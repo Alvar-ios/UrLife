@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Importar datos — Mis Finanzas y Tareas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+<style>
+  .wrap{min-height:100vh;min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:32px 20px;}
+  .box{width:100%;max-width:440px;}
+  .log{font-size:12.5px;color:var(--text-muted);background:var(--paper-sunken);border-radius:10px;padding:10px 12px;margin-top:14px;max-height:220px;overflow-y:auto;white-space:pre-wrap;display:none;}
+  .log.show{display:block;}
+  .filebox{border:1.5px dashed var(--line);border-radius:12px;padding:20px;text-align:center;font-size:13.5px;color:var(--text-muted);margin-bottom:14px;}
+  .filebox.has-file{border-color:var(--accent);color:var(--text);}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="box card" id="box">Cargando…</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="data-layer.js"></script>
+<script>
+(function () {
+  'use strict';
+  const box = document.getElementById('box');
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const stripId = (o) => { const c = Object.assign({}, o); delete c.id; return c; };
+
+  function renderLogin(msg) {
+    box.innerHTML =
+      '<div style="text-align:center;margin-bottom:18px;"><div class="num" style="font-size:22px;font-weight:600;">Importar datos</div>' +
+      '<div style="font-size:12.5px;color:var(--text-faint);margin-top:4px;">Inicia sesión con tu misma cuenta para importar tu copia de seguridad.</div></div>' +
+      '<div class="field"><label>Correo</label><input id="email" type="email" autocomplete="username"></div>' +
+      '<div class="field"><label>Contraseña</label><input id="password" type="password" autocomplete="current-password"></div>' +
+      (msg ? '<div class="alert">' + msg + '</div>' : '') +
+      '<button class="btn accent block" id="btnLogin">Iniciar sesión</button>';
+    document.getElementById('btnLogin').onclick = async () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) return renderLogin('Escribe tu correo y contraseña.');
+      try { await window.Auth.signIn(email, password); }
+      catch (e) { renderLogin('Correo o contraseña incorrectos.'); }
+    };
+  }
+
+  let pickedData = null;
+  function renderImporter(email) {
+    box.innerHTML =
+      '<div style="text-align:center;margin-bottom:18px;"><div class="num" style="font-size:22px;font-weight:600;">Importar datos</div>' +
+      '<div style="font-size:12.5px;color:var(--text-faint);margin-top:4px;">Sesión: ' + esc(email) + '</div></div>' +
+      '<div class="filebox" id="filebox">Elige tu archivo <b>mis-finanzas-backup-*.json</b></div>' +
+      '<input type="file" id="file" accept="application/json" style="width:100%;margin-bottom:14px;">' +
+      '<div style="font-size:12px;color:var(--text-faint);margin-bottom:14px;">Puedes ejecutar esto varias veces con el mismo archivo: no duplica nada, solo actualiza cada registro por su identificador.</div>' +
+      '<button class="btn accent block" id="btnImport" disabled>Importar</button>' +
+      '<button class="btn ghost block" id="btnLogout" style="margin-top:10px;">Cerrar sesión</button>' +
+      '<div class="log" id="log"></div>';
+
+    document.getElementById('file').onchange = async (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      try {
+        const text = await f.text();
+        const parsed = JSON.parse(text);
+        if (!parsed || typeof parsed !== 'object') throw new Error('bad');
+        pickedData = parsed;
+        const fb = document.getElementById('filebox');
+        fb.classList.add('has-file');
+        fb.textContent = f.name + ' — ' + (parsed.movimientos || []).length + ' movimientos, ' + (parsed.tareas || []).length + ' tareas, ' + (parsed.golf || []).length + ' de golf';
+        document.getElementById('btnImport').disabled = false;
+      } catch (err) {
+        pickedData = null;
+        document.getElementById('btnImport').disabled = true;
+        alert('Ese archivo no parece una copia de seguridad válida (debe ser el .json que descarga la app en Más → Copia de seguridad).');
+      }
+    };
+    document.getElementById('btnLogout').onclick = () => window.Auth.signOut();
+    document.getElementById('btnImport').onclick = () => runImport();
+  }
+
+  function log(msg) {
+    const el = document.getElementById('log');
+    el.classList.add('show');
+    el.textContent += msg + '\n';
+    el.scrollTop = el.scrollHeight;
+  }
+
+  async function pool(items, n, worker) {
+    let i = 0, ok = 0, fail = 0;
+    async function run() {
+      while (i < items.length) {
+        const my = i++;
+        try { await worker(items[my]); ok++; } catch (e) { fail++; log('  ⚠ fila ' + my + ': ' + (e && e.message || e)); }
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(n, items.length || 1) }, run));
+    return { ok, fail };
+  }
+
+  async function runImport() {
+    if (!pickedData) return;
+    document.getElementById('btnImport').disabled = true;
+    document.getElementById('btnImport').textContent = 'Importando…';
+    document.getElementById('log').textContent = '';
+
+    if (Array.isArray(pickedData.movimientos) && pickedData.movimientos.length) {
+      log('Movimientos (' + pickedData.movimientos.length + ')…');
+      const r = await pool(pickedData.movimientos, 8, (m) => window.Data.collection('movimientos').doc(m.id).set(stripId(m)));
+      log('  ' + r.ok + ' importados' + (r.fail ? ', ' + r.fail + ' con error' : ''));
+    }
+    if (Array.isArray(pickedData.tareas) && pickedData.tareas.length) {
+      log('Tareas (' + pickedData.tareas.length + ')…');
+      const r = await pool(pickedData.tareas, 8, (t) => window.Data.collection('tareas').doc(t.id).set(stripId(t)));
+      log('  ' + r.ok + ' importadas' + (r.fail ? ', ' + r.fail + ' con error' : ''));
+    }
+    if (Array.isArray(pickedData.golf) && pickedData.golf.length) {
+      log('Golf (' + pickedData.golf.length + ')…');
+      const r = await pool(pickedData.golf, 8, (g) => window.Data.collection('golf').doc(g.id).set(stripId(g)));
+      log('  ' + r.ok + ' importados' + (r.fail ? ', ' + r.fail + ' con error' : ''));
+    }
+    if (pickedData.config && typeof pickedData.config === 'object') {
+      log('Configuración…');
+      try { await window.Data.doc('config/app').set(pickedData.config); log('  hecho'); }
+      catch (e) { log('  ⚠ ' + (e && e.message || e)); }
+    }
+    log('\n✅ Importación terminada. Abre la app y comprueba que todo esté bien.');
+    document.getElementById('btnImport').disabled = false;
+    document.getElementById('btnImport').textContent = 'Importar de nuevo';
+  }
+
+  if (!window.Auth || !window.Data) {
+    box.innerHTML = '<b style="color:var(--expense)">Falta configurar config.js</b> con tu URL y clave de Supabase.';
+    return;
+  }
+  window.Auth.onChange((session) => { session ? renderImporter(session.user.email) : renderLogin(); });
+})();
+</script>
+</body>
+</html>
