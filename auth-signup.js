@@ -1,236 +1,107 @@
-/* ============================================================
-   AUTENTICACIÓN — alta de nuevos usuarios
-   Mantiene la pantalla existente y añade un modo "Crear cuenta".
-   ============================================================ */
+/* Registro de usuarios desde la pantalla de login. */
 (function () {
   'use strict';
 
   const cfg = window.SUPABASE_CONFIG || {};
   if (!window.supabase || !cfg.url || !cfg.anonKey) return;
 
-  const signupClient = window.supabase.createClient(cfg.url, cfg.anonKey, {
+  const client = window.supabase.createClient(cfg.url, cfg.anonKey, {
     auth: { persistSession: false, autoRefreshToken: false }
   });
 
-  // Añade signUp sin modificar la capa de datos existente.
-  if (window.Auth) {
-    window.Auth.signUp = function (email, password) {
-      return signupClient.auth.signUp({ email: email, password: password }).then(function (res) {
-        if (res.error) {
-          const err = new Error(res.error.message || 'No se pudo crear la cuenta.');
-          err.code = res.error.code || res.error.status;
-          throw err;
-        }
-        return res.data;
-      });
-    };
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
   }
 
-  function injectStyles() {
-    if (document.getElementById('signupStyles')) return;
-    const style = document.createElement('style');
-    style.id = 'signupStyles';
-    style.textContent =
-      '.auth-switch{display:block;width:100%;margin-top:14px;padding:8px;border:0;background:none;color:var(--accent);font:500 13px var(--font-ui);cursor:pointer}' +
-      '.auth-title{font-family:var(--font-display);font-size:25px;font-weight:600;color:var(--ink);margin-bottom:3px}' +
-      '.auth-subtitle{font-size:12.5px;color:var(--text-faint)}';
-    document.head.appendChild(style);
-  }
-
-  function findCard() {
-    const email = document.getElementById('loginEmail');
-    return email ? email.closest('.card') : null;
-  }
-
-  function loginView() {
-    const card = findCard();
-    if (!card) return;
-
-    const title = card.querySelector('.num');
-    if (title) {
-      title.className = 'auth-title';
-      title.innerHTML = 'Mis Finanzas<span class="auth-subtitle" style="display:block;">y Tareas</span>';
-    }
-
-    const confirm = document.getElementById('loginPasswordConfirm');
-    if (confirm) confirm.closest('.field').remove();
-
-    const password = document.getElementById('loginPassword');
-    if (password) {
-      password.autocomplete = 'current-password';
-      password.placeholder = '';
-    }
-
-    const main = card.querySelector('[data-auth-action="submitSignup"]');
-    if (main) {
-      main.removeAttribute('data-auth-action');
-      main.setAttribute('data-click', 'doLogin');
-      main.textContent = 'Iniciar sesión';
-    }
-
-    const forgot = card.querySelector('[data-auth-action="forgot"]');
-    if (forgot) {
-      forgot.setAttribute('data-click', 'doForgotPassword');
-      forgot.removeAttribute('data-auth-action');
-      forgot.textContent = '¿Olvidaste tu contraseña?';
-    }
-
-    const switchBtn = card.querySelector('[data-auth-action="showLogin"]');
-    if (switchBtn) switchBtn.remove();
-
-    addSignupSwitch(card);
-  }
-
-  function addSignupSwitch(card) {
-    if (card.querySelector('[data-auth-action="showSignup"]')) return;
-    const button = document.createElement('button');
-    button.className = 'auth-switch';
-    button.type = 'button';
-    button.setAttribute('data-auth-action', 'showSignup');
-    button.textContent = '¿No tienes cuenta? Crear una';
+  function addLink() {
+    const card = document.querySelector('.auth-card') || document.querySelector('#loginEmail')?.closest('.card');
+    if (!card || card.dataset.authMode === 'signup') return;
+    if (card.querySelector('[data-auth-signup]')) return;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'auth-link';
+    b.dataset.authSignup = '1';
+    b.textContent = '¿No tienes cuenta? Crear una';
     const forgot = card.querySelector('[data-click="doForgotPassword"]');
-    (forgot || card.querySelector('[data-click="doLogin"]')).insertAdjacentElement('afterend', button);
+    (forgot || card.querySelector('[data-click="doLogin"]'))?.insertAdjacentElement('afterend', b);
   }
 
-  function signupView() {
-    const card = findCard();
+  function showSignup() {
+    const card = document.querySelector('.auth-card') || document.querySelector('#loginEmail')?.closest('.card');
     if (!card) return;
-
-    const title = card.querySelector('.num, .auth-title');
-    if (title) {
-      title.className = 'auth-title';
-      title.innerHTML = 'Crear cuenta<span class="auth-subtitle" style="display:block;">Mis Finanzas y Tareas</span>';
-    }
-
-    const password = document.getElementById('loginPassword');
-    if (!password) return;
-
-    password.autocomplete = 'new-password';
-    password.placeholder = 'Mínimo 6 caracteres';
-
-    if (!document.getElementById('loginPasswordConfirm')) {
-      const field = document.createElement('div');
-      field.className = 'field';
-      field.innerHTML =
-        '<label>Repite la contraseña</label>' +
-        '<input id="loginPasswordConfirm" type="password" autocomplete="new-password" placeholder="Repite tu contraseña">';
-      password.closest('.field').insertAdjacentElement('afterend', field);
-    }
-
-    const main = card.querySelector('[data-click="doLogin"]');
-    if (main) {
-      main.removeAttribute('data-click');
-      main.setAttribute('data-auth-action', 'submitSignup');
-      main.textContent = 'Crear cuenta';
-    }
-
-    const forgot = card.querySelector('[data-click="doForgotPassword"]');
-    if (forgot) {
-      forgot.removeAttribute('data-click');
-      forgot.setAttribute('data-auth-action', 'forgot');
-      forgot.textContent = '¿Ya tienes cuenta? Iniciar sesión';
-    }
-
-    const switchBtn = card.querySelector('[data-auth-action="showSignup"]');
-    if (switchBtn) switchBtn.remove();
+    card.dataset.authMode = 'signup';
+    card.innerHTML =
+      '<div class="auth-head"><div class="auth-title">Crear cuenta</div><div class="auth-subtitle">Mis Finanzas y Tareas</div></div>' +
+      '<div class="field"><label>Correo</label><input id="signupEmail" type="email" autocomplete="email" placeholder="tu@correo.com"></div>' +
+      '<div class="field"><label>Contraseña</label><input id="signupPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></div>' +
+      '<div class="field"><label>Repite la contraseña</label><input id="signupPassword2" type="password" autocomplete="new-password" placeholder="Repite tu contraseña"></div>' +
+      '<div id="signupMsg"></div>' +
+      '<button class="btn accent block" id="signupSubmit" style="margin-top:6px;">Crear cuenta</button>' +
+      '<button class="auth-link" id="backToLogin">¿Ya tienes cuenta? Iniciar sesión</button>';
+    setTimeout(() => document.getElementById('signupEmail')?.focus(), 60);
   }
 
-  function showMessage(text) {
-    const card = findCard();
-    if (!card) return;
-    const old = card.querySelector('.auth-message');
-    if (old) old.remove();
-    const box = document.createElement('div');
-    box.className = 'alert auth-message';
-    box.style.marginTop = '2px';
-    box.innerHTML = '<div>' + text.replace(/[&<>"']/g, function (c) {
-      return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c];
-    }) + '</div>';
-    const main = card.querySelector('[data-auth-action="submitSignup"]');
-    if (main) main.insertAdjacentElement('beforebegin', box);
+  function showMessage(msg) {
+    const el = document.getElementById('signupMsg');
+    if (el) el.innerHTML = '<div class="alert auth-message" style="margin-top:2px;"><div>' + escapeHtml(msg) + '</div></div>';
   }
 
-  async function submitSignup() {
-    const email = (document.getElementById('loginEmail').value || '').trim();
-    const password = document.getElementById('loginPassword').value || '';
-    const confirm = document.getElementById('loginPasswordConfirm').value || '';
-
-    if (!email || !password || !confirm) return showMessage('Completa todos los campos.');
+  async function signup() {
+    const email = (document.getElementById('signupEmail')?.value || '').trim();
+    const password = document.getElementById('signupPassword')?.value || '';
+    const password2 = document.getElementById('signupPassword2')?.value || '';
+    if (!email || !password || !password2) return showMessage('Completa todos los campos.');
     if (password.length < 6) return showMessage('La contraseña debe tener al menos 6 caracteres.');
-    if (password !== confirm) return showMessage('Las contraseñas no coinciden.');
+    if (password !== password2) return showMessage('Las contraseñas no coinciden.');
 
-    const button = document.querySelector('[data-auth-action="submitSignup"]');
-    if (button) {
-      button.disabled = true;
-      button.textContent = 'Creando cuenta…';
-    }
+    const b = document.getElementById('signupSubmit');
+    b.disabled = true; b.textContent = 'Creando cuenta…';
 
     try {
-      const result = await window.Auth.signUp(email, password);
+      const res = await client.auth.signUp({ email, password });
+      if (res.error) throw res.error;
 
-      // Si Supabase confirma automáticamente el usuario, iniciamos sesión
-      // mediante la capa normal para que la app cargue sus datos.
-      if (result && result.session) {
+      if (res.data && res.data.session) {
         await window.Auth.signIn(email, password);
         return;
       }
 
-      showMessage('Cuenta creada. Revisa tu correo para confirmar la cuenta y después inicia sesión.');
-      if (button) {
-        button.disabled = false;
-        button.textContent = 'Crear cuenta';
-      }
+      const card = document.querySelector('.auth-card');
+      if (card) card.dataset.authMode = 'login';
+      document.getElementById('app').innerHTML =
+        '<div class="auth-screen"><div class="card auth-card">' +
+        '<div class="auth-head"><div class="auth-title">Cuenta creada</div><div class="auth-subtitle">Mis Finanzas y Tareas</div></div>' +
+        '<div class="alert auth-message"><div>Revisa tu correo para confirmar la cuenta y después inicia sesión.</div></div>' +
+        '<button class="btn accent block" id="backToLogin2">Iniciar sesión</button>' +
+        '</div></div>';
     } catch (e) {
-      const raw = String((e && e.message) || '').toLowerCase();
+      const raw = String(e?.message || '').toLowerCase();
       let msg = 'No se pudo crear la cuenta. Inténtalo de nuevo.';
-      if (raw.includes('already') || raw.includes('registered') || raw.includes('exists')) {
-        msg = 'Ese correo ya tiene una cuenta. Prueba a iniciar sesión.';
-      } else if (raw.includes('password')) {
-        msg = 'La contraseña no cumple los requisitos de Supabase.';
-      } else if (raw.includes('email')) {
-        msg = 'Introduce un correo electrónico válido.';
-      }
+      if (raw.includes('already') || raw.includes('registered') || raw.includes('exists')) msg = 'Ese correo ya tiene una cuenta. Prueba a iniciar sesión.';
+      else if (raw.includes('password')) msg = 'La contraseña no cumple los requisitos.';
+      else if (raw.includes('email')) msg = 'Introduce un correo electrónico válido.';
       showMessage(msg);
-      if (button) {
-        button.disabled = false;
-        button.textContent = 'Crear cuenta';
-      }
+      b.disabled = false; b.textContent = 'Crear cuenta';
     }
   }
 
-  document.addEventListener('click', function (event) {
-    const el = event.target.closest ? event.target.closest('[data-auth-action]') : null;
-    if (!el) return;
+  function showLogin() {
+    if (window.__APP__?.main) window.__APP__.main();
+  }
 
-    const action = el.getAttribute('data-auth-action');
-
-    if (action === 'showSignup') {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      signupView();
-      return;
-    }
-
-    if (action === 'showLogin' || action === 'forgot') {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      loginView();
-      return;
-    }
-
-    if (action === 'submitSignup') {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      submitSignup();
-    }
-  }, true);
-
-  const observer = new MutationObserver(function () {
-    if (document.getElementById('loginEmail')) {
-      injectStyles();
-      loginView();
-    }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-auth-signup]')) { e.preventDefault(); showSignup(); return; }
+    if (e.target.closest('#backToLogin, #backToLogin2')) { e.preventDefault(); showLogin(); return; }
+    if (e.target.closest('#signupSubmit')) { e.preventDefault(); signup(); }
   });
 
+  const style = document.createElement('style');
+  style.textContent = '.auth-screen{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px}.auth-card{width:100%;max-width:360px}.auth-head{text-align:center;margin-bottom:22px}.auth-title{font-family:var(--font-display);font-size:26px;font-weight:600;color:var(--ink)}.auth-subtitle{font-size:13px;color:var(--text-faint);margin-top:2px}.auth-link{display:block;width:100%;margin-top:14px;padding:8px;border:0;background:none;color:var(--accent);font:500 13px var(--font-ui);cursor:pointer}';
+  document.head.appendChild(style);
+
+  const observer = new MutationObserver(addLink);
   observer.observe(document.getElementById('app'), { childList: true, subtree: true });
+  addLink();
 })();
