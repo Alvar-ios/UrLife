@@ -343,6 +343,8 @@ function renderInicio() {
     (proximas.length ? '<div class="list">' + proximas.map(renderTareaRow).join('') + '</div>'
       : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">No tienes tareas pendientes.</div>') +
 
+    renderMetasInicio() +
+
     '<div class="section-title">Donde más gastas este mes <button class="link" ' + act('goTab', 'analisis') + '>Ver análisis</button></div>' +
     '<div class="card">' + (top.length ? top.map(([n, v]) =>
       '<div class="budget-row"><div class="top"><span class="cat">' + escapeHtml(n) + '</span><span class="nums"><b class="tnum">' + money(v) + '</b></span></div>' +
@@ -454,9 +456,9 @@ async function doDeleteMov() {
    ANÁLISIS
    ============================================================ */
 function renderAnalisis() {
-  const subs = [['mensual', 'Mensual'], ['anual', 'Anual'], ['proyectos', 'Proyectos']];
+  const subs = [['mensual', 'Mensual'], ['anual', 'Anual'], ['metas', 'Metas'], ['proyectos', 'Proyectos']];
   return '<div class="segmented">' + subs.map(([id, l]) => '<button class="' + (S.analisisSub === id ? 'active' : '') + '" ' + act('setAnalisisSub', id) + '>' + l + '</button>').join('') + '</div>' +
-    '<div style="margin-top:16px;">' + (S.analisisSub === 'mensual' ? renderAnalisisMensual() : S.analisisSub === 'anual' ? renderAnalisisAnual() : renderProyectos()) + '</div>';
+    '<div style="margin-top:16px;">' + (S.analisisSub === 'mensual' ? renderAnalisisMensual() : S.analisisSub === 'anual' ? renderAnalisisAnual() : S.analisisSub === 'metas' ? renderMetas() : renderProyectos()) + '</div>';
 }
 function renderAnalisisMensual() {
   const k = kpisMes(S.anioSel, S.mesSel);
@@ -513,6 +515,70 @@ function renderAnalisisAnual() {
     rows.map((r) => '<div class="row static"><div class="main"><div class="ttl">' + MESES[r.m - 1] + '</div></div>' +
       '<div class="amt pos tnum" style="min-width:88px;text-align:right;">' + moneyShort(r.ingresos) + '</div>' +
       '<div class="amt neg tnum" style="min-width:88px;text-align:right;">' + moneyShort(r.facturas + r.gastos) + '</div></div>').join('') + '</div>';
+}
+/* ============================================================
+   METAS DE AHORRO (Fase 2): cálculos + vista
+   ============================================================ */
+const META_UMBRAL_AMARILLO = 0.7; // ritmo real / ritmo necesario
+function isoDaysAgo(n) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - n); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function fmtMesAnio(d) { return MESES_ABR[d.getMonth()].toLowerCase() + ' ' + d.getFullYear(); }
+function metaStats(m) {
+  const key = (m.nombre || '').trim().toLowerCase();
+  const movs = S.movimientos.filter((x) => x.tipo === 'Ahorro' && (x.categoria || '').trim().toLowerCase() === key);
+  const acum = num(m.yaAhorrado) + movs.reduce((a, x) => a + num(x.importe), 0);
+  const obj = num(m.objetivo);
+  const falta = Math.max(0, obj - acum);
+  const pct = obj > 0 ? acum / obj * 100 : null;
+  const hoyISO = todayISO(), desde = isoDaysAgo(90);
+  const ritmo = movs.filter((x) => (x.fecha || '') > desde && (x.fecha || '') <= hoyISO).reduce((a, x) => a + num(x.importe), 0) / 3;
+  const dias = m.fechaObjetivo ? daysUntil(m.fechaObjetivo) : null;
+  const r = { nombre: m.nombre, acum, obj, falta, pct, ritmo, dias, fecha: m.fechaObjetivo || null, mes: null, tri: null, anio: null, llegada: null, estado: 'gris', texto: '' };
+  if (obj <= 0) { r.texto = 'Sin objetivo definido'; return r; }
+  if (falta <= 0) { r.estado = 'verde'; r.texto = 'Meta lograda'; return r; }
+  if (ritmo > 0) { const d = new Date(); d.setDate(d.getDate() + Math.round(falta / ritmo * 30.4375)); r.llegada = d; }
+  if (dias == null) { r.texto = 'Sin fecha objetivo'; return r; }
+  if (dias < 0) { r.estado = 'rojo'; r.texto = 'La fecha ya pasó y falta ' + money(falta); return r; }
+  r.mes = falta / Math.max(dias / 30.4375, 1); r.tri = r.mes * 3; r.anio = r.mes * 12;
+  const ratio = ritmo / r.mes;
+  if (ratio >= 1) { r.estado = 'verde'; r.texto = 'Vas bien: ritmo suficiente'; }
+  else if (ratio >= META_UMBRAL_AMARILLO) { r.estado = 'amarillo'; r.texto = 'Ritmo justo: conviene mejorar'; }
+  else { r.estado = 'rojo'; r.texto = 'Al ritmo actual no llegarías'; }
+  return r;
+}
+function metasStats() { return (cfg().ahorro || []).filter((m) => m && m.nombre).map(metaStats); }
+const SEMAFORO_COLOR = { verde: 'var(--income)', amarillo: 'var(--accent)', rojo: 'var(--expense)', gris: 'var(--text-faint)' };
+function semaforoDot(estado) { return '<span class="dot" style="background:' + SEMAFORO_COLOR[estado] + ';flex:none;"></span>'; }
+function renderMetas() {
+  const ms = metasStats();
+  if (!ms.length) return '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes metas de ahorro. Créalas en Más → Metas de ahorro (con objetivo y fecha).</div>';
+  return ms.map((r) => {
+    const pctC = r.pct == null ? 0 : Math.max(0, Math.min(100, r.pct));
+    let h = '<div class="card" style="margin-bottom:12px;">' +
+      '<div class="budget-row" style="margin:0;"><div class="top"><span class="cat" style="display:flex;align-items:center;gap:8px;">' + semaforoDot(r.estado) + escapeHtml(r.nombre) + '</span>' +
+      '<span class="nums"><b class="tnum">' + (r.pct == null ? '—' : r.pct.toFixed(0) + '%') + '</b></span></div>' +
+      '<div class="progress"><div style="width:' + pctC + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>' +
+      '<div class="summary-line">' + money(r.acum) + (r.obj > 0 ? ' de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + fmtDateLong(r.fecha) : '') + '</div>' +
+      '<div style="font-size:13.5px;font-weight:600;color:' + SEMAFORO_COLOR[r.estado] + ';margin:2px 0 6px;">' + escapeHtml(r.texto) + '</div>';
+    if (r.mes != null) {
+      h += '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">Necesitas ahorrar aprox. <b class="tnum" style="color:var(--text);">' + money(r.mes) + '/mes</b> · ' + money(r.tri) + '/trimestre · ' + money(r.anio) + '/año.</div>';
+    }
+    if (r.obj > 0 && r.falta > 0) {
+      h += '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">Tu ritmo (últimos 3 meses): <b class="tnum" style="color:var(--text);">' + money(r.ritmo) + '/mes</b>' +
+        (r.llegada ? ' · al ritmo actual llegarías en ' + fmtMesAnio(r.llegada) : ' · sin ahorro reciente para estimar') + '.</div>';
+    }
+    return h + '</div>';
+  }).join('') + '<div class="summary-line">El ahorro de cada meta sale de tus movimientos de tipo Ahorro con ese nombre, más lo que indiques en «Ya ahorrado antes».</div>';
+}
+function renderMetasInicio() {
+  const ms = metasStats().filter((r) => r.obj > 0);
+  if (!ms.length) return '';
+  const cnt = { verde: 0, amarillo: 0, rojo: 0, gris: 0 }; ms.forEach((r) => { cnt[r.estado]++; });
+  const sum = ['verde', 'amarillo', 'rojo'].filter((e) => cnt[e]).map((e) => '<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;">' + semaforoDot(e) + cnt[e] + '</span>').join('');
+  return '<div class="section-title">Metas de ahorro <button class="link" ' + act('goMetas') + '>Ver metas</button></div><div class="card">' +
+    ms.slice(0, 3).map((r) => '<div class="budget-row"><div class="top"><span class="cat" style="display:flex;align-items:center;gap:8px;">' + semaforoDot(r.estado) + escapeHtml(r.nombre) + '</span>' +
+      '<span class="nums"><b class="tnum">' + (r.pct == null ? '—' : r.pct.toFixed(0) + '%') + '</b></span></div>' +
+      '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, r.pct || 0)) + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>').join('') +
+    (ms.length > 1 ? '<div class="summary-line">' + sum + '</div>' : '') + '</div>';
 }
 function renderProyectos() {
   const t = golfTotales();
@@ -695,7 +761,7 @@ const LIST_META = {
   facturas: { title: 'Facturas recurrentes', amtField: 'importe', amtLabel: 'Importe', icon: 'wallet',
     extra: [{ field: 'diaDelMes', label: 'Día del mes', type: 'day' }] },
   ahorro: { title: 'Metas de ahorro', amtField: 'objetivo', amtLabel: 'Objetivo', icon: 'flag',
-    extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }] },
+    extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }, { field: 'yaAhorrado', label: 'Ya ahorrado antes (€)', type: 'money' }] },
   deudas: { title: 'Deudas', amtField: 'objetivo', amtLabel: 'Objetivo', icon: 'bank',
     extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }, { field: 'recurrencia', label: 'Recurrencia (ej. mensual)', type: 'text' }] },
   ingresos: { title: 'Fuentes de ingreso', simple: true, icon: 'wallet' },
@@ -889,6 +955,7 @@ function exportBackup() {
 function extraFieldHtml(key, i, def, value) {
   const common = onChange('listChange', key, i, def.field);
   if (def.type === 'date') return '<input type="date" style="max-width:150px;" value="' + escapeHtml(value || '') + '" ' + common + '>';
+  if (def.type === 'money') return '<input type="number" step="0.01" inputmode="decimal" placeholder="' + def.label + '" style="max-width:130px;" value="' + (value == null ? '' : escapeHtml(value)) + '" ' + common + '>';
   if (def.type === 'day') return '<input type="number" min="1" max="31" inputmode="numeric" placeholder="' + def.label + '" style="max-width:84px;" value="' + (value == null ? '' : escapeHtml(value)) + '" ' + common + '>';
   return '<input type="text" placeholder="' + def.label + '" value="' + escapeHtml(value || '') + '" ' + common + '>';
 }
@@ -960,6 +1027,7 @@ const H = {
   deleteMov: (_a, el) => confirmDelete(el, doDeleteMov),
   // análisis
   setAnalisisSub: ([s]) => { S.analisisSub = s; render(); },
+  goMetas: () => { S.tab = 'analisis'; S.analisisSub = 'metas'; render(); window.scrollTo(0, 0); },
   moveMes: ([d]) => { let m = S.mesSel + Number(d), a = S.anioSel; if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; } S.mesSel = m; S.anioSel = a; render(); },
   moveAnio: ([d]) => { S.anioSel += Number(d); render(); },
   openGolfForm: ([id]) => openGolfForm(id || null),
@@ -1003,6 +1071,7 @@ const H = {
       if (field === meta.amtField) cur[field] = el.value === '' ? null : parseFloat(el.value);
       else if (extraDef && extraDef.type === 'day') { const n = parseInt(el.value, 10); cur[field] = n >= 1 && n <= 31 ? n : null; }
       else if (extraDef && extraDef.type === 'date') cur[field] = el.value || null;
+      else if (extraDef && extraDef.type === 'money') { const n = parseFloat(el.value); cur[field] = isFinite(n) ? n : null; }
       else cur[field] = el.value.trim();
       items[idx] = cur;
     }
