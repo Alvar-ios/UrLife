@@ -39,9 +39,10 @@ function ic(name) {
 /* ---------------- Utilidades ---------------- */
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const MESES_ABR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-const TIPOS = ['Ingreso', 'Factura', 'Gasto', 'Ahorro', 'Deuda'];
-const TIPO_COLOR = { Ingreso: 'income', Factura: 'bill', Gasto: 'expense', Ahorro: 'savings', Deuda: 'debt' };
-const TIPO_SIGNO = { Ingreso: 1, Factura: -1, Gasto: -1, Ahorro: -1, Deuda: -1 };
+const TIPOS = ['Ingreso', 'Factura', 'Gasto', 'Ahorro', 'Inversión', 'Deuda'];
+const TIPOS_ACTIVO = ['Acción', 'ETF', 'Bono', 'Criptomoneda', 'Otro'];
+const TIPO_COLOR = { Ingreso: 'income', Factura: 'bill', Gasto: 'expense', Ahorro: 'savings', 'Inversión': 'savings', Deuda: 'debt' };
+const TIPO_SIGNO = { Ingreso: 1, Factura: -1, Gasto: -1, Ahorro: -1, 'Inversión': -1, Deuda: -1 };
 
 function num(v) { const n = Number(v); return isFinite(n) ? n : 0; }
 function fmt2(n) { return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -212,8 +213,8 @@ function sumTipo(movs, tipo) { return movs.filter((m) => m.tipo === tipo).reduce
 function kpisMes(anio, mes) {
   const movs = movsDelMes(anio, mes);
   const ingresos = sumTipo(movs, 'Ingreso'), facturas = sumTipo(movs, 'Factura'), gastos = sumTipo(movs, 'Gasto');
-  const ahorro = sumTipo(movs, 'Ahorro'), deuda = sumTipo(movs, 'Deuda');
-  return { ingresos, facturas, gastos, ahorro, deuda, disponible: ingresos - facturas - gastos - ahorro - deuda, movs };
+  const ahorro = sumTipo(movs, 'Ahorro'), deuda = sumTipo(movs, 'Deuda'), inversion = sumTipo(movs, 'Inversión');
+  return { ingresos, facturas, gastos, ahorro, inversion, deuda, disponible: ingresos - facturas - gastos - ahorro - inversion - deuda, movs };
 }
 function gastoPorCategoria(movs) {
   const map = {};
@@ -247,6 +248,7 @@ function categoriasPorTipo(tipo) {
   if (tipo === 'Gasto') arr = (c.categoriasGasto || []).map((x) => x.nombre);
   else if (tipo === 'Factura') arr = (c.facturas || []).map((x) => x.nombre);
   else if (tipo === 'Ahorro') arr = (c.ahorro || []).map((x) => x.nombre);
+  else if (tipo === 'Inversión') { const seen = {}; S.movimientos.forEach((m) => { if (m.tipo === 'Inversión' && m.categoria) seen[m.categoria] = (seen[m.categoria] || 0) + 1; }); arr = Object.keys(seen).sort((a, b) => seen[b] - seen[a]); }
   else if (tipo === 'Deuda') arr = (c.deudas || []).map((x) => x.nombre);
   else if (tipo === 'Ingreso') arr = (c.ingresos || []).slice();
   return arr.filter(Boolean);
@@ -413,6 +415,12 @@ function chipsHtml(tipo, current) {
   if (!cats.length) return '';
   return '<div class="chips">' + cats.map((c) => '<button type="button" class="chip ' + (c === current ? 'active' : '') + '" ' + act('pickCat', c) + '>' + escapeHtml(c) + '</button>').join('') + '</div>';
 }
+function invFieldsHtml(tipo, actual) {
+  if (tipo !== 'Inversión') return '';
+  return '<div class="field"><label>Tipo de activo</label><select id="fTipoActivo"><option value="">—</option>' +
+    TIPOS_ACTIVO.map((t) => '<option ' + (actual === t ? 'selected' : '') + '>' + t + '</option>').join('') + '</select></div>';
+}
+function catLabel(tipo) { return tipo === 'Inversión' ? 'Activo <span class="hint">· ej. VWCE, S&amp;P 500 ETF</span>' : 'Categoría'; }
 function openMovForm(id) {
   const ex = id ? S.movimientos.find((m) => m.id === id) : null;
   const tipoIni = ex ? ex.tipo : (S.tab === 'movimientos' && S.movFiltroTipo !== 'Todos' ? S.movFiltroTipo : 'Gasto');
@@ -423,7 +431,8 @@ function openMovForm(id) {
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
     TIPOS.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + t + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>Importe (€) <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : '') + '"></div>' +
-    '<div class="field"><label>Categoría</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : '') + '</div>' +
+    '<div id="invFields">' + invFieldsHtml(tipoIni, ex ? ex.tipoActivo : '') + '</div>' +
+    '<div class="field"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : '') + '</div>' +
     '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : '') + '" ' + onInput('onCatInput') + '></div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : todayISO()) + '"></div>' +
     '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida" value="' + escapeHtml(ex ? ex.descripcion : '') + '"></div>' +
@@ -439,13 +448,16 @@ async function saveMov() {
   const categoria = $('#fCategoria').value.trim();
   const fecha = $('#fFecha').value;
   if (!isFinite(importe) || importe === 0) return toast('Pon un importe válido');
-  if (!categoria) return toast('Elige o escribe una categoría');
+  if (!categoria) return toast(FORM.tipo === 'Inversión' ? 'Escribe o elige el activo' : 'Elige o escribe una categoría');
+  const tipoActivo = FORM.tipo === 'Inversión' ? (($('#fTipoActivo') || {}).value || '') : '';
+  if (FORM.tipo === 'Inversión' && !tipoActivo) return toast('Elige el tipo de activo');
   if (!fecha) return toast('Elige una fecha');
   const ex = FORM.id ? S.movimientos.find((m) => m.id === FORM.id) : null;
   const data = Object.assign(ex ? stripId(ex) : { creadoEn: Date.now() }, {
     tipo: FORM.tipo, importe, categoria, fecha,
     descripcion: $('#fDesc').value.trim(), metodoPago: $('#fMetodo').value,
   });
+  if (FORM.tipo === 'Inversión') data.tipoActivo = tipoActivo; else if ('tipoActivo' in data) data.tipoActivo = null;
   const ok = await write(() => FORM.id ? S.db.collection('movimientos').doc(FORM.id).set(data) : S.db.collection('movimientos').add(data));
   if (ok) { closeSheet(); toast(FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido'); }
 }
@@ -458,9 +470,9 @@ async function doDeleteMov() {
    ANÁLISIS
    ============================================================ */
 function renderAnalisis() {
-  const subs = [['mensual', 'Mensual'], ['anual', 'Anual'], ['metas', 'Metas'], ['proyectos', 'Proyectos']];
+  const subs = [['mensual', 'Mensual'], ['anual', 'Anual'], ['metas', 'Metas'], ['inversiones', 'Inversiones'], ['proyectos', 'Proyectos']];
   return '<div class="segmented">' + subs.map(([id, l]) => '<button class="' + (S.analisisSub === id ? 'active' : '') + '" ' + act('setAnalisisSub', id) + '>' + l + '</button>').join('') + '</div>' +
-    '<div style="margin-top:16px;">' + (S.analisisSub === 'mensual' ? renderAnalisisMensual() : S.analisisSub === 'anual' ? renderAnalisisAnual() : S.analisisSub === 'metas' ? renderMetas() : renderProyectos()) + '</div>';
+    '<div style="margin-top:16px;">' + (S.analisisSub === 'mensual' ? renderAnalisisMensual() : S.analisisSub === 'anual' ? renderAnalisisAnual() : S.analisisSub === 'metas' ? renderMetas() : S.analisisSub === 'inversiones' ? renderInversiones() : renderProyectos()) + '</div>';
 }
 function renderAnalisisMensual() {
   const k = kpisMes(S.anioSel, S.mesSel);
@@ -502,7 +514,7 @@ function renderAnalisisAnual() {
   for (let m = 1; m <= 12; m++) rows.push(Object.assign({ m }, kpisMes(S.anioSel, m)));
   const totIng = rows.reduce((a, r) => a + r.ingresos, 0);
   const totGas = rows.reduce((a, r) => a + r.facturas + r.gastos, 0);
-  const totAho = rows.reduce((a, r) => a + r.ahorro, 0);
+  const totAho = rows.reduce((a, r) => a + r.ahorro + r.inversion, 0);
   const tasa = totIng > 0 ? totAho / totIng * 100 : 0;
   return '<div class="month-nav"><button class="icon-btn" aria-label="Año anterior" ' + act('moveAnio', -1) + '>' + ic('chevL') + '</button>' +
     '<div class="lbl" style="min-width:90px;">' + S.anioSel + '</div>' +
@@ -689,6 +701,59 @@ function renderCalendario() {
     '<div class="card" style="padding:10px 8px;"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">' + cells + '</div></div>' +
     '<div class="section-title">' + DIAS_LARGO[dowMon(dsel)] + ' ' + dsel.getDate() + ' de ' + MESES[dsel.getMonth()].toLowerCase() + '</div>' +
     (evsSel.length ? '<div class="list">' + evsSel.map(calEventRow).join('') + '</div>' : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Sin eventos este día.</div>');
+}
+/* ============================================================
+   INVERSIONES (Fase 4, versión 1): acumulado por activo + inflación manual
+   ============================================================ */
+function inversionesPorActivo() {
+  const map = {};
+  S.movimientos.filter((m) => m.tipo === 'Inversión').forEach((m) => {
+    const key = normName(m.categoria) || '(sin activo)';
+    const g = map[key] || (map[key] = { nombre: (m.categoria || '').trim() || 'Sin activo', total: 0, n: 0, tipoActivo: '', ultima: '' });
+    g.total += num(m.importe); g.n++;
+    if (m.tipoActivo && (m.fecha || '') >= g.ultima) g.tipoActivo = m.tipoActivo;
+    if ((m.fecha || '') > g.ultima) g.ultima = m.fecha || '';
+  });
+  return Object.values(map).sort((a, b) => b.total - a.total);
+}
+function fmtInflacion(inf) {
+  if (!inf || inf.tasa == null || inf.tasa === '') return null;
+  return fmt2(num(inf.tasa)) + ' %' + (inf.fechaDato ? ' (dato de ' + MESES[parseISO(inf.fechaDato).getMonth()].toLowerCase() + ' ' + parseISO(inf.fechaDato).getFullYear() + ')' : '');
+}
+function renderInversiones() {
+  const grupos = inversionesPorActivo();
+  const total = grupos.reduce((a, g) => a + g.total, 0);
+  const porTipo = {};
+  grupos.forEach((g) => { const k = g.tipoActivo || 'Sin clasificar'; porTipo[k] = (porTipo[k] || 0) + g.total; });
+  const inf = fmtInflacion(cfg().inflacion);
+  const infFuente = cfg().inflacion && cfg().inflacion.fuente ? ' · ' + escapeHtml(cfg().inflacion.fuente) : '';
+  let h = '<div class="kpi-row"><div class="kpi savings"><div class="v tnum">' + moneyShort(total) + '</div><div class="l">Total invertido</div></div>' +
+    '<div class="kpi"><div class="v tnum">' + grupos.length + '</div><div class="l">Activos</div></div>' +
+    '<div class="kpi"><div class="v tnum">' + grupos.reduce((a, g) => a + g.n, 0) + '</div><div class="l">Aportaciones</div></div></div>';
+  if (!grupos.length) {
+    h += '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Aún no hay inversiones. Añade un movimiento de tipo <b>Inversión</b> indicando el activo (por ejemplo VWCE).</div>';
+  } else {
+    h += '<div class="section-title">Invertido por activo</div><div class="list">' + grupos.map((g) =>
+      '<div class="row" ' + act('verActivo', g.nombre) + '><span class="dot" style="background:var(--savings)"></span>' +
+      '<div class="main"><div class="ttl">' + escapeHtml(g.nombre) + '</div><div class="meta">' + escapeHtml(g.tipoActivo || 'Sin clasificar') + ' · ' + g.n + (g.n === 1 ? ' aportación' : ' aportaciones') + (total > 0 ? ' · ' + (g.total / total * 100).toFixed(0) + '%' : '') + (g.ultima ? ' · última ' + fmtDateShort(g.ultima) : '') + '</div></div>' +
+      '<div class="amt tnum">' + money(g.total) + '</div></div>').join('') + '</div>';
+    h += '<div class="section-title">Por tipo de activo</div><div class="card">' + Object.entries(porTipo).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+      '<div class="budget-row"><div class="top"><span class="cat">' + escapeHtml(k) + '</span><span class="nums"><b class="tnum">' + money(v) + '</b></span></div>' +
+      '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, total > 0 ? v / total * 100 : 0)) + '%"></div></div></div>').join('') + '</div>';
+  }
+  h += '<div class="section-title">Inflación anual <button class="link" ' + act('openInflacion') + '>' + (inf ? 'Editar' : 'Indicar') + '</button></div><div class="card" style="font-size:14px;">' +
+    (inf ? '<b class="tnum">' + inf + '</b>' + infFuente : '<span style="color:var(--text-faint);">Sin dato. Indica el índice de inflación anual y de qué fecha es.</span>') + '</div>' +
+    '<div class="summary-line">«Invertido» es lo aportado, no el valor actual de mercado. El valor actual y la rentabilidad llegarán en una fase posterior.</div>';
+  return h;
+}
+function openInflacionSheet() {
+  const inf = cfg().inflacion || {};
+  FORM = { kind: 'infl' };
+  openSheet('<div class="handle"></div><h2>Inflación anual</h2>' +
+    '<div class="field"><label>Índice anual (%)</label><input id="iTasa" type="number" step="0.01" inputmode="decimal" placeholder="Ej. 2,8" value="' + (inf.tasa == null ? '' : escapeHtml(inf.tasa)) + '"></div>' +
+    '<div class="field"><label>Fecha del dato</label><input id="iFecha" type="date" value="' + escapeHtml(inf.fechaDato || '') + '"></div>' +
+    '<div class="field"><label>Fuente <span class="hint">· opcional</span></label><input id="iFuente" type="text" placeholder="Ej. INE" value="' + escapeHtml(inf.fuente || '') + '"></div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveInflacion') + '>Guardar</button></div>');
 }
 function renderProyectos() {
   const t = golfTotales();
@@ -932,8 +997,7 @@ function obDots(step) {
   return h + '</div>';
 }
 function obNav(step, last) {
-  return '<div class="actions" style="display:flex;gap:10px;margin-top:20px;">' +
-    (step > 0 ? '<button class="btn ghost" ' + act('obBack') + '>' + ic('chevL') + ' Atrás</button>' : '') +
+  return '<div class="actions" style="display:flex;gap:10px;margin-top:20px;">' +    (step > 0 ? '<button class="btn ghost" ' + act('obBack') + '>' + ic('chevL') + ' Atrás</button>' : '') +
     (last ? '<button class="btn accent block" ' + act('obFinish', 'save') + '>Terminar</button>'
       : '<button class="btn accent block" ' + act('obNext') + '>' + (step === 0 ? 'Empezar' : 'Siguiente') + '</button>') +
     '</div>' +
@@ -1040,7 +1104,8 @@ function renderMas() {
     '<div class="profile-tile"><div class="av">€</div><div><div class="t">Mis Finanzas y Tareas</div>' +
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · datos privados, sincronizados entre tus dispositivos.</div></div></div>' +
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
-    ['categoriasGasto', 'facturas', 'ahorro', 'deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') + '</div>' +
+    ['categoriasGasto', 'facturas', 'ahorro', 'deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') +
+    '<button class="menu-item" ' + act('openInflacion') + '><span class="ic">' + ic('chart') + '</span>Inflación anual<span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Tus datos</div><div class="card menu"><button class="menu-item" ' + act('exportBackup') + '><span class="ic">' + ic('download') + '</span>Copia de seguridad (.json)<span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Apariencia</div><div class="card menu"><div class="menu-item static"><span class="ic">' + ic('moon') + '</span>Tema' +
     '<div class="segmented" style="margin-left:auto;">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button style="padding:6px 12px;" class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div></div>' +
@@ -1128,6 +1193,8 @@ const H = {
     FORM.tipo = t;
     $$('#tipoToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-t') === t));
     const chips = $('#catChips'); if (chips) chips.innerHTML = chipsHtml(t, ($('#fCategoria') || {}).value || '');
+    const inv = $('#invFields'); if (inv) inv.innerHTML = invFieldsHtml(t, '');
+    const cl = $('#catLabel'); if (cl) cl.innerHTML = catLabel(t);
   },
   pickCat: ([c]) => {
     const inp = $('#fCategoria'); if (inp) inp.value = c;
@@ -1152,6 +1219,15 @@ const H = {
   pickEstado: ([e]) => { FORM.estado = e; $$('#estToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-e') === e)); },
   saveTarea: () => saveTarea(),
   deleteTarea: (_a, el) => confirmDelete(el, doDeleteTarea),
+  openInflacion: () => openInflacionSheet(),
+  saveInflacion: async () => {
+    const raw = $('#iTasa').value, tasa = raw === '' ? null : parseFloat(raw);
+    if (raw !== '' && !isFinite(tasa)) return toast('Pon un porcentaje válido');
+    const inflacion = tasa == null ? null : { tasa, fechaDato: $('#iFecha').value || null, fuente: $('#iFuente').value.trim() || null };
+    await saveConfig({ inflacion });
+    closeSheet(); toast('Inflación guardada');
+  },
+  verActivo: ([nombre]) => { S.movQuery = nombre; S.movFiltroTipo = 'Inversión'; S.movPeriodo = 'todo'; S.movLimit = 120; S.tab = 'movimientos'; render(); window.scrollTo(0, 0); },
   // calendario
   setCalVista: ([v]) => { S.calVista = v; render(); },
   calHoy: () => { S.calFecha = todayISO(); render(); },
