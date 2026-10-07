@@ -118,6 +118,7 @@ const S = {
   movFiltroTipo: 'Todos', movPeriodo: 'todo', movQuery: '', movLimit: 120,
   theme: lsGet('theme') || 'auto',
   loadingMsg: 'Cargando tus datos…',
+  onboarding: null, _onboardPending: false,
 };
 let FORM = {};
 let _themeSetByApp = false;
@@ -184,7 +185,7 @@ function subscribeAll() {
     S.golf = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); S.loaded.golf = true; render();
   }, fail('golf', 'No se pudo cargar Golf Reventa')));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
-    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; render();
+    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; maybeStartOnboarding(); render();
   }, fail('cfg', 'No se pudo cargar la configuración')));
 }
 
@@ -298,6 +299,7 @@ function loginBusy(isBusy) {
 }
 
 function render() {
+  if (S.onboarding) { renderOnboarding(); return; }
   const c = $('#content');
   if (!c) return;
   $$('[data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === S.tab));
@@ -690,16 +692,176 @@ async function doDeleteTarea() {
    ============================================================ */
 const LIST_META = {
   categoriasGasto: { title: 'Categorías de gasto', amtField: 'presupuesto', amtLabel: 'Presup./mes', icon: 'tag' },
-  facturas: { title: 'Facturas recurrentes', amtField: 'importe', amtLabel: 'Importe', icon: 'wallet' },
-  ahorro: { title: 'Metas de ahorro', amtField: 'objetivo', amtLabel: 'Objetivo', icon: 'flag' },
-  deudas: { title: 'Deudas', amtField: 'objetivo', amtLabel: 'Objetivo', icon: 'bank' },
+  facturas: { title: 'Facturas recurrentes', amtField: 'importe', amtLabel: 'Importe', icon: 'wallet',
+    extra: [{ field: 'diaDelMes', label: 'Día del mes', type: 'day' }] },
+  ahorro: { title: 'Metas de ahorro', amtField: 'objetivo', amtLabel: 'Objetivo', icon: 'flag',
+    extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }] },
+  deudas: { title: 'Deudas', amtField: 'objetivo', amtLabel: 'Objetivo', icon: 'bank',
+    extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }, { field: 'recurrencia', label: 'Recurrencia (ej. mensual)', type: 'text' }] },
   ingresos: { title: 'Fuentes de ingreso', simple: true, icon: 'wallet' },
   metodosPago: { title: 'Métodos de pago', simple: true, icon: 'list' },
   categoriasTareas: { title: 'Categorías de tareas', simple: true, icon: 'checkCircle' },
 };
+/* ============================================================
+   ASISTENTE DE CONFIGURACIÓN (onboarding)
+   ============================================================ */
+const ONB_CATS = ['Alimentación', 'Vivienda', 'Transporte', 'Ocio', 'Compras', 'Salud', 'Viajes', 'Suscripciones', 'Restaurantes', 'Educación', 'Mascotas', 'Otros'];
+const ONB_INGRESOS = ['Nómina', 'Autónomo', 'Transferencias', 'Inversiones', 'Wallapop/Vinted', 'Otros'];
+const ONB_PROYECTOS = ['Wallapop', 'Vinted', 'Milanuncios', 'Otro'];
+const ONB_STEPS = 5;
+
+function freshOnboardingState(manual) {
+  const c = cfg();
+  const names = (c.categoriasGasto || []).map((x) => x.nombre).filter(Boolean);
+  const clone = (arr) => (arr || []).map((x) => Object.assign({}, x));
+  const proy = (c.proyectosInteres || []).slice();
+  const otro = proy.find((x) => ONB_PROYECTOS.indexOf(x) < 0 && x !== 'Otro') || '';
+  return {
+    manual: !!manual, step: 0,
+    cats: manual ? names.filter((n) => ONB_CATS.indexOf(n) >= 0) : ONB_CATS.slice(),
+    catsCustom: manual ? names.filter((n) => ONB_CATS.indexOf(n) < 0) : [],
+    ingresos: (c.ingresos || []).slice(),
+    facturas: clone(c.facturas), ahorro: clone(c.ahorro), deudas: clone(c.deudas),
+    proyectos: proy.filter((x) => ONB_PROYECTOS.indexOf(x) >= 0).concat(otro ? ['Otro'] : []),
+    proyectoOtro: otro,
+    saving: false,
+  };
+}
+
+async function checkOnboarding() {
+  S._onboardPending = false;
+  try {
+    const meta = await S.db.doc('config/meta').get();
+    if (meta.exists && meta.data() && meta.data().onboarded) return;
+  } catch (e) { return; }
+  S._onboardPending = true;
+  maybeStartOnboarding();
+}
+function maybeStartOnboarding() {
+  if (!S._onboardPending || !S.loaded.cfg || S.onboarding || !S.db) return;
+  S._onboardPending = false;
+  const hasCats = cfg().categoriasGasto && cfg().categoriasGasto.length > 0;
+  if (hasCats) {
+    // Usuario que ya tenía su configuración: no se le muestra el asistente.
+    write(() => S.db.doc('config/meta').update({ onboarded: true, onboardedAt: new Date().toISOString(), auto: true }));
+    return;
+  }
+  S.onboarding = freshOnboardingState(false);
+  render();
+}
+
+function obDots(step) {
+  let h = '<div style="display:flex;gap:6px;justify-content:center;margin-bottom:18px;">';
+  for (let i = 0; i < ONB_STEPS; i++) h += '<span style="width:' + (i === step ? 22 : 8) + 'px;height:8px;border-radius:4px;background:' + (i <= step ? 'var(--accent)' : 'var(--border)') + ';"></span>';
+  return h + '</div>';
+}
+function obNav(step, last) {
+  return '<div class="actions" style="display:flex;gap:10px;margin-top:20px;">' +
+    (step > 0 ? '<button class="btn ghost" ' + act('obBack') + '>' + ic('chevL') + ' Atrás</button>' : '') +
+    (last ? '<button class="btn accent block" ' + act('obFinish', 'save') + '>Terminar</button>'
+      : '<button class="btn accent block" ' + act('obNext') + '>' + (step === 0 ? 'Empezar' : 'Siguiente') + '</button>') +
+    '</div>' +
+    '<button class="section-title link" style="width:100%;text-align:center;margin-top:12px;justify-content:center;" ' + act('obFinish', step === 0 ? 'none' : 'save') + '>' +
+    (step === 0 ? 'Saltar, lo haré más tarde' : 'Guardar y salir') + '</button>';
+}
+function obChips(all, selected, kind) {
+  return '<div class="chips">' + all.map((n) => '<button type="button" class="chip ' + (selected.indexOf(n) >= 0 ? 'active' : '') + '" ' + act(kind, n) + '>' + escapeHtml(n) + '</button>').join('') + '</div>';
+}
+
+function obWelcome() {
+  return '<div style="text-align:center;margin:10px 0 6px;"><div class="num" style="font-size:24px;font-weight:600;color:var(--ink);">Vamos a dejar tu app lista</div>' +
+    '<p style="color:var(--text-faint);font-size:14px;line-height:1.5;margin-top:10px;">En unos minutos configuramos tus categorías, facturas, metas de ahorro y deudas. Todo se puede cambiar después desde <b>Más</b>.</p></div>';
+}
+function obCats() {
+  const ob = S.onboarding;
+  const all = ONB_CATS.concat(ob.catsCustom);
+  return '<h2 class="num" style="margin:0 0 6px;">Categorías de gasto</h2>' +
+    '<p style="color:var(--text-faint);font-size:13.5px;margin:0 0 14px;">Marcadas las más habituales. Quita las que no uses o añade las tuyas.</p>' +
+    obChips(all, ob.cats.concat(ob.catsCustom), 'obToggleCat') +
+    '<div class="row2" style="margin-top:14px;"><input id="obCustomCat" placeholder="Otra categoría…"><button class="btn ghost" ' + act('obAddCustomCat') + '>' + ic('plus') + '</button></div>';
+}
+function obRowsEditor(kind, rows, defs, amtLabel, addLabel) {
+  const body = rows.map((r, i) => {
+    let h = '<div class="row2" style="flex-wrap:wrap;"><input value="' + escapeHtml(r.nombre || '') + '" placeholder="Nombre" ' + onChange('obRowChange', kind, i, 'nombre') + '>' +
+      '<input class="amt" type="number" step="0.01" inputmode="decimal" value="' + (r[defs.amt] == null ? '' : escapeHtml(r[defs.amt])) + '" placeholder="' + amtLabel + '" ' + onChange('obRowChange', kind, i, defs.amt) + '>';
+    defs.extra.forEach((d) => {
+      const common = onChange('obRowChange', kind, i, d.field);
+      if (d.type === 'date') h += '<input type="date" style="max-width:150px;" value="' + escapeHtml(r[d.field] || '') + '" ' + common + '>';
+      else if (d.type === 'day') h += '<input type="number" min="1" max="31" inputmode="numeric" placeholder="' + d.label + '" style="max-width:96px;" value="' + (r[d.field] == null ? '' : escapeHtml(r[d.field])) + '" ' + common + '>';
+      else h += '<input type="text" placeholder="' + d.label + '" value="' + escapeHtml(r[d.field] || '') + '" ' + common + '>';
+    });
+    return h + '<button class="rm" aria-label="Quitar" ' + act('obRowRemove', kind, i) + '>' + ic('close') + '</button></div>';
+  }).join('');
+  return '<div class="card config-list">' + (body || '<div style="padding:14px;color:var(--text-faint);font-size:13.5px;">Nada todavía. Puedes saltarte esto.</div>') + '</div>' +
+    '<div style="margin-top:10px;"><button class="btn ghost block" ' + act('obRowAdd', kind) + '>' + ic('plus') + ' ' + addLabel + '</button></div>';
+}
+const OB_DEFS = {
+  facturas: { amt: 'importe', extra: [{ field: 'diaDelMes', label: 'Día de cobro', type: 'day' }] },
+  ahorro: { amt: 'objetivo', extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }] },
+  deudas: { amt: 'objetivo', extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }, { field: 'recurrencia', label: 'Recurrencia (ej. mensual)', type: 'text' }] },
+};
+function obIncome() {
+  const ob = S.onboarding;
+  const all = ONB_INGRESOS.concat(ob.ingresos.filter((x) => ONB_INGRESOS.indexOf(x) < 0));
+  return '<h2 class="num" style="margin:0 0 6px;">Ingresos y facturas</h2>' +
+    '<p style="color:var(--text-faint);font-size:13.5px;margin:0 0 12px;">¿De dónde entra tu dinero?</p>' + obChips(all, ob.ingresos, 'obToggleIngreso') +
+    '<div class="section-title" style="margin-top:18px;">Facturas recurrentes</div>' +
+    '<p style="color:var(--text-faint);font-size:13px;margin:0 0 8px;">Alquiler, luz, móvil… con el día del mes en que se cobran.</p>' +
+    obRowsEditor('facturas', ob.facturas, OB_DEFS.facturas, 'Importe', 'Añadir factura');
+}
+function obSavingsDebt() {
+  const ob = S.onboarding;
+  return '<h2 class="num" style="margin:0 0 6px;">Ahorro y deudas</h2>' +
+    '<div class="section-title">Metas de ahorro</div>' + obRowsEditor('ahorro', ob.ahorro, OB_DEFS.ahorro, 'Objetivo', 'Añadir meta') +
+    '<div class="section-title" style="margin-top:18px;">Deudas</div>' + obRowsEditor('deudas', ob.deudas, OB_DEFS.deudas, 'Total', 'Añadir deuda');
+}
+function obClose() {
+  const ob = S.onboarding;
+  return '<h2 class="num" style="margin:0 0 6px;">Casi listo</h2>' +
+    '<div class="card" style="padding:14px;margin-bottom:16px;"><div style="display:flex;gap:10px;align-items:flex-start;"><span class="ic">' + ic('checkCircle') + '</span><div style="font-size:13.5px;line-height:1.5;">Además de tus finanzas, esta app gestiona <b>tareas</b>: pendientes con prioridad y fecha límite, en la pestaña Tareas.</div></div></div>' +
+    '<div class="section-title">¿Compras y vendes cosas de segunda mano?</div>' +
+    '<p style="color:var(--text-faint);font-size:13px;margin:0 0 8px;">Opcional. Nos ayuda a preparar el módulo de proyectos de compra-venta.</p>' +
+    obChips(ONB_PROYECTOS, ob.proyectos, 'obToggleProyecto') +
+    (ob.proyectos.indexOf('Otro') >= 0 ? '<div class="field" style="margin-top:12px;"><input placeholder="¿Qué plataforma?" value="' + escapeHtml(ob.proyectoOtro) + '" ' + onChange('obProyectoOtroInput') + '></div>' : '');
+}
+function renderOnboarding() {
+  const ob = S.onboarding;
+  const body = [obWelcome, obCats, obIncome, obSavingsDebt, obClose][ob.step]();
+  $('#app').innerHTML =
+    '<div style="min-height:100vh;min-height:100dvh;display:flex;justify-content:center;padding:24px 16px;"><div style="width:100%;max-width:520px;">' +
+    obDots(ob.step) + '<div class="card" style="padding:18px;">' + body + '</div>' + obNav(ob.step, ob.step === ONB_STEPS - 1) +
+    '</div></div>';
+  window.scrollTo(0, 0);
+}
+async function doObFinish(saveData) {
+  const ob = S.onboarding; if (!ob || ob.saving) return;
+  ob.saving = true;
+  let ok = true;
+  if (saveData) {
+    const old = cfg();
+    const oldBy = {}; (old.categoriasGasto || []).forEach((c) => { oldBy[c.nombre] = c; });
+    const names = ONB_CATS.filter((n) => ob.cats.indexOf(n) >= 0).concat(ob.catsCustom);
+    const cats = (old.categoriasGasto || []).filter((c) => names.indexOf(c.nombre) >= 0)
+      .concat(names.filter((n) => !oldBy[n]).map((n) => ({ nombre: n, presupuesto: null })));
+    const clean = (arr) => arr.filter((r) => r.nombre && String(r.nombre).trim());
+    const proy = ob.proyectos.filter((x) => x !== 'Otro').concat(ob.proyectos.indexOf('Otro') >= 0 ? [ob.proyectoOtro.trim() || 'Otro'] : []);
+    ok = await write(() => S.db.doc('config/app').update({
+      categoriasGasto: cats, ingresos: ob.ingresos.slice(),
+      facturas: clean(ob.facturas), ahorro: clean(ob.ahorro), deudas: clean(ob.deudas),
+      proyectosInteres: proy,
+    }));
+  }
+  if (ok) ok = await write(() => S.db.doc('config/meta').update({ onboarded: true, onboardedAt: new Date().toISOString() }));
+  if (!ok) { ob.saving = false; return; }
+  S.onboarding = null;
+  renderShell(); render();
+}
+function obToggle(arr, v) { const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 1); else arr.push(v); }
+
 function renderMas() {
   const item = (key) => '<button class="menu-item" ' + act('openListEditor', key) + '><span class="ic">' + ic(LIST_META[key].icon) + '</span>' + LIST_META[key].title + '<span class="chev">' + ic('chevR') + '</span></button>';
-  return '<div class="profile-tile"><div class="av">€</div><div><div class="t">Mis Finanzas y Tareas</div>' +
+  return '<button class="btn accent block" style="margin-bottom:18px;" ' + act('startOnboardingManually') + '>' + ic('flag') + ' Repetir asistente de configuración</button>' +
+    '<div class="profile-tile"><div class="av">€</div><div><div class="t">Mis Finanzas y Tareas</div>' +
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · datos privados, sincronizados entre tus dispositivos.</div></div></div>' +
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
     ['categoriasGasto', 'facturas', 'ahorro', 'deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') + '</div>' +
@@ -724,6 +886,12 @@ function exportBackup() {
   } catch (e) { console.error(e); toast('No se pudo generar la copia'); }
 }
 
+function extraFieldHtml(key, i, def, value) {
+  const common = onChange('listChange', key, i, def.field);
+  if (def.type === 'date') return '<input type="date" style="max-width:150px;" value="' + escapeHtml(value || '') + '" ' + common + '>';
+  if (def.type === 'day') return '<input type="number" min="1" max="31" inputmode="numeric" placeholder="' + def.label + '" style="max-width:84px;" value="' + (value == null ? '' : escapeHtml(value)) + '" ' + common + '>';
+  return '<input type="text" placeholder="' + def.label + '" value="' + escapeHtml(value || '') + '" ' + common + '>';
+}
 function listEditorHtml(key) {
   const meta = LIST_META[key];
   const items = (cfg()[key] || []);
@@ -731,6 +899,7 @@ function listEditorHtml(key) {
     ? '<div class="row2"><input value="' + escapeHtml(it) + '" placeholder="Nombre" ' + onChange('listChange', key, i, '') + '><button class="rm" aria-label="Quitar" ' + act('listRemove', key, i) + '>' + ic('close') + '</button></div>'
     : '<div class="row2"><input value="' + escapeHtml(it.nombre) + '" placeholder="Nombre" ' + onChange('listChange', key, i, 'nombre') + '>' +
       '<input class="amt" type="number" step="0.01" inputmode="decimal" value="' + (it[meta.amtField] == null ? '' : it[meta.amtField]) + '" placeholder="' + meta.amtLabel + '" ' + onChange('listChange', key, i, meta.amtField) + '>' +
+      (meta.extra || []).map((def) => extraFieldHtml(key, i, def, it[def.field])).join('') +
       '<button class="rm" aria-label="Quitar" ' + act('listRemove', key, i) + '>' + ic('close') + '</button></div>').join('');
   return '<div class="handle"></div><h2>' + meta.title + '</h2>' +
     '<div class="card config-list">' + (rows || '<div style="padding:16px;color:var(--text-faint);font-size:13.5px;">Vacío. Añade el primero abajo.</div>') + '</div>' +
@@ -809,7 +978,12 @@ const H = {
   listAdd: ([key]) => {
     const meta = LIST_META[key];
     const items = (cfg()[key] || []).slice();
-    items.push(meta.simple ? '' : { nombre: '', [meta.amtField]: null });
+    if (meta.simple) items.push('');
+    else {
+      const blank = { nombre: '', [meta.amtField]: null };
+      (meta.extra || []).forEach((d) => { blank[d.field] = null; });
+      items.push(blank);
+    }
     saveConfig({ [key]: items });
     updateSheet(listEditorHtml(key));
     const inputs = $$('.config-list .row2 input:first-child'); if (inputs.length) inputs[inputs.length - 1].focus();
@@ -825,7 +999,11 @@ const H = {
     if (meta.simple) items[idx] = el.value.trim();
     else {
       const cur = Object.assign({}, items[idx]);
-      if (field === meta.amtField) cur[field] = el.value === '' ? null : parseFloat(el.value); else cur[field] = el.value.trim();
+      const extraDef = (meta.extra || []).find((d) => d.field === field);
+      if (field === meta.amtField) cur[field] = el.value === '' ? null : parseFloat(el.value);
+      else if (extraDef && extraDef.type === 'day') { const n = parseInt(el.value, 10); cur[field] = n >= 1 && n <= 31 ? n : null; }
+      else if (extraDef && extraDef.type === 'date') cur[field] = el.value || null;
+      else cur[field] = el.value.trim();
       items[idx] = cur;
     }
     saveConfig({ [key]: items });
@@ -838,6 +1016,41 @@ const H = {
   },
   setTheme: ([t]) => { S.theme = t; lsSet('theme', t); applyTheme(); render(); },
   exportBackup: () => exportBackup(),
+  // onboarding
+  startOnboardingManually: () => { S.onboarding = freshOnboardingState(true); render(); },
+  obNext: () => { const ob = S.onboarding; if (ob && ob.step < ONB_STEPS - 1) { ob.step++; render(); } },
+  obBack: () => { const ob = S.onboarding; if (ob && ob.step > 0) { ob.step--; render(); } },
+  obToggleCat: ([n]) => {
+    const ob = S.onboarding;
+    if (ob.catsCustom.indexOf(n) >= 0) ob.catsCustom.splice(ob.catsCustom.indexOf(n), 1); else obToggle(ob.cats, n);
+    render();
+  },
+  obAddCustomCat: () => {
+    const ob = S.onboarding, el = $('#obCustomCat'); const v = ((el && el.value) || '').trim();
+    if (!v) return;
+    if (ONB_CATS.indexOf(v) >= 0) { if (ob.cats.indexOf(v) < 0) ob.cats.push(v); }
+    else if (ob.catsCustom.indexOf(v) < 0) ob.catsCustom.push(v);
+    render();
+  },
+  obToggleIngreso: ([n]) => { obToggle(S.onboarding.ingresos, n); render(); },
+  obToggleProyecto: ([n]) => { obToggle(S.onboarding.proyectos, n); render(); },
+  obProyectoOtroInput: (_a, el) => { S.onboarding.proyectoOtro = el.value; },
+  obRowAdd: ([kind]) => {
+    const row = { nombre: '', [OB_DEFS[kind].amt]: null };
+    OB_DEFS[kind].extra.forEach((d) => { row[d.field] = null; });
+    S.onboarding[kind].push(row); render();
+  },
+  obRowRemove: ([kind, i]) => { S.onboarding[kind].splice(Number(i), 1); render(); },
+  obRowChange: ([kind, i, field], el) => {
+    const def = OB_DEFS[kind], row = S.onboarding[kind][Number(i)]; if (!row) return;
+    const ed = def.extra.find((d) => d.field === field);
+    if (field === 'nombre') row.nombre = el.value.trim();
+    else if (field === def.amt) row[field] = el.value === '' ? null : parseFloat(el.value);
+    else if (ed && ed.type === 'day') { const n = parseInt(el.value, 10); row[field] = n >= 1 && n <= 31 ? n : null; }
+    else if (ed && ed.type === 'date') row[field] = el.value || null;
+    else row[field] = el.value.trim();
+  },
+  obFinish: ([mode]) => doObFinish(mode === 'save'),
   // auth
   doLogin: async () => {
     const email = ($('#loginEmail').value || '').trim();
@@ -890,10 +1103,12 @@ async function enterApp(session) {
   $('#content').innerHTML = loadingHtml();
   subscribeAll();
   render();
+  checkOnboarding();
 }
 function leaveApp() {
   S.appStarted = false;
   S.user = null; S.db = null;
+  S.onboarding = null; S._onboardPending = false;
   _unsubs.forEach((u) => { try { u(); } catch (e) { /* noop */ } });
   _unsubs = [];
   renderLoginScreen();
