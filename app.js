@@ -19,6 +19,7 @@ const ICONS = {
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   chevR: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
   chevL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12.5 2H21v8.5L11.5 21 3 11.5Z"/><circle cx="15.5" cy="7.5" r="1.3" fill="currentColor" stroke="none"/></svg>',
   wallet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H18a1 1 0 0 1 1 1v2"/><path d="M3 7.5v10A2.5 2.5 0 0 0 5.5 20H19a1 1 0 0 0 1-1v-3"/><rect x="14" y="11" width="8" height="6" rx="1.4"/><circle cx="17" cy="14" r=".9" fill="currentColor" stroke="none"/></svg>',
@@ -112,7 +113,8 @@ const S = {
   movimientos: [], tareas: [], golf: [], config: null,
   loaded: { mov: false, tar: false, golf: false, cfg: false },
   tab: 'inicio',
-  analisisSub: 'mensual',
+  analisisSub: 'mensual', inicioSub: 'dashboard',
+  calVista: 'mes', calFecha: null, calFiltros: { tareas: true, facturas: true, hitos: true, movs: false },
   mesSel: now0.getMonth() + 1, anioSel: now0.getFullYear(),
   tareasSub: 'activas',
   movFiltroTipo: 'Todos', movPeriodo: 'todo', movQuery: '', movLimit: 120,
@@ -256,7 +258,7 @@ function categoriasPorTipo(tipo) {
 const TABS = [
   { id: 'inicio', label: 'Inicio', icon: 'home' },
   { id: 'movimientos', label: 'Movimientos', icon: 'list' },
-  { id: 'analisis', label: 'Análisis', icon: 'chart' },
+  { id: 'calendario', label: 'Calendario', icon: 'calendar' },
   { id: 'tareas', label: 'Tareas', icon: 'checkCircle' },
   { id: 'mas', label: 'Más', icon: 'more' },
 ];
@@ -305,13 +307,13 @@ function render() {
   $$('[data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === S.tab));
   const title = $('#pageTitle'); if (title) title.textContent = TABS.find((t) => t.id === S.tab).label;
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
-  if (S.tab === 'inicio') c.innerHTML = renderInicio();
+  if (S.tab === 'inicio') c.innerHTML = renderInicioPage();
   else if (S.tab === 'movimientos') c.innerHTML = renderMovimientos();
-  else if (S.tab === 'analisis') c.innerHTML = renderAnalisis();
+  else if (S.tab === 'calendario') c.innerHTML = renderCalendario();
   else if (S.tab === 'tareas') c.innerHTML = renderTareas();
   else if (S.tab === 'mas') c.innerHTML = renderMas();
-  if (S.tab === 'analisis' && S.analisisSub === 'mensual') drawDonut();
-  if (S.tab === 'analisis' && S.analisisSub === 'anual') drawTrend();
+  if (enAnalisis() && S.analisisSub === 'mensual') drawDonut();
+  if (enAnalisis() && S.analisisSub === 'anual') drawTrend();
 }
 
 
@@ -579,6 +581,114 @@ function renderMetasInicio() {
       '<span class="nums"><b class="tnum">' + (r.pct == null ? '—' : r.pct.toFixed(0) + '%') + '</b></span></div>' +
       '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, r.pct || 0)) + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>').join('') +
     (ms.length > 1 ? '<div class="summary-line">' + sum + '</div>' : '') + '</div>';
+}
+/* ============================================================
+   INICIO (Dashboard | Análisis) + CALENDARIO (Fase 3)
+   ============================================================ */
+function enAnalisis() { return S.tab === 'inicio' && S.inicioSub === 'analisis'; }
+function renderInicioPage() {
+  const subs = [['dashboard', 'Dashboard'], ['analisis', 'Análisis']];
+  return '<div class="segmented" style="margin-bottom:16px;">' + subs.map(([id, l]) => '<button class="' + (S.inicioSub === id ? 'active' : '') + '" ' + act('setInicioSub', id) + '>' + l + '</button>').join('') + '</div>' +
+    (S.inicioSub === 'analisis' ? renderAnalisis() : renderInicio());
+}
+
+const DIAS_ABR = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'];
+const DIAS_LARGO = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+function dateISO(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function addDaysISO(iso, n) { const d = parseISO(iso); d.setDate(d.getDate() + n); return dateISO(d); }
+function dowMon(d) { return (d.getDay() + 6) % 7; }
+function calAnchor() { if (!S.calFecha) S.calFecha = todayISO(); return S.calFecha; }
+function normName(x) { return (x || '').trim().toLowerCase(); }
+
+const CAL_ORDEN = { tarea: 0, factura: 1, hito: 2, mov: 3 };
+function evColor(ev) {
+  if (ev.k === 'tarea') return ev.venc ? 'var(--expense)' : 'var(--accent)';
+  if (ev.k === 'factura') return 'var(--bill, var(--accent))';
+  if (ev.k === 'hito') return 'var(--savings, var(--income))';
+  return 'var(--' + (TIPO_COLOR[ev.tipo] || 'text-faint') + ', var(--text-faint))';
+}
+// Devuelve { 'YYYY-MM-DD': [eventos] } entre dos fechas ISO (inclusive).
+function calEventos(desde, hasta) {
+  const f = S.calFiltros, map = {};
+  const add = (iso, ev) => { if (!iso || iso < desde || iso > hasta) return; (map[iso] = map[iso] || []).push(ev); };
+  const hoy = todayISO();
+  if (f.tareas) S.tareas.forEach((t) => {
+    if (t.estado === 'Completado' || !t.fechaLimite) return;
+    add(t.fechaLimite, { k: 'tarea', titulo: t.nombre || 'Tarea', detalle: ['Tarea', t.prioridad, t.categoria].filter(Boolean).join(' · '), venc: t.fechaLimite < hoy, click: act('openTareaForm', t.id) });
+  });
+  if (f.facturas) {
+    const a = parseISO(desde), b = parseISO(hasta);
+    for (let y = a.getFullYear(), m = a.getMonth(); y < b.getFullYear() || (y === b.getFullYear() && m <= b.getMonth()); m++) {
+      if (m > 11) { m = 0; y++; }
+      const dim = new Date(y, m + 1, 0).getDate(), ym = y + '-' + pad2(m + 1);
+      (cfg().facturas || []).forEach((fa) => {
+        if (!fa || !fa.nombre || !fa.diaDelMes) return;
+        const iso = ym + '-' + pad2(Math.min(Number(fa.diaDelMes), dim));
+        const pagada = S.movimientos.some((x) => x.tipo === 'Factura' && (x.fecha || '').slice(0, 7) === ym && normName(x.categoria) === normName(fa.nombre));
+        add(iso, { k: 'factura', titulo: fa.nombre, detalle: 'Factura' + (fa.importe != null && fa.importe !== '' ? ' · ' + money(fa.importe) : '') + ' · ' + (pagada ? 'Pagada' : (iso < hoy ? 'Sin registrar' : 'Pendiente')), pagada });
+      });
+    }
+  }
+  if (f.hitos) {
+    (cfg().ahorro || []).forEach((x) => { if (x && x.nombre && x.fechaObjetivo) add(x.fechaObjetivo, { k: 'hito', titulo: 'Meta: ' + x.nombre, detalle: 'Fecha objetivo' + (x.objetivo ? ' · ' + money(x.objetivo) : '') }); });
+    (cfg().deudas || []).forEach((x) => { if (x && x.nombre && x.fechaObjetivo) add(x.fechaObjetivo, { k: 'hito', titulo: 'Deuda: ' + x.nombre, detalle: 'Fecha objetivo' + (x.objetivo ? ' · ' + money(x.objetivo) : '') }); });
+  }
+  if (f.movs) S.movimientos.forEach((m) => {
+    add(m.fecha, { k: 'mov', tipo: m.tipo, titulo: m.categoria || m.tipo, detalle: m.tipo + ' · ' + moneySigned(m.importe, m.tipo) + (m.descripcion ? ' · ' + m.descripcion : ''), click: act('openMovForm', m.id) });
+  });
+  Object.keys(map).forEach((k) => map[k].sort((x, y) => CAL_ORDEN[x.k] - CAL_ORDEN[y.k]));
+  return map;
+}
+function calEventRow(ev) {
+  return '<div class="row ' + (ev.click ? '' : 'static') + '" ' + (ev.click || '') + '><span class="dot" style="background:' + evColor(ev) + '"></span>' +
+    '<div class="main"><div class="ttl">' + escapeHtml(ev.titulo) + '</div><div class="meta">' + escapeHtml(ev.detalle) + '</div></div></div>';
+}
+function calFiltrosHtml() {
+  const f = S.calFiltros;
+  const items = [['tareas', 'Tareas'], ['facturas', 'Facturas'], ['hitos', 'Metas y deudas'], ['movs', 'Movimientos']];
+  return '<div class="chips" style="margin:12px 0;">' + items.map(([k, l]) => '<button type="button" class="chip ' + (f[k] ? 'active' : '') + '" ' + act('calToggle', k) + '>' + l + '</button>').join('') + '</div>';
+}
+function calNavHtml(label) {
+  return '<div class="month-nav"><button class="icon-btn" aria-label="Anterior" ' + act('calMove', -1) + '>' + ic('chevL') + '</button>' +
+    '<div class="lbl">' + label + '</div><button class="icon-btn" aria-label="Siguiente" ' + act('calMove', 1) + '>' + ic('chevR') + '</button></div>';
+}
+function renderCalendario() {
+  const anchor = calAnchor(), d = parseISO(anchor), hoy = todayISO();
+  const seg = '<div class="segmented"><button class="' + (S.calVista === 'mes' ? 'active' : '') + '" ' + act('setCalVista', 'mes') + '>Mensual</button>' +
+    '<button class="' + (S.calVista === 'semana' ? 'active' : '') + '" ' + act('setCalVista', 'semana') + '>Semanal</button>' +
+    '<button ' + act('calHoy') + '>Hoy</button></div>';
+  if (S.calVista === 'semana') {
+    const lunes = addDaysISO(anchor, -dowMon(d)), domingo = addDaysISO(lunes, 6);
+    const map = calEventos(lunes, domingo);
+    const a = parseISO(lunes), b = parseISO(domingo);
+    const label = a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + MESES_ABR[a.getMonth()].toLowerCase() : '') + ' – ' + b.getDate() + ' ' + MESES_ABR[b.getMonth()].toLowerCase() + ' ' + b.getFullYear();
+    let rows = '';
+    for (let i = 0; i < 7; i++) {
+      const iso = addDaysISO(lunes, i), dd = parseISO(iso), evs = map[iso] || [];
+      rows += '<div class="section-title" style="' + (iso === hoy ? 'color:var(--accent);' : '') + '">' + DIAS_LARGO[i] + ' ' + dd.getDate() + ' ' + MESES_ABR[dd.getMonth()].toLowerCase() + (iso === hoy ? ' · hoy' : '') + '</div>' +
+        (evs.length ? '<div class="list">' + evs.map(calEventRow).join('') + '</div>' : '<div style="color:var(--text-faint);font-size:13px;padding:0 4px 4px;">Sin eventos</div>');
+    }
+    return seg + calNavHtml(label) + calFiltrosHtml() + rows;
+  }
+  // mensual
+  const y = d.getFullYear(), m = d.getMonth(), dim = new Date(y, m + 1, 0).getDate();
+  const primero = y + '-' + pad2(m + 1) + '-01', ultimo = y + '-' + pad2(m + 1) + '-' + pad2(dim);
+  const map = calEventos(primero, ultimo);
+  const offset = dowMon(parseISO(primero));
+  let cells = DIAS_ABR.map((x) => '<div style="text-align:center;font-size:11.5px;color:var(--text-faint);padding:4px 0;">' + x + '</div>').join('');
+  for (let i = 0; i < offset; i++) cells += '<div></div>';
+  for (let n = 1; n <= dim; n++) {
+    const iso = y + '-' + pad2(m + 1) + '-' + pad2(n), evs = map[iso] || [], sel = iso === anchor, esHoy = iso === hoy;
+    const colores = []; evs.forEach((ev) => { const c = evColor(ev); if (colores.indexOf(c) < 0) colores.push(c); });
+    cells += '<button type="button" ' + act('calSelDia', iso) + ' aria-label="' + n + ' ' + MESES[m] + (evs.length ? ', ' + evs.length + ' eventos' : '') + '" style="display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;min-height:48px;padding:6px 0 4px;border-radius:10px;font:inherit;color:var(--text);cursor:pointer;background:' + (sel ? 'var(--surface-2, rgba(128,128,128,.14))' : 'transparent') + ';border:1.5px solid ' + (sel ? 'var(--accent)' : 'transparent') + ';">' +
+      '<span class="tnum" style="font-size:14px;font-weight:' + (esHoy ? 700 : 500) + ';' + (esHoy ? 'color:var(--accent);' : '') + '">' + n + '</span>' +
+      '<span style="display:flex;gap:3px;min-height:6px;">' + colores.slice(0, 4).map((c) => '<i style="width:6px;height:6px;border-radius:50%;background:' + c + ';display:block;"></i>').join('') + '</span></button>';
+  }
+  const dsel = parseISO(anchor), evsSel = map[anchor] || [];
+  return seg + calNavHtml(MESES[m] + ' ' + y) + calFiltrosHtml() +
+    '<div class="card" style="padding:10px 8px;"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">' + cells + '</div></div>' +
+    '<div class="section-title">' + DIAS_LARGO[dowMon(dsel)] + ' ' + dsel.getDate() + ' de ' + MESES[dsel.getMonth()].toLowerCase() + '</div>' +
+    (evsSel.length ? '<div class="list">' + evsSel.map(calEventRow).join('') + '</div>' : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Sin eventos este día.</div>');
 }
 function renderProyectos() {
   const t = golfTotales();
@@ -1000,10 +1110,11 @@ function confirmDelete(el, fn) {
    MANEJADORES (eventos delegados)
    ============================================================ */
 const H = {
-  goTab: ([id]) => { S.tab = id; render(); window.scrollTo(0, 0); },
+  goTab: ([id]) => { if (id === 'analisis') { S.tab = 'inicio'; S.inicioSub = 'analisis'; } else { S.tab = id; if (id === 'inicio') S.inicioSub = 'dashboard'; } render(); window.scrollTo(0, 0); },
+  setInicioSub: ([sub]) => { S.inicioSub = sub; render(); },
   onFab: () => {
     if (S.tab === 'tareas') return openTareaForm();
-    if (S.tab === 'analisis' && S.analisisSub === 'proyectos') return openGolfForm();
+    if (enAnalisis() && S.analisisSub === 'proyectos') return openGolfForm();
     return openMovForm();
   },
   closeSheet: () => closeSheet(),
@@ -1027,7 +1138,7 @@ const H = {
   deleteMov: (_a, el) => confirmDelete(el, doDeleteMov),
   // análisis
   setAnalisisSub: ([s]) => { S.analisisSub = s; render(); },
-  goMetas: () => { S.tab = 'analisis'; S.analisisSub = 'metas'; render(); window.scrollTo(0, 0); },
+  goMetas: () => { S.tab = 'inicio'; S.inicioSub = 'analisis'; S.analisisSub = 'metas'; render(); window.scrollTo(0, 0); },
   moveMes: ([d]) => { let m = S.mesSel + Number(d), a = S.anioSel; if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; } S.mesSel = m; S.anioSel = a; render(); },
   moveAnio: ([d]) => { S.anioSel += Number(d); render(); },
   openGolfForm: ([id]) => openGolfForm(id || null),
@@ -1041,6 +1152,20 @@ const H = {
   pickEstado: ([e]) => { FORM.estado = e; $$('#estToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-e') === e)); },
   saveTarea: () => saveTarea(),
   deleteTarea: (_a, el) => confirmDelete(el, doDeleteTarea),
+  // calendario
+  setCalVista: ([v]) => { S.calVista = v; render(); },
+  calHoy: () => { S.calFecha = todayISO(); render(); },
+  calSelDia: ([iso]) => { S.calFecha = iso; render(); },
+  calToggle: ([k]) => { S.calFiltros[k] = !S.calFiltros[k]; render(); },
+  calMove: ([dir]) => {
+    const n = Number(dir), cur = calAnchor();
+    if (S.calVista === 'semana') { S.calFecha = addDaysISO(cur, 7 * n); }
+    else {
+      const d = parseISO(cur), t = new Date(d.getFullYear(), d.getMonth() + n, 1), hoy = new Date();
+      S.calFecha = (t.getFullYear() === hoy.getFullYear() && t.getMonth() === hoy.getMonth()) ? todayISO() : dateISO(t);
+    }
+    render();
+  },
   // más
   openListEditor: ([key]) => { FORM = { kind: 'list', key }; openSheet(listEditorHtml(key)); },
   listAdd: ([key]) => {
