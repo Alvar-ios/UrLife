@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prueba de proveedores</title>
+<style>
+body{font:14px system-ui,sans-serif;margin:16px;background:#0b0b0f;color:#eee}
+h2{margin:0 0 6px}table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border-bottom:1px solid #333;padding:6px 8px;text-align:left;vertical-align:top}
+th{color:#aaa;font-weight:600}.ok{color:#4ade80}.f{color:#f87171}small{color:#999}
+button{background:#4ade80;color:#000;border:0;border-radius:8px;padding:10px 16px;font-weight:600;font-size:14px}
+</style></head><body>
+<h2>Prueba de proveedores de precios</h2>
+<p><small>Página temporal. Compara proveedores con tus activos reales. Tarda hasta 2 minutos.</small></p>
+<button id="go">Ejecutar prueba</button>
+<div id="out"></div>
+<script>
+var URL_FN='https://slvlovbjccnrtslqbumo.supabase.co/functions/v1/probar-precios?json=1&k=ul-7Qx93mZk41b';
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
+function n(x){return x==null?'—':Number(x).toLocaleString('es-ES',{maximumFractionDigits:4})}
+document.getElementById('go').onclick=function(){
+  var out=document.getElementById('out');out.innerHTML='<p>Consultando proveedores…</p>';
+  fetch(URL_FN).then(function(r){return r.json()}).then(function(d){
+    var h=(d.avisos&&d.avisos.length?'<p class="f">'+d.avisos.map(esc).join('<br>')+'</p>':'')+
+    '<table><tr><th>Activo</th><th>Proveedor</th><th>Símbolo</th><th>Resultado</th><th>Último</th><th>15/04/2026</th><th>Notas</th></tr>'+
+    d.filas.map(function(f){return '<tr><td>'+esc(f.activo)+'</td><td>'+esc(f.proveedor)+'</td><td>'+esc(f.simbolo)+'</td><td class="'+(f.estado==='OK'?'ok':'f')+'">'+f.estado+'<br><small>'+f.ms+' ms</small></td><td>'+n(f.ultimo)+(f.moneda?' '+esc(f.moneda):'')+'<br><small>'+esc(f.ultimoFecha||'')+'</small></td><td>'+n(f.hist)+'<br><small>'+esc(f.histFecha||'')+'</small></td><td><small>'+esc(f.nota||'')+'</small></td></tr>'}).join('')+'</table>';
+    out.innerHTML=h;
+  }).catch(function(e){out.innerHTML='<p class="f">Error: '+esc(e.message)+'</p>'});
+};
+</script></body></html>
