@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$DATABASE_URL" || { echo "Falta el secreto SUPABASE_DB_URL"; exit 1; }
-          pg_dump "$DATABASE_URL" --schema=public --no-owner --no-privileges -f backup.sql
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" --schema=public --no-owner --no-privileges -f backup.sql
           test -s backup.sql
           echo "Filas COPY en el volcado: $(grep -c '^COPY ' backup.sql)"
 
