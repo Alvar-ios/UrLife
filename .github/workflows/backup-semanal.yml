@@ -1,0 +1,53 @@
+# Copia de seguridad semanal de la base de datos de Supabase.
+# - Se ejecuta sola todos los domingos (y a mano desde la pestaña Actions).
+# - El archivo se CIFRA con una contraseña tuya antes de guardarse, así que aunque el repositorio
+#   fuese público nadie podría leerlo.
+# - Se guarda como "artefacto" de GitHub durante 90 días (verás las últimas ~12 copias).
+name: Copia de seguridad semanal
+
+on:
+  schedule:
+    - cron: '17 4 * * 0'   # domingos 04:17 UTC
+  workflow_dispatch: {}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar cliente de PostgreSQL 17
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y curl ca-certificates gnupg
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo $VERSION_CODENAME)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Volcar la base de datos (esquema public)
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          test -n "$DATABASE_URL" || { echo "Falta el secreto SUPABASE_DB_URL"; exit 1; }
+          pg_dump "$DATABASE_URL" --schema=public --no-owner --no-privileges -f backup.sql
+          test -s backup.sql
+          echo "Filas COPY en el volcado: $(grep -c '^COPY ' backup.sql)"
+
+      - name: Cifrar
+        env:
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          test -n "$PASS" || { echo "Falta el secreto BACKUP_PASSPHRASE"; exit 1; }
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$PASS" --symmetric --cipher-algo AES256 -o "backup-$(date -u +%F).sql.gpg" backup.sql
+          rm -f backup.sql
+          ls -la
+
+      - name: Guardar copia (90 días)
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-supabase
+          path: backup-*.sql.gpg
+          retention-days: 90
+          if-no-files-found: error

@@ -46,15 +46,24 @@ const TIPO_SIGNO = { Ingreso: 1, Factura: -1, Gasto: -1, Ahorro: -1, 'Inversión
 
 function num(v) { const n = Number(v); return isFinite(n) ? n : 0; }
 function fmt2(n) { return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function money(n) { return fmt2(num(n)) + ' €'; }
+/* Moneda de la cuenta (solo símbolo y formato: NO convierte importes). Se guarda en config.moneda. */
+const MONEDAS = {
+  EUR: { s: '€', dec: 2, n: 'Euro' }, USD: { s: '$', dec: 2, n: 'Dólar estadounidense' }, GBP: { s: '£', dec: 2, n: 'Libra esterlina' },
+  JPY: { s: '¥', dec: 0, n: 'Yen japonés' }, CHF: { s: 'CHF', dec: 2, n: 'Franco suizo' }, CAD: { s: 'C$', dec: 2, n: 'Dólar canadiense' },
+  AUD: { s: 'A$', dec: 2, n: 'Dólar australiano' }, MXN: { s: 'MX$', dec: 2, n: 'Peso mexicano' }
+};
+function monedaCod() { const c = S && S.config && S.config.moneda; return MONEDAS[c] ? c : 'EUR'; }
+function sym() { return MONEDAS[monedaCod()].s; }
+function fmtM(n) { const d = MONEDAS[monedaCod()].dec; return n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function money(n) { return fmtM(num(n)) + ' ' + sym(); }
 function moneyShort(n) {
   n = num(n);
-  return Math.abs(n) >= 100 ? n.toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €' : money(n);
+  return Math.abs(n) >= 100 ? n.toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' ' + sym() : money(n);
 }
 // Importe con signo según el efecto real sobre tu dinero (una devolución = gasto negativo = suma)
 function moneySigned(importe, tipo) {
   const eff = (TIPO_SIGNO[tipo] || 1) * num(importe);
-  return (eff >= 0 ? '+' : '−') + fmt2(Math.abs(eff)) + ' €';
+  return (eff >= 0 ? '+' : '−') + fmtM(Math.abs(eff)) + ' ' + sym();
 }
 function effect(importe, tipo) { return (TIPO_SIGNO[tipo] || 1) * num(importe); }
 
@@ -297,6 +306,66 @@ function renderLoginScreen(msg) {
     '</div></div>';
   setTimeout(() => { const el = $('#loginEmail'); if (el) el.focus(); }, 60);
 }
+/* ============================================================
+   VERIFICACIÓN EN DOS PASOS (TOTP, Bloque 2)
+   Cliente auxiliar solo para las llamadas MFA; comparte la sesión guardada del navegador.
+   Tras activar/desactivar/verificar se recarga la página para que ambos clientes vuelvan a estar sincronizados.
+   ============================================================ */
+let _mfaClient = null;
+function mfaDisponible() { const c = window.SUPABASE_CONFIG || {}; return !!(window.supabase && typeof window.supabase.createClient === 'function' && c.url && c.anonKey); }
+function mfaApi() {
+  if (!_mfaClient) {
+    const c = window.SUPABASE_CONFIG;
+    _mfaClient = window.supabase.createClient(c.url, c.anonKey, { auth: { persistSession: true, autoRefreshToken: false, detectSessionInUrl: false } });
+  }
+  return _mfaClient.auth.mfa;
+}
+function jwtAal(session) {
+  try {
+    const part = String(session && session.access_token || '').split('.')[1];
+    const json = decodeURIComponent(atob(part.replace(/-/g, '+').replace(/_/g, '/')).split('').map((ch) => '%' + ('00' + ch.charCodeAt(0).toString(16)).slice(-2)).join(''));
+    return JSON.parse(json).aal || null;
+  } catch (e) { return null; }
+}
+function needsMfa(session) {
+  const f = (session && session.user && session.user.factors) || [];
+  const verificado = f.some((x) => x && x.status === 'verified' && (!x.factor_type || x.factor_type === 'totp'));
+  return verificado && jwtAal(session) !== 'aal2';
+}
+function mfaErrMsg(e) {
+  const m = String((e && e.message) || '');
+  if (/invalid|expired|incorrect/i.test(m)) return 'Código incorrecto o caducado. Prueba con el siguiente código de tu app.';
+  return 'No se pudo completar. Revisa tu conexión e inténtalo de nuevo.';
+}
+function renderMfaScreen(msg) {
+  $('#app').innerHTML =
+    '<div style="min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;">' +
+    '<div class="card" style="width:100%;max-width:360px;">' +
+    '<h2 class="num" style="margin:0 0 6px;text-align:center;">Verificación en dos pasos</h2>' +
+    '<p style="color:var(--text-faint);font-size:13.5px;line-height:1.5;margin:0 0 14px;text-align:center;">Escribe el código de 6 cifras de tu app autenticadora.</p>' +
+    '<div class="field"><input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="text-align:center;letter-spacing:6px;font-size:20px;"></div>' +
+    (msg ? '<div class="alert" style="margin-top:2px;">' + ic('alert') + '<div>' + escapeHtml(msg) + '</div></div>' : '') +
+    '<button class="btn accent block" style="margin-top:6px;" ' + act('doMfaVerify') + '>Verificar</button>' +
+    '<button class="section-title link" style="width:100%;text-align:center;margin-top:16px;justify-content:center;" ' + act('doMfaCancel') + '>Cerrar sesión</button>' +
+    '</div></div>';
+  setTimeout(() => { const el = $('#mfaCode'); if (el) el.focus(); }, 60);
+}
+async function mfaSheetHtml() {
+  let verified = null;
+  try {
+    const r = await mfaApi().listFactors();
+    verified = ((r.data && r.data.totp) || [])[0] || null; // listFactors.totp solo contiene los verificados
+  } catch (e) { return '<div class="handle"></div><h2>Verificación en dos pasos</h2><p>No se pudo consultar. Revisa tu conexión.</p><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>'; }
+  if (verified) {
+    return '<div class="handle"></div><h2>Verificación en dos pasos</h2>' +
+      '<p style="line-height:1.5;"><b style="color:var(--income);">Activada.</b> Al iniciar sesión te pediremos el código de tu app autenticadora.</p>' +
+      '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn danger block" ' + act('mfaDisable', verified.id) + '>Desactivar</button></div>';
+  }
+  return '<div class="handle"></div><h2>Verificación en dos pasos</h2>' +
+    '<p style="color:var(--text-faint);font-size:13.5px;line-height:1.5;">Añade una capa extra de seguridad: además de la contraseña, se pedirá un código de 6 cifras de una app como Google Authenticator, Microsoft Authenticator o Authy. Es opcional.</p>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Ahora no</button><button class="btn accent block" ' + act('mfaStart') + '>Activar</button></div>';
+}
+
 function loginBusy(isBusy) {
   const b = $('[data-click="doLogin"]');
   if (b) { b.disabled = isBusy; b.textContent = isBusy ? 'Entrando…' : 'Iniciar sesión'; }
@@ -391,7 +460,7 @@ function renderMovList() {
   }
   const net = movs.reduce((a, m) => a + effect(m.importe, m.tipo), 0);
   const shown = movs.slice(0, S.movLimit);
-  let html = '<div class="summary-line">' + movs.length + (movs.length === 1 ? ' movimiento' : ' movimientos') + ' · balance ' + (net >= 0 ? '+' : '−') + fmt2(Math.abs(net)) + ' €</div>';
+  let html = '<div class="summary-line">' + movs.length + (movs.length === 1 ? ' movimiento' : ' movimientos') + ' · balance ' + (net >= 0 ? '+' : '−') + fmtM(Math.abs(net)) + ' ' + sym() + '</div>';
   let last = null;
   shown.forEach((m) => {
     if (m.fecha !== last) { if (last !== null) html += '</div>'; html += '<div class="date-sep">' + fmtDateGroup(m.fecha) + '</div><div class="list">'; last = m.fecha; }
@@ -430,7 +499,7 @@ function openMovForm(id) {
     '<div class="handle"></div><h2>' + (ex ? 'Editar movimiento' : 'Nuevo movimiento') + '</h2>' +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
     TIPOS.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + t + '</button>').join('') + '</div></div>' +
-    '<div class="field"><label>Importe (€) <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : '') + '"></div>' +
+    '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : '') + '"></div>' +
     '<div id="invFields">' + invFieldsHtml(tipoIni, ex ? ex.tipoActivo : '') + '</div>' +
     '<div class="field"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : '') + '</div>' +
     '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : '') + '" ' + onInput('onCatInput') + '></div>' +
@@ -840,7 +909,7 @@ function renderProyectos() {
       const roi = vendido && num(g.invertido) > 0 ? Math.round(ben / num(g.invertido) * 100) : null;
       return '<div class="row" ' + act('openGolfForm', g.id) + '><span class="dot" style="background:' + (vendido ? 'var(--income)' : 'var(--accent)') + '"></span>' +
         '<div class="main"><div class="ttl">' + escapeHtml(g.articulo) + '</div><div class="meta">' + fmtDateShort(g.fecha) + ' ' + (g.fecha || '').slice(0, 4) + ' · ' + (vendido ? 'Vendido · ' + (roi >= 0 ? '+' : '') + roi + '%' : 'En cartera') + '</div></div>' +
-        '<div class="amt tnum ' + (vendido ? (ben >= 0 ? 'pos' : 'neg') : '') + '">' + (vendido ? (ben >= 0 ? '+' : '−') + fmt2(Math.abs(ben)) + ' €' : money(g.invertido)) + '</div></div>';
+        '<div class="amt tnum ' + (vendido ? (ben >= 0 ? 'pos' : 'neg') : '') + '">' + (vendido ? (ben >= 0 ? '+' : '−') + fmtM(Math.abs(ben)) + ' ' + sym() : money(g.invertido)) + '</div></div>';
     }).join('') + '</div>' : '<div class="empty"><b>Sin artículos todavía</b></div>') +
     '<div style="margin-top:16px;"><button class="btn ghost block" ' + act('openGolfForm') + '>' + ic('plus') + ' Añadir artículo</button></div>';
 }
@@ -851,8 +920,8 @@ function openGolfForm(id) {
     '<div class="handle"></div><h2>' + (ex ? 'Editar artículo' : 'Nuevo artículo de golf') + '</h2>' +
     '<div class="field"><label>Artículo</label><input id="gArt" type="text" placeholder="Ej. Driver Titleist" value="' + escapeHtml(ex ? ex.articulo : '') + '"></div>' +
     '<div class="field"><label>Fecha</label><input id="gFecha" type="date" value="' + (ex ? ex.fecha : todayISO()) + '"></div>' +
-    '<div class="field"><label>Invertido (€)</label><input id="gInv" type="number" step="0.01" inputmode="decimal" value="' + (ex ? ex.invertido : '') + '"></div>' +
-    '<div class="field"><label>Venta (€) <span class="hint">· vacío si aún no lo has vendido</span></label><input id="gVenta" type="number" step="0.01" inputmode="decimal" value="' + (ex && ex.venta != null ? ex.venta : '') + '"></div>' +
+    '<div class="field"><label>Invertido (' + sym() + ')</label><input id="gInv" type="number" step="0.01" inputmode="decimal" value="' + (ex ? ex.invertido : '') + '"></div>' +
+    '<div class="field"><label>Venta (' + sym() + ') <span class="hint">· vacío si aún no lo has vendido</span></label><input id="gVenta" type="number" step="0.01" inputmode="decimal" value="' + (ex && ex.venta != null ? ex.venta : '') + '"></div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveGolf') + '>Guardar</button></div>' +
     (ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteGolf') + '>' + ic('trash') + ' Eliminar artículo</button>' : '')
   );
@@ -1007,7 +1076,7 @@ const LIST_META = {
   facturas: { title: 'Facturas recurrentes', amtField: 'importe', amtLabel: 'Importe', icon: 'wallet',
     extra: [{ field: 'diaDelMes', label: 'Día del mes', type: 'day' }] },
   ahorro: { title: 'Metas de ahorro', amtField: 'objetivo', amtLabel: 'Objetivo', icon: 'flag',
-    extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }, { field: 'yaAhorrado', label: 'Ya ahorrado antes (€)', type: 'money' }] },
+    extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }, { field: 'yaAhorrado', label: 'Ya ahorrado antes', type: 'money' }] },
   deudas: { title: 'Deudas', amtField: 'objetivo', amtLabel: 'Objetivo', icon: 'bank',
     extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }, { field: 'recurrencia', label: 'Recurrencia (ej. mensual)', type: 'text' }] },
   ingresos: { title: 'Fuentes de ingreso', simple: true, icon: 'wallet' },
@@ -1173,11 +1242,14 @@ function obToggle(arr, v) { const i = arr.indexOf(v); if (i >= 0) arr.splice(i, 
 function renderMas() {
   const item = (key) => '<button class="menu-item" ' + act('openListEditor', key) + '><span class="ic">' + ic(LIST_META[key].icon) + '</span>' + LIST_META[key].title + '<span class="chev">' + ic('chevR') + '</span></button>';
   return '<button class="btn accent block" style="margin-bottom:18px;" ' + act('startOnboardingManually') + '>' + ic('flag') + ' Repetir asistente de configuración</button>' +
-    '<div class="profile-tile"><div class="av">€</div><div><div class="t">Mis Finanzas y Tareas</div>' +
+    '<div class="profile-tile"><div class="av">' + sym() + '</div><div><div class="t">Mis Finanzas y Tareas</div>' +
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · datos privados, sincronizados entre tus dispositivos.</div></div></div>' +
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
     ['categoriasGasto', 'facturas', 'ahorro', 'deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') +
     '<button class="menu-item" ' + act('openTabsAn') + '><span class="ic">' + ic('chart') + '</span>Pestañas de Análisis<span class="chev">' + ic('chevR') + '</span></button></div>' +
+    '<div class="section-title">Cuenta y seguridad</div><div class="card menu">' +
+    '<button class="menu-item" ' + act('openMoneda') + '><span class="ic">' + ic('chart') + '</span>Moneda<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">' + monedaCod() + ' ' + sym() + '</span><span class="chev">' + ic('chevR') + '</span></button>' +
+    (mfaDisponible() ? '<button class="menu-item" ' + act('openSeguridad') + '><span class="ic">' + ic('alert') + '</span>Verificación en dos pasos<span class="chev">' + ic('chevR') + '</span></button>' : '') + '</div>' +
     '<div class="section-title">Tus datos</div><div class="card menu"><button class="menu-item" ' + act('exportBackup') + '><span class="ic">' + ic('download') + '</span>Copia de seguridad (.json)<span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Apariencia</div><div class="card menu"><div class="menu-item static"><span class="ic">' + ic('moon') + '</span>Tema' +
     '<div class="segmented" style="margin-left:auto;">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button style="padding:6px 12px;" class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div></div>' +
@@ -1394,6 +1466,65 @@ const H = {
     else row[field] = el.value.trim();
   },
   obFinish: ([mode]) => doObFinish(mode === 'save'),
+  // moneda
+  openMoneda: () => openSheet('<div class="handle"></div><h2>Moneda</h2>' +
+    '<p style="color:var(--text-faint);font-size:13.5px;line-height:1.5;margin:0 0 12px;">Cambia el símbolo y el formato de todos los importes. <b>No convierte</b> tus datos: un importe de 100 pasará de «100 €» a «100 $». Úsalo si llevas tus cuentas en esa moneda.</p>' +
+    '<div class="chips">' + Object.keys(MONEDAS).map((k) => '<button type="button" class="chip ' + (monedaCod() === k ? 'active' : '') + '" ' + act('setMoneda', k) + '>' + k + ' ' + MONEDAS[k].s + '</button>').join('') + '</div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Hecho</button></div>'),
+  setMoneda: ([k]) => { if (!MONEDAS[k]) return; saveConfig({ moneda: k }); H.openMoneda(); render(); },
+  // 2FA
+  openSeguridad: async () => { openSheet('<div class="handle"></div><h2>Verificación en dos pasos</h2><p>Cargando…</p>'); updateSheet(await mfaSheetHtml()); },
+  mfaStart: async () => {
+    try {
+      const api = mfaApi();
+      const l = await api.listFactors();
+      for (const f of (l.data && l.data.all) || []) { if (f.status !== 'verified') await api.unenroll({ factorId: f.id }); } // limpia intentos abandonados
+      const r = await api.enroll({ factorType: 'totp', friendlyName: 'Mis Finanzas ' + Date.now() });
+      if (r.error) throw r.error;
+      const t = r.data.totp;
+      updateSheet('<div class="handle"></div><h2>Escanea el código QR</h2>' +
+        '<p style="color:var(--text-faint);font-size:13.5px;line-height:1.5;margin:0 0 10px;">1. Abre tu app autenticadora y añade una cuenta escaneando este QR.<br>2. Escribe aquí el código de 6 cifras que te muestre.</p>' +
+        '<div style="text-align:center;margin:8px 0;"><img alt="Código QR" src="' + escapeHtml(t.qr_code) + '" style="width:200px;height:200px;background:#fff;padding:8px;border-radius:8px;"></div>' +
+        '<p style="font-size:12px;color:var(--text-faint);text-align:center;word-break:break-all;">¿No puedes escanear? Clave manual: <b>' + escapeHtml(t.secret) + '</b></p>' +
+        '<div class="field"><input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="text-align:center;letter-spacing:6px;font-size:20px;"></div>' +
+        '<div id="mfaMsg" style="color:var(--expense);font-size:13px;min-height:18px;"></div>' +
+        '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('mfaConfirm', r.data.id) + '>Activar</button></div>');
+    } catch (e) { toast('No se pudo iniciar. Inténtalo de nuevo.'); }
+  },
+  mfaConfirm: async ([factorId]) => {
+    const code = (($('#mfaCode') || {}).value || '').replace(/\s/g, '');
+    const msg = $('#mfaMsg');
+    if (!/^\d{6}$/.test(code)) { if (msg) msg.textContent = 'Escribe los 6 dígitos.'; return; }
+    try {
+      const r = await mfaApi().challengeAndVerify({ factorId, code });
+      if (r.error) throw r.error;
+      toast('Verificación en dos pasos activada');
+      setTimeout(() => window.location.reload(), 900);
+    } catch (e) { if (msg) msg.textContent = mfaErrMsg(e); }
+  },
+  mfaDisable: async ([factorId]) => {
+    if (!window.confirm('¿Desactivar la verificación en dos pasos? Tu cuenta quedará protegida solo por la contraseña.')) return;
+    try {
+      const r = await mfaApi().unenroll({ factorId });
+      if (r.error) throw r.error;
+      toast('Verificación en dos pasos desactivada');
+      setTimeout(() => window.location.reload(), 900);
+    } catch (e) { toast('No se pudo desactivar. Cierra sesión, vuelve a entrar con tu código e inténtalo otra vez.'); }
+  },
+  doMfaVerify: async () => {
+    const code = (($('#mfaCode') || {}).value || '').replace(/\s/g, '');
+    if (!/^\d{6}$/.test(code)) return renderMfaScreen('Escribe los 6 dígitos.');
+    try {
+      const api = mfaApi();
+      const l = await api.listFactors();
+      const f = ((l.data && l.data.totp) || [])[0];
+      if (!f) throw new Error('invalid');
+      const r = await api.challengeAndVerify({ factorId: f.id, code });
+      if (r.error) throw r.error;
+      window.location.reload();
+    } catch (e) { renderMfaScreen(mfaErrMsg(e)); }
+  },
+  doMfaCancel: async () => { try { await window.Auth.signOut(); } catch (e) { /* noop */ } renderLoginScreen(); },
   // auth
   doLogin: async () => {
     const email = ($('#loginEmail').value || '').trim();
@@ -1464,6 +1595,7 @@ async function main() {
     return;
   }
   window.Auth.onChange((session) => {
+    if (session && needsMfa(session)) { if (!S.appStarted) renderMfaScreen(); return; }
     if (session) { if (!S.appStarted) enterApp(session); }
     else { leaveApp(); }
   });
