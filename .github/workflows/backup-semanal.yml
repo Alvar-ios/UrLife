@@ -47,6 +47,17 @@ jobs:
           rm -f backup.sql
           ls -la
 
+      - name: Comprobar que la copia se puede abrir y tiene datos
+        env:
+          PASS: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          f=$(ls backup-*.sql.gpg)
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$PASS" -d "$f" > verificacion.sql
+          echo "Filas guardadas en la copia, por tabla:"
+          awk '/^COPY /{t=$2; n=0; inside=1; next} /^\\\.$/{if(inside){print "  " t ": " n; inside=0}; next} inside{n++}' verificacion.sql
+          rm -f verificacion.sql
+
       - name: Guardar copia (90 días)
         uses: actions/upload-artifact@v4
         with:
