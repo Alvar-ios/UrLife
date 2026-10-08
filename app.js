@@ -484,51 +484,175 @@ function chipsHtml(tipo, current) {
   if (!cats.length) return '';
   return '<div class="chips">' + cats.map((c) => '<button type="button" class="chip ' + (c === current ? 'active' : '') + '" ' + act('pickCat', c) + '>' + escapeHtml(c) + '</button>').join('') + '</div>';
 }
+/* ============================================================
+   ACTIVOS AUTOMÁTICOS (Bloque 3): búsqueda, participaciones y valoración
+   ============================================================ */
+function activosDisponible() { const c = window.SUPABASE_CONFIG || {}; return !!(c.url && c.anonKey && window.Auth && typeof window.Auth.getSession === 'function'); }
+async function activosApi(accion, extra) {
+  const c = window.SUPABASE_CONFIG;
+  const ses = await window.Auth.getSession();
+  if (!ses || !ses.access_token) throw new Error('sin_sesion');
+  const r = await fetch(c.url + '/functions/v1/activos-api', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ses.access_token, apikey: c.anonKey },
+    body: JSON.stringify(Object.assign({ accion }, extra || {}))
+  });
+  let j; try { j = await r.json(); } catch (e) { j = { error: 'respuesta_invalida' }; }
+  if (!r.ok && !j.error) j.error = 'http_' + r.status;
+  return j;
+}
+const TIPO_ACTIVO_MAP = { ETF: 'ETF', 'Acción': 'Acción', Criptomoneda: 'Criptomoneda', Fondo: 'Otro' };
+function tipoActivoDe(a) { return TIPOS_ACTIVO.indexOf(a && a.tipo) >= 0 ? a.tipo : (TIPO_ACTIVO_MAP[a && a.tipo] || 'Otro'); }
+function errPrecioMsg(e) {
+  if (e === 'limite') return 'Hoy se han agotado las consultas gratuitas de precios. Escribe tú las participaciones o inténtalo mañana.';
+  if (e === 'sin_precio') return 'No hay precio de ese activo para esa fecha. Escribe tú las participaciones.';
+  if (e === 'sin_divisa') return 'No hay tipo de cambio para esa fecha. Escribe tú las participaciones.';
+  return 'No se pudo consultar el precio. Revisa tu conexión o escribe tú las participaciones.';
+}
+function invAuto() { return FORM.tipo === 'Inversión' && FORM.invModo === 'auto' && activosDisponible(); }
+function syncCatField() { const f = $('#catField'); if (f) f.style.display = invAuto() ? 'none' : ''; }
+function refreshInvFields() { const el = $('#invFields'); if (el) el.innerHTML = invFieldsHtml(FORM.tipo, FORM.tipoActivoIni || ''); syncCatField(); }
+function activosPropios() {
+  const m = {};
+  S.movimientos.forEach((x) => { if (x.tipo === 'Inversión' && x.activoId && !m[x.activoId]) m[x.activoId] = (x.categoria || '').trim() || 'Activo'; });
+  return Object.entries(m);
+}
 function invFieldsHtml(tipo, actual) {
   if (tipo !== 'Inversión') return '';
-  return '<div class="field"><label>Tipo de activo</label><select id="fTipoActivo"><option value="">—</option>' +
-    TIPOS_ACTIVO.map((t) => '<option ' + (actual === t ? 'selected' : '') + '>' + t + '</option>').join('') + '</select></div>';
+  if (!(FORM.invModo === 'auto' && activosDisponible())) {
+    return '<div class="field"><label>Tipo de activo</label><select id="fTipoActivo"><option value="">—</option>' +
+      TIPOS_ACTIVO.map((t) => '<option ' + (actual === t ? 'selected' : '') + '>' + t + '</option>').join('') + '</select></div>' +
+      (activosDisponible() ? '<button type="button" class="link" style="margin:-4px 0 12px;" ' + act('invAuto') + '>Vincular a un activo con valoración automática</button>' : '');
+  }
+  const a = FORM.activo;
+  let h = '<div class="field"><label>Activo</label>';
+  if (a) {
+    h += '<div class="card" style="padding:12px;display:flex;align-items:center;gap:10px;"><div style="flex:1;"><b>' + escapeHtml(a.nombre) + '</b>' +
+      '<div style="font-size:12.5px;color:var(--text-faint);">' + escapeHtml([a.simbolo, a.tipo, a.moneda].filter(Boolean).join(' · ')) + '</div></div>' +
+      '<button type="button" class="link" ' + act('cambiarActivo') + '>Cambiar</button></div>';
+  } else {
+    h += '<div style="display:flex;gap:8px;"><input id="fBuscar" type="text" placeholder="Nombre, ticker o ISIN" style="flex:1;" ' + onChange('buscarActivo') + '>' +
+      '<button type="button" class="btn accent" style="flex:none;" ' + act('buscarActivo') + '>Buscar</button></div><div id="resBusca" style="margin-top:8px;"></div>';
+    const prop = activosPropios();
+    if (prop.length) h += '<div style="font-size:12.5px;color:var(--text-faint);margin:10px 0 6px;">O elige uno que ya tienes:</div><div class="chips">' +
+      prop.map(([id, n]) => '<button type="button" class="chip" ' + act('pickActivoPropio', id) + '>' + escapeHtml(n) + '</button>').join('') + '</div>';
+  }
+  h += '</div>';
+  if (a) {
+    h += '<div id="previewPart" style="font-size:13px;color:var(--text-faint);margin:-4px 0 12px;line-height:1.5;"></div>' +
+      '<div class="field"><label>Participaciones <span class="hint">· opcional; vacío = se calculan solas</span></label><input id="fPart" type="number" step="any" inputmode="decimal" placeholder="Automático" value="' + (FORM.partOrig != null ? Math.abs(FORM.partOrig) : '') + '"></div>';
+  }
+  h += '<button type="button" class="link" style="margin:-4px 0 12px;" ' + act('invManual') + '>Escribirlo a mano (sin valoración automática)</button>';
+  return h;
+}
+function updatePreview() {
+  const el = $('#previewPart'); if (!el) return;
+  const pr = FORM.precio, imp = parseFloat(($('#fImporte') || {}).value);
+  if (FORM.precioCargando) { el.textContent = 'Consultando el precio de ese día…'; return; }
+  if (!pr) { el.textContent = ''; return; }
+  if (pr.error) { el.textContent = errPrecioMsg(pr.error); return; }
+  const precioTxt = fmt2(pr.cierre) + ' ' + (pr.moneda === 'GBX' ? 'GBX' : pr.moneda) + (pr.moneda !== 'EUR' ? ' (≈ ' + fmt2(pr.cierre_eur) + ' €)' : '');
+  el.innerHTML = (isFinite(imp) && imp !== 0 ? '≈ <b>' + (imp / pr.cierre_eur).toLocaleString('es-ES', { maximumFractionDigits: 6 }) + '</b> participaciones · ' : '') +
+    'precio ' + precioTxt + ' · cierre del ' + fmtDateShort(pr.fecha_precio);
+}
+async function cargarPreview() {
+  const a = FORM.activo, f = ($('#fFecha') || {}).value;
+  if (!a || !a.activo_id || !f) { FORM.precio = null; updatePreview(); return; }
+  const key = a.activo_id + '|' + f; FORM.precioKey = key; FORM.precioCargando = true; updatePreview();
+  let r; try { r = await activosApi('precio_en', { activo_id: a.activo_id, fecha: f }); } catch (e) { r = { error: 'red' }; }
+  if (FORM.precioKey !== key) return;
+  FORM.precioCargando = false;
+  FORM.precio = r.error ? { error: r.error } : Object.assign(r, { activo_id: a.activo_id, fecha_solicitada: f });
+  updatePreview();
+}
+async function elegirActivo(a) {
+  FORM.activo = a; FORM.precio = null; refreshInvFields();
+  if (!a.activo_id) {
+    const el = $('#previewPart'); if (el) el.textContent = 'Preparando el activo…';
+    let r; try { r = await activosApi('registrar', { proveedor: a.proveedor, ref: a.ref, simbolo: a.simbolo, nombre: a.nombre, tipo: a.tipo, moneda: a.moneda, isin: a.isin }); } catch (e) { r = { error: 'red' }; }
+    if (r.error || !r.activo) { FORM.activo = null; refreshInvFields(); return toast(r.error === 'moneda_no_soportada' ? 'Esa moneda (' + r.moneda + ') aún no está soportada' : 'No se pudo preparar el activo. Inténtalo de nuevo.'); }
+    FORM.activo.activo_id = r.activo.id;
+  }
+  cargarPreview();
 }
 function catLabel(tipo) { return tipo === 'Inversión' ? 'Activo <span class="hint">· ej. VWCE, S&amp;P 500 ETF</span>' : 'Categoría'; }
 function openMovForm(id) {
   const ex = id ? S.movimientos.find((m) => m.id === id) : null;
   const tipoIni = ex ? ex.tipo : (S.tab === 'movimientos' && S.movFiltroTipo !== 'Todos' ? S.movFiltroTipo : 'Gasto');
-  FORM = { kind: 'mov', id: ex ? ex.id : null, tipo: tipoIni };
+  FORM = { kind: 'mov', id: ex ? ex.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : '' };
+  FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
+  if (ex && ex.activoId) { FORM.activo = { activo_id: ex.activoId, nombre: ex.categoria, tipo: ex.tipoActivo || '', simbolo: '', moneda: '' }; FORM.partOrig = ex.participaciones == null ? null : Number(ex.participaciones); }
   const metodos = cfg().metodosPago || [];
   openSheet(
     '<div class="handle"></div><h2>' + (ex ? 'Editar movimiento' : 'Nuevo movimiento') + '</h2>' +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
     TIPOS.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + t + '</button>').join('') + '</div></div>' +
-    '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : '') + '"></div>' +
+    '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : '') + '" ' + onInput('onImporteInput') + '></div>' +
     '<div id="invFields">' + invFieldsHtml(tipoIni, ex ? ex.tipoActivo : '') + '</div>' +
-    '<div class="field"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : '') + '</div>' +
+    '<div class="field" id="catField"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : '') + '</div>' +
     '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : '') + '" ' + onInput('onCatInput') + '></div>' +
-    '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : todayISO()) + '"></div>' +
+    '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : todayISO()) + '" ' + onChange('onFechaChange') + '></div>' +
     '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida" value="' + escapeHtml(ex ? ex.descripcion : '') + '"></div>' +
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
     metodos.map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
     (ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteMov') + '>' + ic('trash') + ' Eliminar movimiento</button>' : '')
   );
+  syncCatField();
+  if (FORM.activo && FORM.activo.activo_id) cargarPreview();
   if (!ex) setTimeout(() => { const el = $('#fImporte'); if (el) el.focus(); }, 80);
 }
 async function saveMov() {
+  if (FORM.guardando) return;
   const importe = parseFloat($('#fImporte').value);
-  const categoria = $('#fCategoria').value.trim();
   const fecha = $('#fFecha').value;
+  const auto = invAuto();
+  if (auto) { if (!FORM.activo) return toast('Busca y elige el activo'); const c = $('#fCategoria'); if (c) c.value = FORM.activo.nombre; }
+  const categoria = $('#fCategoria').value.trim();
   if (!isFinite(importe) || importe === 0) return toast('Pon un importe válido');
   if (!categoria) return toast(FORM.tipo === 'Inversión' ? 'Escribe o elige el activo' : 'Elige o escribe una categoría');
-  const tipoActivo = FORM.tipo === 'Inversión' ? (($('#fTipoActivo') || {}).value || '') : '';
+  const tipoActivo = FORM.tipo === 'Inversión' ? (auto ? tipoActivoDe(FORM.activo) : (($('#fTipoActivo') || {}).value || '')) : '';
   if (FORM.tipo === 'Inversión' && !tipoActivo) return toast('Elige el tipo de activo');
   if (!fecha) return toast('Elige una fecha');
   const ex = FORM.id ? S.movimientos.find((m) => m.id === FORM.id) : null;
-  const data = Object.assign(ex ? stripId(ex) : { creadoEn: Date.now() }, {
-    tipo: FORM.tipo, importe, categoria, fecha,
-    descripcion: $('#fDesc').value.trim(), metodoPago: $('#fMetodo').value,
-  });
-  if (FORM.tipo === 'Inversión') data.tipoActivo = tipoActivo; else if ('tipoActivo' in data) data.tipoActivo = null;
-  const ok = await write(() => FORM.id ? S.db.collection('movimientos').doc(FORM.id).set(data) : S.db.collection('movimientos').add(data));
-  if (ok) { closeSheet(); toast(FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido'); }
+  let participaciones = null, activoId = null;
+  FORM.guardando = true;
+  try {
+    if (auto) {
+      const a = FORM.activo;
+      if (!a.activo_id) {
+        const r = await activosApi('registrar', { proveedor: a.proveedor, ref: a.ref, simbolo: a.simbolo, nombre: a.nombre, tipo: a.tipo, moneda: a.moneda, isin: a.isin }).catch(() => ({ error: 'red' }));
+        if (r.error || !r.activo) return toast('No se pudo preparar el activo. Inténtalo de nuevo.');
+        a.activo_id = r.activo.id;
+      }
+      activoId = a.activo_id;
+      const sign = importe < 0 ? -1 : 1;
+      const manual = parseFloat((($('#fPart') || {}).value) || '');
+      const orig = FORM.partOrig == null ? null : Math.abs(FORM.partOrig);
+      const manualCambiada = isFinite(manual) && manual > 0 && (orig == null || Math.abs(manual - orig) > 1e-9);
+      if (manualCambiada) participaciones = sign * manual;
+      else if (ex && ex.participaciones != null && ex.activoId === activoId && Number(ex.importe) === importe && ex.fecha === fecha) participaciones = Number(ex.participaciones);
+      else {
+        let pr = FORM.precio && !FORM.precio.error && FORM.precio.activo_id === activoId && FORM.precio.fecha_solicitada === fecha ? FORM.precio : null;
+        if (!pr) { try { pr = await activosApi('precio_en', { activo_id: activoId, fecha }); } catch (e) { pr = { error: 'red' }; } }
+        if (pr.error) return toast(errPrecioMsg(pr.error));
+        participaciones = importe / pr.cierre_eur;
+      }
+      participaciones = Math.round(participaciones * 1e8) / 1e8;
+    }
+    const data = Object.assign(ex ? stripId(ex) : { creadoEn: Date.now() }, {
+      tipo: FORM.tipo, importe, categoria, fecha,
+      descripcion: $('#fDesc').value.trim(), metodoPago: $('#fMetodo').value,
+    });
+    if (FORM.tipo === 'Inversión') data.tipoActivo = tipoActivo; else if ('tipoActivo' in data) data.tipoActivo = null;
+    if (auto) { data.activoId = activoId; data.participaciones = participaciones; }
+    else {
+      if ('activoId' in data && FORM.tipo !== 'Inversión') data.activoId = null;
+      if ('participaciones' in data && FORM.tipo !== 'Inversión') data.participaciones = null;
+    }
+    const ok = await write(() => FORM.id ? S.db.collection('movimientos').doc(FORM.id).set(data) : S.db.collection('movimientos').add(data));
+    if (ok) { closeSheet(); toast(FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido'); }
+  } finally { FORM.guardando = false; }
 }
 async function doDeleteMov() {
   const ok = await write(() => S.db.collection('movimientos').doc(FORM.id).delete());
@@ -850,9 +974,10 @@ function renderCalendario() {
 function inversionesPorActivo() {
   const map = {};
   S.movimientos.filter((m) => m.tipo === 'Inversión').forEach((m) => {
-    const key = normName(m.categoria) || '(sin activo)';
-    const g = map[key] || (map[key] = { nombre: (m.categoria || '').trim() || 'Sin activo', total: 0, n: 0, tipoActivo: '', ultima: '' });
+    const key = m.activoId ? 'id:' + m.activoId : (normName(m.categoria) || '(sin activo)');
+    const g = map[key] || (map[key] = { nombre: (m.categoria || '').trim() || 'Sin activo', total: 0, n: 0, tipoActivo: '', ultima: '', activoId: m.activoId || null, part: 0, conPart: 0 });
     g.total += num(m.importe); g.n++;
+    if (m.activoId && m.participaciones != null && m.participaciones !== '') { g.part += Number(m.participaciones); g.conPart++; }
     if (m.tipoActivo && (m.fecha || '') >= g.ultima) g.tipoActivo = m.tipoActivo;
     if ((m.fecha || '') > g.ultima) g.ultima = m.fecha || '';
   });
@@ -872,27 +997,80 @@ function inflacionHtml() {
     '<div style="font-size:26px;font-weight:700;" class="tnum">' + fmt2(d.tasa) + ' %</div>' +
     '<div style="font-size:11.5px;color:var(--text-faint);line-height:1.5;margin-top:6px;">' + escapeHtml(d.que) + ' · ' + escapeHtml(d.periodo) + ' · Fuente: ' + escapeHtml(d.fuente) + ' · Dato obtenido el ' + fmtDateLong(d.obtenido) + '.</div></div>';
 }
+const eur0 = (n) => n.toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
+const eur2 = (n) => fmt2(n) + ' €';
+function valorDeGrupo(g) {
+  if (!g.activoId || g.conPart !== g.n || !S.valoracion) return null;
+  const v = S.valoracion.valores && S.valoracion.valores[g.activoId];
+  if (!v || v.cierre_eur == null) return null;
+  const valor = g.part * v.cierre_eur;
+  return { valor, gan: valor - g.total, pct: g.total > 0 ? (valor - g.total) / g.total * 100 : null, v };
+}
+async function cargarValoracion(ids) {
+  if (S._valCarga) return; S._valCarga = true;
+  try {
+    const r = await activosApi('valorar', { ids });
+    S.valoracion = r && r.valores ? { ts: Date.now(), valores: r.valores } : { ts: Date.now(), valores: {}, error: true };
+  } catch (e) { S.valoracion = { ts: Date.now(), valores: {}, error: true }; }
+  S._valCarga = false;
+  if (enAnalisis() && subAnalisis() === 'inversiones') render();
+}
 function renderInversiones() {
   const grupos = inversionesPorActivo();
   const total = grupos.reduce((a, g) => a + g.total, 0);
   const porTipo = {};
   grupos.forEach((g) => { const k = g.tipoActivo || 'Sin clasificar'; porTipo[k] = (porTipo[k] || 0) + g.total; });
-  let h = '<div class="kpi-row"><div class="kpi savings"><div class="v tnum">' + moneyShort(total) + '</div><div class="l">Total invertido</div></div>' +
-    '<div class="kpi"><div class="v tnum">' + grupos.length + '</div><div class="l">Activos</div></div>' +
-    '<div class="kpi"><div class="v tnum">' + grupos.reduce((a, g) => a + g.n, 0) + '</div><div class="l">Aportaciones</div></div></div>';
-  if (!grupos.length) {
-    h += '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Aún no hay inversiones. Añade un movimiento de tipo <b>Inversión</b> indicando el activo (por ejemplo VWCE).</div>';
+  // valoración automática
+  const ids = grupos.filter((g) => g.activoId && g.conPart === g.n).map((g) => g.activoId);
+  if (activosDisponible() && ids.length && !S._valCarga) {
+    const v = S.valoracion, edad = v ? Date.now() - v.ts : Infinity;
+    const faltan = v && ids.some((id) => !(v.valores && v.valores[id]));
+    if (!v || edad > 600000 || (faltan && edad > 60000)) setTimeout(() => cargarValoracion(ids), 0);
+  }
+  const vals = grupos.map(valorDeGrupo);
+  const valoradas = grupos.map((g, i) => vals[i] ? g : null).filter(Boolean);
+  const sumValor = vals.reduce((a, v) => a + (v ? v.valor : 0), 0);
+  const sumInvValoradas = valoradas.reduce((a, g) => a + g.total, 0);
+  const sumGan = sumValor - sumInvValoradas;
+  const pctGan = sumInvValoradas > 0 ? sumGan / sumInvValoradas * 100 : null;
+  const signo = (n) => (n >= 0 ? '+' : '−');
+  let h;
+  if (valoradas.length) {
+    h = '<div class="kpi-row"><div class="kpi savings"><div class="v tnum">' + moneyShort(total) + '</div><div class="l">Invertido</div></div>' +
+      '<div class="kpi"><div class="v tnum">' + eur0(sumValor) + '</div><div class="l">Valor actual</div></div>' +
+      '<div class="kpi ' + (sumGan >= 0 ? 'income' : 'expense') + '"><div class="v tnum">' + signo(sumGan) + eur0(Math.abs(sumGan)) + '</div><div class="l">' + (pctGan == null ? 'Resultado' : signo(sumGan) + Math.abs(pctGan).toFixed(1).replace('.', ',') + ' %') + '</div></div></div>';
   } else {
-    h += '<div class="section-title">Invertido por activo</div><div class="list">' + grupos.map((g) =>
-      '<div class="row" ' + act('verActivo', g.nombre) + '><span class="dot" style="background:var(--savings)"></span>' +
-      '<div class="main"><div class="ttl">' + escapeHtml(g.nombre) + '</div><div class="meta">' + escapeHtml(g.tipoActivo || 'Sin clasificar') + ' · ' + g.n + (g.n === 1 ? ' aportación' : ' aportaciones') + (total > 0 ? ' · ' + (g.total / total * 100).toFixed(0) + '%' : '') + (g.ultima ? ' · última ' + fmtDateShort(g.ultima) : '') + '</div></div>' +
-      '<div class="amt tnum">' + money(g.total) + '</div></div>').join('') + '</div>';
+    h = '<div class="kpi-row"><div class="kpi savings"><div class="v tnum">' + moneyShort(total) + '</div><div class="l">Total invertido</div></div>' +
+      '<div class="kpi"><div class="v tnum">' + grupos.length + '</div><div class="l">Activos</div></div>' +
+      '<div class="kpi"><div class="v tnum">' + grupos.reduce((a, g) => a + g.n, 0) + '</div><div class="l">Aportaciones</div></div></div>';
+  }
+  if (!grupos.length) {
+    h += '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Aún no hay inversiones. Añade un movimiento de tipo <b>Inversión</b> y busca el activo (por nombre, ticker o ISIN).</div>';
+  } else {
+    h += '<div class="section-title">Tus activos</div><div class="list">' + grupos.map((g, i) => {
+      const vv = vals[i];
+      const base = g.n + (g.n === 1 ? ' aportación' : ' aportaciones');
+      if (vv) {
+        const pr = vv.v;
+        return '<div class="row" ' + act('verActivo', g.nombre) + '><span class="dot" style="background:var(--savings)"></span>' +
+          '<div class="main"><div class="ttl">' + escapeHtml(g.nombre) + '</div><div class="meta">' + g.part.toLocaleString('es-ES', { maximumFractionDigits: 4 }) + ' part. · invertido ' + eur2(g.total) +
+          ' · ' + fmt2(pr.cierre) + ' ' + escapeHtml(pr.moneda || '') + ' (cierre ' + fmtDateShort(pr.fecha_precio) + ')</div></div>' +
+          '<div class="amt tnum">' + eur2(vv.valor) + '<div style="font-size:12.5px;font-weight:600;color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + ';">' + signo(vv.gan) + eur2(Math.abs(vv.gan)) + (vv.pct == null ? '' : ' (' + signo(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %)') + '</div></div></div>';
+      }
+      const pendiente = g.activoId && g.conPart === g.n && activosDisponible() && !(S.valoracion && !S._valCarga);
+      const sinVal = g.activoId && g.conPart === g.n && S.valoracion && !S._valCarga ? ' · sin precio disponible todavía' : (pendiente ? ' · valorando…' : '');
+      return '<div class="row" ' + act('verActivo', g.nombre) + '><span class="dot" style="background:var(--savings)"></span>' +
+        '<div class="main"><div class="ttl">' + escapeHtml(g.nombre) + '</div><div class="meta">' + escapeHtml(g.tipoActivo || 'Sin clasificar') + ' · ' + base + (total > 0 ? ' · ' + (g.total / total * 100).toFixed(0) + '%' : '') + (g.ultima ? ' · última ' + fmtDateShort(g.ultima) : '') + sinVal + '</div></div>' +
+        '<div class="amt tnum">' + money(g.total) + '</div></div>';
+    }).join('') + '</div>';
     h += '<div class="section-title">Por tipo de activo</div><div class="card">' + Object.entries(porTipo).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
       '<div class="budget-row"><div class="top"><span class="cat">' + escapeHtml(k) + '</span><span class="nums"><b class="tnum">' + money(v) + '</b></span></div>' +
       '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, total > 0 ? v / total * 100 : 0)) + '%"></div></div></div>').join('') + '</div>';
   }
+  const sinVincular = grupos.filter((g) => !(g.activoId && g.conPart === g.n)).length;
   h += inflacionHtml() +
-    '<div class="summary-line">«Invertido» es lo aportado, no el valor actual de mercado. El valor actual y la rentabilidad llegarán en una fase posterior.</div>';
+    '<div class="summary-line">Valores de cierre del último día de mercado, en euros (los activos en otras monedas se convierten al cambio del Banco Central Europeo). «Invertido» es lo que aportaste.' +
+    (sinVincular && valoradas.length ? ' ' + sinVincular + (sinVincular === 1 ? ' activo no se valora' : ' activos no se valoran') + ' porque no está vinculado: edita sus movimientos y elige el activo en el buscador.' : '') + '</div>';
   return h;
 }
 function renderProyectos() {
@@ -1339,7 +1517,29 @@ const H = {
     const chips = $('#catChips'); if (chips) chips.innerHTML = chipsHtml(t, ($('#fCategoria') || {}).value || '');
     const inv = $('#invFields'); if (inv) inv.innerHTML = invFieldsHtml(t, '');
     const cl = $('#catLabel'); if (cl) cl.innerHTML = catLabel(t);
+    syncCatField();
   },
+  // activos automáticos
+  invAuto: () => { FORM.invModo = 'auto'; refreshInvFields(); },
+  invManual: () => { FORM.invModo = 'manual'; FORM.activo = null; FORM.precio = null; refreshInvFields(); },
+  cambiarActivo: () => { FORM.activo = null; FORM.precio = null; FORM.partOrig = null; refreshInvFields(); },
+  pickActivoPropio: ([id]) => { const n = (activosPropios().find((x) => x[0] === id) || [])[1] || 'Activo'; const ex = S.movimientos.find((m) => m.activoId === id); elegirActivo({ activo_id: id, nombre: n, tipo: ex ? ex.tipoActivo : '', simbolo: '', moneda: '' }); },
+  buscarActivo: async ([modo]) => {
+    const q = (($('#fBuscar') || {}).value || '').trim(); const box = $('#resBusca'); if (!box) return;
+    if (q.length < 2) { box.innerHTML = '<span style="font-size:13px;color:var(--text-faint);">Escribe al menos 2 letras.</span>'; return; }
+    box.innerHTML = '<span style="font-size:13px;color:var(--text-faint);">Buscando…</span>';
+    let r; try { r = await activosApi('buscar', { q, externo: modo === 'ext' }); } catch (e) { r = { error: 'red' }; }
+    if (!$('#resBusca')) return;
+    if (r.error) { box.innerHTML = '<span style="font-size:13px;color:var(--expense);">No se pudo buscar. Revisa tu conexión.</span>'; return; }
+    FORM.resultados = r.resultados || [];
+    let h = FORM.resultados.map((x, i) => '<button type="button" class="menu-item" style="width:100%;text-align:left;" ' + act('pickResultado', i) + '><span style="flex:1;"><b>' + escapeHtml(x.nombre) + '</b><br><span style="font-size:12.5px;color:var(--text-faint);">' + escapeHtml([x.simbolo, x.tipo, x.moneda, x.bolsa, x.isin].filter(Boolean).join(' · ')) + '</span></span></button>').join('');
+    if (!FORM.resultados.length) h = '<span style="font-size:13px;color:var(--text-faint);">Sin resultados.' + (r.limite ? ' Hoy se han agotado las consultas gratuitas al mercado; inténtalo mañana.' : '') + '</span>';
+    if (r.hayMas) h += '<button type="button" class="link" style="margin-top:6px;" ' + act('buscarActivo', 'ext') + '>No es este: buscar en el mercado</button>';
+    box.innerHTML = h;
+  },
+  pickResultado: ([i]) => { const a = (FORM.resultados || [])[Number(i)]; if (a) elegirActivo(Object.assign({}, a)); },
+  onFechaChange: () => { if (FORM.activo) cargarPreview(); },
+  onImporteInput: () => updatePreview(),
   pickCat: ([c]) => {
     const inp = $('#fCategoria'); if (inp) inp.value = c;
     $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c));
