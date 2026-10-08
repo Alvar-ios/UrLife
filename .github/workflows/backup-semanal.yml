@@ -9,6 +9,9 @@ on:
   schedule:
     - cron: '17 4 * * 0'   # domingos 04:17 UTC
   workflow_dispatch: {}
+  push:
+    paths:
+      - '.github/workflows/backup-semanal.yml'   # se ejecuta también al editar este archivo (sirve para probarla)
 
 jobs:
   backup:
