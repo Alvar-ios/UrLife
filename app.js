@@ -114,7 +114,7 @@ const S = {
   movimientos: [], tareas: [], golf: [], config: null,
   loaded: { mov: false, tar: false, golf: false, cfg: false },
   tab: 'inicio',
-  analisisSub: 'mensual', inicioSub: 'dashboard',
+  analisisSub: 'general', generalSub: 'mensual', inicioSub: 'dashboard',
   calVista: 'mes', calFecha: null, calFiltros: { tareas: true, facturas: true, hitos: true, movs: false },
   mesSel: now0.getMonth() + 1, anioSel: now0.getFullYear(),
   tareasSub: 'activas',
@@ -314,8 +314,8 @@ function render() {
   else if (S.tab === 'calendario') c.innerHTML = renderCalendario();
   else if (S.tab === 'tareas') c.innerHTML = renderTareas();
   else if (S.tab === 'mas') c.innerHTML = renderMas();
-  if (enAnalisis() && S.analisisSub === 'mensual') drawDonut();
-  if (enAnalisis() && S.analisisSub === 'anual') drawTrend();
+  if (enAnalisis() && subAnalisis() === 'general' && S.generalSub === 'mensual') drawDonut();
+  if (enAnalisis() && subAnalisis() === 'general' && S.generalSub === 'anual') drawTrend();
 }
 
 
@@ -347,7 +347,7 @@ function renderInicio() {
     (proximas.length ? '<div class="list">' + proximas.map(renderTareaRow).join('') + '</div>'
       : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">No tienes tareas pendientes.</div>') +
 
-    renderMetasInicio() +
+    (tabAnVisible('metas') ? renderMetasInicio() : '') +
 
     '<div class="section-title">Donde más gastas este mes <button class="link" ' + act('goTab', 'analisis') + '>Ver análisis</button></div>' +
     '<div class="card">' + (top.length ? top.map(([n, v]) =>
@@ -469,10 +469,42 @@ async function doDeleteMov() {
 /* ============================================================
    ANÁLISIS
    ============================================================ */
+/* Pestañas de Análisis (Bloque 1). 'general' siempre visible; las demás son elegibles y se guardan en la cuenta.
+   Proyectos queda oculto (no borrado): ponlo a true para reactivarlo. */
+const PROYECTOS_VISIBLE = false;
+const TABS_AN_OPC = [['metas', 'Metas de ahorro'], ['inversiones', 'Inversiones'], ['deudas', 'Deudas']].concat(PROYECTOS_VISIBLE ? [['proyectos', 'Proyectos']] : []);
+function tabsAnElegidas() {
+  const g = cfg().tabsAnalisis;
+  const ids = TABS_AN_OPC.map((t) => t[0]);
+  return Array.isArray(g) ? g.filter((x) => ids.indexOf(x) >= 0) : ids.slice(0, 3); // por defecto: todas las visibles
+}
+function tabAnVisible(id) { return id === 'general' || tabsAnElegidas().indexOf(id) >= 0; }
+function subAnalisis() {
+  let sub = S.analisisSub;
+  if (sub === 'mensual' || sub === 'anual') { S.generalSub = sub; sub = 'general'; S.analisisSub = 'general'; }
+  return tabAnVisible(sub) ? sub : 'general';
+}
 function renderAnalisis() {
-  const subs = [['mensual', 'Mensual'], ['anual', 'Anual'], ['metas', 'Metas'], ['inversiones', 'Inversiones'], ['proyectos', 'Proyectos']];
-  return '<div class="segmented">' + subs.map(([id, l]) => '<button class="' + (S.analisisSub === id ? 'active' : '') + '" ' + act('setAnalisisSub', id) + '>' + l + '</button>').join('') + '</div>' +
-    '<div style="margin-top:16px;">' + (S.analisisSub === 'mensual' ? renderAnalisisMensual() : S.analisisSub === 'anual' ? renderAnalisisAnual() : S.analisisSub === 'metas' ? renderMetas() : S.analisisSub === 'inversiones' ? renderInversiones() : renderProyectos()) + '</div>';
+  const sub = subAnalisis();
+  const labels = { metas: 'Metas', inversiones: 'Inversiones', deudas: 'Deudas', proyectos: 'Proyectos' };
+  const tabs = [['general', 'General']].concat(TABS_AN_OPC.filter((t) => tabAnVisible(t[0])).map((t) => [t[0], labels[t[0]]]));
+  let body;
+  if (sub === 'general') {
+    const g = S.generalSub === 'anual' ? 'anual' : 'mensual';
+    body = '<div class="segmented" style="margin-bottom:16px;">' + [['mensual', 'Mensual'], ['anual', 'Anual']].map(([id, l]) => '<button class="' + (g === id ? 'active' : '') + '" ' + act('setGeneralSub', id) + '>' + l + '</button>').join('') + '</div>' +
+      (g === 'mensual' ? renderAnalisisMensual() : renderAnalisisAnual());
+  } else body = sub === 'metas' ? renderMetas() : sub === 'inversiones' ? renderInversiones() : sub === 'deudas' ? renderDeudas() : renderProyectos();
+  return (tabs.length > 1 ? '<div class="segmented">' + tabs.map(([id, l]) => '<button class="' + (sub === id ? 'active' : '') + '" ' + act('setAnalisisSub', id) + '>' + l + '</button>').join('') + '</div>' : '') +
+    '<div style="text-align:right;margin:8px 0 0;"><button class="link" ' + act('openTabsAn') + '>Elegir pestañas</button></div>' +
+    '<div style="margin-top:10px;">' + body + '</div>';
+}
+function tabsAnSheetHtml() {
+  const sel = tabsAnElegidas();
+  return '<div class="handle"></div><h2>Pestañas de Análisis</h2>' +
+    '<p style="color:var(--text-faint);font-size:13.5px;line-height:1.5;margin:0 0 12px;">Elige qué pestañas quieres ver. General (con las vistas Mensual y Anual) siempre está visible. Tus datos no se tocan: solo cambia lo que se muestra.</p>' +
+    '<div class="chips"><button type="button" class="chip active" disabled style="opacity:.7;">General</button>' +
+    TABS_AN_OPC.map(([id, l]) => '<button type="button" class="chip ' + (sel.indexOf(id) >= 0 ? 'active' : '') + '" ' + act('toggleTabAn', id) + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Hecho</button></div>';
 }
 function renderAnalisisMensual() {
   const k = kpisMes(S.anioSel, S.mesSel);
@@ -582,6 +614,47 @@ function renderMetas() {
     }
     return h + '</div>';
   }).join('') + '<div class="summary-line">El ahorro de cada meta sale de tus movimientos de tipo Ahorro con ese nombre, más lo que indiques en «Ya ahorrado antes».</div>';
+}
+function deudaStats(d) {
+  const key = (d.nombre || '').trim().toLowerCase();
+  const movs = S.movimientos.filter((x) => x.tipo === 'Deuda' && (x.categoria || '').trim().toLowerCase() === key);
+  const total = num(d.objetivo);
+  const pagado = movs.reduce((a, x) => a + num(x.importe), 0);
+  const pend = Math.max(0, total - pagado);
+  const pct = total > 0 ? pagado / total * 100 : null;
+  const hoyISO = todayISO(), desde = isoDaysAgo(90);
+  const ritmo = movs.filter((x) => (x.fecha || '') > desde && (x.fecha || '') <= hoyISO).reduce((a, x) => a + num(x.importe), 0) / 3;
+  const dias = d.fechaObjetivo ? daysUntil(d.fechaObjetivo) : null;
+  const r = { nombre: d.nombre, total, pagado, pend, pct, ritmo, dias, fecha: d.fechaObjetivo || null, mes: null, estado: 'gris', texto: '' };
+  if (total <= 0) { r.texto = 'Sin total definido'; return r; }
+  if (pend <= 0) { r.estado = 'verde'; r.texto = 'Deuda saldada'; return r; }
+  if (dias == null) { r.texto = 'Sin fecha objetivo'; return r; }
+  if (dias < 0) { r.estado = 'rojo'; r.texto = 'La fecha ya pasó y quedan ' + money(pend); return r; }
+  r.mes = pend / Math.max(dias / 30.4375, 1);
+  const ratio = ritmo / r.mes;
+  if (ratio >= 1) { r.estado = 'verde'; r.texto = 'Vas bien: ritmo suficiente'; }
+  else if (ratio >= META_UMBRAL_AMARILLO) { r.estado = 'amarillo'; r.texto = 'Ritmo justo: conviene pagar algo más'; }
+  else { r.estado = 'rojo'; r.texto = 'Al ritmo actual no llegarías a tiempo'; }
+  return r;
+}
+function renderDeudas() {
+  const ds = (cfg().deudas || []).filter((d) => d && d.nombre).map(deudaStats);
+  if (!ds.length) return '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes deudas. Créalas en Más → Deudas (con el total y, si quieres, una fecha objetivo).</div>';
+  const tot = ds.reduce((a, r) => a + r.total, 0), pag = ds.reduce((a, r) => a + Math.min(r.pagado, r.total), 0), pen = ds.reduce((a, r) => a + r.pend, 0);
+  return '<div class="kpi-row"><div class="kpi expense"><div class="v tnum">' + moneyShort(pen) + '</div><div class="l">Pendiente</div></div>' +
+    '<div class="kpi income"><div class="v tnum">' + moneyShort(pag) + '</div><div class="l">Pagado</div></div>' +
+    '<div class="kpi"><div class="v tnum">' + moneyShort(tot) + '</div><div class="l">Total</div></div></div>' +
+    ds.map((r) => {
+      const pctC = r.pct == null ? 0 : Math.max(0, Math.min(100, r.pct));
+      let h = '<div class="card" style="margin-bottom:12px;">' +
+        '<div class="budget-row" style="margin:0;"><div class="top"><span class="cat" style="display:flex;align-items:center;gap:8px;">' + semaforoDot(r.estado) + escapeHtml(r.nombre) + '</span>' +
+        '<span class="nums"><b class="tnum">' + (r.pct == null ? '—' : r.pct.toFixed(0) + '%') + '</b></span></div>' +
+        '<div class="progress"><div style="width:' + pctC + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>' +
+        '<div class="summary-line">Pagado ' + money(r.pagado) + (r.total > 0 ? ' de ' + money(r.total) + ' · pendiente ' + money(r.pend) : '') + (r.fecha ? ' · hasta ' + fmtDateLong(r.fecha) : '') + '</div>' +
+        '<div style="font-size:13.5px;font-weight:600;color:' + SEMAFORO_COLOR[r.estado] + ';margin:2px 0 6px;">' + escapeHtml(r.texto) + '</div>';
+      if (r.mes != null) h += '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">Cuota necesaria: <b class="tnum" style="color:var(--text);">' + money(r.mes) + '/mes</b> · tu ritmo (últimos 3 meses): <b class="tnum" style="color:var(--text);">' + money(r.ritmo) + '/mes</b>.</div>';
+      return h + '</div>';
+    }).join('') + '<div class="summary-line">Lo pagado sale de tus movimientos de tipo Deuda con el nombre de cada deuda. Esta versión no calcula intereses.</div>';
 }
 function renderMetasInicio() {
   const ms = metasStats().filter((r) => r.obj > 0);
@@ -716,17 +789,25 @@ function inversionesPorActivo() {
   });
   return Object.values(map).sort((a, b) => b.total - a.total);
 }
-function fmtInflacion(inf) {
-  if (!inf || inf.tasa == null || inf.tasa === '') return null;
-  return fmt2(num(inf.tasa)) + ' %' + (inf.fechaDato ? ' (dato de ' + MESES[parseISO(inf.fechaDato).getMonth()].toLowerCase() + ' ' + parseISO(inf.fechaDato).getFullYear() + ')' : '');
+/* Inflación: datos fechados, consultados por mí en fuentes oficiales (no se teclean). */
+const INFLACION_DATOS = {
+  es: { label: 'España', tasa: 4.9, que: 'IPC, variación anual (indicador adelantado)', periodo: 'septiembre de 2026', fuente: 'INE, publicado el 29/09/2026', obtenido: '2026-10-08' },
+  ue: { label: 'Zona euro', tasa: 3.8, que: 'IPCA, variación anual (estimación preliminar)', periodo: 'septiembre de 2026', fuente: 'Eurostat, publicado el 02/10/2026', obtenido: '2026-10-08' },
+  mundo: { label: 'Mundo', tasa: 4.7, que: 'Inflación general media anual, previsión', periodo: 'año 2026', fuente: 'FMI, World Economic Outlook Update de julio de 2026', obtenido: '2026-10-08' }
+};
+function inflacionRegion() { const r = cfg().inflacionRegion; return INFLACION_DATOS[r] ? r : 'es'; }
+function inflacionHtml() {
+  const reg = inflacionRegion(), d = INFLACION_DATOS[reg];
+  return '<div class="section-title">Inflación anual</div><div class="card">' +
+    '<div class="segmented" style="margin-bottom:12px;">' + Object.keys(INFLACION_DATOS).map((k) => '<button class="' + (reg === k ? 'active' : '') + '" ' + act('setInflacion', k) + '>' + INFLACION_DATOS[k].label + '</button>').join('') + '</div>' +
+    '<div style="font-size:26px;font-weight:700;" class="tnum">' + fmt2(d.tasa) + ' %</div>' +
+    '<div style="font-size:11.5px;color:var(--text-faint);line-height:1.5;margin-top:6px;">' + escapeHtml(d.que) + ' · ' + escapeHtml(d.periodo) + ' · Fuente: ' + escapeHtml(d.fuente) + ' · Dato obtenido el ' + fmtDateLong(d.obtenido) + '.</div></div>';
 }
 function renderInversiones() {
   const grupos = inversionesPorActivo();
   const total = grupos.reduce((a, g) => a + g.total, 0);
   const porTipo = {};
   grupos.forEach((g) => { const k = g.tipoActivo || 'Sin clasificar'; porTipo[k] = (porTipo[k] || 0) + g.total; });
-  const inf = fmtInflacion(cfg().inflacion);
-  const infFuente = cfg().inflacion && cfg().inflacion.fuente ? ' · ' + escapeHtml(cfg().inflacion.fuente) : '';
   let h = '<div class="kpi-row"><div class="kpi savings"><div class="v tnum">' + moneyShort(total) + '</div><div class="l">Total invertido</div></div>' +
     '<div class="kpi"><div class="v tnum">' + grupos.length + '</div><div class="l">Activos</div></div>' +
     '<div class="kpi"><div class="v tnum">' + grupos.reduce((a, g) => a + g.n, 0) + '</div><div class="l">Aportaciones</div></div></div>';
@@ -741,19 +822,9 @@ function renderInversiones() {
       '<div class="budget-row"><div class="top"><span class="cat">' + escapeHtml(k) + '</span><span class="nums"><b class="tnum">' + money(v) + '</b></span></div>' +
       '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, total > 0 ? v / total * 100 : 0)) + '%"></div></div></div>').join('') + '</div>';
   }
-  h += '<div class="section-title">Inflación anual <button class="link" ' + act('openInflacion') + '>' + (inf ? 'Editar' : 'Indicar') + '</button></div><div class="card" style="font-size:14px;">' +
-    (inf ? '<b class="tnum">' + inf + '</b>' + infFuente : '<span style="color:var(--text-faint);">Sin dato. Indica el índice de inflación anual y de qué fecha es.</span>') + '</div>' +
+  h += inflacionHtml() +
     '<div class="summary-line">«Invertido» es lo aportado, no el valor actual de mercado. El valor actual y la rentabilidad llegarán en una fase posterior.</div>';
   return h;
-}
-function openInflacionSheet() {
-  const inf = cfg().inflacion || {};
-  FORM = { kind: 'infl' };
-  openSheet('<div class="handle"></div><h2>Inflación anual</h2>' +
-    '<div class="field"><label>Índice anual (%)</label><input id="iTasa" type="number" step="0.01" inputmode="decimal" placeholder="Ej. 2,8" value="' + (inf.tasa == null ? '' : escapeHtml(inf.tasa)) + '"></div>' +
-    '<div class="field"><label>Fecha del dato</label><input id="iFecha" type="date" value="' + escapeHtml(inf.fechaDato || '') + '"></div>' +
-    '<div class="field"><label>Fuente <span class="hint">· opcional</span></label><input id="iFuente" type="text" placeholder="Ej. INE" value="' + escapeHtml(inf.fuente || '') + '"></div>' +
-    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveInflacion') + '>Guardar</button></div>');
 }
 function renderProyectos() {
   const t = golfTotales();
@@ -997,7 +1068,8 @@ function obDots(step) {
   return h + '</div>';
 }
 function obNav(step, last) {
-  return '<div class="actions" style="display:flex;gap:10px;margin-top:20px;">' +    (step > 0 ? '<button class="btn ghost" ' + act('obBack') + '>' + ic('chevL') + ' Atrás</button>' : '') +
+  return '<div class="actions" style="display:flex;gap:10px;margin-top:20px;">' +
+    (step > 0 ? '<button class="btn ghost" ' + act('obBack') + '>' + ic('chevL') + ' Atrás</button>' : '') +
     (last ? '<button class="btn accent block" ' + act('obFinish', 'save') + '>Terminar</button>'
       : '<button class="btn accent block" ' + act('obNext') + '>' + (step === 0 ? 'Empezar' : 'Siguiente') + '</button>') +
     '</div>' +
@@ -1105,7 +1177,7 @@ function renderMas() {
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · datos privados, sincronizados entre tus dispositivos.</div></div></div>' +
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
     ['categoriasGasto', 'facturas', 'ahorro', 'deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') +
-    '<button class="menu-item" ' + act('openInflacion') + '><span class="ic">' + ic('chart') + '</span>Inflación anual<span class="chev">' + ic('chevR') + '</span></button></div>' +
+    '<button class="menu-item" ' + act('openTabsAn') + '><span class="ic">' + ic('chart') + '</span>Pestañas de Análisis<span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Tus datos</div><div class="card menu"><button class="menu-item" ' + act('exportBackup') + '><span class="ic">' + ic('download') + '</span>Copia de seguridad (.json)<span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Apariencia</div><div class="card menu"><div class="menu-item static"><span class="ic">' + ic('moon') + '</span>Tema' +
     '<div class="segmented" style="margin-left:auto;">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button style="padding:6px 12px;" class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div></div>' +
@@ -1179,7 +1251,7 @@ const H = {
   setInicioSub: ([sub]) => { S.inicioSub = sub; render(); },
   onFab: () => {
     if (S.tab === 'tareas') return openTareaForm();
-    if (enAnalisis() && S.analisisSub === 'proyectos') return openGolfForm();
+    if (enAnalisis() && PROYECTOS_VISIBLE && subAnalisis() === 'proyectos') return openGolfForm();
     return openMovForm();
   },
   closeSheet: () => closeSheet(),
@@ -1219,14 +1291,15 @@ const H = {
   pickEstado: ([e]) => { FORM.estado = e; $$('#estToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-e') === e)); },
   saveTarea: () => saveTarea(),
   deleteTarea: (_a, el) => confirmDelete(el, doDeleteTarea),
-  openInflacion: () => openInflacionSheet(),
-  saveInflacion: async () => {
-    const raw = $('#iTasa').value, tasa = raw === '' ? null : parseFloat(raw);
-    if (raw !== '' && !isFinite(tasa)) return toast('Pon un porcentaje válido');
-    const inflacion = tasa == null ? null : { tasa, fechaDato: $('#iFecha').value || null, fuente: $('#iFuente').value.trim() || null };
-    await saveConfig({ inflacion });
-    closeSheet(); toast('Inflación guardada');
+  setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
+  openTabsAn: () => openSheet(tabsAnSheetHtml()),
+  toggleTabAn: ([id]) => {
+    const sel = tabsAnElegidas(), i = sel.indexOf(id);
+    if (i >= 0) sel.splice(i, 1); else sel.push(id);
+    saveConfig({ tabsAnalisis: TABS_AN_OPC.map((t) => t[0]).filter((x) => sel.indexOf(x) >= 0) });
+    updateSheet(tabsAnSheetHtml()); render();
   },
+  setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; render(); },
   verActivo: ([nombre]) => { S.movQuery = nombre; S.movFiltroTipo = 'Inversión'; S.movPeriodo = 'todo'; S.movLimit = 120; S.tab = 'movimientos'; render(); window.scrollTo(0, 0); },
   // calendario
   setCalVista: ([v]) => { S.calVista = v; render(); },
