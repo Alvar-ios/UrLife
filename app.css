@@ -349,3 +349,18 @@ main#content {
 .tr-mini .v { font-size: 15px; font-weight: 600; margin-top: 2px; }
 /* Botones tipo enlace fuera de los títulos de sección (Elegir pestañas, Cambiar activo…) */
 button.link { font-family: inherit; font-size: 13px; font-weight: 600; color: var(--accent); cursor: pointer; background: none; border: none; padding: 4px 0; display: inline-block; text-align: left; }
+
+/* Bloque 4: avisos de cobros y pagos, editor de reglas */
+.rec-card { padding: 4px 14px; }
+.rec-aviso { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.rec-aviso:last-child { border-bottom: none; }
+.rec-aviso .rec-txt { flex: 1 1 auto; min-width: 0; line-height: 1.35; }
+.rec-aviso .rec-sub { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.rec-aviso.pasado .rec-sub { color: var(--expense); }
+.rec-aviso.hecho { color: var(--text-muted); }
+.rec-btns { display: flex; gap: 6px; flex: none; flex-wrap: wrap; justify-content: flex-end; max-width: 55%; }
+.btn.sm { padding: 7px 11px; font-size: 12.5px; border-radius: 9px; min-height: 0; }
+.rec-prev { font-size: 13px; color: var(--text-muted); background: var(--paper-sunken); border-radius: 10px; padding: 10px 12px; margin-top: 10px; line-height: 1.45; }
+.rec-learn { font-size: 13px; line-height: 1.45; background: var(--income-soft); color: var(--text); border-radius: 10px; padding: 9px 11px; margin: 4px 0 8px; }
+.rec-learn.warn { background: var(--accent-soft); }
+.rec-hint { font-size: 12.5px; color: var(--text-faint); line-height: 1.45; margin-top: 6px; }

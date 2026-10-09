@@ -409,6 +409,8 @@ function renderInicio() {
     '<div class="kpi avail"><div class="v tnum">' + moneyShort(k.disponible) + '</div><div class="l">Disponible</div></div></div>' +
     '<div class="summary-line" style="margin-bottom:0;">' + MESES[m - 1] + ' ' + y + '</div>' +
 
+    avisosRecHtml() +
+
     ((vencidas.length || excedidas.length) ? '<div class="section-title">Avisos</div>' +
       (vencidas.length ? '<div class="alert">' + ic('alert') + '<div><b>' + vencidas.length + (vencidas.length > 1 ? ' tareas vencidas' : ' tarea vencida') + '</b>Míralas en la pestaña Tareas.</div></div>' : '') +
       excedidas.map((c) => '<div class="alert warn">' + ic('alert') + '<div><b>' + escapeHtml(c.categoria) + ' por encima del presupuesto</b>' + money(c.real) + ' de ' + money(c.presupuesto) + ' este mes.</div></div>').join('') : '') +
@@ -577,9 +579,10 @@ async function elegirActivo(a) {
   cargarPreview();
 }
 function catLabel(tipo) { return tipo === 'Inversión' ? 'Activo <span class="hint">· ej. VWCE, S&amp;P 500 ETF</span>' : 'Categoría'; }
-function openMovForm(id) {
+function openMovForm(id, pre) {
   const ex = id ? S.movimientos.find((m) => m.id === id) : null;
-  const tipoIni = ex ? ex.tipo : (S.tab === 'movimientos' && S.movFiltroTipo !== 'Todos' ? S.movFiltroTipo : 'Gasto');
+  pre = (!ex && pre) || {};
+  const tipoIni = ex ? ex.tipo : pre.tipo ? pre.tipo : (S.tab === 'movimientos' && S.movFiltroTipo !== 'Todos' ? S.movFiltroTipo : 'Gasto');
   FORM = { kind: 'mov', id: ex ? ex.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : '' };
   FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
   if (ex && ex.activoId) { FORM.activo = { activo_id: ex.activoId, nombre: ex.categoria, tipo: ex.tipoActivo || '', simbolo: '', moneda: '' }; FORM.partOrig = ex.participaciones == null ? null : Number(ex.participaciones); }
@@ -588,11 +591,11 @@ function openMovForm(id) {
     '<div class="handle"></div><h2>' + (ex ? 'Editar movimiento' : 'Nuevo movimiento') + '</h2>' +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
     TIPOS.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + t + '</button>').join('') + '</div></div>' +
-    '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : '') + '" ' + onInput('onImporteInput') + '></div>' +
+    '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : (pre.importe != null ? pre.importe : '')) + '" ' + onInput('onImporteInput') + '></div>' +
     '<div id="invFields">' + invFieldsHtml(tipoIni, ex ? ex.tipoActivo : '') + '</div>' +
-    '<div class="field" id="catField"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : '') + '</div>' +
-    '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : '') + '" ' + onInput('onCatInput') + '></div>' +
-    '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : todayISO()) + '" ' + onChange('onFechaChange') + '></div>' +
+    '<div class="field" id="catField"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : (pre.categoria || '')) + '</div>' +
+    '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : (pre.categoria || '')) + '" ' + onInput('onCatInput') + '></div>' +
+    '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : (pre.fecha || todayISO())) + '" ' + onChange('onFechaChange') + '></div>' +
     '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida" value="' + escapeHtml(ex ? ex.descripcion : '') + '"></div>' +
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
     metodos.map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' +
@@ -879,10 +882,11 @@ function dowMon(d) { return (d.getDay() + 6) % 7; }
 function calAnchor() { if (!S.calFecha) S.calFecha = todayISO(); return S.calFecha; }
 function normName(x) { return (x || '').trim().toLowerCase(); }
 
-const CAL_ORDEN = { tarea: 0, factura: 1, hito: 2, mov: 3 };
+const CAL_ORDEN = { tarea: 0, cobro: 1, factura: 1, hito: 2, mov: 3 };
 function evColor(ev) {
   if (ev.k === 'tarea') return ev.venc ? 'var(--expense)' : 'var(--accent)';
   if (ev.k === 'factura') return 'var(--bill, var(--accent))';
+  if (ev.k === 'cobro') return 'var(--income)';
   if (ev.k === 'hito') return 'var(--savings, var(--income))';
   return 'var(--' + (TIPO_COLOR[ev.tipo] || 'text-faint') + ', var(--text-faint))';
 }
@@ -896,17 +900,16 @@ function calEventos(desde, hasta) {
     add(t.fechaLimite, { k: 'tarea', titulo: t.nombre || 'Tarea', detalle: ['Tarea', t.prioridad, t.categoria].filter(Boolean).join(' · '), venc: t.fechaLimite < hoy, click: act('openTareaForm', t.id) });
   });
   if (f.facturas) {
-    const a = parseISO(desde), b = parseISO(hasta);
-    for (let y = a.getFullYear(), m = a.getMonth(); y < b.getFullYear() || (y === b.getFullYear() && m <= b.getMonth()); m++) {
-      if (m > 11) { m = 0; y++; }
-      const dim = new Date(y, m + 1, 0).getDate(), ym = y + '-' + pad2(m + 1);
-      (cfg().facturas || []).forEach((fa) => {
-        if (!fa || !fa.nombre || !fa.diaDelMes) return;
-        const iso = ym + '-' + pad2(Math.min(Number(fa.diaDelMes), dim));
-        const pagada = S.movimientos.some((x) => x.tipo === 'Factura' && (x.fecha || '').slice(0, 7) === ym && normName(x.categoria) === normName(fa.nombre));
-        add(iso, { k: 'factura', titulo: fa.nombre, detalle: 'Factura' + (fa.importe != null && fa.importe !== '' ? ' · ' + money(fa.importe) : '') + ' · ' + (pagada ? 'Pagada' : (iso < hoy ? 'Sin registrar' : 'Pendiente')), pagada });
+    recurrentes().forEach((rc) => {
+      if (!rc.regla) return;
+      const occs = ocurrencias(rc.regla, uAdd(desde, -20), uAdd(hasta, 20));
+      estadoOcurrencias(rc, occs).forEach((o) => {
+        const imp = importePrevisto(rc, o.iso);
+        const est = o.estado === 'ok' ? (rc.kind === 'cobro' ? 'Cobrado' : 'Pagada') : o.estado === 'no' ? 'No ocurrió' : (o.iso < hoy ? 'Sin registrar' : 'Pendiente');
+        const click = o.mov ? act('openMovForm', o.mov.id) : (o.estado === 'pend' ? act('recNuevoMov', rc.kind, rc.idx, o.iso) : '');
+        add(o.iso, { k: rc.kind === 'cobro' ? 'cobro' : 'factura', titulo: rc.nombre, detalle: (rc.kind === 'cobro' ? 'Cobro' : 'Factura') + (imp != null ? ' · ' + money(imp) : '') + ' · ' + est, pagada: o.estado === 'ok', click });
       });
-    }
+    });
   }
   if (f.hitos) {
     (cfg().ahorro || []).forEach((x) => { if (x && x.nombre && x.fechaObjetivo) add(x.fechaObjetivo, { k: 'hito', titulo: 'Meta: ' + x.nombre, detalle: 'Fecha objetivo' + (x.objetivo ? ' · ' + money(x.objetivo) : '') }); });
@@ -924,7 +927,7 @@ function calEventRow(ev) {
 }
 function calFiltrosHtml() {
   const f = S.calFiltros;
-  const items = [['tareas', 'Tareas'], ['facturas', 'Facturas'], ['hitos', 'Metas y deudas'], ['movs', 'Movimientos']];
+  const items = [['tareas', 'Tareas'], ['facturas', 'Cobros y facturas'], ['hitos', 'Metas y deudas'], ['movs', 'Movimientos']];
   return '<div class="chips" style="margin:12px 0;">' + items.map(([k, l]) => '<button type="button" class="chip ' + (f[k] ? 'active' : '') + '" ' + act('calToggle', k) + '>' + l + '</button>').join('') + '</div>';
 }
 function calNavHtml(label) {
@@ -1349,6 +1352,7 @@ function renderTareaRow(t) {
   const partes = [];
   if (!done && t.estado === 'Iniciado') partes.push('En curso');
   if (t.categoria) partes.push(t.categoria);
+  if (!done && t.repetir) partes.push('↻ ' + repTexto(t.repetir).toLowerCase());
   if (done && t.fechaFin) partes.push('Hecha el ' + fmtDateShort(t.fechaFin));
   else if (t.fechaLimite) partes.push(vencida ? 'Vencida el ' + fmtDateShort(t.fechaLimite) : 'Para el ' + fmtDateShort(t.fechaLimite));
   const dotColor = t.prioridad === 'Alta' ? 'var(--expense)' : t.prioridad === 'Media' ? 'var(--accent)' : 'var(--text-faint)';
@@ -1372,9 +1376,16 @@ async function toggleTarea(id) {
   if (!t || _busy.has(id)) return;
   _busy.add(id);
   const reabrir = t.estado === 'Completado';
-  const ok = await write(() => S.db.collection('tareas').doc(id).set(aplicaEstado(t, reabrir ? 'Pendiente' : 'Completado')));
+  const data = aplicaEstado(t, reabrir ? 'Pendiente' : 'Completado');
+  let sig = null;
+  if (!reabrir && t.repetir) {
+    sig = await crearSiguienteTarea(t);
+    if (!sig) { _busy.delete(id); return; }
+    data.repetir = null; // la repetición pasa a la tarea nueva
+  }
+  const ok = await write(() => S.db.collection('tareas').doc(id).set(data));
   _busy.delete(id);
-  if (ok) toast(reabrir ? 'Tarea reabierta' : '¡Tarea completada!');
+  if (ok) toast(reabrir ? 'Tarea reabierta' : (sig ? '¡Hecha! La siguiente: ' + fechaCortaU(sig) : '¡Tarea completada!'));
 }
 function openTareaForm(id) {
   const ex = id ? S.tareas.find((t) => t.id === id) : null;
@@ -1388,6 +1399,7 @@ function openTareaForm(id) {
     '<div class="field"><label>Prioridad</label>' + tg('prio', ['Baja', 'Media', 'Alta'], FORM.prioridad, 'pickPrio') + '</div>' +
     (ex ? '<div class="field"><label>Estado</label>' + tg('est', ['Pendiente', 'Iniciado', 'Completado'], FORM.estado, 'pickEstado') + '</div>' : '') +
     '<div class="field"><label>Fecha límite <span class="hint">· opcional</span></label><input id="tFecha" type="date" value="' + (ex && ex.fechaLimite ? ex.fechaLimite : '') + '"></div>' +
+    repetirFieldHtml(ex ? ex.repetir : null) +
     '<div class="field"><label>Comentario <span class="hint">· opcional</span></label><input id="tComentario" type="text" value="' + escapeHtml(ex ? ex.comentario : '') + '"></div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTarea') + '>Guardar</button></div>' +
     (ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTarea') + '>' + ic('trash') + ' Eliminar tarea</button>' : '')
@@ -1399,16 +1411,388 @@ async function saveTarea() {
   if (!nombre) return toast('Ponle un nombre a la tarea');
   const ex = FORM.id ? S.tareas.find((t) => t.id === FORM.id) : null;
   const base = ex ? stripId(ex) : { fechaCreacion: todayISO(), fechaInicio: null, fechaFin: null };
+  const repetir = leerRepetir();
+  if (repetir === undefined) return toast('Pon cada cuánto se repite (1 a 365)');
   const data = aplicaEstado(Object.assign(base, {
     nombre, categoria: $('#tCategoria').value, prioridad: FORM.prioridad,
-    fechaLimite: $('#tFecha').value || null, comentario: $('#tComentario').value.trim(),
+    fechaLimite: $('#tFecha').value || null, comentario: $('#tComentario').value.trim(), repetir,
   }), FORM.estado);
+  let sig = null;
+  if (repetir && FORM.estado === 'Completado' && (!ex || ex.estado !== 'Completado')) {
+    sig = await crearSiguienteTarea(data);
+    if (!sig) return;
+    data.repetir = null; // la repetición pasa a la tarea nueva
+  }
   const ok = await write(() => FORM.id ? S.db.collection('tareas').doc(FORM.id).set(data) : S.db.collection('tareas').add(data));
-  if (ok) { closeSheet(); toast(FORM.id ? 'Tarea actualizada' : 'Tarea añadida'); }
+  if (ok) { closeSheet(); toast(sig ? 'Hecha. La siguiente: ' + fechaCortaU(sig) : (FORM.id ? 'Tarea actualizada' : 'Tarea añadida')); }
 }
 async function doDeleteTarea() {
   const ok = await write(() => S.db.collection('tareas').doc(FORM.id).delete());
   if (ok) { closeSheet(); toast('Tarea eliminada'); }
+}
+
+/* ============================================================
+   COBROS Y PAGOS RECURRENTES (Bloque 4): reglas de fechas, avisos y aprendizaje
+   ============================================================ */
+const DOW_LARGO = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']; // 0 = lunes
+const ORDINAL = { '1': 'primer', '2': 'segundo', '3': 'tercer', '4': 'cuarto', '-1': 'último' };
+const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+function uD(iso) { const p = String(iso).split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); }
+function uISO(d) { return d.toISOString().slice(0, 10); }
+function uAdd(iso, n) { const d = uD(iso); d.setUTCDate(d.getUTCDate() + n); return uISO(d); }
+function dowL(d) { return (d.getUTCDay() + 6) % 7; } // 0 lunes … 6 domingo
+function esFinde(d) { return dowL(d) >= 5; }
+function ymdU(y, m, d) { return new Date(Date.UTC(y, m, d)); } // m empieza en 0
+function diasMesU(y, m) { return new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); }
+function ajustarFinde(d, modo) {
+  if (!modo || !esFinde(d)) return d;
+  const r = new Date(d.getTime());
+  while (esFinde(r)) r.setUTCDate(r.getUTCDate() + (modo === 'antes' ? -1 : 1));
+  return r;
+}
+// Fechas de una regla mensual dentro de un mes (y, m con enero = 0)
+function fechasMesRegla(r, y, m) {
+  const dim = diasMesU(y, m);
+  if (r.t === 'dia') return [ajustarFinde(ymdU(y, m, Math.min(Math.max(1, Number(r.dia) || 1), dim)), r.ajuste)];
+  if (r.t === 'ultHabil') { const d = ymdU(y, m, dim); while (esFinde(d)) d.setUTCDate(d.getUTCDate() - 1); return [d]; }
+  if (r.t === 'priHabil') { const d = ymdU(y, m, 1); while (esFinde(d)) d.setUTCDate(d.getUTCDate() + 1); return [d]; }
+  if (r.t === 'nesimo') {
+    const dow = Number(r.dow) || 0, n = Number(r.n) || 1;
+    if (n > 0) {
+      const d = ymdU(y, m, 1); while (dowL(d) !== dow) d.setUTCDate(d.getUTCDate() + 1);
+      d.setUTCDate(d.getUTCDate() + 7 * (n - 1)); return d.getUTCMonth() === m ? [d] : [];
+    }
+    const d = ymdU(y, m, dim); while (dowL(d) !== dow) d.setUTCDate(d.getUTCDate() - 1); return [d];
+  }
+  if (r.t === 'quincenal') return [ajustarFinde(ymdU(y, m, 15), r.ajuste), ajustarFinde(ymdU(y, m, dim), r.ajuste)];
+  return [];
+}
+// Todas las fechas de una regla entre dos fechas ISO (inclusive), ordenadas.
+function ocurrencias(r, desde, hasta) {
+  if (!r || !r.t || !desde || !hasta || desde > hasta) return [];
+  const out = [];
+  if (r.t === 'semanas') {
+    if (!r.ancla) return [];
+    const paso = Math.max(1, Math.min(52, Number(r.cada) || 1)) * 7 * 864e5;
+    const a = uD(r.ancla).getTime();
+    let k = Math.ceil((uD(desde).getTime() - a) / paso);
+    for (let i = 0; i < 1000; i++, k++) { const iso = uISO(new Date(a + k * paso)); if (iso > hasta) break; if (iso >= desde) out.push(iso); }
+    return out;
+  }
+  const a = uD(desde), b = uD(hasta), by = b.getUTCFullYear(), bm = b.getUTCMonth();
+  let y = a.getUTCFullYear(), m = a.getUTCMonth() - 1; if (m < 0) { m = 11; y--; } // un mes antes: el ajuste de fin de semana puede cruzar de mes
+  for (let i = 0; i < 1200; i++) {
+    if (y > by || (y === by && m > bm)) break;
+    fechasMesRegla(r, y, m).forEach((d) => { const iso = uISO(d); if (iso >= desde && iso <= hasta) out.push(iso); });
+    m++; if (m > 11) { m = 0; y++; }
+  }
+  return [...new Set(out)].sort();
+}
+function reglaTexto(r) {
+  if (!r || !r.t) return 'Sin fecha';
+  const aj = r.ajuste === 'antes' ? ' (si cae en finde, el viernes antes)' : r.ajuste === 'despues' ? ' (si cae en finde, el lunes después)' : '';
+  if (r.t === 'dia') return 'El día ' + r.dia + ' de cada mes' + aj;
+  if (r.t === 'ultHabil') return 'Último día hábil del mes';
+  if (r.t === 'priHabil') return 'Primer día hábil del mes';
+  if (r.t === 'nesimo') return 'El ' + ORDINAL[String(r.n)] + ' ' + DOW_LARGO[Number(r.dow) || 0] + ' de cada mes';
+  if (r.t === 'quincenal') return 'Los días 15 y último de cada mes' + aj;
+  if (r.t === 'semanas') return (Number(r.cada) === 1 ? 'Cada semana' : 'Cada ' + r.cada + ' semanas') + (r.ancla ? ', los ' + DOW_LARGO[dowL(uD(r.ancla))] : '');
+  return 'Sin fecha';
+}
+const fechaCortaU = (iso) => { const d = uD(iso); return d.getUTCDate() + ' ' + MESES_CORTO[d.getUTCMonth()]; };
+function reglaDe(it) {
+  if (it && it.regla && it.regla.t) return it.regla;
+  return it && Number(it.diaDelMes) ? { t: 'dia', dia: Number(it.diaDelMes), ajuste: '' } : null;
+}
+// Lista unificada: ingresos fijos (config.cobros) y facturas (config.facturas)
+function recurrentes() {
+  const c = cfg(), out = [];
+  (c.cobros || []).forEach((it, i) => { if (it && it.nombre) out.push({ kind: 'cobro', idx: i, tipo: 'Ingreso', nombre: it.nombre, importe: it.importe, regla: reglaDe(it), extras: it.extras || [], desde: it.desde || null, key: 'c:' + normName(it.nombre) }); });
+  (c.facturas || []).forEach((it, i) => { if (it && it.nombre) out.push({ kind: 'factura', idx: i, tipo: 'Factura', nombre: it.nombre, importe: it.importe, regla: reglaDe(it), extras: [], desde: it.desde || null, key: 'f:' + normName(it.nombre) }); });
+  return out;
+}
+function recBuscar(kind, idx) { return recurrentes().find((r) => r.kind === kind && r.idx === Number(idx)) || null; }
+function importePrevisto(rc, iso) {
+  if (rc.importe == null || rc.importe === '' || !isFinite(Number(rc.importe))) return null;
+  const base = Number(rc.importe), mes = Number(iso.slice(5, 7));
+  return (rc.extras || []).map(Number).includes(mes) ? base * 2 : base;
+}
+function toleranciaRegla(r) {
+  if (r && r.t === 'semanas') return Math.max(2, Math.min(10, (Number(r.cada) || 1) * 3 - 1));
+  if (r && r.t === 'quincenal') return 5;
+  return 12;
+}
+// Para cada fecha prevista: ¿hay un movimiento que la cubra?, ¿se marcó como «no ha ocurrido»?
+function estadoOcurrencias(rc, occs) {
+  const tol = toleranciaRegla(rc.regla), n = normName(rc.nombre), est = cfg().recEstado || {};
+  const movs = S.movimientos.filter((m) => m.tipo === rc.tipo && m.fecha && normName(m.categoria) === n).map((m) => ({ m, t: uD(m.fecha).getTime() }));
+  const usados = new Set();
+  return occs.map((iso) => {
+    const t = uD(iso).getTime(); let best = null, bd = Infinity;
+    movs.forEach((x) => { if (usados.has(x.m.id)) return; const d = Math.abs(x.t - t) / 864e5; if (d <= tol && d < bd) { bd = d; best = x.m; } });
+    if (best) { usados.add(best.id); return { iso, estado: 'ok', mov: best }; }
+    const e = est[rc.key + '@' + iso];
+    return { iso, estado: e === 'no' ? 'no' : e === 'ok' ? 'ok' : 'pend' };
+  });
+}
+function avisosRecurrentes() {
+  const hoy = todayISO(), man = uAdd(hoy, 1), ini = uAdd(hoy, -31);
+  const out = { pasados: [], hoy: [], manana: [], revisar: [] };
+  recurrentes().forEach((rc) => {
+    if (!rc.regla) return;
+    // los que ya existían antes de esta versión solo preguntan desde el 1/10/2026, para no llenar Inicio de preguntas antiguas
+    const base = rc.desde || '2026-10-01', desde = base > ini ? base : ini;
+    const occs = ocurrencias(rc.regla, uAdd(desde, -40), man);
+    estadoOcurrencias(rc, occs).forEach((o) => {
+      if (o.iso < desde) return;
+      const item = Object.assign({ rc, importe: importePrevisto(rc, o.iso) }, o);
+      if (o.iso === hoy) { if (o.estado !== 'no') out.hoy.push(item); }
+      else if (o.iso === man) { if (o.estado === 'pend') out.manana.push(item); }
+      else if (o.iso < hoy && o.estado === 'pend') out.pasados.push(item);
+    });
+    if (rc.regla.aprendida) { const sug = sugerenciaMejor(rc); if (sug) out.revisar.push({ rc, sug }); }
+  });
+  out.pasados.sort((a, b) => a.iso.localeCompare(b.iso));
+  return out;
+}
+function avisosRecHtml() {
+  const a = avisosRecurrentes();
+  if (!a.pasados.length && !a.hoy.length && !a.manana.length && !a.revisar.length) return '';
+  const imp = (x) => (x.importe == null ? '' : ' · ' + money(x.importe));
+  const que = (rc) => (rc.kind === 'cobro' ? 'Cobro' : 'Pago');
+  const fila = (cuerpo, botones, cls) => '<div class="rec-aviso ' + (cls || '') + '"><div class="rec-txt">' + cuerpo + '</div>' + (botones ? '<div class="rec-btns">' + botones + '</div>' : '') + '</div>';
+  let h = '';
+  a.pasados.forEach((x) => {
+    h += fila('<b>' + escapeHtml(x.rc.nombre) + '</b>' + imp(x) + '<div class="rec-sub">' + que(x.rc) + ' previsto el ' + fechaCortaU(x.iso) + ' · ¿Se ha producido?</div>',
+      '<button class="btn sm accent" ' + act('recSi', x.rc.kind, x.rc.idx, x.iso) + '>Sí</button><button class="btn sm ghost" ' + act('recNo', x.rc.kind, x.rc.idx, x.iso) + '>No ha ocurrido</button>', 'pasado');
+  });
+  a.hoy.forEach((x) => {
+    if (x.estado === 'ok') h += fila('✓ <b>Hoy: ' + escapeHtml(x.rc.nombre) + '</b>' + (x.mov ? ' · ' + money(x.mov.importe) : imp(x)) + '<div class="rec-sub">Registrado</div>',
+      x.mov ? '<button class="btn sm ghost" ' + act('openMovForm', x.mov.id) + '>Editar</button>' : '', 'hecho');
+    else h += fila('<b>Hoy: ' + escapeHtml(x.rc.nombre) + '</b>' + imp(x) + '<div class="rec-sub">' + que(x.rc) + ' previsto para hoy</div>',
+      '<button class="btn sm accent" ' + act('recSi', x.rc.kind, x.rc.idx, x.iso) + '>Confirmar</button>', 'hoy');
+  });
+  a.manana.forEach((x) => { h += fila('<b>Mañana: ' + escapeHtml(x.rc.nombre) + '</b>' + imp(x) + '<div class="rec-sub">' + que(x.rc) + ' previsto</div>', '', 'manana'); });
+  a.revisar.forEach((x) => {
+    h += fila('<b>' + escapeHtml(x.rc.nombre) + '</b><div class="rec-sub">Tus últimos movimientos encajan mejor con «' + escapeHtml(reglaTexto(x.sug.r)) + '» (' + x.sug.hits + ' de ' + x.sug.total + ').</div>',
+      '<button class="btn sm ghost" ' + act('recEditar', x.rc.kind, x.rc.idx) + '>Revisar</button>', 'revisar');
+  });
+  return '<div class="section-title">Cobros y pagos <button class="link" ' + act('openRecurrentes') + '>Gestionar</button></div><div class="card rec-card">' + h + '</div>';
+}
+function marcarRec(key, iso, v) {
+  const est = Object.assign({}, cfg().recEstado || {}), lim = uAdd(todayISO(), -150);
+  Object.keys(est).forEach((k) => { if ((k.split('@')[1] || '') < lim) delete est[k]; });
+  if (v) est[key + '@' + iso] = v; else delete est[key + '@' + iso];
+  saveConfig({ recEstado: est });
+}
+async function recConfirmar(kind, idx, iso) {
+  const rc = recBuscar(kind, idx); if (!rc) return;
+  const importe = importePrevisto(rc, iso);
+  if (importe == null) { openMovForm(null, { tipo: rc.tipo, categoria: rc.nombre, fecha: iso }); return; }
+  const lock = 'rec|' + rc.key + '|' + iso;
+  if (_busy.has(lock)) return; _busy.add(lock);
+  const data = { creadoEn: Date.now(), tipo: rc.tipo, importe, categoria: rc.nombre, fecha: iso, descripcion: '', metodoPago: '' };
+  const ok = await write(() => S.db.collection('movimientos').add(data));
+  _busy.delete(lock);
+  if (ok) { marcarRec(rc.key, iso, 'ok'); render(); toast((rc.kind === 'cobro' ? 'Cobro' : 'Pago') + ' registrado: ' + money(importe) + '. Puedes editarlo en Movimientos.'); }
+}
+// Aprender la regla a partir de las fechas reales (sin servidor): prueba todo el catálogo y se queda con la que mejor explica tus fechas.
+function fechasHistorial(tipo, nombre) {
+  const n = normName(nombre), lim = uAdd(todayISO(), -400);
+  return [...new Set(S.movimientos.filter((m) => m.tipo === tipo && m.fecha && m.fecha >= lim && normName(m.categoria) === n).map((m) => m.fecha))].sort();
+}
+function puntuarRegla(r, fechas) {
+  const set = new Set(fechas), occ = ocurrencias(r, fechas[0], fechas[fechas.length - 1]);
+  const hits = occ.filter((x) => set.has(x)).length;
+  return { hits, extra: occ.length - hits, score: hits - 0.6 * (occ.length - hits) };
+}
+function aprenderRegla(fechas) {
+  if (!fechas || fechas.length < 3) return null;
+  const cands = [];
+  // orden = preferencia a igualdad de aciertos: día fijo, hábiles, día con ajuste, quincenal, día de la semana, semanas
+  for (let d = 1; d <= 31; d++) cands.push({ t: 'dia', dia: d, ajuste: '' });
+  cands.push({ t: 'ultHabil' }, { t: 'priHabil' });
+  for (let d = 1; d <= 31; d++) ['antes', 'despues'].forEach((aj) => cands.push({ t: 'dia', dia: d, ajuste: aj }));
+  cands.push({ t: 'quincenal', ajuste: '' }, { t: 'quincenal', ajuste: 'antes' });
+  [1, 2, 3, 4, -1].forEach((n) => { for (let w = 0; w < 7; w++) cands.push({ t: 'nesimo', n, dow: w }); });
+  [1, 2, 4].forEach((c) => cands.push({ t: 'semanas', cada: c, ancla: fechas[fechas.length - 1] }));
+  let best = null;
+  cands.forEach((r, i) => {
+    const p = puntuarRegla(r, fechas), sc = p.score - i * 1e-6; // a igualdad, la regla más sencilla
+    if (!best || sc > best.sc) best = { r, hits: p.hits, total: fechas.length, sc };
+  });
+  return best && best.hits >= 2 ? best : null;
+}
+const mismaRegla = (a, b) => ['t', 'dia', 'ajuste', 'n', 'dow', 'cada'].every((k) => String((a || {})[k] == null ? '' : a[k]) === String((b || {})[k] == null ? '' : b[k]));
+function sugerenciaMejor(rc) {
+  const fechas = fechasHistorial(rc.tipo, rc.nombre);
+  const best = aprenderRegla(fechas);
+  if (!best || mismaRegla(best.r, rc.regla)) return null;
+  const actual = puntuarRegla(rc.regla, fechas);
+  return best.hits > actual.hits ? best : null;
+}
+/* ---- Pantalla «Cobros y pagos recurrentes» ---- */
+function recListaHtml() {
+  const rs = recurrentes(), hoy = todayISO();
+  const prox = (rc) => { const o = rc.regla ? ocurrencias(rc.regla, hoy, uAdd(hoy, 400))[0] : null; return o ? 'próximo ' + fechaCortaU(o) : ''; };
+  const fila = (rc) => '<div class="row" ' + act('recEditar', rc.kind, rc.idx) + '><span class="dot" style="background:' + (rc.kind === 'cobro' ? 'var(--income)' : 'var(--bill, var(--accent))') + '"></span>' +
+    '<div class="main"><div class="ttl">' + escapeHtml(rc.nombre) + '</div><div class="meta">' + escapeHtml(rc.regla ? reglaTexto(rc.regla) + ' · ' + prox(rc) : 'Sin fecha: tócalo para elegir cuándo') + '</div></div>' +
+    '<div class="amt tnum">' + (rc.importe == null || rc.importe === '' ? '—' : money(rc.importe)) + '</div></div>';
+  const cob = rs.filter((r) => r.kind === 'cobro'), fac = rs.filter((r) => r.kind === 'factura');
+  const vacio = (t) => '<div class="card" style="color:var(--text-faint);font-size:13.5px;">' + t + '</div>';
+  return '<div class="handle"></div><h2>Cobros y pagos recurrentes</h2>' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 6px;">Con cada uno te avisamos en Inicio el día anterior y el mismo día, y lo verás en el calendario.</div>' +
+    '<div class="section-title">Ingresos fijos</div>' + (cob.length ? '<div class="list">' + cob.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade tu nómina u otro cobro fijo.')) +
+    '<div class="section-title">Facturas y pagos</div>' + (fac.length ? '<div class="list">' + fac.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguna.')) +
+    '<div class="actions"><button class="btn ghost block" ' + act('recNuevo', 'cobro') + '>' + ic('plus') + ' Ingreso fijo</button><button class="btn ghost block" ' + act('recNuevo', 'factura') + '>' + ic('plus') + ' Factura o pago</button></div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+const REGLA_OPC = [['dia', 'Un día fijo del mes'], ['ultHabil', 'El último día hábil del mes'], ['priHabil', 'El primer día hábil del mes'], ['nesimo', 'Un día de la semana concreto (p. ej. el primer lunes)'], ['quincenal', 'Dos veces al mes (el 15 y el último)'], ['semanas', 'Cada cierto número de semanas']];
+function reglaPorDefecto(t) {
+  if (t === 'dia') return { t, dia: 1, ajuste: '' };
+  if (t === 'nesimo') return { t, n: 1, dow: 0 };
+  if (t === 'quincenal') return { t, ajuste: '' };
+  if (t === 'semanas') return { t, cada: 2, ancla: todayISO() };
+  return t ? { t } : null;
+}
+function recParamsHtml(r) {
+  const sel = (id, opts, val, field) => '<select id="' + id + '" ' + onChange('recParam', field) + '>' + opts.map(([v, l]) => '<option value="' + v + '"' + (String(val == null ? '' : val) === String(v) ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>';
+  const ajuste = (val) => '<div class="field"><label>Si cae en fin de semana</label>' + sel('recAjuste', [['', 'Se queda ese día'], ['antes', 'Se adelanta al viernes'], ['despues', 'Se pasa al lunes']], val, 'ajuste') + '</div>';
+  if (!r) return '';
+  if (r.t === 'dia') return '<div class="field"><label>Día del mes</label><input id="recDia" type="number" min="1" max="31" inputmode="numeric" value="' + escapeHtml(r.dia) + '" ' + onInput('recParam', 'dia') + '><div class="rec-hint">Si el mes tiene menos días, se usa el último.</div></div>' + ajuste(r.ajuste);
+  if (r.t === 'quincenal') return ajuste(r.ajuste);
+  if (r.t === 'nesimo') return '<div class="field"><label>Cuál</label><div style="display:flex;gap:8px;">' + sel('recN', [['1', 'Primer'], ['2', 'Segundo'], ['3', 'Tercer'], ['4', 'Cuarto'], ['-1', 'Último']], r.n, 'n') + sel('recDow', DOW_LARGO.map((d, i) => [String(i), d]), r.dow, 'dow') + '</div></div>';
+  if (r.t === 'semanas') return '<div class="field"><label>Cada cuántas semanas</label><input id="recCada" type="number" min="1" max="52" inputmode="numeric" value="' + escapeHtml(r.cada) + '" ' + onInput('recParam', 'cada') + '></div>' +
+    '<div class="field"><label>Una fecha en la que ocurrió u ocurrirá</label><input id="recAncla" type="date" value="' + escapeHtml(r.ancla || '') + '" ' + onChange('recParam', 'ancla') + '></div>';
+  return '';
+}
+function recPreviewHtml() {
+  const r = FORM.regla, hoy = todayISO();
+  if (!r || !r.t) return '';
+  const occ = ocurrencias(r, hoy, uAdd(hoy, 400)).slice(0, 3);
+  const ex = (FORM.extras || []).map(Number);
+  return occ.length ? 'Próximas fechas: <b>' + occ.map((o) => fechaCortaU(o) + (ex.includes(Number(o.slice(5, 7))) ? ' (con paga extra)' : '')).join(' · ') + '</b>' : 'Revisa la regla: no sale ninguna fecha.';
+}
+function recEditorHtml() {
+  const F = FORM, r = F.regla, esCobro = F.recKind === 'cobro';
+  const nombres = esCobro ? (cfg().ingresos || []).filter(Boolean) : [];
+  const meses = MESES_CORTO.map((mm, i) => '<button type="button" class="chip ' + ((F.extras || []).map(Number).includes(i + 1) ? 'active' : '') + '" ' + act('recExtra', i + 1) + '>' + mm + '</button>').join('');
+  let aprendido = '';
+  if (F.aprendido) aprendido = '<div class="rec-learn ' + (F.aprendido.ok ? '' : 'warn') + '">' + F.aprendido.txt + '</div>';
+  let sugerencia = '';
+  if (F.idx != null && r && r.aprendida && F.origKind === F.recKind) {
+    const rc = { tipo: esCobro ? 'Ingreso' : 'Factura', nombre: F.nombre, regla: r };
+    const sug = sugerenciaMejor(rc);
+    if (sug) sugerencia = '<div class="rec-learn">Tus últimos movimientos encajan mejor con <b>' + escapeHtml(reglaTexto(sug.r)) + '</b> (coincide en ' + sug.hits + ' de ' + sug.total + '). <button type="button" class="link" ' + act('recUsarSugerencia') + '>Usar esta</button></div>';
+  }
+  return '<div class="handle"></div><h2>' + (F.idx != null ? 'Editar' : (esCobro ? 'Nuevo ingreso fijo' : 'Nueva factura o pago')) + '</h2>' +
+    '<div class="field"><label>Tipo</label><div class="type-toggle"><button type="button" data-t="Ingreso" class="' + (esCobro ? 'active' : '') + '" ' + act('recSetKind', 'cobro') + '>Ingreso</button><button type="button" data-t="Factura" class="' + (!esCobro ? 'active' : '') + '" ' + act('recSetKind', 'factura') + '>Factura o pago</button></div></div>' +
+    '<div class="field"><label>Nombre</label>' + (nombres.length ? '<div class="chips">' + nombres.map((nm) => '<button type="button" class="chip ' + (normName(nm) === normName(F.nombre) ? 'active' : '') + '" ' + act('recPickNombre', nm) + '>' + escapeHtml(nm) + '</button>').join('') + '</div>' : '') +
+    '<input id="recNombre" type="text" placeholder="' + (esCobro ? 'Nómina' : 'Alquiler') + '" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('recCampo', 'nombre') + '></div>' +
+    '<div class="field"><label>Importe previsto (' + sym() + ') <span class="hint">· opcional</span></label><input id="recImporte" type="number" step="0.01" inputmode="decimal" value="' + (F.importe == null ? '' : escapeHtml(F.importe)) + '" ' + onInput('recCampo', 'importe') + '></div>' +
+    '<div class="field"><label>¿Cuándo ' + (esCobro ? 'te suele llegar' : 'se paga') + '?</label><select id="recTipo" ' + onChange('recTipo') + '><option value="">Elige una opción…</option>' +
+    REGLA_OPC.map(([v, l]) => '<option value="' + v + '"' + (r && r.t === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
+    (esCobro ? '<div class="rec-hint">Lo más habitual: entre el 1 y el 5, entre el 28 y el 30, o el último día hábil. Si dudas, usa «Aprender de mi historial».</div>' : '') + '</div>' +
+    '<div id="recParams">' + recParamsHtml(r) + '</div>' +
+    '<button type="button" class="link" style="margin:0 0 6px;" ' + act('recAprender') + '>✨ Aprender de mi historial</button>' + aprendido + sugerencia +
+    (esCobro ? '<div class="field" style="margin-top:10px;"><label>Pagas extra <span class="hint">· meses en que cobras el doble</span></label><div class="chips">' + meses + '</div></div>' : '') +
+    '<div class="rec-prev" id="recPrev">' + recPreviewHtml() + '</div>' +
+    '<div class="rec-hint">«Día hábil» cuenta los fines de semana, todavía no los festivos.</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('openRecurrentes') + '>Cancelar</button><button class="btn accent block" ' + act('recGuardar') + '>Guardar</button></div>' +
+    (F.idx != null ? '<button class="btn danger block" style="margin-top:10px;" ' + act('recEliminar') + '>' + ic('trash') + ' Eliminar</button>' : '');
+}
+function recRefrescarPrev() { const el = $('#recPrev'); if (el) el.innerHTML = recPreviewHtml(); }
+function recAbrirEditor(kind, idx) {
+  const it = idx != null ? ((cfg()[kind === 'cobro' ? 'cobros' : 'facturas'] || [])[Number(idx)] || null) : null;
+  FORM = { kind: 'rec', recKind: kind, origKind: kind, idx: it ? Number(idx) : null, nombre: it ? it.nombre : '', importe: it && it.importe != null ? it.importe : null,
+    regla: it ? (reglaDe(it) ? Object.assign({}, reglaDe(it)) : null) : null, extras: it && it.extras ? it.extras.slice() : [], aprendido: null };
+  openSheet(recEditorHtml());
+}
+function recGuardar() {
+  const F = FORM;
+  const nombre = ($('#recNombre').value || '').trim();
+  if (!nombre) return toast('Ponle un nombre');
+  const impTxt = $('#recImporte').value;
+  const importe = impTxt === '' ? null : parseFloat(impTxt);
+  if (impTxt !== '' && !isFinite(importe)) return toast('Revisa el importe');
+  let regla = F.regla && F.regla.t ? Object.assign({}, F.regla) : null;
+  if (regla && regla.t === 'dia') { const d = parseInt(regla.dia, 10); if (!(d >= 1 && d <= 31)) return toast('El día tiene que estar entre 1 y 31'); regla.dia = d; }
+  if (regla && regla.t === 'semanas') { const c = parseInt(regla.cada, 10); if (!(c >= 1 && c <= 52)) return toast('Pon cada cuántas semanas (1 a 52)'); if (!regla.ancla) return toast('Pon una fecha de referencia'); regla.cada = c; }
+  const c = cfg(), cobros = (c.cobros || []).slice(), facturas = (c.facturas || []).slice();
+  const arrDe = (k) => (k === 'cobro' ? cobros : facturas);
+  let prev = null;
+  if (F.idx != null) prev = arrDe(F.origKind)[F.idx] || null;
+  const item = Object.assign({}, prev || {}, { nombre, importe, regla, desde: (prev && prev.desde) || (prev ? null : todayISO()) });
+  item.diaDelMes = regla && regla.t === 'dia' ? regla.dia : null;
+  if (F.recKind === 'cobro') item.extras = (F.extras || []).map(Number).sort((a, b) => a - b); else delete item.extras;
+  if (F.idx != null && F.origKind === F.recKind) arrDe(F.recKind)[F.idx] = item;
+  else { if (F.idx != null) arrDe(F.origKind).splice(F.idx, 1); arrDe(F.recKind).push(item); }
+  const patch = { cobros, facturas };
+  if (F.recKind === 'cobro' && !(c.ingresos || []).some((x) => normName(x) === normName(nombre))) patch.ingresos = (c.ingresos || []).concat([nombre]);
+  saveConfig(patch);
+  FORM = { kind: 'recLista' };
+  updateSheet(recListaHtml());
+  render();
+  toast('Guardado');
+}
+function recEliminar() {
+  const F = FORM, key = F.origKind === 'cobro' ? 'cobros' : 'facturas';
+  const arr = (cfg()[key] || []).slice(); arr.splice(F.idx, 1);
+  saveConfig({ [key]: arr });
+  FORM = { kind: 'recLista' };
+  updateSheet(recListaHtml());
+  render();
+  toast('Eliminado');
+}
+/* ---- Tareas recurrentes ---- */
+const REP_UNIDADES = { dia: ['día', 'días'], semana: ['semana', 'semanas'], mes: ['mes', 'meses'], anio: ['año', 'años'] };
+function repTexto(rep) {
+  if (!rep || !REP_UNIDADES[rep.unidad]) return '';
+  const n = Number(rep.cada) || 1, u = REP_UNIDADES[rep.unidad];
+  if (n === 1) return { dia: 'Cada día', semana: 'Cada semana', mes: 'Cada mes', anio: 'Cada año' }[rep.unidad];
+  return 'Cada ' + n + ' ' + u[1];
+}
+function sumarPeriodo(iso, rep, veces) {
+  const d = uD(iso), n = (Number(rep.cada) || 1) * veces;
+  if (rep.unidad === 'dia') d.setUTCDate(d.getUTCDate() + n);
+  else if (rep.unidad === 'semana') d.setUTCDate(d.getUTCDate() + 7 * n);
+  else {
+    const meses = rep.unidad === 'anio' ? 12 * n : n, dia = d.getUTCDate();
+    d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + meses);
+    d.setUTCDate(Math.min(dia, diasMesU(d.getUTCFullYear(), d.getUTCMonth())));
+  }
+  return uISO(d);
+}
+function siguienteFechaTarea(t) {
+  const hoy = todayISO(), base = t.fechaLimite || hoy;
+  let k = 1, sig = sumarPeriodo(base, t.repetir, 1);
+  while (sig <= hoy && k < 2000) { k++; sig = sumarPeriodo(base, t.repetir, k); }
+  return sig;
+}
+async function crearSiguienteTarea(t) {
+  const sig = siguienteFechaTarea(t);
+  const nueva = { nombre: t.nombre, categoria: t.categoria || '', prioridad: t.prioridad || 'Media', estado: 'Pendiente', fechaLimite: sig, comentario: t.comentario || '',
+    fechaCreacion: todayISO(), fechaInicio: null, fechaFin: null, repetir: t.repetir };
+  const ok = await write(() => S.db.collection('tareas').add(nueva));
+  return ok ? sig : null;
+}
+function leerRepetir() {
+  const el = $('#tRepetir'); const v = el ? el.value : '';
+  if (!v) return null;
+  if (v !== 'custom') return { cada: 1, unidad: v };
+  const n = parseInt(($('#tRepN') || {}).value, 10), u = ($('#tRepU') || {}).value;
+  return n >= 1 && n <= 365 && REP_UNIDADES[u] ? { cada: n, unidad: u } : undefined;
+}
+function repCustomHtml(rep) {
+  return '<div style="display:flex;gap:8px;align-items:center;margin-top:8px;"><span style="font-size:14px;">Cada</span><input id="tRepN" type="number" min="1" max="365" inputmode="numeric" style="max-width:80px;" value="' + escapeHtml(rep && rep.cada ? rep.cada : 2) + '">' +
+    '<select id="tRepU">' + Object.keys(REP_UNIDADES).map((k) => '<option value="' + k + '"' + (rep && rep.unidad === k ? ' selected' : '') + '>' + REP_UNIDADES[k][1] + '</option>').join('') + '</select></div>';
+}
+function repetirFieldHtml(rep) {
+  const sel = !rep ? '' : (Number(rep.cada) === 1 ? rep.unidad : 'custom');
+  const opts = [['', 'No se repite'], ['dia', 'Cada día'], ['semana', 'Cada semana'], ['mes', 'Cada mes'], ['anio', 'Cada año'], ['custom', 'Personalizado…']];
+  return '<div class="field"><label>Repetir</label><select id="tRepetir" ' + onChange('tRepetirCambio') + '>' + opts.map(([v, l]) => '<option value="' + v + '"' + (sel === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
+    '<div id="tRepCustom">' + (sel === 'custom' ? repCustomHtml(rep) : '') + '</div>' +
+    '<div class="rec-hint">Al completarla se crea sola la siguiente.</div></div>';
 }
 
 /* ============================================================
@@ -1588,7 +1972,9 @@ function renderMas() {
     '<div class="profile-tile"><div class="av">' + sym() + '</div><div><div class="t">Mis Finanzas y Tareas</div>' +
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · datos privados, sincronizados entre tus dispositivos.</div></div></div>' +
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
-    ['categoriasGasto', 'facturas', 'ahorro', 'deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') +
+    item('categoriasGasto') +
+    '<button class="menu-item" ' + act('openRecurrentes') + '><span class="ic">' + ic('calendar') + '</span>Cobros y pagos recurrentes<span class="chev">' + ic('chevR') + '</span></button>' +
+    ['ahorro', 'deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') +
     '<button class="menu-item" ' + act('openTabsAn') + '><span class="ic">' + ic('chart') + '</span>Pestañas de Análisis<span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Cuenta y seguridad</div><div class="card menu">' +
     '<button class="menu-item" ' + act('openMoneda') + '><span class="ic">' + ic('chart') + '</span>Moneda<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">' + monedaCod() + ' ' + sym() + '</span><span class="chev">' + ic('chevR') + '</span></button>' +
@@ -1728,6 +2114,36 @@ const H = {
   pickEstado: ([e]) => { FORM.estado = e; $$('#estToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-e') === e)); },
   saveTarea: () => saveTarea(),
   deleteTarea: (_a, el) => confirmDelete(el, doDeleteTarea),
+  openRecurrentes: () => { FORM = { kind: 'recLista' }; if ($('#sheetBackdrop')) updateSheet(recListaHtml()); else openSheet(recListaHtml()); },
+  recNuevo: ([k]) => recAbrirEditor(k, null),
+  recEditar: ([k, i]) => recAbrirEditor(k, i),
+  recSetKind: ([k]) => { if (FORM.kind !== 'rec') return; FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; FORM.recKind = k; FORM.aprendido = null; updateSheet(recEditorHtml()); },
+  recPickNombre: ([n]) => { FORM.nombre = n; const el = $('#recNombre'); if (el) el.value = n; $$('#sheetBackdrop .chips .chip').forEach((c) => { if (c.textContent && !/^[a-z]{3}$/.test(c.textContent)) c.classList.toggle('active', normName(c.textContent) === normName(n)); }); },
+  recCampo: ([f], el) => { if (f === 'importe') FORM.importe = el.value === '' ? null : el.value; else FORM[f] = el.value; },
+  recTipo: (_, el) => { FORM.regla = reglaPorDefecto(el.value); FORM.aprendido = null; const p = $('#recParams'); if (p) p.innerHTML = recParamsHtml(FORM.regla); recRefrescarPrev(); },
+  recParam: ([f], el) => { if (!FORM.regla) return; const v = el.value; FORM.regla = Object.assign({}, FORM.regla, { [f]: (f === 'dia' || f === 'cada' || f === 'n' || f === 'dow') ? (v === '' ? '' : Number(v)) : v }); delete FORM.regla.aprendida; recRefrescarPrev(); },
+  recExtra: ([m]) => { const n = Number(m), ex = (FORM.extras || []).map(Number); FORM.extras = ex.includes(n) ? ex.filter((x) => x !== n) : ex.concat([n]); FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; updateSheet(recEditorHtml()); },
+  recAprender: () => {
+    FORM.nombre = (($('#recNombre') || {}).value || '').trim();
+    if (!FORM.nombre) { toast('Escribe primero el nombre'); return; }
+    const tipo = FORM.recKind === 'cobro' ? 'Ingreso' : 'Factura';
+    const fechas = fechasHistorial(tipo, FORM.nombre);
+    const best = aprenderRegla(fechas);
+    if (!best) FORM.aprendido = { ok: false, txt: 'Necesito al menos 3 movimientos de «' + escapeHtml(FORM.nombre) + '» (tipo ' + tipo + ') para aprender la regla. Ahora hay ' + fechas.length + '.' };
+    else {
+      FORM.regla = Object.assign({}, best.r, { aprendida: { hits: best.hits, total: best.total, fecha: todayISO() } });
+      const claro = best.hits / best.total >= 0.6;
+      FORM.aprendido = { ok: claro, txt: (claro ? '✅ ' : '⚠️ ') + 'Regla aprendida: <b>' + escapeHtml(reglaTexto(best.r)) + '</b>. Coincide en ' + best.hits + ' de ' + best.total + ' movimientos.' + (claro ? '' : ' No hay un patrón claro: revísala.') };
+    }
+    updateSheet(recEditorHtml());
+  },
+  recUsarSugerencia: () => { const sug = sugerenciaMejor({ tipo: FORM.recKind === 'cobro' ? 'Ingreso' : 'Factura', nombre: FORM.nombre, regla: FORM.regla }); if (sug) { FORM.regla = Object.assign({}, sug.r, { aprendida: { hits: sug.hits, total: sug.total, fecha: todayISO() } }); FORM.aprendido = { ok: true, txt: '✅ Regla actualizada: <b>' + escapeHtml(reglaTexto(sug.r)) + '</b>. Pulsa Guardar.' }; updateSheet(recEditorHtml()); } },
+  recGuardar: () => recGuardar(),
+  recEliminar: (_, el) => confirmDelete(el, recEliminar),
+  recSi: ([k, i, iso]) => recConfirmar(k, i, iso),
+  recNo: ([k, i, iso]) => { const rc = recBuscar(k, i); if (!rc) return; marcarRec(rc.key, iso, 'no'); render(); toast('Anotado: no ha ocurrido'); },
+  recNuevoMov: ([k, i, iso]) => { const rc = recBuscar(k, i); if (!rc) return; openMovForm(null, { tipo: rc.tipo, categoria: rc.nombre, fecha: iso, importe: importePrevisto(rc, iso) }); },
+  tRepetirCambio: (_, el) => { const c = $('#tRepCustom'); if (c) c.innerHTML = el.value === 'custom' ? repCustomHtml(null) : ''; },
   setInvPeriodo: ([k]) => { if (PERIODOS_INV.some((x) => x[0] === k)) { S.invPeriodo = k; render(); } },
   setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
@@ -1967,6 +2383,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { S, main, render, kpisMes, H, cfg, aplicaEstado };
+window.__APP__ = { S, main, render, kpisMes, H, cfg, aplicaEstado, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes };
 if (!window.__NO_AUTOSTART__) main();
 })();
