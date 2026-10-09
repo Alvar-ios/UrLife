@@ -400,3 +400,20 @@ button.link { font-family: inherit; font-size: 13px; font-weight: 600; color: va
 .field .regla-box input[type=text] { display: inline-block; width: 120px; padding: 3px 7px; font-size: 13px; border-radius: 7px; margin: 0 2px; }
 .field .regla-box span { flex: 1 1 auto; }
 .field label.regla-box { font-weight: 400; font-size: 12.5px; color: var(--text-muted); text-transform: none; letter-spacing: 0; margin: 8px 0 0; }
+
+/* Novedades y etiquetas NUEVO / MEJORADO */
+.badge-new { display: inline-block; vertical-align: middle; margin-left: 6px; font-size: 9.5px; font-weight: 800; letter-spacing: .06em; padding: 2px 6px; border-radius: 6px; background: var(--income); color: #fff; line-height: 1.3; text-transform: uppercase; font-family: inherit; }
+.badge-new.mejor { background: var(--savings); }
+.badge-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--savings); margin-left: 4px; vertical-align: super; }
+.nov-hero { background: linear-gradient(135deg, var(--accent), var(--savings)); color: #fff; border-radius: var(--radius-m); padding: 16px 18px; margin-bottom: 12px; }
+.nov-hero h2 { color: #fff; margin: 2px 0 0; font-size: 20px; }
+.nov-k { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .9; }
+.nov-list { border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden; background: var(--paper-raised); }
+.nov-it { display: flex; gap: 12px; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+.nov-it[data-click] { cursor: pointer; }
+.nov-it:last-child { border-bottom: none; }
+.nov-em { font-size: 22px; width: 28px; text-align: center; flex: none; }
+.nov-tx { flex: 1; min-width: 0; }
+.nov-tx b { font-size: 14.5px; }
+.nov-tx div { font-size: 12.5px; color: var(--text-muted); margin-top: 1px; line-height: 1.35; }
+.nov-go { color: var(--text-faint); flex: none; display: flex; }

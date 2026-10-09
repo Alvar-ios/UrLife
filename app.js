@@ -197,7 +197,7 @@ function subscribeAll() {
     S.golf = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); S.loaded.golf = true; render();
   }, fail('golf', 'No se pudo cargar Golf Reventa')));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
-    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; maybeStartOnboarding(); render();
+    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; maybeStartOnboarding(); render(); maybeNovedades();
   }, fail('cfg', 'No se pudo cargar la configuración')));
 }
 
@@ -450,7 +450,7 @@ function movsFiltrados() {
 }
 function renderMovimientos() {
   const periodos = [['todo', 'Todo'], ['mes', 'Este mes'], ['anterior', 'Mes anterior'], ['anio', 'Este año']];
-  return '<div style="display:flex;justify-content:flex-end;margin:-4px 0 6px;"><button class="link" ' + act('impAbrir') + '>' + ic('download') + ' Importar extracto o Excel</button></div>' +
+  return '<div style="display:flex;justify-content:flex-end;margin:-4px 0 6px;"><button class="link" ' + act('impAbrir') + '>' + ic('download') + ' Importar extracto o Excel' + badge('importar') + '</button></div>' +
     '<div class="field" style="margin-bottom:10px;"><input type="search" id="movSearch" placeholder="Buscar categoría, nota o método de pago" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></div>' +
     '<div class="pill-row">' + ['Todos'].concat(TIPOS).map((t) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + t + '</button>').join('') + '</div>' +
     '<div class="pill-row" style="padding-top:0;">' + periodos.map(([id, l]) => '<button class="pill sm ' + (S.movPeriodo === id ? 'active' : '') + '" ' + act('setMovPeriodo', id) + '>' + l + '</button>').join('') + '</div>' +
@@ -697,7 +697,7 @@ function renderAnalisis() {
     body = '<div class="segmented" style="margin-bottom:16px;">' + [['mensual', 'Mensual'], ['anual', 'Anual']].map(([id, l]) => '<button class="' + (g === id ? 'active' : '') + '" ' + act('setGeneralSub', id) + '>' + l + '</button>').join('') + '</div>' +
       (g === 'mensual' ? renderAnalisisMensual() : renderAnalisisAnual());
   } else body = sub === 'metas' ? renderMetas() : sub === 'inversiones' ? renderInversiones() : sub === 'deudas' ? renderDeudas() : renderProyectos();
-  return (tabs.length > 1 ? '<div class="segmented">' + tabs.map(([id, l]) => '<button class="' + (sub === id ? 'active' : '') + '" ' + act('setAnalisisSub', id) + '>' + l + '</button>').join('') + '</div>' : '') +
+  return (tabs.length > 1 ? '<div class="segmented">' + tabs.map(([id, l]) => '<button class="' + (sub === id ? 'active' : '') + '" ' + act('setAnalisisSub', id) + '>' + l + (id === 'inversiones' ? badgeDot('inversiones') : '') + '</button>').join('') + '</div>' : '') +
     '<div style="text-align:right;margin:8px 0 0;"><button class="link" ' + act('openTabsAn') + '>Elegir pestañas</button></div>' +
     '<div style="margin-top:10px;">' + body + '</div>';
 }
@@ -1091,7 +1091,7 @@ function evolucionHtml(grupos, valorActual) {
   const desde = movs[0].fecha, clave = ids.join(',') + '|' + desde;
   const H = S.historico;
   const vigente = H && H.clave === clave && Date.now() - H.ts < (H.error ? 60000 : 600000);
-  if (!vigente && !S._histCarga && activosDisponible()) setTimeout(() => cargarHistorico(ids, desde, clave), 0);
+  if (!vigente && !S._histCarga && !S._histProg && activosDisponible()) S._histProg = setTimeout(() => { S._histProg = null; cargarHistorico(ids, desde, clave); }, 0);
   const per = PERIODOS_INV.find((x) => x[0] === S.invPeriodo) || PERIODOS_INV[4];
   const chips = '<div class="segmented tr-chips">' + PERIODOS_INV.map((x) => '<button class="' + (x[0] === per[0] ? 'active' : '') + '" ' + act('setInvPeriodo', x[0]) + '>' + x[1] + '</button>').join('') + '</div>';
   let cuerpo, cabecera;
@@ -1198,7 +1198,7 @@ function renderInversiones() {
   if (activosDisponible() && ids.length && !S._valCarga) {
     const v = S.valoracion, edad = v ? Date.now() - v.ts : Infinity;
     const faltan = v && ids.some((id) => !(v.valores && v.valores[id]));
-    if (!v || edad > 600000 || (faltan && edad > 60000)) setTimeout(() => cargarValoracion(ids), 0);
+    if ((!v || edad > 600000 || (faltan && edad > 60000)) && !S._valProg) S._valProg = setTimeout(() => { S._valProg = null; cargarValoracion(ids); }, 0);
   }
   const vals = grupos.map(valorDeGrupo);
   const valoradas = grupos.map((g, i) => vals[i] ? g : null).filter(Boolean);
@@ -1435,6 +1435,58 @@ async function saveTarea() {
 async function doDeleteTarea() {
   const ok = await write(() => S.db.collection('tareas').doc(FORM.id).delete());
   if (ok) { closeSheet(); toast('Tarea eliminada'); }
+}
+
+/* ============================================================
+   NOVEDADES: ventana al abrir la app y etiquetas NUEVO / MEJORADO
+   Para cada sesión de cambios: añadir una entrada al principio de NOVEDADES
+   (con su fecha) y, si hace falta, nuevas claves en BADGES.
+   ============================================================ */
+const NOVEDADES = [
+  { id: '2026-10-09', titulo: 'Parche 2', items: [
+    ['📈', 'Gráfico de tu cartera', 'Estilo bróker: elige periodo y desliza el dedo para ver cada día.', 'inversiones'],
+    ['🔥', '¿Le ganas a la inflación?', 'Tu rentabilidad anual comparada con la inflación.', 'inversiones'],
+    ['📅', 'Cobros y pagos recurrentes', 'Nómina, alquiler… con su fecha real (último día hábil, primer lunes…).', 'cobros'],
+    ['🔔', 'Avisos en Inicio', 'Mañana, hoy (botón Confirmar) y «¿Se ha producido?».', ''],
+    ['🔁', 'Tareas que se repiten', 'Al completarla se crea sola la siguiente.', 'tareas'],
+    ['📥', 'Importar del banco o Excel', 'Vista previa, sin duplicados y se puede deshacer.', 'importar'],
+    ['🏷️', 'Categorías automáticas', 'Escribe «Mercadona», marca Recordar y la próxima vez se pone sola.', 'reglas'],
+  ] },
+];
+// clave → [texto de la etiqueta, fecha de la versión]. Se ven 21 días o hasta que entras en ese apartado.
+const BADGES = {
+  cobros: ['NUEVO', '2026-10-09'], importar: ['NUEVO', '2026-10-09'], reglas: ['NUEVO', '2026-10-09'],
+  repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'],
+};
+function badgeActivo(k) {
+  const b = BADGES[k]; if (!b) return false;
+  if (uAdd(b[1], 21) < todayISO()) return false;
+  return !((cfg().badgesVistos || {})[k]);
+}
+function badge(k) { return badgeActivo(k) ? ' <span class="badge-new ' + (BADGES[k][0] === 'NUEVO' ? '' : 'mejor') + '">' + BADGES[k][0] + '</span>' : ''; }
+function badgeDot(k) { return badgeActivo(k) ? '<span class="badge-dot"></span>' : ''; }
+function verBadge(k) {
+  if (!badgeActivo(k)) return;
+  saveConfig({ badgesVistos: Object.assign({}, cfg().badgesVistos || {}, { [k]: todayISO() }) });
+}
+function novedadesHtml(todas) {
+  const lista = todas ? NOVEDADES : NOVEDADES.slice(0, 1);
+  return '<div class="handle"></div>' + lista.map((n, i) =>
+    (i === 0 ? '<div class="nov-hero"><div class="nov-k">Novedades · ' + escapeHtml(n.titulo) + '</div><h2>🚀 ¡PalomApp se ha actualizado!</h2></div>' : '<div class="section-title">' + escapeHtml(n.titulo) + ' · ' + fechaCortaU(n.id) + '</div>') +
+    '<div class="nov-list">' + n.items.map(([em, t, d, ir]) => '<div class="nov-it"' + (ir && i === 0 ? ' ' + act('novIr', ir) : '') + '><div class="nov-em">' + em + '</div><div class="nov-tx"><b>' + escapeHtml(t) + '</b><div>' + escapeHtml(d) + '</div></div>' + (ir && i === 0 ? '<span class="nov-go">' + ic('chevR') + '</span>' : '') + '</div>').join('') + '</div>'
+  ).join('') +
+    (!todas && NOVEDADES.length > 1 ? '<button type="button" class="link" style="margin-top:10px;" ' + act('verNovedades', '1') + '>Ver novedades anteriores</button>' : '') +
+    '<div style="font-size:12.5px;color:var(--text-faint);margin-top:10px;">Lo nuevo lleva la etiqueta <span class="badge-new">NUEVO</span> o <span class="badge-new mejor">MEJORADO</span> dentro de la app. Puedes volver a ver esto en Más → Novedades.</div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>¡Entendido!</button></div>';
+}
+function maybeNovedades() {
+  if (S._novRevisado || S.onboarding || !allLoaded() || !S.db || !NOVEDADES.length) return;
+  S._novRevisado = true;
+  const ult = NOVEDADES[0].id;
+  if ((cfg().novedadesVistas || '') >= ult) return;
+  saveConfig({ novedadesVistas: ult });
+  if ($('#sheetBackdrop')) return;
+  setTimeout(() => { if (!$('#sheetBackdrop')) openSheet(novedadesHtml(false)); }, 400);
 }
 
 /* ============================================================
@@ -1979,7 +2031,7 @@ function avisosRecHtml() {
     h += fila('<b>' + escapeHtml(x.rc.nombre) + '</b><div class="rec-sub">Tus últimos movimientos encajan mejor con «' + escapeHtml(reglaTexto(x.sug.r)) + '» (' + x.sug.hits + ' de ' + x.sug.total + ').</div>',
       '<button class="btn sm ghost" ' + act('recEditar', x.rc.kind, x.rc.idx) + '>Revisar</button>', 'revisar');
   });
-  return '<div class="section-title">Cobros y pagos <button class="link" ' + act('openRecurrentes') + '>Gestionar</button></div><div class="card rec-card">' + h + '</div>';
+  return '<div class="section-title">Cobros y pagos' + badge('cobros') + ' <button class="link" ' + act('openRecurrentes') + '>Gestionar</button></div><div class="card rec-card">' + h + '</div>';
 }
 function marcarRec(key, iso, v) {
   const est = Object.assign({}, cfg().recEstado || {}), lim = uAdd(todayISO(), -150);
@@ -2192,7 +2244,7 @@ function repCustomHtml(rep) {
 function repetirFieldHtml(rep) {
   const sel = !rep ? '' : (Number(rep.cada) === 1 ? rep.unidad : 'custom');
   const opts = [['', 'No se repite'], ['dia', 'Cada día'], ['semana', 'Cada semana'], ['mes', 'Cada mes'], ['anio', 'Cada año'], ['custom', 'Personalizado…']];
-  return '<div class="field"><label>Repetir</label><select id="tRepetir" ' + onChange('tRepetirCambio') + '>' + opts.map(([v, l]) => '<option value="' + v + '"' + (sel === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
+  return '<div class="field"><label>Repetir' + badge('repetir') + '</label><select id="tRepetir" ' + onChange('tRepetirCambio') + '>' + opts.map(([v, l]) => '<option value="' + v + '"' + (sel === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
     '<div id="tRepCustom">' + (sel === 'custom' ? repCustomHtml(rep) : '') + '</div>' +
     '<div class="rec-hint">Al completarla se crea sola la siguiente.</div></div>';
 }
@@ -2356,6 +2408,7 @@ async function doObFinish(saveData) {
     const clean = (arr) => arr.filter((r) => r.nombre && String(r.nombre).trim());
     const proy = ob.proyectos.filter((x) => x !== 'Otro').concat(ob.proyectos.indexOf('Otro') >= 0 ? [ob.proyectoOtro.trim() || 'Otro'] : []);
     ok = await write(() => S.db.doc('config/app').update({
+      novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '',
       categoriasGasto: cats, ingresos: ob.ingresos.slice(),
       facturas: clean(ob.facturas), ahorro: clean(ob.ahorro), deudas: clean(ob.deudas),
       proyectosInteres: proy,
@@ -2375,15 +2428,16 @@ function renderMas() {
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · datos privados, sincronizados entre tus dispositivos.</div></div></div>' +
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
     item('categoriasGasto') +
-    '<button class="menu-item" ' + act('openRecurrentes') + '><span class="ic">' + ic('calendar') + '</span>Cobros y pagos recurrentes<span class="chev">' + ic('chevR') + '</span></button>' +
+    '<button class="menu-item" ' + act('openRecurrentes') + '><span class="ic">' + ic('calendar') + '</span>Cobros y pagos recurrentes' + badge('cobros') + '<span class="chev">' + ic('chevR') + '</span></button>' +
     ['ahorro', 'deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') +
-    '<button class="menu-item" ' + act('openReglas') + '><span class="ic">' + ic('tag') + '</span>Reglas de categorías<span class="chev">' + ic('chevR') + '</span></button>' +
+    '<button class="menu-item" ' + act('openReglas') + '><span class="ic">' + ic('tag') + '</span>Reglas de categorías' + badge('reglas') + '<span class="chev">' + ic('chevR') + '</span></button>' +
     '<button class="menu-item" ' + act('openTabsAn') + '><span class="ic">' + ic('chart') + '</span>Pestañas de Análisis<span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Cuenta y seguridad</div><div class="card menu">' +
     '<button class="menu-item" ' + act('openMoneda') + '><span class="ic">' + ic('chart') + '</span>Moneda<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">' + monedaCod() + ' ' + sym() + '</span><span class="chev">' + ic('chevR') + '</span></button>' +
     (mfaDisponible() ? '<button class="menu-item" ' + act('openSeguridad') + '><span class="ic">' + ic('alert') + '</span>Verificación en dos pasos<span class="chev">' + ic('chevR') + '</span></button>' : '') + '</div>' +
+    '<div class="section-title">Novedades</div><div class="card menu"><button class="menu-item" ' + act('verNovedades', '1') + '><span class="ic">' + ic('flag') + '</span>Qué hay de nuevo<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">' + (NOVEDADES[0] ? escapeHtml(NOVEDADES[0].titulo) : '') + '</span><span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Tus datos</div><div class="card menu">' +
-    '<button class="menu-item" ' + act('impAbrir') + '><span class="ic">' + ic('download') + '</span>Importar extracto o Excel<span class="chev">' + ic('chevR') + '</span></button>' +
+    '<button class="menu-item" ' + act('impAbrir') + '><span class="ic">' + ic('download') + '</span>Importar extracto o Excel' + badge('importar') + '<span class="chev">' + ic('chevR') + '</span></button>' +
     '<button class="menu-item" ' + act('openLotes') + '><span class="ic">' + ic('list') + '</span>Importaciones<span class="chev">' + ic('chevR') + '</span></button>' +
     '<button class="menu-item" ' + act('exportBackup') + '><span class="ic">' + ic('download') + '</span>Copia de seguridad (.json)<span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Apariencia</div><div class="card menu"><div class="menu-item static"><span class="ic">' + ic('moon') + '</span>Tema' +
@@ -2431,8 +2485,10 @@ function listEditorHtml(key) {
 /* ============================================================
    HOJA (modal)
    ============================================================ */
+let _sheetGen = 0; // evita que el cierre retardado de una hoja borre otra que se acaba de abrir
 function openSheet(html) {
   const host = $('#sheetHost'); if (!host) return;
+  _sheetGen++;
   host.innerHTML = '<div class="sheet-backdrop" id="sheetBackdrop" role="dialog" aria-modal="true"><div class="sheet">' + html + '</div></div>';
   requestAnimationFrame(() => { const b = $('#sheetBackdrop'); if (b) b.classList.add('open'); });
 }
@@ -2440,7 +2496,8 @@ function updateSheet(html) { const s = $('#sheetBackdrop .sheet'); if (s) s.inne
 function closeSheet() {
   const b = $('#sheetBackdrop'); if (!b) return;
   b.classList.remove('open');
-  setTimeout(() => { const h = $('#sheetHost'); if (h && !h.querySelector('.sheet-backdrop.open')) h.innerHTML = ''; }, 220);
+  const gen = _sheetGen;
+  setTimeout(() => { if (gen !== _sheetGen) return; const h = $('#sheetHost'); if (h && !h.querySelector('.sheet-backdrop.open')) h.innerHTML = ''; }, 220);
 }
 function confirmDelete(el, fn) {
   if (el.getAttribute('data-armed') === '1') { fn(); return; }
@@ -2505,7 +2562,7 @@ const H = {
   saveMov: () => saveMov(),
   deleteMov: (_a, el) => confirmDelete(el, doDeleteMov),
   // análisis
-  setAnalisisSub: ([s]) => { S.analisisSub = s; render(); },
+  setAnalisisSub: ([s]) => { if (s === 'inversiones') verBadge('inversiones'); S.analisisSub = s; render(); },
   goMetas: () => { S.tab = 'inicio'; S.inicioSub = 'analisis'; S.analisisSub = 'metas'; render(); window.scrollTo(0, 0); },
   moveMes: ([d]) => { let m = S.mesSel + Number(d), a = S.anioSel; if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; } S.mesSel = m; S.anioSel = a; render(); },
   moveAnio: ([d]) => { S.anioSel += Number(d); render(); },
@@ -2520,7 +2577,7 @@ const H = {
   pickEstado: ([e]) => { FORM.estado = e; $$('#estToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-e') === e)); },
   saveTarea: () => saveTarea(),
   deleteTarea: (_a, el) => confirmDelete(el, doDeleteTarea),
-  impAbrir: () => impAbrir(),
+  impAbrir: () => { verBadge('importar'); impAbrir(); },
   impArchivo: async (_, el) => {
     const f = el.files && el.files[0]; if (!f) return;
     if (f.size > 15 * 1024 * 1024) { IMP.error = 'El archivo es demasiado grande (máx. 15 MB).'; updateSheet(impHtml()); return; }
@@ -2578,13 +2635,13 @@ const H = {
   impDeshacer: async ([lote]) => { if (await deshacerLote(lote)) closeSheet(); },
   openLotes: () => { FORM = { kind: 'lotes' }; openSheet(lotesHtml()); },
   loteDeshacer: ([id], el) => confirmDelete(el, async () => { if (await deshacerLote(id)) setTimeout(() => updateSheet(lotesHtml()), 400); }),
-  openReglas: () => { FORM = { kind: 'reglas' }; openSheet(reglasHtml()); },
+  openReglas: () => { verBadge('reglas'); FORM = { kind: 'reglas' }; openSheet(reglasHtml()); },
   reglaQuitar: ([i]) => { const rs = (cfg().reglasCat || []).slice(); rs.splice(Number(i), 1); saveConfig({ reglasCat: rs }); updateSheet(reglasHtml()); },
   reglaAnadir: () => { const t = $('#rgTexto').value, c = $('#rgCat').value.trim(); if (!normDesc(t) || !c) return toast('Pon el texto y la categoría'); guardarRegla(t, c, $('#rgTipo').value); updateSheet(reglasHtml()); toast('Regla añadida'); },
   onDescInput: () => { autoCategoriaDesc(); refrescarReglaBox(); },
   reglaCheck: (_, el) => { FORM.recordar = el.checked; },
   reglaTexto: (_, el) => { FORM.reglaTexto = el.value; },
-  openRecurrentes: () => { FORM = { kind: 'recLista' }; if ($('#sheetBackdrop')) updateSheet(recListaHtml()); else openSheet(recListaHtml()); },
+  openRecurrentes: () => { verBadge('cobros'); FORM = { kind: 'recLista' }; if ($('#sheetBackdrop')) updateSheet(recListaHtml()); else openSheet(recListaHtml()); },
   recNuevo: ([k]) => recAbrirEditor(k, null),
   recEditar: ([k, i]) => recAbrirEditor(k, i),
   recSetKind: ([k]) => { if (FORM.kind !== 'rec') return; FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; FORM.recKind = k; FORM.aprendido = null; updateSheet(recEditorHtml()); },
@@ -2613,7 +2670,18 @@ const H = {
   recSi: ([k, i, iso]) => recConfirmar(k, i, iso),
   recNo: ([k, i, iso]) => { const rc = recBuscar(k, i); if (!rc) return; marcarRec(rc.key, iso, 'no'); render(); toast('Anotado: no ha ocurrido'); },
   recNuevoMov: ([k, i, iso]) => { const rc = recBuscar(k, i); if (!rc) return; openMovForm(null, { tipo: rc.tipo, categoria: rc.nombre, fecha: iso, importe: importePrevisto(rc, iso) }); },
-  tRepetirCambio: (_, el) => { const c = $('#tRepCustom'); if (c) c.innerHTML = el.value === 'custom' ? repCustomHtml(null) : ''; },
+  tRepetirCambio: (_, el) => { verBadge('repetir'); const c = $('#tRepCustom'); if (c) c.innerHTML = el.value === 'custom' ? repCustomHtml(null) : ''; },
+  verNovedades: ([t]) => openSheet(novedadesHtml(t === '1')),
+  novIr: ([k]) => {
+    closeSheet();
+    setTimeout(() => {
+      if (k === 'inversiones') { S.tab = 'inicio'; S.inicioSub = 'analisis'; S.analisisSub = 'inversiones'; verBadge('inversiones'); render(); window.scrollTo(0, 0); }
+      else if (k === 'cobros') H.openRecurrentes([]);
+      else if (k === 'importar') H.impAbrir([]);
+      else if (k === 'reglas') H.openReglas([]);
+      else if (k === 'tareas') { S.tab = 'tareas'; render(); window.scrollTo(0, 0); }
+    }, 260);
+  },
   setInvPeriodo: ([k]) => { if (PERIODOS_INV.some((x) => x[0] === k)) { S.invPeriodo = k; render(); } },
   setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
