@@ -69,18 +69,29 @@
       onSnapshot: function (next, errCb) {
         var channel = null;
         var stopped = false;
-        function refresh() {
-          if (!currentUid) return;
-          sb.from(table).select('*').eq('user_id', currentUid).then(function (res) {
-            if (stopped) return;
-            if (res.error) { if (errCb) errCb(pgError(res.error)); return; }
-            next({ docs: (res.data || []).map(function (r) { return { id: r.id, exists: true, data: function () { return rowToObj(r); } }; }) });
+        // Lee todas las filas por páginas (Supabase devuelve como máximo 1000 por consulta).
+        function fetchAll(from, acc) {
+          var PAGE = 1000;
+          return sb.from(table).select('*').eq('user_id', currentUid).order('id').range(from, from + PAGE - 1).then(function (res) {
+            if (res.error) throw res.error;
+            var rows = acc.concat(res.data || []);
+            return (res.data || []).length === PAGE ? fetchAll(from + PAGE, rows) : rows;
           });
         }
+        function refresh() {
+          if (!currentUid) return;
+          fetchAll(0, []).then(function (rows) {
+            if (stopped) return;
+            next({ docs: rows.map(function (r) { return { id: r.id, exists: true, data: function () { return rowToObj(r); } }; }) });
+          }, function (e) { if (!stopped && errCb) errCb(pgError(e)); });
+        }
+        // Agrupa ráfagas de cambios (p. ej. una importación) en una sola recarga.
+        var timer = null;
+        function refreshSoon() { clearTimeout(timer); timer = setTimeout(refresh, 300); }
         refresh();
         if (currentUid) {
           channel = sb.channel(table + '-' + currentUid)
-            .on('postgres_changes', { event: '*', schema: 'public', table: table, filter: 'user_id=eq.' + currentUid }, refresh)
+            .on('postgres_changes', { event: '*', schema: 'public', table: table, filter: 'user_id=eq.' + currentUid }, refreshSoon)
             .subscribe();
         }
         return function unsubscribe() { stopped = true; if (channel) sb.removeChannel(channel); };
@@ -106,6 +117,27 @@
             });
           },
         };
+      },
+      // Inserta muchas filas de una vez sin pisar las que ya existan (mismo id). Devuelve cuántas se enviaron.
+      bulkInsert: function (items) {
+        var rows = items.map(function (it) { return objToRow(it.data, it.id, currentUid); });
+        var chunks = [];
+        for (var i = 0; i < rows.length; i += 200) chunks.push(rows.slice(i, i + 200));
+        return chunks.reduce(function (p, chunk) {
+          return p.then(function (n) {
+            return sb.from(table).upsert(chunk, { onConflict: 'id', ignoreDuplicates: true }).then(function (res) {
+              if (res.error) throw pgError(res.error);
+              return n + chunk.length;
+            });
+          });
+        }, Promise.resolve(0));
+      },
+      // Borra todas las filas propias con un valor concreto en un campo (solo se usa para deshacer una importación).
+      deleteWhere: function (field, value) {
+        if (field !== 'lote' || !value) return Promise.reject(new Error('Borrado no permitido'));
+        return sb.from(table).delete().eq('user_id', currentUid).eq(toSnake(field), value).then(function (res) {
+          if (res.error) throw pgError(res.error);
+        });
       },
       add: function (data) {
         var id = newId();

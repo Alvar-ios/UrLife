@@ -364,3 +364,39 @@ button.link { font-family: inherit; font-size: 13px; font-weight: 600; color: va
 .rec-learn { font-size: 13px; line-height: 1.45; background: var(--income-soft); color: var(--text); border-radius: 10px; padding: 9px 11px; margin: 4px 0 8px; }
 .rec-learn.warn { background: var(--accent-soft); }
 .rec-hint { font-size: 12.5px; color: var(--text-faint); line-height: 1.45; margin-top: 6px; }
+
+/* Bloque 5: importación y reglas */
+.imp-drop { display: flex; align-items: center; justify-content: center; border: 1.5px dashed var(--line); border-radius: var(--radius-m); padding: 26px 12px; cursor: pointer; background: var(--paper-raised); font-weight: 600; color: var(--accent); }
+.imp-drop input { display: none; }
+.imp-drop span { display: inline-flex; gap: 8px; align-items: center; }
+.imp-file { font-size: 12.5px; color: var(--text-faint); margin: -8px 0 10px; word-break: break-all; }
+.imp-file select { font-size: 12.5px; padding: 2px 6px; width: auto; }
+.imp-map { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.imp-map label { flex: 0 0 38%; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.imp-map select { flex: 1 1 auto; min-width: 0; }
+.imp-note { font-size: 12.5px; color: var(--text-muted); background: var(--paper-sunken); border-radius: 9px; padding: 8px 10px; margin-bottom: 6px; line-height: 1.4; }
+.imp-note.warn { background: var(--accent-soft); color: var(--text); }
+.imp-bulk { font-size: 12.5px; margin: 6px 2px; color: var(--text-faint); }
+.imp-bulk .link { font-size: 12.5px; }
+.imp-list { border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden; }
+.imp-row { display: flex; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--paper-raised); align-items: flex-start; }
+.imp-row:last-child { border-bottom: none; }
+.imp-row.off { opacity: .5; }
+.imp-row input[type=checkbox] { margin-top: 3px; width: 18px; height: 18px; flex: none; accent-color: var(--accent); }
+.imp-main { flex: 1 1 auto; min-width: 0; }
+.imp-top { display: flex; gap: 8px; justify-content: space-between; font-size: 13.5px; }
+.imp-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.imp-amt { font-weight: 600; flex: none; }
+.imp-sub { font-size: 11.5px; color: var(--text-faint); margin: 2px 0 6px; }
+.imp-sels { display: flex; gap: 6px; }
+.imp-sels select { font-size: 12.5px; padding: 5px 6px; min-width: 0; flex: 1 1 0; }
+.regla-box { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.6; cursor: pointer; }
+.regla-box input[type=checkbox] { margin-top: 4px; accent-color: var(--accent); flex: none; }
+.regla-box input[type=text] { display: inline-block; width: 110px; padding: 2px 6px; font-size: 12.5px; }
+.list .rm { flex: none; color: var(--text-faint); background: none; border: none; font-size: 16px; cursor: pointer; padding: 8px; }
+.imp-map select, .imp-sels select, .imp-file select { padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--paper-raised); color: var(--text); font-size: 14px; }
+.imp-sels select { padding: 6px 8px; font-size: 13px; }
+.field .regla-box input[type=checkbox] { width: 18px; height: 18px; padding: 0; margin: 3px 0 0; flex: none; }
+.field .regla-box input[type=text] { display: inline-block; width: 120px; padding: 3px 7px; font-size: 13px; border-radius: 7px; margin: 0 2px; }
+.field .regla-box span { flex: 1 1 auto; }
+.field label.regla-box { font-weight: 400; font-size: 12.5px; color: var(--text-muted); text-transform: none; letter-spacing: 0; margin: 8px 0 0; }
