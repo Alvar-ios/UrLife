@@ -385,6 +385,7 @@ function render() {
   else if (S.tab === 'mas') c.innerHTML = renderMas();
   if (enAnalisis() && subAnalisis() === 'general' && S.generalSub === 'mensual') drawDonut();
   if (enAnalisis() && subAnalisis() === 'general' && S.generalSub === 'anual') drawTrend();
+  if (enAnalisis() && subAnalisis() === 'inversiones') bindInvChart();
 }
 
 
@@ -969,7 +970,7 @@ function renderCalendario() {
     (evsSel.length ? '<div class="list">' + evsSel.map(calEventRow).join('') + '</div>' : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Sin eventos este día.</div>');
 }
 /* ============================================================
-   INVERSIONES (Fase 4, versión 1): acumulado por activo + inflación manual
+   INVERSIONES: acumulado por activo, valoración, evolución y rentabilidad anual
    ============================================================ */
 function inversionesPorActivo() {
   const map = {};
@@ -1015,6 +1016,169 @@ async function cargarValoracion(ids) {
   S._valCarga = false;
   if (enAnalisis() && subAnalisis() === 'inversiones') render();
 }
+/* ---------- Evolución de la cartera y rentabilidad anual (Fase 3D) ---------- */
+const PERIODOS_INV = [['1m', '1M', 30], ['3m', '3M', 91], ['6m', '6M', 182], ['1a', '1A', 365], ['max', 'Máx', 0]];
+function addDiasISO(iso, n) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function movsValorables(grupos) {
+  const ok = new Set(grupos.filter((g) => g.activoId && g.conPart === g.n).map((g) => g.activoId));
+  return S.movimientos.filter((m) => m.tipo === 'Inversión' && m.activoId && ok.has(m.activoId) && m.fecha && m.participaciones != null && m.participaciones !== '')
+    .map((m) => ({ fecha: m.fecha, id: m.activoId, imp: num(m.importe), part: Number(m.participaciones), ajuste: /^ajuste/i.test(m.descripcion || '') }))
+    .sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0));
+}
+async function cargarHistorico(ids, desde, clave) {
+  if (S._histCarga) return; S._histCarga = true;
+  try {
+    const r = await activosApi('historico', { ids, desde });
+    S.historico = r && r.series ? { ts: Date.now(), clave, series: r.series, limite: !!r.limite } : { ts: Date.now(), clave, series: {}, error: true };
+  } catch (e) { S.historico = { ts: Date.now(), clave, series: {}, error: true }; }
+  S._histCarga = false;
+  if (enAnalisis() && subAnalisis() === 'inversiones') render();
+}
+// Un punto por día desde la primera aportación: participaciones acumuladas × último cierre conocido (en €).
+function serieCartera(movs, series) {
+  const hoy = todayISO(), ids = [...new Set(movs.map((m) => m.id))];
+  const idx = {}, ult = {}, unid = {};
+  ids.forEach((id) => { idx[id] = 0; const s = series[id] || []; ult[id] = s.length ? s[0][1] : null; });
+  let k = 0, inv = 0; const out = [];
+  for (let d = movs[0].fecha, guard = 0; d <= hoy && guard < 4000; d = addDiasISO(d, 1), guard++) {
+    while (k < movs.length && movs[k].fecha <= d) { const m = movs[k++]; unid[m.id] = (unid[m.id] || 0) + m.part; inv += m.imp; }
+    let v = 0;
+    ids.forEach((id) => {
+      const s = series[id] || [];
+      while (idx[id] < s.length && s[idx[id]][0] <= d) { ult[id] = s[idx[id]][1]; idx[id]++; }
+      if (unid[id] && ult[id] != null) v += unid[id] * ult[id];
+    });
+    out.push({ d, v, inv });
+  }
+  return out;
+}
+function cambioPeriodo(prev, fin) {
+  const delta = (fin.v - fin.inv) - (prev.v - prev.inv);
+  const base = prev.v + (fin.inv - prev.inv);
+  return { delta, pct: base > 0 ? delta / base * 100 : null };
+}
+// Rentabilidad anual ponderada por dinero (TIR): tiene en cuenta cuándo entró cada euro.
+function xirr(flujos) {
+  if (flujos.length < 2) return null;
+  const t0 = parseISO(flujos[0].d).getTime();
+  const anios = flujos.map((x) => (parseISO(x.d).getTime() - t0) / 864e5 / 365);
+  const f = (r) => flujos.reduce((a, x, i) => a + x.c / Math.pow(1 + r, anios[i]), 0);
+  let lo = -0.99, hi = 10, flo = f(lo);
+  if (!isFinite(flo) || flo * f(hi) > 0) return null;
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2, fm = f(mid);
+    if (Math.abs(fm) < 1e-9) return mid;
+    if (flo * fm < 0) hi = mid; else { lo = mid; flo = fm; }
+  }
+  return (lo + hi) / 2;
+}
+const pct1 = (n) => (n >= 0 ? '+' : '−') + Math.abs(n).toFixed(1).replace('.', ',') + ' %';
+const eurS = (n) => (n >= 0 ? '+' : '−') + fmt2(Math.abs(n)) + ' €';
+function fechaCorta(iso) { const d = parseISO(iso); return d ? d.getDate() + ' ' + MESES_ABR[d.getMonth()] + ' ' + d.getFullYear() : ''; }
+function evolucionHtml(grupos, valorActual) {
+  const movs = movsValorables(grupos);
+  if (!movs.length) return '';
+  const ids = [...new Set(movs.map((m) => m.id))].sort();
+  const desde = movs[0].fecha, clave = ids.join(',') + '|' + desde;
+  const H = S.historico;
+  const vigente = H && H.clave === clave && Date.now() - H.ts < (H.error ? 60000 : 600000);
+  if (!vigente && !S._histCarga && activosDisponible()) setTimeout(() => cargarHistorico(ids, desde, clave), 0);
+  const per = PERIODOS_INV.find((x) => x[0] === S.invPeriodo) || PERIODOS_INV[4];
+  const chips = '<div class="segmented tr-chips">' + PERIODOS_INV.map((x) => '<button class="' + (x[0] === per[0] ? 'active' : '') + '" ' + act('setInvPeriodo', x[0]) + '>' + x[1] + '</button>').join('') + '</div>';
+  let cuerpo, cabecera;
+  if (H && H.clave === clave && !H.error && Object.keys(H.series).length) {
+    const serie = serieCartera(movs, H.series);
+    // el último punto usa la valoración actual para que cuadre con la lista de activos
+    if (serie.length && valorActual != null) serie[serie.length - 1].v = valorActual;
+    const ini = per[2] ? addDiasISO(todayISO(), -per[2]) : desde;
+    let i0 = serie.findIndex((p) => p.d >= ini); if (i0 < 0) i0 = 0;
+    const pts = serie.slice(i0);
+    const prev = i0 > 0 ? serie[i0 - 1] : { d: desde, v: 0, inv: 0 };
+    const fin = pts[pts.length - 1];
+    const ch = cambioPeriodo(prev, fin);
+    S._invChart = { pts, prev, sube: ch.delta >= 0, label: per[0] === 'max' ? 'desde el inicio' : 'en ' + per[1].replace('M', ' mes' + (per[2] > 31 ? 'es' : '')).replace('1A', '1 año') };
+    const W = 320, Hh = 150;
+    const vals = pts.map((p) => p.v).concat(pts.map((p) => p.inv));
+    let mn = Math.min(...vals), mx = Math.max(...vals); const pad = (mx - mn) * 0.08 || 1; mn -= pad; mx += pad;
+    S._invChart.mn = mn; S._invChart.mx = mx;
+    const X = (i) => (pts.length > 1 ? i / (pts.length - 1) * W : W / 2), Y = (v) => Hh - (v - mn) / (mx - mn) * Hh;
+    const linea = (key) => pts.map((p, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p[key]).toFixed(1)).join(' ');
+    const color = ch.delta >= 0 ? 'var(--income)' : 'var(--expense)';
+    cabecera = '<div class="tr-big tnum" id="invBig">' + eur2(fin.v) + '</div>' +
+      '<div class="tr-chg tnum" id="invChg" style="color:' + color + '">' + (ch.delta >= 0 ? '▲ ' : '▼ ') + eurS(ch.delta) + (ch.pct == null ? '' : ' (' + pct1(ch.pct) + ')') + ' <span class="tr-when">' + S._invChart.label + '</span></div>';
+    cuerpo = '<div class="tr-chart" id="invChart"><svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none">' +
+      '<path d="' + linea('inv') + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>' +
+      '<path d="' + linea('v') + '" fill="none" stroke="' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>' +
+      '<div class="tr-cursor" id="invLine"></div><div class="tr-dot" id="invDot" style="background:' + color + '"></div></div>' +
+      '<div class="tr-legend"><span><i style="background:' + color + '"></i>Valor de tu cartera</span><span><i class="dash"></i>Lo que has metido</span></div>';
+    const notas = [];
+    if (movs.some((m) => m.ajuste)) notas.push('Los tramos que vienen de movimientos de «Ajuste» son aproximados: se cuentan desde la fecha del ajuste.');
+    if (ids.some((id) => !(H.series[id] || []).length)) notas.push('Algún activo aún no tiene histórico de precios; se completará en la próxima actualización.');
+    if (H.limite) notas.push('Hoy se ha llegado al límite diario de consultas del proveedor de precios; el histórico se completará mañana.');
+    if (notas.length) cuerpo += '<div class="tr-note">' + notas.join(' ') + '</div>';
+  } else {
+    cabecera = valorActual != null ? '<div class="tr-big tnum">' + eur2(valorActual) + '</div>' : '';
+    S._invChart = null;
+    cuerpo = '<div class="tr-chart tr-empty">' + (H && H.clave === clave && H.error ? 'No se ha podido cargar la evolución. Se volverá a intentar en un momento.' : 'Cargando evolución…') + '</div>';
+  }
+  return '<div class="card tr-card"><div class="tr-head">' + cabecera + '<div class="tr-fecha" id="invFecha"></div></div>' + cuerpo + chips + '</div>';
+}
+function bindInvChart() {
+  const el = document.getElementById('invChart'), C = S._invChart;
+  if (!el || !C || !C.pts.length) return;
+  const big = document.getElementById('invBig'), chg = document.getElementById('invChg'), fecha = document.getElementById('invFecha');
+  const line = document.getElementById('invLine'), dot = document.getElementById('invDot');
+  const pintar = (i) => {
+    const p = C.pts[i], ch = cambioPeriodo(C.prev, p);
+    const x = C.pts.length > 1 ? i / (C.pts.length - 1) * 100 : 50, y = (1 - (p.v - C.mn) / (C.mx - C.mn)) * 100;
+    if (big) big.textContent = eur2(p.v);
+    if (chg) { chg.style.color = ch.delta >= 0 ? 'var(--income)' : 'var(--expense)'; chg.innerHTML = (ch.delta >= 0 ? '▲ ' : '▼ ') + eurS(ch.delta) + (ch.pct == null ? '' : ' (' + pct1(ch.pct) + ')') + ' <span class="tr-when">metido: ' + eur0(p.inv) + '</span>'; }
+    if (fecha) fecha.textContent = fechaCorta(p.d);
+    line.style.left = x + '%'; line.style.display = 'block';
+    dot.style.left = x + '%'; dot.style.top = y + '%'; dot.style.display = 'block';
+  };
+  const reset = () => {
+    const fin = C.pts[C.pts.length - 1], ch = cambioPeriodo(C.prev, fin);
+    if (big) big.textContent = eur2(fin.v);
+    if (chg) { chg.style.color = ch.delta >= 0 ? 'var(--income)' : 'var(--expense)'; chg.innerHTML = (ch.delta >= 0 ? '▲ ' : '▼ ') + eurS(ch.delta) + (ch.pct == null ? '' : ' (' + pct1(ch.pct) + ')') + ' <span class="tr-when">' + C.label + '</span>'; }
+    if (fecha) fecha.textContent = '';
+    line.style.display = 'none'; dot.style.display = 'none';
+  };
+  const mover = (ev) => {
+    const r = el.getBoundingClientRect(); if (!r.width) return;
+    const t = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
+    pintar(Math.round(t * (C.pts.length - 1)));
+  };
+  el.addEventListener('pointerdown', (ev) => { try { el.setPointerCapture(ev.pointerId); } catch (e) { /* */ } mover(ev); });
+  el.addEventListener('pointermove', (ev) => { if (ev.pointerType === 'mouse' || ev.buttons || ev.pressure > 0) mover(ev); });
+  el.addEventListener('pointerup', reset);
+  el.addEventListener('pointercancel', reset);
+  el.addEventListener('pointerleave', reset);
+}
+function rentabilidadHtml(grupos, valorActual) {
+  const movs = movsValorables(grupos);
+  if (!movs.length || valorActual == null) return '';
+  const hoy = todayISO();
+  const flujos = movs.map((m) => ({ d: m.fecha, c: -m.imp })).concat([{ d: hoy, c: valorActual }]);
+  const r = xirr(flujos);
+  const dias = (parseISO(hoy).getTime() - parseISO(movs[0].fecha).getTime()) / 864e5;
+  if (r == null || dias < 30) return '<div class="section-title">Rentabilidad anual</div><div class="card" style="font-size:13.5px;color:var(--text-faint);">Necesitas al menos un mes de historia para calcular la rentabilidad anual.</div>';
+  const reg = inflacionRegion(), inf = INFLACION_DATOS[reg];
+  const rp = r * 100, ip = inf.tasa, real = ((1 + r) / (1 + ip / 100) - 1) * 100, dif = rp - ip;
+  const gana = dif >= 0;
+  const veredicto = gana
+    ? 'Le ganas a la inflación por <b>' + Math.abs(dif).toFixed(1).replace('.', ',') + ' puntos</b>: tu poder de compra crece un ' + pct1(real).replace('+', '') + ' al año.'
+    : 'La inflación te gana por <b>' + Math.abs(dif).toFixed(1).replace('.', ',') + ' puntos</b>: tu poder de compra baja un ' + pct1(real).replace('−', '') + ' al año.';
+  return '<div class="section-title">Rentabilidad anual</div><div class="card">' +
+    '<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><div class="tr-big tnum" style="color:' + (rp >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + pct1(rp) + '</div><div style="font-size:13px;color:var(--text-muted);">al año</div></div>' +
+    '<div style="display:flex;gap:10px;margin:10px 0 8px;">' +
+    '<div class="tr-mini"><div class="l">Tu cartera</div><div class="v tnum">' + pct1(rp) + '</div></div>' +
+    '<div class="tr-mini" title="Inflación ' + escapeHtml(inf.label) + '"><div class="l">Inflación</div><div class="v tnum">' + fmt2(ip).replace(/,?0+$/, '').replace(/,$/, '') + ' %</div></div>' +
+    '<div class="tr-mini"><div class="l">Real</div><div class="v tnum" style="color:' + (gana ? 'var(--income)' : 'var(--expense)') + '">' + pct1(real) + '</div></div></div>' +
+    '<div style="font-size:13.5px;line-height:1.45;">' + (gana ? '✅ ' : '⚠️ ') + veredicto + '</div>' +
+    '<div style="font-size:11.5px;color:var(--text-faint);line-height:1.5;margin-top:8px;">Calculada según cuándo metiste cada euro (rentabilidad ponderada por dinero), desde el ' + fechaCorta(movs[0].fecha) + '.' +
+    (dias < 365 ? ' Con menos de un año de datos la cifra anual es orientativa: extrapola lo ocurrido hasta ahora.' : '') + ' Inflación de ' + escapeHtml(inf.label) + '; cámbiala justo debajo.</div></div>';
+}
 function renderInversiones() {
   const grupos = inversionesPorActivo();
   const total = grupos.reduce((a, g) => a + g.total, 0);
@@ -1036,7 +1200,8 @@ function renderInversiones() {
   const signo = (n) => (n >= 0 ? '+' : '−');
   let h;
   if (valoradas.length) {
-    h = '<div class="kpi-row"><div class="kpi savings"><div class="v tnum">' + moneyShort(total) + '</div><div class="l">Invertido</div></div>' +
+    h = evolucionHtml(grupos, valoradas.length === grupos.length ? sumValor : null) +
+      '<div class="kpi-row"><div class="kpi savings"><div class="v tnum">' + moneyShort(total) + '</div><div class="l">Invertido</div></div>' +
       '<div class="kpi"><div class="v tnum">' + eur0(sumValor) + '</div><div class="l">Valor actual</div></div>' +
       '<div class="kpi ' + (sumGan >= 0 ? 'income' : 'expense') + '"><div class="v tnum">' + signo(sumGan) + eur0(Math.abs(sumGan)) + '</div><div class="l">' + (pctGan == null ? 'Resultado' : signo(sumGan) + Math.abs(pctGan).toFixed(1).replace('.', ',') + ' %') + '</div></div></div>';
   } else {
@@ -1068,7 +1233,7 @@ function renderInversiones() {
       '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, total > 0 ? v / total * 100 : 0)) + '%"></div></div></div>').join('') + '</div>';
   }
   const sinVincular = grupos.filter((g) => !(g.activoId && g.conPart === g.n)).length;
-  h += inflacionHtml() +
+  h += (valoradas.length && valoradas.length === grupos.length ? rentabilidadHtml(grupos, sumValor) : '') + inflacionHtml() +
     '<div class="summary-line">Valores de cierre del último día de mercado, en euros (los activos en otras monedas se convierten al cambio del Banco Central Europeo). «Invertido» es lo que aportaste.' +
     (sinVincular && valoradas.length ? ' ' + sinVincular + (sinVincular === 1 ? ' activo no se valora' : ' activos no se valoran') + ' porque no está vinculado: edita sus movimientos y elige el activo en el buscador.' : '') + '</div>';
   return h;
@@ -1563,6 +1728,7 @@ const H = {
   pickEstado: ([e]) => { FORM.estado = e; $$('#estToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-e') === e)); },
   saveTarea: () => saveTarea(),
   deleteTarea: (_a, el) => confirmDelete(el, doDeleteTarea),
+  setInvPeriodo: ([k]) => { if (PERIODOS_INV.some((x) => x[0] === k)) { S.invPeriodo = k; render(); } },
   setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
   toggleTabAn: ([id]) => {
