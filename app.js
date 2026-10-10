@@ -390,6 +390,8 @@ function render() {
   const c = $('#content');
   if (!c) return;
   $$('[data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === S.tab));
+  const nuevoMas = ['grupos', 'patrimonio', 'metas', 'importar', 'reglas', 'cobros'].some(badgeActivo);
+  $$('[data-tab="mas"]').forEach((b) => b.classList.toggle('con-novedad', nuevoMas));
   const title = $('#pageTitle'); if (title) title.textContent = TABS.find((t) => t.id === S.tab).label;
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
   if (S.tab === 'inicio') c.innerHTML = renderInicioPage();
@@ -501,7 +503,7 @@ function renderMovList() {
   const movs = movsFiltrados();
   if (!movs.length) {
     return '<div class="empty"><div class="big">' + ic('wallet') + '</div><b>Sin movimientos aquí</b><div style="margin-top:4px;">Cambia el filtro o añade uno nuevo.</div>' +
-      '<div class="cta"><button class="btn accent" ' + act('openMovForm') + '>' + ic('plus') + ' Añadir movimiento</button></div></div>';
+      '<div class="cta"><button class="btn accent" ' + act('openMovForm') + '>' + ic('plus') + ' Añadir movimiento</button>' + (ticketsDisponible() ? ' <button class="btn ghost" ' + act('ticketFoto') + '>' + ic('camera') + ' Foto de ticket</button>' : '') + '</div></div>';
   }
   const net = movs.reduce((a, m) => a + effect(m.importe, m.tipo), 0);
   const shown = movs.slice(0, S.movLimit);
@@ -763,7 +765,7 @@ function renderAnalisis() {
     body = '<div class="segmented" style="margin-bottom:16px;">' + [['mensual', 'Mensual'], ['anual', 'Anual']].map(([id, l]) => '<button class="' + (g === id ? 'active' : '') + '" ' + act('setGeneralSub', id) + '>' + l + '</button>').join('') + '</div>' +
       (g === 'mensual' ? renderAnalisisMensual() : renderAnalisisAnual());
   } else body = sub === 'metas' ? renderMetas() : sub === 'inversiones' ? renderInversiones() : sub === 'deudas' ? renderDeudas() : renderProyectos();
-  return (tabs.length > 1 ? '<div class="segmented">' + tabs.map(([id, l]) => '<button class="' + (sub === id ? 'active' : '') + '" ' + act('setAnalisisSub', id) + '>' + l + (id === 'inversiones' ? badgeDot('inversiones') : '') + '</button>').join('') + '</div>' : '') +
+  return (tabs.length > 1 ? '<div class="segmented">' + tabs.map(([id, l]) => '<button class="' + (sub === id ? 'active' : '') + '" ' + act('setAnalisisSub', id) + '>' + l + (id === 'inversiones' ? badgeDot('inversiones') : id === 'metas' ? badgeDot('metas') : '') + '</button>').join('') + '</div>' : '') +
     '<div style="text-align:right;margin:8px 0 0;"><button class="link" ' + act('openTabsAn') + '>Elegir pestañas</button></div>' +
     '<div style="margin-top:10px;">' + body + '</div>';
 }
@@ -2100,7 +2102,7 @@ function patrimonioHtml() {
   const fila = (l, v, signo, color, accion) => '<div class="pat-row tappable" ' + accion + '><span>' + l + '</span><b class="tnum" style="color:' + color + '">' + signo + money(Math.abs(v)) + '</b><span class="chev-s">' + ic('chevR') + '</span></div>';
   const diasBanco = p.bancoFecha ? Math.round((uD(todayISO()) - uD(p.bancoFecha)) / 864e5) : null;
   const cargando = S._valCarga || S._valProg;
-  return '<div class="section-title">Patrimonio</div><div class="card pat-card">' +
+  return '<div class="section-title">Patrimonio' + badge('patrimonio') + '</div><div class="card pat-card">' +
     '<div class="pat-total tnum">' + money(p.total) + '</div>' +
     (p.nCuentas ? fila('Dinero en el banco' + (diasBanco != null && diasBanco > 30 ? ' · <span style="color:var(--accent)">actualízalo</span>' : ''), p.banco, p.banco >= 0 ? '+' : '−', 'var(--income)', act('openCuentas'))
       : '<div class="pat-row tappable" ' + act('openCuentas') + '><span>Dinero en el banco</span><b style="color:var(--accent)">Añadir saldo</b><span class="chev-s">' + ic('chevR') + '</span></div>') +
@@ -2684,6 +2686,23 @@ async function doDeleteTarea() {
    (con su fecha) y, si hace falta, nuevas claves en BADGES.
    ============================================================ */
 const NOVEDADES = [
+  { id: '2026-10-10', titulo: 'Parche 3',
+    destacados: [
+      { em: '📸', titulo: 'Foto del ticket', color: 'accent', ir: 'ticket', boton: 'Probar con un ticket',
+        texto: 'Haz una foto al ticket y la app lee cada artículo, el total, la fecha y la tienda. Tú solo revisas y guardas.',
+        puntos: ['Sin teclear nada', 'Si algo no cuadra, te avisa', 'La foto no se guarda'] },
+      { em: '👥', titulo: 'Gastos compartidos', color: 'savings', ir: 'grupos', boton: 'Crear grupo o invitar',
+        texto: 'Comparte un gasto con tu pareja, la familia o un viaje. En tus números cuenta solo tu parte y la app lleva quién debe a quién.',
+        puntos: ['Reparte a medias, por % o artículo a artículo del ticket', 'Botón «Saldar» para quedar en paz', 'Huchas y deudas comunes (una hipoteca a medias)'] },
+    ],
+    items: [
+      ['📈', 'Metas de inversión', 'Asigna tus aportaciones a una meta y mira si llegas a tiempo.', 'metas'],
+      ['🏦', 'Tu patrimonio', 'Banco + inversiones + ahorro − deudas, en Inicio.', 'cuentas'],
+      ['👆', 'Atajos en Inicio', 'Toca una cifra o una categoría y verás esos movimientos.', ''],
+      ['⬇️', 'Cerrar deslizando', 'Las ventanas se cierran deslizando hacia abajo o con la ✕.', ''],
+      ['📥', 'Importar más completo', 'Del archivo también salen categorías, nóminas, facturas, metas y deudas.', 'importar'],
+      ['🗓️', 'Pagos cada varios meses', 'Trimestrales, semestrales o anuales, con su fecha.', 'cobros'],
+    ] },
   { id: '2026-10-09', titulo: 'Parche 2', items: [
     ['📈', 'Gráfico de tu cartera', 'Estilo bróker: elige periodo y desliza el dedo para ver cada día.', 'inversiones'],
     ['🔥', '¿Le ganas a la inflación?', 'Tu rentabilidad anual comparada con la inflación.', 'inversiones'],
@@ -2697,7 +2716,7 @@ const NOVEDADES = [
 // clave → [texto de la etiqueta, fecha de la versión]. Se ven 21 días o hasta que entras en ese apartado.
 const BADGES = {
   cobros: ['NUEVO', '2026-10-09'], importar: ['NUEVO', '2026-10-09'], reglas: ['NUEVO', '2026-10-09'],
-  repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'], compartir: ['NUEVO', '2026-10-10'], ticket: ['NUEVO', '2026-10-10'],
+  repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'], compartir: ['NUEVO', '2026-10-10'], ticket: ['NUEVO', '2026-10-10'], metas: ['MEJORADO', '2026-10-10'], patrimonio: ['NUEVO', '2026-10-10'],
 };
 function badgeActivo(k) {
   const b = BADGES[k]; if (!b) return false;
@@ -2710,10 +2729,16 @@ function verBadge(k) {
   if (!badgeActivo(k)) return;
   saveConfig({ badgesVistos: Object.assign({}, cfg().badgesVistos || {}, { [k]: todayISO() }) });
 }
+function novDestHtml(d, vivo) {
+  return '<div class="nov-dest ' + d.color + '"><div class="nov-dest-top"><div class="nov-dest-em">' + d.em + '</div><div><span class="badge-new">NUEVO</span><h3>' + escapeHtml(d.titulo) + '</h3></div></div>' +
+    '<p>' + escapeHtml(d.texto) + '</p><ul>' + d.puntos.map((x) => '<li>' + escapeHtml(x) + '</li>').join('') + '</ul>' +
+    (vivo && d.ir ? '<button type="button" class="btn block nov-dest-btn" ' + act('novIr', d.ir) + '>' + escapeHtml(d.boton) + '</button>' : '') + '</div>';
+}
 function novedadesHtml(todas) {
   const lista = todas ? NOVEDADES : NOVEDADES.slice(0, 1);
   return '<div class="handle"></div>' + lista.map((n, i) =>
-    (i === 0 ? '<div class="nov-hero"><div class="nov-k">Novedades · ' + escapeHtml(n.titulo) + '</div><h2>🚀 ¡PalomApp se ha actualizado!</h2></div>' : '<div class="section-title">' + escapeHtml(n.titulo) + ' · ' + fechaCortaU(n.id) + '</div>') +
+    (i === 0 ? '<div class="nov-hero"><div class="nov-k">Novedades · ' + escapeHtml(n.titulo) + '</div><h2>🚀 ¡PalomApp se ha actualizado!</h2>' + (n.destacados ? '<div class="nov-sub">Lo más importante de esta versión:</div>' : '') + '</div>' : '<div class="section-title">' + escapeHtml(n.titulo) + ' · ' + fechaCortaU(n.id) + '</div>') +
+    (n.destacados ? n.destacados.map((d) => novDestHtml(d, i === 0)).join('') + '<div class="section-title" style="margin-top:16px;">Y además</div>' : '') +
     '<div class="nov-list">' + n.items.map(([em, t, d, ir]) => '<div class="nov-it"' + (ir && i === 0 ? ' ' + act('novIr', ir) : '') + '><div class="nov-em">' + em + '</div><div class="nov-tx"><b>' + escapeHtml(t) + '</b><div>' + escapeHtml(d) + '</div></div>' + (ir && i === 0 ? '<span class="nov-go">' + ic('chevR') + '</span>' : '') + '</div>').join('') + '</div>'
   ).join('') +
     (!todas && NOVEDADES.length > 1 ? '<button type="button" class="link" style="margin-top:10px;" ' + act('verNovedades', '1') + '>Ver novedades anteriores</button>' : '') +
@@ -3748,7 +3773,7 @@ function renderMas() {
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
     item('categoriasGasto') +
     '<button class="menu-item" ' + act('openRecurrentes') + '><span class="ic">' + ic('calendar') + '</span>Cobros y pagos recurrentes' + badge('cobros') + '<span class="chev">' + ic('chevR') + '</span></button>' +
-    '<button class="menu-item" ' + act('openMetas') + '><span class="ic">' + ic('flag') + '</span>Metas<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">ahorro e inversión</span><span class="chev">' + ic('chevR') + '</span></button>' +
+    '<button class="menu-item" ' + act('openMetas') + '><span class="ic">' + ic('flag') + '</span>Metas' + badge('metas') + '<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">ahorro e inversión</span><span class="chev">' + ic('chevR') + '</span></button>' +
     ['deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') +
     '<button class="menu-item" ' + act('openReglas') + '><span class="ic">' + ic('tag') + '</span>Reglas de categorías' + badge('reglas') + '<span class="chev">' + ic('chevR') + '</span></button>' +
     '<button class="menu-item" ' + act('openTabsAn') + '><span class="ic">' + ic('chart') + '</span>Pestañas de Análisis<span class="chev">' + ic('chevR') + '</span></button></div>' +
@@ -3758,7 +3783,7 @@ function renderMas() {
     '<div class="section-title">Compartir</div><div class="card menu"><button class="menu-item" ' + act('openGrupos') + '><span class="ic">' + ic('users') + '</span>Grupos y personas' + badge('grupos') + '<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">' + (S.grupos ? S.grupos.filter((g) => g.tipo === 'grupo').length || '' : '') + '</span><span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Novedades</div><div class="card menu"><button class="menu-item" ' + act('verNovedades', '1') + '><span class="ic">' + ic('flag') + '</span>Qué hay de nuevo<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">' + (NOVEDADES[0] ? escapeHtml(NOVEDADES[0].titulo) : '') + '</span><span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Tus datos</div><div class="card menu">' +
-    '<button class="menu-item" ' + act('openCuentas') + '><span class="ic">' + ic('bank') + '</span>Cuentas y saldos<span class="chev">' + ic('chevR') + '</span></button>' +
+    '<button class="menu-item" ' + act('openCuentas') + '><span class="ic">' + ic('bank') + '</span>Cuentas y saldos' + badge('patrimonio') + '<span class="chev">' + ic('chevR') + '</span></button>' +
     '<button class="menu-item" ' + act('impAbrir') + '><span class="ic">' + ic('download') + '</span>Importar extracto o Excel' + badge('importar') + '<span class="chev">' + ic('chevR') + '</span></button>' +
     '<button class="menu-item" ' + act('openLotes') + '><span class="ic">' + ic('list') + '</span>Importaciones<span class="chev">' + ic('chevR') + '</span></button>' +
     '<button class="menu-item" ' + act('exportBackup') + '><span class="ic">' + ic('download') + '</span>Copia de seguridad (.json)<span class="chev">' + ic('chevR') + '</span></button></div>' +
@@ -4030,7 +4055,7 @@ const H = {
     if (await accionGrupo(() => S.db.grupos.reparto(id, r), 'Reparto guardado')) abrirGrupo(id);
   },
   // análisis
-  setAnalisisSub: ([s]) => { if (s === 'inversiones') verBadge('inversiones'); S.analisisSub = s; render(); },
+  setAnalisisSub: ([s]) => { if (s === 'inversiones') verBadge('inversiones'); if (s === 'metas') verBadge('metas'); S.analisisSub = s; render(); },
   goMetas: () => { S.tab = 'inicio'; S.inicioSub = 'analisis'; S.analisisSub = 'metas'; render(); window.scrollTo(0, 0); },
   moveMes: ([d]) => { let m = S.mesSel + Number(d), a = S.anioSel; if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; } S.mesSel = m; S.anioSel = a; render(); },
   moveAnio: ([d]) => { S.anioSel += Number(d); render(); },
@@ -4143,7 +4168,12 @@ const H = {
   verNovedades: ([t]) => openSheet(novedadesHtml(t === '1')),
   novIr: ([k]) => {
     closeSheet();
+    if (k === 'ticket') { elegirFotoTicket(); return; } // en el mismo toque, para que el móvil deje abrir la cámara
     setTimeout(() => {
+      if (k === 'grupos') H.openGrupos([]);
+      else if (k === 'metas') { verBadge('metas'); H.goMetas([]); }
+      else if (k === 'cuentas') { verBadge('patrimonio'); H.openCuentas([]); }
+      else
       if (k === 'inversiones') { S.tab = 'inicio'; S.inicioSub = 'analisis'; S.analisisSub = 'inversiones'; verBadge('inversiones'); render(); window.scrollTo(0, 0); }
       else if (k === 'cobros') H.openRecurrentes([]);
       else if (k === 'importar') H.impAbrir([]);
@@ -4151,7 +4181,7 @@ const H = {
       else if (k === 'tareas') { S.tab = 'tareas'; render(); window.scrollTo(0, 0); }
     }, 260);
   },
-  openMetas: () => { FORM = { kind: 'metas' }; if ($('#sheetBackdrop')) updateSheet(metasListaHtml()); else openSheet(metasListaHtml()); },
+  openMetas: () => { verBadge('metas'); FORM = { kind: 'metas' }; if ($('#sheetBackdrop')) updateSheet(metasListaHtml()); else openSheet(metasListaHtml()); },
   metaNueva: () => metaAbrirEditor(null),
   metaEditar: ([id]) => metaAbrirEditor(id || null),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
@@ -4172,7 +4202,7 @@ const H = {
   verMes: ([y, m]) => { S.anioSel = Number(y); S.mesSel = Number(m); S.generalSub = 'mensual'; render(); window.scrollTo(0, 0); },
   volver: () => { const v = S.volverA; S.volverA = null; if (!v) return; S.tab = v.tab; S.inicioSub = v.inicioSub; S.analisisSub = v.analisisSub; S.generalSub = v.generalSub; S.movCat = ''; S.movPeriodo = 'todo'; S.movFiltroTipo = 'Todos'; render(); window.scrollTo(0, 0); },
   quitarMovCat: () => { S.movCat = ''; render(); },
-  openCuentas: () => { FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
+  openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
   cuentaAnadir: () => { saveConfig({ cuentas: (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]) }); updateSheet(cuentasHtml()); const ins = $$('#sheetBackdrop .config-list .row2 input:first-child'); if (ins.length) ins[ins.length - 1].focus(); },
   cuentaQuitar: ([i]) => { const cs = (cfg().cuentas || []).slice(); cs.splice(Number(i), 1); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
   cuentaCampo: ([i, f], el) => {
