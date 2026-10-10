@@ -197,7 +197,7 @@ function subscribeAll() {
     S.golf = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); S.loaded.golf = true; render();
   }, fail('golf', 'No se pudo cargar Golf Reventa')));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
-    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; maybeStartOnboarding(); render(); maybeNovedades(); asegurarIdsMetas();
+    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
   }, fail('cfg', 'No se pudo cargar la configuración')));
 }
 
@@ -907,6 +907,115 @@ function renderMetasInicio() {
       '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, r.pct || 0)) + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>').join('') +
     (ms.length > 1 ? '<div class="summary-line">' + sum + '</div>' : '') + '</div>';
 }
+/* ============================================================
+   GRUPOS PARA COMPARTIR (Bloque 8.1): crear, invitar por WhatsApp, unirse, salir
+   Las reglas de la base de datos deciden qué ve cada uno; aquí solo se muestra.
+   ============================================================ */
+const APP_URL = 'https://urlife-zeta.vercel.app/';
+function gruposDisponible() { return !!(S.db && S.db.grupos && S.db.rpc); }
+function miUid() { return (S.user && S.user.id) || (S.db && S.db.uid && S.db.uid()) || null; }
+function nombreSugerido() {
+  const e = ((S.user && S.user.email) || '').split('@')[0].replace(/[._\-]+/g, ' ').replace(/\d+/g, '').trim().split(' ')[0] || 'Yo';
+  return e.charAt(0).toUpperCase() + e.slice(1);
+}
+const ERR_GRUPO = { no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
+  demasiadas_invitaciones: 'Hay demasiados enlaces pendientes. Anula alguno.', demasiados_grupos: 'Has creado muchos grupos hoy. Prueba mañana.', usa_salir: 'Para irte tú, usa «Salir del grupo».', sin_sesion: 'Tienes que iniciar sesión.' };
+function errGrupo(e) { const m = String((e && (e.message || (e.original && e.original.message))) || ''); const k = Object.keys(ERR_GRUPO).find((x) => m.indexOf(x) >= 0); return k ? ERR_GRUPO[k] : 'No se pudo completar. Revisa tu conexión.'; }
+async function cargarGrupos() {
+  if (!gruposDisponible()) return;
+  try {
+    const r = await S.db.grupos.listar(), yo = miUid();
+    S.grupos = r.grupos.filter((g) => !g.cerrado).map((g) => {
+      const ms = r.miembros.filter((m) => m.grupo_id === g.id);
+      const activos = ms.filter((m) => !m.baja);
+      const mio = activos.find((m) => m.user_id === yo);
+      return { id: g.id, nombre: g.nombre, tipo: g.tipo, reparto: g.reparto, miembros: activos.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || '')), todos: ms, soyAdmin: !!(mio && mio.rol === 'admin'), miNombre: mio ? mio.nombre : '' };
+    }).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  } catch (e) { console.error(e); S.grupos = S.grupos || []; }
+}
+function iniciales(n) { return String(n || '?').trim().split(/\s+/).map((x) => x.charAt(0)).join('').slice(0, 2).toUpperCase(); }
+const COLORES_PERSONA = ['#B8752A', '#2F6F52', '#7A5AA8', '#A8452F', '#3B6EA8', '#8A6D1F'];
+function avatarHtml(m, i) { return '<span class="avatar" style="background:' + COLORES_PERSONA[i % COLORES_PERSONA.length] + '" title="' + escapeHtml(m.nombre) + '">' + escapeHtml(iniciales(m.nombre)) + '</span>'; }
+function gruposListaHtml() {
+  const gs = (S.grupos || []).filter((g) => g.tipo === 'grupo');
+  return '<div class="handle"></div><h2>Grupos</h2>' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Para compartir gastos, metas y deudas con otras personas (por ejemplo, «Casa» o «Viaje»). Lo tuyo sigue siendo privado: solo se ve lo que compartas en cada grupo.</div>' +
+    (S.grupos == null ? '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Cargando…</div>'
+      : gs.length ? '<div class="list">' + gs.map((g) => '<div class="row" ' + act('grupoVer', g.id) + '><div class="avatars">' + g.miembros.slice(0, 4).map(avatarHtml).join('') + '</div>' +
+        '<div class="main"><div class="ttl">' + escapeHtml(g.nombre) + '</div><div class="meta">' + g.miembros.map((m) => escapeHtml(m.nombre)).join(', ') + '</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>'
+        : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no estás en ningún grupo. Crea uno e invita por WhatsApp.</div>') +
+    '<div class="actions"><button class="btn ghost block" ' + act('grupoNuevo') + '>' + ic('plus') + ' Crear grupo</button><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+function grupoNuevoHtml() {
+  return '<div class="handle"></div><h2>Nuevo grupo</h2>' +
+    '<div class="field"><label>Nombre del grupo</label><input id="gNombre" type="text" maxlength="60" placeholder="Casa"></div>' +
+    '<div class="field"><label>Tu nombre en el grupo</label><input id="gMiNombre" type="text" maxlength="40" value="' + escapeHtml(nombreSugerido()) + '"><div class="rec-hint">Es como te verán los demás.</div></div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('openGrupos') + '>Cancelar</button><button class="btn accent block" ' + act('grupoCrear') + '>Crear</button></div>';
+}
+function grupoHtml(id) {
+  const g = (S.grupos || []).find((x) => x.id === id);
+  if (!g) return '<div class="handle"></div><h2>Grupo</h2><div class="card" style="color:var(--text-faint);">Este grupo ya no está disponible.</div><div class="actions"><button class="btn accent block" ' + act('openGrupos') + '>Volver</button></div>';
+  const yo = miUid(), inv = (FORM && FORM.invitaciones) || [];
+  const pendientes = inv.filter((x) => !x.usada_en && new Date(x.expira) > new Date());
+  return '<div class="handle"></div><h2>' + escapeHtml(g.nombre) + '</h2>' +
+    (g.soyAdmin ? '<div class="field"><label>Nombre del grupo</label><div style="display:flex;gap:8px;"><input id="gRenombrar" type="text" maxlength="60" value="' + escapeHtml(g.nombre) + '"><button class="btn sm ghost" ' + act('grupoRenombrar', g.id) + '>Guardar</button></div></div>' : '') +
+    '<div class="section-title">Miembros (' + g.miembros.length + ')</div><div class="list">' +
+    g.miembros.map((m, i) => '<div class="row static">' + avatarHtml(m, i) + '<div class="main"><div class="ttl">' + escapeHtml(m.nombre) + (m.user_id === yo ? ' <span class="hint">(tú)</span>' : '') + '</div><div class="meta">' + (m.rol === 'admin' ? 'Administrador' : 'Miembro') + '</div></div>' +
+      (g.soyAdmin && m.user_id !== yo ? '<button class="btn sm ghost" ' + act('grupoQuitar', g.id, m.user_id) + '>Quitar</button>' : '') + '</div>').join('') + '</div>' +
+    '<div class="field" style="margin-top:12px;"><label>Tu nombre en este grupo</label><div style="display:flex;gap:8px;"><input id="gMiNombreEd" type="text" maxlength="40" value="' + escapeHtml(g.miNombre) + '"><button class="btn sm ghost" ' + act('grupoMiNombre', g.id) + '>Guardar</button></div></div>' +
+    '<div class="section-title">Invitar</div><div class="card">' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin-bottom:10px;">Se crea un enlace que vale para <b>una persona</b> y caduca en <b>7 días</b>. Al abrirlo, se une con la cuenta con la que esté (o con la que inicie sesión).</div>' +
+    (FORM && FORM.ultimoEnlace
+      ? '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(FORM.ultimoMsg || FORM.ultimoEnlace) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
+        '<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn ghost block" ' + act('grupoCopiar') + '>Copiar enlace</button>' + (navigator.share ? '<button class="btn ghost block" ' + act('grupoCompartir') + '>Compartir…</button>' : '') + '</div>' +
+        '<div class="enlace-box">' + escapeHtml(FORM.ultimoEnlace) + '</div>' +
+        '<button type="button" class="link" style="margin-top:8px;" ' + act('grupoInvitar', g.id) + '>Crear otro enlace (para otra persona)</button>'
+      : '<button class="btn accent block" ' + act('grupoInvitar', g.id) + '>Crear enlace de invitación</button>') +
+    (pendientes.length ? '<div class="rec-hint" style="margin-top:10px;">' + pendientes.length + (pendientes.length === 1 ? ' enlace pendiente' : ' enlaces pendientes') + ' · <button type="button" class="link" ' + act('grupoAnularTodos', g.id) + '>Anularlos</button></div>' : '') + '</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('openGrupos') + '>Volver</button></div>' +
+    '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Salir del grupo</button>' +
+    (g.soyAdmin && g.miembros.length > 1 ? '<button class="btn danger block" style="margin-top:8px;" ' + act('grupoCerrar', g.id) + '>Cerrar el grupo para todos</button>' : '');
+}
+async function abrirGrupo(id) {
+  FORM = { kind: 'grupo', id, invitaciones: [] };
+  if ($('#sheetBackdrop')) updateSheet(grupoHtml(id)); else openSheet(grupoHtml(id));
+  try { FORM.invitaciones = await S.db.grupos.invitaciones(id); if (FORM.kind === 'grupo' && FORM.id === id) updateSheet(grupoHtml(id)); } catch (e) { /* sin lista de enlaces */ }
+}
+async function accionGrupo(fn, okMsg) {
+  try { const r = await fn(); if (okMsg) toast(okMsg); await cargarGrupos(); return r == null || r === '' ? true : r; }
+  catch (e) { console.error(e); toast(errGrupo(e)); return null; }
+}
+/* ---- unirse con un enlace ?unirse=TOKEN (con la sesión abierta o con la que se inicie) ---- */
+function capturarEnlaceUnirse() {
+  try {
+    const u = new URL(window.location.href), t = u.searchParams.get('unirse');
+    if (t && /^[A-Za-z0-9_-]{16,64}$/.test(t)) { lsSet('unirse', t); u.searchParams.delete('unirse'); window.history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); }
+  } catch (e) { /* sin URL */ }
+}
+async function maybeUnirse() {
+  const t = lsGet('unirse');
+  if (!t || S._uniendo || S.onboarding || !allLoaded() || !gruposDisponible()) return;
+  S._uniendo = true;
+  let info = null;
+  try { info = await S.db.rpc('ver_invitacion', { p_token: t }); } catch (e) { console.error(e); S._uniendo = false; return; }
+  FORM = { kind: 'unirse', token: t, info };
+  openSheet(unirseHtml());
+}
+function unirseHtml() {
+  const i = FORM.info || {};
+  const email = (S.user && S.user.email) || '';
+  if (!i.valida) {
+    const txt = i.motivo === 'ya_miembro' ? 'Ya eres miembro de «' + escapeHtml(i.nombre || '') + '».' : i.motivo === 'caducada' ? 'Este enlace ha caducado. Pide uno nuevo a quien te invitó.' : i.motivo === 'usada' ? 'Este enlace ya se ha usado. Cada enlace vale para una persona: pide uno nuevo.' : 'Este enlace no es válido.';
+    return '<div class="handle"></div><h2>Invitación</h2><div class="card" style="font-size:14px;line-height:1.5;">' + txt + '</div>' +
+      '<div class="actions"><button class="btn accent block" ' + act('unirseCerrar', i.motivo === 'ya_miembro' ? i.grupo || '' : '') + '>Entendido</button></div>';
+  }
+  return '<div class="handle"></div><h2>Te han invitado a un grupo</h2>' +
+    '<div class="unirse-card"><div class="unirse-nombre">' + escapeHtml(i.nombre) + '</div><div class="unirse-meta">Te invita ' + escapeHtml(i.invita || 'un miembro') + ' · ' + i.miembros + (Number(i.miembros) === 1 ? ' miembro' : ' miembros') + '</div></div>' +
+    '<div class="field"><label>Tu nombre en el grupo</label><input id="uNombre" type="text" maxlength="40" value="' + escapeHtml(nombreSugerido()) + '"></div>' +
+    '<div class="rec-hint" style="margin-bottom:6px;">Entrarás con la cuenta <b>' + escapeHtml(email) + '</b>. Tus movimientos siguen siendo privados: el grupo solo verá lo que compartas en él. <button type="button" class="link" ' + act('unirseOtraCuenta') + '>¿No es tu cuenta?</button></div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('unirseCerrar', '') + '>Ahora no</button><button class="btn accent block" ' + act('unirseConfirmar') + '>Unirme</button></div>';
+}
+
 /* ============================================================
    METAS (Bloque 6): identificador estable, metas de inversión y patrimonio
    ============================================================ */
@@ -1745,7 +1854,7 @@ const NOVEDADES = [
 // clave → [texto de la etiqueta, fecha de la versión]. Se ven 21 días o hasta que entras en ese apartado.
 const BADGES = {
   cobros: ['NUEVO', '2026-10-09'], importar: ['NUEVO', '2026-10-09'], reglas: ['NUEVO', '2026-10-09'],
-  repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'],
+  repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'],
 };
 function badgeActivo(k) {
   const b = BADGES[k]; if (!b) return false;
@@ -1769,6 +1878,7 @@ function novedadesHtml(todas) {
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>¡Entendido!</button></div>';
 }
 function maybeNovedades() {
+  if (lsGet('unirse')) return; // primero la invitación
   if (S._novRevisado || S.onboarding || !allLoaded() || !S.db || !NOVEDADES.length) return;
   S._novRevisado = true;
   const ult = NOVEDADES[0].id;
@@ -2802,6 +2912,7 @@ function renderMas() {
     '<div class="section-title">Cuenta y seguridad</div><div class="card menu">' +
     '<button class="menu-item" ' + act('openMoneda') + '><span class="ic">' + ic('chart') + '</span>Moneda<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">' + monedaCod() + ' ' + sym() + '</span><span class="chev">' + ic('chevR') + '</span></button>' +
     (mfaDisponible() ? '<button class="menu-item" ' + act('openSeguridad') + '><span class="ic">' + ic('alert') + '</span>Verificación en dos pasos<span class="chev">' + ic('chevR') + '</span></button>' : '') + '</div>' +
+    '<div class="section-title">Compartir</div><div class="card menu"><button class="menu-item" ' + act('openGrupos') + '><span class="ic">' + ic('list') + '</span>Grupos' + badge('grupos') + '<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">' + (S.grupos ? S.grupos.filter((g) => g.tipo === 'grupo').length || '' : '') + '</span><span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Novedades</div><div class="card menu"><button class="menu-item" ' + act('verNovedades', '1') + '><span class="ic">' + ic('flag') + '</span>Qué hay de nuevo<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">' + (NOVEDADES[0] ? escapeHtml(NOVEDADES[0].titulo) : '') + '</span><span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Tus datos</div><div class="card menu">' +
     '<button class="menu-item" ' + act('openCuentas') + '><span class="ic">' + ic('bank') + '</span>Cuentas y saldos<span class="chev">' + ic('chevR') + '</span></button>' +
@@ -3111,6 +3222,51 @@ const H = {
     cs[Number(i)] = c; saveConfig({ cuentas: cs }); render();
   },
   cuentasListo: () => { const cs = (cfg().cuentas || []).filter((c) => c && (c.nombre || c.saldo != null)).map((c) => (c.nombre ? c : Object.assign({}, c, { nombre: 'Cuenta' }))); saveConfig({ cuentas: cs }); closeSheet(); render(); },
+  openGrupos: () => { verBadge('grupos'); FORM = { kind: 'grupos' }; if ($('#sheetBackdrop')) updateSheet(gruposListaHtml()); else openSheet(gruposListaHtml()); cargarGrupos().then(() => { if (FORM && FORM.kind === 'grupos') updateSheet(gruposListaHtml()); render(); }); },
+  grupoNuevo: () => { FORM = { kind: 'grupoNuevo' }; updateSheet(grupoNuevoHtml()); setTimeout(() => { const el = $('#gNombre'); if (el) el.focus(); }, 60); },
+  grupoCrear: async () => {
+    const n = ($('#gNombre').value || '').trim(), yo = ($('#gMiNombre').value || '').trim();
+    if (!n) return toast('Ponle un nombre al grupo');
+    if (FORM.creando) return; FORM.creando = true;
+    const id = await accionGrupo(() => S.db.rpc('crear_grupo', { p_nombre: n, p_mi_nombre: yo || nombreSugerido() }), 'Grupo creado');
+    FORM.creando = false;
+    if (id) abrirGrupo(id); render();
+  },
+  grupoVer: ([id]) => abrirGrupo(id),
+  grupoRenombrar: async ([id]) => { const n = ($('#gRenombrar').value || '').trim(); if (!n) return toast('Pon un nombre'); if (await accionGrupo(() => S.db.grupos.renombrar(id, n), 'Nombre cambiado')) abrirGrupo(id); },
+  grupoMiNombre: async ([id]) => { const n = ($('#gMiNombreEd').value || '').trim(); if (!n) return toast('Pon un nombre'); if (await accionGrupo(() => S.db.grupos.miNombre(id, n), 'Guardado')) abrirGrupo(id); },
+  grupoInvitar: async ([id]) => {
+    if (FORM.creandoEnlace) return; FORM.creandoEnlace = true;
+    const t = await accionGrupo(() => S.db.rpc('crear_invitacion', { p_grupo: id }));
+    FORM.creandoEnlace = false;
+    if (!t || t === true) return;
+    const g = (S.grupos || []).find((x) => x.id === id), url = APP_URL + '?unirse=' + encodeURIComponent(t);
+    FORM.ultimoEnlace = url;
+    FORM.ultimoMsg = 'Te invito a mi grupo «' + (g ? g.nombre : '') + '» en PalomApp para compartir gastos. Ábrelo aquí (vale 7 días y para una sola persona): ' + url;
+    try { FORM.invitaciones = await S.db.grupos.invitaciones(id); } catch (e) { /* */ }
+    if (FORM.kind === 'grupo') updateSheet(grupoHtml(id));
+  },
+  grupoCopiar: async () => { try { await navigator.clipboard.writeText(FORM.ultimoEnlace); toast('Enlace copiado'); } catch (e) { toast('Mantén pulsado el enlace de abajo para copiarlo'); } },
+  grupoCompartir: async () => { try { await navigator.share({ text: FORM.ultimoMsg }); } catch (e) { /* cancelado */ } },
+  grupoAnularTodos: async ([id]) => {
+    const ps = (FORM.invitaciones || []).filter((x) => !x.usada_en && new Date(x.expira) > new Date());
+    for (const x of ps) { if (!(await accionGrupo(() => S.db.rpc('anular_invitacion', { p_token: x.token })))) break; }
+    FORM.ultimoEnlace = ''; toast('Enlaces anulados'); abrirGrupo(id);
+  },
+  grupoQuitar: ([id, uid], el) => confirmDelete(el, async () => { if (await accionGrupo(() => S.db.rpc('quitar_miembro', { p_grupo: id, p_user: uid }), 'Miembro quitado')) abrirGrupo(id); }),
+  grupoSalir: ([id], el) => confirmDelete(el, async () => { if (await accionGrupo(() => S.db.rpc('salir_grupo', { p_grupo: id }), 'Has salido del grupo')) { FORM = { kind: 'grupos' }; updateSheet(gruposListaHtml()); render(); } }),
+  grupoCerrar: ([id], el) => confirmDelete(el, async () => { if (await accionGrupo(() => S.db.rpc('cerrar_grupo', { p_grupo: id }), 'Grupo cerrado')) { FORM = { kind: 'grupos' }; updateSheet(gruposListaHtml()); render(); } }),
+  unirseConfirmar: async () => {
+    if (FORM.uniendo) return; FORM.uniendo = true;
+    const nombre = ($('#uNombre').value || '').trim() || nombreSugerido();
+    const id = await accionGrupo(() => S.db.rpc('unirse', { p_token: FORM.token, p_nombre: nombre }), '¡Te has unido al grupo!');
+    FORM.uniendo = false;
+    if (!id) return;
+    lsSet('unirse', ''); S._uniendo = false;
+    render(); abrirGrupo(id);
+  },
+  unirseCerrar: ([grupoId]) => { lsSet('unirse', ''); S._uniendo = false; if (grupoId) { cargarGrupos().then(() => abrirGrupo(grupoId)); } else closeSheet(); },
+  unirseOtraCuenta: async () => { closeSheet(); S._uniendo = false; await window.Auth.signOut(); toast('Inicia sesión con la otra cuenta y se completará la invitación'); },
   setInvPeriodo: ([k]) => { if (PERIODOS_INV.some((x) => x[0] === k)) { S.invPeriodo = k; render(); } },
   setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
@@ -3330,6 +3486,7 @@ async function enterApp(session) {
 }
 function leaveApp() {
   S.appStarted = false;
+  S.grupos = null; S._uniendo = false; S._gruposCargando = false;
   S.user = null; S.db = null;
   S.onboarding = null; S._onboardPending = false;
   _unsubs.forEach((u) => { try { u(); } catch (e) { /* noop */ } });
@@ -3338,6 +3495,7 @@ function leaveApp() {
 }
 async function main() {
   applyTheme();
+  capturarEnlaceUnirse();
   if (!window.Auth || !window.Data) {
     $('#app').innerHTML = '<div class="loading"><div class="big" style="font-size:28px;">' + ic('alert') + '</div><b style="color:var(--expense);">Falta configurar la app</b>' +
       '<div style="margin-top:8px;max-width:320px;">No se encontró la conexión con Supabase. Copia <code>config.example.js</code> a <code>config.js</code>, rellena tu URL y tu clave pública, y recarga la página.</div></div>';

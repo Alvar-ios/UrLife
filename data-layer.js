@@ -228,5 +228,19 @@
     },
   };
 
-  window.Data = { collection: collection, doc: doc };
+  /* ---- grupos para compartir (bloque 8): las reglas de la base de datos deciden qué se ve ---- */
+  function q(p) { return p.then(function (res) { if (res.error) throw pgError(res.error); return res.data; }); }
+  var grupos = {
+    listar: function () {
+      return Promise.all([q(sb.from('grupos').select('*')), q(sb.from('grupo_miembros').select('*'))]).then(function (r) {
+        return { grupos: r[0] || [], miembros: r[1] || [] };
+      });
+    },
+    invitaciones: function (grupoId) { return q(sb.from('grupo_invitaciones').select('token,expira,usada_en,created_at').eq('grupo_id', grupoId).order('created_at', { ascending: false })); },
+    renombrar: function (grupoId, nombre) { return q(sb.from('grupos').update({ nombre: nombre }).eq('id', grupoId)); },
+    miNombre: function (grupoId, nombre) { return q(sb.from('grupo_miembros').update({ nombre: nombre }).eq('grupo_id', grupoId).eq('user_id', currentUid)); },
+  };
+  function rpc(fn, params) { return q(sb.rpc(fn, params || {})); }
+
+  window.Data = { collection: collection, doc: doc, grupos: grupos, rpc: rpc, uid: function () { return currentUid; } };
 })();
