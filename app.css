@@ -419,3 +419,24 @@ button.link { font-family: inherit; font-size: 13px; font-weight: 600; color: va
 .nov-go { color: var(--text-faint); flex: none; display: flex; }
 .imp-cfg { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
 .imp-cfg input { margin-top: 3px; accent-color: var(--accent); flex: none; }
+
+/* Bloque 6: metas de inversión y patrimonio */
+.type-toggle button.active[data-t="Inversión"] { background: var(--savings); }
+.meta-tipo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--savings); background: var(--savings-soft); padding: 2px 6px; border-radius: 6px; }
+.meta-inv-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 4px; }
+.meta-inv-nums .l { font-size: 11px; color: var(--text-faint); }
+.meta-inv-nums .v { font-size: 15px; font-weight: 600; margin-top: 1px; }
+.meta-est { font-size: 12px; color: var(--text-muted); background: var(--paper-sunken); border-radius: 9px; padding: 8px 10px; margin-top: 8px; line-height: 1.45; }
+.asig-grupo { border: 1px solid var(--line); border-radius: var(--radius-m); background: var(--paper-raised); margin-bottom: 10px; overflow: hidden; }
+.asig-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.asig-head b { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.asig-head span { font-size: 12px; color: var(--text-faint); flex: none; }
+.asig-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 13px; cursor: pointer; }
+.asig-row:last-child { border-bottom: none; }
+.asig-row input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+.asig-row span { flex: 1; min-width: 0; color: var(--text-muted); }
+.pat-card { padding: 14px 16px; }
+.pat-total { font-family: var(--font-display); font-size: 26px; font-weight: 600; margin-bottom: 8px; }
+.pat-row { display: flex; justify-content: space-between; gap: 10px; font-size: 13.5px; padding: 4px 0; color: var(--text-muted); }
+.pat-note { font-size: 11.5px; color: var(--text-faint); margin-top: 8px; line-height: 1.45; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; }

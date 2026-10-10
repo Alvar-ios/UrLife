@@ -197,7 +197,7 @@ function subscribeAll() {
     S.golf = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); S.loaded.golf = true; render();
   }, fail('golf', 'No se pudo cargar Golf Reventa')));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
-    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; maybeStartOnboarding(); render(); maybeNovedades();
+    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; maybeStartOnboarding(); render(); maybeNovedades(); asegurarIdsMetas();
   }, fail('cfg', 'No se pudo cargar la configuración')));
 }
 
@@ -256,7 +256,7 @@ function categoriasPorTipo(tipo) {
   let arr = [];
   if (tipo === 'Gasto') arr = (c.categoriasGasto || []).map((x) => x.nombre);
   else if (tipo === 'Factura') arr = (c.facturas || []).map((x) => x.nombre);
-  else if (tipo === 'Ahorro') arr = (c.ahorro || []).map((x) => x.nombre);
+  else if (tipo === 'Ahorro') arr = (c.ahorro || []).filter((x) => x && x.nombre && x.tipo !== 'inversion').map((x) => x.nombre);
   else if (tipo === 'Inversión') { const seen = {}; S.movimientos.forEach((m) => { if (m.tipo === 'Inversión' && m.categoria) seen[m.categoria] = (seen[m.categoria] || 0) + 1; }); arr = Object.keys(seen).sort((a, b) => seen[b] - seen[a]); }
   else if (tipo === 'Deuda') arr = (c.deudas || []).map((x) => x.nombre);
   else if (tipo === 'Ingreso') arr = (c.ingresos || []).slice();
@@ -420,6 +420,7 @@ function renderInicio() {
       : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">No tienes tareas pendientes.</div>') +
 
     (tabAnVisible('metas') ? renderMetasInicio() : '') +
+    patrimonioHtml() +
 
     '<div class="section-title">Donde más gastas este mes <button class="link" ' + act('goTab', 'analisis') + '>Ver análisis</button></div>' +
     '<div class="card">' + (top.length ? top.map(([n, v]) =>
@@ -523,6 +524,9 @@ function activosPropios() {
 }
 function invFieldsHtml(tipo, actual) {
   if (tipo !== 'Inversión') return '';
+  return invFieldsBaseHtml(tipo, actual) + metaInvSelectorHtml();
+}
+function invFieldsBaseHtml(tipo, actual) {
   if (!(FORM.invModo === 'auto' && activosDisponible())) {
     return '<div class="field"><label>Tipo de activo</label><select id="fTipoActivo"><option value="">—</option>' +
       TIPOS_ACTIVO.map((t) => '<option ' + (actual === t ? 'selected' : '') + '>' + t + '</option>').join('') + '</select></div>' +
@@ -586,6 +590,7 @@ function openMovForm(id, pre) {
   const tipoIni = ex ? ex.tipo : pre.tipo ? pre.tipo : (S.tab === 'movimientos' && S.movFiltroTipo !== 'Todos' ? S.movFiltroTipo : 'Gasto');
   FORM = { kind: 'mov', id: ex ? ex.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : '' };
   FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
+  FORM.metaId = ex && ex.metaId ? ex.metaId : null;
   if (ex && ex.activoId) { FORM.activo = { activo_id: ex.activoId, nombre: ex.categoria, tipo: ex.tipoActivo || '', simbolo: '', moneda: '' }; FORM.partOrig = ex.participaciones == null ? null : Number(ex.participaciones); }
   const metodos = cfg().metodosPago || [];
   openSheet(
@@ -655,6 +660,10 @@ async function saveMov() {
       if ('activoId' in data && FORM.tipo !== 'Inversión') data.activoId = null;
       if ('participaciones' in data && FORM.tipo !== 'Inversión') data.participaciones = null;
     }
+    // meta: inversión → la elegida (o General); ahorro → la meta de ahorro con ese nombre
+    if (FORM.tipo === 'Inversión') data.metaId = FORM.metaId && metasCfg().some((m) => m.id === FORM.metaId) ? FORM.metaId : null;
+    else if (FORM.tipo === 'Ahorro') { const mt = metasCfg().find((m) => tipoMeta(m) === 'ahorro' && m.id && normName(m.nombre) === normName(categoria)); data.metaId = mt ? mt.id : null; }
+    else if ('metaId' in data) data.metaId = null;
     const reglaNueva = FORM.recordar && FORM.tipo !== 'Inversión' ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
     const ok = await write(() => FORM.id ? S.db.collection('movimientos').doc(FORM.id).set(data) : S.db.collection('movimientos').add(data));
     if (ok) {
@@ -772,8 +781,7 @@ const META_UMBRAL_AMARILLO = 0.7; // ritmo real / ritmo necesario
 function isoDaysAgo(n) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - n); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
 function fmtMesAnio(d) { return MESES_ABR[d.getMonth()].toLowerCase() + ' ' + d.getFullYear(); }
 function metaStats(m) {
-  const key = (m.nombre || '').trim().toLowerCase();
-  const movs = S.movimientos.filter((x) => x.tipo === 'Ahorro' && (x.categoria || '').trim().toLowerCase() === key);
+  const movs = movsDeMeta(m);
   const acum = num(m.yaAhorrado) + movs.reduce((a, x) => a + num(x.importe), 0);
   const obj = num(m.objetivo);
   const falta = Math.max(0, obj - acum);
@@ -794,13 +802,18 @@ function metaStats(m) {
   else { r.estado = 'rojo'; r.texto = 'Al ritmo actual no llegarías'; }
   return r;
 }
-function metasStats() { return (cfg().ahorro || []).filter((m) => m && m.nombre).map(metaStats); }
+function metasStats() { return metasCfg().map((m) => (tipoMeta(m) === 'inversion' ? metaInvStats(m) : Object.assign(metaStats(m), { id: m.id }))); }
 const SEMAFORO_COLOR = { verde: 'var(--income)', amarillo: 'var(--accent)', rojo: 'var(--expense)', gris: 'var(--text-faint)' };
 function semaforoDot(estado) { return '<span class="dot" style="background:' + SEMAFORO_COLOR[estado] + ';flex:none;"></span>'; }
 function renderMetas() {
   const ms = metasStats();
-  if (!ms.length) return '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes metas de ahorro. Créalas en Más → Metas de ahorro (con objetivo y fecha).</div>';
-  return ms.map((r) => {
+  if (ms.some((r) => r.inv)) asegurarValoracion();
+  const cab = '<div style="display:flex;justify-content:flex-end;margin:-4px 0 8px;"><button class="link" ' + act('openMetas') + '>Gestionar metas</button></div>';
+  if (!ms.length) return cab + '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes metas. Créalas en Más → Metas: de ahorro o de inversión (por ejemplo, la entrada de una casa).</div>';
+  const generalInv = S.movimientos.filter((x) => x.tipo === 'Inversión' && !(x.metaId && ms.some((r) => r.inv && r.id === x.metaId)));
+  const valGeneral = generalInv.reduce((a, x) => { const v = valorMovInv(x); return a + (v == null ? num(x.importe) : v); }, 0);
+  return cab + ms.map((r) => {
+    if (r.inv) return metaInvCardHtml(r);
     const pctC = r.pct == null ? 0 : Math.max(0, Math.min(100, r.pct));
     let h = '<div class="card" style="margin-bottom:12px;">' +
       '<div class="budget-row" style="margin:0;"><div class="top"><span class="cat" style="display:flex;align-items:center;gap:8px;">' + semaforoDot(r.estado) + escapeHtml(r.nombre) + '</span>' +
@@ -815,8 +828,9 @@ function renderMetas() {
       h += '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">Tu ritmo (últimos 3 meses): <b class="tnum" style="color:var(--text);">' + money(r.ritmo) + '/mes</b>' +
         (r.llegada ? ' · al ritmo actual llegarías en ' + fmtMesAnio(r.llegada) : ' · sin ahorro reciente para estimar') + '.</div>';
     }
-    return h + '</div>';
-  }).join('') + '<div class="summary-line">El ahorro de cada meta sale de tus movimientos de tipo Ahorro con ese nombre, más lo que indiques en «Ya ahorrado antes».</div>';
+    return h + '<div style="margin-top:8px;"><button class="btn sm ghost" ' + act('metaEditar', r.id || '') + '>Editar meta</button></div></div>';
+  }).join('') + (ms.some((r) => r.inv) && generalInv.length ? '<div class="summary-line">Inversiones sin meta («General»): ' + money(valGeneral) + ' de valor actual.</div>' : '') +
+    '<div class="summary-line">Metas de ahorro: suman tus movimientos de tipo Ahorro de esa meta, más lo que indiques en «Ya ahorrado antes». Metas de inversión: valor actual de las aportaciones que les asignes.</div>';
 }
 function deudaStats(d) {
   const key = (d.nombre || '').trim().toLowerCase();
@@ -864,12 +878,237 @@ function renderMetasInicio() {
   if (!ms.length) return '';
   const cnt = { verde: 0, amarillo: 0, rojo: 0, gris: 0 }; ms.forEach((r) => { cnt[r.estado]++; });
   const sum = ['verde', 'amarillo', 'rojo'].filter((e) => cnt[e]).map((e) => '<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;">' + semaforoDot(e) + cnt[e] + '</span>').join('');
-  return '<div class="section-title">Metas de ahorro <button class="link" ' + act('goMetas') + '>Ver metas</button></div><div class="card">' +
+  return '<div class="section-title">Metas <button class="link" ' + act('goMetas') + '>Ver metas</button></div><div class="card">' +
     ms.slice(0, 3).map((r) => '<div class="budget-row"><div class="top"><span class="cat" style="display:flex;align-items:center;gap:8px;">' + semaforoDot(r.estado) + escapeHtml(r.nombre) + '</span>' +
       '<span class="nums"><b class="tnum">' + (r.pct == null ? '—' : r.pct.toFixed(0) + '%') + '</b></span></div>' +
       '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, r.pct || 0)) + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>').join('') +
     (ms.length > 1 ? '<div class="summary-line">' + sum + '</div>' : '') + '</div>';
 }
+/* ============================================================
+   METAS (Bloque 6): identificador estable, metas de inversión y patrimonio
+   ============================================================ */
+const RENT_DEFECTO = 4; // % anual: estimación prudente cuando no hay histórico suficiente
+function nuevoIdMeta() { return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function metasCfg() { return (cfg().ahorro || []).filter((m) => m && m.nombre); }
+function tipoMeta(m) { return m && m.tipo === 'inversion' ? 'inversion' : 'ahorro'; }
+// Da un identificador a las metas que aún no lo tienen (una vez por sesión). Los movimientos antiguos siguen contando por nombre.
+function asegurarIdsMetas() {
+  if (S._metaIds || !S.loaded.cfg || !S.db || S.onboarding) return;
+  S._metaIds = true;
+  const arr = cfg().ahorro || [];
+  if (!arr.some((m) => m && m.nombre && !m.id)) return;
+  saveConfig({ ahorro: arr.map((m) => (m && m.nombre && !m.id ? Object.assign({}, m, { id: nuevoIdMeta() }) : m)) });
+}
+function movsDeMeta(m) {
+  const n = normName(m.nombre);
+  if (tipoMeta(m) === 'inversion') return S.movimientos.filter((x) => x.tipo === 'Inversión' && m.id && x.metaId === m.id);
+  return S.movimientos.filter((x) => x.tipo === 'Ahorro' && ((m.id && x.metaId === m.id) || (!x.metaId && normName(x.categoria) === n)));
+}
+function valorMovInv(x) {
+  const v = S.valoracion && S.valoracion.valores && x.activoId ? S.valoracion.valores[x.activoId] : null;
+  if (!v || v.cierre_eur == null || x.participaciones == null || x.participaciones === '') return null;
+  return Number(x.participaciones) * v.cierre_eur;
+}
+function asegurarValoracion() {
+  const ids = [...new Set(S.movimientos.filter((x) => x.tipo === 'Inversión' && x.activoId).map((x) => x.activoId))];
+  if (!activosDisponible() || !ids.length || S._valCarga || S._valProg) return;
+  const v = S.valoracion, edad = v ? Date.now() - v.ts : Infinity, faltan = v && ids.some((id) => !(v.valores && v.valores[id]));
+  if (!v || edad > 600000 || (faltan && edad > 60000)) S._valProg = setTimeout(() => { S._valProg = null; cargarValoracion(ids); }, 0);
+}
+function metaInvStats(m) {
+  const movs = movsDeMeta(m).filter((x) => x.fecha).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  const fuera = num(m.yaAhorrado);
+  let aportado = fuera, valor = fuera, sinValorar = 0;
+  movs.forEach((x) => { const imp = num(x.importe), v = valorMovInv(x); aportado += imp; if (v == null) { valor += imp; sinValorar++; } else valor += v; });
+  const obj = num(m.objetivo), hoy = todayISO();
+  // rentabilidad: la que pongas > tu histórico (6 meses o más) > 4 % prudente
+  let rent, fuente;
+  const manual = m.rentabilidad != null && m.rentabilidad !== '' && isFinite(Number(m.rentabilidad));
+  const meses = movs.length ? (uD(hoy) - uD(movs[0].fecha)) / 864e5 / 30.4375 : 0;
+  if (manual) { rent = Number(m.rentabilidad); fuente = 'la que has indicado'; }
+  else {
+    const r = movs.length && meses >= 6 && !sinValorar ? xirr(movs.map((x) => ({ d: x.fecha, c: -num(x.importe) })).concat([{ d: hoy, c: valor - fuera }])) : null;
+    if (r != null && isFinite(r)) {
+      rent = Math.max(0, Math.min(10, r * 100));
+      fuente = 'según tu histórico (' + Math.round(meses) + ' meses)' + (r * 100 > 10 || r < 0 ? ', acotada entre 0 % y 10 %' : '');
+    } else { rent = RENT_DEFECTO; fuente = 'estimación prudente: aún no hay 6 meses de histórico'; }
+  }
+  const i = Math.pow(1 + rent / 100, 1 / 12) - 1;
+  const desde = isoDaysAgo(90);
+  const ritmo = Math.max(0, movs.filter((x) => x.fecha > desde && x.fecha <= hoy).reduce((a, x) => a + num(x.importe), 0) / 3);
+  const dias = m.fechaObjetivo ? daysUntil(m.fechaObjetivo) : null;
+  const r = { inv: true, id: m.id, nombre: m.nombre, aportado, valor, gan: valor - aportado, obj, pct: obj > 0 ? valor / obj * 100 : null, falta: Math.max(0, obj - valor),
+    n: movs.length, sinValorar, rent, fuente, ritmo, dias, fecha: m.fechaObjetivo || null, necesario: null, llegada: null, estado: 'gris', texto: '' };
+  if (obj > 0 && valor < obj) {
+    let v = valor;
+    for (let k = 1; k <= 600; k++) { v = v * (1 + i) + ritmo; if (v >= obj) { const d = new Date(); d.setMonth(d.getMonth() + k); r.llegada = d; break; } }
+  }
+  if (obj <= 0) { r.texto = 'Sin objetivo definido'; return r; }
+  if (valor >= obj) { r.estado = 'verde'; r.texto = 'Meta lograda'; return r; }
+  if (dias == null) { r.texto = 'Sin fecha objetivo'; return r; }
+  if (dias < 0) { r.estado = 'rojo'; r.texto = 'La fecha ya pasó y faltan ' + money(r.falta); return r; }
+  const nM = Math.max(1, dias / 30.4375), f = Math.pow(1 + i, nM);
+  r.necesario = i > 0 ? Math.max(0, (obj - valor * f) * i / (f - 1)) : Math.max(0, (obj - valor) / nM);
+  if (r.necesario <= 0.005) { r.estado = 'verde'; r.texto = 'Con lo que vale hoy llegarías sin aportar más'; return r; }
+  const ratio = ritmo / r.necesario;
+  if (ratio >= 1) { r.estado = 'verde'; r.texto = 'Vas bien: tu ritmo es suficiente'; }
+  else if (ratio >= META_UMBRAL_AMARILLO) { r.estado = 'amarillo'; r.texto = 'Ritmo justo: conviene aportar algo más'; }
+  else { r.estado = 'rojo'; r.texto = 'Al ritmo actual no llegarías a tiempo'; }
+  return r;
+}
+function metaInvCardHtml(r) {
+  const pctC = r.pct == null ? 0 : Math.max(0, Math.min(100, r.pct));
+  const pctGan = r.aportado > 0 ? r.gan / r.aportado * 100 : null;
+  let h = '<div class="card" style="margin-bottom:12px;">' +
+    '<div class="budget-row" style="margin:0;"><div class="top"><span class="cat" style="display:flex;align-items:center;gap:8px;">' + semaforoDot(r.estado) + escapeHtml(r.nombre) + ' <span class="meta-tipo">Inversión</span></span>' +
+    '<span class="nums"><b class="tnum">' + (r.pct == null ? '—' : r.pct.toFixed(0) + '%') + '</b></span></div>' +
+    '<div class="progress"><div style="width:' + pctC + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>' +
+    '<div class="meta-inv-nums"><div><div class="l">Vale hoy</div><div class="v tnum">' + money(r.valor) + '</div></div>' +
+    '<div><div class="l">Aportado</div><div class="v tnum">' + money(r.aportado) + '</div></div>' +
+    '<div><div class="l">Resultado</div><div class="v tnum" style="color:' + (r.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (r.gan >= 0 ? '+' : '−') + money(Math.abs(r.gan)) + (pctGan == null ? '' : ' <small>(' + pct1(pctGan) + ')</small>') + '</div></div></div>' +
+    '<div class="summary-line">' + (r.obj > 0 ? 'Objetivo ' + money(r.obj) : 'Sin objetivo') + (r.fecha ? ' · hasta ' + fmtDateLong(r.fecha) : '') + ' · ' + r.n + (r.n === 1 ? ' aportación' : ' aportaciones') + '</div>' +
+    '<div style="font-size:13.5px;font-weight:600;color:' + SEMAFORO_COLOR[r.estado] + ';margin:2px 0 6px;">' + escapeHtml(r.texto) + '</div>';
+  if (r.necesario != null && r.necesario > 0.005) h += '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">Para llegar a tiempo necesitas aportar aprox. <b class="tnum" style="color:var(--text);">' + money(r.necesario) + '/mes</b>.</div>';
+  if (r.obj > 0 && r.falta > 0) h += '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">Tu ritmo (últimos 3 meses): <b class="tnum" style="color:var(--text);">' + money(r.ritmo) + '/mes</b>' +
+    (r.llegada ? ' · a este ritmo llegarías hacia ' + fmtMesAnio(r.llegada) : ' · sin aportaciones recientes para estimar') + '.</div>';
+  h += '<div class="meta-est">📈 Proyección con una rentabilidad del <b>' + fmt2(r.rent).replace(/,00$/, '') + ' % anual</b> (' + escapeHtml(r.fuente) + '). Es una <b>estimación</b>: las inversiones suben y bajan y no hay ninguna garantía.' +
+    (r.sinValorar ? ' ' + r.sinValorar + (r.sinValorar === 1 ? ' aportación sin precio automático cuenta' : ' aportaciones sin precio automático cuentan') + ' por lo aportado.' : '') + '</div>' +
+    '<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn sm ghost" ' + act('metaAsignar', r.id) + '>Asignar aportaciones</button><button class="btn sm ghost" ' + act('metaEditar', r.id) + '>Editar meta</button></div>';
+  return h + '</div>';
+}
+/* ---- editor de metas ---- */
+function metasListaHtml() {
+  const ms = metasCfg();
+  return '<div class="handle"></div><h2>Metas</h2>' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;"><b>Ahorro:</b> dinero que apartas (movimientos de tipo Ahorro). <b>Inversión:</b> lo que vas invirtiendo para algo (por ejemplo, la entrada de una casa); su progreso es lo que valen hoy esas inversiones.</div>' +
+    (ms.length ? '<div class="list">' + ms.map((m) => '<div class="row" ' + act('metaEditar', m.id || '') + '><span class="dot" style="background:var(--savings)"></span><div class="main"><div class="ttl">' + escapeHtml(m.nombre) + '</div><div class="meta">' + (tipoMeta(m) === 'inversion' ? 'Inversión' : 'Ahorro') + (m.fechaObjetivo ? ' · hasta ' + fmtDateShort(m.fechaObjetivo) : '') + '</div></div><div class="amt tnum">' + (num(m.objetivo) > 0 ? money(m.objetivo) : '—') + '</div></div>').join('') + '</div>'
+      : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no tienes metas.</div>') +
+    '<div class="actions"><button class="btn ghost block" ' + act('metaNueva') + '>' + ic('plus') + ' Nueva meta</button><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+function metaEditorHtml() {
+  const F = FORM, inv = F.tipoMeta === 'inversion';
+  const v = (x) => (x == null ? '' : escapeHtml(x));
+  return '<div class="handle"></div><h2>' + (F.id ? 'Editar meta' : 'Nueva meta') + '</h2>' +
+    '<div class="field"><label>Tipo</label><div class="type-toggle"><button type="button" data-t="Ahorro" class="' + (!inv ? 'active' : '') + '" ' + act('metaTipo', 'ahorro') + '>Ahorro</button><button type="button" data-t="Inversión" class="' + (inv ? 'active' : '') + '" ' + act('metaTipo', 'inversion') + '>Inversión</button></div></div>' +
+    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="' + (inv ? 'Entrada de la casa' : 'Fondo de emergencia') + '" value="' + v(F.nombre) + '"></div>' +
+    '<div class="field"><label>Objetivo (' + sym() + ')</label><input id="mObjetivo" type="number" step="0.01" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
+    '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="mFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
+    (inv
+      ? '<div class="field"><label>Rentabilidad anual esperada (%) <span class="hint">· opcional</span></label><input id="mRent" type="number" step="0.1" inputmode="decimal" placeholder="Automática" value="' + v(F.rentabilidad) + '"><div class="rec-hint">Si lo dejas vacío se usa la rentabilidad real de las aportaciones de esta meta cuando haya 6 meses de histórico, y si no, un ' + RENT_DEFECTO + ' % prudente. Siempre es una estimación.</div></div>' +
+        '<div class="field"><label>Valor de lo invertido fuera de la app (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"><div class="rec-hint">Solo si tienes inversiones para esta meta que no apuntas en la app. Lo apuntado se asigna con «Asignar aportaciones».</div></div>'
+      : '<div class="field"><label>Ya ahorrado antes (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"></div>') +
+    '<div class="actions"><button class="btn ghost block" ' + act('openMetas') + '>Cancelar</button><button class="btn accent block" ' + act('metaGuardar') + '>Guardar</button></div>' +
+    (F.id ? '<button class="btn danger block" style="margin-top:10px;" ' + act('metaEliminar') + '>' + ic('trash') + ' Eliminar meta</button><div class="rec-hint" style="text-align:center;">Eliminar la meta no borra ningún movimiento.</div>' : '');
+}
+function metaAbrirEditor(id) {
+  const m = id ? metasCfg().find((x) => x.id === id) : null;
+  FORM = { kind: 'meta', id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null };
+  if ($('#sheetBackdrop')) updateSheet(metaEditorHtml()); else openSheet(metaEditorHtml());
+}
+function metaLeerForm() {
+  const F = FORM, val = (sel) => { const el = $(sel); return el ? el.value : ''; };
+  F.nombre = val('#mNombre').trim(); F.objetivo = val('#mObjetivo'); F.fechaObjetivo = val('#mFecha'); F.yaAhorrado = val('#mFuera'); F.rentabilidad = val('#mRent');
+}
+async function metaGuardar() {
+  metaLeerForm();
+  const F = FORM;
+  if (!F.nombre) return toast('Ponle un nombre a la meta');
+  const arr = (cfg().ahorro || []).slice();
+  if (arr.some((m) => m && m.nombre && m.id !== F.id && normName(m.nombre) === normName(F.nombre))) return toast('Ya tienes una meta con ese nombre');
+  const numOrNull = (x) => { const n = parseFloat(x); return x === '' || x == null || !isFinite(n) ? null : n; };
+  const idx = F.id ? arr.findIndex((m) => m && m.id === F.id) : -1;
+  const prev = idx >= 0 ? arr[idx] : {};
+  const item = Object.assign({}, prev, { id: F.id || nuevoIdMeta(), nombre: F.nombre, tipo: F.tipoMeta, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado) });
+  if (F.tipoMeta === 'inversion') item.rentabilidad = numOrNull(F.rentabilidad); else delete item.rentabilidad;
+  // renombrar: los movimientos de Ahorro que se enlazaban por el nombre antiguo pasan a enlazarse por el identificador
+  if (F.id && F.nombreOrig && normName(F.nombreOrig) !== normName(F.nombre)) {
+    const ligados = S.movimientos.filter((x) => x.tipo === 'Ahorro' && !x.metaId && normName(x.categoria) === normName(F.nombreOrig));
+    for (const x of ligados) { if (!(await write(() => S.db.collection('movimientos').doc(x.id).set(Object.assign(stripId(x), { metaId: item.id, categoria: F.nombre }))))) return; }
+  }
+  if (idx >= 0) arr[idx] = item; else arr.push(item);
+  saveConfig({ ahorro: arr });
+  FORM = { kind: 'metas' };
+  updateSheet(metasListaHtml());
+  render();
+  toast('Meta guardada');
+}
+function metaEliminar() {
+  const arr = (cfg().ahorro || []).filter((m) => !(m && m.id === FORM.id));
+  saveConfig({ ahorro: arr });
+  FORM = { kind: 'metas' };
+  updateSheet(metasListaHtml());
+  render();
+  toast('Meta eliminada');
+}
+/* ---- asignar aportaciones a una meta de inversión ---- */
+function asignarHtml() {
+  const F = FORM, meta = metasCfg().find((m) => m.id === F.metaId);
+  if (!meta) return '';
+  const nombresMeta = {}; metasCfg().forEach((m) => { if (m.id) nombresMeta[m.id] = m.nombre; });
+  const movs = S.movimientos.filter((x) => x.tipo === 'Inversión').sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  const grupos = {};
+  movs.forEach((x) => { const k = x.activoId || 'n:' + normName(x.categoria); (grupos[k] = grupos[k] || { nombre: (x.categoria || 'Sin activo').trim(), movs: [] }).movs.push(x); });
+  const html = Object.entries(grupos).sort((a, b) => b[1].movs.length - a[1].movs.length).map(([k, g]) => {
+    const todas = g.movs.every((x) => F.sel.has(x.id));
+    return '<div class="asig-grupo"><div class="asig-head"><b>' + escapeHtml(g.nombre) + '</b><span>' + g.movs.length + ' · ' + money(g.movs.reduce((a, x) => a + num(x.importe), 0)) + '</span>' +
+      '<button type="button" class="btn sm ' + (todas ? 'accent' : 'ghost') + '" ' + act('asigGrupo', k) + '>' + (todas ? '✓ Todas' : 'Todas') + '</button></div>' +
+      g.movs.map((x) => {
+        const otra = x.metaId && x.metaId !== F.metaId && nombresMeta[x.metaId] ? nombresMeta[x.metaId] : '';
+        return '<label class="asig-row"><input type="checkbox" ' + (F.sel.has(x.id) ? 'checked' : '') + ' ' + onChange('asigMov', x.id) + '><span>' + fmtDateShort(x.fecha) + ' ' + (x.fecha || '').slice(0, 4) + (x.descripcion ? ' · ' + escapeHtml(x.descripcion) : '') + (otra ? ' · <i>ahora en «' + escapeHtml(otra) + '»</i>' : '') + '</span><b class="tnum">' + money(x.importe) + '</b></label>';
+      }).join('') + '</div>';
+  }).join('');
+  const n = F.sel.size, tot = movs.filter((x) => F.sel.has(x.id)).reduce((a, x) => a + num(x.importe), 0);
+  return '<div class="handle"></div><h2>Asignar a «' + escapeHtml(meta.nombre) + '»</h2>' +
+    '<div style="font-size:13px;color:var(--text-muted);margin:-6px 0 10px;line-height:1.45;">Marca las aportaciones de inversión que son para esta meta. Lo que no asignes a ninguna meta queda en «General».</div>' +
+    (html || '<div class="card" style="color:var(--text-faint);font-size:13.5px;">No tienes movimientos de inversión.</div>') +
+    '<div class="rec-prev">Seleccionadas: <b>' + n + '</b> · ' + money(tot) + ' aportados</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('asigGuardar') + '>Guardar</button></div>';
+}
+async function asigGuardar() {
+  const F = FORM, cambios = [];
+  S.movimientos.filter((x) => x.tipo === 'Inversión').forEach((x) => {
+    const quiere = F.sel.has(x.id), tiene = x.metaId === F.metaId;
+    if (quiere && !tiene) cambios.push([x, F.metaId]);
+    else if (!quiere && tiene) cambios.push([x, null]);
+  });
+  if (!cambios.length) { closeSheet(); return; }
+  F.guardando = true;
+  let ok = 0;
+  for (const [x, metaId] of cambios) { if (await write(() => S.db.collection('movimientos').doc(x.id).set(Object.assign(stripId(x), { metaId })))) ok++; else break; }
+  closeSheet();
+  toast(ok === cambios.length ? 'Aportaciones asignadas' : 'Solo se guardaron ' + ok + ' de ' + cambios.length + ' cambios');
+}
+/* ---- selector de meta en el formulario de inversión ---- */
+function metaInvSelectorHtml() {
+  const ms = metasCfg().filter((m) => tipoMeta(m) === 'inversion' && m.id);
+  if (!ms.length) return '';
+  const sel = FORM.metaId && ms.some((m) => m.id === FORM.metaId) ? FORM.metaId : '';
+  return '<div class="field"><label>Meta <span class="hint">· para qué es esta inversión</span></label><div class="chips">' +
+    [['', 'General']].concat(ms.map((m) => [m.id, m.nombre])).map(([id, n]) => '<button type="button" class="chip ' + (sel === id ? 'active' : '') + '" ' + act('pickMetaInv', id) + '>' + escapeHtml(n) + '</button>').join('') + '</div></div>';
+}
+/* ---- patrimonio (solo informativo) ---- */
+function patrimonio() {
+  let inv = 0, sinValor = 0;
+  S.movimientos.forEach((x) => { if (x.tipo !== 'Inversión') return; const v = valorMovInv(x); if (v == null) { inv += num(x.importe); sinValor++; } else inv += v; });
+  metasCfg().filter((m) => tipoMeta(m) === 'inversion').forEach((m) => { inv += num(m.yaAhorrado); });
+  const ahorro = metasCfg().filter((m) => tipoMeta(m) === 'ahorro').reduce((a, m) => a + metaStats(m).acum, 0);
+  const deudas = (cfg().deudas || []).filter((d) => d && d.nombre).map(deudaStats).filter((r) => r.total > 0).reduce((a, r) => a + r.pend, 0);
+  return { inv, sinValor, ahorro, deudas, total: inv + ahorro - deudas };
+}
+function patrimonioHtml() {
+  if (S.movimientos.some((x) => x.tipo === 'Inversión')) asegurarValoracion();
+  const p = patrimonio();
+  if (!p.inv && !p.ahorro && !p.deudas) return '';
+  const fila = (l, v, signo, color) => '<div class="pat-row"><span>' + l + '</span><b class="tnum" style="color:' + color + '">' + signo + money(Math.abs(v)) + '</b></div>';
+  const cargando = S._valCarga || S._valProg;
+  return '<div class="section-title">Patrimonio</div><div class="card pat-card">' +
+    '<div class="pat-total tnum">' + money(p.total) + '</div>' +
+    fila('Inversiones (valor de mercado)' + (cargando ? ' · actualizando…' : ''), p.inv, '+', 'var(--income)') +
+    fila('Ahorro en metas', p.ahorro, '+', 'var(--income)') +
+    (p.deudas ? fila('Deudas pendientes', p.deudas, '−', 'var(--expense)') : '') +
+    '<div class="pat-note">Solo informativo: <b>no incluye el dinero de tus cuentas del banco</b>.' + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo aportado.' : '') + '</div></div>';
+}
+
 /* ============================================================
    INICIO (Dashboard | Análisis) + CALENDARIO (Fase 3)
    ============================================================ */
@@ -1023,7 +1262,7 @@ async function cargarValoracion(ids) {
     S.valoracion = r && r.valores ? { ts: Date.now(), valores: r.valores } : { ts: Date.now(), valores: {}, error: true };
   } catch (e) { S.valoracion = { ts: Date.now(), valores: {}, error: true }; }
   S._valCarga = false;
-  if (enAnalisis() && subAnalisis() === 'inversiones') render();
+  render();
 }
 /* ---------- Evolución de la cartera y rentabilidad anual (Fase 3D) ---------- */
 const PERIODOS_INV = [['1m', '1M', 30], ['3m', '3M', 91], ['6m', '6M', 182], ['1a', '1A', 365], ['max', 'Máx', 0]];
@@ -1833,7 +2072,7 @@ function impPatchConfig(filas) {
   const nuevos = impNuevosConfig(filas), c = cfg(), patch = {};
   if (nuevos.categoriasGasto.length) patch.categoriasGasto = (c.categoriasGasto || []).concat(nuevos.categoriasGasto.map((n) => ({ nombre: n, presupuesto: null })));
   if (nuevos.ingresos.length) patch.ingresos = (c.ingresos || []).concat(nuevos.ingresos);
-  if (nuevos.ahorro.length) patch.ahorro = (c.ahorro || []).concat(nuevos.ahorro.map((n) => ({ nombre: n, objetivo: null, fechaObjetivo: null })));
+  if (nuevos.ahorro.length) patch.ahorro = (c.ahorro || []).concat(nuevos.ahorro.map((n) => ({ id: nuevoIdMeta(), nombre: n, tipo: 'ahorro', objetivo: null, fechaObjetivo: null })));
   if (nuevos.deudas.length) patch.deudas = (c.deudas || []).concat(nuevos.deudas.map((n) => ({ nombre: n, objetivo: null, fechaObjetivo: null, recurrencia: '' })));
   if (nuevos.facturas.length) {
     patch.facturas = (c.facturas || []).concat(nuevos.facturas.map((n) => {
@@ -2506,7 +2745,8 @@ function renderMas() {
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
     item('categoriasGasto') +
     '<button class="menu-item" ' + act('openRecurrentes') + '><span class="ic">' + ic('calendar') + '</span>Cobros y pagos recurrentes' + badge('cobros') + '<span class="chev">' + ic('chevR') + '</span></button>' +
-    ['ahorro', 'deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') +
+    '<button class="menu-item" ' + act('openMetas') + '><span class="ic">' + ic('flag') + '</span>Metas<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">ahorro e inversión</span><span class="chev">' + ic('chevR') + '</span></button>' +
+    ['deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') +
     '<button class="menu-item" ' + act('openReglas') + '><span class="ic">' + ic('tag') + '</span>Reglas de categorías' + badge('reglas') + '<span class="chev">' + ic('chevR') + '</span></button>' +
     '<button class="menu-item" ' + act('openTabsAn') + '><span class="ic">' + ic('chart') + '</span>Pestañas de Análisis<span class="chev">' + ic('chevR') + '</span></button></div>' +
     '<div class="section-title">Cuenta y seguridad</div><div class="card menu">' +
@@ -2760,6 +3000,22 @@ const H = {
       else if (k === 'tareas') { S.tab = 'tareas'; render(); window.scrollTo(0, 0); }
     }, 260);
   },
+  openMetas: () => { FORM = { kind: 'metas' }; if ($('#sheetBackdrop')) updateSheet(metasListaHtml()); else openSheet(metasListaHtml()); },
+  metaNueva: () => metaAbrirEditor(null),
+  metaEditar: ([id]) => metaAbrirEditor(id || null),
+  metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
+  metaGuardar: () => metaGuardar(),
+  metaEliminar: (_, el) => confirmDelete(el, metaEliminar),
+  metaAsignar: ([id]) => { FORM = { kind: 'asignar', metaId: id, sel: new Set(S.movimientos.filter((x) => x.tipo === 'Inversión' && x.metaId === id).map((x) => x.id)) }; openSheet(asignarHtml()); },
+  asigMov: ([id], el) => { if (el.checked) FORM.sel.add(id); else FORM.sel.delete(id); updateSheet(asignarHtml()); },
+  asigGrupo: ([k]) => {
+    const ids = S.movimientos.filter((x) => x.tipo === 'Inversión' && (x.activoId || 'n:' + normName(x.categoria)) === k).map((x) => x.id);
+    const todas = ids.every((id) => FORM.sel.has(id));
+    ids.forEach((id) => { if (todas) FORM.sel.delete(id); else FORM.sel.add(id); });
+    updateSheet(asignarHtml());
+  },
+  asigGuardar: () => { if (!FORM.guardando) asigGuardar(); },
+  pickMetaInv: ([id]) => { FORM.metaId = id || null; $$('#invFields .chips .chip').forEach((b) => { const a = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || ''); if ((b.getAttribute('data-click') || '').indexOf('pickMetaInv') === 0) b.classList.toggle('active', a === (id || '')); }); },
   setInvPeriodo: ([k]) => { if (PERIODOS_INV.some((x) => x[0] === k)) { S.invPeriodo = k; render(); } },
   setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
@@ -2999,6 +3255,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { imp: () => IMP, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes };
+window.__APP__ = { imp: () => IMP, metasStats, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes };
 if (!window.__NO_AUTOSTART__) main();
 })();
