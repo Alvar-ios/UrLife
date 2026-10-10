@@ -506,3 +506,8 @@ a.btn { display: flex; align-items: center; justify-content: center; text-decora
 .comp-box .chip.active { background: var(--accent); color: var(--accent-ink); }
 .comp-box .segmented { background: var(--paper-raised); }
 .comp-box .segmented button.active { background: var(--accent-soft); color: var(--accent); box-shadow: none; }
+
+/* Metas y deudas compartidas (bloque 8.3) */
+.obj-grupo { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 2px 8px; border-radius: 100px; }
+.obj-grupo .i { width: 13px; height: 13px; }
+.obj-personas { font-size: 13px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }

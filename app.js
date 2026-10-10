@@ -209,6 +209,7 @@ function subscribeAll() {
     }
     render(); refrescarSheetCompartido();
   }, (e) => { console.error(e); S.compartidos = S.compartidos || []; }));
+  if (S.db.objetivos) _unsubs.push(S.db.objetivos.suscribir((rows) => { S.objetivos = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.objetivos = S.objetivos || []; }));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
     S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
   }, fail('cfg', 'No se pudo cargar la configuración')));
@@ -630,11 +631,11 @@ function openMovForm(id, pre) {
   if (mio && mio.compartidoId && !comp && compPorId(mio.compartidoId)) return openCompForm(mio.compartidoId);
   // En un gasto compartido se ve el compartido (el total); tu movimiento enlazado se actualiza al guardar.
   const ex = comp ? Object.assign({}, mio || {}, { id: mio ? mio.id : null, tipo: comp.tipo, importe: comp.importe, categoria: comp.categoria, fecha: comp.fecha, descripcion: comp.descripcion }) : mio;
-  const compDest = pre && pre.comp;
+  const compDest = pre && pre.comp, objPre = pre && pre.objetivo;
   pre = (!ex && pre) || {};
   const tipoIni = ex ? ex.tipo : pre.tipo ? pre.tipo : (S.tab === 'movimientos' && S.movFiltroTipo !== 'Todos' ? S.movFiltroTipo : 'Gasto');
   FORM = { kind: 'mov', id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
-  if (compDest) { FORM.comp = { on: true }; compPrepararDestino(compDest); }
+  if (compDest) { FORM.comp = { on: true, objetivo: objPre || null }; compPrepararDestino(compDest); }
   FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
   FORM.metaId = ex && ex.metaId ? ex.metaId : null;
   if (ex && ex.activoId) { FORM.activo = { activo_id: ex.activoId, nombre: ex.categoria, tipo: ex.tipoActivo || '', simbolo: '', moneda: '' }; FORM.partOrig = ex.participaciones == null ? null : Number(ex.participaciones); }
@@ -648,7 +649,7 @@ function openMovForm(id, pre) {
     '<div class="field" id="catField"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : (pre.categoria || '')) + '</div>' +
     '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : (pre.categoria || '')) + '" ' + onInput('onCatInput') + '></div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : (pre.fecha || todayISO())) + '" ' + onChange('onFechaChange') + '></div>' +
-    '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : '') + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>' +
+    '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>' +
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
     metodos.map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' +
     '<div class="field" id="compField">' + compFieldHtml() + '</div>' +
@@ -662,6 +663,8 @@ function openMovForm(id, pre) {
 }
 async function saveMov() {
   if (FORM.guardando) return;
+  const obSel = FORM.comp && FORM.comp.on && TIPO_OBJ[FORM.tipo] && FORM.comp.objetivo ? objPorId(FORM.comp.objetivo) : null;
+  if (obSel && obSel.tipo === TIPO_OBJ[FORM.tipo] && FORM.comp.dest === 'g:' + obSel.grupoId) { const c = $('#fCategoria'); if (c) c.value = obSel.nombre; }
   const importe = parseFloat($('#fImporte').value);
   const fecha = $('#fFecha').value;
   const auto = invAuto();
@@ -857,8 +860,8 @@ function semaforoDot(estado) { return '<span class="dot" style="background:' + S
 function renderMetas() {
   const ms = metasStats();
   if (ms.some((r) => r.inv)) asegurarValoracion();
-  const cab = '<div style="display:flex;justify-content:flex-end;margin:-4px 0 8px;"><button class="link" ' + act('openMetas') + '>Gestionar metas</button></div>';
-  if (!ms.length) return cab + '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes metas. Créalas en Más → Metas: de ahorro o de inversión (por ejemplo, la entrada de una casa).</div>';
+  const cab = '<div style="display:flex;justify-content:flex-end;gap:16px;margin:-4px 0 8px;">' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('plus') + ' Meta compartida' + badge('compartir') + '</button>' : '') + '<button class="link" ' + act('openMetas') + '>Gestionar metas</button></div>';
+  if (!ms.length) return cab + (objCompartidos('ahorro').length ? objCardsHtml('ahorro') : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes metas. Créalas en Más → Metas: de ahorro o de inversión (por ejemplo, la entrada de una casa).</div>');
   const generalInv = S.movimientos.filter((x) => x.tipo === 'Inversión' && !(x.metaId && ms.some((r) => r.inv && r.id === x.metaId)));
   const valGeneral = generalInv.reduce((a, x) => { const v = valorMovInv(x); return a + (v == null ? num(x.importe) : v); }, 0);
   return cab + ms.map((r) => {
@@ -878,12 +881,12 @@ function renderMetas() {
         (r.llegada ? ' · al ritmo actual llegarías en ' + fmtMesAnio(r.llegada) : ' · sin ahorro reciente para estimar') + '.</div>';
     }
     return h + '<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn sm ghost" ' + act('irMovs', 'Ahorro', 'todo', r.nombre) + '>Ver movimientos</button><button class="btn sm ghost" ' + act('metaEditar', r.id || '') + '>Editar meta</button></div></div>';
-  }).join('') + (ms.some((r) => r.inv) && generalInv.length ? '<div class="summary-line">Inversiones sin meta («General»): ' + money(valGeneral) + ' de valor actual.</div>' : '') +
+  }).join('') + objCardsHtml('ahorro') + (ms.some((r) => r.inv) && generalInv.length ? '<div class="summary-line">Inversiones sin meta («General»): ' + money(valGeneral) + ' de valor actual.</div>' : '') +
     '<div class="summary-line">Metas de ahorro: suman tus movimientos de tipo Ahorro de esa meta, más lo que indiques en «Ya ahorrado antes». Metas de inversión: valor actual de las aportaciones que les asignes.</div>';
 }
 function deudaStats(d) {
   const key = (d.nombre || '').trim().toLowerCase();
-  const movs = S.movimientos.filter((x) => x.tipo === 'Deuda' && (x.categoria || '').trim().toLowerCase() === key);
+  const movs = movsPersonales().filter((x) => x.tipo === 'Deuda' && (x.categoria || '').trim().toLowerCase() === key);
   const total = num(d.objetivo);
   const pagado = movs.reduce((a, x) => a + num(x.importe), 0);
   const pend = Math.max(0, total - pagado);
@@ -903,7 +906,7 @@ function deudaStats(d) {
   else { r.estado = 'rojo'; r.texto = 'Al ritmo actual no llegarías a tiempo'; }
   return r;
 }
-function renderDeudas() {
+function renderDeudasPersonales() {
   const ds = (cfg().deudas || []).filter((d) => d && d.nombre).map(deudaStats);
   if (!ds.length) return '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes deudas. Créalas en Más → Deudas (con el total y, si quieres, una fecha objetivo).</div>';
   const tot = ds.reduce((a, r) => a + r.total, 0), pag = ds.reduce((a, r) => a + Math.min(r.pagado, r.total), 0), pen = ds.reduce((a, r) => a + r.pend, 0);
@@ -923,7 +926,7 @@ function renderDeudas() {
     }).join('') + '<div class="summary-line">Lo pagado sale de tus movimientos de tipo Deuda con el nombre de cada deuda. Esta versión no calcula intereses.</div>';
 }
 function renderMetasInicio() {
-  const ms = metasStats().filter((r) => r.obj > 0);
+  const ms = metasStats().concat(objCompartidos('ahorro')).filter((r) => r.obj > 0);
   if (!ms.length) return '';
   const cnt = { verde: 0, amarillo: 0, rojo: 0, gris: 0 }; ms.forEach((r) => { cnt[r.estado]++; });
   const sum = ['verde', 'amarillo', 'rojo'].filter((e) => cnt[e]).map((e) => '<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;">' + semaforoDot(e) + cnt[e] + '</span>').join('');
@@ -946,7 +949,7 @@ function nombreSugerido() {
 }
 const ERR_GRUPO = { no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
   demasiadas_invitaciones: 'Hay demasiados enlaces pendientes. Anula alguno.', demasiados_grupos: 'Has creado muchos grupos hoy. Prueba mañana.', usa_salir: 'Para irte tú, usa «Salir del grupo».', sin_sesion: 'Tienes que iniciar sesión.',
-  saldo_pendiente: 'Hay cuentas pendientes. Saldadlas antes (botón «Saldar»).', reparto_no_cuadra: 'El reparto no suma el total.', reparto_no_valido: 'Revisa el reparto: solo puede incluir a miembros.', pagador_no_valido: 'Quien pagó tiene que ser del grupo.', compartido_borrado: 'Ese gasto ya se había eliminado.' };
+  saldo_pendiente: 'Hay cuentas pendientes. Saldadlas antes (botón «Saldar»).', reparto_no_cuadra: 'El reparto no suma el total.', reparto_no_valido: 'Revisa el reparto: solo puede incluir a miembros.', pagador_no_valido: 'Quien pagó tiene que ser del grupo.', compartido_borrado: 'Ese gasto ya se había eliminado.', objetivo_no_valido: 'Elige una meta o deuda de ese grupo.', objetivo_borrado: 'Esa meta o deuda ya se había eliminado.' };
 function errGrupo(e) { const m = String((e && (e.message || (e.original && e.original.message))) || ''); const k = Object.keys(ERR_GRUPO).find((x) => m.indexOf(x) >= 0); return k ? ERR_GRUPO[k] : 'No se pudo completar. Revisa tu conexión.'; }
 async function cargarGrupos() {
   if (!gruposDisponible()) return;
@@ -992,7 +995,7 @@ function grupoHtml(id) {
   const pendientes = inv.filter((x) => !x.usada_en && new Date(x.expira) > new Date());
   if (g.tipo === 'directo') return personaHtml(g);
   return '<div class="handle"></div><h2>' + escapeHtml(g.nombre) + '</h2>' +
-    (g.miembros.length >= 2 ? cuentasGrupoHtml(g) : '') +
+    (g.miembros.length >= 2 ? cuentasGrupoHtml(g) + objetivosGrupoHtml(g) : '') +
     (g.soyAdmin ? '<div class="field" style="margin-top:14px;"><label>Nombre del grupo</label><div style="display:flex;gap:8px;"><input id="gRenombrar" type="text" maxlength="60" value="' + escapeHtml(g.nombre) + '"><button class="btn sm ghost" ' + act('grupoRenombrar', g.id) + '>Guardar</button></div></div>' : '') +
     '<div class="section-title">Miembros (' + g.miembros.length + ')</div><div class="list">' +
     g.miembros.map((m, i) => '<div class="row static">' + avatarHtml(m, i) + '<div class="main"><div class="ttl">' + escapeHtml(m.nombre) + (m.user_id === yo ? ' <span class="hint">(tú)</span>' : '') + '</div><div class="meta">' + (m.rol === 'admin' ? 'Administrador' : 'Miembro') + '</div></div>' +
@@ -1063,7 +1066,8 @@ function unirseHtml() {
      compartidoId y deja de contarse, para no sumar dos veces.
    - Las «Liquidaciones» (Saldar) no son gasto: solo ajustan quién debe a quién.
    ============================================================ */
-const TIPOS_COMPARTIBLES = ['Gasto', 'Factura'];
+const TIPOS_COMPARTIBLES = ['Gasto', 'Factura', 'Ahorro', 'Deuda'];
+const TIPO_OBJ = { Ahorro: 'ahorro', Deuda: 'deuda' }; // tipo de movimiento → tipo de meta/deuda compartida
 function compartidosDisponible() { return !!(S.db && S.db.compartidos && gruposDisponible()); }
 function cents(x) { return Math.round(num(x) * 100); }
 function r2(x) { return Math.round(num(x) * 100) / 100; }
@@ -1088,7 +1092,7 @@ function miNombreAlguno() { const g = (S.grupos || []).find((x) => x.miNombre); 
 // Tus movimientos + tu parte de lo compartido (sin contar dos veces lo que pagaste tú).
 function movsEfectivos() {
   const cs = S.compartidos || [], yo = miUid();
-  if (S._ef && S._ef.m === S.movimientos && S._ef.c === cs && S._ef.u === yo) return S._ef.v;
+  if (S._ef && S._ef.m === S.movimientos && S._ef.c === cs && S._ef.o === S.objetivos && S._ef.u === yo) return S._ef.v;
   let v = S.movimientos;
   if (cs.length) {
     const vivos = new Set(cs.map((c) => c.id));
@@ -1096,11 +1100,19 @@ function movsEfectivos() {
     cs.forEach((c) => {
       if (c.tipo === 'Liquidación') return;
       const p = miParte(c); if (!(p > 0)) return;
-      v.push({ id: 'c:' + c.id, fecha: c.fecha, tipo: c.tipo, categoria: c.categoria || 'Compartido', descripcion: c.descripcion || '', importe: p, metodoPago: '', comp: c });
+      const ob = c.objetivoId ? objPorId(c.objetivoId) : null;
+      v.push({ id: 'c:' + c.id, fecha: c.fecha, tipo: c.tipo, categoria: (ob && ob.nombre) || c.categoria || 'Compartido', descripcion: c.descripcion || '', importe: p, metodoPago: '', comp: c });
     });
   }
-  S._ef = { m: S.movimientos, c: cs, u: yo, v };
+  S._ef = { m: S.movimientos, c: cs, o: S.objetivos, u: yo, v };
   return v;
+}
+// Solo tus movimientos personales que cuentan (sin los cargos enlazados a algo compartido)
+function movsPersonales() {
+  const cs = S.compartidos || [];
+  if (!cs.length) return S.movimientos;
+  const vivos = new Set(cs.map((c) => c.id));
+  return S.movimientos.filter((m) => !(m.compartidoId && vivos.has(m.compartidoId)));
 }
 function compAplicarLocal(c, quitarId) { S.compartidos = (S.compartidos || []).filter((x) => x.id !== c.id && x.id !== quitarId).concat([c]); }
 function compQuitarLocal(id) { S.compartidos = (S.compartidos || []).filter((x) => x.id !== id); }
@@ -1132,7 +1144,7 @@ function deudasDe(grupoId) {
 }
 function saldoTxt(v) { return v > 0.004 ? 'te deben ' + money(v) : v < -0.004 ? 'debes ' + money(-v) : 'en paz'; }
 function saldoColor(v) { return v > 0.004 ? 'var(--income)' : v < -0.004 ? 'var(--expense)' : 'var(--text-faint)'; }
-function compQuienTxt(c) { return nombreDestino(grupoDe(c.grupoId)) + ' · ' + (c.pagadoPor === miUid() ? 'pagaste tú' : 'pagó ' + nombreDe(c.grupoId, c.pagadoPor)); }
+function compQuienTxt(c) { const ap = c.tipo === 'Ahorro'; return nombreDestino(grupoDe(c.grupoId)) + ' · ' + (c.pagadoPor === miUid() ? (ap ? 'aportaste tú' : 'pagaste tú') : (ap ? 'aportó ' : 'pagó ') + nombreDe(c.grupoId, c.pagadoPor)); }
 // Porcentajes con 2 decimales que suman exactamente 100 (el ajuste va al mayor)
 function pctsCuadrados(vals) {
   const tot = vals.reduce((a, v) => a + v.x, 0) || 1, out = {};
@@ -1151,8 +1163,12 @@ function destinosCompartir() {
   return out;
 }
 // Por defecto: con quien compartiste la última vez; si no, tu único grupo.
+function destinosPara(tipo) {
+  const ds = destinosCompartir(), t = TIPO_OBJ[tipo];
+  return t ? ds.filter((d) => d.k.indexOf('g:') === 0 && objetivosDe(d.k.slice(2), t).length) : ds;
+}
 function destinoPorDefecto() {
-  const ds = destinosCompartir(), ult = cfg().ultimoCompartir;
+  const ds = destinosPara(FORM.tipo), ult = cfg().ultimoCompartir;
   if (ult && ds.some((d) => d.k === ult)) return ult;
   const gs = ds.filter((d) => d.grupo);
   return gs.length === 1 ? gs[0].k : ds.length === 1 ? ds[0].k : '';
@@ -1194,16 +1210,25 @@ function calcReparto(cp, imp, ms) {
   return { reparto: out };
 }
 function compFormDesde(c) {
-  const cp = { on: true, dest: 'g:' + c.grupoId, pagador: c.pagadoPor, modo: c.modo || 'igual', incl: {}, vals: {} };
+  const cp = { on: true, dest: 'g:' + c.grupoId, pagador: c.pagadoPor, modo: c.modo || 'igual', incl: {}, vals: {}, objetivo: c.objetivoId || null, clase: claseComp(c.tipo) };
   const ks = Object.keys(c.reparto || {});
   ks.forEach((u) => { cp.incl[u] = num(c.reparto[u]) > 0; });
   if (cp.modo === 'porcentaje') { const p = pctsCuadrados(ks.map((u) => ({ u, x: num(c.reparto[u]) }))); ks.forEach((u) => { cp.vals[u] = String(p[u]); }); }
   else ks.forEach((u) => { cp.vals[u] = String(num(c.reparto[u])); });
   return cp;
 }
+function claseComp(tipo) { return TIPO_OBJ[tipo] || 'gasto'; }
+// Prepara el destino solo si hace falta (destino no válido para el tipo o cambia de clase), sin pisar un reparto hecho a mano.
+function compAsegurarDestino() {
+  const cp = FORM.comp, ds = destinosPara(FORM.tipo), c = FORM.compId ? compPorId(FORM.compId) : null;
+  const valido = cp.dest && (ds.some((d) => d.k === cp.dest) || (c && cp.dest === 'g:' + c.grupoId));
+  if (valido && cp.clase === claseComp(FORM.tipo)) return;
+  const k = valido ? cp.dest : destinoPorDefecto();
+  if (k) compPrepararDestino(k); else { cp.dest = ''; cp.objetivo = null; cp.clase = claseComp(FORM.tipo); }
+}
 function compPrepararDestino(k) {
   const cp = FORM.comp, yo = miUid();
-  cp.dest = k;
+  cp.dest = k; cp.clase = claseComp(FORM.tipo);
   const ms = miembrosComp();
   if (!ms.some((m) => m.uid === cp.pagador)) cp.pagador = yo;
   cp.incl = {}; ms.forEach((m) => { cp.incl[m.uid] = true; });
@@ -1211,6 +1236,15 @@ function compPrepararDestino(k) {
   const g = k.indexOf('g:') === 0 ? grupoDe(k.slice(2)) : null, def = g && g.reparto && typeof g.reparto === 'object' ? g.reparto : null;
   if (def && ms.every((m) => def[m.uid] != null)) { cp.modo = 'porcentaje'; ms.forEach((m) => { cp.vals[m.uid] = String(def[m.uid]); }); }
   else cp.modo = 'igual';
+  const t = TIPO_OBJ[FORM.tipo];
+  if (t) {
+    const os = objetivosDe(k.slice(2), t);
+    const c0 = FORM.compId ? compPorId(FORM.compId) : null, huerfana = c0 && c0.objetivoId === cp.objetivo && !objPorId(cp.objetivo);
+    if (!huerfana && !os.some((o) => o.id === cp.objetivo)) cp.objetivo = os.length ? os[0].id : null;
+    const ob = objPorId(cp.objetivo), cat = $('#fCategoria'); if (ob && cat) cat.value = ob.nombre;
+    // en una hucha cada uno aporta lo suyo: por defecto solo cuenta para quien aporta
+    if (FORM.tipo === 'Ahorro') { cp.modo = 'igual'; cp.incl = {}; cp.incl[cp.pagador] = true; cp.vals = {}; }
+  } else cp.objetivo = null;
 }
 // Al cambiar de modo se parte del reparto que ya había, para no empezar de cero.
 function compCambiarModo(modo) {
@@ -1226,12 +1260,16 @@ function compCambiarModo(modo) {
 }
 function compFieldHtml() {
   if (!FORM || FORM.kind !== 'mov' || !compartidosDisponible()) return '';
-  const cp = FORM.comp || (FORM.comp = { on: false });
-  if (TIPOS_COMPARTIBLES.indexOf(FORM.tipo) < 0) return FORM.compId ? '<div class="rec-hint">Solo se comparten gastos y facturas: si lo guardas así, dejará de estar compartido.</div>' : '';
-  if (!cp.on) return '<button type="button" class="comp-toggle" ' + act('compOn') + '>' + ic('users') + '<span>Compartir este gasto</span>' + badge('compartir') + '</button>';
-  const yo = miUid(), ds = destinosCompartir(), c = FORM.compId ? compPorId(FORM.compId) : null;
+  const cp = FORM.comp || (FORM.comp = { on: false }), t = TIPO_OBJ[FORM.tipo];
+  if (TIPOS_COMPARTIBLES.indexOf(FORM.tipo) < 0) return FORM.compId ? '<div class="rec-hint">Solo se comparten gastos, facturas, ahorro y deudas: si lo guardas así, dejará de estar compartido.</div>' : '';
+  if (!cp.on) return '<button type="button" class="comp-toggle" ' + act('compOn') + '>' + ic('users') + '<span>' + (t === 'ahorro' ? 'Aportar a una meta compartida' : t === 'deuda' ? 'Pagar una deuda compartida' : 'Compartir este gasto') + '</span>' + badge('compartir') + '</button>';
+  const yo = miUid(), ds = destinosPara(FORM.tipo), c = FORM.compId ? compPorId(FORM.compId) : null;
   if (c && !ds.some((d) => d.k === 'g:' + c.grupoId)) ds.unshift({ k: 'g:' + c.grupoId, label: nombreDestino(grupoDe(c.grupoId)) });
   let h = '<div class="comp-box"><div class="comp-head"><b>' + ic('users') + ' Compartido</b><button type="button" class="link" ' + act('compOff') + '>No compartir</button></div>';
+  if (!ds.length && t) {
+    return h + '<div class="rec-hint">Aún no tienes ' + (t === 'deuda' ? 'deudas compartidas (como una hipoteca)' : 'metas compartidas (una hucha para un viaje…)') + '. Créala y luego apunta aquí lo que ' + (t === 'deuda' ? 'pagáis' : 'aporta cada uno') + '.</div>' +
+      '<button type="button" class="btn sm ghost" style="margin-top:10px;" ' + act('objNueva', t) + '>' + ic('plus') + (t === 'deuda' ? ' Crear deuda compartida' : ' Crear meta compartida') + '</button></div>';
+  }
   if (!ds.length) {
     return h + '<div class="rec-hint">Aún no compartes con nadie. Crea un grupo o invita a una persona y, cuando acepte, podrás compartir con ella.</div>' +
       '<button type="button" class="btn sm ghost" style="margin-top:10px;" ' + act('compIrGrupos') + '>Ir a Grupos y personas</button></div>';
@@ -1239,7 +1277,12 @@ function compFieldHtml() {
   h += '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('compDest', d.k) + '>' + (d.grupo ? '👥 ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>';
   if (!cp.dest) return h + '<div class="rec-hint">Elige con quién lo compartes.</div></div>';
   const ms = miembrosComp();
-  return h + '<div class="comp-lbl">Pagó</div><div class="chips">' + ms.map((m) => '<button type="button" class="chip ' + (cp.pagador === m.uid ? 'active' : '') + '" ' + act('compPagador', m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>' +
+  if (t) {
+    const os = objetivosDe(cp.dest.slice(2), t);
+    const huerf = c && c.objetivoId && c.objetivoId === cp.objetivo && !objPorId(c.objetivoId) ? '<button type="button" class="chip active">' + escapeHtml(c.categoria || '—') + ' (eliminada)</button>' : '';
+    h += '<div class="comp-lbl">' + (t === 'deuda' ? 'Deuda' : 'Meta') + '</div><div class="chips">' + huerf + os.map((o) => '<button type="button" class="chip ' + (cp.objetivo === o.id ? 'active' : '') + '" ' + act('compObjetivo', o.id) + '>' + escapeHtml(o.nombre) + '</button>').join('') + '</div>';
+  }
+  return h + '<div class="comp-lbl">' + (FORM.tipo === 'Ahorro' ? 'Aporta' : 'Pagó') + '</div><div class="chips">' + ms.map((m) => '<button type="button" class="chip ' + (cp.pagador === m.uid ? 'active' : '') + '" ' + act('compPagador', m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>' +
     '<div class="comp-lbl">Cómo se reparte</div><div class="segmented sm">' + [['igual', 'Iguales'], ['porcentaje', 'Por %'], ['importe', 'Por importe']].map(([id, l]) => '<button type="button" class="' + (cp.modo === id ? 'active' : '') + '" ' + act('compModo', id) + '>' + l + '</button>').join('') + '</div>' +
     '<div id="compReparto">' + compRepartoHtml() + '</div></div>';
 }
@@ -1252,7 +1295,8 @@ function compRepartoHtml() {
   } else {
     h = ms.map((m) => '<div class="comp-row"><span class="n">' + nom(m) + '</span><input type="number" step="0.01" min="0" inputmode="decimal" class="comp-val" placeholder="0" value="' + escapeHtml((cp.vals || {})[m.uid] || '') + '" ' + onInput('compVal', m.uid) + '><span class="u">' + (cp.modo === 'porcentaje' ? '%' : sym()) + '</span></div>').join('');
   }
-  return '<div class="comp-rows">' + h + '</div><div id="compResumen" class="comp-resumen">' + compResumenHtml() + '</div>';
+  return '<div class="comp-rows">' + h + '</div>' + (FORM.tipo === 'Ahorro' ? '<div class="rec-hint" style="margin-top:4px;">En una hucha, normalmente cada uno aporta lo suyo: marca solo a quien aporta.</div>' : '') +
+    '<div id="compResumen" class="comp-resumen">' + compResumenHtml() + '</div>';
 }
 function compResumenHtml() {
   const cp = FORM.comp, ms = miembrosComp(), yo = miUid(), imp = importeForm();
@@ -1304,6 +1348,10 @@ async function saveCompartido(d) {
   if (!cp.dest) return toast('Elige con quién lo compartes');
   const r = calcReparto(cp, d.importe, miembrosComp());
   if (r.error) return toast(r.error);
+  const t = TIPO_OBJ[FORM.tipo], previo = FORM.compId ? compPorId(FORM.compId) : null;
+  const ob = t ? objPorId(cp.objetivo) : null;
+  const huerfana = t && previo && previo.objetivoId && cp.objetivo === previo.objetivoId && !ob && cp.dest === 'g:' + previo.grupoId;
+  if (t && !huerfana && (!ob || ob.tipo !== t || cp.dest !== 'g:' + ob.grupoId)) return toast(t === 'deuda' ? 'Elige la deuda compartida' : 'Elige la meta compartida');
   if (FORM.guardando) return;
   FORM.guardando = true;
   try {
@@ -1313,14 +1361,14 @@ async function saveCompartido(d) {
       if (!g || g === true) return;
       grupoId = g;
     }
-    const datos = { fecha: d.fecha, tipo: FORM.tipo, categoria: d.categoria, descripcion: d.descripcion, importe: r2(d.importe), pagadoPor: cp.pagador, reparto: r.reparto, modo: cp.modo };
-    const previo = FORM.compId ? compPorId(FORM.compId) : null;
+    const datos = { fecha: d.fecha, tipo: FORM.tipo, categoria: ob ? ob.nombre : huerfana ? (previo.categoria || d.categoria) : d.categoria, descripcion: d.descripcion, importe: r2(d.importe), pagadoPor: cp.pagador, reparto: r.reparto, modo: cp.modo, objetivoId: ob ? ob.id : huerfana ? previo.objetivoId : null };
     let c;
     try {
       if (previo && previo.grupoId === grupoId) c = await S.db.compartidos.editar(previo.id, datos);
       else {
         c = await S.db.compartidos.crear(Object.assign({ grupoId }, datos));
-        if (previo) await S.db.compartidos.borrar(previo.id);
+        // se mueve a otro grupo: si no se puede retirar el anterior, se deshace el nuevo para no contar dos veces
+        if (previo) { try { await S.db.compartidos.borrar(previo.id); } catch (e) { try { await S.db.compartidos.borrar(c.id); } catch (e2) { console.error(e2); } throw e; } }
       }
     } catch (e) { console.error(e); return toast(errGrupo(e)); }
     compAplicarLocal(c, previo && previo.id !== c.id ? previo.id : null);
@@ -1330,13 +1378,13 @@ async function saveCompartido(d) {
     let ok = true;
     if (mio || cp.pagador === yo) {
       const data = Object.assign(mio ? stripId(mio) : { creadoEn: Date.now() }, { compartidoId: c.id });
-      if (cp.pagador === yo || !mio) Object.assign(data, { tipo: FORM.tipo, importe: datos.importe, categoria: d.categoria, fecha: d.fecha, descripcion: d.descripcion, metodoPago: d.metodoPago });
+      if (cp.pagador === yo || !mio) Object.assign(data, { tipo: FORM.tipo, importe: datos.importe, categoria: datos.categoria, fecha: d.fecha, descripcion: d.descripcion, metodoPago: d.metodoPago });
       ['tipoActivo', 'activoId', 'participaciones', 'metaId'].forEach((k) => { if (k in data) data[k] = null; });
       ok = await write(() => S.db.collection('movimientos').doc(mio ? mio.id : undefined).set(data));
     }
     const reglaNueva = FORM.recordar ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
     if (reglaNueva) guardarRegla(reglaNueva, d.categoria, FORM.tipo);
-    toast(!ok ? 'Compartido guardado, pero no se pudo guardar tu copia' : previo ? 'Gasto compartido actualizado' : 'Gasto compartido añadido');
+    toast(!ok ? 'Compartido guardado, pero no se pudo guardar tu copia' : previo ? 'Actualizado' : t === 'ahorro' ? 'Aportación añadida a «' + datos.categoria + '»' : t === 'deuda' ? 'Pago añadido a «' + datos.categoria + '»' : 'Gasto compartido añadido');
     render(); terminarForm();
   } finally { FORM.guardando = false; }
 }
@@ -1370,7 +1418,7 @@ function compRowGrupo(c) {
     return '<div class="row" ' + act('compAbrir', c.id, c.grupoId) + '><span class="dot" style="background:var(--text-faint)"></span><div class="main"><div class="ttl">' + t + '</div><div class="meta">' + fmtDateShort(c.fecha) + ' · para saldar cuentas</div></div><div class="amt tnum">' + money(c.importe) + '</div></div>';
   }
   return '<div class="row" ' + act('compAbrir', c.id, c.grupoId) + '><span class="dot" style="background:var(--' + (TIPO_COLOR[c.tipo] || 'debt') + ')"></span><div class="main"><div class="ttl">' + escapeHtml(c.categoria || c.tipo) + '</div>' +
-    '<div class="meta">' + fmtDateShort(c.fecha) + (c.descripcion ? ' · ' + escapeHtml(c.descripcion) : '') + ' · ' + (c.pagadoPor === yo ? 'pagaste tú' : 'pagó ' + n(c.pagadoPor)) + '</div></div>' +
+    '<div class="meta">' + fmtDateShort(c.fecha) + (c.descripcion ? ' · ' + escapeHtml(c.descripcion) : '') + ' · ' + (c.tipo === 'Ahorro' ? (c.pagadoPor === yo ? 'aportaste tú' : 'aportó ' + n(c.pagadoPor)) : (c.pagadoPor === yo ? 'pagaste tú' : 'pagó ' + n(c.pagadoPor))) + '</div></div>' +
     '<div class="amt tnum">' + money(c.importe) + '<div class="amt-sub">tu parte ' + money(miParte(c)) + '</div></div></div>';
 }
 function cuentasGrupoHtml(g) {
@@ -1409,7 +1457,7 @@ function personaHtml(g) {
       '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Anular la invitación</button>';
   }
   return '<div class="handle"></div><h2>' + escapeHtml(o.nombre) + '</h2><div style="font-size:13px;color:var(--text-muted);margin:-6px 0 4px;">Gastos que compartes solo con ' + escapeHtml(o.nombre) + ', sin grupo.</div>' +
-    cuentasGrupoHtml(g) +
+    cuentasGrupoHtml(g) + objetivosGrupoHtml(g) +
     '<div class="actions"><button class="btn ghost block" ' + act('openGrupos') + '>Volver</button></div>' +
     '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Dejar de compartir con ' + escapeHtml(o.nombre) + '</button>';
 }
@@ -1443,6 +1491,131 @@ function grupoRepartoHtml(g) {
     '<div class="actions"><button class="btn ghost block" ' + act('grupoRepartoIgual', g.id) + '>A partes iguales</button><button class="btn accent block" ' + act('grupoRepartoGuardar', g.id) + '>Guardar</button></div>' +
     '<button type="button" class="link" style="margin-top:12px;" ' + act('grupoVer', g.id) + '>' + ic('chevL') + ' Volver</button>';
 }
+
+/* ============================================================
+   METAS Y DEUDAS COMPARTIDAS (Bloque 8.3)
+   - Una meta (hucha) o deuda (hipoteca…) vive en `objetivos_compartidos` y la ve todo el grupo.
+   - Cada aportación o pago es un movimiento compartido de tipo Ahorro o Deuda enlazado a ella
+     (así cuenta tu parte en tus números y, si se reparte, entra en el quién debe a quién).
+   ============================================================ */
+function objPorId(id) { return (S.objetivos || []).find((o) => o.id === id) || null; }
+function objetivosDe(grupoId, tipo) { return (S.objetivos || []).filter((o) => o.grupoId === grupoId && (!tipo || o.tipo === tipo)).sort((a, b) => a.nombre.localeCompare(b.nombre)); }
+function aportesDe(o) { return (S.compartidos || []).filter((c) => c.objetivoId === o.id); }
+function objAplicarLocal(o) { S.objetivos = (S.objetivos || []).filter((x) => x.id !== o.id).concat([o]); }
+function objQuitarLocal(id) { S.objetivos = (S.objetivos || []).filter((x) => x.id !== id); }
+function objStats(o) {
+  const cs = aportesDe(o), deuda = o.tipo === 'deuda', porPersona = {};
+  cs.forEach((c) => Object.keys(c.reparto || {}).forEach((u) => { porPersona[u] = (porPersona[u] || 0) + num(c.reparto[u]); }));
+  const acum = num(o.previo) + cs.reduce((a, c) => a + num(c.importe), 0);
+  const obj = num(o.objetivo), falta = Math.max(0, obj - acum), pct = obj > 0 ? acum / obj * 100 : null;
+  const hoy = todayISO(), desde = isoDaysAgo(90);
+  const ritmo = cs.filter((c) => (c.fecha || '') > desde && (c.fecha || '') <= hoy).reduce((a, c) => a + num(c.importe), 0) / 3;
+  const dias = o.fechaObjetivo ? daysUntil(o.fechaObjetivo) : null;
+  const r = { o, id: o.id, nombre: o.nombre, deuda, acum, obj, falta, pct, ritmo, dias, fecha: o.fechaObjetivo || null, porPersona, mio: porPersona[miUid()] || 0, mes: null, llegada: null, estado: 'gris', texto: '' };
+  if (obj <= 0) { r.texto = deuda ? 'Sin total definido' : 'Sin objetivo definido'; return r; }
+  if (falta <= 0) { r.estado = 'verde'; r.texto = deuda ? 'Deuda saldada' : 'Meta lograda'; return r; }
+  if (ritmo > 0) { const d = new Date(); d.setDate(d.getDate() + Math.round(falta / ritmo * 30.4375)); r.llegada = d; }
+  if (dias == null) { r.texto = 'Sin fecha objetivo'; return r; }
+  if (dias < 0) { r.estado = 'rojo'; r.texto = 'La fecha ya pasó y ' + (deuda ? 'quedan ' : 'faltan ') + money(falta); return r; }
+  r.mes = falta / Math.max(dias / 30.4375, 1);
+  const ratio = ritmo / r.mes;
+  if (ratio >= 1) { r.estado = 'verde'; r.texto = 'Vais bien: ritmo suficiente'; }
+  else if (ratio >= META_UMBRAL_AMARILLO) { r.estado = 'amarillo'; r.texto = deuda ? 'Ritmo justo: conviene pagar algo más' : 'Ritmo justo: conviene aportar algo más'; }
+  else { r.estado = 'rojo'; r.texto = deuda ? 'Al ritmo actual no llegaríais a tiempo' : 'Al ritmo actual no llegaríais'; }
+  return r;
+}
+function objCompartidos(tipo) { return (S.objetivos || []).filter((o) => o.tipo === tipo && grupoDe(o.grupoId)).map(objStats); }
+// Tu parte de una deuda compartida: según el reparto habitual del grupo (o a partes iguales)
+function miProporcion(o) {
+  const g = grupoDe(o.grupoId), yo = miUid(); if (!g || !g.miembros.length) return 0;
+  const r = g.reparto && typeof g.reparto === 'object' && g.reparto[yo] != null ? num(g.reparto[yo]) / 100 : null;
+  return r != null ? r : 1 / g.miembros.length;
+}
+function objCardHtml(r) {
+  const g = grupoDe(r.o.grupoId), yo = miUid(), pctC = r.pct == null ? 0 : Math.max(0, Math.min(100, r.pct));
+  const personas = Object.keys(r.porPersona).sort((a, b) => (b === yo) - (a === yo)).map((u) => escapeHtml(nombreDe(r.o.grupoId, u)) + ' <b class="tnum">' + money(r.porPersona[u]) + '</b>').join(' · ');
+  return '<div class="card" style="margin-bottom:12px;">' +
+    '<div class="budget-row" style="margin:0;"><div class="top"><span class="cat" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' + semaforoDot(r.estado) + escapeHtml(r.nombre) + '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span></span>' +
+    '<span class="nums"><b class="tnum">' + (r.pct == null ? '—' : r.pct.toFixed(0) + '%') + '</b></span></div>' +
+    '<div class="progress"><div style="width:' + pctC + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>' +
+    '<div class="summary-line">' + (r.deuda ? 'Pagado ' + money(r.acum) + (r.obj > 0 ? ' de ' + money(r.obj) + ' · pendiente ' + money(r.falta) : '') : money(r.acum) + (r.obj > 0 ? ' de ' + money(r.obj) : '')) + (r.fecha ? ' · hasta ' + fmtDateLong(r.fecha) : '') + '</div>' +
+    '<div style="font-size:13.5px;font-weight:600;color:' + SEMAFORO_COLOR[r.estado] + ';margin:2px 0 6px;">' + escapeHtml(r.texto) + '</div>' +
+    (r.mes != null ? '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">' + (r.deuda ? 'Cuota necesaria entre todos: ' : 'Necesitáis ahorrar entre todos aprox. ') + '<b class="tnum" style="color:var(--text);">' + money(r.mes) + '/mes</b> · ritmo (últimos 3 meses): <b class="tnum" style="color:var(--text);">' + money(r.ritmo) + '/mes</b>.</div>'
+      : r.obj > 0 && r.falta > 0 ? '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">Ritmo (últimos 3 meses): <b class="tnum" style="color:var(--text);">' + money(r.ritmo) + '/mes</b>' + (r.llegada ? ' · a este ritmo llegaríais en ' + fmtMesAnio(r.llegada) : '') + '.</div>' : '') +
+    (personas || num(r.o.previo) ? '<div class="obj-personas">' + (r.deuda ? 'Parte de cada uno: ' : 'Aportado: ') + (personas || '—') + (num(r.o.previo) ? ' · antes de la app ' + money(r.o.previo) : '') + '</div>' : '') +
+    '<div style="display:flex;gap:8px;margin-top:10px;"><button class="btn sm accent" ' + act('objAportar', r.id) + '>' + (r.deuda ? 'Apuntar un pago' : 'Aportar') + '</button><button class="btn sm ghost" ' + act('objEditar', r.id) + '>Editar</button></div></div>';
+}
+function objCardsHtml(tipo) {
+  const rs = objCompartidos(tipo);
+  return rs.length ? '<div class="section-title">Compartidas</div>' + rs.map(objCardHtml).join('') : '';
+}
+function objetivosGrupoHtml(g) {
+  const os = objetivosDe(g.id);
+  let h = '<div class="section-title">Metas y deudas compartidas</div><div class="card">';
+  h += os.length ? os.map((o) => {
+    const r = objStats(o);
+    return '<div class="budget-row tappable" ' + act('objEditar', o.id, g.id) + '><div class="top"><span class="cat" style="display:flex;align-items:center;gap:8px;">' + semaforoDot(r.estado) + escapeHtml(o.nombre) + ' <span class="hint">· ' + (r.deuda ? 'deuda' : 'meta') + '</span></span>' +
+      '<span class="nums"><b class="tnum">' + (r.pct == null ? money(r.acum) : r.pct.toFixed(0) + '%') + '</b></span></div>' +
+      '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, r.pct || 0)) + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>';
+  }).join('') : '<div style="color:var(--text-faint);font-size:13.5px;line-height:1.45;">Una hucha para un viaje, la hipoteca… Cada uno apunta lo que aporta o paga y veis el progreso juntos.</div>';
+  return h + '<div style="display:flex;gap:8px;margin-top:12px;"><button class="btn sm ghost block" ' + act('objNueva', 'ahorro', g.id) + '>' + ic('plus') + ' Meta</button><button class="btn sm ghost block" ' + act('objNueva', 'deuda', g.id) + '>' + ic('plus') + ' Deuda</button></div></div>';
+}
+function objEditorHtml() {
+  const F = FORM, deuda = F.tipo === 'deuda', o = F.id ? objPorId(F.id) : null, r = o ? objStats(o) : null;
+  const v = (x) => (x == null ? '' : escapeHtml(x)), ds = F.id ? [] : destinosCompartir();
+  const cancelar = act('objCancelar');
+  return '<div class="handle"></div><h2>' + (o ? escapeHtml(o.nombre) : deuda ? 'Nueva deuda compartida' : 'Nueva meta compartida') + '</h2>' +
+    (r ? '<div class="card" style="margin-bottom:12px;"><div class="progress" style="margin:0 0 8px;"><div style="width:' + Math.max(0, Math.min(100, r.pct || 0)) + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div>' +
+        '<div style="font-size:14px;">' + (deuda ? 'Pagado ' : '') + '<b class="tnum">' + money(r.acum) + '</b>' + (r.obj > 0 ? ' de ' + money(r.obj) + (deuda ? ' · pendiente ' + money(r.falta) : '') : '') + ' · <span style="color:' + SEMAFORO_COLOR[r.estado] + '">' + escapeHtml(r.texto) + '</span></div>' +
+        '<div class="rec-hint" style="margin-top:4px;">Compartida con ' + escapeHtml(nombreDestino(grupoDe(o.grupoId))) + '</div>' +
+        '<button class="btn accent block" style="margin-top:10px;" ' + act('objAportar', o.id) + '>' + (deuda ? 'Apuntar un pago' : 'Aportar') + '</button></div>' : '') +
+    (!F.id ? '<div class="field"><label>Con</label>' + (ds.length ? '<div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (F.dest === d.k ? 'active' : '') + '" ' + act('objDest', d.k) + '>' + (d.grupo ? '👥 ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>'
+        : '<div class="rec-hint">Primero crea un grupo o invita a una persona (Más → Compartir).</div>') + '</div>' : '') +
+    '<div class="field"><label>Nombre</label><input id="oNombre" type="text" maxlength="60" placeholder="' + (deuda ? 'Hipoteca' : 'Viaje a Japón') + '" value="' + v(F.nombre) + '"></div>' +
+    '<div class="field"><label>' + (deuda ? 'Total de la deuda' : 'Objetivo') + ' (' + sym() + ')</label><input id="oObjetivo" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
+    '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="oFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
+    '<div class="field"><label>' + (deuda ? 'Ya pagado antes' : 'Ya ahorrado antes') + ' (' + sym() + ') <span class="hint">· opcional</span></label><input id="oPrevio" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.previo) + '"><div class="rec-hint">Lo que ya ' + (deuda ? 'habíais pagado' : 'teníais ahorrado') + ' entre todos antes de apuntarlo aquí.</div></div>' +
+    '<div class="actions"><button class="btn ghost block" ' + cancelar + '>Cancelar</button><button class="btn accent block" ' + act('objGuardar') + '>Guardar</button></div>' +
+    (o ? '<button class="btn danger block" style="margin-top:10px;" ' + act('objEliminar') + '>' + ic('trash') + ' Eliminar ' + (deuda ? 'deuda' : 'meta') + ' compartida</button><div class="rec-hint" style="text-align:center;">Se quita para todos. Lo ya aportado o pagado no se borra.</div>' : '');
+}
+function objLeerForm() {
+  const F = FORM, val = (sel) => { const el = $(sel); return el ? el.value : undefined; };
+  ['nombre', 'objetivo', 'fechaObjetivo', 'previo'].forEach((k, i) => { const x = val(['#oNombre', '#oObjetivo', '#oFecha', '#oPrevio'][i]); if (x !== undefined) F[k] = x; });
+}
+function objAbrir(html) { if ($('#sheetBackdrop')) updateSheet(html); else openSheet(html); }
+async function objGuardar() {
+  objLeerForm();
+  const F = FORM, nombre = String(F.nombre || '').trim();
+  if (!nombre) return toast('Ponle un nombre');
+  const n = (x) => { const y = parseFloat(x); return x === '' || x == null || !isFinite(y) ? null : y; };
+  const datos = { nombre, objetivo: n(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, previo: Math.max(0, n(F.previo) || 0) };
+  if (datos.objetivo != null && datos.objetivo < 0) return toast('El objetivo no puede ser negativo');
+  if (F.id && !objPorId(F.id)) { closeSheet(); return toast('Esa meta o deuda ya no existe: la ha eliminado alguien del grupo'); }
+  if (F.guardando) return; F.guardando = true;
+  try {
+    let gid = F.id ? objPorId(F.id).grupoId : null;
+    if (!F.id) {
+      if (!F.dest) return toast('Elige con quién la compartes');
+      gid = F.dest.slice(2);
+      if (F.dest.indexOf('u:') === 0) { const g = await accionGrupo(() => S.db.rpc('crear_directo', { p_user: gid })); if (!g || g === true) return; gid = g; }
+    }
+    if (objetivosDe(gid, F.tipo).some((x) => x.id !== F.id && normName(x.nombre) === normName(nombre))) return toast('Ya hay una con ese nombre ahí');
+    let o;
+    try { o = F.id ? await S.db.objetivos.editar(F.id, datos) : await S.db.objetivos.crear(Object.assign({ grupoId: gid, tipo: F.tipo }, datos)); }
+    catch (e) { console.error(e); return toast(errGrupo(e)); }
+    objAplicarLocal(o); toast(F.id ? 'Guardado' : (F.tipo === 'deuda' ? 'Deuda compartida creada' : 'Meta compartida creada'));
+    render();
+    const b = !F.id && S._borradorMov; S._borradorMov = null;
+    if (b) return openMovForm(null, { tipo: b.tipo, importe: b.importe, fecha: b.fecha, descripcion: b.descripcion, categoria: o.nombre, comp: 'g:' + o.grupoId, objetivo: o.id });
+    if (F.volverGrupo && grupoDe(F.volverGrupo)) abrirGrupo(F.volverGrupo); else closeSheet();
+  } finally { F.guardando = false; }
+}
+// Análisis → Deudas: tus deudas y debajo las compartidas
+function renderDeudas() {
+  const comp = objCompartidos('deuda'), personales = (cfg().deudas || []).some((d) => d && d.nombre);
+  const cab = compartidosDisponible() ? '<div style="display:flex;justify-content:flex-end;margin:-4px 0 8px;"><button class="link" ' + act('objNueva', 'deuda') + '>' + ic('plus') + ' Deuda compartida' + badge('compartir') + '</button></div>' : '';
+  return cab + (personales || !comp.length ? renderDeudasPersonales() : '') + (comp.length ? '<div class="section-title">Compartidas</div>' + comp.map(objCardHtml).join('') : '');
+}
 // Tarjeta del Dashboard
 function compartidoInicioHtml() {
   if (!compartidosDisponible() || !(S.compartidos || []).length) return '';
@@ -1456,7 +1629,8 @@ function compartidoInicioHtml() {
 }
 // Si cambia algo compartido mientras miras un grupo, se actualiza (sin pisar lo que estés escribiendo)
 function refrescarSheetCompartido() {
-  const b = $('#sheetBackdrop'); if (!b || !FORM) return;
+  const b = $('#sheetBackdrop'); if (!b || b.dataset.cerrando || !FORM) return;
+  if (FORM.kind === 'obj' && FORM.id && !objPorId(FORM.id)) { closeSheet(); return toast('Esa meta o deuda la ha eliminado alguien del grupo'); }
   const ae = document.activeElement; if (ae && b.contains(ae) && /INPUT|SELECT|TEXTAREA/.test(ae.tagName)) return;
   if (FORM.kind === 'grupo' && FORM.id) updateSheet(grupoHtml(FORM.id));
   else if (FORM.kind === 'grupos') updateSheet(gruposListaHtml());
@@ -1480,7 +1654,7 @@ function asegurarIdsMetas() {
 function movsDeMeta(m) {
   const n = normName(m.nombre);
   if (tipoMeta(m) === 'inversion') return S.movimientos.filter((x) => x.tipo === 'Inversión' && m.id && x.metaId === m.id);
-  return S.movimientos.filter((x) => x.tipo === 'Ahorro' && ((m.id && x.metaId === m.id) || (!x.metaId && normName(x.categoria) === n)));
+  return movsPersonales().filter((x) => x.tipo === 'Ahorro' && ((m.id && x.metaId === m.id) || (!x.metaId && normName(x.categoria) === n)));
 }
 function valorMovInv(x) {
   const v = S.valoracion && S.valoracion.valores && x.activoId ? S.valoracion.valores[x.activoId] : null;
@@ -1561,7 +1735,8 @@ function metasListaHtml() {
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;"><b>Ahorro:</b> dinero que apartas (movimientos de tipo Ahorro). <b>Inversión:</b> lo que vas invirtiendo para algo (por ejemplo, la entrada de una casa); su progreso es lo que valen hoy esas inversiones.</div>' +
     (ms.length ? '<div class="list">' + ms.map((m) => '<div class="row" ' + act('metaEditar', m.id || '') + '><span class="dot" style="background:var(--savings)"></span><div class="main"><div class="ttl">' + escapeHtml(m.nombre) + '</div><div class="meta">' + (tipoMeta(m) === 'inversion' ? 'Inversión' : 'Ahorro') + (m.fechaObjetivo ? ' · hasta ' + fmtDateShort(m.fechaObjetivo) : '') + '</div></div><div class="amt tnum">' + (num(m.objetivo) > 0 ? money(m.objetivo) : '—') + '</div></div>').join('') + '</div>'
       : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no tienes metas.</div>') +
-    '<div class="actions"><button class="btn ghost block" ' + act('metaNueva') + '>' + ic('plus') + ' Nueva meta</button><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+    '<div class="actions"><button class="btn ghost block" ' + act('metaNueva') + '>' + ic('plus') + ' Nueva meta</button>' + (compartidosDisponible() ? '<button class="btn ghost block" ' + act('objNueva', 'ahorro') + '>' + ic('users') + ' Meta compartida</button>' : '') + '</div>' +
+    '<div class="actions" style="margin-top:8px;"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 function metaEditorHtml() {
   const F = FORM, inv = F.tipoMeta === 'inversion';
@@ -1692,10 +1867,14 @@ function patrimonio() {
   const banco = cuentasCfg().reduce((a, c) => a + num(c.saldo), 0);
   S.movimientos.forEach((x) => { if (x.tipo !== 'Inversión') return; const v = valorMovInv(x); if (v == null) { inv += num(x.importe); sinValor++; } else inv += v; });
   metasCfg().filter((m) => tipoMeta(m) === 'inversion').forEach((m) => { inv += num(m.yaAhorrado); });
-  const ahorro = metasCfg().filter((m) => tipoMeta(m) === 'ahorro').reduce((a, m) => a + metaStats(m).acum, 0);
-  const deudas = (cfg().deudas || []).filter((d) => d && d.nombre).map(deudaStats).filter((r) => r.total > 0).reduce((a, r) => a + r.pend, 0);
+  let ahorro = metasCfg().filter((m) => tipoMeta(m) === 'ahorro').reduce((a, m) => a + metaStats(m).acum, 0);
+  let deudas = (cfg().deudas || []).filter((d) => d && d.nombre).map(deudaStats).filter((r) => r.total > 0).reduce((a, r) => a + r.pend, 0);
+  // compartido: lo que has aportado a huchas compartidas y tu parte de lo pendiente de deudas compartidas
+  const ahorroComp = objCompartidos('ahorro').reduce((a, r) => a + r.mio, 0);
+  const deudaComp = objCompartidos('deuda').filter((r) => r.obj > 0).reduce((a, r) => a + r.falta * miProporcion(r.o), 0);
+  ahorro += ahorroComp; deudas += deudaComp;
   const fechas = cuentasCfg().map((c) => c.fecha).filter(Boolean).sort();
-  return { banco, bancoFecha: fechas.length ? fechas[0] : null, nCuentas: cuentasCfg().length, inv, sinValor, ahorro, deudas, total: banco + inv + ahorro - deudas };
+  return { banco, bancoFecha: fechas.length ? fechas[0] : null, nCuentas: cuentasCfg().length, inv, sinValor, ahorro, deudas, comp: !!(S.objetivos || []).length, total: banco + inv + ahorro - deudas };
 }
 function patrimonioHtml() {
   if (S.movimientos.some((x) => x.tipo === 'Inversión')) asegurarValoracion();
@@ -1711,7 +1890,7 @@ function patrimonioHtml() {
     (p.inv || S.movimientos.some((x) => x.tipo === 'Inversión') ? fila('Inversiones (valor de mercado)' + (cargando ? ' · actualizando…' : ''), p.inv, '+', 'var(--income)', act('irAnalisis', 'inversiones')) : '') +
     (p.ahorro || metasCfg().some((m) => tipoMeta(m) === 'ahorro') ? fila('Ahorro en metas', p.ahorro, '+', 'var(--income)', act('goMetas')) : '') +
     (p.deudas ? fila('Deudas pendientes', p.deudas, '−', 'var(--expense)', act('irAnalisis', 'deudas')) : '') +
-    '<div class="pat-note">Solo informativo. El saldo del banco lo pones tú en Más → Cuentas y saldos' + (p.bancoFecha ? ' (actualizado el ' + fmtDateShort(p.bancoFecha) + ')' : '') + '.' + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo aportado.' : '') + '</div></div>';
+    '<div class="pat-note">Solo informativo. El saldo del banco lo pones tú en Más → Cuentas y saldos' + (p.bancoFecha ? ' (actualizado el ' + fmtDateShort(p.bancoFecha) + ')' : '') + '.' + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo aportado.' : '') + (p.comp ? ' De lo compartido cuenta tu parte: lo que has aportado y, en las deudas, tu parte de lo pendiente según el reparto habitual.' : '') + '</div></div>';
 }
 
 /* ============================================================
@@ -1764,6 +1943,7 @@ function calEventos(desde, hasta) {
   if (f.hitos) {
     (cfg().ahorro || []).forEach((x) => { if (x && x.nombre && x.fechaObjetivo) add(x.fechaObjetivo, { k: 'hito', titulo: 'Meta: ' + x.nombre, detalle: 'Fecha objetivo' + (x.objetivo ? ' · ' + money(x.objetivo) : '') }); });
     (cfg().deudas || []).forEach((x) => { if (x && x.nombre && x.fechaObjetivo) add(x.fechaObjetivo, { k: 'hito', titulo: 'Deuda: ' + x.nombre, detalle: 'Fecha objetivo' + (x.objetivo ? ' · ' + money(x.objetivo) : '') }); });
+    (S.objetivos || []).forEach((x) => { if (x.fechaObjetivo) add(x.fechaObjetivo, { k: 'hito', titulo: (x.tipo === 'deuda' ? 'Deuda' : 'Meta') + ' compartida: ' + x.nombre, detalle: 'Fecha objetivo' + (x.objetivo ? ' · ' + money(x.objetivo) : '') }); });
   }
   if (f.movs) movsEfectivos().forEach((m) => {
     add(m.fecha, { k: 'mov', tipo: m.tipo, titulo: m.categoria || m.tipo, detalle: m.tipo + ' · ' + moneySigned(m.importe, m.tipo) + (m.descripcion ? ' · ' + m.descripcion : ''), click: act('openMovForm', m.id) });
@@ -3373,7 +3553,7 @@ function renderMas() {
     '<div class="section-title">Cuenta</div><div class="card menu"><button class="menu-item" ' + act('doLogout') + '><span class="ic">' + ic('close') + '</span>Cerrar sesión</button></div>';
 }
 function exportBackup() {
-  const payload = { exportadoEl: new Date().toISOString(), movimientos: S.movimientos, tareas: S.tareas, golf: S.golf, config: S.config, compartidos: S.compartidos || [] };
+  const payload = { exportadoEl: new Date().toISOString(), movimientos: S.movimientos, tareas: S.tareas, golf: S.golf, config: S.config, compartidos: S.compartidos || [], objetivosCompartidos: S.objetivos || [] };
   try {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -3486,6 +3666,7 @@ const H = {
     const inv = $('#invFields'); if (inv) inv.innerHTML = invFieldsHtml(t, '');
     const cl = $('#catLabel'); if (cl) cl.innerHTML = catLabel(t);
     syncCatField();
+    if (FORM.comp && FORM.comp.on) compAsegurarDestino();
     refrescarComp();
   },
   // activos automáticos
@@ -3517,7 +3698,7 @@ const H = {
   saveMov: () => saveMov(),
   deleteMov: (_a, el) => confirmDelete(el, doDeleteMov),
   // gastos compartidos
-  compOn: () => { verBadge('compartir'); FORM.comp = FORM.comp || {}; FORM.comp.on = true; if (S.grupos == null) cargarGrupos().then(() => refrescarComp()); if (!FORM.comp.dest) { const k = destinoPorDefecto(); if (k) compPrepararDestino(k); } refrescarComp(); },
+  compOn: () => { verBadge('compartir'); FORM.comp = FORM.comp || {}; FORM.comp.on = true; if (S.grupos == null) cargarGrupos().then(() => refrescarComp()); compAsegurarDestino(); refrescarComp(); },
   compOff: () => {
     const c = FORM.compId ? compPorId(FORM.compId) : null;
     if (c && c.pagadoPor !== miUid()) return toast('Solo quien lo pagó puede dejar de compartirlo. Si no se hizo, elimínalo.');
@@ -3525,7 +3706,44 @@ const H = {
     if (c) toast('Al guardar dejará de estar compartido y contará entero como tuyo');
   },
   compDest: ([k]) => { compPrepararDestino(k); refrescarComp(); },
-  compPagador: ([u]) => { FORM.comp.pagador = u; refrescarComp(); },
+  compPagador: ([u]) => {
+    const cp = FORM.comp, solo = cp.modo === 'igual' && Object.keys(cp.incl || {}).filter((k) => cp.incl[k]).join() === cp.pagador;
+    cp.pagador = u;
+    if (FORM.tipo === 'Ahorro' && solo) { cp.incl = {}; cp.incl[u] = true; } // la aportación sigue siendo de quien aporta
+    refrescarComp();
+  },
+  compObjetivo: ([id]) => { FORM.comp.objetivo = id; const o = objPorId(id), c = $('#fCategoria'); if (o && c) c.value = o.nombre; refrescarComp(); },
+  objNueva: ([tipo, gid]) => {
+    const enForm = FORM && FORM.kind === 'mov' && !FORM.id && !FORM.compId && $('#fImporte');
+    S._borradorMov = enForm ? { tipo: FORM.tipo, importe: $('#fImporte').value, fecha: ($('#fFecha') || {}).value, descripcion: ($('#fDesc') || {}).value } : null;
+    const ds = destinosCompartir(), gs = ds.filter((d) => d.grupo);
+    FORM = { kind: 'obj', tipo: tipo === 'deuda' ? 'deuda' : 'ahorro', id: null, volverGrupo: gid || null, dest: gid ? 'g:' + gid : gs.length === 1 ? gs[0].k : ds.length === 1 ? ds[0].k : '' };
+    objAbrir(objEditorHtml());
+  },
+  objEditar: ([id, gid]) => {
+    const o = objPorId(id); if (!o) return toast('Ya no existe');
+    FORM = { kind: 'obj', tipo: o.tipo, id, volverGrupo: gid || null, dest: 'g:' + o.grupoId, nombre: o.nombre, objetivo: o.objetivo, fechaObjetivo: o.fechaObjetivo, previo: o.previo || '' };
+    objAbrir(objEditorHtml());
+  },
+  objDest: ([k]) => { objLeerForm(); FORM.dest = k; updateSheet(objEditorHtml()); },
+  objCancelar: () => {
+    const F = FORM, b = S._borradorMov; S._borradorMov = null;
+    if (b && !F.id) return openMovForm(null, { tipo: b.tipo, importe: b.importe, fecha: b.fecha, descripcion: b.descripcion });
+    if (F.volverGrupo && grupoDe(F.volverGrupo)) abrirGrupo(F.volverGrupo); else closeSheet();
+  },
+  objGuardar: () => objGuardar(),
+  objEliminar: (_a, el) => confirmDelete(el, async () => {
+    const F = FORM;
+    try { await S.db.objetivos.borrar(F.id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
+    objQuitarLocal(F.id); toast('Eliminada'); render();
+    if (F.volverGrupo && grupoDe(F.volverGrupo)) abrirGrupo(F.volverGrupo); else closeSheet();
+  }),
+  objAportar: ([id]) => {
+    const o = objPorId(id); if (!o) return;
+    const abierta = $('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando;
+    S._volverGrupo = (abierta && FORM && FORM.kind === 'obj' && FORM.volverGrupo) || null;
+    openMovForm(null, { tipo: o.tipo === 'deuda' ? 'Deuda' : 'Ahorro', categoria: o.nombre, comp: 'g:' + o.grupoId, objetivo: o.id });
+  },
   compModo: ([m]) => { compCambiarModo(m); refrescarComp(); },
   compIncl: ([u], el) => { FORM.comp.incl[u] = !!el.checked; const r = $('#compReparto'); if (r) r.innerHTML = compRepartoHtml(); },
   compVal: ([u], el) => { FORM.comp.vals = FORM.comp.vals || {}; FORM.comp.vals[u] = el.value; refrescarComp(true); },
@@ -3979,7 +4197,7 @@ async function enterApp(session) {
   S.user = session.user;
   S.db = window.Data;
   S.appStarted = true;
-  S.movimientos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S._gruposVistos = {};
+  S.movimientos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S.objetivos = null; S._gruposVistos = {};
   S.loaded = { mov: false, tar: false, golf: false, cfg: false };
   renderShell();
   $('#content').innerHTML = loadingHtml();
@@ -3989,7 +4207,7 @@ async function enterApp(session) {
 }
 function leaveApp() {
   S.appStarted = false;
-  S.grupos = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S._volverGrupo = null;
+  S.grupos = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S._volverGrupo = null;
   S.user = null; S.db = null;
   S.onboarding = null; S._onboardPending = false;
   _unsubs.forEach((u) => { try { u(); } catch (e) { /* noop */ } });
@@ -4011,6 +4229,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { imp: () => IMP, metasStats, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, movsEfectivos, deudasDe, calcReparto, saldosDe };
+window.__APP__ = { imp: () => IMP, metasStats, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
 if (!window.__NO_AUTOSTART__) main();
 })();

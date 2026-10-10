@@ -24,3 +24,15 @@ quien no es del grupo no ve ni crea ni cambia gastos compartidos; reparto que no
 negativo o con gente de fuera rechazado; nadie puede hacerse pasar por otro creador;
 no se puede mover un gasto a otro grupo ni borrarlo de verdad; tras salir del grupo se
 siguen viendo (sin poder cambiarlos) los gastos en los que participaste; sin sesión, nada.
+
+Metas y deudas compartidas (bloque 8.3): objetivos_compartidos_tabla,
+compartidos_tipos_ahorro_deuda, compartidos_validacion_objetivos.
+- Tabla `objetivos_compartidos` (hucha o deuda de un grupo; borrado suave) y columna
+  `compartidos.objetivo_id`. Las aportaciones y pagos son movimientos compartidos de tipo
+  Ahorro o Deuda que tienen que ir con una meta/deuda del mismo grupo y del mismo tipo.
+
+Pruebas de aislamiento (18 casos, 10/10/2026, cuentas de prueba, todo deshecho al terminar):
+quien no es del grupo no ve, crea ni cambia metas o deudas compartidas; no se puede mover
+una meta a otro grupo ni cambiar su tipo; una aportación sin meta, con una meta de otro grupo
+o del tipo equivocado se rechaza; una meta eliminada no admite aportaciones nuevas, pero las
+anteriores siguen; aportar a una hucha no crea deudas entre miembros y una cuota repartida sí.

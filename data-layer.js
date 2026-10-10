@@ -244,47 +244,52 @@
   };
   function rpc(fn, params) { return q(sb.rpc(fn, params || {})); }
 
-  /* ---- gastos compartidos (bloque 8.2): los ve todo el grupo; nunca se borran de verdad (borrado = fecha) ---- */
-  var COMP_CAMPOS = ['id', 'grupoId', 'fecha', 'tipo', 'categoria', 'descripcion', 'importe', 'pagadoPor', 'reparto', 'modo'];
-  function compDeFila(r) {
-    return { id: r.id, grupoId: r.grupo_id, fecha: r.fecha, tipo: r.tipo, categoria: r.categoria || '', descripcion: r.descripcion || '',
-      importe: Number(r.importe), pagadoPor: r.pagado_por, reparto: r.reparto || {}, modo: r.modo || 'igual',
-      creadoPor: r.creado_por, createdAt: r.created_at, updatedAt: r.updated_at, editadoPor: r.editado_por };
+  /* ---- gastos compartidos (8.2) y metas/deudas compartidas (8.3): los ve todo el grupo; nunca se borran de verdad (borrado = fecha) ---- */
+  function tablaCompartida(tabla, campos, deFila, inmutables) {
+    function aFila(o) { var row = {}; campos.forEach(function (k) { if (o[k] !== undefined) row[toSnake(k)] = o[k]; }); return row; }
+    return {
+      suscribir: function (next, errCb) {
+        var stopped = false, channel = null, timer = null;
+        function fetchAll(from, acc) {
+          var PAGE = 1000;
+          return sb.from(tabla).select('*').is('borrado', null).order('id').range(from, from + PAGE - 1).then(function (res) {
+            if (res.error) throw res.error;
+            var rows = acc.concat(res.data || []);
+            return (res.data || []).length === PAGE ? fetchAll(from + PAGE, rows) : rows;
+          });
+        }
+        function refresh() {
+          if (!currentUid) return;
+          fetchAll(0, []).then(function (rows) { if (!stopped) next(rows.map(deFila)); }, function (e) { if (!stopped && errCb) errCb(pgError(e)); });
+        }
+        function refreshSoon() { clearTimeout(timer); timer = setTimeout(refresh, 300); }
+        refresh();
+        // sin filtro: las reglas de la base de datos solo envían lo que puedes ver
+        if (currentUid) channel = sb.channel(tabla + '-' + currentUid).on('postgres_changes', { event: '*', schema: 'public', table: tabla }, refreshSoon).subscribe();
+        return function unsubscribe() { stopped = true; clearTimeout(timer); if (channel) sb.removeChannel(channel); };
+      },
+      crear: function (o) {
+        var row = aFila(o); delete row.id; // el id lo pone la base de datos
+        return q(sb.from(tabla).insert(row).select().single()).then(deFila);
+      },
+      editar: function (id, o) {
+        var row = aFila(o); delete row.id; inmutables.forEach(function (k) { delete row[k]; });
+        return q(sb.from(tabla).update(row).eq('id', id).select().single()).then(deFila);
+      },
+      borrar: function (id) {
+        return q(sb.from(tabla).update({ borrado: new Date().toISOString() }).eq('id', id).select('id')).then(function (d) { if (!d || !d.length) throw new Error('no_autorizado'); return d; });
+      },
+    };
   }
-  function compAFila(o) { var row = {}; COMP_CAMPOS.forEach(function (k) { if (o[k] !== undefined) row[toSnake(k)] = o[k]; }); return row; }
-  var compartidos = {
-    suscribir: function (next, errCb) {
-      var stopped = false, channel = null, timer = null;
-      function fetchAll(from, acc) {
-        var PAGE = 1000;
-        return sb.from('compartidos').select('*').is('borrado', null).order('id').range(from, from + PAGE - 1).then(function (res) {
-          if (res.error) throw res.error;
-          var rows = acc.concat(res.data || []);
-          return (res.data || []).length === PAGE ? fetchAll(from + PAGE, rows) : rows;
-        });
-      }
-      function refresh() {
-        if (!currentUid) return;
-        fetchAll(0, []).then(function (rows) { if (!stopped) next(rows.map(compDeFila)); }, function (e) { if (!stopped && errCb) errCb(pgError(e)); });
-      }
-      function refreshSoon() { clearTimeout(timer); timer = setTimeout(refresh, 300); }
-      refresh();
-      // sin filtro: las reglas de la base de datos solo envían lo que puedes ver
-      if (currentUid) channel = sb.channel('compartidos-' + currentUid).on('postgres_changes', { event: '*', schema: 'public', table: 'compartidos' }, refreshSoon).subscribe();
-      return function unsubscribe() { stopped = true; clearTimeout(timer); if (channel) sb.removeChannel(channel); };
-    },
-    crear: function (o) {
-      var row = compAFila(o); delete row.id; // el id lo pone la base de datos
-      return q(sb.from('compartidos').insert(row).select().single()).then(compDeFila);
-    },
-    editar: function (id, o) {
-      var row = compAFila(o); delete row.id; delete row.grupo_id;
-      return q(sb.from('compartidos').update(row).eq('id', id).select().single()).then(compDeFila);
-    },
-    borrar: function (id) {
-      return q(sb.from('compartidos').update({ borrado: new Date().toISOString() }).eq('id', id).select('id')).then(function (d) { if (!d || !d.length) throw new Error('no_autorizado'); return d; });
-    },
-  };
+  var compartidos = tablaCompartida('compartidos', ['id', 'grupoId', 'fecha', 'tipo', 'categoria', 'descripcion', 'importe', 'pagadoPor', 'reparto', 'modo', 'objetivoId'], function (r) {
+    return { id: r.id, grupoId: r.grupo_id, fecha: r.fecha, tipo: r.tipo, categoria: r.categoria || '', descripcion: r.descripcion || '',
+      importe: Number(r.importe), pagadoPor: r.pagado_por, reparto: r.reparto || {}, modo: r.modo || 'igual', objetivoId: r.objetivo_id || null,
+      creadoPor: r.creado_por, createdAt: r.created_at, updatedAt: r.updated_at, editadoPor: r.editado_por };
+  }, ['grupo_id']);
+  var objetivos = tablaCompartida('objetivos_compartidos', ['id', 'grupoId', 'tipo', 'nombre', 'objetivo', 'fechaObjetivo', 'previo'], function (r) {
+    return { id: r.id, grupoId: r.grupo_id, tipo: r.tipo, nombre: r.nombre, objetivo: r.objetivo == null ? null : Number(r.objetivo),
+      fechaObjetivo: r.fecha_objetivo || null, previo: Number(r.previo || 0), creadoPor: r.creado_por, createdAt: r.created_at };
+  }, ['grupo_id', 'tipo']);
 
-  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, rpc: rpc, uid: function () { return currentUid; } };
+  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, rpc: rpc, uid: function () { return currentUid; } };
 })();
