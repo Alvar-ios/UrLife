@@ -37,6 +37,17 @@ const ICONS = {
   piggy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18 9 12l4 3 7-8"/><path d="M15 7h5v5"/></svg>',
   card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M16 12.5h2"/><path d="M3 10h18"/></svg>',
   gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L20.5 8H6.2"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>',
+  fork: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10"/><path d="M17 3c-2 2-2 6 0 8v10"/></svg>',
+  car: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16V11l2-5h10l2 5v5"/><path d="M3 16h18v3H3z"/><circle cx="7.5" cy="13.5" r=".8"/><circle cx="16.5" cy="13.5" r=".8"/></svg>',
+  film: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V6h16v3a2 2 0 0 0 0 4v3H4v-3a2 2 0 0 0 0-4z"/><path d="M14 6v10"/></svg>',
+  shirt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4 3 7l2 4 3-1v10h8V10l3 1 2-4-5-3a4 4 0 0 1-8 0z"/></svg>',
+  bolt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></svg>',
+  heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>',
+  gift: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-2-4-6-4-6-1.5S10 9 12 9c2 0 6-.5 6-1.5S14 5 12 9"/></svg>',
+  plane: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 3 11l1.5-1.5L11 11l5-6a1.5 1.5 0 0 1 2.5 1.5L13 12l1.5 6.5L13 20l-3-6z"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>',
+  receipt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
 };
 function ic(name) {
   const s = ICONS[name];
@@ -519,7 +530,9 @@ function irMovs(o) {
 const mesClave = (y, m) => 'm:' + y + '-' + pad2(m);
 function movsFiltrados() {
   let movs = movsEfectivos().filter(inPeriodo);
-  if (GRUPOS_TIPO[S.movFiltroTipo]) movs = movs.filter((m) => GRUPOS_TIPO[S.movFiltroTipo].includes(m.tipo));
+  if (S.movFiltroTipo === '_comp') movs = movs.filter((m) => m.comp);
+  else if (S.movFiltroTipo === '_ticket') movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
+  else if (GRUPOS_TIPO[S.movFiltroTipo]) movs = movs.filter((m) => GRUPOS_TIPO[S.movFiltroTipo].includes(m.tipo));
   else if (S.movFiltroTipo !== 'Todos') movs = movs.filter((m) => m.tipo === S.movFiltroTipo);
   if (S.movCat) movs = movs.filter((m) => normName(m.categoria) === normName(S.movCat));
   const q = S.movQuery.trim().toLowerCase();
@@ -528,14 +541,14 @@ function movsFiltrados() {
 }
 function renderMovimientos() {
   const periodos = [['todo', 'Todo'], ['mes', 'Este mes'], ['anterior', 'Mes anterior'], ['anio', 'Este año']];
-  return '<div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px 16px;margin:-4px 0 6px;">' + (ticketsDisponible() ? '<button class="link" ' + act('ticketFoto') + '>' + ic('camera') + ' Foto de ticket' + badge('ticket') + '</button>' : '') + '<button class="link" ' + act('impAbrir') + '>' + ic('download') + ' Importar extracto o Excel' + badge('importar') + '</button></div>' +
+  return '<div class="mov-tools">' + (ticketsDisponible() ? '<button class="tool-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Foto de ticket</span>' + badge('ticket') + '</button>' : '') + '<button class="tool-btn" ' + act('impAbrir') + '>' + ic('download') + '<span>Importar extracto o Excel</span>' + badge('importar') + '</button></div>' +
     (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
     ((S.movCat || GRUPOS_TIPO[S.movFiltroTipo] || periodoTxt(S.movPeriodo)) ? '<div class="filtros-activos">' +
       (GRUPOS_TIPO[S.movFiltroTipo] ? '<button class="chip active" ' + act('setMovFiltro', 'Todos') + '>' + GRUPOS_TXT[S.movFiltroTipo] + ' ✕</button>' : '') +
       (periodoTxt(S.movPeriodo) ? '<button class="chip active" ' + act('setMovPeriodo', 'todo') + '>' + periodoTxt(S.movPeriodo) + ' ✕</button>' : '') +
       (S.movCat ? '<button class="chip active" ' + act('quitarMovCat') + '>' + escapeHtml(S.movCat) + ' ✕</button>' : '') + '</div>' : '') +
     '<div class="field" style="margin-bottom:10px;"><input type="search" id="movSearch" placeholder="Buscar categoría, nota o método de pago" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></div>' +
-    '<div class="pill-row">' + ['Todos'].concat(TIPOS).map((t) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + t + '</button>').join('') + '</div>' +
+    '<div class="pill-row">' + [['Todos', 'Todos']].concat(TIPOS.map((t) => [t, t])).concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
     '<div class="pill-row" style="padding-top:0;">' + periodos.map(([id, l]) => '<button class="pill sm ' + (S.movPeriodo === id ? 'active' : '') + '" ' + act('setMovPeriodo', id) + '>' + l + '</button>').join('') + '</div>' +
     '<div id="movList">' + renderMovList() + '</div>';
 }
@@ -549,8 +562,9 @@ function renderMovList() {
   const shown = movs.slice(0, S.movLimit);
   let html = '<div class="summary-line">' + movs.length + (movs.length === 1 ? ' movimiento' : ' movimientos') + ' · balance ' + (net >= 0 ? '+' : '−') + fmtM(Math.abs(net)) + ' ' + sym() + '</div>';
   let last = null;
+  const totDia = {}; shown.forEach((m) => { totDia[m.fecha] = (totDia[m.fecha] || 0) + effect(m.importe, m.tipo); });
   shown.forEach((m) => {
-    if (m.fecha !== last) { if (last !== null) html += '</div>'; html += '<div class="date-sep">' + fmtDateGroup(m.fecha) + '</div><div class="list">'; last = m.fecha; }
+    if (m.fecha !== last) { if (last !== null) html += '</div>'; const t = totDia[m.fecha] || 0; html += '<div class="date-sep"><span>' + fmtDateGroup(m.fecha) + '</span><span class="tnum ' + (t >= 0 ? 'pos' : 'neg') + '">' + (t >= 0 ? '+' : '−') + fmtM(Math.abs(t)) + ' ' + sym() + '</span></div><div class="list">'; last = m.fecha; }
     html += renderMovRow(m);
   });
   if (last !== null) html += '</div>';
@@ -560,8 +574,8 @@ function renderMovList() {
 function renderMovRow(m) {
   const eff = effect(m.importe, m.tipo), c = m.comp;
   return '<div class="row" ' + act('openMovForm', m.id) + '>' +
-    '<span class="dot" style="background:var(--' + (TIPO_COLOR[m.tipo] || 'debt') + ')"></span>' +
-    '<div class="main"><div class="ttl">' + escapeHtml(m.categoria || 'Sin categoría') + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + '</div>' +
+    movIcHtml(m) +
+    '<div class="main"><div class="ttl">' + escapeHtml(m.categoria || 'Sin categoría') + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
     '<div class="meta">' + (m.descripcion ? escapeHtml(m.descripcion) + ' · ' : '') + (c ? escapeHtml(compQuienTxt(c)) : escapeHtml(m.tipo) + (m.metodoPago ? ' · ' + escapeHtml(m.metodoPago) : '')) + '</div></div>' +
     '<div class="amt tnum ' + (eff >= 0 ? 'pos' : 'neg') + '">' + moneySigned(m.importe, m.tipo) + (c ? '<div class="amt-sub">tu parte de ' + money(c.importe) + '</div>' : '') + '</div></div>';
 }
@@ -675,7 +689,7 @@ function openMovForm(id, pre) {
   const ex = comp ? Object.assign({}, mio || {}, { id: mio ? mio.id : null, tipo: comp.tipo, importe: comp.importe, categoria: comp.categoria, fecha: comp.fecha, descripcion: comp.descripcion }) : mio;
   const compDest = pre && pre.comp, objPre = pre && pre.objetivo;
   pre = (!ex && pre) || {};
-  const tipoIni = ex ? ex.tipo : pre.tipo ? pre.tipo : (S.tab === 'movimientos' && S.movFiltroTipo !== 'Todos' ? S.movFiltroTipo : 'Gasto');
+  const tipoIni = ex ? ex.tipo : pre.tipo ? pre.tipo : (S.tab === 'movimientos' && TIPOS.indexOf(S.movFiltroTipo) >= 0 ? S.movFiltroTipo : 'Gasto');
   FORM = { kind: 'mov', id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
   if (compDest) { FORM.comp = { on: true, objetivo: objPre || null }; compPrepararDestino(compDest); }
   FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
@@ -913,12 +927,11 @@ function renderMetas() {
   return cab + ms.map((r) => {
     if (r.inv) return metaInvCardHtml(r);
     const pctC = r.pct == null ? 0 : Math.max(0, Math.min(100, r.pct));
-    let h = '<div class="card" style="margin-bottom:12px;">' +
-      '<div class="budget-row" style="margin:0;"><div class="top"><span class="cat" style="display:flex;align-items:center;gap:8px;">' + semaforoDot(r.estado) + escapeHtml(r.nombre) + '</span>' +
-      '<span class="nums"><b class="tnum">' + (r.pct == null ? '—' : r.pct.toFixed(0) + '%') + '</b></span></div>' +
-      '<div class="progress"><div style="width:' + pctC + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>' +
-      '<div class="summary-line">' + money(r.acum) + (r.obj > 0 ? ' de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + fmtDateLong(r.fecha) : '') + '</div>' +
-      '<div style="font-size:13.5px;font-weight:600;color:' + SEMAFORO_COLOR[r.estado] + ';margin:2px 0 6px;">' + escapeHtml(r.texto) + '</div>';
+    let h = '<div class="card meta-card" style="margin-bottom:12px;">' +
+      '<div class="meta-cab">' + anilloHtml(r.pct, SEMAFORO_COLOR[r.estado], 64) + '<div class="meta-info"><div class="meta-nom">' + escapeHtml(r.nombre) + '</div>' +
+      '<div class="meta-cant tnum">' + money(r.acum) + (r.obj > 0 ? ' de ' + money(r.obj) : '') + '</div>' +
+      '<span class="estado-pill e-' + r.estado + '">' + escapeHtml(r.texto) + '</span></div></div>' +
+      (r.fecha ? '<div class="summary-line" style="margin:10px 2px 4px;">Hasta el ' + fmtDateLong(r.fecha) + '</div>' : '');
     if (r.mes != null) {
       h += '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">Necesitas ahorrar aprox. <b class="tnum" style="color:var(--text);">' + money(r.mes) + '/mes</b> · ' + money(r.tri) + '/trimestre · ' + money(r.anio) + '/año.</div>';
     }
@@ -1896,6 +1909,72 @@ function articulosTopHtml(movs) {
 }
 
 
+
+/* ============================================================
+   ICONOS DE CATEGORÍA (Bloque 9B): un icono reconocible por palabra clave y el color del tipo
+   ============================================================ */
+const CAT_ICONOS = [
+  [/super|mercadona|carrefour|lidl|alcampo|dia\b|aldi|compra|aliment|fruta|eroski|hiper/, 'cart'],
+  [/restaur|cena|comida|bar\b|bares|caf[eé]|pizza|burger|tapas|almuerzo|desayuno|glovo|just ?eat|uber ?eats/, 'fork'],
+  [/transp|gasolin|combust|coche|parking|aparcam|taxi|uber|cabify|metro|bus\b|tren|renfe|peaje|itv|taller/, 'car'],
+  [/ocio|cine|concierto|teatro|netflix|spotify|hbo|disney|suscrip|juego|fiesta|entrada/, 'film'],
+  [/ropa|zara|primark|calzado|zapat|moda|h&m|mango/, 'shirt'],
+  [/alquiler|hipoteca|casa|hogar|comunidad|mueble|ikea|limpieza/, 'home'],
+  [/luz|electric|gas\b|agua|internet|fibra|tel[eé]fono|m[oó]vil|movistar|vodafone|orange|digi|iberdrola|endesa|naturgy/, 'bolt'],
+  [/salud|farmac|m[eé]dic|dentista|gimnas|gym|deporte|seguro m|clinica|cl[ií]nica/, 'heart'],
+  [/regalo|cumple/, 'gift'],
+  [/viaje|vuelo|hotel|avi[oó]n|airbnb|vacacion/, 'plane'],
+  [/educa|colegio|cole\b|libro|curso|academia|universidad|guarder/, 'book'],
+];
+const TIPO_ICONO = { Ingreso: 'arrowUp', 'Inversión': 'chart', Ahorro: 'piggy', Deuda: 'card', Factura: 'calendar', Gasto: 'tag' };
+function iconoCat(tipo, categoria, descripcion) {
+  if (tipo === 'Ingreso' || tipo === 'Inversión' || tipo === 'Ahorro' || tipo === 'Deuda') return TIPO_ICONO[tipo];
+  const t = normDesc((categoria || '') + ' ' + (descripcion || ''));
+  const m = CAT_ICONOS.find(([re]) => re.test(t));
+  return m ? m[1] : TIPO_ICONO[tipo] || 'tag';
+}
+function movIcHtml(m) { return '<span class="mov-ic t-' + (TIPO_COLOR[m.tipo] || 'debt') + '" aria-hidden="true">' + ic(iconoCat(m.tipo, m.categoria, m.descripcion)) + '</span>'; }
+// Anillo de progreso (metas)
+function anilloHtml(pct, color, tam) {
+  const r = 26, c = 2 * Math.PI * r, v = Math.max(0, Math.min(100, pct || 0));
+  return '<svg class="anillo" width="' + tam + '" height="' + tam + '" viewBox="0 0 64 64" role="img" aria-label="' + Math.round(v) + ' por ciento"><circle cx="32" cy="32" r="' + r + '" fill="none" stroke="var(--paper-sunken)" stroke-width="7"/>' +
+    '<circle class="anillo-v" cx="32" cy="32" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + (c * v / 100).toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 32 32)"/>' +
+    '<text x="32" y="37" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor">' + (pct == null ? '—' : Math.round(pct) + '%') + '</text></svg>';
+}
+/* ============================================================
+   AGENDA · SEMANA (Bloque 9B): tira de la semana, el día elegido, lo próximo y todas las tareas
+   ============================================================ */
+const DIA_LETRA = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+function eventosAgenda(desde, hasta) {
+  const f0 = S.calFiltros; S.calFiltros = { tareas: true, facturas: true, hitos: true, movs: false };
+  try { return calEventos(desde, hasta); } finally { S.calFiltros = f0; }
+}
+function renderAgendaSemana() {
+  const hoy = todayISO(), sel = S.agendaDia || hoy, lunes = uAdd(sel, -dowMon(parseISO(sel)));
+  const mapW = eventosAgenda(lunes, uAdd(lunes, 6)), mapN = eventosAgenda(uAdd(sel, 1), uAdd(sel, 14));
+  const venc = tareasVencidas();
+  const tira = '<div class="semana"><button class="semana-flecha" aria-label="Semana anterior" ' + act('agendaSemana', -1) + '>' + ic('chevL') + '</button>' +
+    '<div class="semana-dias">' + [0, 1, 2, 3, 4, 5, 6].map((i) => { const iso = uAdd(lunes, i), n = (mapW[iso] || []).length;
+      return '<button class="dia' + (iso === sel ? ' sel' : '') + (iso === hoy ? ' hoy' : '') + '" ' + act('agendaDia', iso) + ' aria-label="' + fmtDateLong(iso) + '"><span class="l">' + DIA_LETRA[i] + '</span><b>' + parseISO(iso).getDate() + '</b><i class="' + (n ? 'con' : '') + '"></i></button>'; }).join('') + '</div>' +
+    '<button class="semana-flecha" aria-label="Semana siguiente" ' + act('agendaSemana', 1) + '>' + ic('chevR') + '</button></div>';
+  const dSel = parseISO(sel), nom = DIAS_LARGO[dowMon(dSel)].toLowerCase() + ' ' + dSel.getDate();
+  const tituloDia = sel === hoy ? 'Hoy, ' + nom : sel === uAdd(hoy, 1) ? 'Mañana, ' + nom : sel === uAdd(hoy, -1) ? 'Ayer, ' + nom : nom.charAt(0).toUpperCase() + nom.slice(1) + ' de ' + MESES[dSel.getMonth()].toLowerCase();
+  const tarDia = S.tareas.filter((t) => t.estado !== 'Completado' && t.fechaLimite === sel).sort(cmpTarea);
+  const filasDia = tarDia.map(renderTareaRow).join('') + (mapW[sel] || []).filter((ev) => ev.k !== 'tarea').map(calEventRow).join('');
+  const prox = Object.keys(mapN).sort().map((iso) => mapN[iso].map((ev) => '<div class="row ' + (ev.click ? '' : 'static') + '" ' + (ev.click || '') + '><span class="dia-col"><b>' + parseISO(iso).getDate() + '</b><span>' + DIAS_LARGO[dowMon(parseISO(iso))].slice(0, 3).toLowerCase() + '</span></span>' +
+    '<div class="main"><div class="ttl">' + escapeHtml(ev.titulo) + '</div><div class="meta" style="color:' + evColor(ev) + '">' + escapeHtml(ev.detalle) + '</div></div></div>').join('')).join('');
+  const activas = S.tareas.filter((t) => t.estado !== 'Completado').sort(cmpTarea), completadas = S.tareas.filter((t) => t.estado === 'Completado').sort((a, b) => (b.fechaFin || '').localeCompare(a.fechaFin || ''));
+  const lista = S.tareasSub === 'completadas' ? completadas : activas;
+  return tira +
+    (venc.length ? '<div class="alert tappable" ' + act('setTareasSub', 'activas') + '>' + ic('alert') + '<div><b>' + venc.length + (venc.length > 1 ? ' tareas vencidas' : ' tarea vencida') + '</b>' + escapeHtml(venc.map((t) => t.nombre).slice(0, 2).join(', ')) + '</div></div>' : '') +
+    '<div class="section-title">' + escapeHtml(tituloDia) + ' <button class="link" ' + act('crearIr', 'tarea') + '>' + ic('plus') + ' Tarea</button></div>' +
+    (filasDia ? '<div class="list">' + filasDia + '</div>' : '<div class="card empty-mini">Nada para este día.</div>') +
+    (prox ? '<div class="section-title">Próximos días</div><div class="list">' + prox + '</div>' : '') +
+    '<div class="section-title">Todas tus tareas</div>' +
+    '<div class="segmented"><button class="' + (S.tareasSub !== 'completadas' ? 'active' : '') + '" ' + act('setTareasSub', 'activas') + '>Pendientes (' + activas.length + ')</button>' +
+    '<button class="' + (S.tareasSub === 'completadas' ? 'active' : '') + '" ' + act('setTareasSub', 'completadas') + '>Completadas (' + completadas.length + ')</button></div><div style="height:10px;"></div>' +
+    (lista.length ? '<div class="list">' + lista.map(renderTareaRow).join('') + '</div>' : '<div class="card empty-mini">' + (S.tareasSub === 'completadas' ? 'Aún no has completado ninguna.' : 'Nada pendiente. ¡Bien!') + '</div>');
+}
 /* ============================================================
    DINERO (patrimonio, metas, inversiones, deudas y compartido) · AGENDA · TÚ  (Bloque 9)
    ============================================================ */
@@ -1921,8 +2000,8 @@ function renderCompartidoDinero() {
 }
 function renderAgenda() {
   const sub = S.agendaSub === 'calendario' ? 'calendario' : 'tareas';
-  return '<div class="segmented" style="margin-bottom:14px;">' + [['tareas', 'Tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (sub === id ? 'active' : '') + '" ' + act('irAgenda', id) + '>' + l + '</button>').join('') + '</div>' +
-    (sub === 'tareas' ? renderTareas() : renderCalendario());
+  return '<div class="segmented" style="margin-bottom:14px;">' + [['tareas', 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (sub === id ? 'active' : '') + '" ' + act('irAgenda', id) + '>' + l + '</button>').join('') + '</div>' +
+    (sub === 'tareas' ? renderAgendaSemana() : renderCalendario());
 }
 // «Tú»: todos los ajustes en grupos, con buscador
 function renderTu() {
@@ -2238,6 +2317,11 @@ function patrimonio() {
   const fechas = cuentasCfg().map((c) => c.fecha).filter(Boolean).sort();
   return { banco, bancoFecha: fechas.length ? fechas[0] : null, nCuentas: cuentasCfg().length, inv, sinValor, ahorro, deudas, comp: !!(S.objetivos || []).length, total: banco + inv + ahorro - deudas };
 }
+function patBarraHtml(p) {
+  const partes = [[Math.max(0, p.banco), 'var(--bill)'], [Math.max(0, p.inv), 'var(--savings)'], [Math.max(0, p.ahorro), 'var(--accent)'], [Math.max(0, p.deudas), 'var(--expense)']];
+  const tot = partes.reduce((a, x) => a + x[0], 0); if (!tot) return '';
+  return '<div class="pat-barra" aria-hidden="true">' + partes.filter((x) => x[0] > 0).map(([v, c]) => '<i style="flex:' + (v / tot).toFixed(4) + ';background:' + c + '"></i>').join('') + '</div>';
+}
 function patrimonioHtml() {
   if (S.movimientos.some((x) => x.tipo === 'Inversión')) asegurarValoracion();
   const p = patrimonio();
@@ -2246,7 +2330,7 @@ function patrimonioHtml() {
   const diasBanco = p.bancoFecha ? Math.round((uD(todayISO()) - uD(p.bancoFecha)) / 864e5) : null;
   const cargando = S._valCarga || S._valProg;
   return '<div class="section-title">Patrimonio' + badge('patrimonio') + '</div><div class="card pat-card">' +
-    '<div class="pat-total tnum">' + money(p.total) + '</div>' +
+    '<div class="pat-total tnum">' + money(p.total) + '</div>' + patBarraHtml(p) +
     (p.nCuentas ? fila('Dinero en el banco' + (diasBanco != null && diasBanco > 30 ? ' · <span style="color:var(--accent)">actualízalo</span>' : ''), p.banco, p.banco >= 0 ? '+' : '−', 'var(--income)', act('openCuentas'))
       : '<div class="pat-row tappable" ' + act('openCuentas') + '><span>Dinero en el banco</span><b style="color:var(--accent)">Añadir saldo</b><span class="chev-s">' + ic('chevR') + '</span></div>') +
     (p.inv || S.movimientos.some((x) => x.tipo === 'Inversión') ? fila('Inversiones (valor de mercado)' + (cargando ? ' · actualizando…' : ''), p.inv, '+', 'var(--income)', act('irAnalisis', 'inversiones')) : '') +
@@ -4042,6 +4126,8 @@ const H = {
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
     S.tab = TAB_ALIAS[id] || id; render(); window.scrollTo(0, 0);
   },
+  agendaDia: ([iso]) => { S.agendaDia = iso; render(); },
+  agendaSemana: ([d]) => { S.agendaDia = uAdd(S.agendaDia || todayISO(), 7 * Number(d)); render(); },
   irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
   irDinero: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
   setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); render(); },

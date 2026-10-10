@@ -636,3 +636,59 @@ body.en-tu .tb-avatar { box-shadow: 0 0 0 3px var(--accent-soft); }
 .menu-extra + .chev { margin-left: 8px; }
 .tu-buscar { margin: 14px 0 0; }
 .buscar-campo input { font-size: 16px; }
+
+/* ================= Bloque 9B · lavado de cara ================= */
+:root { --radius-m: 18px; }
+.card { border-radius: 20px; }
+.list { border-radius: 20px; }
+.section-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 0; margin: 24px 2px 10px; }
+.section-title .link { font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+.section-title .link .i { width: 14px; height: 14px; }
+.section-title .hint { font-weight: 500; color: var(--text-faint); font-size: 12.5px; }
+.pill { border-radius: 20px; }
+.date-sep { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; font-weight: 700; color: var(--text); margin: 20px 6px 8px; }
+.date-sep .pos { color: var(--income); font-weight: 600; } .date-sep .neg { color: var(--expense); font-weight: 600; }
+.mov-ic { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; flex: none; }
+.mov-ic .i { width: 20px; height: 20px; }
+.mov-ic.t-expense { background: var(--expense-soft); color: var(--expense); }
+.mov-ic.t-income { background: var(--income-soft); color: var(--income); }
+.mov-ic.t-savings { background: var(--savings-soft); color: var(--savings); }
+.mov-ic.t-bill { background: var(--bill-soft); color: var(--bill); }
+.mov-ic.t-debt { background: var(--paper-sunken); color: var(--debt); }
+.row .ttl { font-weight: 600; }
+.mov-tools { display: flex; gap: 8px; overflow-x: auto; margin: -2px 0 12px; scrollbar-width: none; }
+.mov-tools::-webkit-scrollbar { display: none; }
+.tool-btn { flex: none; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--paper-raised); color: var(--text); border-radius: 14px; padding: 9px 12px; font: inherit; font-weight: 600; font-size: 13.5px; cursor: pointer; }
+.tool-btn .i { width: 18px; height: 18px; color: var(--accent); }
+.tool-btn .badge-new { margin-left: 2px; }
+/* metas con anillo */
+.meta-cab { display: flex; align-items: center; gap: 14px; }
+.anillo { flex: none; color: var(--text); }
+.anillo-v { transition: stroke-dasharray .9s cubic-bezier(.2,.9,.25,1); }
+.meta-info { min-width: 0; display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+.meta-nom { font-weight: 700; font-size: 16px; }
+.meta-cant { font-size: 13.5px; color: var(--text-muted); }
+.estado-pill { font-size: 12px; font-weight: 700; border-radius: 9px; padding: 3px 9px; margin-top: 3px; }
+.estado-pill.e-verde { background: var(--income-soft); color: var(--income); }
+.estado-pill.e-amarillo { background: var(--accent-soft); color: var(--accent); }
+.estado-pill.e-rojo { background: var(--expense-soft); color: var(--expense); }
+.estado-pill.e-gris { background: var(--paper-sunken); color: var(--text-muted); }
+/* patrimonio */
+.pat-barra { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; margin: 10px 0 8px; }
+.pat-barra i { display: block; }
+/* agenda: semana */
+.semana { display: flex; align-items: center; gap: 4px; margin-bottom: 14px; }
+.semana-flecha { width: 30px; height: 44px; border: none; background: none; color: var(--text-faint); display: grid; place-items: center; cursor: pointer; flex: none; }
+.semana-flecha .i { width: 16px; height: 16px; }
+.semana-dias { flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.dia { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0 7px; border-radius: 16px; border: 1px solid var(--line); background: var(--paper-raised); color: var(--text); font: inherit; cursor: pointer; }
+.dia .l { font-size: 11px; font-weight: 600; color: var(--text-faint); }
+.dia b { font-size: 16px; }
+.dia i { width: 5px; height: 5px; border-radius: 50%; background: transparent; }
+.dia i.con { background: var(--accent); }
+.dia.hoy b { color: var(--accent); }
+.dia.sel { background: var(--hero-bg); border-color: var(--hero-bg); color: #F4F1EA; }
+.dia.sel .l { color: var(--hero-muted); } .dia.sel b { color: #F4F1EA; } .dia.sel i.con { background: #E7B577; }
+.dia-col { width: 38px; flex: none; text-align: center; display: flex; flex-direction: column; line-height: 1.1; }
+.dia-col b { font-size: 17px; } .dia-col span { font-size: 11px; color: var(--text-faint); }
+.tu-grupo .section-title { margin-top: 20px; }
