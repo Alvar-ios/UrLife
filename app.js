@@ -402,6 +402,7 @@ function render() {
   if (enAnalisis() && subAnalisis() === 'general' && S.generalSub === 'mensual') drawDonut();
   if (enAnalisis() && subAnalisis() === 'general' && S.generalSub === 'anual') drawTrend();
   if (enAnalisis() && subAnalisis() === 'inversiones') bindInvChart();
+  if (!S._novRevisado || lsGet('unirse')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
 }
 
 
@@ -2747,13 +2748,20 @@ function novedadesHtml(todas) {
 }
 function maybeNovedades() {
   if (lsGet('unirse')) return; // primero la invitación
-  if (S._novRevisado || S.onboarding || !allLoaded() || !S.db || !NOVEDADES.length) return;
-  S._novRevisado = true;
+  if (S._novRevisado || S._novProg || S.onboarding || !allLoaded() || !S.db || !NOVEDADES.length) return;
   const ult = NOVEDADES[0].id;
-  if ((cfg().novedadesVistas || '') >= ult) return;
-  saveConfig({ novedadesVistas: ult });
+  if ((cfg().novedadesVistas || '') >= ult) { S._novRevisado = true; return; }
+  // Si hay otra ventana abierta se espera a que se cierre (solo durante el primer minuto; si no, sale la próxima vez).
+  if (Date.now() - (S._inicioApp || 0) > 60000) { S._novRevisado = true; return; }
   if ($('#sheetBackdrop')) return;
-  setTimeout(() => { if (!$('#sheetBackdrop')) openSheet(novedadesHtml(false)); }, 400);
+  S._novProg = true;
+  setTimeout(() => {
+    S._novProg = false;
+    if (S._novRevisado || $('#sheetBackdrop') || !S.appStarted) return;
+    S._novRevisado = true;
+    saveConfig({ novedadesVistas: ult }); // se marca como vista solo cuando de verdad se enseña
+    openSheet(novedadesHtml(false));
+  }, 400);
 }
 
 /* ============================================================
@@ -4465,7 +4473,7 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet
 async function enterApp(session) {
   S.user = session.user;
   S.db = window.Data;
-  S.appStarted = true;
+  S.appStarted = true; S._inicioApp = Date.now(); S._novRevisado = false;
   S.movimientos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S.objetivos = null; S._gruposVistos = {};
   S.loaded = { mov: false, tar: false, golf: false, cfg: false };
   renderShell();
