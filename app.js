@@ -3219,14 +3219,15 @@ function novDestHtml(d, vivo) {
     '<p>' + escapeHtml(d.texto) + '</p><ul>' + d.puntos.map((x) => '<li>' + escapeHtml(x) + '</li>').join('') + '</ul>' +
     (vivo && d.ir ? '<button type="button" class="btn block nov-dest-btn" ' + act('novIr', d.ir) + '>' + escapeHtml(d.boton) + '</button>' : '') + '</div>';
 }
-function novedadesHtml(todas) {
-  const lista = todas ? NOVEDADES : NOVEDADES.slice(0, 1);
+// todas: el historial completo (Tú → Novedades). Si no, la última versión y las que aún no hayas visto (máx. 3).
+function novedadesHtml(todas, vistas) {
+  const lista = todas ? NOVEDADES : NOVEDADES.filter((n, i) => i === 0 || (vistas && n.id > vistas)).slice(0, 3);
   return '<div class="handle"></div>' + lista.map((n, i) =>
     (i === 0 ? '<div class="nov-hero"><div class="nov-k">Novedades · ' + escapeHtml(n.titulo) + '</div><h2>🚀 ¡PalomApp se ha actualizado!</h2>' + (n.destacados ? '<div class="nov-sub">Lo más importante de esta versión:</div>' : '') + '</div>' : '<div class="section-title">' + escapeHtml(n.titulo) + ' · ' + fechaCortaU(n.id.slice(0, 10)) + '</div>') +
     (n.destacados ? n.destacados.map((d) => novDestHtml(d, i === 0)).join('') + '<div class="section-title" style="margin-top:16px;">Y además</div>' : '') +
     '<div class="nov-list">' + n.items.map(([em, t, d, ir]) => '<div class="nov-it"' + (ir && i === 0 ? ' ' + act('novIr', ir) : '') + '><div class="nov-em">' + em + '</div><div class="nov-tx"><b>' + escapeHtml(t) + '</b><div>' + escapeHtml(d) + '</div></div>' + (ir && i === 0 ? '<span class="nov-go">' + ic('chevR') + '</span>' : '') + '</div>').join('') + '</div>'
   ).join('') +
-    (!todas && NOVEDADES.length > 1 ? '<button type="button" class="link" style="margin-top:10px;" ' + act('verNovedades', '1') + '>Ver novedades anteriores</button>' : '') +
+    (!todas && NOVEDADES.length > lista.length ? '<button type="button" class="link" style="margin-top:10px;" ' + act('verNovedades', '1') + '>Ver novedades anteriores</button>' : '') +
     '<div style="font-size:12.5px;color:var(--text-faint);margin-top:10px;">Lo nuevo lleva la etiqueta <span class="badge-new">NUEVO</span> o <span class="badge-new mejor">MEJORADO</span> dentro de la app. Puedes volver a ver esto en Tú → Novedades.</div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>¡Entendido!</button></div>';
 }
@@ -3243,8 +3244,9 @@ function maybeNovedades() {
     S._novProg = false;
     if (S._novRevisado || $('#sheetBackdrop') || !S.appStarted) return;
     S._novRevisado = true;
+    const vistas = cfg().novedadesVistas || '';
     saveConfig({ novedadesVistas: ult }); // se marca como vista solo cuando de verdad se enseña
-    openSheet(novedadesHtml(false));
+    openSheet(novedadesHtml(false, vistas));
   }, 400);
 }
 
@@ -5045,8 +5047,26 @@ function leaveApp() {
   _unsubs = [];
   renderLoginScreen();
 }
+// Si la app se quedó abierta en segundo plano y mientras tanto se publicó una versión nueva,
+// al volver se recarga sola (así ves los cambios y la ventana de novedades). Nunca mientras escribes o tienes una ventana abierta.
+const _ver = { firma: null, oculta: 0 };
+async function firmaApp() {
+  try { const r = await fetch('app.js', { method: 'HEAD', cache: 'no-store' }); return r && r.ok ? (r.headers.get('etag') || r.headers.get('last-modified') || null) : null; } catch (e) { return null; }
+}
+function vigilarVersion() {
+  if (typeof fetch !== 'function' || !/^https?:$/.test(location.protocol)) return;
+  firmaApp().then((f) => { _ver.firma = f; });
+  document.addEventListener('visibilitychange', async () => {
+    if (document.hidden) { _ver.oculta = Date.now(); return; }
+    if (!_ver.firma || Date.now() - _ver.oculta < 15000) return;
+    const f = await firmaApp();
+    const escribiendo = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+    if (f && f !== _ver.firma && !$('#sheetBackdrop') && !escribiendo) location.reload();
+  });
+}
 async function main() {
   applyTheme();
+  vigilarVersion();
   capturarEnlaceUnirse();
   if (!window.Auth || !window.Data) {
     $('#app').innerHTML = '<div class="loading"><div class="big" style="font-size:28px;">' + ic('alert') + '</div><b style="color:var(--expense);">Falta configurar la app</b>' +
