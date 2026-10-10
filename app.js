@@ -656,7 +656,7 @@ function movNavHtml(dir) {
   const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
   const flecha = (d, ok, icono, aria) => '<button class="mov-flecha" aria-label="' + aria + '" ' + (ok ? act('movPerMover', d) : 'disabled') + '>' + ic(icono) + '</button>';
   return '<div class="mov-nav' + (modo === 'todo' ? ' todo' : '') + '"><div class="mov-per">' + flecha(-1, ant, 'chevL', modo === 'anio' ? 'Año anterior' : 'Mes anterior') +
-    '<button class="mov-per-lbl' + anim + '" ' + act('movPerHoy') + '><b>' + lbl + '</b><span>' + sub + '</span></button>' +
+    '<button class="mov-per-lbl' + anim + '" ' + act('movPerHoy') + '><b>' + lbl + '</b><span>' + sub + badge('mesames') + '</span></button>' +
     flecha(1, sig, 'chevR', modo === 'anio' ? 'Año siguiente' : 'Mes siguiente') + '</div>' +
     '<div class="segmented mov-modo">' + [['mes', 'Mes'], ['anio', 'Año'], ['todo', 'Todo']].map(([k, l]) => '<button class="' + (modo === k ? 'active' : '') + '" ' + act('setMovModo', k) + '>' + l + '</button>').join('') + '</div></div>';
 }
@@ -1023,7 +1023,7 @@ function renderAnalisisMensual(enInicio) {
     (hayGasto ? '<div class="chart-wrap" id="donutWrap"></div><div class="legend" id="donutLegend"></div>'
       : '<div style="text-align:center;color:var(--text-faint);font-size:13.5px;">Sin gastos registrados en ' + MESES[S.mesSel - 1].toLowerCase() + '.</div>') + '</div>' +
 
-    '<div class="section-title">Presupuesto por categoría</div><div class="card">' +
+    '<div class="section-title"><span>Presupuesto por categoría' + badge('presup') + '</span></div><div class="card">' +
     (filas.length ? '<div class="summary-line" style="margin-top:0;">Gastado ' + money(totReal) + (totPres ? ' de ' + money(totPres) + ' presupuestados' : '') + '</div>' +
       presupuestoFilasHtml(filas, catMap)
       : '<div style="color:var(--text-faint);font-size:13.5px;">Añade categorías en Tú → Categorías de gasto.</div>') + '</div>' +
@@ -1060,7 +1060,7 @@ function renderAnalisisAnual(enInicio) {
     '<div class="kpi income tappable" ' + act('irMovs', 'Ingreso', 'y:' + S.anioSel) + '><div class="v tnum">' + moneyShort(totIng) + '</div><div class="l">Ingresos</div></div>' +
     '<div class="kpi expense tappable" ' + act('irMovs', '_gastos', 'y:' + S.anioSel) + '><div class="v tnum">' + moneyShort(totGas) + '</div><div class="l">Gastos</div></div>' +
     '<div class="kpi avail tappable" ' + act('irMovs', '_ahorro', 'y:' + S.anioSel) + '><div class="v tnum">' + tasa.toFixed(0) + '%</div><div class="l">Tasa de ahorro</div></div></div>') +
-    '<div class="section-title">Ingresos y gastos por mes</div><div class="card"><div class="chart-wrap" id="trendWrap"></div>' +
+    '<div class="section-title"><span>Ingresos y gastos por mes' + badge('anual') + '</span></div><div class="card"><div class="chart-wrap" id="trendWrap"></div>' +
     '<div class="legend"><span><i style="background:var(--income)"></i>Ingresos</span><span><i style="background:var(--expense)"></i>Gastos</span></div></div>' +
     '<div class="section-title">Detalle</div><div class="list">' +
     rows.map((r) => '<div class="row' + (r.m > mesesEmpezados(S.anioSel) ? ' futuro' : '') + '" ' + act('verMes', S.anioSel, r.m) + '><div class="main"><div class="ttl">' + MESES[r.m - 1] + '</div></div>' +
@@ -2818,7 +2818,7 @@ function evolucionHtml(grupos, valorActual) {
     S._invChart = null;
     cuerpo = '<div class="tr-chart tr-empty">' + (H && H.clave === clave && H.error ? 'No se ha podido cargar la evolución. Se volverá a intentar en un momento.' : 'Cargando evolución…') + '</div>';
   }
-  const modos = S._invChart || (H && H.clave === clave && !H.error) ? '<div class="segmented tr-modo">' + [['valor', 'Valor'], ['rentab', 'Rentabilidad']].map((x) => '<button class="' + (S.invModo === x[0] ? 'active' : '') + '" ' + act('setInvModo', x[0]) + '>' + x[1] + '</button>').join('') + '</div>' : '';
+  const modos = S._invChart || (H && H.clave === clave && !H.error) ? '<div class="segmented tr-modo">' + [['valor', 'Valor'], ['rentab', 'Rentabilidad']].map((x) => '<button class="' + (S.invModo === x[0] ? 'active' : '') + '" ' + act('setInvModo', x[0]) + '>' + x[1] + (x[0] === 'rentab' ? badge('rentab') : '') + '</button>').join('') + '</div>' : '';
   return '<div class="card tr-card">' + modos + '<div class="tr-head">' + cabecera + '<div class="tr-fecha" id="invFecha"></div></div>' + cuerpo + chips + '</div>';
 }
 function bindInvChart() {
@@ -3153,6 +3153,23 @@ async function doDeleteTarea() {
    (con su fecha) y, si hace falta, nuevas claves en BADGES.
    ============================================================ */
 const NOVEDADES = [
+  { id: '2026-10-10b', titulo: 'Parche 4 · Nuevo diseño',
+    destacados: [
+      { em: '🧭', titulo: 'La app, rediseñada', color: 'accent', ir: 'crear', boton: 'Probar el botón +',
+        texto: 'Cuatro secciones claras: Inicio, Movimientos, Dinero y Agenda. Con el botón + del centro apuntas cualquier cosa, y tus ajustes están en «Tú», tu inicial arriba a la derecha.',
+        puntos: ['Inicio: lo que te queda este mes, de un vistazo', 'Lupa arriba para encontrar cualquier cosa', 'Agenda con tu semana y todas tus tareas'] },
+      { em: '✨', titulo: 'Más cómoda y más agradable', color: 'savings', ir: 'movimientos', boton: 'Ver mis movimientos',
+        texto: 'Movimientos mes a mes con flechas, gráficos suaves y pequeños detalles que hacen la app más agradable de usar.',
+        puntos: ['Desliza un movimiento para duplicarlo o borrarlo', '¿Te equivocas? Botón «Deshacer»', 'Confeti cuando cumples una meta 🎉'] },
+    ],
+    items: [
+      ['📊', 'Rentabilidad de tus inversiones', 'Nuevo modo «Rentabilidad»: solo lo que ganan tus inversiones, sin contar lo que metes.', 'rentab'],
+      ['📅', 'Movimientos mes a mes', 'Pasa de un mes a otro con las flechas, o mira el año entero o todo.', 'movimientos'],
+      ['🎯', 'Presupuestos más claros', 'De lo que más gastas a lo que menos, con una marca donde está tu presupuesto.', 'presup'],
+      ['📈', 'Resumen del año', 'Curvas suaves y sin líneas a 0 en los meses que aún no han llegado.', 'anual'],
+      ['🔍', 'Buscador', 'La lupa de arriba busca movimientos, tareas y ajustes.', 'buscar'],
+      ['🗓️', 'Agenda', 'Tu semana, lo próximo y todas tus tareas, juntas.', 'tareas'],
+    ] },
   { id: '2026-10-10', titulo: 'Parche 3',
     destacados: [
       { em: '📸', titulo: 'Foto del ticket', color: 'accent', ir: 'ticket', boton: 'Probar con un ticket',
@@ -3184,6 +3201,7 @@ const NOVEDADES = [
 const BADGES = {
   cobros: ['NUEVO', '2026-10-09'], importar: ['NUEVO', '2026-10-09'], reglas: ['NUEVO', '2026-10-09'],
   repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'], compartir: ['NUEVO', '2026-10-10'], ticket: ['NUEVO', '2026-10-10'], metas: ['MEJORADO', '2026-10-10'], patrimonio: ['NUEVO', '2026-10-10'],
+  rentab: ['NUEVO', '2026-10-10'], mesames: ['NUEVO', '2026-10-10'], presup: ['MEJORADO', '2026-10-10'], anual: ['MEJORADO', '2026-10-10'],
 };
 function badgeActivo(k) {
   const b = BADGES[k]; if (!b) return false;
@@ -3204,7 +3222,7 @@ function novDestHtml(d, vivo) {
 function novedadesHtml(todas) {
   const lista = todas ? NOVEDADES : NOVEDADES.slice(0, 1);
   return '<div class="handle"></div>' + lista.map((n, i) =>
-    (i === 0 ? '<div class="nov-hero"><div class="nov-k">Novedades · ' + escapeHtml(n.titulo) + '</div><h2>🚀 ¡PalomApp se ha actualizado!</h2>' + (n.destacados ? '<div class="nov-sub">Lo más importante de esta versión:</div>' : '') + '</div>' : '<div class="section-title">' + escapeHtml(n.titulo) + ' · ' + fechaCortaU(n.id) + '</div>') +
+    (i === 0 ? '<div class="nov-hero"><div class="nov-k">Novedades · ' + escapeHtml(n.titulo) + '</div><h2>🚀 ¡PalomApp se ha actualizado!</h2>' + (n.destacados ? '<div class="nov-sub">Lo más importante de esta versión:</div>' : '') + '</div>' : '<div class="section-title">' + escapeHtml(n.titulo) + ' · ' + fechaCortaU(n.id.slice(0, 10)) + '</div>') +
     (n.destacados ? n.destacados.map((d) => novDestHtml(d, i === 0)).join('') + '<div class="section-title" style="margin-top:16px;">Y además</div>' : '') +
     '<div class="nov-list">' + n.items.map(([em, t, d, ir]) => '<div class="nov-it"' + (ir && i === 0 ? ' ' + act('novIr', ir) : '') + '><div class="nov-em">' + em + '</div><div class="nov-tx"><b>' + escapeHtml(t) + '</b><div>' + escapeHtml(d) + '</div></div>' + (ir && i === 0 ? '<span class="nov-go">' + ic('chevR') + '</span>' : '') + '</div>').join('') + '</div>'
   ).join('') +
@@ -4410,7 +4428,7 @@ const H = {
     if (/^m:/.test(p)) { let [y, m] = p.slice(2).split('-').map(Number); m += d; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } S.movPeriodo = mesClave(y, m); }
     else if (/^y:/.test(p)) S.movPeriodo = 'y:' + (Number(p.slice(2)) + d);
     else return;
-    S._movDir = d; S.movLimit = 120; render();
+    S._movDir = d; S.movLimit = 120; verBadge('mesames'); render();
   },
   setMovModo: ([k]) => {
     const p = movPerNorm(S.movPeriodo), hoy = new Date(), y = /^[my]:/.test(p) ? Number(p.slice(2, 6)) : hoy.getFullYear();
@@ -4713,6 +4731,12 @@ const H = {
       else if (k === 'importar') H.impAbrir([]);
       else if (k === 'reglas') H.openReglas([]);
       else if (k === 'tareas') H.irAgenda(['tareas']);
+      else if (k === 'crear') H.onFab([]);
+      else if (k === 'buscar') H.openBuscar([]);
+      else if (k === 'movimientos') H.goTab(['movimientos']);
+      else if (k === 'rentab') { S.invModo = 'rentab'; lsSet('invModo', 'rentab'); verBadge('rentab'); H.irDinero(['inversiones']); }
+      else if (k === 'presup') { verBadge('presup'); S.generalSub = 'mensual'; H.goTab(['inicio']); setTimeout(() => { const el = $('.budget-row'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 120); }
+      else if (k === 'anual') { verBadge('anual'); H.goTab(['inicio']); H.setGeneralSub(['anual']); }
     }, 260);
   },
   openMetas: () => { verBadge('metas'); FORM = { kind: 'metas' }; if ($('#sheetBackdrop')) updateSheet(metasListaHtml()); else openSheet(metasListaHtml()); },
@@ -4792,7 +4816,7 @@ const H = {
   unirseCerrar: ([grupoId]) => { lsSet('unirse', ''); S._uniendo = false; if (grupoId) { cargarGrupos().then(() => abrirGrupo(grupoId)); } else closeSheet(); },
   unirseOtraCuenta: async () => { closeSheet(); S._uniendo = false; await window.Auth.signOut(); toast('Inicia sesión con la otra cuenta y se completará la invitación'); },
   setInvPeriodo: ([k]) => { if (PERIODOS_INV.some((x) => x[0] === k)) { S.invPeriodo = k; render(); } },
-  setInvModo: ([k]) => { S.invModo = k === 'rentab' ? 'rentab' : 'valor'; lsSet('invModo', S.invModo); render(); },
+  setInvModo: ([k]) => { S.invModo = k === 'rentab' ? 'rentab' : 'valor'; lsSet('invModo', S.invModo); if (S.invModo === 'rentab') verBadge('rentab'); render(); },
   setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
   toggleTabAn: ([id]) => {
