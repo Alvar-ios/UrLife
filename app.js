@@ -31,6 +31,12 @@ const ICONS = {
   bank: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10 12 4l8 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3.5 21h17"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15"/><path d="M9 7V5.2A1.2 1.2 0 0 1 10.2 4h3.6A1.2 1.2 0 0 1 15 5.2V7"/><path d="M6.5 7 7.3 19a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4L17.5 7"/></svg>',
   users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.9-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.8 14.2c2.4-.3 4.3 1.2 4.9 4.3"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  arrowDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg>',
+  arrowUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>',
+  piggy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18 9 12l4 3 7-8"/><path d="M15 7h5v5"/></svg>',
+  card: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M16 12.5h2"/><path d="M3 10h18"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
 };
 function ic(name) {
   const s = ICONS[name];
@@ -124,7 +130,7 @@ const S = {
   movimientos: [], tareas: [], golf: [], config: null,
   loaded: { mov: false, tar: false, golf: false, cfg: false },
   tab: 'inicio',
-  analisisSub: 'general', generalSub: 'mensual', inicioSub: 'dashboard',
+  analisisSub: 'general', generalSub: 'mensual', inicioSub: 'dashboard', dineroSub: 'metas', agendaSub: 'tareas',
   calVista: 'mes', calFecha: null, calFiltros: { tareas: true, facturas: true, hitos: true, movs: false },
   mesSel: now0.getMonth() + 1, anioSel: now0.getFullYear(),
   tareasSub: 'activas',
@@ -280,24 +286,32 @@ function categoriasPorTipo(tipo) {
 /* ============================================================
    SHELL + RENDER
    ============================================================ */
+/* Bloque 9: 4 secciones + botón + central; los ajustes van en «Tú» (tu inicial, arriba a la derecha). */
 const TABS = [
   { id: 'inicio', label: 'Inicio', icon: 'home' },
   { id: 'movimientos', label: 'Movimientos', icon: 'list' },
-  { id: 'calendario', label: 'Calendario', icon: 'calendar' },
-  { id: 'tareas', label: 'Tareas', icon: 'checkCircle' },
-  { id: 'mas', label: 'Más', icon: 'more' },
+  { id: 'dinero', label: 'Dinero', icon: 'card' },
+  { id: 'agenda', label: 'Agenda', icon: 'calendar' },
 ];
+const TITULOS = { inicio: 'Inicio', movimientos: 'Movimientos', dinero: 'Dinero', agenda: 'Agenda', tu: 'Tú' };
+// Nombres antiguos de pestañas → dónde están ahora
+const TAB_ALIAS = { analisis: 'inicio', mas: 'tu', tareas: 'agenda', calendario: 'agenda' };
 function tabBtn(t) {
   return '<button class="tab" data-tab="' + t.id + '" ' + act('goTab', t.id) + '><span class="ic">' + ic(t.icon) + '</span><span>' + t.label + '</span></button>';
 }
+function inicialUsuario() { const n = miNombreAlguno ? (S.grupos ? miNombreAlguno() : nombreSugerido()) : nombreSugerido(); return escapeHtml((n || '?').trim().charAt(0).toUpperCase()); }
 function renderShell() {
   $('#app').innerHTML =
     '<nav class="rail" aria-label="Secciones"><div class="brand">Mis Finanzas<span class="sub">y Tareas</span></div>' +
     TABS.map(tabBtn).join('') +
-    '<button class="rail-fab" ' + act('onFab') + '>' + ic('plus') + ' Añadir</button></nav>' +
-    '<div class="page"><header class="topbar"><h1 id="pageTitle"></h1><div class="sub">' + fmtDateLong(todayISO()) + '</div></header><main id="content"></main></div>' +
-    '<nav class="tabbar" aria-label="Secciones">' + TABS.map(tabBtn).join('') + '</nav>' +
-    '<button class="fab" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' +
+    '<button class="rail-fab" ' + act('onFab') + '>' + ic('plus') + ' Añadir</button>' +
+    '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
+    '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('goTab', 'inicio') + '>' + ic('chevL') + '</button>' +
+    '<div><h1 id="pageTitle"></h1><div class="sub">' + fmtDateLong(todayISO()) + '</div></div></div>' +
+    '<div class="tb-r"><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
+    '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
+    '<nav class="tabbar" aria-label="Secciones">' + tabBtn(TABS[0]) + tabBtn(TABS[1]) +
+    '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabBtn(TABS[2]) + tabBtn(TABS[3]) + '</nav>' +
     '<div id="sheetHost"></div><div class="toast" id="toast" role="status"></div>';
 }
 
@@ -389,19 +403,23 @@ function render() {
   if (S.onboarding) { renderOnboarding(); return; }
   const c = $('#content');
   if (!c) return;
+  if (TAB_ALIAS[S.tab]) S.tab = TAB_ALIAS[S.tab];
+  if (!TITULOS[S.tab]) S.tab = 'inicio';
   $$('[data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === S.tab));
-  const nuevoMas = ['grupos', 'patrimonio', 'metas', 'importar', 'reglas', 'cobros'].some(badgeActivo);
-  $$('[data-tab="mas"]').forEach((b) => b.classList.toggle('con-novedad', nuevoMas));
-  const title = $('#pageTitle'); if (title) title.textContent = TABS.find((t) => t.id === S.tab).label;
+  const nuevoTu = ['grupos', 'patrimonio', 'metas', 'importar', 'reglas', 'cobros'].some(badgeActivo);
+  $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
+  const av = $('#tbAvatar'); if (av) av.textContent = inicialUsuario();
+  document.body.classList.toggle('en-tu', S.tab === 'tu');
+  const title = $('#pageTitle'); if (title) title.textContent = TITULOS[S.tab];
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
-  if (S.tab === 'inicio') c.innerHTML = renderInicioPage();
+  if (S.tab === 'inicio') c.innerHTML = renderInicio();
   else if (S.tab === 'movimientos') c.innerHTML = renderMovimientos();
-  else if (S.tab === 'calendario') c.innerHTML = renderCalendario();
-  else if (S.tab === 'tareas') c.innerHTML = renderTareas();
-  else if (S.tab === 'mas') c.innerHTML = renderMas();
-  if (enAnalisis() && subAnalisis() === 'general' && S.generalSub === 'mensual') drawDonut();
-  if (enAnalisis() && subAnalisis() === 'general' && S.generalSub === 'anual') drawTrend();
-  if (enAnalisis() && subAnalisis() === 'inversiones') bindInvChart();
+  else if (S.tab === 'dinero') c.innerHTML = renderDinero();
+  else if (S.tab === 'agenda') c.innerHTML = renderAgenda();
+  else if (S.tab === 'tu') c.innerHTML = renderTu();
+  if (S.tab === 'inicio' && S.generalSub !== 'anual') drawDonut();
+  if (S.tab === 'inicio' && S.generalSub === 'anual') drawTrend();
+  if (S.tab === 'dinero' && dineroSub() === 'inversiones') bindInvChart();
   if (!S._novRevisado || lsGet('unirse')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
 }
 
@@ -411,37 +429,58 @@ function render() {
    INICIO
    ============================================================ */
 function renderInicio() {
-  const d = new Date(), y = d.getFullYear(), m = d.getMonth() + 1;
-  const k = kpisMes(y, m);
+  const anual = S.generalSub === 'anual', d = new Date(), y = S.anioSel, m = S.mesSel;
+  const actual = y === d.getFullYear() && m === d.getMonth() + 1;
   const vencidas = tareasVencidas();
-  const excedidas = presupuestoExcedido(y, m);
-  const proximas = S.tareas.filter((t) => t.estado !== 'Completado').sort(cmpTarea).slice(0, 3);
-  const cat = gastoPorCategoria(k.movs);
-  const top = Object.entries(cat).filter((e) => e[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 4);
-  const maxV = top.length ? top[0][1] : 1;
-
-  return kpiMesHtml(k, y, m) +
-    '<div class="summary-line" style="margin-bottom:0;">' + MESES[m - 1] + ' ' + y + ' · toca una cifra para ver sus movimientos</div>' +
-
-    avisosRecHtml() +
-
+  const excedidas = anual ? [] : presupuestoExcedido(y, m);
+  return heroHtml() +
+    (actual && !anual ? avisosRecHtml() : '') +
     ((vencidas.length || excedidas.length) ? '<div class="section-title">Avisos</div>' +
-      (vencidas.length ? '<div class="alert tappable" ' + act('goTab', 'tareas') + '>' + ic('alert') + '<div><b>' + vencidas.length + (vencidas.length > 1 ? ' tareas vencidas' : ' tarea vencida') + '</b>Míralas en la pestaña Tareas.</div></div>' : '') +
+      (vencidas.length ? '<div class="alert tappable" ' + act('irAgenda', 'tareas') + '>' + ic('alert') + '<div><b>' + vencidas.length + (vencidas.length > 1 ? ' tareas vencidas' : ' tarea vencida') + '</b>Míralas en Agenda.</div></div>' : '') +
       excedidas.map((c) => '<div class="alert warn tappable" ' + act('irMovs', '_gastos', mesClave(y, m), c.categoria) + '>' + ic('alert') + '<div><b>' + escapeHtml(c.categoria) + ' por encima del presupuesto</b>' + money(c.real) + ' de ' + money(c.presupuesto) + ' este mes.</div></div>').join('') : '') +
-
-    '<div class="section-title">Próximas tareas <button class="link" ' + act('goTab', 'tareas') + '>Ver todas</button></div>' +
-    (proximas.length ? '<div class="list">' + proximas.map(renderTareaRow).join('') + '</div>'
-      : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">No tienes tareas pendientes.</div>') +
-
-    (tabAnVisible('metas') ? renderMetasInicio() : '') +
-    patrimonioHtml() +
+    (anual ? '' : proximoHtml()) +
     compartidoInicioHtml() +
-
-    '<div class="section-title">Donde más gastas este mes <button class="link" ' + act('goTab', 'analisis') + '>Ver análisis</button></div>' +
-    '<div class="card">' + (top.length ? top.map(([n, v]) =>
-      '<div class="budget-row tappable" ' + act('irMovs', '_gastos', mesClave(y, m), n) + '><div class="top"><span class="cat">' + escapeHtml(n) + '</span><span class="nums"><b class="tnum">' + money(v) + '</b></span></div>' +
-      '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, v / maxV * 100)) + '%"></div></div></div>').join('')
-      : '<div style="color:var(--text-faint);font-size:13.5px;">Todavía no hay gastos este mes.</div>') + '</div>';
+    (anual ? renderAnalisisAnual(true) : renderAnalisisMensual(true));
+}
+// Tarjeta principal: lo que te queda (mes o año), con cambio de periodo y las tres cifras clave
+function heroHtml() {
+  const anual = S.generalSub === 'anual', d = new Date();
+  let ing = 0, gas = 0, aho = 0, deu = 0, mk, etiqueta, dispTxt;
+  if (anual) {
+    for (let i = 1; i <= 12; i++) { const k = kpisMes(S.anioSel, i); ing += k.ingresos; gas += k.facturas + k.gastos; aho += k.ahorro + k.inversion; deu += k.deuda; }
+    mk = 'y:' + S.anioSel; etiqueta = String(S.anioSel);
+    dispTxt = S.anioSel === d.getFullYear() ? 'Te queda este año' : 'Te quedó en ' + S.anioSel;
+  } else {
+    const k = kpisMes(S.anioSel, S.mesSel); ing = k.ingresos; gas = k.facturas + k.gastos; aho = k.ahorro + k.inversion; deu = k.deuda;
+    mk = mesClave(S.anioSel, S.mesSel); etiqueta = MESES[S.mesSel - 1] + (S.anioSel !== d.getFullYear() ? ' ' + S.anioSel : '');
+    const actual = S.anioSel === d.getFullYear() && S.mesSel === d.getMonth() + 1;
+    dispTxt = actual ? 'Te queda este mes' : 'Te quedó en ' + MESES[S.mesSel - 1].toLowerCase();
+  }
+  const disp = ing - gas - aho - deu, base = Math.max(ing, gas + aho + deu, 1);
+  const w = (v) => Math.max(0, Math.min(100, v / base * 100)).toFixed(1) + '%';
+  const tile = (l, v, cls, a) => '<button class="hero-tile tappable" ' + a + '><span class="l">' + l + '</span><b class="tnum ' + cls + '">' + moneyShort(v) + '</b></button>';
+  return '<section class="hero" aria-label="Resumen">' +
+    '<div class="hero-top"><div class="hero-nav"><button class="hero-arrow" aria-label="Anterior" ' + act(anual ? 'moveAnio' : 'moveMes', -1) + '>' + ic('chevL') + '</button>' +
+    '<span class="hero-per">' + etiqueta + '</span><button class="hero-arrow" aria-label="Siguiente" ' + act(anual ? 'moveAnio' : 'moveMes', 1) + '>' + ic('chevR') + '</button></div>' +
+    '<div class="hero-seg">' + [['mensual', 'Mes'], ['anual', 'Año']].map(([id, l]) => '<button class="' + ((anual ? 'anual' : 'mensual') === id ? 'active' : '') + '" ' + act('setGeneralSub', id) + '>' + l + '</button>').join('') + '</div></div>' +
+    '<button class="hero-main tappable" ' + act('irMovs', 'Todos', mk) + '><span class="hero-k">' + dispTxt + '</span><span class="hero-v tnum' + (disp < 0 ? ' neg' : '') + '">' + money(disp) + '</span></button>' +
+    '<div class="hero-bar" aria-hidden="true"><i class="g" style="width:' + w(gas) + '"></i><i class="a" style="width:' + w(aho) + '"></i><i class="d" style="width:' + w(deu) + '"></i></div>' +
+    '<div class="hero-tiles">' + tile('Ingresos', ing, 'pos', act('irMovs', 'Ingreso', mk)) + tile('Gastos', gas, 'neg', act('irMovs', '_gastos', mk)) + tile('Ahorro', aho, 'sav', act('irMovs', '_ahorro', mk)) + '</div></section>';
+}
+// «Lo próximo»: tareas, cobros y pagos de los próximos 14 días
+function proximoHtml() {
+  const hoy = todayISO(), hasta = uAdd(hoy, 14);
+  const f0 = S.calFiltros; S.calFiltros = { tareas: true, facturas: true, hitos: true, movs: false };
+  let map; try { map = calEventos(hoy, hasta); } finally { S.calFiltros = f0; }
+  const evs = [];
+  Object.keys(map).sort().forEach((iso) => map[iso].forEach((ev) => { if (!ev.pagada) evs.push(Object.assign({ iso }, ev)); }));
+  const venc = tareasVencidas().length;
+  if (!evs.length) return '';
+  const cuando = (iso) => { const n = daysUntil(iso); return n === 0 ? 'Hoy' : n === 1 ? 'Mañana' : DIAS_LARGO[dowMon(parseISO(iso))] + ' ' + parseISO(iso).getDate(); };
+  return '<div class="section-title">Lo próximo <button class="link" ' + act('irAgenda', 'tareas') + '>Ver agenda</button></div>' +
+    '<div class="prox-scroll">' + evs.slice(0, 10).map((ev) => '<button class="prox-card tappable k-' + ev.k + '" ' + (ev.click || '') + '><span class="prox-cuando' + (daysUntil(ev.iso) <= 1 ? ' pronto' : '') + '">' + cuando(ev.iso) + '</span>' +
+      '<span class="prox-t">' + escapeHtml(ev.titulo) + '</span><span class="prox-d">' + escapeHtml(ev.detalle) + '</span></button>').join('') + '</div>' +
+    (venc ? '' : '');
 }
 
 /* ============================================================
@@ -468,7 +507,7 @@ function periodoTxt(p) {
 }
 // Atajo: abre Movimientos con un filtro (tipo o grupo, periodo y categoría) y recuerda de dónde vienes para poder volver
 function irMovs(o) {
-  S.volverA = { tab: S.tab, inicioSub: S.inicioSub, analisisSub: S.analisisSub, generalSub: S.generalSub, label: S.tab === 'inicio' ? (S.inicioSub === 'analisis' ? 'Análisis' : 'Inicio') : 'atrás' };
+  S.volverA = { tab: S.tab, inicioSub: S.inicioSub, analisisSub: S.analisisSub, generalSub: S.generalSub, label: TITULOS[S.tab] || 'atrás' };
   S.tab = 'movimientos';
   S.movFiltroTipo = o.tipo || 'Todos';
   S.movPeriodo = o.periodo || 'todo';
@@ -778,7 +817,7 @@ function tabsAnSheetHtml() {
     TABS_AN_OPC.map(([id, l]) => '<button type="button" class="chip ' + (sel.indexOf(id) >= 0 ? 'active' : '') + '" ' + act('toggleTabAn', id) + '>' + l + '</button>').join('') + '</div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Hecho</button></div>';
 }
-function renderAnalisisMensual() {
+function renderAnalisisMensual(enInicio) {
   const k = kpisMes(S.anioSel, S.mesSel);
   const catMap = gastoPorCategoria(k.movs);
   const cats = (cfg().categoriasGasto || []).filter((c) => c.nombre);
@@ -789,12 +828,12 @@ function renderAnalisisMensual() {
   const totReal = Object.values(catMap).reduce((a, v) => a + v, 0);
   const hayGasto = Object.values(catMap).some((v) => v > 0);
 
-  return '<div class="month-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('moveMes', -1) + '>' + ic('chevL') + '</button>' +
+  return (enInicio ? '' : '<div class="month-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('moveMes', -1) + '>' + ic('chevL') + '</button>' +
     '<div class="lbl">' + MESES[S.mesSel - 1] + ' ' + S.anioSel + '</div>' +
     '<button class="icon-btn" aria-label="Mes siguiente" ' + act('moveMes', 1) + '>' + ic('chevR') + '</button></div>' +
-    kpiMesHtml(k, S.anioSel, S.mesSel) +
+    kpiMesHtml(k, S.anioSel, S.mesSel)) +
 
-    '<div class="section-title">Reparto del gasto</div><div class="card">' +
+    '<div class="section-title"><span>En qué gastas <span class="hint">· sin facturas fijas</span></span></div><div class="card">' +
     (hayGasto ? '<div class="chart-wrap" id="donutWrap"></div><div class="legend" id="donutLegend"></div>'
       : '<div style="text-align:center;color:var(--text-faint);font-size:13.5px;">Sin gastos registrados en ' + MESES[S.mesSel - 1].toLowerCase() + '.</div>') + '</div>' +
 
@@ -808,23 +847,23 @@ function renderAnalisisMensual() {
           '<span class="nums"><b class="tnum">' + money(real) + '</b>' + (pres > 0 ? ' / ' + money(pres) : '') + '</span></div>' +
           '<div class="progress ' + (over ? 'over' : '') + '"><div style="width:' + Math.max(0, Math.min(100, pct)) + '%"></div></div></div>';
       }).join('')
-      : '<div style="color:var(--text-faint);font-size:13.5px;">Añade categorías en Más → Categorías de gasto.</div>') + '</div>' +
+      : '<div style="color:var(--text-faint);font-size:13.5px;">Añade categorías en Tú → Categorías de gasto.</div>') + '</div>' +
     articulosTopHtml(k.movs);
 }
-function renderAnalisisAnual() {
+function renderAnalisisAnual(enInicio) {
   const rows = [];
   for (let m = 1; m <= 12; m++) rows.push(Object.assign({ m }, kpisMes(S.anioSel, m)));
   const totIng = rows.reduce((a, r) => a + r.ingresos, 0);
   const totGas = rows.reduce((a, r) => a + r.facturas + r.gastos, 0);
   const totAho = rows.reduce((a, r) => a + r.ahorro + r.inversion, 0);
   const tasa = totIng > 0 ? totAho / totIng * 100 : 0;
-  return '<div class="month-nav"><button class="icon-btn" aria-label="Año anterior" ' + act('moveAnio', -1) + '>' + ic('chevL') + '</button>' +
+  return (enInicio ? '<div class="summary-line" style="margin-top:12px;">Tasa de ahorro del año: <b>' + tasa.toFixed(0) + '%</b> de tus ingresos.</div>' : '<div class="month-nav"><button class="icon-btn" aria-label="Año anterior" ' + act('moveAnio', -1) + '>' + ic('chevL') + '</button>' +
     '<div class="lbl" style="min-width:90px;">' + S.anioSel + '</div>' +
     '<button class="icon-btn" aria-label="Año siguiente" ' + act('moveAnio', 1) + '>' + ic('chevR') + '</button></div>' +
     '<div class="kpi-row">' +
     '<div class="kpi income tappable" ' + act('irMovs', 'Ingreso', 'y:' + S.anioSel) + '><div class="v tnum">' + moneyShort(totIng) + '</div><div class="l">Ingresos</div></div>' +
     '<div class="kpi expense tappable" ' + act('irMovs', '_gastos', 'y:' + S.anioSel) + '><div class="v tnum">' + moneyShort(totGas) + '</div><div class="l">Gastos</div></div>' +
-    '<div class="kpi avail tappable" ' + act('irMovs', '_ahorro', 'y:' + S.anioSel) + '><div class="v tnum">' + tasa.toFixed(0) + '%</div><div class="l">Tasa de ahorro</div></div></div>' +
+    '<div class="kpi avail tappable" ' + act('irMovs', '_ahorro', 'y:' + S.anioSel) + '><div class="v tnum">' + tasa.toFixed(0) + '%</div><div class="l">Tasa de ahorro</div></div></div>') +
     '<div class="section-title">Ingresos y gastos por mes</div><div class="card"><div class="chart-wrap" id="trendWrap"></div>' +
     '<div class="legend"><span><i style="background:var(--income)"></i>Ingresos</span><span><i style="background:var(--expense)"></i>Gastos</span></div></div>' +
     '<div class="section-title">Detalle</div><div class="list">' +
@@ -868,7 +907,7 @@ function renderMetas() {
   const ms = metasStats();
   if (ms.some((r) => r.inv)) asegurarValoracion();
   const cab = '<div style="display:flex;justify-content:flex-end;gap:16px;margin:-4px 0 8px;">' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('plus') + ' Meta compartida' + badge('compartir') + '</button>' : '') + '<button class="link" ' + act('openMetas') + '>Gestionar metas</button></div>';
-  if (!ms.length) return cab + (objCompartidos('ahorro').length ? objCardsHtml('ahorro') : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes metas. Créalas en Más → Metas: de ahorro o de inversión (por ejemplo, la entrada de una casa).</div>');
+  if (!ms.length) return cab + (objCompartidos('ahorro').length ? objCardsHtml('ahorro') : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes metas. Créalas en Tú → Metas: de ahorro o de inversión (por ejemplo, la entrada de una casa).</div>');
   const generalInv = S.movimientos.filter((x) => x.tipo === 'Inversión' && !(x.metaId && ms.some((r) => r.inv && r.id === x.metaId)));
   const valGeneral = generalInv.reduce((a, x) => { const v = valorMovInv(x); return a + (v == null ? num(x.importe) : v); }, 0);
   return cab + ms.map((r) => {
@@ -915,7 +954,7 @@ function deudaStats(d) {
 }
 function renderDeudasPersonales() {
   const ds = (cfg().deudas || []).filter((d) => d && d.nombre).map(deudaStats);
-  if (!ds.length) return '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes deudas. Créalas en Más → Deudas (con el total y, si quieres, una fecha objetivo).</div>';
+  if (!ds.length) return '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes deudas. Créalas en Tú → Deudas (con el total y, si quieres, una fecha objetivo).</div>';
   const tot = ds.reduce((a, r) => a + r.total, 0), pag = ds.reduce((a, r) => a + Math.min(r.pagado, r.total), 0), pen = ds.reduce((a, r) => a + r.pend, 0);
   return '<div class="kpi-row"><div class="kpi expense"><div class="v tnum">' + moneyShort(pen) + '</div><div class="l">Pendiente</div></div>' +
     '<div class="kpi income tappable" ' + act('irMovs', 'Deuda', 'todo') + '><div class="v tnum">' + moneyShort(pag) + '</div><div class="l">Pagado</div></div>' +
@@ -1578,7 +1617,7 @@ function objEditorHtml() {
         '<div class="rec-hint" style="margin-top:4px;">Compartida con ' + escapeHtml(nombreDestino(grupoDe(o.grupoId))) + '</div>' +
         '<button class="btn accent block" style="margin-top:10px;" ' + act('objAportar', o.id) + '>' + (deuda ? 'Apuntar un pago' : 'Aportar') + '</button></div>' : '') +
     (!F.id ? '<div class="field"><label>Con</label>' + (ds.length ? '<div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (F.dest === d.k ? 'active' : '') + '" ' + act('objDest', d.k) + '>' + (d.grupo ? '👥 ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>'
-        : '<div class="rec-hint">Primero crea un grupo o invita a una persona (Más → Compartir).</div>') + '</div>' : '') +
+        : '<div class="rec-hint">Primero crea un grupo o invita a una persona (Tú → Grupos y personas).</div>') + '</div>' : '') +
     '<div class="field"><label>Nombre</label><input id="oNombre" type="text" maxlength="60" placeholder="' + (deuda ? 'Hipoteca' : 'Viaje a Japón') + '" value="' + v(F.nombre) + '"></div>' +
     '<div class="field"><label>' + (deuda ? 'Total de la deuda' : 'Objetivo') + ' (' + sym() + ')</label><input id="oObjetivo" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="oFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
@@ -1856,6 +1895,109 @@ function articulosTopHtml(movs) {
     '<div class="progress"><div style="width:' + Math.max(2, x.v / max * 100) + '%"></div></div></div>').join('') + '</div>';
 }
 
+
+/* ============================================================
+   DINERO (patrimonio, metas, inversiones, deudas y compartido) · AGENDA · TÚ  (Bloque 9)
+   ============================================================ */
+const DINERO_SUBS = [['metas', 'Metas'], ['inversiones', 'Inversiones'], ['deudas', 'Deudas'], ['compartido', 'Compartido']];
+function dineroSub() { return DINERO_SUBS.some((x) => x[0] === S.dineroSub) ? S.dineroSub : 'metas'; }
+function renderDinero() {
+  const sub = dineroSub();
+  const body = sub === 'metas' ? renderMetas() : sub === 'inversiones' ? renderInversiones() : sub === 'deudas' ? renderDeudas() : renderCompartidoDinero();
+  return (patrimonioHtml() || '') +
+    '<div class="chips-nav" role="tablist">' + DINERO_SUBS.map(([id, l]) => '<button role="tab" class="chip-nav ' + (sub === id ? 'active' : '') + '" ' + act('setDineroSub', id) + '>' + l + (badgeActivo(id) ? '<span class="badge-dot"></span>' : '') + '</button>').join('') + '</div>' +
+    '<div class="dinero-body">' + body + '</div>';
+}
+function renderCompartidoDinero() {
+  if (!gruposDisponible()) return '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Compartir no está disponible aquí.</div>';
+  const gs = (S.grupos || []).filter((g) => g.tipo === 'grupo' || (g.tipo === 'directo' && g.miembros.length >= 2));
+  const lista = gs.length ? '<div class="list">' + gs.map((g) => { const v = miSaldo(g.id), hay = (S.compartidos || []).some((c) => c.grupoId === g.id);
+    return '<div class="row" ' + act('grupoVer', g.id) + '>' + (g.tipo === 'directo' ? avatarHtml(otroDe(g) || { nombre: '?' }, 2) : '<div class="avatars">' + g.miembros.slice(0, 3).map(avatarHtml).join('') + '</div>') +
+      '<div class="main"><div class="ttl">' + escapeHtml(nombreDestino(g)) + '</div><div class="meta">' + (g.tipo === 'directo' ? 'Sin grupo' : g.miembros.length + ' miembros') + '</div></div>' +
+      '<b class="tnum" style="color:' + saldoColor(v) + ';font-size:14px;">' + (hay ? saldoTxt(v) : '—') + '</b><span class="chev-s">' + ic('chevR') + '</span></div>'; }).join('') + '</div>'
+    : '<div class="card empty-mini">Aún no compartes nada. Crea un grupo (casa, viaje…) o invita a una persona por WhatsApp.</div>';
+  const objs = (S.objetivos || []).length ? '<div class="section-title">Metas y deudas compartidas</div>' + objCompartidos('ahorro').concat(objCompartidos('deuda')).map(objCardHtml).join('') : '';
+  return lista + '<div class="actions"><button class="btn accent block" ' + act('openGrupos') + '>' + ic('users') + ' Grupos y personas</button></div>' + objs;
+}
+function renderAgenda() {
+  const sub = S.agendaSub === 'calendario' ? 'calendario' : 'tareas';
+  return '<div class="segmented" style="margin-bottom:14px;">' + [['tareas', 'Tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (sub === id ? 'active' : '') + '" ' + act('irAgenda', id) + '>' + l + '</button>').join('') + '</div>' +
+    (sub === 'tareas' ? renderTareas() : renderCalendario());
+}
+// «Tú»: todos los ajustes en grupos, con buscador
+function renderTu() {
+  const it = (accion, args, icono, txt, extra, claves) => '<button class="menu-item" data-k="' + escapeHtml(normDesc(txt + ' ' + (claves || ''))) + '" ' + act(accion, ...args) + '><span class="ic">' + ic(icono) + '</span>' + txt + (extra || '') + '<span class="chev">' + ic('chevR') + '</span></button>';
+  const lista = (key, claves) => it('openListEditor', [key], LIST_META[key].icon, LIST_META[key].title, '', claves);
+  const grupo = (t, items) => '<div class="tu-grupo"><div class="section-title">' + t + '</div><div class="card menu">' + items.join('') + '</div></div>';
+  const nGr = S.grupos ? S.grupos.filter((g) => g.tipo === 'grupo').length : null;
+  return '<div class="profile-tile"><div class="av">' + inicialUsuario() + '</div><div><div class="t">' + escapeHtml(S.grupos ? miNombreAlguno() : nombreSugerido()) + '</div>' +
+    '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · tus datos son privados.</div></div></div>' +
+    '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
+    grupo('Compartir', [it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir paloma invitar whatsapp')]) +
+    grupo('Tu dinero', [lista('categoriasGasto', 'presupuestos'),
+      it('openRecurrentes', [], 'calendar', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas'),
+      it('openMetas', [], 'flag', 'Metas', badge('metas') + '<span class="menu-extra">ahorro e inversión</span>', 'objetivos hucha'),
+      lista('deudas', 'prestamo hipoteca'), lista('ingresos', 'nomina'), lista('metodosPago', 'tarjeta bizum efectivo'),
+      it('openCuentas', [], 'bank', 'Cuentas y saldos', badge('patrimonio'), 'banco saldo patrimonio')]) +
+    grupo('Herramientas', [it('impAbrir', [], 'download', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
+      it('openLotes', [], 'list', 'Importaciones', '', 'deshacer'),
+      it('openReglas', [], 'tag', 'Reglas de categorías', badge('reglas'), 'automatico'),
+      it('exportBackup', [], 'download', 'Copia de seguridad (.json)', '', 'exportar backup')]) +
+    grupo('Tareas', [lista('categoriasTareas', '')]) +
+    grupo('App', ['<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' +
+      '<div class="segmented" style="margin-left:auto;">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button style="padding:6px 12px;" class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
+      it('openMoneda', [], 'chart', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
+      mfaDisponible() ? it('openSeguridad', [], 'alert', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
+      it('verNovedades', ['1'], 'flag', 'Qué hay de nuevo', '<span class="menu-extra">' + (NOVEDADES[0] ? escapeHtml(NOVEDADES[0].titulo) : '') + '</span>', 'novedades parche'),
+      it('startOnboardingManually', [], 'flag', 'Repetir asistente de configuración', '', 'empezar')]) +
+    '<div class="tu-grupo"><div class="card menu"><button class="menu-item" data-k="cerrar sesion salir" ' + act('doLogout') + '><span class="ic">' + ic('close') + '</span>Cerrar sesión</button></div></div>' +
+    '<div class="empty-mini" id="tuNada" style="display:none;">No hay ningún ajuste con ese nombre.</div>';
+}
+/* ---- botón + : todo lo que se puede crear ---- */
+function crearHtml() {
+  const op = (accion, args, icono, txt, cls) => '<button class="crear-op tappable ' + cls + '" ' + act(accion, ...args) + '><span class="crear-ic">' + ic(icono) + '</span><span>' + txt + '</span></button>';
+  return '<div class="handle"></div><h2>¿Qué quieres apuntar?</h2>' +
+    (ticketsDisponible() ? '<button class="crear-ticket tappable" ' + act('crearIr', 'ticket') + '><span class="crear-ic">' + ic('camera') + '</span><span><b>Foto de ticket</b><span>Lee los artículos y el total por ti</span></span>' + badge('ticket') + '</button>' : '') +
+    '<div class="crear-grid">' +
+    op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
+    (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : op('crearIr', ['factura'], 'calendar', 'Factura', 'k-factura')) +
+    op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['ahorro'], 'piggy', 'Ahorro', 'k-ahorro') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
+    '</div>';
+}
+function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearHtml()); else openSheet(crearHtml()); }
+/* ---- buscador global: movimientos, tareas, categorías y ajustes ---- */
+const BUSCAR_ACCIONES = [
+  ['Foto de ticket', 'camara recibo leer', 'ticketFoto', []], ['Nuevo gasto', 'apuntar añadir', 'crearIr', ['gasto']], ['Nueva tarea', 'apuntar', 'crearIr', ['tarea']],
+  ['Grupos y personas', 'compartir paloma invitar saldar deudas', 'openGrupos', []], ['Metas', 'ahorro objetivos hucha', 'irDinero', ['metas']],
+  ['Inversiones', 'bolsa etf cartera fondos', 'irDinero', ['inversiones']], ['Deudas', 'prestamo hipoteca coche', 'irDinero', ['deudas']],
+  ['Patrimonio', 'cuanto tengo total', 'irDinero', ['metas']], ['Cuentas y saldos', 'banco saldo', 'openCuentas', []],
+  ['Categorías de gasto', 'presupuestos', 'openListEditor', ['categoriasGasto']], ['Cobros y pagos recurrentes', 'nomina alquiler facturas fijas', 'openRecurrentes', []],
+  ['Importar extracto o Excel', 'banco csv', 'impAbrir', []], ['Reglas de categorías', 'automatico', 'openReglas', []],
+  ['Calendario', 'agenda mes semana', 'irAgenda', ['calendario']], ['Tareas', 'pendientes', 'irAgenda', ['tareas']],
+  ['Análisis del año', 'anual resumen', 'verAnio', []], ['Copia de seguridad', 'exportar backup json', 'exportBackup', []],
+  ['Tema oscuro o claro', 'apariencia', 'goTab', ['tu']], ['Moneda', 'euro dolar', 'openMoneda', []], ['Qué hay de nuevo', 'novedades parche', 'verNovedades', ['1']],
+];
+function buscarHtml() {
+  return '<div class="handle"></div><div class="field buscar-campo"><input type="search" id="qBuscar" placeholder="Buscar: Mercadona, luz, 42,50, metas…" aria-label="Buscar en la app" autocomplete="off" ' + onInput('buscarGlobal') + '></div>' +
+    '<div id="buscarRes">' + buscarResHtml('') + '</div>';
+}
+function buscarResHtml(q0) {
+  const q = normDesc(q0);
+  if (!q) return '<div class="section-title">Atajos</div><div class="chips">' + BUSCAR_ACCIONES.slice(0, 8).map(([t, , h, a]) => '<button type="button" class="chip" ' + act('buscarIr', h, ...a) + '>' + escapeHtml(t) + '</button>').join('') + '</div>' +
+    '<div class="rec-hint" style="margin-top:12px;">Busca movimientos por tienda, categoría o importe, tus tareas y cualquier ajuste.</div>';
+  const pal = q.split(' ').filter(Boolean), casa = (txt) => { const t = normDesc(txt); return pal.every((w) => t.indexOf(w) >= 0); };
+  const acc = BUSCAR_ACCIONES.filter(([t, k]) => casa(t + ' ' + k)).slice(0, 5);
+  const cats = [...new Set(categoriasPorTipo('Gasto').concat(categoriasPorTipo('Factura')))].filter((c) => casa(c)).slice(0, 4);
+  const movs = movsEfectivos().filter((m) => casa([m.categoria, m.descripcion, m.tipo, fmtM(Math.abs(num(m.importe))), String(m.importe)].join(' '))).sort(cmpMov).slice(0, 12);
+  const tars = S.tareas.filter((t) => casa([t.nombre, t.categoria].join(' '))).slice(0, 5);
+  let h = '';
+  if (acc.length) h += '<div class="section-title">Ir a</div><div class="list">' + acc.map(([t, , hd, a]) => '<div class="row" ' + act('buscarIr', hd, ...a) + '><span class="dot" style="background:var(--accent)"></span><div class="main"><div class="ttl">' + escapeHtml(t) + '</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>';
+  if (cats.length) h += '<div class="section-title">Categorías</div><div class="list">' + cats.map((c) => '<div class="row" ' + act('buscarIr', 'irMovs', '_gastos', 'todo', c) + '><span class="dot" style="background:var(--expense)"></span><div class="main"><div class="ttl">' + escapeHtml(c) + '</div><div class="meta">Ver todos sus movimientos</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>';
+  if (movs.length) h += '<div class="section-title">Movimientos</div><div class="list">' + movs.map((m) => '<div class="row" ' + act('buscarIr', 'openMovForm', m.id) + '><span class="dot" style="background:var(--' + (TIPO_COLOR[m.tipo] || 'debt') + ')"></span><div class="main"><div class="ttl">' + escapeHtml(m.categoria || m.tipo) + '</div><div class="meta">' + fmtDateShort(m.fecha) + (m.descripcion ? ' · ' + escapeHtml(m.descripcion) : '') + '</div></div><div class="amt tnum">' + moneySigned(m.importe, m.tipo) + '</div></div>').join('') + '</div>';
+  if (tars.length) h += '<div class="section-title">Tareas</div><div class="list">' + tars.map((t) => '<div class="row" ' + act('buscarIr', 'openTareaForm', t.id) + '><span class="dot" style="background:var(--bill)"></span><div class="main"><div class="ttl">' + escapeHtml(t.nombre || 'Tarea') + '</div><div class="meta">' + escapeHtml(t.estado || '') + '</div></div></div>').join('') + '</div>';
+  return h || '<div class="empty-mini">Nada con «' + escapeHtml(q0) + '». Prueba con otra palabra.</div>';
+}
+
 /* ============================================================
    METAS (Bloque 6): identificador estable, metas de inversión y patrimonio
    ============================================================ */
@@ -2110,7 +2252,7 @@ function patrimonioHtml() {
     (p.inv || S.movimientos.some((x) => x.tipo === 'Inversión') ? fila('Inversiones (valor de mercado)' + (cargando ? ' · actualizando…' : ''), p.inv, '+', 'var(--income)', act('irAnalisis', 'inversiones')) : '') +
     (p.ahorro || metasCfg().some((m) => tipoMeta(m) === 'ahorro') ? fila('Ahorro en metas', p.ahorro, '+', 'var(--income)', act('goMetas')) : '') +
     (p.deudas ? fila('Deudas pendientes', p.deudas, '−', 'var(--expense)', act('irAnalisis', 'deudas')) : '') +
-    '<div class="pat-note">Solo informativo. El saldo del banco lo pones tú en Más → Cuentas y saldos' + (p.bancoFecha ? ' (actualizado el ' + fmtDateShort(p.bancoFecha) + ')' : '') + '.' + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo aportado.' : '') + (p.comp ? ' De lo compartido cuenta tu parte: lo que has aportado y, en las deudas, tu parte de lo pendiente según el reparto habitual.' : '') + '</div></div>';
+    '<div class="pat-note">Solo informativo. El saldo del banco lo pones tú en Tú → Cuentas y saldos' + (p.bancoFecha ? ' (actualizado el ' + fmtDateShort(p.bancoFecha) + ')' : '') + '.' + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo aportado.' : '') + (p.comp ? ' De lo compartido cuenta tu parte: lo que has aportado y, en las deudas, tu parte de lo pendiente según el reparto habitual.' : '') + '</div></div>';
 }
 
 /* ============================================================
@@ -2285,7 +2427,7 @@ async function cargarHistorico(ids, desde, clave) {
     S.historico = r && r.series ? { ts: Date.now(), clave, series: r.series, limite: !!r.limite } : { ts: Date.now(), clave, series: {}, error: true };
   } catch (e) { S.historico = { ts: Date.now(), clave, series: {}, error: true }; }
   S._histCarga = false;
-  if (enAnalisis() && subAnalisis() === 'inversiones') render();
+  if (S.tab === 'dinero' && dineroSub() === 'inversiones') render();
 }
 // Un punto por día desde la primera aportación: participaciones acumuladas × último cierre conocido (en €).
 function serieCartera(movs, series) {
@@ -2743,7 +2885,7 @@ function novedadesHtml(todas) {
     '<div class="nov-list">' + n.items.map(([em, t, d, ir]) => '<div class="nov-it"' + (ir && i === 0 ? ' ' + act('novIr', ir) : '') + '><div class="nov-em">' + em + '</div><div class="nov-tx"><b>' + escapeHtml(t) + '</b><div>' + escapeHtml(d) + '</div></div>' + (ir && i === 0 ? '<span class="nov-go">' + ic('chevR') + '</span>' : '') + '</div>').join('') + '</div>'
   ).join('') +
     (!todas && NOVEDADES.length > 1 ? '<button type="button" class="link" style="margin-top:10px;" ' + act('verNovedades', '1') + '>Ver novedades anteriores</button>' : '') +
-    '<div style="font-size:12.5px;color:var(--text-faint);margin-top:10px;">Lo nuevo lleva la etiqueta <span class="badge-new">NUEVO</span> o <span class="badge-new mejor">MEJORADO</span> dentro de la app. Puedes volver a ver esto en Más → Novedades.</div>' +
+    '<div style="font-size:12.5px;color:var(--text-faint);margin-top:10px;">Lo nuevo lleva la etiqueta <span class="badge-new">NUEVO</span> o <span class="badge-new mejor">MEJORADO</span> dentro de la app. Puedes volver a ver esto en Tú → Novedades.</div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>¡Entendido!</button></div>';
 }
 function maybeNovedades() {
@@ -3034,7 +3176,7 @@ function impHtml() {
   if (I.paso === 'hecho') {
     return h2(I.fallo ? 'Importación incompleta' : '¡Importado!') +
       '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '⚠️ No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '✅ Se han guardado <b>' + I.hechos + '</b> movimientos.' + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.' : '')) + '</div>' +
-      '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Más → Importaciones.</div>' +
+      '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Tú → Importaciones.</div>' +
       '<div class="actions"><button class="btn ghost block" ' + act('impDeshacer', I.lote) + '>Deshacer</button><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
   }
   return '';
@@ -3895,10 +4037,38 @@ function confirmDelete(el, fn) {
    MANEJADORES (eventos delegados)
    ============================================================ */
 const H = {
-  goTab: ([id]) => { S.volverA = null; if (id === 'movimientos') S.movCat = ''; if (id === 'analisis') { S.tab = 'inicio'; S.inicioSub = 'analisis'; } else { S.tab = id; if (id === 'inicio') S.inicioSub = 'dashboard'; } render(); window.scrollTo(0, 0); },
-  setInicioSub: ([sub]) => { S.inicioSub = sub; render(); },
-  onFab: () => {
-    if (S.tab === 'tareas') return openTareaForm();
+  goTab: ([id]) => {
+    S.volverA = null; if (id === 'movimientos') S.movCat = '';
+    if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
+    S.tab = TAB_ALIAS[id] || id; render(); window.scrollTo(0, 0);
+  },
+  irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
+  irDinero: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
+  setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); render(); },
+  verAnio: () => { S.tab = 'inicio'; S.generalSub = 'anual'; render(); window.scrollTo(0, 0); },
+  openBuscar: () => { FORM = { kind: 'buscar' }; if ($('#sheetBackdrop')) updateSheet(buscarHtml()); else openSheet(buscarHtml()); setTimeout(() => { const el = $('#qBuscar'); if (el) el.focus(); }, 80); },
+  buscarGlobal: (_a, el) => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); },
+  buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
+  tuFiltrar: (_a, el) => {
+    const q = normDesc(el.value); let n = 0;
+    $$('#content .tu-grupo').forEach((g) => { let vis = 0; g.querySelectorAll('.menu-item').forEach((b) => { const ok = !q || (b.getAttribute('data-k') || '').indexOf(q) >= 0; b.style.display = ok ? '' : 'none'; if (ok) vis++; }); g.style.display = vis ? '' : 'none'; n += vis; });
+    const z = $('#tuNada'); if (z) z.style.display = n ? 'none' : '';
+  },
+  crearIr: ([k]) => {
+    if (k === 'ticket') { closeSheet(); elegirFotoTicket(); return; } // en el mismo toque, para que el móvil deje abrir la cámara
+    S._volverGrupo = null;
+    if (k === 'gasto') openMovForm(null, { tipo: 'Gasto' });
+    else if (k === 'ingreso') openMovForm(null, { tipo: 'Ingreso' });
+    else if (k === 'factura') openMovForm(null, { tipo: 'Factura' });
+    else if (k === 'ahorro') openMovForm(null, { tipo: 'Ahorro' });
+    else if (k === 'compartido') { const d = destinoPorDefecto(); openMovForm(null, d ? { tipo: 'Gasto', comp: d } : { tipo: 'Gasto' }); if (!d) H.compOn([]); }
+    else if (k === 'tarea') openTareaForm();
+    else if (k === 'importar') H.impAbrir([]);
+  },
+  setInicioSub: () => { S.tab = 'inicio'; render(); },
+  onFab: () => openCrear(),
+  onFabAntiguo: () => {
+    if (S.tab === 'tareas' || (S.tab === 'agenda' && S.agendaSub !== 'calendario')) return openTareaForm();
     if (enAnalisis() && PROYECTOS_VISIBLE && subAnalisis() === 'proyectos') return openGolfForm();
     return openMovForm();
   },
@@ -4063,8 +4233,8 @@ const H = {
     if (await accionGrupo(() => S.db.grupos.reparto(id, r), 'Reparto guardado')) abrirGrupo(id);
   },
   // análisis
-  setAnalisisSub: ([s]) => { if (s === 'inversiones') verBadge('inversiones'); if (s === 'metas') verBadge('metas'); S.analisisSub = s; render(); },
-  goMetas: () => { S.tab = 'inicio'; S.inicioSub = 'analisis'; S.analisisSub = 'metas'; render(); window.scrollTo(0, 0); },
+  setAnalisisSub: ([s]) => { if (s === 'general') { S.tab = 'inicio'; render(); return; } H.irDinero([s]); },
+  goMetas: () => H.irDinero(['metas']),
   moveMes: ([d]) => { let m = S.mesSel + Number(d), a = S.anioSel; if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; } S.mesSel = m; S.anioSel = a; render(); },
   moveAnio: ([d]) => { S.anioSel += Number(d); render(); },
   openGolfForm: ([id]) => openGolfForm(id || null),
@@ -4182,11 +4352,11 @@ const H = {
       else if (k === 'metas') { verBadge('metas'); H.goMetas([]); }
       else if (k === 'cuentas') { verBadge('patrimonio'); H.openCuentas([]); }
       else
-      if (k === 'inversiones') { S.tab = 'inicio'; S.inicioSub = 'analisis'; S.analisisSub = 'inversiones'; verBadge('inversiones'); render(); window.scrollTo(0, 0); }
+      if (k === 'inversiones') H.irDinero(['inversiones']);
       else if (k === 'cobros') H.openRecurrentes([]);
       else if (k === 'importar') H.impAbrir([]);
       else if (k === 'reglas') H.openReglas([]);
-      else if (k === 'tareas') { S.tab = 'tareas'; render(); window.scrollTo(0, 0); }
+      else if (k === 'tareas') H.irAgenda(['tareas']);
     }, 260);
   },
   openMetas: () => { verBadge('metas'); FORM = { kind: 'metas' }; if ($('#sheetBackdrop')) updateSheet(metasListaHtml()); else openSheet(metasListaHtml()); },
@@ -4206,8 +4376,8 @@ const H = {
   asigGuardar: () => { if (!FORM.guardando) asigGuardar(); },
   pickMetaInv: ([id]) => { FORM.metaId = id || null; $$('#invFields .chips .chip').forEach((b) => { const a = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || ''); if ((b.getAttribute('data-click') || '').indexOf('pickMetaInv') === 0) b.classList.toggle('active', a === (id || '')); }); },
   irMovs: ([tipo, periodo, cat]) => irMovs({ tipo, periodo, cat }),
-  irAnalisis: ([sub]) => { S.tab = 'inicio'; S.inicioSub = 'analisis'; S.analisisSub = sub; if (sub === 'inversiones') verBadge('inversiones'); render(); window.scrollTo(0, 0); },
-  verMes: ([y, m]) => { S.anioSel = Number(y); S.mesSel = Number(m); S.generalSub = 'mensual'; render(); window.scrollTo(0, 0); },
+  irAnalisis: ([sub]) => { if (sub === 'general') { S.tab = 'inicio'; render(); window.scrollTo(0, 0); return; } H.irDinero([sub]); },
+  verMes: ([y, m]) => { S.anioSel = Number(y); S.mesSel = Number(m); S.generalSub = 'mensual'; S.tab = 'inicio'; render(); window.scrollTo(0, 0); },
   volver: () => { const v = S.volverA; S.volverA = null; if (!v) return; S.tab = v.tab; S.inicioSub = v.inicioSub; S.analisisSub = v.analisisSub; S.generalSub = v.generalSub; S.movCat = ''; S.movPeriodo = 'todo'; S.movFiltroTipo = 'Todos'; render(); window.scrollTo(0, 0); },
   quitarMovCat: () => { S.movCat = ''; render(); },
   openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
@@ -4274,7 +4444,7 @@ const H = {
     saveConfig({ tabsAnalisis: TABS_AN_OPC.map((t) => t[0]).filter((x) => sel.indexOf(x) >= 0) });
     updateSheet(tabsAnSheetHtml()); render();
   },
-  setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; render(); },
+  setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; S.tab = 'inicio'; render(); },
   verActivo: ([nombre]) => { S.movQuery = nombre; S.movFiltroTipo = 'Inversión'; S.movPeriodo = 'todo'; S.movLimit = 120; S.tab = 'movimientos'; render(); window.scrollTo(0, 0); },
   // calendario
   setCalVista: ([v]) => { S.calVista = v; render(); },
@@ -4506,6 +4676,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { imp: () => IMP, metasStats, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
+window.__APP__ = { imp: () => IMP, metasStats, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
 if (!window.__NO_AUTOSTART__) main();
 })();
