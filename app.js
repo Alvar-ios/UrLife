@@ -486,7 +486,7 @@ function movsFiltrados() {
 }
 function renderMovimientos() {
   const periodos = [['todo', 'Todo'], ['mes', 'Este mes'], ['anterior', 'Mes anterior'], ['anio', 'Este año']];
-  return '<div style="display:flex;justify-content:flex-end;margin:-4px 0 6px;"><button class="link" ' + act('impAbrir') + '>' + ic('download') + ' Importar extracto o Excel' + badge('importar') + '</button></div>' +
+  return '<div style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px 16px;margin:-4px 0 6px;">' + (ticketsDisponible() ? '<button class="link" ' + act('ticketFoto') + '>' + ic('camera') + ' Foto de ticket' + badge('ticket') + '</button>' : '') + '<button class="link" ' + act('impAbrir') + '>' + ic('download') + ' Importar extracto o Excel' + badge('importar') + '</button></div>' +
     (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
     ((S.movCat || GRUPOS_TIPO[S.movFiltroTipo] || periodoTxt(S.movPeriodo)) ? '<div class="filtros-activos">' +
       (GRUPOS_TIPO[S.movFiltroTipo] ? '<button class="chip active" ' + act('setMovFiltro', 'Todos') + '>' + GRUPOS_TXT[S.movFiltroTipo] + ' ✕</button>' : '') +
@@ -642,6 +642,7 @@ function openMovForm(id, pre) {
   const metodos = cfg().metodosPago || [];
   openSheet(
     '<div class="handle"></div><h2>' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : 'Nuevo movimiento') + '</h2>' +
+    (!ex && !compDest && ticketsDisponible() ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto</span>' + badge('ticket') + '</button>' : '') +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
     TIPOS.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + t + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : (pre.importe != null ? pre.importe : '')) + '" ' + onInput('onImporteInput') + '></div>' +
@@ -652,6 +653,7 @@ function openMovForm(id, pre) {
     '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>' +
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
     metodos.map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' +
+    '<div id="artField">' + artFieldHtml(comp || ex) + '</div>' +
     '<div class="field" id="compField">' + compFieldHtml() + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + (S._volverGrupo ? act('grupoVer', S._volverGrupo) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
     (comp ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>'
@@ -707,6 +709,7 @@ async function saveMov() {
       tipo: FORM.tipo, importe, categoria, fecha,
       descripcion: $('#fDesc').value.trim(), metodoPago: $('#fMetodo').value,
     });
+    if (FORM.articulos) data.articulos = FORM.articulos;
     if (FORM.compQuitado && 'compartidoId' in data) data.compartidoId = null; // ya no está compartido: cuenta entero como tuyo
     if (FORM.tipo === 'Inversión') data.tipoActivo = tipoActivo; else if ('tipoActivo' in data) data.tipoActivo = null;
     if (auto) { data.activoId = activoId; data.participaciones = participaciones; }
@@ -802,7 +805,8 @@ function renderAnalisisMensual() {
           '<span class="nums"><b class="tnum">' + money(real) + '</b>' + (pres > 0 ? ' / ' + money(pres) : '') + '</span></div>' +
           '<div class="progress ' + (over ? 'over' : '') + '"><div style="width:' + Math.max(0, Math.min(100, pct)) + '%"></div></div></div>';
       }).join('')
-      : '<div style="color:var(--text-faint);font-size:13.5px;">Añade categorías en Más → Categorías de gasto.</div>') + '</div>';
+      : '<div style="color:var(--text-faint);font-size:13.5px;">Añade categorías en Más → Categorías de gasto.</div>') + '</div>' +
+    articulosTopHtml(k.movs);
 }
 function renderAnalisisAnual() {
   const rows = [];
@@ -1362,6 +1366,7 @@ async function saveCompartido(d) {
       grupoId = g;
     }
     const datos = { fecha: d.fecha, tipo: FORM.tipo, categoria: ob ? ob.nombre : huerfana ? (previo.categoria || d.categoria) : d.categoria, descripcion: d.descripcion, importe: r2(d.importe), pagadoPor: cp.pagador, reparto: r.reparto, modo: cp.modo, objetivoId: ob ? ob.id : huerfana ? previo.objetivoId : null };
+    if (FORM.articulos) datos.articulos = FORM.articulos;
     let c;
     try {
       if (previo && previo.grupoId === grupoId) c = await S.db.compartidos.editar(previo.id, datos);
@@ -1378,7 +1383,7 @@ async function saveCompartido(d) {
     let ok = true;
     if (mio || cp.pagador === yo) {
       const data = Object.assign(mio ? stripId(mio) : { creadoEn: Date.now() }, { compartidoId: c.id });
-      if (cp.pagador === yo || !mio) Object.assign(data, { tipo: FORM.tipo, importe: datos.importe, categoria: datos.categoria, fecha: d.fecha, descripcion: d.descripcion, metodoPago: d.metodoPago });
+      if (cp.pagador === yo || !mio) Object.assign(data, { tipo: FORM.tipo, importe: datos.importe, categoria: datos.categoria, fecha: d.fecha, descripcion: d.descripcion, metodoPago: d.metodoPago }, FORM.articulos ? { articulos: FORM.articulos } : {});
       ['tipoActivo', 'activoId', 'participaciones', 'metaId'].forEach((k) => { if (k in data) data[k] = null; });
       ok = await write(() => S.db.collection('movimientos').doc(mio ? mio.id : undefined).set(data));
     }
@@ -1634,6 +1639,218 @@ function refrescarSheetCompartido() {
   const ae = document.activeElement; if (ae && b.contains(ae) && /INPUT|SELECT|TEXTAREA/.test(ae.tagName)) return;
   if (FORM.kind === 'grupo' && FORM.id) updateSheet(grupoHtml(FORM.id));
   else if (FORM.kind === 'grupos') updateSheet(gruposListaHtml());
+}
+
+
+/* ============================================================
+   TICKETS (Bloque 8B): foto → artículos → gasto, y reparto por artículo
+   La foto no se guarda: se reduce en el móvil, la lee la IA en el servidor
+   (función tickets-ia) y se descarta. Límite de lecturas al mes por persona.
+   ============================================================ */
+const TICKET_LADO = 1568, TICKET_CALIDAD = 0.85;
+function ticketsDisponible() { return activosDisponible(); }
+const ERR_TICKET = {
+  sin_clave: 'La lectura de tickets aún no está activada. Mientras tanto puedes apuntar el gasto a mano.',
+  limite: 'Has usado todas las lecturas de tickets de este mes. Se renuevan el día 1.',
+  clave_mala: 'La lectura de tickets no está disponible ahora mismo. Apunta el gasto a mano.',
+  sin_saldo: 'La lectura de tickets no está disponible ahora mismo. Apunta el gasto a mano.',
+  imagen_grande: 'La foto es demasiado grande. Prueba con otra.',
+  imagen: 'No se pudo usar esa imagen. Prueba con otra foto.',
+  no_ticket: 'No parece un ticket o no se lee bien. Prueba con otra foto: con buena luz, el ticket entero y sin arrugas.',
+  sin_sesion: 'Tienes que iniciar sesión.',
+};
+function errTicket(k) { return ERR_TICKET[k] || 'No se pudo leer el ticket. Revisa tu conexión e inténtalo de nuevo.'; }
+async function ticketsApi(body) {
+  const c = window.SUPABASE_CONFIG, ses = await window.Auth.getSession();
+  if (!ses || !ses.access_token) return { error: 'sin_sesion' };
+  const r = await fetch(c.url + '/functions/v1/tickets-ia', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ses.access_token, apikey: c.anonKey },
+    body: JSON.stringify(body),
+  });
+  let j; try { j = await r.json(); } catch (e) { j = { error: 'respuesta_invalida' }; }
+  if (!r.ok && !j.error) j.error = 'http_' + r.status;
+  return j;
+}
+// Reduce la foto en el propio móvil (lado mayor 1568 px, JPEG): sube menos y la IA no necesita más.
+function reducirFoto(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      try {
+        const k = Math.min(1, TICKET_LADO / Math.max(img.naturalWidth, img.naturalHeight));
+        const cv = document.createElement('canvas'); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        res({ b64: cv.toDataURL('image/jpeg', TICKET_CALIDAD).split(',')[1], tipo: 'image/jpeg' });
+      } catch (e) { URL.revokeObjectURL(url); rej(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('imagen')); };
+    img.src = url;
+  });
+}
+function elegirFotoTicket() {
+  if (!ticketsDisponible()) return toast('La lectura de tickets no está disponible aquí');
+  verBadge('ticket');
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.style.display = 'none';
+  inp.onchange = () => { const f = inp.files && inp.files[0]; inp.remove(); if (f) leerTicket(f); };
+  document.body.appendChild(inp); inp.click();
+}
+async function leerTicket(file) {
+  S._volverGrupo = null;
+  FORM = { kind: 'ticket', cargando: true };
+  const F = FORM;
+  if ($('#sheetBackdrop')) updateSheet(ticketHtml()); else openSheet(ticketHtml());
+  try { F.foto = await (window.__reducirFoto || reducirFoto)(file); }
+  catch (e) { F.cargando = false; F.error = 'imagen'; if (FORM === F) updateSheet(ticketHtml()); return; }
+  await ticketPedir(F, false);
+}
+async function ticketPedir(F, preciso) {
+  const previo = F.t || null;
+  F.cargando = true; F.preciso = preciso; F.error = null; F.t = null;
+  if (FORM === F) updateSheet(ticketHtml());
+  let r;
+  try { r = await (window.__ticketsApi || ticketsApi)({ imagen: F.foto.b64, tipo: F.foto.tipo, preciso, categorias: categoriasPorTipo('Gasto') }); }
+  catch (e) { r = { error: 'red' }; }
+  F.cargando = false;
+  if (r.usados != null) { F.usados = r.usados; F.limite = r.limite; }
+  if (!r.error && (!r.ticket || !r.ticket.es_ticket)) r.error = 'no_ticket';
+  if (r.error) { F.error = r.error; F.t = previo; if (FORM === F) updateSheet(ticketHtml()); return; }
+  const t = r.ticket;
+  F.modelo = r.modelo || (preciso ? 'preciso' : 'rapido');
+  if (F.modelo === 'preciso') F.foto = null; // ya no hace falta: se descarta
+  F.t = {
+    comercio: t.comercio || '', fecha: t.fecha && t.fecha <= todayISO() ? t.fecha : todayISO(), total: r2(t.total),
+    categoria: t.categoria || sugerirCategoria(t.comercio || '', 'Gasto') || '', notas: t.notas || '',
+    articulos: (t.articulos || []).map((a) => ({ nombre: a.nombre, cantidad: num(a.cantidad) || 1, importe: r2(a.importe), quien: null })),
+  };
+  if (!F.t.total) F.t.total = tkSuma(F);
+  F.rep = F.rep || { on: false, dest: '', pagador: miUid() };
+  if (FORM === F) updateSheet(ticketHtml());
+}
+function tkSuma(F) { return r2(F.t.articulos.reduce((a, x) => a + num(x.importe), 0)); }
+function miembrosDeDestino(k) {
+  const yo = miUid();
+  if (!k) return [];
+  if (k.indexOf('g:') === 0) { const g = grupoDe(k.slice(2)); return g ? g.miembros.map((m) => ({ uid: m.user_id, nombre: m.nombre })).sort((a, b) => (b.uid === yo) - (a.uid === yo)) : []; }
+  return [{ uid: yo, nombre: miNombreAlguno() }, { uid: k.slice(2), nombre: nombreDe(null, k.slice(2)) }];
+}
+// Reparto por artículo: cada artículo se divide a partes iguales entre quienes lo marcan (al céntimo).
+function tkReparto(F) {
+  const ms = miembrosDeDestino(F.rep.dest).map((m) => m.uid), tot = {};
+  ms.forEach((u) => { tot[u] = 0; });
+  F.t.articulos.forEach((a) => {
+    let qs = (a.quien || ms).filter((u) => ms.indexOf(u) >= 0); if (!qs.length) qs = ms;
+    const c = cents(a.importe), base = Math.trunc(c / qs.length); let resto = c - base * qs.length;
+    qs.forEach((u) => { let v = base; if (resto > 0) { v++; resto--; } else if (resto < 0) { v--; resto++; } tot[u] += v; });
+  });
+  return tot; // céntimos
+}
+function tkCuadreHtml(F) {
+  const sum = tkSuma(F), tot = r2(F.t.total), dif = r2(tot - sum);
+  if (Math.abs(dif) < 0.01) return '<div class="tk-ok">' + ic('checkCircle') + ' La suma de los artículos cuadra con el total.</div>';
+  return '<div class="tk-warn">Los artículos suman <b class="tnum">' + money(sum) + '</b> y el total del ticket es <b class="tnum">' + money(tot) + '</b> (diferencia ' + money(Math.abs(dif)) + '). Revisa los importes.</div>' +
+    '<div class="tk-acciones">' + (F.foto && F.modelo === 'rapido' ? '<button type="button" class="btn sm accent" ' + act('tkPreciso') + '>Leer con más precisión</button>' : '') +
+    '<button type="button" class="btn sm ghost" ' + act('tkTotalSuma') + '>Usar la suma como total</button></div>';
+}
+function tkResumenHtml(F) {
+  if (!F.rep || !F.rep.on || !F.rep.dest) return '';
+  const tot = tkReparto(F), ms = miembrosDeDestino(F.rep.dest), yo = miUid();
+  return '<div class="comp-lbl">A cada uno le toca</div>' + ms.map((m) => '<div class="comp-row"><span class="n">' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</span><b class="tnum">' + money((tot[m.uid] || 0) / 100) + '</b></div>').join('');
+}
+function ticketHtml() {
+  const F = FORM, yo = miUid();
+  if (F.cargando) return '<div class="handle"></div><h2>Leyendo el ticket…</h2><div class="card tk-cargando"><div class="spinner"></div><div>' + (F.preciso ? 'Lectura precisa: tarda un poco más.' : 'Tarda unos segundos.') + '</div><div class="rec-hint">La foto no se guarda: se lee y se descarta.</div></div>';
+  if (F.error && !F.t) {
+    return '<div class="handle"></div><h2>Foto de ticket</h2><div class="card" style="font-size:14px;line-height:1.5;">' + escapeHtml(errTicket(F.error)) + '</div>' +
+      '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button>' +
+      (F.error === 'sin_clave' || F.error === 'limite' || F.error === 'clave_mala' || F.error === 'sin_saldo' ? '<button class="btn accent block" ' + act('tkAMano') + '>Apuntar a mano</button>'
+        : F.foto && F.error !== 'no_ticket' ? '<button class="btn accent block" ' + act('tkReintentar') + '>Reintentar</button>' : '<button class="btn accent block" ' + act('ticketFoto') + '>Otra foto</button>') + '</div>';
+  }
+  const t = F.t, rep = F.rep, ds = compartidosDisponible() ? destinosCompartir() : [], ms = rep.on ? miembrosDeDestino(rep.dest) : [];
+  const chipsQuien = (a, i) => '<div class="tk-quien">' + ms.map((m) => '<button type="button" class="chip ' + (!a.quien || a.quien.indexOf(m.uid) >= 0 ? 'active' : '') + '" ' + act('tkQuien', i, m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>';
+  return '<div class="handle"></div><h2>Revisa el ticket</h2>' +
+    (F.error ? '<div class="tk-warn" style="margin-bottom:10px;">' + escapeHtml(errTicket(F.error)) + '</div>' : '') +
+    '<div class="field"><label>Comercio</label><input id="tkComercio" type="text" maxlength="60" value="' + escapeHtml(t.comercio) + '" ' + onInput('tkCampo', 'comercio') + '></div>' +
+    '<div class="tk-2"><div class="field"><label>Fecha</label><input id="tkFecha" type="date" value="' + t.fecha + '" ' + onChange('tkCampo', 'fecha') + '></div>' +
+    '<div class="field"><label>Total (' + sym() + ')</label><input id="tkTotal" type="number" step="0.01" inputmode="decimal" value="' + t.total + '" ' + onInput('tkCampo', 'total') + '></div></div>' +
+    '<div class="section-title">Artículos (' + t.articulos.length + ')</div>' +
+    '<div class="tk-cab"><span>Artículo</span><span>Uds.</span><span>Importe</span><span></span></div>' +
+    '<div class="tk-list">' + t.articulos.map((a, i) => '<div class="tk-item"><div class="tk-row">' +
+      '<input class="tk-n" type="text" maxlength="80" value="' + escapeHtml(a.nombre) + '" ' + onInput('tkArt', i, 'nombre') + '>' +
+      '<input class="tk-c" type="number" step="any" min="0" inputmode="decimal" value="' + a.cantidad + '" ' + onInput('tkArt', i, 'cantidad') + '>' +
+      '<input class="tk-i" type="number" step="0.01" inputmode="decimal" value="' + a.importe + '" ' + onInput('tkArt', i, 'importe') + '>' +
+      '<button type="button" class="tk-x" aria-label="Quitar" ' + act('tkQuitar', i) + '>' + ic('close') + '</button></div>' +
+      (rep.on && rep.dest ? chipsQuien(a, i) : '') + '</div>').join('') + '</div>' +
+    '<button type="button" class="link" style="margin-top:8px;" ' + act('tkAnadir') + '>' + ic('plus') + ' Añadir artículo</button>' +
+    '<div id="tkCuadre" style="margin-top:12px;">' + tkCuadreHtml(F) + '</div>' +
+    (t.notas ? '<div class="rec-hint" style="margin-top:8px;">Nota de la lectura: ' + escapeHtml(t.notas) + '</div>' : '') +
+    (ds.length ? '<div class="field" style="margin-top:14px;">' + (!rep.on
+      ? '<button type="button" class="comp-toggle" ' + act('tkRep', '1') + '>' + ic('users') + '<span>Repartir la cuenta por artículos</span></button>'
+      : '<div class="comp-box"><div class="comp-head"><b>' + ic('users') + ' Repartir por artículos</b><button type="button" class="link" ' + act('tkRep', '0') + '>No repartir</button></div>' +
+        '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (rep.dest === d.k ? 'active' : '') + '" ' + act('tkDest', d.k) + '>' + (d.grupo ? '👥 ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>' +
+        (rep.dest ? '<div class="comp-lbl">Pagó</div><div class="chips">' + ms.map((m) => '<button type="button" class="chip ' + (rep.pagador === m.uid ? 'active' : '') + '" ' + act('tkPagador', m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>' +
+          '<div class="rec-hint" style="margin-top:8px;">En cada artículo, marca quién lo toma. Lo que marquéis varios se divide a partes iguales.</div>' +
+          '<div id="tkResumen">' + tkResumenHtml(F) + '</div>' : '<div class="rec-hint" style="margin-top:6px;">Elige con quién compartes la cuenta.</div>') + '</div>') + '</div>' : '') +
+    (F.limite ? '<div class="rec-hint" style="margin-top:10px;">Lecturas este mes: ' + F.usados + ' de ' + F.limite + '. La foto no se ha guardado.</div>' : '') +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('tkContinuar') + '>Continuar</button></div>';
+}
+function tkRefrescarParcial() {
+  const F = FORM; if (!F || F.kind !== 'ticket' || !F.t) return;
+  const c = $('#tkCuadre'); if (c) c.innerHTML = tkCuadreHtml(F);
+  const r = $('#tkResumen'); if (r) r.innerHTML = tkResumenHtml(F);
+}
+// Pasa lo revisado al formulario de siempre (ahí se elige categoría y se guarda, compartido o no).
+function tkContinuar() {
+  const F = FORM, t = F.t;
+  const total = r2(t.total);
+  if (!(total > 0)) return toast('Pon el total del ticket');
+  const vivos = t.articulos.filter((a) => (a.nombre || '').trim() || num(a.importe));
+  const arts = vivos.map((a) => ({ nombre: (a.nombre || '').trim() || 'Artículo', cantidad: num(a.cantidad) || 1, importe: r2(a.importe) }));
+  let comp = null;
+  if (F.rep.on) {
+    if (!F.rep.dest) return toast('Elige con quién repartes la cuenta');
+    if (Math.abs(r2(total - tkSuma(F))) >= 0.01) return toast('Para repartir por artículos, la suma tiene que cuadrar con el total');
+    const uids = miembrosDeDestino(F.rep.dest).map((m) => m.uid), tot = tkReparto(F);
+    if (Object.values(tot).some((v) => v < 0)) return toast('A alguien le sale un importe negativo: revisa los descuentos');
+    arts.forEach((a, i) => { a.quien = (vivos[i].quien || uids).filter((u) => uids.indexOf(u) >= 0); });
+    comp = { on: true, dest: F.rep.dest, pagador: F.rep.pagador || miUid(), modo: 'importe', incl: {}, vals: {} };
+    uids.forEach((u) => { comp.incl[u] = tot[u] > 0; comp.vals[u] = tot[u] > 0 ? String(tot[u] / 100) : ''; });
+  }
+  F.foto = null;
+  openMovForm(null, { tipo: 'Gasto', importe: total, categoria: t.categoria, fecha: t.fecha, descripcion: t.comercio });
+  FORM.articulos = arts;
+  if (comp) FORM.comp = comp;
+  const af = $('#artField'); if (af) af.innerHTML = artFieldHtml();
+  refrescarComp();
+}
+// En el formulario: los artículos del ticket (solo lectura)
+function artFieldHtml(ex) {
+  const arts = (FORM && FORM.articulos) || (ex && ex.articulos) || null;
+  if (!arts || !arts.length) return '';
+  return '<details class="tk-det"><summary>🧾 ' + arts.length + (arts.length === 1 ? ' artículo' : ' artículos') + ' del ticket</summary><div class="tk-det-l">' +
+    arts.map((a) => '<div class="tk-det-r"><span>' + (num(a.cantidad) && num(a.cantidad) !== 1 ? num(a.cantidad).toLocaleString('es-ES') + ' × ' : '') + escapeHtml(a.nombre) + '</span><b class="tnum">' + money(a.importe) + '</b></div>').join('') + '</div></details>';
+}
+// Análisis mensual: en qué artículos se va el dinero (solo de gastos con ticket; con lo compartido, tu parte)
+function articulosTopHtml(movs) {
+  const yo = miUid(), mapa = {};
+  movs.forEach((m) => {
+    if (m.tipo !== 'Gasto' && m.tipo !== 'Factura') return;
+    const c = m.comp, arts = (c ? c.articulos : m.articulos) || [];
+    arts.forEach((a) => {
+      let v = num(a.importe);
+      if (c) { if (Array.isArray(a.quien) && a.quien.length) v = a.quien.indexOf(yo) >= 0 ? v / a.quien.length : 0; else v = num(c.importe) ? v * miParte(c) / num(c.importe) : 0; }
+      if (!v) return;
+      const k = normName(a.nombre); (mapa[k] = mapa[k] || { nombre: a.nombre, v: 0, n: 0 }); mapa[k].v += v; mapa[k].n += num(a.cantidad) || 1;
+    });
+  });
+  const top = Object.values(mapa).filter((x) => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 8);
+  if (!top.length) return '';
+  const max = top[0].v;
+  return '<div class="section-title">Lo que más compras · según tus tickets</div><div class="card">' + top.map((x) =>
+    '<div class="budget-row"><div class="top"><span class="cat">' + escapeHtml(x.nombre) + (x.n > 1 ? ' <span class="hint">×' + x.n.toLocaleString('es-ES', { maximumFractionDigits: 2 }) + '</span>' : '') + '</span><span class="nums"><b class="tnum">' + money(x.v) + '</b></span></div>' +
+    '<div class="progress"><div style="width:' + Math.max(2, x.v / max * 100) + '%"></div></div></div>').join('') + '</div>';
 }
 
 /* ============================================================
@@ -2480,7 +2697,7 @@ const NOVEDADES = [
 // clave → [texto de la etiqueta, fecha de la versión]. Se ven 21 días o hasta que entras en ese apartado.
 const BADGES = {
   cobros: ['NUEVO', '2026-10-09'], importar: ['NUEVO', '2026-10-09'], reglas: ['NUEVO', '2026-10-09'],
-  repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'], compartir: ['NUEVO', '2026-10-10'],
+  repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'], compartir: ['NUEVO', '2026-10-10'], ticket: ['NUEVO', '2026-10-10'],
 };
 function badgeActivo(k) {
   const b = BADGES[k]; if (!b) return false;
@@ -3697,6 +3914,28 @@ const H = {
   onCatInput: (_a, el) => { if (FORM) FORM.catAuto = false; refrescarReglaBox(); $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === el.value.trim())); },
   saveMov: () => saveMov(),
   deleteMov: (_a, el) => confirmDelete(el, doDeleteMov),
+  // tickets
+  ticketFoto: () => elegirFotoTicket(),
+  tkReintentar: () => { if (FORM.kind === 'ticket' && FORM.foto) ticketPedir(FORM, !!FORM.preciso); },
+  tkPreciso: () => { if (FORM.kind === 'ticket' && FORM.foto) ticketPedir(FORM, true); },
+  tkAMano: () => { S._volverGrupo = null; openMovForm(null, { tipo: 'Gasto' }); },
+  tkCampo: ([k], el) => { const t = FORM.t; if (!t) return; if (k === 'total') { t.total = numCampo(el.value); tkRefrescarParcial(); } else t[k] = el.value; },
+  tkArt: ([i, k], el) => { const a = FORM.t && FORM.t.articulos[Number(i)]; if (!a) return; a[k] = k === 'nombre' ? el.value : numCampo(el.value); if (k === 'importe') tkRefrescarParcial(); },
+  tkQuitar: ([i]) => { FORM.t.articulos.splice(Number(i), 1); updateSheet(ticketHtml()); },
+  tkAnadir: () => { FORM.t.articulos.push({ nombre: '', cantidad: 1, importe: 0, quien: null }); updateSheet(ticketHtml()); const ns = $$('#sheetBackdrop .tk-n'); if (ns.length) ns[ns.length - 1].focus(); },
+  tkTotalSuma: () => { FORM.t.total = tkSuma(FORM); const el = $('#tkTotal'); if (el) el.value = FORM.t.total; tkRefrescarParcial(); },
+  tkRep: ([on]) => { const R = FORM.rep; R.on = on === '1'; if (R.on && !R.dest) { const k = destinoPorDefecto(); if (k) R.dest = k; } updateSheet(ticketHtml()); },
+  tkDest: ([k]) => { const R = FORM.rep; R.dest = k; if (!miembrosDeDestino(k).some((m) => m.uid === R.pagador)) R.pagador = miUid(); FORM.t.articulos.forEach((a) => { a.quien = null; }); updateSheet(ticketHtml()); },
+  tkPagador: ([u]) => { FORM.rep.pagador = u; updateSheet(ticketHtml()); },
+  tkQuien: ([i, u], el) => {
+    const a = FORM.t.articulos[Number(i)], todos = miembrosDeDestino(FORM.rep.dest).map((m) => m.uid);
+    const q = (a.quien || todos).slice(), j = q.indexOf(u);
+    if (j >= 0) { if (q.length === 1) return toast('Al menos una persona tiene que tomarlo'); q.splice(j, 1); } else q.push(u);
+    a.quien = q.length === todos.length ? null : q;
+    el.classList.toggle('active', j < 0);
+    tkRefrescarParcial();
+  },
+  tkContinuar: () => tkContinuar(),
   // gastos compartidos
   compOn: () => { verBadge('compartir'); FORM.comp = FORM.comp || {}; FORM.comp.on = true; if (S.grupos == null) cargarGrupos().then(() => refrescarComp()); compAsegurarDestino(); refrescarComp(); },
   compOff: () => {
@@ -4229,6 +4468,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { imp: () => IMP, metasStats, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
+window.__APP__ = { imp: () => IMP, metasStats, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
 if (!window.__NO_AUTOSTART__) main();
 })();

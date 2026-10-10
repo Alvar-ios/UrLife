@@ -281,9 +281,9 @@
       },
     };
   }
-  var compartidos = tablaCompartida('compartidos', ['id', 'grupoId', 'fecha', 'tipo', 'categoria', 'descripcion', 'importe', 'pagadoPor', 'reparto', 'modo', 'objetivoId'], function (r) {
+  var compartidos = tablaCompartida('compartidos', ['id', 'grupoId', 'fecha', 'tipo', 'categoria', 'descripcion', 'importe', 'pagadoPor', 'reparto', 'modo', 'objetivoId', 'articulos'], function (r) {
     return { id: r.id, grupoId: r.grupo_id, fecha: r.fecha, tipo: r.tipo, categoria: r.categoria || '', descripcion: r.descripcion || '',
-      importe: Number(r.importe), pagadoPor: r.pagado_por, reparto: r.reparto || {}, modo: r.modo || 'igual', objetivoId: r.objetivo_id || null,
+      importe: Number(r.importe), pagadoPor: r.pagado_por, reparto: r.reparto || {}, modo: r.modo || 'igual', objetivoId: r.objetivo_id || null, articulos: r.articulos || null,
       creadoPor: r.creado_por, createdAt: r.created_at, updatedAt: r.updated_at, editadoPor: r.editado_por };
   }, ['grupo_id']);
   var objetivos = tablaCompartida('objetivos_compartidos', ['id', 'grupoId', 'tipo', 'nombre', 'objetivo', 'fechaObjetivo', 'previo'], function (r) {

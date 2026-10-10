@@ -36,3 +36,13 @@ quien no es del grupo no ve, crea ni cambia metas o deudas compartidas; no se pu
 una meta a otro grupo ni cambiar su tipo; una aportación sin meta, con una meta de otro grupo
 o del tipo equivocado se rechaza; una meta eliminada no admite aportaciones nuevas, pero las
 anteriores siguen; aportar a una hucha no crea deudas entre miembros y una cuota repartida sí.
+
+Tickets (bloque 8B): tickets_uso_y_articulos y la función `tickets-ia`.
+- La foto se reduce en el móvil, la función la manda a Claude (Haiku; «Leer con más
+  precisión» usa Sonnet) y devuelve los artículos. La foto no se guarda en ningún sitio.
+- `tickets_uso`: una fila por lectura (para el límite de 60 al mes por persona); solo la
+  escribe la función y cada persona solo ve las suyas.
+- `movimientos.articulos` y `compartidos.articulos`: lista de artículos del ticket
+  (nombre, cantidad, importe y, si se reparte, quién lo tomó).
+- Necesita el secreto ANTHROPIC_API_KEY en Supabase → Edge Functions → Secrets. Sin él,
+  la app avisa de que la lectura de tickets aún no está activada.
