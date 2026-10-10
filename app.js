@@ -1727,7 +1727,7 @@ function impHtml() {
       const opts = '<option value="">Sin categoría</option>' + [...new Set(cats.concat(r.categoria ? [r.categoria] : []))].map((c) => '<option' + (c === r.categoria ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('');
       return '<div class="imp-row' + (r.incluir ? '' : ' off') + '">' +
         '<input type="checkbox" ' + (r.incluir ? 'checked' : '') + ' ' + onChange('impIncluir', k) + '>' +
-        '<div class="imp-main"><div class="imp-top"><span class="imp-desc">' + escapeHtml(r.desc || '(sin descripción)') + '</span><span class="imp-amt tnum" style="color:' + (r.tipo === 'Ingreso' ? 'var(--income)' : 'var(--expense)') + '">' + (r.tipo === 'Ingreso' ? '+' : '−') + fmt2(r.importe) + '</span></div>' +
+        '<div class="imp-main"><div class="imp-top"><span class="imp-desc">' + escapeHtml(r.desc || '(sin descripción)') + '</span><span class="imp-amt tnum" style="color:' + ((r.tipo === 'Ingreso') === (r.importe >= 0) ? (r.tipo === 'Ingreso' ? 'var(--income)' : 'var(--expense)') : 'var(--text-muted)') + '">' + ((r.tipo === 'Ingreso') === (r.importe >= 0) ? (r.tipo === 'Ingreso' ? '+' : '−') : (r.tipo === 'Ingreso' ? '−' : '+')) + fmt2(Math.abs(r.importe)) + (r.tipo !== 'Ingreso' && r.importe < 0 ? ' <small>devolución</small>' : '') + '</span></div>' +
         '<div class="imp-sub">' + fechaCortaU(r.fecha) + ' ' + r.fecha.slice(0, 4) +
         (r.estado === 'dup' ? ' · <b style="color:var(--accent)">¿duplicado?</b>' : '') +
         (r.origenCat === 'regla' ? ' · por tu regla' : r.origenCat === 'historial' ? ' · sugerida' : r.origenCat === 'factura' ? ' · factura recurrente' : '') + '</div>' +
@@ -1776,6 +1776,13 @@ function impProcesar() {
   const porFechaImp = {}; S.movimientos.forEach((x) => { const k = x.fecha + '|' + Math.abs(num(x.importe)).toFixed(2); porFechaImp[k] = (porFechaImp[k] || 0) + 1; });
   const usados = {}, ocurr = {}, out = [];
   const col = (f, k) => (k == null || k === '' ? '' : f[k]);
+  // Con columna Tipo: ¿los gastos vienen en negativo (extracto) o en positivo (tu Excel)? Lo contrario es una devolución.
+  let gastosNeg = false;
+  if (m.tipo != null && m.tipo !== '' && I.modoImporte !== 'dos') {
+    let neg = 0, pos = 0;
+    filas.forEach((f) => { const t = tipoDesdeTexto(f[m.tipo]), v = parseNum(col(f, m.importe)); if (t && t !== 'Ingreso' && v) { if (v < 0) neg++; else pos++; } });
+    gastosNeg = neg > pos;
+  }
   filas.forEach((f, i) => {
     const fecha = parseFechaImp(col(f, m.fecha), I.fmtFecha);
     let imp = null;
@@ -1784,6 +1791,9 @@ function impProcesar() {
     const desc = [m.desc, m.desc2].filter((k) => k != null && k !== '').map((k) => String(f[k] == null ? '' : f[k]).trim()).filter(Boolean).join(' · ').slice(0, 300);
     if (!fecha || imp == null || imp === 0) { out.push({ n: i }); return; }
     let tipo = m.tipo != null && m.tipo !== '' ? tipoDesdeTexto(f[m.tipo]) : null;
+    // importe que se guarda: positivo normalmente; negativo si es una devolución (solo cuando el archivo trae el tipo)
+    let valor = Math.abs(imp);
+    if (tipo) valor = tipo === 'Ingreso' ? imp : (gastosNeg ? -imp : imp);
     if (!tipo) tipo = imp < 0 ? 'Gasto' : 'Ingreso';
     let categoria = m.cat != null && m.cat !== '' ? String(f[m.cat] == null ? '' : f[m.cat]).trim() : '', origenCat = categoria ? 'archivo' : '';
     if (!categoria && tipo === 'Gasto') { const fa = (cfg().facturas || []).find((x) => x && x.nombre && normDesc(x.nombre).length >= 3 && normDesc(desc).indexOf(normDesc(x.nombre)) >= 0); if (fa) { tipo = 'Factura'; categoria = fa.nombre; origenCat = 'factura'; } }
@@ -1796,7 +1806,7 @@ function impProcesar() {
     let estado = 'nuevo';
     if (existentes.has(id)) { estado = 'importado'; usados[kd] = (usados[kd] || 0) + 1; }
     else if ((porFechaImp[kd] || 0) > (usados[kd] || 0)) { estado = 'dup'; usados[kd] = (usados[kd] || 0) + 1; }
-    out.push({ n: i, id, fecha, importe: Math.abs(imp), tipo, categoria, origenCat, desc, estado, incluir: estado === 'nuevo' });
+    out.push({ n: i, id, fecha, importe: valor, tipo, categoria, origenCat, desc, estado, incluir: estado === 'nuevo' });
   });
   I.filas = out;
 }
