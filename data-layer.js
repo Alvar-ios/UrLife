@@ -239,8 +239,52 @@
     invitaciones: function (grupoId) { return q(sb.from('grupo_invitaciones').select('token,expira,usada_en,created_at').eq('grupo_id', grupoId).order('created_at', { ascending: false })); },
     renombrar: function (grupoId, nombre) { return q(sb.from('grupos').update({ nombre: nombre }).eq('id', grupoId)); },
     miNombre: function (grupoId, nombre) { return q(sb.from('grupo_miembros').update({ nombre: nombre }).eq('grupo_id', grupoId).eq('user_id', currentUid)); },
+    // reparto habitual del grupo: { user_id: porcentaje } o null (a partes iguales). Solo administradores.
+    reparto: function (grupoId, reparto) { return q(sb.from('grupos').update({ reparto: reparto }).eq('id', grupoId).select('id')).then(function (d) { if (!d || !d.length) throw new Error('no_autorizado'); return d; }); },
   };
   function rpc(fn, params) { return q(sb.rpc(fn, params || {})); }
 
-  window.Data = { collection: collection, doc: doc, grupos: grupos, rpc: rpc, uid: function () { return currentUid; } };
+  /* ---- gastos compartidos (bloque 8.2): los ve todo el grupo; nunca se borran de verdad (borrado = fecha) ---- */
+  var COMP_CAMPOS = ['id', 'grupoId', 'fecha', 'tipo', 'categoria', 'descripcion', 'importe', 'pagadoPor', 'reparto', 'modo'];
+  function compDeFila(r) {
+    return { id: r.id, grupoId: r.grupo_id, fecha: r.fecha, tipo: r.tipo, categoria: r.categoria || '', descripcion: r.descripcion || '',
+      importe: Number(r.importe), pagadoPor: r.pagado_por, reparto: r.reparto || {}, modo: r.modo || 'igual',
+      creadoPor: r.creado_por, createdAt: r.created_at, updatedAt: r.updated_at, editadoPor: r.editado_por };
+  }
+  function compAFila(o) { var row = {}; COMP_CAMPOS.forEach(function (k) { if (o[k] !== undefined) row[toSnake(k)] = o[k]; }); return row; }
+  var compartidos = {
+    suscribir: function (next, errCb) {
+      var stopped = false, channel = null, timer = null;
+      function fetchAll(from, acc) {
+        var PAGE = 1000;
+        return sb.from('compartidos').select('*').is('borrado', null).order('id').range(from, from + PAGE - 1).then(function (res) {
+          if (res.error) throw res.error;
+          var rows = acc.concat(res.data || []);
+          return (res.data || []).length === PAGE ? fetchAll(from + PAGE, rows) : rows;
+        });
+      }
+      function refresh() {
+        if (!currentUid) return;
+        fetchAll(0, []).then(function (rows) { if (!stopped) next(rows.map(compDeFila)); }, function (e) { if (!stopped && errCb) errCb(pgError(e)); });
+      }
+      function refreshSoon() { clearTimeout(timer); timer = setTimeout(refresh, 300); }
+      refresh();
+      // sin filtro: las reglas de la base de datos solo envían lo que puedes ver
+      if (currentUid) channel = sb.channel('compartidos-' + currentUid).on('postgres_changes', { event: '*', schema: 'public', table: 'compartidos' }, refreshSoon).subscribe();
+      return function unsubscribe() { stopped = true; clearTimeout(timer); if (channel) sb.removeChannel(channel); };
+    },
+    crear: function (o) {
+      var row = compAFila(o); delete row.id; // el id lo pone la base de datos
+      return q(sb.from('compartidos').insert(row).select().single()).then(compDeFila);
+    },
+    editar: function (id, o) {
+      var row = compAFila(o); delete row.id; delete row.grupo_id;
+      return q(sb.from('compartidos').update(row).eq('id', id).select().single()).then(compDeFila);
+    },
+    borrar: function (id) {
+      return q(sb.from('compartidos').update({ borrado: new Date().toISOString() }).eq('id', id).select('id')).then(function (d) { if (!d || !d.length) throw new Error('no_autorizado'); return d; });
+    },
+  };
+
+  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, rpc: rpc, uid: function () { return currentUid; } };
 })();

@@ -475,3 +475,34 @@ button.link { font-family: inherit; font-size: 13px; font-weight: 600; color: va
 .unirse-meta { font-size: 13px; opacity: .9; margin-top: 2px; }
 a.btn { display: flex; align-items: center; justify-content: center; text-decoration: none; }
 .wa-btn { background: #25D366 !important; color: #fff !important; }
+
+/* Gastos compartidos (bloque 8.2) */
+.comp-toggle { display: flex; align-items: center; gap: 8px; width: 100%; padding: 12px 14px; border: 1px dashed var(--line); border-radius: var(--radius-m); background: transparent; color: var(--accent); font: inherit; font-weight: 600; font-size: 14.5px; cursor: pointer; text-align: left; }
+.comp-toggle .i, .comp-head .i, .comp-tag .i, .comp-ok .i { width: 18px; height: 18px; flex: none; }
+.comp-box { border: 1px solid var(--accent); border-radius: var(--radius-m); padding: 12px 14px; background: var(--accent-soft); }
+.comp-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.comp-head b { display: flex; align-items: center; gap: 6px; font-size: 14.5px; color: var(--accent); }
+.comp-lbl { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 6px; }
+.comp-box .chips { margin: 0; }
+.segmented.sm button { font-size: 12.5px; padding: 7px 4px; }
+.comp-rows { margin-top: 8px; }
+.comp-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; cursor: default; }
+.comp-row:last-child { border-bottom: none; }
+.comp-row .n { flex: 1; min-width: 0; }
+.comp-row input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); margin: 0; flex: none; }
+.comp-row input.comp-val, .field .comp-row input.comp-val { width: 100px; flex: none; text-align: right; padding: 8px 10px; font-size: 15px; }
+.comp-row .u { width: 18px; color: var(--text-faint); font-size: 13px; flex: none; }
+.comp-resumen { margin-top: 10px; font-size: 13.5px; line-height: 1.45; }
+.amt-sub { font-size: 11px; color: var(--text-faint); font-weight: 500; text-align: right; white-space: nowrap; }
+.comp-tag { display: inline-flex; vertical-align: -3px; color: var(--accent); margin-left: 6px; }
+.deuda-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; }
+.deuda-row:last-of-type { border-bottom: none; }
+.deuda-row .t { flex: 1; line-height: 1.35; }
+.comp-ok { display: flex; align-items: center; gap: 8px; color: var(--income); font-weight: 600; font-size: 14.5px; }
+.comp-total { font-family: var(--font-display); font-size: 21px; font-weight: 600; margin-bottom: 6px; }
+.field label.comp-row { display: flex; margin: 0; font-size: 14.5px; font-weight: 400; color: var(--text); cursor: pointer; }
+.comp-row b { font-weight: 600; }
+.comp-box .chip { background: var(--paper-raised); }
+.comp-box .chip.active { background: var(--accent); color: var(--accent-ink); }
+.comp-box .segmented { background: var(--paper-raised); }
+.comp-box .segmented button.active { background: var(--accent-soft); color: var(--accent); box-shadow: none; }
