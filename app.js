@@ -48,6 +48,7 @@ const ICONS = {
   plane: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 3 11l1.5-1.5L11 11l5-6a1.5 1.5 0 0 1 2.5 1.5L13 12l1.5 6.5L13 20l-3-6z"/></svg>',
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>',
   receipt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
 };
 function ic(name) {
   const s = ICONS[name];
@@ -114,12 +115,110 @@ function escapeHtml(s) {
 }
 function stripId(o) { const c = { ...o }; delete c.id; return c; }
 
-function toast(msg) {
+/* Avisos tipo «isla»: salen arriba, crecen desde una píldora y pueden traer «Deshacer». */
+const TOAST_AVISO = /^(No |Error|Solo |Pon |Elige |Escribe |Ese |Esa |Hay |Has usado|Para |Al menos|A alguien|Es más|Busca |Un gasto|Los |La lectura|Tienes)/;
+function toast(msg, opts) {
   const el = $('#toast'); if (!el) return;
-  el.textContent = msg;
-  el.classList.add('show');
+  opts = opts || {};
+  const aviso = opts.aviso || TOAST_AVISO.test(msg);
+  el.innerHTML = '<span class="toast-ic ' + (aviso ? 'aviso' : 'ok') + '">' + ic(aviso ? 'alert' : 'check') + '</span><span class="toast-txt"></span>' + (opts.deshacer ? '<button type="button" class="toast-btn">Deshacer</button>' : '');
+  el.querySelector('.toast-txt').textContent = msg;
+  if (opts.deshacer) el.querySelector('.toast-btn').onclick = () => { el.classList.remove('show'); clearTimeout(toast._t); opts.deshacer(); };
+  el.classList.toggle('con-accion', !!opts.deshacer);
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   clearTimeout(toast._t);
-  toast._t = setTimeout(() => el.classList.remove('show'), 2400);
+  toast._t = setTimeout(() => el.classList.remove('show'), opts.deshacer ? 5000 : 2600);
+  vibrar(aviso ? [18, 50, 18] : 10);
+}
+/* ---- microinteracciones (Bloque 9C) ---- */
+function reduceMotion() { try { return !window.matchMedia || window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return true; } }
+function vibrar(p) { try { if (navigator.vibrate && !reduceMotion()) navigator.vibrate(p); } catch (e) { /* sin vibración */ } }
+// Cifra principal de Inicio: rueda y cuenta desde el valor anterior al cambiar de mes o año
+function numDeTexto(t) { const n = parseFloat(String(t).replace(/[^\d,−-]/g, '').replace('−', '-').replace(',', '.')); return isFinite(n) ? n : null; }
+function animarHero() {
+  const v = $('#content .hero-v'); if (!v) { S._heroPrev = null; return; }
+  const nuevo = v.textContent, clave = S.generalSub + '|' + S.anioSel + '|' + S.mesSel, prev = S._heroPrev;
+  S._heroPrev = { clave, txt: nuevo };
+  if (!prev || prev.clave === clave || reduceMotion()) return;
+  v.classList.add((S._heroDir || 1) < 0 ? 'rueda-abajo' : 'rueda-arriba');
+  const de = numDeTexto(prev.txt), a = numDeTexto(nuevo); if (de == null || a == null || de === a) return;
+  const t0 = performance.now(), dur = 560;
+  const paso = (t) => { if (!v.isConnected) return; const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); v.textContent = k < 1 ? money(de + (a - de) * e) : nuevo; if (k < 1) requestAnimationFrame(paso); };
+  requestAnimationFrame(paso);
+}
+// Selectores: una marca que viaja hasta la opción elegida, con un poco de muelle
+const _segPos = {};
+function animarSegmentados(root) {
+  if (!root || reduceMotion()) return;
+  root.querySelectorAll('.segmented, .hero-seg').forEach((seg) => {
+    const activo = seg.querySelector(':scope > button.active'); if (!activo || !activo.offsetWidth) return;
+    const btns = [...seg.querySelectorAll(':scope > button')];
+    const key = btns.map((b) => (b.getAttribute('data-click') || b.textContent).split('|')[0]).join(',') + '#' + btns.length;
+    seg.classList.add('con-ind'); // antes de medir: así las posiciones son relativas al selector
+    let ind = seg.querySelector(':scope > .seg-ind');
+    if (!ind) { ind = document.createElement('span'); ind.className = 'seg-ind'; seg.insertBefore(ind, seg.firstChild); }
+    const pos = { l: activo.offsetLeft, w: activo.offsetWidth, t: activo.offsetTop, h: activo.offsetHeight }, prev = _segPos[key];
+    _segPos[key] = pos;
+    const set = (q) => { ind.style.transform = 'translateX(' + q.l + 'px)'; ind.style.width = q.w + 'px'; ind.style.top = q.t + 'px'; ind.style.height = q.h + 'px'; };
+    if (prev && (prev.l !== pos.l || prev.w !== pos.w)) { ind.style.transition = 'none'; set(prev); void ind.offsetWidth; ind.style.transition = ''; }
+    set(pos);
+  });
+}
+// Confeti al cumplir una meta (una vez por meta y dispositivo)
+function confeti() {
+  if (reduceMotion() || !document.body.animate) return;
+  const cols = ['#C97A2C', '#2F7A57', '#7A5AA8', '#3D6BA5', '#E7B577', '#E78B6B'], cx = window.innerWidth / 2, cy = Math.min(window.innerHeight * 0.4, 320);
+  for (let i = 0; i < 34; i++) {
+    const p = document.createElement('i'); p.className = 'confeti';
+    p.style.background = cols[i % cols.length]; p.style.left = cx + 'px'; p.style.top = cy + 'px';
+    document.body.appendChild(p);
+    const ang = Math.random() * Math.PI * 2, dist = 90 + Math.random() * 170;
+    const anim = p.animate([{ transform: 'translate(-50%,-50%) rotate(0)', opacity: 1 }, { transform: 'translate(calc(-50% + ' + Math.round(Math.cos(ang) * dist) + 'px), calc(-50% + ' + Math.round(Math.sin(ang) * dist + 140) + 'px)) rotate(' + Math.round(360 + Math.random() * 360) + 'deg)', opacity: 0 }],
+      { duration: 1100 + Math.random() * 500, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'forwards' });
+    anim.onfinish = () => p.remove();
+  }
+  vibrar([12, 40, 12, 40, 24]);
+}
+function celebrarMetas() {
+  if (S.tab !== 'dinero' || reduceMotion()) return;
+  let hechas = []; try { hechas = JSON.parse(lsGet('metasCelebradas') || '[]'); } catch (e) { hechas = []; }
+  const nuevas = metasStats().filter((r) => !r.inv && r.obj > 0 && r.falta <= 0 && r.id && hechas.indexOf(r.id) < 0);
+  if (!nuevas.length) return;
+  lsSet('metasCelebradas', JSON.stringify(hechas.concat(nuevas.map((r) => r.id))));
+  setTimeout(() => { confeti(); toast('¡Meta cumplida: ' + nuevas[0].nombre + '!'); }, 350);
+}
+/* ---- deslizar un movimiento para duplicarlo o borrarlo ---- */
+const SWIPE_ANCHO = 148;
+let _sw = null;
+function cerrarSwipe(sw) { if (!sw) return; sw.classList.remove('abierta'); const r = sw.querySelector(':scope > .row'); if (r) r.style.transform = ''; }
+document.addEventListener('touchstart', (e) => {
+  const r = e.target && e.target.closest ? e.target.closest('.swipe > .row') : null;
+  $$('.swipe.abierta').forEach((x) => { if (!r || x !== r.parentNode) cerrarSwipe(x); });
+  if (!r || e.touches.length !== 1) { _sw = null; return; }
+  _sw = { row: r, x0: e.touches[0].clientX, y0: e.touches[0].clientY, dx: 0, base: r.parentNode.classList.contains('abierta') ? -SWIPE_ANCHO : 0, eje: null };
+}, { passive: true });
+document.addEventListener('touchmove', (e) => {
+  if (!_sw) return;
+  const t = e.touches[0], dx = t.clientX - _sw.x0, dy = t.clientY - _sw.y0;
+  if (!_sw.eje) { if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return; _sw.eje = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y'; if (_sw.eje === 'x') _sw.row.style.transition = 'none'; }
+  if (_sw.eje !== 'x') return;
+  _sw.dx = dx;
+  _sw.row.style.transform = 'translateX(' + Math.max(-SWIPE_ANCHO - 36, Math.min(0, _sw.base + dx)) + 'px)';
+}, { passive: true });
+document.addEventListener('touchend', () => {
+  const w = _sw; _sw = null; if (!w || w.eje !== 'x') return;
+  w.row.style.transition = '';
+  const abrir = w.base + w.dx < -SWIPE_ANCHO / 2;
+  w.row.parentNode.classList.toggle('abierta', abrir);
+  w.row.style.transform = abrir ? 'translateX(' + (-SWIPE_ANCHO) + 'px)' : '';
+  if (abrir) vibrar(8);
+  S._swipeHasta = Date.now() + 400;
+});
+async function borrarMovConDeshacer(id) {
+  const m = S.movimientos.find((x) => x.id === id); if (!m) return;
+  const copia = stripId(m);
+  const ok = await write(() => S.db.collection('movimientos').doc(id).delete());
+  if (ok) toast('Movimiento eliminado', { deshacer: async () => { if (await write(() => S.db.collection('movimientos').doc(id).set(copia))) toast('Recuperado'); } });
 }
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
@@ -326,7 +425,10 @@ function renderShell() {
     '<div id="sheetHost"></div><div class="toast" id="toast" role="status"></div>';
 }
 
-function loadingHtml() { return '<div class="loading"><div class="spinner"></div><div id="loadingMsg">' + escapeHtml(S.loadingMsg) + '</div></div>'; }
+function loadingHtml() {
+  return '<div class="esqueleto" aria-busy="true"><div class="sk sk-hero"></div><div class="sk sk-t"></div><div class="sk-fila"><div class="sk sk-card"></div><div class="sk sk-card"></div></div><div class="sk sk-t"></div><div class="sk sk-lista"></div>' +
+    '<div class="loading-txt" id="loadingMsg">' + escapeHtml(S.loadingMsg) + '</div></div>';
+}
 
 /* ============================================================
    LOGIN (pantalla completa, sin navegación)
@@ -431,6 +533,8 @@ function render() {
   if (S.tab === 'inicio' && S.generalSub !== 'anual') drawDonut();
   if (S.tab === 'inicio' && S.generalSub === 'anual') drawTrend();
   if (S.tab === 'dinero' && dineroSub() === 'inversiones') bindInvChart();
+  if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
+  animarHero(); animarSegmentados(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
 }
 
@@ -572,6 +676,12 @@ function renderMovList() {
   return html;
 }
 function renderMovRow(m) {
+  const fila = renderMovRowBase(m);
+  if (m.comp) return fila;
+  return '<div class="swipe"><div class="swipe-acc"><button class="sw-dup" ' + act('movDuplicar', m.id) + '>' + ic('copy') + '<span>Duplicar</span></button>' +
+    '<button class="sw-del" ' + act('movBorrar', m.id) + '>' + ic('trash') + '<span>Borrar</span></button></div>' + fila + '</div>';
+}
+function renderMovRowBase(m) {
   const eff = effect(m.importe, m.tipo), c = m.comp;
   return '<div class="row" ' + act('openMovForm', m.id) + '>' +
     movIcHtml(m) +
@@ -787,8 +897,8 @@ async function saveMov() {
   } finally { FORM.guardando = false; }
 }
 async function doDeleteMov() {
-  const ok = await write(() => S.db.collection('movimientos').doc(FORM.id).delete());
-  if (ok) { closeSheet(); toast('Movimiento eliminado'); }
+  const id = FORM.id; closeSheet();
+  await borrarMovConDeshacer(id);
 }
 
 /* ============================================================
@@ -2861,7 +2971,7 @@ async function toggleTarea(id) {
   }
   const ok = await write(() => S.db.collection('tareas').doc(id).set(data));
   _busy.delete(id);
-  if (ok) toast(reabrir ? 'Tarea reabierta' : (sig ? '¡Hecha! La siguiente: ' + fechaCortaU(sig) : '¡Tarea completada!'));
+  if (ok) toast(reabrir ? 'Tarea reabierta' : (sig ? '¡Hecha! La siguiente: ' + fechaCortaU(sig) : '¡Tarea completada!'), !reabrir && !sig ? { deshacer: () => toggleTarea(id) } : null);
 }
 function openTareaForm(id) {
   const ex = id ? S.tareas.find((t) => t.id === id) : null;
@@ -4099,10 +4209,12 @@ function openSheet(html) {
   _sheetGen++;
   host.innerHTML = '<div class="sheet-backdrop" id="sheetBackdrop" role="dialog" aria-modal="true"><div class="sheet">' + SHEET_X() + html + '</div></div>';
   activarArrastreSheet(host.querySelector('.sheet'));
-  requestAnimationFrame(() => { const b = $('#sheetBackdrop'); if (b && !b.dataset.cerrando) b.classList.add('open'); });
+  requestAnimationFrame(() => { const b = $('#sheetBackdrop'); if (b && !b.dataset.cerrando) b.classList.add('open'); animarSegmentados($('#sheetHost')); });
+  document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear'));
 }
-function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) s.innerHTML = SHEET_X() + html; else openSheet(html); } // si se estaba cerrando, se abre de nuevo
+function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
 function closeSheet() {
+  document.body.classList.remove('crear-abierto');
   const b = $('#sheetBackdrop'); if (!b) return;
   b.dataset.cerrando = '1';
   b.classList.remove('open');
@@ -4124,13 +4236,14 @@ const H = {
   goTab: ([id]) => {
     S.volverA = null; if (id === 'movimientos') S.movCat = '';
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
-    S.tab = TAB_ALIAS[id] || id; render(); window.scrollTo(0, 0);
+    const nueva = TAB_ALIAS[id] || id; if (nueva !== S.tab) S._entrando = true;
+    S.tab = nueva; render(); window.scrollTo(0, 0);
   },
   agendaDia: ([iso]) => { S.agendaDia = iso; render(); },
   agendaSemana: ([d]) => { S.agendaDia = uAdd(S.agendaDia || todayISO(), 7 * Number(d)); render(); },
-  irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
-  irDinero: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
-  setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); render(); },
+  irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
+  irDinero: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
+  setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; render(); },
   verAnio: () => { S.tab = 'inicio'; S.generalSub = 'anual'; render(); window.scrollTo(0, 0); },
   openBuscar: () => { FORM = { kind: 'buscar' }; if ($('#sheetBackdrop')) updateSheet(buscarHtml()); else openSheet(buscarHtml()); setTimeout(() => { const el = $('#qBuscar'); if (el) el.focus(); }, 80); },
   buscarGlobal: (_a, el) => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); },
@@ -4164,7 +4277,9 @@ const H = {
   setMovPeriodo: ([p]) => { S.movPeriodo = p; S.movLimit = 120; render(); },
   onMovSearch: (_a, el) => debouncedSearch(el.value),
   movMore: () => { S.movLimit += 150; const l = $('#movList'); if (l) l.innerHTML = renderMovList(); },
-  openMovForm: ([id]) => { S._volverGrupo = null; openMovForm(id || null); },
+  openMovForm: ([id], el) => { if (el && el.parentNode && el.parentNode.classList && el.parentNode.classList.contains('abierta')) { cerrarSwipe(el.parentNode); return; } S._volverGrupo = null; openMovForm(id || null); },
+  movDuplicar: ([id]) => { const m = S.movimientos.find((x) => x.id === id); $$('.swipe.abierta').forEach(cerrarSwipe); if (!m) return; S._volverGrupo = null; openMovForm(null, { tipo: m.tipo, importe: m.importe, categoria: m.categoria, fecha: todayISO(), descripcion: m.descripcion }); toast('Copia lista: revisa y guarda'); },
+  movBorrar: ([id]) => { vibrar([10, 30, 10]); borrarMovConDeshacer(id); },
   pickTipo: ([t], el) => {
     FORM.tipo = t;
     $$('#tipoToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-t') === t));
@@ -4321,14 +4436,21 @@ const H = {
   // análisis
   setAnalisisSub: ([s]) => { if (s === 'general') { S.tab = 'inicio'; render(); return; } H.irDinero([s]); },
   goMetas: () => H.irDinero(['metas']),
-  moveMes: ([d]) => { let m = S.mesSel + Number(d), a = S.anioSel; if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; } S.mesSel = m; S.anioSel = a; render(); },
-  moveAnio: ([d]) => { S.anioSel += Number(d); render(); },
+  moveMes: ([d]) => { S._heroDir = Number(d); let m = S.mesSel + Number(d), a = S.anioSel; if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; } S.mesSel = m; S.anioSel = a; render(); },
+  moveAnio: ([d]) => { S._heroDir = Number(d); S.anioSel += Number(d); render(); },
   openGolfForm: ([id]) => openGolfForm(id || null),
   saveGolf: () => saveGolf(),
   deleteGolf: (_a, el) => confirmDelete(el, doDeleteGolf),
   // tareas
   setTareasSub: ([s]) => { S.tareasSub = s; render(); },
-  toggleTarea: ([id]) => toggleTarea(id),
+  toggleTarea: ([id], el) => {
+    const t = S.tareas.find((x) => x.id === id);
+    if (!el || !t || t.estado === 'Completado' || reduceMotion()) return toggleTarea(id);
+    el.classList.add('marcando'); el.innerHTML = ic('check');
+    const row = el.closest('.row'); if (row) row.classList.add('hecha-anim');
+    vibrar([8, 40, 14]);
+    setTimeout(() => toggleTarea(id), 430);
+  },
   openTareaForm: ([id]) => openTareaForm(id || null),
   pickPrio: ([p]) => { FORM.prioridad = p; $$('#prioToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-p') === p)); },
   pickEstado: ([e]) => { FORM.estado = e; $$('#estToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-e') === e)); },
@@ -4707,12 +4829,15 @@ const H = {
 };
 const debouncedSearch = debounce((v) => { S.movQuery = v; S.movLimit = 120; const l = $('#movList'); if (l) l.innerHTML = renderMovList(); }, 160);
 
+const VIBRA = new Set(['goTab', 'onFab', 'crearIr', 'setGeneralSub', 'setDineroSub', 'irAgenda', 'agendaDia', 'agendaSemana', 'setMovFiltro', 'setMovPeriodo', 'pickTipo', 'compOn', 'tkQuien', 'moveMes', 'moveAnio', 'setTareasSub']);
 function dispatch(kind, e) {
   const t = e.target;
   const el = t && t.closest ? t.closest('[data-' + kind + ']') : null;
   if (!el) return;
   const parts = el.getAttribute('data-' + kind).split('|');
   const fn = H[parts[0]];
+  if (kind === 'click' && parts[0] === 'openMovForm' && Date.now() < (S._swipeHasta || 0)) return; // venía de deslizar
+  if (kind === 'click' && VIBRA.has(parts[0])) vibrar(6);
   if (fn) fn(parts.slice(1).map(decodeURIComponent), el, e);
 }
 document.addEventListener('click', (e) => {
@@ -4762,6 +4887,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { imp: () => IMP, metasStats, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
+window.__APP__ = { imp: () => IMP, toast, metasStats, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
 if (!window.__NO_AUTOSTART__) main();
 })();
