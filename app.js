@@ -1844,10 +1844,13 @@ function impPatchConfig(filas) {
       const ap = aprenderRegla(fechas);
       if (ap && ap.hits / ap.total >= 0.6) it.regla = Object.assign({}, ap.r, { aprendida: { hits: ap.hits, total: ap.total, fecha: todayISO() } });
       else {
-        // día fijo solo si se paga todos los meses seguidos el mismo día (si es trimestral o suelto, se deja sin fecha)
+        // mismo día y mismo hueco entre pagos: mensual (día fijo) o cada N meses; si es suelto, se deja sin fecha
         const mesN = (f) => Number(f.slice(0, 4)) * 12 + Number(f.slice(5, 7));
-        const seguidos = fechas.length >= 2 && fechas.every((f, i) => i === 0 || mesN(f) - mesN(fechas[i - 1]) === 1);
-        if (seguidos && fechas.every((f) => f.slice(8) === fechas[0].slice(8))) it.regla = { t: 'dia', dia: Number(fechas[0].slice(8)), ajuste: '' };
+        const huecos = fechas.slice(1).map((f, i) => mesN(f) - mesN(fechas[i]));
+        const mismoDia = fechas.every((f) => f.slice(8) === fechas[0].slice(8));
+        if (fechas.length >= 2 && mismoDia && huecos.every((g) => g === huecos[0]) && huecos[0] >= 1 && huecos[0] <= 12) {
+          it.regla = huecos[0] === 1 ? { t: 'dia', dia: Number(fechas[0].slice(8)), ajuste: '' } : { t: 'meses', cada: huecos[0], ancla: fechas[fechas.length - 1], ajuste: '' };
+        }
       }
       if (it.regla && it.regla.t === 'dia') it.diaDelMes = it.regla.dia;
       return it;
@@ -1981,6 +1984,18 @@ function fechasMesRegla(r, y, m) {
 function ocurrencias(r, desde, hasta) {
   if (!r || !r.t || !desde || !hasta || desde > hasta) return [];
   const out = [];
+  if (r.t === 'meses') { // cada N meses (trimestral, semestral, anual…) el mismo día que la fecha de referencia
+    if (!r.ancla) return [];
+    const cada = Math.max(1, Math.min(24, Number(r.cada) || 1)), a = uD(r.ancla), dia = a.getUTCDate();
+    const y0 = a.getUTCFullYear(), m0 = a.getUTCMonth(), d0 = uD(desde);
+    let k = Math.floor(((d0.getUTCFullYear() - y0) * 12 + (d0.getUTCMonth() - m0)) / cada) - 1;
+    for (let i = 0; i < 1000; i++, k++) {
+      const mm = m0 + k * cada, yy = y0 + Math.floor(mm / 12), mo = ((mm % 12) + 12) % 12;
+      const iso = uISO(ajustarFinde(ymdU(yy, mo, Math.min(dia, diasMesU(yy, mo))), r.ajuste));
+      if (iso > hasta) break; if (iso >= desde) out.push(iso);
+    }
+    return out;
+  }
   if (r.t === 'semanas') {
     if (!r.ancla) return [];
     const paso = Math.max(1, Math.min(52, Number(r.cada) || 1)) * 7 * 864e5;
@@ -2006,6 +2021,7 @@ function reglaTexto(r) {
   if (r.t === 'priHabil') return 'Primer día hábil del mes';
   if (r.t === 'nesimo') return 'El ' + ORDINAL[String(r.n)] + ' ' + DOW_LARGO[Number(r.dow) || 0] + ' de cada mes';
   if (r.t === 'quincenal') return 'Los días 15 y último de cada mes' + aj;
+  if (r.t === 'meses') { const c = Number(r.cada) || 1, d = r.ancla ? uD(r.ancla) : null; const dd = d ? d.getUTCDate() : ''; return (c === 1 ? 'Cada mes' : c === 12 ? 'Cada año' : c === 3 ? 'Cada 3 meses (trimestral)' : c === 6 ? 'Cada 6 meses (semestral)' : 'Cada ' + c + ' meses') + (d ? (c === 12 ? ', el ' + dd + ' de ' + MESES_CORTO[d.getUTCMonth()] : ', el día ' + dd) : '') + aj; }
   if (r.t === 'semanas') return (Number(r.cada) === 1 ? 'Cada semana' : 'Cada ' + r.cada + ' semanas') + (r.ancla ? ', los ' + DOW_LARGO[dowL(uD(r.ancla))] : '');
   return 'Sin fecha';
 }
@@ -2126,6 +2142,7 @@ function aprenderRegla(fechas) {
   cands.push({ t: 'quincenal', ajuste: '' }, { t: 'quincenal', ajuste: 'antes' });
   [1, 2, 3, 4, -1].forEach((n) => { for (let w = 0; w < 7; w++) cands.push({ t: 'nesimo', n, dow: w }); });
   [1, 2, 4].forEach((c) => cands.push({ t: 'semanas', cada: c, ancla: fechas[fechas.length - 1] }));
+  [2, 3, 6, 12].forEach((c) => cands.push({ t: 'meses', cada: c, ancla: fechas[fechas.length - 1], ajuste: '' }));
   let best = null;
   cands.forEach((r, i) => {
     const p = puntuarRegla(r, fechas), sc = p.score - i * 1e-6; // a igualdad, la regla más sencilla
@@ -2157,12 +2174,13 @@ function recListaHtml() {
     '<div class="actions"><button class="btn ghost block" ' + act('recNuevo', 'cobro') + '>' + ic('plus') + ' Ingreso fijo</button><button class="btn ghost block" ' + act('recNuevo', 'factura') + '>' + ic('plus') + ' Factura o pago</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
-const REGLA_OPC = [['dia', 'Un día fijo del mes'], ['ultHabil', 'El último día hábil del mes'], ['priHabil', 'El primer día hábil del mes'], ['nesimo', 'Un día de la semana concreto (p. ej. el primer lunes)'], ['quincenal', 'Dos veces al mes (el 15 y el último)'], ['semanas', 'Cada cierto número de semanas']];
+const REGLA_OPC = [['dia', 'Un día fijo del mes'], ['ultHabil', 'El último día hábil del mes'], ['priHabil', 'El primer día hábil del mes'], ['nesimo', 'Un día de la semana concreto (p. ej. el primer lunes)'], ['quincenal', 'Dos veces al mes (el 15 y el último)'], ['semanas', 'Cada cierto número de semanas'], ['meses', 'Cada cierto número de meses (trimestral, anual…)']];
 function reglaPorDefecto(t) {
   if (t === 'dia') return { t, dia: 1, ajuste: '' };
   if (t === 'nesimo') return { t, n: 1, dow: 0 };
   if (t === 'quincenal') return { t, ajuste: '' };
   if (t === 'semanas') return { t, cada: 2, ancla: todayISO() };
+  if (t === 'meses') return { t, cada: 3, ancla: todayISO(), ajuste: '' };
   return t ? { t } : null;
 }
 function recParamsHtml(r) {
@@ -2172,6 +2190,8 @@ function recParamsHtml(r) {
   if (r.t === 'dia') return '<div class="field"><label>Día del mes</label><input id="recDia" type="number" min="1" max="31" inputmode="numeric" value="' + escapeHtml(r.dia) + '" ' + onInput('recParam', 'dia') + '><div class="rec-hint">Si el mes tiene menos días, se usa el último.</div></div>' + ajuste(r.ajuste);
   if (r.t === 'quincenal') return ajuste(r.ajuste);
   if (r.t === 'nesimo') return '<div class="field"><label>Cuál</label><div style="display:flex;gap:8px;">' + sel('recN', [['1', 'Primer'], ['2', 'Segundo'], ['3', 'Tercer'], ['4', 'Cuarto'], ['-1', 'Último']], r.n, 'n') + sel('recDow', DOW_LARGO.map((d, i) => [String(i), d]), r.dow, 'dow') + '</div></div>';
+  if (r.t === 'meses') return '<div class="field"><label>Cada cuántos meses</label><input id="recCadaM" type="number" min="1" max="24" inputmode="numeric" value="' + escapeHtml(r.cada) + '" ' + onInput('recParam', 'cada') + '><div class="rec-hint">3 = trimestral, 6 = semestral, 12 = anual.</div></div>' +
+    '<div class="field"><label>Una fecha en la que ocurrió u ocurrirá</label><input id="recAnclaM" type="date" value="' + escapeHtml(r.ancla || '') + '" ' + onChange('recParam', 'ancla') + '></div>' + ajuste(r.ajuste);
   if (r.t === 'semanas') return '<div class="field"><label>Cada cuántas semanas</label><input id="recCada" type="number" min="1" max="52" inputmode="numeric" value="' + escapeHtml(r.cada) + '" ' + onInput('recParam', 'cada') + '></div>' +
     '<div class="field"><label>Una fecha en la que ocurrió u ocurrirá</label><input id="recAncla" type="date" value="' + escapeHtml(r.ancla || '') + '" ' + onChange('recParam', 'ancla') + '></div>';
   return '';
@@ -2227,6 +2247,7 @@ function recGuardar() {
   if (impTxt !== '' && !isFinite(importe)) return toast('Revisa el importe');
   let regla = F.regla && F.regla.t ? Object.assign({}, F.regla) : null;
   if (regla && regla.t === 'dia') { const d = parseInt(regla.dia, 10); if (!(d >= 1 && d <= 31)) return toast('El día tiene que estar entre 1 y 31'); regla.dia = d; }
+  if (regla && regla.t === 'meses') { const c = parseInt(regla.cada, 10); if (!(c >= 1 && c <= 24)) return toast('Pon cada cuántos meses (1 a 24)'); if (!regla.ancla) return toast('Pon una fecha de referencia'); regla.cada = c; }
   if (regla && regla.t === 'semanas') { const c = parseInt(regla.cada, 10); if (!(c >= 1 && c <= 52)) return toast('Pon cada cuántas semanas (1 a 52)'); if (!regla.ancla) return toast('Pon una fecha de referencia'); regla.cada = c; }
   const c = cfg(), cobros = (c.cobros || []).slice(), facturas = (c.facturas || []).slice();
   const arrDe = (k) => (k === 'cobro' ? cobros : facturas);
