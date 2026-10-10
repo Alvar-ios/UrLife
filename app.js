@@ -1746,6 +1746,10 @@ function impHtml() {
       (nDup ? '<div class="imp-note warn">⚠️ ' + nDup + (nDup === 1 ? ' fila se parece' : ' filas se parecen') + ' a movimientos que ya tienes (misma fecha e importe). Van desmarcadas; márcalas si son distintas.</div>' : '') +
       (err.length ? '<div class="imp-note">' + err.length + (err.length === 1 ? ' fila no se ha podido leer' : ' filas no se han podido leer') + ' (sin fecha o importe válidos) y se omiten.</div>' : '') +
       (sinCat ? '<div class="imp-note">' + sinCat + ' sin categoría: se guardarán como «Sin categoría» y podrás cambiarlas luego.</div>' : '') +
+      (() => {
+        const nv = impNuevosConfig(sel), partes = Object.keys(nv).filter((k) => nv[k].length).map((k) => '<b>' + IMP_NUEVOS_TXT[k] + ':</b> ' + nv[k].map(escapeHtml).join(', '));
+        return partes.length ? '<label class="imp-note imp-cfg"><input type="checkbox" ' + (I.anadirConfig !== false ? 'checked' : '') + ' ' + onChange('impAnadirCfg') + '> <span>Añadir a tu configuración lo nuevo del archivo:<br>' + partes.join('<br>') + '</span></label>' : '';
+      })() +
       '<div class="imp-bulk"><button type="button" class="link" ' + act('impTodas', '1') + '>Marcar todas</button> · <button type="button" class="link" ' + act('impTodas', '0') + '>Desmarcar todas</button></div>' +
       '<div class="imp-list">' + visibles.slice(0, LIM).map(filaHtml).join('') + '</div>' +
       (visibles.length > LIM ? '<button class="btn ghost block" style="margin-top:8px;" ' + act('impVerTodo') + '>Ver las ' + visibles.length + ' filas</button>' : '') +
@@ -1754,7 +1758,7 @@ function impHtml() {
   if (I.paso === 'importando') return h2('Importando…') + '<div style="color:var(--text-muted);font-size:14px;">Guardando ' + I.total + ' movimientos. No cierres la app.</div>';
   if (I.paso === 'hecho') {
     return h2(I.fallo ? 'Importación incompleta' : '¡Importado!') +
-      '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '⚠️ No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '✅ Se han guardado <b>' + I.hechos + '</b> movimientos.') + '</div>' +
+      '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '⚠️ No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '✅ Se han guardado <b>' + I.hechos + '</b> movimientos.' + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.' : '')) + '</div>' +
       '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Más → Importaciones.</div>' +
       '<div class="actions"><button class="btn ghost block" ' + act('impDeshacer', I.lote) + '>Deshacer</button><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
   }
@@ -1810,6 +1814,47 @@ function impProcesar() {
   });
   I.filas = out;
 }
+// Lo que trae el archivo y aún no existe en tu configuración (categorías, fuentes de ingreso, facturas, metas, deudas)
+function impNuevosConfig(filas) {
+  const c = cfg(), out = { categoriasGasto: [], ingresos: [], facturas: [], ahorro: [], deudas: [] };
+  const existe = { categoriasGasto: (c.categoriasGasto || []).map((x) => normName(x && x.nombre)), ingresos: (c.ingresos || []).map(normName),
+    facturas: (c.facturas || []).map((x) => normName(x && x.nombre)), ahorro: (c.ahorro || []).map((x) => normName(x && x.nombre)), deudas: (c.deudas || []).map((x) => normName(x && x.nombre)) };
+  const clave = { Gasto: 'categoriasGasto', Ingreso: 'ingresos', Factura: 'facturas', Ahorro: 'ahorro', Deuda: 'deudas' };
+  filas.forEach((r) => {
+    const k = clave[r.tipo], n = (r.categoria || '').trim();
+    if (!k || !n || normName(n) === 'sin categoria' || normName(n) === 'sin categoría') return;
+    if (existe[k].includes(normName(n)) || out[k].some((x) => normName(x) === normName(n))) return;
+    out[k].push(n);
+  });
+  return out;
+}
+const IMP_NUEVOS_TXT = { categoriasGasto: 'Categorías de gasto', ingresos: 'Fuentes de ingreso', facturas: 'Facturas recurrentes', ahorro: 'Metas de ahorro', deudas: 'Deudas' };
+function impPatchConfig(filas) {
+  const nuevos = impNuevosConfig(filas), c = cfg(), patch = {};
+  if (nuevos.categoriasGasto.length) patch.categoriasGasto = (c.categoriasGasto || []).concat(nuevos.categoriasGasto.map((n) => ({ nombre: n, presupuesto: null })));
+  if (nuevos.ingresos.length) patch.ingresos = (c.ingresos || []).concat(nuevos.ingresos);
+  if (nuevos.ahorro.length) patch.ahorro = (c.ahorro || []).concat(nuevos.ahorro.map((n) => ({ nombre: n, objetivo: null, fechaObjetivo: null })));
+  if (nuevos.deudas.length) patch.deudas = (c.deudas || []).concat(nuevos.deudas.map((n) => ({ nombre: n, objetivo: null, fechaObjetivo: null, recurrencia: '' })));
+  if (nuevos.facturas.length) {
+    patch.facturas = (c.facturas || []).concat(nuevos.facturas.map((n) => {
+      const mias = filas.filter((r) => r.tipo === 'Factura' && normName(r.categoria) === normName(n)).sort((a, b) => a.fecha.localeCompare(b.fecha));
+      const fechas = [...new Set(mias.map((r) => r.fecha))];
+      const it = { nombre: n, importe: mias.length ? Math.abs(mias[mias.length - 1].importe) : null, diaDelMes: null, desde: todayISO() };
+      // regla de fecha: aprendida con 3 o más pagos, o día fijo si al menos 2 coinciden en el mismo día del mes
+      const ap = aprenderRegla(fechas);
+      if (ap && ap.hits / ap.total >= 0.6) it.regla = Object.assign({}, ap.r, { aprendida: { hits: ap.hits, total: ap.total, fecha: todayISO() } });
+      else {
+        // día fijo solo si se paga todos los meses seguidos el mismo día (si es trimestral o suelto, se deja sin fecha)
+        const mesN = (f) => Number(f.slice(0, 4)) * 12 + Number(f.slice(5, 7));
+        const seguidos = fechas.length >= 2 && fechas.every((f, i) => i === 0 || mesN(f) - mesN(fechas[i - 1]) === 1);
+        if (seguidos && fechas.every((f) => f.slice(8) === fechas[0].slice(8))) it.regla = { t: 'dia', dia: Number(fechas[0].slice(8)), ajuste: '' };
+      }
+      if (it.regla && it.regla.t === 'dia') it.diaDelMes = it.regla.dia;
+      return it;
+    }));
+  }
+  return { nuevos, patch };
+}
 async function impEjecutar() {
   const I = IMP;
   const sel = I.filas.filter((r) => r.id && r.incluir && r.estado !== 'importado');
@@ -1828,8 +1873,9 @@ async function impEjecutar() {
   const c = cfg();
   const lotes = (c.importLotes || []).concat([{ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: hechos || 0 }]).slice(-50);
   const perfiles = Object.assign({}, c.importPerfiles || {}, { [firmaArchivo(I)]: { map: I.map, modoImporte: I.modoImporte, signo: I.signo, fmtFecha: I.fmtFecha, usado: todayISO() } });
-  saveConfig({ importLotes: lotes, importPerfiles: perfiles });
-  Object.assign(I, { paso: 'hecho', hechos, fallo });
+  const extra = hechos && I.anadirConfig !== false ? impPatchConfig(sel).patch : {};
+  saveConfig(Object.assign({ importLotes: lotes, importPerfiles: perfiles }, extra));
+  Object.assign(I, { paso: 'hecho', hechos, fallo, configNuevos: Object.keys(extra).length });
   updateSheet(impHtml());
   if (!fallo) toast(hechos + ' movimientos importados');
 }
@@ -2642,6 +2688,7 @@ const H = {
     r.ofrecerRegla = ''; updateSheet(impHtml());
   },
   impEjecutar: () => impEjecutar(),
+  impAnadirCfg: (_, el) => { IMP.anadirConfig = el.checked; },
   impDeshacer: async ([lote]) => { if (await deshacerLote(lote)) closeSheet(); },
   openLotes: () => { FORM = { kind: 'lotes' }; openSheet(lotesHtml()); },
   loteDeshacer: ([id], el) => confirmDelete(el, async () => { if (await deshacerLote(id)) setTimeout(() => updateSheet(lotesHtml()), 400); }),
