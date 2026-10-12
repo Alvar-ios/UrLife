@@ -984,12 +984,12 @@ function esGastoForm() { return FORM && (FORM.tipo === 'Gasto' || FORM.tipo === 
 function fijoHtml() {
   if (!esGastoForm()) return '';
   const f = FORM.tipo === 'Factura';
-  return '<div class="segmented fijo-seg"><button type="button" class="' + (f ? '' : 'active') + '" ' + act('pickFijo', '0') + '>Del día a día</button><button type="button" class="' + (f ? 'active' : '') + '" ' + act('pickFijo', '1') + '>Fijo · recibo</button></div>';
+  return '<div class="segmented fijo-seg"><button type="button" class="' + (f ? '' : 'active') + '" ' + act('pickFijo', '0') + '>Del día a día</button><button type="button" class="' + (f ? 'active' : '') + '" ' + act('pickFijo', '1') + '>Fijo · recibo' + badge('fijo') + '</button></div>';
 }
 function subFieldHtml(cat, actual) {
   if (!FORM || !(FORM.tipo === 'Gasto' || FORM.tipo === 'Factura')) return '';
   const fijo = FORM.tipo === 'Factura', subs = subcatsDe(cat, fijo);
-  return '<label>' + (fijo ? '¿Qué recibo es? <span class="hint">· Alquiler, Spotify, luz…</span>' : 'Detalle <span class="hint">· opcional: Uñas, Golf, Mercadona…</span>') + '</label>' +
+  return '<label>' + (fijo ? '¿Qué recibo es? <span class="hint">· Alquiler, Spotify, luz…</span>' : 'Detalle' + badge('detalle') + ' <span class="hint">· opcional: Uñas, Golf, Mercadona…</span>') + '</label>' +
     (subs.length ? '<div class="chips" id="subChips">' + subs.map((s) => '<button type="button" class="chip ' + (normName(s) === normName(actual) ? 'active' : '') + '" ' + act('pickSub', s) + '>' + escapeHtml(s) + '</button>').join('') + '</div>' : '') +
     '<input id="fSub" type="text" placeholder="' + (fijo ? 'Nombre del recibo' : 'Sin detalle') + '" value="' + escapeHtml(actual || '') + '" ' + onInput('onSubInput') + '>';
 }
@@ -1101,6 +1101,7 @@ async function saveMov() {
       descripcion: $('#fDesc').value.trim(), metodoPago: $('#fMetodo').value,
     });
     if (esG) data.subcategoria = subcategoria; else if ('subcategoria' in data) data.subcategoria = null;
+    if (subcategoria) verBadge('detalle');
     // una categoría personalizada nueva se añade a tu lista
     if (esG && !esCatGasto(categoria)) saveConfig({ categoriasGasto: (cfg().categoriasGasto || []).concat([{ nombre: categoria, presupuesto: null }]) });
     if (FORM.articulos) data.articulos = FORM.articulos;
@@ -2367,7 +2368,7 @@ function renderTu() {
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · tus datos son privados.</div></div></div>' +
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
     grupo('Compartir', [it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir paloma invitar whatsapp')]) +
-    grupo('Tu dinero', [lista('categoriasGasto', 'presupuestos'),
+    grupo('Tu dinero', [it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
       it('openRecurrentes', [], 'calendar', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas'),
       it('openMetas', [], 'flag', 'Metas', badge('metas') + '<span class="menu-extra">ahorro e inversión</span>', 'objetivos hucha'),
       lista('deudas', 'prestamo hipoteca'), lista('ingresos', 'nomina'), lista('metodosPago', 'tarjeta bizum efectivo'),
@@ -2377,7 +2378,7 @@ function renderTu() {
       it('openReglas', [], 'tag', 'Reglas de categorías', badge('reglas'), 'automatico'),
       it('exportBackup', [], 'download', 'Copia de seguridad (.json)', '', 'exportar backup')]) +
     grupo('Tareas', [lista('categoriasTareas', '')]) +
-    grupo('App', ['<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' +
+    grupo('App', ['<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
       '<div class="segmented" style="margin-left:auto;">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button style="padding:6px 12px;" class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
       it('openMoneda', [], 'chart', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
       mfaDisponible() ? it('openSeguridad', [], 'alert', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
@@ -3326,6 +3327,23 @@ async function doDeleteTarea() {
    (con su fecha) y, si hace falta, nuevas claves en BADGES.
    ============================================================ */
 const NOVEDADES = [
+  { id: '2026-10-12', titulo: 'Parche 5 · Categorías para todos',
+    destacados: [
+      { em: '🏷️', titulo: 'Categorías iguales para todos', color: 'accent', ir: 'categorias', boton: 'Ver mis categorías',
+        texto: 'Ahora todos tenemos las mismas 16 categorías, así un gasto compartido cae en la misma para cada uno. Hemos pasado las tuyas a las nuevas sin perder nada.',
+        puntos: ['Tu detalle se guarda: «Salud y cuidado personal · Uñas»', 'Puedes crear las tuyas (te avisa si no sirven para compartir)', 'Presupuestos por categoría, como siempre'] },
+      { em: '🧾', titulo: 'Las facturas ya son gastos', color: 'savings', ir: 'fijo', boton: 'Apuntar un gasto fijo',
+        texto: 'Al apuntar un gasto eliges «Del día a día» o «Fijo · recibo». El alquiler, la luz o Spotify cuentan en su categoría y en tus presupuestos.',
+        puntos: ['«Vivienda · Alquiler», «Suscripciones · Spotify»', 'Los avisos de recibos siguen igual', 'Filtro «Fijos» en Movimientos'] },
+    ],
+    items: [
+      ['🔎', 'Filtra por detalle', 'Dentro de una categoría, toca Uñas, Golf, Pelu…', 'movimientos'],
+      ['💾', 'Guardar siempre a mano', 'El botón Guardar ya no se esconde detrás del teclado.', ''],
+      ['🌑', 'Modo oscuro en negro', 'Fondo negro y textos que se leen mejor.', 'tema'],
+      ['👆', 'Botones más fáciles de tocar', 'Y todo cabe bien en móviles pequeños.', ''],
+      ['👋', 'Empieza aquí', 'Si alguien empieza de cero, Inicio le guía paso a paso.', ''],
+      ['🔍', 'El buscador suma', 'Escribe «super» y verás lo que llevas este mes.', 'buscar'],
+    ] },
   { id: '2026-10-10b', titulo: 'Parche 4 · Nuevo diseño',
     destacados: [
       { em: '🧭', titulo: 'La app, rediseñada', color: 'accent', ir: 'crear', boton: 'Probar el botón +',
@@ -3374,6 +3392,7 @@ const NOVEDADES = [
 const BADGES = {
   cobros: ['NUEVO', '2026-10-09'], importar: ['NUEVO', '2026-10-09'], reglas: ['NUEVO', '2026-10-09'],
   repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'], compartir: ['NUEVO', '2026-10-10'], ticket: ['NUEVO', '2026-10-10'], metas: ['MEJORADO', '2026-10-10'], patrimonio: ['NUEVO', '2026-10-10'],
+  categorias: ['NUEVO', '2026-10-12'], fijo: ['NUEVO', '2026-10-12'], detalle: ['NUEVO', '2026-10-12'], oscuro: ['MEJORADO', '2026-10-12'],
   rentab: ['NUEVO', '2026-10-10'], mesames: ['NUEVO', '2026-10-10'], presup: ['MEJORADO', '2026-10-10'], anual: ['MEJORADO', '2026-10-10'],
 };
 function badgeActivo(k) {
@@ -4655,7 +4674,7 @@ const H = {
   movBorrar: ([id]) => { vibrar([10, 30, 10]); borrarMovConDeshacer(id); },
   pickFijo: ([v]) => {
     if (!esGastoForm()) return;
-    FORM.tipo = v === '1' ? 'Factura' : 'Gasto';
+    FORM.tipo = v === '1' ? 'Factura' : 'Gasto'; if (v === '1') verBadge('fijo');
     const fb = $('#fijoBox'); if (fb) { fb.innerHTML = fijoHtml(); animarSegmentados(fb); }
     refrescarSub(); refrescarComp();
   },
@@ -4951,6 +4970,9 @@ const H = {
       else if (k === 'reglas') H.openReglas([]);
       else if (k === 'tareas') H.irAgenda(['tareas']);
       else if (k === 'crear') H.onFab([]);
+      else if (k === 'categorias') H.openListEditor(['categoriasGasto']);
+      else if (k === 'fijo') { verBadge('fijo'); openMovForm(null, { tipo: 'Factura' }); }
+      else if (k === 'tema') { verBadge('oscuro'); H.goTab(['tu']); }
       else if (k === 'buscar') H.openBuscar([]);
       else if (k === 'movimientos') H.goTab(['movimientos']);
       else if (k === 'rentab') { S.invModo = 'rentab'; lsSet('invModo', 'rentab'); verBadge('rentab'); H.irDinero(['inversiones']); }
@@ -5077,7 +5099,7 @@ const H = {
     guardarCats(catsGasto().concat([{ nombre: v, presupuesto: null, std: false }]));
     setTimeout(() => updateSheet(catsEditorHtml()), 50); toast('Categoría personalizada añadida');
   },
-  openListEditor: ([key]) => { FORM = { kind: 'list', key }; openSheet(listEditorHtml(key)); },
+  openListEditor: ([key]) => { if (key === 'categoriasGasto') verBadge('categorias'); FORM = { kind: 'list', key }; openSheet(listEditorHtml(key)); },
   listAdd: ([key]) => {
     const meta = LIST_META[key];
     const items = (cfg()[key] || []).slice();
@@ -5118,7 +5140,7 @@ const H = {
     if (items.length !== (cfg()[key] || []).length) saveConfig({ [key]: items });
     closeSheet();
   },
-  setTheme: ([t]) => { S.theme = t; lsSet('theme', t); applyTheme(); render(); },
+  setTheme: ([t]) => { verBadge('oscuro'); S.theme = t; lsSet('theme', t); applyTheme(); render(); },
   exportBackup: () => exportBackup(),
   // onboarding
   startOnboardingManually: () => { S.onboarding = freshOnboardingState(true); render(); },
