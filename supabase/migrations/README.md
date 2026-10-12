@@ -52,3 +52,9 @@ Prueba mapa de paradores (12/10/2026): paradores_notas.
   `paradores_comentarios` (texto de 1 a 1.000 caracteres, no se editan).
 - Solo los miembros activos del grupo (`es_miembro`) leen y escriben; cada uno firma con su
   propia cuenta y solo borra sus comentarios; sin sesión, nada. Página: /prueba-mapa-paradores/.
+
+Semáforo por persona (12/10/2026): paradores_luces_por_persona.
+- Tabla `paradores_luces` (una luz por parador, grupo y persona). Cada miembro solo pone,
+  cambia o apaga la suya; todos los del grupo las leen.
+- Las 30 luces que había en `paradores_semaforo` se copiaron a cada miembro activo del grupo.
+  `paradores_semaforo` se conserva como copia; la página ya no la usa.

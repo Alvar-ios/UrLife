@@ -163,6 +163,17 @@ footer{color:var(--muted);font-size:.78rem;max-width:80ch}
 .clabel{font-family:var(--f-body);font-weight:600;letter-spacing:.14em;fill:var(--muted);opacity:.6;text-anchor:middle;pointer-events:none;paint-order:stroke;stroke:var(--land);stroke-linejoin:round}
 .cname{font-family:var(--f-body);font-weight:500;fill:var(--ink);opacity:.62;pointer-events:none;paint-order:stroke;stroke:var(--land);stroke-linejoin:round}
 .cdot{fill:var(--ink);opacity:.5;pointer-events:none}
+/* Favoritas y luces por persona */
+#map.favmode .pin.f2 .dot{fill:var(--l-gold);stroke:var(--paper);filter:drop-shadow(0 0 4px var(--l-gold))}
+#map.favmode .pin.f1 .dot{fill:var(--paper);stroke:var(--l-gold);stroke-width:2.6}
+#map.favmode .pin.f2 .num,#map.favmode .pin.f1 .num{fill:var(--ink)}
+.prow{display:grid;grid-template-columns:76px minmax(0,1fr);gap:8px;align-items:center}
+.pname{font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.light.ro{cursor:default}
+.juntos{margin:2px 0 0;display:flex;align-items:center;gap:2px;font-size:.88rem}
+.pv{display:inline-flex;align-items:center;font-size:.76rem;color:var(--muted);margin-right:10px}
+.pv .lt-dot{margin-right:4px}
+.rkf{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
 /* Pestañas */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
 .tabs button{all:unset;cursor:pointer;padding:8px 16px 9px;font-weight:600;font-size:.95rem;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1px}
@@ -285,12 +296,13 @@ svg.map{touch-action:pan-y}
 
   <nav class="tabs" role="tablist" aria-label="Secciones">
     <button type="button" role="tab" id="tbMapa" aria-selected="true" aria-controls="vMapa">Mapa</button>
+    <button type="button" role="tab" id="tbRk" aria-selected="false" aria-controls="vRk">Ranking</button>
     <button type="button" role="tab" id="tbRes" aria-selected="false" aria-controls="vRes">Resumen</button>
   </nav>
   <div class="view" id="vMapa" role="tabpanel" aria-labelledby="tbMapa">
   <div class="filters" role="group" aria-label="Filtros">
     <div class="fgroup"><span class="flabel">Ver</span>
-      <div class="seg" id="segView"><button type="button" data-v="all" aria-pressed="true">Todos</button><button type="button" data-v="top" aria-pressed="false">Top 10</button></div>
+      <div class="seg" id="segView"><button type="button" data-v="all" aria-pressed="true">Todos</button><button type="button" data-v="top" aria-pressed="false">Top 10</button><button type="button" data-v="fav" aria-pressed="false">Favoritas</button></div>
     </div>
     <div class="fgroup"><span class="flabel">Entorno</span>
       <div class="seg" id="segEnv"><button type="button" data-v="" aria-pressed="true">Todo</button><button type="button" data-v="Interior" aria-pressed="false">Interior</button><button type="button" data-v="Costa" aria-pressed="false">Costa</button><button type="button" data-v="Montaña" aria-pressed="false">Montaña</button></div>
@@ -322,6 +334,7 @@ svg.map{touch-action:pan-y}
         <span><i class="sw" style="background:var(--closed)"></i>Cerrado / por confirmar</span>
         <span><i class="sw" style="background:var(--warn);border-radius:2px;transform:rotate(45deg);width:9px;height:9px"></i>Majadahonda</span>
         <span>Pellizca o usa + / − para hacer zoom</span>
+        <span id="legFav" hidden><b>Favoritas:</b> <i class="sw" style="background:var(--l-gold);box-shadow:0 0 6px var(--l-gold)"></i>os flipa a los dos <i class="sw" style="background:var(--paper);border:2.5px solid var(--l-gold)"></i>le flipa a uno</span>
         <span>Vuestra luz: <i class="lt-dot" style="background:var(--l-red)"></i>no nos gusta <i class="lt-dot" style="background:var(--l-orange)"></i>sin más <i class="lt-dot" style="background:var(--l-green)"></i>nos gusta <i class="lt-dot gold" style="background:var(--l-gold)"></i>nos flipa</span>
       </div>
     </div>
@@ -335,6 +348,7 @@ svg.map{touch-action:pan-y}
     </aside>
   </div>
   </div>
+  <div class="view" id="vRk" role="tabpanel" aria-labelledby="tbRk" hidden></div>
   <div class="view" id="vRes" role="tabpanel" aria-labelledby="tbRes" hidden></div>
 
   <footer>Tiempos de coche y clima de noviembre (máx./mín. medias) son aproximados. La valoración (1–5) es orientativa. Comprobad disponibilidad en paradores.es y la previsión real en AEMET a partir del 30 de octubre.</footer>
@@ -506,6 +520,7 @@ $('#fOpen').onchange=e=>{st.open=e.target.checked;render()};
 
 function pass(p){
   if(st.view==='top'&&!p.top)return false;
+  if(st.view==='fav'){const s=sem[slug(p)];if(!s||!s.fav)return false}
   if(st.env&&p.e!==st.env)return false;
   if(st.tipo&&p.t!==st.tipo)return false;
   if(st.com&&p.c!==st.com)return false;
@@ -519,9 +534,13 @@ function render(){
   P.forEach(p=>p.el.classList.toggle('dim',!vis.includes(p)));
   document.querySelectorAll('.region').forEach(r=>r.classList.toggle('hl',!!st.com&&nameMatch(r.dataset.name,st.com)));
   $('#count').textContent=`${vis.length} de ${P.length}`;
-  const sorted=st.view==='top'?[...vis].sort((a,b)=>a.top-b.top):[...vis].sort((a,b)=>(a.d??9999)-(b.d??9999)||a.n.localeCompare(b.n,'es'));
-  $('#listTitle').textContent=st.view==='top'?'Top 10 recomendado':'Paradores';
-  $('#sortLbl').textContent=st.view==='top'?'por ranking':'por cercanía';
+  const S=p=>sem[slug(p)]||{fav:0,avg:0};
+  const sorted=st.view==='top'?[...vis].sort((a,b)=>a.top-b.top)
+    :st.view==='fav'?[...vis].sort((a,b)=>S(b).fav-S(a).fav||S(b).avg-S(a).avg||b.r-a.r)
+    :[...vis].sort((a,b)=>(a.d??9999)-(b.d??9999)||a.n.localeCompare(b.n,'es'));
+  $('#listTitle').textContent=st.view==='top'?'Top 10 recomendado':st.view==='fav'?'Vuestras favoritas':'Paradores';
+  $('#sortLbl').textContent=st.view==='top'?'por ranking':st.view==='fav'?'primero las de los dos':'por cercanía';
+  svg.classList.toggle('favmode',st.view==='fav');const lf=$('#legFav');if(lf)lf.hidden=st.view!=='fav';
   if(st.sel==null||!vis.includes(P[st.sel])){const first=sorted[0];st.sel=first?first.i:null}
   lastSorted=sorted;renderList();
   syncZoom();
@@ -535,12 +554,12 @@ function renderList(){
   lastSorted.forEach(p=>{
     const d=document.createElement('div');d.className='item'+(st.sel===p.i?' sel':'');d.tabIndex=0;d.setAttribute('role','option');d.setAttribute('aria-selected',String(st.sel===p.i));
     const s=sem[slug(p)],nc=cmts.filter(c=>c.p===slug(p)).length;
-    const dot=s&&SEM[s.v]?`<i class="lt-dot ${s.v}" style="background:${SEM[s.v].c}" title="${SEM[s.v].t}"></i>`:'';
-    d.innerHTML=`<span class="mk ${cls(p)}">${p.top||''}</span><span style="min-width:0"><div class="nm">${dot}${p.n}</div><div class="meta">${p.c} · ${p.t} · ${p.e}${nc?` · ${nc} ${nc===1?'comentario':'comentarios'}`:''}</div></span><span class="dr">${drive(p)}</span>`;
+    const dot=dotHTML(s),ft=st.view==='fav'?favTxt(s):'';
+    d.innerHTML=`<span class="mk ${cls(p)}">${p.top||''}</span><span style="min-width:0"><div class="nm">${dot}${p.n}</div><div class="meta">${ft?`<b style="color:var(--gold)">${esc(ft)}</b> · `:''}${p.c} · ${p.t} · ${p.e}${nc?` · ${nc} ${nc===1?'comentario':'comentarios'}`:''}</div></span><span class="dr">${drive(p)}</span>`;
     d.onclick=()=>select(p.i,false);d.onkeydown=e=>{if(e.key==='Enter'){select(p.i,false)}};
     L.appendChild(d)});
   L.scrollTop=top;
-  renderResumen();
+  renderResumen();renderRanking();
 }
 function nameMatch(geoName,c){
   const m={'Asturias':'Asturias','Baleares':'Balears','Cataluña':'Catalu','C. Valenciana':'Valenciana','Madrid':'Madrid','Murcia':'Murcia','Navarra':'Navarra','País Vasco':'País Vasco','Ceuta':'Ceuta','Melilla':'Melilla'};
@@ -666,13 +685,44 @@ window.addEventListener('resize',()=>{if(LB.open){lbClamp();lbApply(false)}});
 // ---- Semáforo y comentarios (compartidos entre quienes abren el mapa) ----
 const SEM={red:{c:'var(--l-red)',t:'No nos gusta'},orange:{c:'var(--l-orange)',t:'Sin más'},green:{c:'var(--l-green)',t:'Nos gusta'},gold:{c:'var(--l-gold)',t:'Nos flipa'}};
 const slug=p=>p.n.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-const sem={};let cmts=[];const drafts={};const names={};
+const sem={};const luz={};let members=[];let cmts=[];const drafts={};const names={};
 let sb=null,grupo=null,grupos=[],myId=null,social='loading',ro=false,smsg='',smsgErr=false,busy=false;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const who=id=>id&&id===myId?'Tú':(names[id]||'Alguien');
 const when=t=>{try{return new Date(t).toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return ''}};
 
-function paintLights(){P.forEach(p=>{const s=sem[slug(p)];if(s&&SEM[s.v]){p.lt.style.display='';p.lt.style.fill=SEM[s.v].c;p.lt.style.filter=s.v==='gold'?'drop-shadow(0 0 3px var(--l-gold))':''}else p.lt.style.display='none'})}
+const SC={red:1,orange:2,green:3,gold:4},KEYS=['red','orange','green','gold'];
+const quien=m=>m.id===myId?'Tú':(m.nombre||names[m.id]||'Alguien');
+// sem[k] = mezcla de las luces de los miembros: v (luz conjunta), vals (una por miembro, null si falta), fav (cuántos dicen "nos flipa")
+function combinar(){
+  Object.keys(sem).forEach(k=>delete sem[k]);
+  Object.entries(luz).forEach(([k,by])=>{
+    const vals=members.map(m=>by[m.id]?by[m.id].v:null),got=vals.filter(Boolean);if(!got.length)return;
+    const avg=got.reduce((a,v)=>a+SC[v],0)/got.length;
+    sem[k]={v:KEYS[Math.min(3,Math.max(0,Math.floor(avg+1e-9)-1))],avg,vals,n:got.length,all:got.length===members.length,agree:new Set(got).size===1,fav:got.filter(v=>v==='gold').length};
+  });
+}
+const colorOf=v=>v?SEM[v].c:'var(--line)';
+const todosFlipa=s=>!!s&&s.fav>0&&s.fav===members.length;
+function mixBg(s){const c=s.vals.map(colorOf);if(c.every(x=>x===c[0]))return c[0];const w=100/c.length;return 'linear-gradient(90deg,'+c.map((x,i)=>`${x} ${(i*w).toFixed(1)}% ${((i+1)*w).toFixed(1)}%`).join(',')+')'}
+function dotHTML(s){if(!s)return '';const t=members.map((m,i)=>`${quien(m)}: ${s.vals[i]?SEM[s.vals[i]].t:'sin marcar'}`).join(' · ');
+  return `<i class="lt-dot${todosFlipa(s)?' gold':''}" style="background:${mixBg(s)}" title="${esc(t)}"></i>`}
+function favTxt(s){if(!s||!s.fav)return '';if(todosFlipa(s))return members.length>1?'os flipa a los dos':'te flipa';
+  const ms=members.filter((m,i)=>s.vals[i]==='gold');return ms.length===1&&ms[0].id===myId?'te flipa a ti':'le flipa a '+lista(ms.map(quien))}
+function juntosTxt(s){
+  if(members.length<2)return SEM[s.v].t;
+  if(!s.all){const falta=members.filter((m,i)=>!s.vals[i]).map(m=>m.id===myId?'la tuya':'la de '+(m.nombre||'Alguien'));return 'Falta '+lista(falta)}
+  return s.agree?'Coincidís: '+SEM[s.v].t:'Mezcla de los dos: '+SEM[s.v].t}
+let defsEl=null;
+function fillFor(s){const c=s.vals.map(colorOf);if(c.every(x=>x===c[0]))return c[0];
+  const id='mx-'+s.vals.map(v=>v||'n').join('-');
+  if(!document.getElementById(id)){if(!defsEl){defsEl=document.createElementNS(NS,'defs');svg.insertBefore(defsEl,svg.firstChild)}
+    const g=document.createElementNS(NS,'linearGradient');g.id=id;const w=1/c.length;
+    c.forEach((x,i)=>[i*w,(i+1)*w].forEach(o=>{const st=document.createElementNS(NS,'stop');st.setAttribute('offset',o);st.setAttribute('style','stop-color:'+x);g.appendChild(st)}));defsEl.appendChild(g)}
+  return 'url(#'+id+')'}
+function paintLights(){P.forEach(p=>{const s=sem[slug(p)];
+  p.el.classList.toggle('f2',todosFlipa(s));p.el.classList.toggle('f1',!!s&&s.fav>0&&!todosFlipa(s));
+  if(s){p.lt.style.display='';p.lt.style.fill=fillFor(s);p.lt.style.filter=todosFlipa(s)?'drop-shadow(0 0 3px var(--l-gold))':''}else p.lt.style.display='none'})}
 
 function renderSocial(){
   const box=$('#social');if(!box||st.sel==null)return;
@@ -682,11 +732,16 @@ function renderSocial(){
   let h='';
   if(grupos.length>1)h+=`<div class="fgroup"><label class="flabel" for="gSel">Notas del grupo</label><select id="gSel">${grupos.map(g=>`<option value="${esc(g.id)}"${g.id===grupo?' selected':''}>${esc(g.nombre)}</option>`).join('')}</select></div>`;
   else if(grupos.length===1)h+=`<p class="by">Compartido con tu grupo ${esc(grupos[0].nombre)}</p>`;
-  h+='<h4>Vuestra luz</h4><div class="lights" role="group" aria-label="Semáforo">';
-  for(const [v,o] of Object.entries(SEM)){const on=!!(s&&s.v===v);
-    h+=`<button type="button" class="light ${v}${on?' on':''}" data-v="${v}" aria-pressed="${on}" ${off?'aria-disabled="true"':''}><i style="background:${o.c}"></i>${o.t}</button>`}
-  h+='</div>';
-  if(s&&SEM[s.v])h+=`<p class="by">${esc(who(s.by))} · ${when(s.at)} · toca la luz encendida para apagarla</p>`;
+  h+='<h4>Vuestras luces</h4>';
+  const ms=members.length?members:[{id:myId,nombre:''}];
+  ms.forEach(m=>{const mio=m.id===myId,mv=luz[k]&&luz[k][m.id]?luz[k][m.id].v:null;
+    h+=`<div class="prow"><span class="pname">${esc(quien(m))}</span><div class="lights" role="group" aria-label="Luz de ${esc(quien(m))}">`;
+    if(mio){for(const [v,o] of Object.entries(SEM)){const on=mv===v;
+      h+=`<button type="button" class="light ${v}${on?' on':''}" data-v="${v}" aria-pressed="${on}" ${off?'aria-disabled="true"':''}><i style="background:${o.c}"></i>${o.t}</button>`}}
+    else h+=mv?`<span class="light ${mv} on ro"><i style="background:${SEM[mv].c}"></i>${SEM[mv].t}</span>`:'<span class="smsg">Aún no la ha marcado</span>';
+    h+='</div></div>'});
+  if(s)h+=`<p class="juntos">${dotHTML(s)}<b>${esc(juntosTxt(s))}</b></p>`;
+  if(luz[k]&&luz[k][myId])h+='<p class="by">Toca tu luz encendida para apagarla.</p>';
   h+=`<h4>Comentarios${mine.length?' ('+mine.length+')':''}</h4>`;
   if(mine.length){h+='<ul class="clist">'+mine.map(c=>`<li><div class="chead"><span><b>${esc(who(c.by))}</b> · ${when(c.at)}</span>${c.by&&c.by===myId&&!off?`<button type="button" class="cdel" data-id="${esc(c.id)}">Borrar</button>`:''}</div><p class="ctext">${esc(c.text)}</p></li>`).join('')+'</ul>'}
   else if(social==='on')h+='<p class="smsg">Aún no hay comentarios sobre este parador.</p>';
@@ -711,15 +766,16 @@ function fail(e){smsgErr=true;
   else if(c==='23514')smsg='El texto no es válido (entre 1 y 1.000 caracteres).';
   else smsg='No se pudo guardar'+(c?' ('+c+')':'')+'. Vuelve a intentarlo.';
   renderSocial()}
+function refrescarLuces(){combinar();paintLights();renderList();renderSocial()}
 async function setLight(p,v){
-  const k=slug(p),prev=sem[k];smsg='';smsgErr=false;
-  const apagar=prev&&prev.v===v;
-  if(apagar)delete sem[k];else sem[k]={v,by:myId,at:Date.now()};
-  paintLights();renderList();renderSocial();
+  const k=slug(p);smsg='';smsgErr=false;luz[k]=luz[k]||{};
+  const prev=luz[k][myId]?{...luz[k][myId]}:null,apagar=prev&&prev.v===v;
+  if(apagar)delete luz[k][myId];else luz[k][myId]={v,at:Date.now()};
+  refrescarLuces();
   const {error}=apagar
-    ? await sb.from('paradores_semaforo').delete().eq('grupo_id',grupo).eq('parador',k)
-    : await sb.from('paradores_semaforo').upsert({grupo_id:grupo,parador:k,valor:v,autor:myId},{onConflict:'grupo_id,parador'});
-  if(error){if(prev)sem[k]=prev;else delete sem[k];paintLights();renderList();fail(error)}
+    ? await sb.from('paradores_luces').delete().eq('grupo_id',grupo).eq('parador',k).eq('user_id',myId)
+    : await sb.from('paradores_luces').upsert({grupo_id:grupo,parador:k,user_id:myId,valor:v},{onConflict:'grupo_id,parador,user_id'});
+  if(error){if(prev)luz[k][myId]=prev;else delete luz[k][myId];refrescarLuces();fail(error)}
 }
 async function addComment(p){
   const k=slug(p),text=(drafts[k]||'').trim();if(!text||busy)return;
@@ -736,15 +792,17 @@ async function loadAll(){
   if(!grupo||cargando)return;cargando=true;
   try{
     const [a,b,m]=await Promise.all([
-      sb.from('paradores_semaforo').select('parador,valor,autor,actualizado').eq('grupo_id',grupo),
+      sb.from('paradores_luces').select('parador,user_id,valor,actualizado').eq('grupo_id',grupo),
       sb.from('paradores_comentarios').select('id,parador,texto,autor,creado').eq('grupo_id',grupo).order('creado'),
-      sb.from('grupo_miembros').select('user_id,nombre').eq('grupo_id',grupo)]);
+      sb.from('grupo_miembros').select('user_id,nombre,baja').eq('grupo_id',grupo)]);
     if(a.error||b.error){social='off';offWhy='No se pudieron cargar las notas ('+((a.error||b.error).code||'error')+').';renderSocial();return}
-    Object.keys(sem).forEach(k=>delete sem[k]);
-    (a.data||[]).forEach(r=>{sem[r.parador]={v:r.valor,by:r.autor,at:Date.parse(r.actualizado)}});
+    Object.keys(luz).forEach(k=>delete luz[k]);
+    (a.data||[]).forEach(r=>{(luz[r.parador]=luz[r.parador]||{})[r.user_id]={v:r.valor,at:Date.parse(r.actualizado)}});
     cmts=(b.data||[]).map(r=>({id:r.id,p:r.parador,text:r.texto,by:r.autor,at:Date.parse(r.creado)}));
     (m.data||[]).forEach(r=>{if(r.nombre)names[r.user_id]=r.nombre});
-    social='on';paintLights();renderList();renderSocial();
+    members=(m.data||[]).filter(r=>!r.baja).map(r=>({id:r.user_id,nombre:r.nombre||''})).sort((x,y)=>(y.id===myId)-(x.id===myId));
+    if(!members.some(x=>x.id===myId))members.unshift({id:myId,nombre:''});
+    social='on';combinar();paintLights();renderList();renderSocial();
   }finally{cargando=false}
 }
 let offWhy='',canal=null,refreshT=0;
@@ -752,13 +810,13 @@ function suscribir(){
   if(canal){sb.removeChannel(canal);canal=null}
   const refresh=()=>{clearTimeout(refreshT);refreshT=setTimeout(loadAll,300)};
   canal=sb.channel('paradores-'+grupo)
-    .on('postgres_changes',{event:'*',schema:'public',table:'paradores_semaforo',filter:'grupo_id=eq.'+grupo},refresh)
+    .on('postgres_changes',{event:'*',schema:'public',table:'paradores_luces',filter:'grupo_id=eq.'+grupo},refresh)
     .on('postgres_changes',{event:'*',schema:'public',table:'paradores_comentarios',filter:'grupo_id=eq.'+grupo},refresh)
     .subscribe();
 }
 function cambiarGrupo(id){
   grupo=id;try{localStorage.setItem('paradores-grupo',id)}catch(e){}
-  Object.keys(sem).forEach(k=>delete sem[k]);cmts=[];social='loading';paintLights();renderList();renderSocial();
+  Object.keys(luz).forEach(k=>delete luz[k]);members=[];combinar();cmts=[];social='loading';paintLights();renderList();renderSocial();
   loadAll();suscribir();
 }
 (async()=>{
@@ -784,14 +842,14 @@ function cambiarGrupo(id){
 })();
 
 // ---- Pestañas ----
-function showTab(t){
-  const res=t==='res';$('#vMapa').hidden=res;$('#vRes').hidden=!res;
-  $('#tbMapa').setAttribute('aria-selected',String(!res));$('#tbRes').setAttribute('aria-selected',String(res));
+const TABS={mapa:['tbMapa','vMapa'],rk:['tbRk','vRk'],res:['tbRes','vRes']},ORDT=['mapa','rk','res'];let tabAct='mapa';
+function showTab(t){if(!TABS[t])t='mapa';tabAct=t;
+  Object.entries(TABS).forEach(([k,[b,v]])=>{$('#'+v).hidden=k!==t;$('#'+b).setAttribute('aria-selected',String(k===t))});
   try{localStorage.setItem('paradores-tab',t)}catch(e){}
-  hideTip();if(res)renderResumen();
+  hideTip();if(t==='res')renderResumen();if(t==='rk')renderRanking();
 }
-$('#tbMapa').onclick=()=>showTab('mapa');$('#tbRes').onclick=()=>showTab('res');
-$('.tabs').addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){const res=$('#vRes').hidden;showTab(res?'res':'mapa');(res?$('#tbRes'):$('#tbMapa')).focus()}});
+ORDT.forEach(t=>{$('#'+TABS[t][0]).onclick=()=>showTab(t)});
+$('.tabs').addEventListener('keydown',e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;const t=ORDT[(ORDT.indexOf(tabAct)+d+3)%3];showTab(t);$('#'+TABS[t][0]).focus()});
 function irA(i){showTab('mapa');const p=P[i];
   if(!pass(p)){st.view='all';st.env='';st.tipo='';st.com='';st.max=480;st.open=false;
     ['#segView','#segEnv'].forEach(id=>document.querySelectorAll(id+' button').forEach((b,k)=>b.setAttribute('aria-pressed',String(k===0))));
@@ -845,6 +903,12 @@ function analisis(V){
   const sorp=V.filter(p=>p.r&&((sem[slug(p)].v==='gold'&&p.r<=3)||(sem[slug(p)].v==='red'&&p.r>=5)));
   if(sorp.length)tips.push(`No coincidís con mis estrellas en <b>${lista(sorp.map(p=>p.n))}</b>: ahí vuestro gusto manda.`);
   else if(like.length>=2&&media(like.map(p=>p.r))>=4.4)tips.push('Vuestros favoritos coinciden con los que yo puntué más alto: buena señal para el top 10.');
+  if(members.length>1){
+    const dis=V.filter(p=>{const s=sem[slug(p)];return s.n>1&&!s.agree});
+    if(dis.length)tips.push(`No coincidís en <b>${dis.length}</b>${dis.length<=4?': '+lista(dis.map(p=>p.n)):''}. En Ranking podéis filtrar solo los desacuerdos.`);
+    const prom=members.map(m=>{const vs=Object.values(luz).map(b=>b[m.id]?SC[b[m.id].v]:0).filter(Boolean);return {m,a:media(vs),n:vs.length}}).filter(x=>x.n>=3);
+    if(prom.length>=2){prom.sort((x,y)=>y.a-x.a);if(prom[0].a-prom[prom.length-1].a>=.3){const g=prom[0].m;tips.push(g.id===myId?'<b>Tú</b> pones luces más altas de media: eres el más fácil de convencer.':`<b>${esc(g.nombre||'Alguien')}</b> pone luces más altas de media que tú.`)}}
+  }
   // recomendaciones: parecidos a los que os gustan y aún sin marcar
   let reco=[];
   if(like.length>=2){
@@ -857,25 +921,19 @@ function analisis(V){
 function renderResumen(){
   const R=$('#vRes');if(!R||R.hidden)return;
   if(social!=='on'){R.innerHTML=`<div class="card"><p class="empty-rs">${social==='loading'?'Cargando vuestras valoraciones…':'Entra en UrLife con tu cuenta para ver el resumen de vuestras valoraciones.'}</p></div>`;return}
-  const AB=P.filter(abierto),V=AB.filter(p=>sem[slug(p)]&&SEM[sem[slug(p)].v]);
+  const AB=P.filter(abierto),V=AB.filter(p=>sem[slug(p)]&&SEM[sem[slug(p)].v]),V2=V.filter(p=>sem[slug(p)].all);
   const cnt={};ORDEN.forEach(v=>cnt[v]=V.filter(p=>sem[slug(p)].v===v).length);
   const nc=p=>cmts.filter(c=>c.p===slug(p)).length;
   let h='<div class="rs">';
   // progreso
-  h+=`<div class="card"><h3>Lo que lleváis visto</h3><div class="kpi"><span class="big">${pct(V.length,AB.length)}%</span><span class="of">${V.length} de ${AB.length} paradores abiertos en vuestras fechas</span></div>
+  h+=`<div class="card"><h3>Lo que lleváis visto</h3><div class="kpi"><span class="big">${pct(V.length,AB.length)}%</span><span class="of">${V.length} de ${AB.length} paradores abiertos valorados${members.length>1?` · ${V2.length} por los dos`:''}</span></div>
     <div class="bar" role="img" aria-label="${V.length} de ${AB.length} valorados"><i class="done" style="width:${pct(V.length,AB.length)}%"></i></div>
-    <div class="split">${ORDEN.map(v=>`<div><b>${pct(cnt[v],V.length)}%</b><span><i class="lt-dot ${v}" style="background:${SEM[v].c}"></i>${SEM[v].t} · ${cnt[v]}</span></div>`).join('')}</div></div>`;
+    <p class="by" style="margin:8px 0 0">Reparto de la luz conjunta (la mezcla de las vuestras):</p><div class="split" style="margin-top:6px">${ORDEN.map(v=>`<div><b>${pct(cnt[v],V.length)}%</b><span><i class="lt-dot ${v}" style="background:${SEM[v].c}"></i>${SEM[v].t} · ${cnt[v]}</span></div>`).join('')}</div></div>`;
   // análisis
   const A=analisis(V);
   h+=`<div class="card"><h3>Análisis en directo</h3><ul class="tips">${A.tips.map(t=>`<li>${t}</li>`).join('')}</ul>`;
   if(A.reco.length)h+=`<p class="flabel" style="margin:14px 0 4px">Por lo que marcáis, os podrían gustar</p><div class="reco">${A.reco.map(p=>`<button type="button" data-i="${p.i}">${esc(p.n)} · ${drive(p)}</button>`).join('')}</div>`;
   h+='</div>';
-  // ranking
-  const rk=[...V].sort((a,b)=>ORDEN.indexOf(sem[slug(a)].v)-ORDEN.indexOf(sem[slug(b)].v)||b.r-a.r||(a.d??999)-(b.d??999));
-  h+=`<details class="rk" open><summary>Vuestro ranking (${V.length})</summary>`;
-  h+=rk.length?'<ol class="rkl">'+rk.map(p=>{const v=sem[slug(p)].v,c=nc(p);return `<li tabindex="0" data-i="${p.i}"><span style="min-width:0"><div class="nm"><i class="lt-dot ${v}" style="background:${SEM[v].c}"></i>${esc(p.n)}</div><div class="meta">${p.c} · ${p.t} · ${p.e}${c?` · ${c} ${c===1?'comentario':'comentarios'}`:''}</div></span><span class="r">${drive(p)}<br>${'★'.repeat(p.r)}</span></li>`}).join('')+'</ol>'
-    :'<p class="empty-rs" style="padding:0 18px 14px">Aún no habéis puesto ninguna luz. Abrid un parador en el mapa y marcad qué os parece.</p>';
-  h+='</details>';
   // por comunidad
   const coms2=[...new Set(P.map(p=>p.c))].map(c=>{const ab=AB.filter(p=>p.c===c),vv=V.filter(p=>p.c===c);return {c,ab:ab.length,v:vv.length,vv}}).filter(x=>x.ab).sort((a,b)=>pct(b.v,b.ab)-pct(a.v,a.ab)||b.ab-a.ab);
   h+=`<div class="card"><h3>Por comunidad</h3><div style="overflow-x:auto"><table class="ctab"><tbody>${coms2.map(x=>`<tr><td class="cname">${x.c}</td><td style="width:45%"><div class="cb" role="img" aria-label="${x.v} de ${x.ab} valorados">${ORDEN.map(v=>{const n=x.vv.filter(p=>sem[slug(p)].v===v).length;return n?`<i style="width:${n/x.ab*100}%;background:${SEM[v].c}"></i>`:''}).join('')}</div></td><td class="n">${pct(x.v,x.ab)}%</td><td class="n">${x.v}/${x.ab}</td></tr>`).join('')}</tbody></table></div>
@@ -884,10 +942,49 @@ function renderResumen(){
   R.innerHTML=h;
   R.querySelectorAll('[data-i]').forEach(el=>{const go=()=>irA(+el.dataset.i);el.onclick=go;el.onkeydown=e=>{if(e.key==='Enter')go()}});
 }
+
+// ---- Pestaña Ranking con filtros ----
+const rk={luz:'',fav:false,dis:false,sin:false,tipo:'',ent:'',com:''};let rkInit=false;
+function renderRanking(){
+  const R=$('#vRk');if(!R||R.hidden)return;
+  if(social!=='on'){rkInit=false;R.innerHTML=`<div class="card"><p class="empty-rs">${social==='loading'?'Cargando vuestras valoraciones…':'Entra en UrLife con tu cuenta para ver vuestro ranking.'}</p></div>`;return}
+  if(!rkInit){rkInit=true;
+    const opt=(a)=>a.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('');
+    R.innerHTML=`<div class="rkf" role="group" aria-label="Filtros del ranking">
+      <div class="fgroup"><label class="flabel" for="rkLuz">Luz conjunta</label><select id="rkLuz">${opt([['','Todas'],...ORDEN.map(v=>[v,SEM[v].t])])}</select></div>
+      <div class="fgroup"><label class="flabel" for="rkTipo">Tipo</label><select id="rkTipo">${opt([['','Todos'],...['Castillo','Convento','Monasterio','Palacio','Moderno'].map(x=>[x,x])])}</select></div>
+      <div class="fgroup"><label class="flabel" for="rkEnt">Entorno</label><select id="rkEnt">${opt([['','Todos'],['Interior','Interior'],['Costa','Costa'],['Montaña','Montaña']])}</select></div>
+      <div class="fgroup"><label class="flabel" for="rkCom">Comunidad</label><select id="rkCom">${opt([['','Todas'],...coms.map(c=>[c,c])])}</select></div>
+      <label class="check"><input type="checkbox" id="rkFav"> Favoritas (flipa a alguno)</label>
+      <label class="check"><input type="checkbox" id="rkDis"> Solo desacuerdos</label>
+      <label class="check"><input type="checkbox" id="rkSin"> Incluir sin valorar</label>
+    </div>
+    <div class="card listcard"><div class="listhead"><h3 id="rkT">Ranking</h3><span class="flabel">de mejor a peor</span></div><ol class="rkl" id="rkL"></ol></div>`;
+    [['rkLuz','luz'],['rkTipo','tipo'],['rkEnt','ent'],['rkCom','com']].forEach(([id,k])=>{const el=$('#'+id);el.value=rk[k];el.onchange=()=>{rk[k]=el.value;renderRanking()}});
+    [['rkFav','fav'],['rkDis','dis'],['rkSin','sin']].forEach(([id,k])=>{const el=$('#'+id);el.checked=rk[k];el.onchange=()=>{rk[k]=el.checked;renderRanking()}});
+  }
+  const S=p=>sem[slug(p)];
+  const items=P.filter(p=>{const s=S(p);
+    if(!s&&(!rk.sin||!abierto(p)))return false;
+    if(rk.luz&&(!s||s.v!==rk.luz))return false;
+    if(rk.fav&&!(s&&s.fav))return false;
+    if(rk.dis&&!(s&&s.n>1&&!s.agree))return false;
+    if(rk.tipo&&p.t!==rk.tipo)return false;if(rk.ent&&p.e!==rk.ent)return false;if(rk.com&&p.c!==rk.com)return false;
+    return true}).sort((a,b)=>{const x=S(a)||{avg:0,fav:0,n:0},y=S(b)||{avg:0,fav:0,n:0};return y.avg-x.avg||y.fav-x.fav||y.n-x.n||b.r-a.r||(a.d??999)-(b.d??999)});
+  $('#rkT').textContent=items.length+(items.length===1?' parador':' paradores');
+  const L=$('#rkL');
+  if(!items.length){L.innerHTML='<li style="cursor:default;grid-template-columns:1fr"><span class="empty-rs">Ningún parador con estos filtros.</span></li>';return}
+  L.innerHTML=items.map(p=>{const s=S(p),c=cmts.filter(x=>x.p===slug(p)).length,ft=favTxt(s);
+    const per=members.length>1?'<div>'+members.map((m,i)=>{const v=s?s.vals[i]:null;return `<span class="pv"><i class="lt-dot" style="background:${colorOf(v)}"></i>${esc(quien(m))}</span>`}).join('')+'</div>':'';
+    return `<li tabindex="0" data-i="${p.i}"><span style="min-width:0"><div class="nm">${s?dotHTML(s):'<i class="lt-dot" style="background:var(--line)"></i>'}${esc(p.n)}</div>
+      <div class="meta">${ft?`<b style="color:var(--gold)">${esc(ft)}</b> · `:''}${p.c} · ${p.t} · ${p.e}${c?` · ${c} ${c===1?'comentario':'comentarios'}`:''}</div>${per}</span>
+      <span class="r">${drive(p)}<br>${'★'.repeat(p.r)}</span></li>`}).join('');
+  L.querySelectorAll('[data-i]').forEach(el=>{const go=()=>irA(+el.dataset.i);el.onclick=go;el.onkeydown=e=>{if(e.key==='Enter')go()}});
+}
 // selección inicial: Cuenca (Top 1)
 if(st.sel==null)st.sel=P.findIndex(p=>p.top===1);
 render();
-try{if(localStorage.getItem('paradores-tab')==='res')showTab('res')}catch(e){}
+try{const t=localStorage.getItem('paradores-tab');if(t==='res'||t==='rk')showTab(t)}catch(e){}
 </script>
 
 </body>
