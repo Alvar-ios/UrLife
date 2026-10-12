@@ -179,6 +179,12 @@ svg.map{touch-action:pan-y}
 .gal figcaption{font-size:.68rem;color:var(--muted);line-height:1.3;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gal .sk{flex:0 0 210px;height:140px;border-radius:8px;background:var(--line);animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.5}}
+.gal .cta{flex:0 0 150px;height:140px;border-radius:8px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;text-decoration:none;scroll-snap-align:start;border:1px solid var(--line)}
+.gal .cta.of{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.gal .cta.go{background:var(--paper);color:var(--ink)}
+.gal .cta b{font-family:var(--f-display);font-weight:400;font-size:1.05rem;line-height:1.15}
+.gal .cta span{font-size:.74rem;opacity:.8;line-height:1.3}
+.gal .cta:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .gal .none{font-size:.85rem;color:var(--muted);align-self:center}
 .gal-src{font-size:.7rem;color:var(--muted);margin:-8px 0 10px}
 .gal-src a{color:var(--muted)}
@@ -495,25 +501,34 @@ function detail(){
 // ---- Fotos libres de Wikimedia Commons (se cargan al abrir cada ficha) ----
 const galCache={};
 const plain=h=>{try{return (new DOMParser().parseFromString(h||'','text/html').body.textContent||'').trim()}catch(e){return ''}};
+const yearOf=m=>{const v=plain((m.DateTimeOriginal&&m.DateTimeOriginal.value)||'');const y=(v.match(/(19|20)\d\d/)||[])[0]||((m.DateTime&&m.DateTime.value)||'').slice(0,4);return /^(19|20)\d\d$/.test(y)?+y:null};
 async function commons(q,lim){
-  const u='https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit='+(lim||12)
-   +'&gsrsearch='+encodeURIComponent(q+' filetype:bitmap')+'&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=480&iiextmetadatafilter=Artist|LicenseShortName';
+  const u='https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit='+(lim||20)
+   +'&gsrsearch='+encodeURIComponent(q+' filetype:bitmap')+'&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=480&iiextmetadatafilter=Artist|LicenseShortName|Categories|DateTimeOriginal|DateTime|ImageDescription';
   const r=await fetch(u);if(!r.ok)throw new Error('commons '+r.status);
   const j=await r.json();const pages=Object.values((j.query&&j.query.pages)||{}).sort((a,b)=>a.index-b.index);
-  return pages.filter(pg=>pg.imageinfo&&pg.imageinfo[0]&&pg.imageinfo[0].thumburl).map(pg=>{const ii=pg.imageinfo[0],m=ii.extmetadata||{};
+  return pages.filter(pg=>pg.imageinfo&&pg.imageinfo[0]&&pg.imageinfo[0].thumburl&&pg.imageinfo[0].width>=800).map(pg=>{const ii=pg.imageinfo[0],m=ii.extmetadata||{};
     const big=ii.width>1600&&/\/480px-/.test(ii.thumburl)?ii.thumburl.replace('/480px-','/1600px-'):(ii.url||ii.thumburl);
-    return {id:pg.pageid,src:ii.thumburl,big,page:ii.descriptionurl,autor:plain(m.Artist&&m.Artist.value).slice(0,60)||'Autor desconocido',lic:(m.LicenseShortName&&m.LicenseShortName.value)||''}});
+    const txt=((pg.title||'')+' '+((m.Categories&&m.Categories.value)||'')+' '+plain(m.ImageDescription&&m.ImageDescription.value)).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+    return {id:pg.pageid,src:ii.thumburl,big,page:ii.descriptionurl,txt,year:yearOf(m),autor:plain(m.Artist&&m.Artist.value).slice(0,60)||'Autor desconocido',lic:(m.LicenseShortName&&m.LicenseShortName.value)||''}});
 }
 const MAXF=12;
+const norm=t=>t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 function fotosDe(p){
   if(galCache[p.i])return galCache[p.i];
   galCache[p.i]=(async()=>{
-    const out=[],seen=new Set();const add=l=>l.forEach(f=>{if(!seen.has(f.id)&&out.length<MAXF){out.push(f);seen.add(f.id)}});
-    const edificio=p.tt.split(',')[0];
-    const [a,b]=await Promise.all([commons('Parador '+p.n).catch(()=>[]),commons(edificio+' '+p.n).catch(()=>[])]);
-    add(a);add(b);
-    if(out.length<8)add(await commons(p.n+' monumento',10).catch(()=>[]));
-    return out;
+    const lugar=norm(p.n).split(/[^a-z0-9]+/).filter(w=>w.length>3);
+    const edificio=norm(p.tt.split(',')[0]).split(/[^a-z0-9]+/).filter(w=>w.length>4&&!['parador','edificio','moderno','antiguo','hotel'].includes(w));
+    const [a,b]=await Promise.all([commons('Parador '+p.n).catch(()=>[]),commons('intitle:Parador '+p.n).catch(()=>[])]);
+    const seen=new Set(),all=[];[...a,...b].forEach(f=>{if(!seen.has(f.id)){seen.add(f.id);all.push(f)}});
+    // solo fotos que son del parador: la palabra "parador" y el lugar en el título, la categoría o la descripción
+    const delParador=all.filter(f=>f.txt.includes('parador')&&lugar.some(w=>f.txt.includes(w)));
+    let out=delParador;
+    if(out.length<3){ // pocos resultados: probar con el nombre del edificio histórico (convento, castillo…)
+      const c=await commons(p.tt.split(',')[0]+' '+p.n).catch(()=>[]);
+      c.forEach(f=>{if(!seen.has(f.id)&&lugar.some(w=>f.txt.includes(w))&&(f.txt.includes('parador')||edificio.filter(w=>f.txt.includes(w)).length>=2)){seen.add(f.id);out.push(f)}});
+    }
+    return out.sort((x,y)=>(y.year||0)-(x.year||0)).slice(0,MAXF);
   })();
   return galCache[p.i];
 }
@@ -523,14 +538,17 @@ async function loadGal(p){
   const fotos=await fotosDe(p);
   if(st.sel!==p.i||!$('#gal'))return; // el usuario ya cambió de parador
   const L=links(p);
-  if(!fotos.length){g.innerHTML=`<p class="none">No hay fotos libres de este parador. <a href="${L.fotos}" target="_blank" rel="noopener" style="color:var(--teal)">Ver fotos en Google</a></p>`;g.style.minHeight='0';return}
   g.innerHTML='';
+  const of=oficial(p);
+  if(of)g.insertAdjacentHTML('beforeend',`<a class="cta of" href="${of}" target="_blank" rel="noopener"><b>Fotos oficiales</b><span>Habitaciones, interior y exterior en paradores.es ↗</span></a>`);
+  g.insertAdjacentHTML('beforeend',`<a class="cta go" href="https://www.google.com/search?tbm=isch&q=${encodeURIComponent('Parador '+p.n+' habitaciones')}" target="_blank" rel="noopener"><b>Habitaciones</b><span>Más fotos en Google Imágenes ↗</span></a>`);
+  if(!fotos.length)g.insertAdjacentHTML('beforeend','<p class="none">Sin fotos libres verificadas de este parador en Wikimedia Commons.</p>');
   fotos.forEach((f,k)=>{const fig=document.createElement('figure');
     const a=document.createElement('a');a.className='ph';a.href=f.big;a.setAttribute('aria-label','Ampliar foto '+(k+1));a.onclick=e=>{e.preventDefault();openLB(p,fotos,k)};
     const im=document.createElement('img');im.src=f.src;im.alt='Foto de '+p.n;im.loading='lazy';im.onerror=()=>fig.remove();a.appendChild(im);
-    const cap=document.createElement('figcaption');cap.textContent=f.autor+(f.lic?' · '+f.lic:'');cap.title=cap.textContent;
+    const cap=document.createElement('figcaption');cap.textContent=(f.year?f.year+' · ':'')+f.autor+(f.lic?' · '+f.lic:'');cap.title=cap.textContent;
     fig.append(a,cap);g.appendChild(fig)});
-  const src=$('#galSrc');src.hidden=false;src.innerHTML='Fotos libres de <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a> · toca una para verla en grande';
+  const src=$('#galSrc');src.hidden=false;src.innerHTML=fotos.length?'Fotos libres del parador en <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>, de la más reciente a la más antigua · toca una para verla en grande':'';src.hidden=!fotos.length;
 }
 
 // ---- Visor: pantalla completa con pellizco, doble toque, arrastre y deslizar ----
@@ -546,7 +564,7 @@ function lbShow(i){
   const n=LB.fotos.length;LB.i=(i+n)%n;const f=LB.fotos[LB.i];
   LB.s=1;LB.x=0;LB.y=0;lbApply(false);
   lbImg.src=f.src;lbImg.alt='Foto '+(LB.i+1)+' de '+LB.name;
-  $('#lbN').textContent=(LB.i+1)+' / '+n;$('#lbCap').textContent=f.autor+(f.lic?' · '+f.lic:'');$('#lbLink').href=f.page;
+  $('#lbN').textContent=(LB.i+1)+' / '+n;$('#lbCap').textContent=(f.year?f.year+' · ':'')+f.autor+(f.lic?' · '+f.lic:'');$('#lbLink').href=f.page;
   $('#lbPrev').hidden=$('#lbNext').hidden=n<2;
   const load=$('#lbLoad');
   if(f.big&&f.big!==f.src){load.hidden=false;const im=new Image();im.onload=()=>{if(LB.fotos[LB.i]===f){lbImg.src=f.big;load.hidden=true}};im.onerror=()=>{load.hidden=true};im.src=f.big}else load.hidden=true;
