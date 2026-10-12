@@ -560,7 +560,7 @@ function detail(){
     <div class="eyebrow">${p.c} · ${p.p} ${badges}</div>
     <h2>Parador de ${p.n}</h2>
     <p class="tt">${p.tt}</p>
-    <div class="ov" id="ov" hidden></div><div class="gal" id="gal" aria-label="Fotos del parador"></div>
+    <div class="gal" id="gal" aria-label="Fotos del parador"></div>
     <dl class="facts">
       <div><dt>Coche</dt><dd>${drive(p)}</dd></div>
       <div><dt>Clima nov.</dt><dd>${p.mx}° / ${p.mn}°${p.ll?' · lluvia':''}</dd></div>
@@ -579,43 +579,8 @@ function detail(){
 }
 
 
-// ---- Fotos de viajeros con licencia libre (Openverse), se ven dentro de la página ----
-const norm=t=>t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
-const ovCache={};
-const licTxt=(l,v)=>!l?'':l==='pdm'?'Dominio público':l==='cc0'?'CC0':'CC '+String(l).toUpperCase()+(v?' '+v:'');
-function ovFotos(p){
-  const key='ov1:'+p.n;
-  try{const c=JSON.parse(localStorage.getItem(key)||'null');if(c&&Date.now()-c.t<7*864e5)return Promise.resolve(c.f)}catch(e){}
-  if(ovCache[p.n])return ovCache[p.n];
-  ovCache[p.n]=(async()=>{
-    const r=await fetch('https://api.openverse.org/v1/images/?page_size=40&mature=false&q='+encodeURIComponent('parador '+p.n));
-    if(!r.ok)throw new Error('openverse '+r.status);
-    const j=await r.json();
-    let lugar=norm(p.n).split(/[^a-z0-9]+/).filter(w=>w.length>3);if(!lugar.length)lugar=norm(p.n).split(/[^a-z0-9]+/).filter(Boolean);
-    const vistos=new Set();
-    const out=(j.results||[]).filter(x=>{const txt=norm((x.title||'')+' '+(x.tags||[]).map(t=>t.name||'').join(' '));
-        return x.url&&!vistos.has(x.url)&&vistos.add(x.url)&&txt.includes('parador')&&lugar.some(w=>txt.includes(w))&&(!x.width||x.width>=800)})
-      .slice(0,12).map(x=>({src:x.thumbnail||x.url,big:x.url,page:x.foreign_landing_url||x.url,autor:String(x.creator||'Autor desconocido').slice(0,60),lic:licTxt(x.license,x.license_version),year:null}));
-    try{localStorage.setItem(key,JSON.stringify({t:Date.now(),f:out}))}catch(e){}
-    return out;
-  })().catch(()=>{delete ovCache[p.n];return null});
-  return ovCache[p.n];
-}
-async function loadOv(p){
-  let b=$('#ov');if(!b)return;b.hidden=false;
-  b.innerHTML='<div class="ov-h">Fotos de viajeros</div><div class="ov-strip"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>';
-  const f=await ovFotos(p);
-  b=$('#ov');if(!b||st.sel!==p.i)return;
-  if(!f||!f.length){b.hidden=true;b.innerHTML='';return}
-  b.innerHTML=`<div class="ov-h">Fotos de viajeros <span>${f.length} con licencia libre · toca para ampliar</span></div><div class="ov-strip"></div>`;
-  const strip=b.querySelector('.ov-strip');
-  f.forEach((x,k)=>{const a=document.createElement('button');a.type='button';a.className='ov-ph';a.setAttribute('aria-label','Ampliar foto '+(k+1)+' de '+p.n);
-    const im=document.createElement('img');im.src=x.src;im.alt='';im.loading='lazy';im.onerror=()=>a.remove();a.appendChild(im);
-    a.onclick=()=>openLB(p,f,k);strip.appendChild(a)});
-}
 const CATS=[['Exterior','exterior fachada'],['Habitaciones','habitaciones'],['Interior y salones','salones interior'],['Terraza y piscina','terraza piscina'],['Restaurante','restaurante comedor'],['Vistas','vistas']];
 function loadGal(p){
-  loadOv(p);
   const g=$('#gal');if(!g)return;
   const of=oficial(p),gi=q=>'https://www.google.com/search?tbm=isch&q='+encodeURIComponent('Parador de '+p.n+' '+q);
   g.innerHTML=(of?`<a class="cta of" href="${of}" target="_blank" rel="noopener"><b>Fotos oficiales en paradores.es</b><span>Galería del parador: habitaciones, interior y exterior ↗</span></a>`:'')
