@@ -174,6 +174,37 @@ footer{color:var(--muted);font-size:.78rem;max-width:80ch}
 .pv{display:inline-flex;align-items:center;font-size:.76rem;color:var(--muted);margin-right:10px}
 .pv .lt-dot{margin-right:4px}
 .rkf{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+/* El ring: desacuerdos */
+.tabs{overflow-x:auto;scrollbar-width:none}
+.tabs button{white-space:nowrap}
+.vs-tag{display:inline-block;font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--paper);background:var(--l-red);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:2px}
+.tabs .cnt{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--l-red);color:var(--paper);font-size:.7rem;font-weight:700;margin-left:6px;vertical-align:1px}
+.ring-hero{background:var(--ink);color:var(--paper);border-radius:12px;padding:18px 20px;display:grid;gap:6px}
+.ring-hero h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.6rem;line-height:1.1}
+.ring-hero p{margin:0;opacity:.85;max-width:60ch}
+.ring-score{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.ring-score span{font-family:var(--f-mono);font-size:.8rem;border:1px solid color-mix(in srgb,var(--paper) 35%,transparent);border-radius:999px;padding:3px 10px}
+.fight{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;scroll-margin-top:12px}
+.fight.lvl3{border-color:var(--l-red)}
+.fight .fh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 16px 4px;flex-wrap:wrap}
+.fight .fh h4{margin:0;font-family:var(--f-display);font-weight:400;font-size:1.25rem}
+.lvl{font-size:.66rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:4px;padding:2px 7px;color:var(--paper)}
+.lvl.l3{background:var(--l-red)}.lvl.l2{background:var(--l-orange)}.lvl.l1{background:var(--muted)}
+.corners{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:10px 16px}
+.corner{border-radius:10px;padding:10px 12px;min-width:0;border:2px solid var(--line)}
+.corner .who{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.corner .vv{display:flex;align-items:center;gap:6px;font-weight:600;margin-top:3px}
+.corner.win{border-color:var(--gold)}
+.vsx{font-family:var(--f-display);font-size:1.3rem;color:var(--l-red)}
+.fight .joke{margin:0 16px 8px;font-style:italic;color:var(--muted);font-size:.9rem}
+.fight .ref{margin:0 16px 10px;font-size:.86rem}
+.fight .acts{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 14px}
+.fight .acts button{font:inherit;font-size:.84rem;font-weight:600;border-radius:999px;padding:5px 13px;cursor:pointer;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.fight .acts button.give{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.fight .acts button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.homework li{cursor:pointer}
+.ringlink{all:unset;cursor:pointer;margin-left:6px;color:var(--l-red);font-weight:700;text-decoration:underline;font-size:.86rem}
+.ringlink:focus-visible{outline:2px solid var(--gold)}
 /* Pestañas */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
 .tabs button{all:unset;cursor:pointer;padding:8px 16px 9px;font-weight:600;font-size:.95rem;color:var(--muted);border-bottom:2.5px solid transparent;margin-bottom:-1px}
@@ -297,6 +328,7 @@ svg.map{touch-action:pan-y}
   <nav class="tabs" role="tablist" aria-label="Secciones">
     <button type="button" role="tab" id="tbMapa" aria-selected="true" aria-controls="vMapa">Mapa</button>
     <button type="button" role="tab" id="tbRk" aria-selected="false" aria-controls="vRk">Ranking</button>
+    <button type="button" role="tab" id="tbRing" aria-selected="false" aria-controls="vRing">El ring</button>
     <button type="button" role="tab" id="tbRes" aria-selected="false" aria-controls="vRes">Resumen</button>
   </nav>
   <div class="view" id="vMapa" role="tabpanel" aria-labelledby="tbMapa">
@@ -349,6 +381,7 @@ svg.map{touch-action:pan-y}
   </div>
   </div>
   <div class="view" id="vRk" role="tabpanel" aria-labelledby="tbRk" hidden></div>
+  <div class="view" id="vRing" role="tabpanel" aria-labelledby="tbRing" hidden></div>
   <div class="view" id="vRes" role="tabpanel" aria-labelledby="tbRes" hidden></div>
 
   <footer>Tiempos de coche y clima de noviembre (máx./mín. medias) son aproximados. La valoración (1–5) es orientativa. Comprobad disponibilidad en paradores.es y la previsión real en AEMET a partir del 30 de octubre.</footer>
@@ -554,12 +587,12 @@ function renderList(){
   lastSorted.forEach(p=>{
     const d=document.createElement('div');d.className='item'+(st.sel===p.i?' sel':'');d.tabIndex=0;d.setAttribute('role','option');d.setAttribute('aria-selected',String(st.sel===p.i));
     const s=sem[slug(p)],nc=cmts.filter(c=>c.p===slug(p)).length;
-    const dot=dotHTML(s),ft=st.view==='fav'?favTxt(s):'';
-    d.innerHTML=`<span class="mk ${cls(p)}">${p.top||''}</span><span style="min-width:0"><div class="nm">${dot}${p.n}</div><div class="meta">${ft?`<b style="color:var(--gold)">${esc(ft)}</b> · `:''}${p.c} · ${p.t} · ${p.e}${nc?` · ${nc} ${nc===1?'comentario':'comentarios'}`:''}</div></span><span class="dr">${drive(p)}</span>`;
+    const dot=dotHTML(s),ft=st.view==='fav'?favTxt(s):'',vs=conflicto(s)?'<span class="vs-tag">conflicto</span>':'';
+    d.innerHTML=`<span class="mk ${cls(p)}">${p.top||''}</span><span style="min-width:0"><div class="nm">${dot}${p.n}${vs}</div><div class="meta">${ft?`<b style="color:var(--gold)">${esc(ft)}</b> · `:''}${p.c} · ${p.t} · ${p.e}${nc?` · ${nc} ${nc===1?'comentario':'comentarios'}`:''}</div></span><span class="dr">${drive(p)}</span>`;
     d.onclick=()=>select(p.i,false);d.onkeydown=e=>{if(e.key==='Enter'){select(p.i,false)}};
     L.appendChild(d)});
   L.scrollTop=top;
-  renderResumen();renderRanking();
+  renderResumen();renderRanking();renderRing();
 }
 function nameMatch(geoName,c){
   const m={'Asturias':'Asturias','Baleares':'Balears','Cataluña':'Catalu','C. Valenciana':'Valenciana','Madrid':'Madrid','Murcia':'Murcia','Navarra':'Navarra','País Vasco':'País Vasco','Ceuta':'Ceuta','Melilla':'Melilla'};
@@ -713,6 +746,8 @@ function juntosTxt(s){
   if(members.length<2)return SEM[s.v].t;
   if(!s.all){const falta=members.filter((m,i)=>!s.vals[i]).map(m=>m.id===myId?'la tuya':'la de '+(m.nombre||'Alguien'));return 'Falta '+lista(falta)}
   return s.agree?'Coincidís: '+SEM[s.v].t:'Mezcla de los dos: '+SEM[s.v].t}
+const conflicto=s=>!!s&&members.length>1&&s.n>1&&!s.agree;
+const brecha=s=>{const v=s.vals.filter(Boolean).map(x=>SC[x]);return Math.max(...v)-Math.min(...v)};
 let defsEl=null;
 function fillFor(s){const c=s.vals.map(colorOf);if(c.every(x=>x===c[0]))return c[0];
   const id='mx-'+s.vals.map(v=>v||'n').join('-');
@@ -741,6 +776,7 @@ function renderSocial(){
     else h+=mv?`<span class="light ${mv} on ro"><i style="background:${SEM[mv].c}"></i>${SEM[mv].t}</span>`:'<span class="smsg">Aún no la ha marcado</span>';
     h+='</div></div>'});
   if(s)h+=`<p class="juntos">${dotHTML(s)}<b>${esc(juntosTxt(s))}</b></p>`;
+  if(conflicto(s))h+=`<p class="juntos"><span class="vs-tag" style="margin:0 6px 0 0">conflicto</span>Aquí hay pelea pendiente. <button type="button" class="ringlink" id="goRing">Llevarlo al ring</button></p>`;
   if(luz[k]&&luz[k][myId])h+='<p class="by">Toca tu luz encendida para apagarla.</p>';
   h+=`<h4>Comentarios${mine.length?' ('+mine.length+')':''}</h4>`;
   if(mine.length){h+='<ul class="clist">'+mine.map(c=>`<li><div class="chead"><span><b>${esc(who(c.by))}</b> · ${when(c.at)}</span>${c.by&&c.by===myId&&!off?`<button type="button" class="cdel" data-id="${esc(c.id)}">Borrar</button>`:''}</div><p class="ctext">${esc(c.text)}</p></li>`).join('')+'</ul>'}
@@ -753,6 +789,7 @@ function renderSocial(){
   box.innerHTML=h;
   box.querySelectorAll('.light').forEach(b=>b.onclick=()=>{if(!off)setLight(p,b.dataset.v)});
   const gs=box.querySelector('#gSel');if(gs)gs.onchange=()=>cambiarGrupo(gs.value);
+  const gr=box.querySelector('#goRing');if(gr)gr.onclick=()=>{showTab('ring');const c=document.getElementById('rg-'+k);if(c)c.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'})};
   box.querySelectorAll('.cdel').forEach(b=>b.onclick=()=>delComment(b.dataset.id));
   const ta=box.querySelector('textarea');
   if(ta){if(hadFocus){ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length)}
@@ -842,14 +879,14 @@ function cambiarGrupo(id){
 })();
 
 // ---- Pestañas ----
-const TABS={mapa:['tbMapa','vMapa'],rk:['tbRk','vRk'],res:['tbRes','vRes']},ORDT=['mapa','rk','res'];let tabAct='mapa';
+const TABS={mapa:['tbMapa','vMapa'],rk:['tbRk','vRk'],ring:['tbRing','vRing'],res:['tbRes','vRes']},ORDT=['mapa','rk','ring','res'];let tabAct='mapa';
 function showTab(t){if(!TABS[t])t='mapa';tabAct=t;
   Object.entries(TABS).forEach(([k,[b,v]])=>{$('#'+v).hidden=k!==t;$('#'+b).setAttribute('aria-selected',String(k===t))});
   try{localStorage.setItem('paradores-tab',t)}catch(e){}
-  hideTip();if(t==='res')renderResumen();if(t==='rk')renderRanking();
+  hideTip();if(t==='res')renderResumen();if(t==='rk')renderRanking();if(t==='ring')renderRing();
 }
 ORDT.forEach(t=>{$('#'+TABS[t][0]).onclick=()=>showTab(t)});
-$('.tabs').addEventListener('keydown',e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;const t=ORDT[(ORDT.indexOf(tabAct)+d+3)%3];showTab(t);$('#'+TABS[t][0]).focus()});
+$('.tabs').addEventListener('keydown',e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(!d)return;const t=ORDT[(ORDT.indexOf(tabAct)+d+ORDT.length)%ORDT.length];showTab(t);$('#'+TABS[t][0]).focus()});
 function irA(i){showTab('mapa');const p=P[i];
   if(!pass(p)){st.view='all';st.env='';st.tipo='';st.com='';st.max=480;st.open=false;
     ['#segView','#segEnv'].forEach(id=>document.querySelectorAll(id+' button').forEach((b,k)=>b.setAttribute('aria-pressed',String(k===0))));
@@ -905,7 +942,7 @@ function analisis(V){
   else if(like.length>=2&&media(like.map(p=>p.r))>=4.4)tips.push('Vuestros favoritos coinciden con los que yo puntué más alto: buena señal para el top 10.');
   if(members.length>1){
     const dis=V.filter(p=>{const s=sem[slug(p)];return s.n>1&&!s.agree});
-    if(dis.length)tips.push(`No coincidís en <b>${dis.length}</b>${dis.length<=4?': '+lista(dis.map(p=>p.n)):''}. En Ranking podéis filtrar solo los desacuerdos.`);
+    if(dis.length)tips.push(`No coincidís en <b>${dis.length}</b>${dis.length<=4?': '+lista(dis.map(p=>p.n)):''}. Lo tenéis todo en la pestaña <b>El ring</b>.`);
     const prom=members.map(m=>{const vs=Object.values(luz).map(b=>b[m.id]?SC[b[m.id].v]:0).filter(Boolean);return {m,a:media(vs),n:vs.length}}).filter(x=>x.n>=3);
     if(prom.length>=2){prom.sort((x,y)=>y.a-x.a);if(prom[0].a-prom[prom.length-1].a>=.3){const g=prom[0].m;tips.push(g.id===myId?'<b>Tú</b> pones luces más altas de media: eres el más fácil de convencer.':`<b>${esc(g.nombre||'Alguien')}</b> pone luces más altas de media que tú.`)}}
   }
@@ -976,15 +1013,61 @@ function renderRanking(){
   if(!items.length){L.innerHTML='<li style="cursor:default;grid-template-columns:1fr"><span class="empty-rs">Ningún parador con estos filtros.</span></li>';return}
   L.innerHTML=items.map(p=>{const s=S(p),c=cmts.filter(x=>x.p===slug(p)).length,ft=favTxt(s);
     const per=members.length>1?'<div>'+members.map((m,i)=>{const v=s?s.vals[i]:null;return `<span class="pv"><i class="lt-dot" style="background:${colorOf(v)}"></i>${esc(quien(m))}</span>`}).join('')+'</div>':'';
-    return `<li tabindex="0" data-i="${p.i}"><span style="min-width:0"><div class="nm">${s?dotHTML(s):'<i class="lt-dot" style="background:var(--line)"></i>'}${esc(p.n)}</div>
+    return `<li tabindex="0" data-i="${p.i}"><span style="min-width:0"><div class="nm">${s?dotHTML(s):'<i class="lt-dot" style="background:var(--line)"></i>'}${esc(p.n)}${conflicto(s)?'<span class="vs-tag">conflicto</span>':''}</div>
       <div class="meta">${ft?`<b style="color:var(--gold)">${esc(ft)}</b> · `:''}${p.c} · ${p.t} · ${p.e}${c?` · ${c} ${c===1?'comentario':'comentarios'}`:''}</div>${per}</span>
       <span class="r">${drive(p)}<br>${'★'.repeat(p.r)}</span></li>`}).join('');
   L.querySelectorAll('[data-i]').forEach(el=>{const go=()=>irA(+el.dataset.i);el.onclick=go;el.onkeydown=e=>{if(e.key==='Enter')go()}});
 }
+
+// ---- El ring: desacuerdos para debatir ----
+const CHISTES={
+  3:['Esto no se arregla con un café: se arregla con una cena que pague quien pierda.','Uno ve un sitio de cuento; el otro, un sitio donde no dormiría ni gratis. Alguien está muy equivocado.','Nivel de conflicto: discutir quién conduce a la vuelta.','Guerra abierta. Se recomienda negociar con algo de picar delante.'],
+  2:['Dos colores de diferencia: con un buen argumento, alguien cede.','Hay tema para una sobremesa larga.','Ni tan bonito ni tan feo: toca defender la postura con datos.','Combate serio. Se aceptan fotos como prueba.'],
+  1:['Pique menor. Se resuelve con un \"vale, como tú digas\".','Casi de acuerdo. Casi.','El típico \"me gusta… pero\". Nada que una mirada no arregle.','Diferencia de matiz: no merece ni sacar los guantes.']};
+const NIVEL={3:'Guerra abierta',2:'Combate serio',1:'Pique'};
+const hashS=t=>[...t].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
+const esperado=r=>r>=5?4:r===4?3:r===3?2:1; // mis estrellas traducidas a luz
+function renderRing(){
+  const tb=$('#tbRing');
+  const pelea=P.filter(p=>conflicto(sem[slug(p)]));
+  if(tb)tb.innerHTML='El ring'+(pelea.length?`<span class="cnt">${pelea.length}</span>`:'');
+  const R=$('#vRing');if(!R||R.hidden)return;
+  if(social!=='on'){R.innerHTML=`<div class="card"><p class="empty-rs">${social==='loading'?'Preparando el ring…':'Entra en UrLife con tu cuenta para ver vuestros desacuerdos.'}</p></div>`;return}
+  if(members.length<2){R.innerHTML='<div class="card"><p class="empty-rs">El ring necesita dos contrincantes: en tu grupo solo estás tú.</p></div>';return}
+  const otro=members.find(m=>m.id!==myId)||members[1];
+  const lv=pelea.map(p=>({p,s:sem[slug(p)],b:brecha(sem[slug(p)])})).sort((a,b)=>b.b-a.b||b.p.r-a.p.r);
+  const n3=lv.filter(x=>x.b===3).length,n2=lv.filter(x=>x.b===2).length,n1=lv.filter(x=>x.b===1).length;
+  const frase=!lv.length?'Paz total en la pareja. Sospechoso, pero lo aceptamos.'
+    :n3?`Hay ${n3===1?'una guerra abierta':n3+' guerras abiertas'}. Que nadie salga de casa hasta resolverlo.`
+    :lv.length>=5?'Muchos frentes abiertos. Recomendación: debatir de uno en uno y con la tripa llena.'
+    :'Algún pique sin importancia. Nada que no se arregle esta noche.';
+  // árbitro: quién está más cerca de mis estrellas en total
+  let pT=0,pO=0;lv.forEach(({p,s})=>{const iT=members.findIndex(m=>m.id===myId),iO=members.indexOf(otro);const e=esperado(p.r);
+    const dT=Math.abs(SC[s.vals[iT]]-e),dO=Math.abs(SC[s.vals[iO]]-e);if(dT<dO)pT++;else if(dO<dT)pO++});
+  let h=`<div class="ring-hero"><h3>${lv.length?lv.length+(lv.length===1?' combate pendiente':' combates pendientes'):'Ring vacío'}</h3><p>${frase}</p>`;
+  if(lv.length)h+=`<div class="ring-score"><span>Guerras abiertas: ${n3}</span><span>Combates serios: ${n2}</span><span>Piques: ${n1}</span><span>Razón según el árbitro: Tú ${pT} · ${esc(otro.nombre||'Alguien')} ${pO}</span></div>`;
+  h+='</div>';
+  lv.forEach(({p,s,b})=>{const k=slug(p),iT=members.findIndex(m=>m.id===myId),iO=members.indexOf(otro),vT=s.vals[iT],vO=s.vals[iO];
+    const e=esperado(p.r),dT=Math.abs(SC[vT]-e),dO=Math.abs(SC[vO]-e);
+    const ch=CHISTES[b][hashS(k)%CHISTES[b].length],nc=cmts.filter(c=>c.p===k).length;
+    const ref=dT===dO?'El árbitro (yo) se lava las manos: los dos estáis igual de lejos de mis estrellas.'
+      :`El árbitro (yo) ${dT<dO?'te da la razón a <b>ti</b>':'le da la razón a <b>'+esc(otro.nombre||'Alguien')+'</b>'}: le puse ${p.r} ${p.r===1?'estrella':'estrellas'}.`;
+    const corner=(m,v,win)=>`<div class="corner${win?' win':''}"><div class="who">${m.id===myId?'Tú':esc(m.nombre||'Alguien')}</div><div class="vv"><i class="lt-dot ${v}" style="background:${SEM[v].c}"></i>${SEM[v].t}</div></div>`;
+    h+=`<article class="fight lvl${b}" id="rg-${k}"><div class="fh"><h4>${esc(p.n)}</h4><span class="lvl l${b}">${NIVEL[b]}</span></div>
+      <div class="corners">${corner(members[iT],vT,dT<dO)}<span class="vsx" aria-label="contra">vs</span>${corner(otro,vO,dO<dT)}</div>
+      <p class="joke">${esc(ch)}</p><p class="ref">${ref}${nc?` Hay ${nc} ${nc===1?'comentario':'comentarios'} con argumentos.`:''}</p>
+      <div class="acts"><button type="button" data-go="${p.i}">Ver ficha y argumentos</button><button type="button" class="give" data-give="${p.i}" data-v="${vO}">Me rindo: pongo "${SEM[vO].t}"</button></div></article>`});
+  // deberes: solo uno ha opinado
+  const deb=P.filter(p=>{const s=sem[slug(p)];return s&&!s.all&&members.length>1});
+  if(deb.length){h+=`<div class="card"><h3>Deberes pendientes</h3><p class="by" style="margin:-4px 0 8px">Solo uno de los dos ha opinado. Sin rival no hay combate.</p><ol class="rkl homework">${deb.map(p=>{const s=sem[slug(p)];const falta=members.filter((m,i)=>!s.vals[i]).map(m=>m.id===myId?'ti':(m.nombre||'Alguien'));return `<li tabindex="0" data-go="${p.i}"><span style="min-width:0"><div class="nm">${dotHTML(s)}${esc(p.n)}</div><div class="meta">Le toca a ${esc(lista(falta))}</div></span><span class="r">${drive(p)}</span></li>`}).join('')}</ol></div>`}
+  R.innerHTML=h;
+  R.querySelectorAll('[data-go]').forEach(el=>{const go=()=>irA(+el.dataset.go);el.onclick=go;el.onkeydown=e=>{if(e.key==='Enter')go()}});
+  R.querySelectorAll('[data-give]').forEach(el=>el.onclick=()=>{el.disabled=true;el.textContent='Firmando la paz…';setLight(P[+el.dataset.give],el.dataset.v)});
+}
 // selección inicial: Cuenca (Top 1)
 if(st.sel==null)st.sel=P.findIndex(p=>p.top===1);
 render();
-try{const t=localStorage.getItem('paradores-tab');if(t==='res'||t==='rk')showTab(t)}catch(e){}
+try{const t=localStorage.getItem('paradores-tab');if(t==='res'||t==='rk'||t==='ring')showTab(t)}catch(e){}
 </script>
 
 </body>
