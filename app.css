@@ -882,3 +882,23 @@ button.link::after { content: ''; position: absolute; inset: -10px -6px; }
 .mov-per-lbl { flex: 1 1 auto; }
 .mov-per-lbl b { font-size: 18px; }
 @media (max-width: 380px) { .mov-nav { gap: 6px; } .mov-flecha { width: 32px; } .mov-modo button { padding: 7px 8px; } .mov-per-lbl b { font-size: 17px; } }
+
+/* ================= Categorías estándar (12/10) ================= */
+.fijo-seg { margin-top: 8px; }
+.chip-pers { color: var(--accent); font-weight: 800; margin-right: 4px; }
+.chip-mas { border-style: dashed; color: var(--text-muted); }
+.cat-aviso { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: var(--accent-soft); color: var(--text-muted); font-size: 12.5px; line-height: 1.4; }
+.cat-aviso .i { color: var(--accent); flex: none; margin-top: 1px; }
+.cat-aviso.fuerte { background: var(--expense-soft); }
+.cat-aviso.fuerte .i { color: var(--expense); }
+.sub-row { padding-top: 0; }
+.pres-mas { display: block; margin: 12px auto 0; text-align: center; }
+.cat-std-row { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--line); }
+.cat-std-row:last-child { border-bottom: none; }
+.cat-std-row .mov-ic { width: 32px; height: 32px; }
+.cat-std-row .cn { flex: 1; min-width: 0; }
+.cat-std-row .cn b { display: block; font-size: 14.5px; font-weight: 600; }
+.cat-std-row .cn span { font-size: 12px; color: var(--text-faint); }
+.cat-std-row input.amt { width: 92px; flex: none; border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--paper-raised); color: var(--text); font-size: 14px; text-align: right; }
+.cat-std-row .rm { flex: none; }
+.cat-std-row input.cn-in { flex: 1; min-width: 0; border: none; background: none; font-size: 14.5px; font-weight: 600; color: var(--text); padding: 6px 2px; }

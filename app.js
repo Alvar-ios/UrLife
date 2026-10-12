@@ -48,6 +48,10 @@ const ICONS = {
   plane: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 3 11l1.5-1.5L11 11l5-6a1.5 1.5 0 0 1 2.5 1.5L13 12l1.5 6.5L13 20l-3-6z"/></svg>',
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>',
   receipt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
+  ball: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5 15.8 10l-1.4 4.4H9.6L8.2 10z"/><path d="M12 3.5v4M20.3 9.6 15.8 10M17.2 19.6l-2.8-5.2M6.8 19.6l2.8-5.2M3.7 9.6 8.2 10"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>',
+  paw: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5c1-2 2.2-3 3.5-3s2.5 1 3.5 3 1 4.5-1.5 4.5c-1 0-1.3-.6-2-.6s-1 .6-2 .6c-2.5 0-2.5-2.5-1.5-4.5z"/><circle cx="7" cy="9.5" r="1.6"/><circle cx="10.2" cy="6.3" r="1.6"/><circle cx="13.8" cy="6.3" r="1.6"/><circle cx="17" cy="9.5" r="1.6"/></svg>',
+  repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V9a3 3 0 0 1 3-3h12"/><path d="m16 3 3 3-3 3"/><path d="M20 13v2a3 3 0 0 1-3 3H5"/><path d="m8 21-3-3 3-3"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
 };
 function ic(name) {
@@ -60,6 +64,7 @@ const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto'
 const MESES_ABR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 const TIPOS = ['Ingreso', 'Factura', 'Gasto', 'Ahorro', 'Inversión', 'Deuda'];
 const TIPOS_ACTIVO = ['Acción', 'ETF', 'Bono', 'Criptomoneda', 'Otro'];
+const TIPOS_FORM = ['Ingreso', 'Gasto', 'Ahorro', 'Inversión', 'Deuda']; // la factura es un Gasto «fijo»
 const TIPO_COLOR = { Ingreso: 'income', Factura: 'bill', Gasto: 'expense', Ahorro: 'savings', 'Inversión': 'savings', Deuda: 'debt' };
 const TIPO_SIGNO = { Ingreso: 1, Factura: -1, Gasto: -1, Ahorro: -1, 'Inversión': -1, Deuda: -1 };
 
@@ -339,7 +344,7 @@ function subscribeAll() {
   _unsubs = [];
   const fail = (key, msg) => () => { S.loaded[key] = true; toast(msg); render(); };
   _unsubs.push(S.db.collection('movimientos').onSnapshot((snap) => {
-    S.movimientos = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); S.loaded.mov = true; render();
+    S._movsRaw = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); aplicarMovs(); S.loaded.mov = true; render();
   }, fail('mov', 'No se pudieron cargar los movimientos')));
   _unsubs.push(S.db.collection('tareas').onSnapshot((snap) => {
     S.tareas = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); S.loaded.tar = true; render();
@@ -361,7 +366,7 @@ function subscribeAll() {
   }, (e) => { console.error(e); S.compartidos = S.compartidos || []; }));
   if (S.db.objetivos) _unsubs.push(S.db.objetivos.suscribir((rows) => { S.objetivos = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.objetivos = S.objetivos || []; }));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
-    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
+    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
   }, fail('cfg', 'No se pudo cargar la configuración')));
 }
 
@@ -391,7 +396,7 @@ function kpisMes(anio, mes) {
 }
 function gastoPorCategoria(movs) {
   const map = {};
-  movs.filter((m) => m.tipo === 'Gasto').forEach((m) => { map[m.categoria] = (map[m.categoria] || 0) + num(m.importe); });
+  movs.filter((m) => m.tipo === 'Gasto' || m.tipo === 'Factura').forEach((m) => { map[m.categoria] = (map[m.categoria] || 0) + num(m.importe); });
   return map;
 }
 function tareasVencidas() { return S.tareas.filter((t) => t.estado !== 'Completado' && t.fechaLimite && daysUntil(t.fechaLimite) < 0); }
@@ -412,14 +417,104 @@ function cmpTarea(a, b) {
 function cmpMov(a, b) { return (b.fecha || '').localeCompare(a.fecha || '') || (num(b.creadoEn || b.orden) - num(a.creadoEn || a.orden)); }
 function presupuestoExcedido(anio, mes) {
   const map = gastoPorCategoria(movsDelMes(anio, mes));
-  return (cfg().categoriasGasto || []).filter((c) => c.nombre && c.presupuesto && (map[c.nombre] || 0) > c.presupuesto)
+  return catsGasto().filter((c) => c.nombre && c.presupuesto && (map[c.nombre] || 0) > c.presupuesto)
     .map((c) => ({ categoria: c.nombre, real: map[c.nombre], presupuesto: c.presupuesto }));
+}
+/* ============================================================
+   CATEGORÍAS ESTÁNDAR (12/10/2026): iguales para todos y no se pueden borrar.
+   Así un gasto compartido cae en la misma categoría para cada persona. Además cada uno puede
+   crear las suyas (personalizadas) y apuntar un detalle (subcategoría: «Uñas», «Golf», «Spotify»).
+   Las facturas son «gastos fijos»: tipo Factura, con categoría estándar y el recibo como detalle.
+   ============================================================ */
+const CATS_STD = [
+  { n: 'Supermercado', ic: 'cart', d: 'Comida y cosas de casa' },
+  { n: 'Restaurantes y bares', ic: 'fork', d: 'Comer fuera, cañas, cafés' },
+  { n: 'Vivienda', ic: 'home', d: 'Alquiler o hipoteca, comunidad' },
+  { n: 'Suministros', ic: 'bolt', d: 'Luz, agua, gas, internet, móvil' },
+  { n: 'Transporte', ic: 'car', d: 'Gasolina, parking, coche, transporte público' },
+  { n: 'Ocio', ic: 'film', d: 'Cine, conciertos, planes' },
+  { n: 'Deporte', ic: 'ball', d: 'Gimnasio, golf, pádel' },
+  { n: 'Compras', ic: 'shirt', d: 'Ropa y cosas' },
+  { n: 'Salud y cuidado personal', ic: 'heart', d: 'Farmacia, médico, pelu, uñas' },
+  { n: 'Regalos', ic: 'gift', d: 'Cumpleaños, detalles' },
+  { n: 'Viajes', ic: 'plane', d: 'Hoteles, vuelos, escapadas' },
+  { n: 'Suscripciones', ic: 'repeat', d: 'Spotify, Netflix, apps' },
+  { n: 'Seguros', ic: 'shield', d: 'Coche, hogar, salud' },
+  { n: 'Educación', ic: 'book', d: 'Cursos, libros, academia' },
+  { n: 'Mascotas', ic: 'paw', d: 'Comida, veterinario' },
+  { n: 'Otros', ic: 'tag', d: 'Lo que no encaja en ninguna' },
+];
+const CAT_STD_POR = {}; CATS_STD.forEach((c) => { CAT_STD_POR[normName(c.n)] = c; });
+// Nombres que significan lo mismo que una estándar (para importar archivos y datos antiguos)
+const ALIAS_STD = {
+  groceries: 'Supermercado', 'alimentación': 'Supermercado', alimentacion: 'Supermercado', compra: 'Supermercado', 'compra semanal': 'Supermercado', supermercados: 'Supermercado',
+  'dining out': 'Restaurantes y bares', restaurantes: 'Restaurantes y bares', restaurante: 'Restaurantes y bares', bares: 'Restaurantes y bares', 'comer fuera': 'Restaurantes y bares',
+  shopping: 'Compras', ropa: 'Compras', gifts: 'Regalos', regalo: 'Regalos', entertainment: 'Ocio', salud: 'Salud y cuidado personal', health: 'Salud y cuidado personal',
+  travel: 'Viajes', viaje: 'Viajes', other: 'Otros', otro: 'Otros', hogar: 'Vivienda', casa: 'Vivienda', housing: 'Vivienda', rent: 'Vivienda', alquiler: 'Vivienda',
+  transport: 'Transporte', subscriptions: 'Suscripciones', suscripción: 'Suscripciones', education: 'Educación', educacion: 'Educación', pets: 'Mascotas', mascota: 'Mascotas',
+  insurance: 'Seguros', seguro: 'Seguros', utilities: 'Suministros', facturas: 'Suministros', sport: 'Deporte', sports: 'Deporte', deportes: 'Deporte', gym: 'Deporte', gimnasio: 'Deporte',
+};
+// Para recibos y archivos: adivina la estándar por el nombre (Spotify → Suscripciones, Rent → Vivienda…)
+const ADIVINA_STD = [
+  [/spotify|netflix|hbo|disney|prime video|amazon prime|claude|chatgpt|openai|icloud|google one|youtube|apple|suscrip|dazn|filmin/, 'Suscripciones'],
+  [/seguro|insurance|mapfre|mutua|axa|allianz|sanitas|adeslas|asisa|linea directa|l[ií]nea directa/, 'Seguros'],
+  [/alquiler|rent|hipoteca|comunidad|ibi|piso|vivienda/, 'Vivienda'],
+  [/luz|agua|gas|internet|wifi|fibra|m[oó]vil|phone|tel[eé]fono|iberdrola|endesa|naturgy|digi|movistar|vodafone|orange|o2|electric/, 'Suministros'],
+  [/gym|gimnasio|golf|p[aá]del|fitness|deporte|club/, 'Deporte'],
+  [/compras? (del )?mes|supermerc|mercadona|lidl|carrefour|aldi|alcampo|eroski|grocer|alimentaci/, 'Supermercado'],
+  [/gasolin|petrol|repsol|cepsa|parking|aparcam|coche|taxi|uber|cabify|metro|renfe|tren|bus|peaje|itv/, 'Transporte'],
+  [/restaur|birra|cerveza|bar|cafeter|dining|glovo|just ?eat|uber ?eats/, 'Restaurantes y bares'],
+  [/cine|concierto|teatro|entertainment|ocio|fiesta|oktoberfest|palomitas/, 'Ocio'],
+  [/farmac|m[eé]dic|dentista|pelu|u[ñn]as|est[eé]tica|autocuidado|colonia|perfum|salud/, 'Salud y cuidado personal'],
+  [/regalo|gift/, 'Regalos'], [/viaje|hotel|vuelo|airbnb|booking|ryanair|vueling|iberia/, 'Viajes'],
+  [/curso|academia|universidad|libro|educa/, 'Educación'], [/veterin|mascota|perro|gato/, 'Mascotas'],
+  [/shopping|ropa|zara|primark|amazon|wallapop|vinted|ikea|compras/, 'Compras'],
+];
+function catStd(n) { return CAT_STD_POR[normName(n)] || null; }
+function esCatStd(n) { return !!catStd(n); }
+function adivinarCatStd(texto) { const t = normDesc(texto || ''); const r = ADIVINA_STD.find(([re]) => re.test(t)); return r ? r[1] : null; }
+// Lista de categorías de gasto de esta persona: las estándar (con su presupuesto) y después las personalizadas
+function catsGasto() {
+  const propias = ((cfg().categoriasGasto) || []).filter((c) => c && c.nombre);
+  const por = {}; propias.forEach((c) => { por[normName(c.nombre)] = c; });
+  return CATS_STD.map((s) => Object.assign({ presupuesto: null }, por[normName(s.n)] || {}, { nombre: s.n, std: true }))
+    .concat(propias.filter((c) => !esCatStd(c.nombre)).map((c) => Object.assign({}, c, { std: false })));
+}
+function esCatGasto(n) { const k = normName(n); return !!k && catsGasto().some((c) => normName(c.nombre) === k); }
+// La categoría de un recibo: la que tenga puesta; si no, se adivina por el nombre; si no, Otros
+function catDeRecibo(nombre) {
+  const it = (cfg().facturas || []).find((x) => x && normName(x.nombre) === normName(nombre));
+  if (it && it.categoria && esCatGasto(it.categoria)) return catStd(it.categoria) ? catStd(it.categoria).n : it.categoria;
+  return adivinarCatStd(nombre) || 'Otros';
+}
+// Pone en orden la categoría de un gasto: nombres equivalentes → estándar; facturas antiguas (categoría = recibo) → categoría + recibo como detalle
+function catNorm(tipo, categoria, sub) {
+  if (tipo !== 'Gasto' && tipo !== 'Factura') return { categoria, subcategoria: sub || null };
+  const c = (categoria || '').trim();
+  if (catStd(c)) return { categoria: catStd(c).n, subcategoria: sub || null };
+  if (tipo === 'Factura' && !sub && c && !esCatGasto(c)) return { categoria: catDeRecibo(c), subcategoria: c };
+  if (ALIAS_STD[normName(c)] && !(cfg().categoriasGasto || []).some((x) => x && normName(x.nombre) === normName(c))) return { categoria: ALIAS_STD[normName(c)], subcategoria: sub || null }; // si la tienes como personalizada, se respeta
+  return { categoria: c, subcategoria: sub || null };
+}
+function normMov(m) {
+  if (m.tipo !== 'Gasto' && m.tipo !== 'Factura') return m;
+  const r = catNorm(m.tipo, m.categoria, m.subcategoria);
+  return r.categoria === m.categoria && (r.subcategoria || null) === (m.subcategoria || null) ? m : Object.assign({}, m, r);
+}
+function aplicarMovs() { S.movimientos = (S._movsRaw || []).map(normMov); }
+const tipoTxt = (t) => (t === 'Factura' ? 'Gasto fijo' : t);
+// Subcategorías que ya has usado en una categoría (y los recibos de esa categoría si es un gasto fijo)
+function subcatsDe(cat, fijo) {
+  const k = normName(cat), cuenta = {};
+  if (!k) return [];
+  if (fijo) (cfg().facturas || []).forEach((x) => { if (x && x.nombre && normName(catDeRecibo(x.nombre)) === k) cuenta[x.nombre] = (cuenta[x.nombre] || 0) + 100; });
+  movsEfectivos().forEach((m) => { if ((m.tipo === 'Gasto' || m.tipo === 'Factura') && m.subcategoria && normName(m.categoria) === k && (!fijo || m.tipo === 'Factura')) cuenta[m.subcategoria] = (cuenta[m.subcategoria] || 0) + 1; });
+  return Object.keys(cuenta).sort((a, b) => cuenta[b] - cuenta[a]).slice(0, 10);
 }
 function categoriasPorTipo(tipo) {
   const c = cfg();
   let arr = [];
-  if (tipo === 'Gasto') arr = (c.categoriasGasto || []).map((x) => x.nombre);
-  else if (tipo === 'Factura') arr = (c.facturas || []).map((x) => x.nombre);
+  if (tipo === 'Gasto' || tipo === 'Factura') arr = catsGasto().map((x) => x.nombre);
   else if (tipo === 'Ahorro') arr = (c.ahorro || []).filter((x) => x && x.nombre && x.tipo !== 'inversion').map((x) => x.nombre);
   else if (tipo === 'Inversión') { const seen = {}; S.movimientos.forEach((m) => { if (m.tipo === 'Inversión' && m.categoria) seen[m.categoria] = (seen[m.categoria] || 0) + 1; }); arr = Object.keys(seen).sort((a, b) => seen[b] - seen[a]); }
   else if (tipo === 'Deuda') arr = (c.deudas || []).map((x) => x.nombre);
@@ -695,7 +790,7 @@ function irMovs(o) {
   S.tab = 'movimientos';
   S.movFiltroTipo = o.tipo || 'Todos';
   S.movPeriodo = o.periodo || 'todo';
-  S.movCat = o.cat || '';
+  S.movCat = o.cat || ''; S.movSub = '';
   S.movQuery = '';
   S.movLimit = 120;
   render(); window.scrollTo(0, 0);
@@ -708,9 +803,20 @@ function movsFiltrados() {
   else if (GRUPOS_TIPO[S.movFiltroTipo]) movs = movs.filter((m) => GRUPOS_TIPO[S.movFiltroTipo].includes(m.tipo));
   else if (S.movFiltroTipo !== 'Todos') movs = movs.filter((m) => m.tipo === S.movFiltroTipo);
   if (S.movCat) movs = movs.filter((m) => normName(m.categoria) === normName(S.movCat));
+  if (S.movCat && S.movSub) movs = movs.filter((m) => normName(m.subcategoria) === normName(S.movSub));
   const q = S.movQuery.trim().toLowerCase();
-  if (q) movs = movs.filter((m) => [m.categoria, m.descripcion, m.metodoPago].some((x) => (x || '').toLowerCase().includes(q)));
+  if (q) movs = movs.filter((m) => [m.categoria, m.subcategoria, m.descripcion, m.metodoPago].some((x) => (x || '').toLowerCase().includes(q)));
   return movs.sort(cmpMov);
+}
+// Dentro de una categoría: chips con sus detalles (Uñas, Pelu…) para afinar
+function subFiltroHtml() {
+  if (!S.movCat) return '';
+  const cuenta = {};
+  movsEfectivos().forEach((m) => { if (m.subcategoria && normName(m.categoria) === normName(S.movCat)) cuenta[m.subcategoria] = (cuenta[m.subcategoria] || 0) + 1; });
+  const subs = Object.keys(cuenta).sort((a, b) => cuenta[b] - cuenta[a]);
+  if (!subs.length) return '';
+  return '<div class="pill-row sub-row"><button class="pill sm ' + (!S.movSub ? 'active' : '') + '" ' + act('setMovSub', '') + '>Todo ' + escapeHtml(S.movCat) + '</button>' +
+    subs.map((s) => '<button class="pill sm ' + (normName(S.movSub) === normName(s) ? 'active' : '') + '" ' + act('setMovSub', s) + '>' + escapeHtml(s) + '</button>').join('') + '</div>';
 }
 function renderMovimientos() {
   const dir = S._movDir || 0; S._movDir = 0;
@@ -720,8 +826,9 @@ function renderMovimientos() {
     ((S.movCat || GRUPOS_TIPO[S.movFiltroTipo]) ? '<div class="filtros-activos">' +
       (GRUPOS_TIPO[S.movFiltroTipo] ? '<button class="chip active" ' + act('setMovFiltro', 'Todos') + '>' + GRUPOS_TXT[S.movFiltroTipo] + ' ✕</button>' : '') +
       (S.movCat ? '<button class="chip active" ' + act('quitarMovCat') + '>' + escapeHtml(S.movCat) + ' ✕</button>' : '') + '</div>' : '') +
+    subFiltroHtml() +
     '<div class="field" style="margin-bottom:10px;"><input type="search" id="movSearch" placeholder="Buscar categoría, nota o método de pago" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></div>' +
-    '<div class="pill-row">' + [['Todos', 'Todos']].concat(TIPOS.map((t) => [t, t])).concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="pill-row">' + [['Todos', 'Todos'], ['Ingreso', 'Ingresos'], ['_gastos', 'Gastos'], ['Factura', 'Fijos'], ['Ahorro', 'Ahorro'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
     '<div id="movList" class="' + (dir && !reduceMotion() ? (dir > 0 ? 'desde-der' : 'desde-izq') : '') + '">' + renderMovList() + '</div>';
 }
 function renderMovList() {
@@ -758,11 +865,23 @@ function renderMovRowBase(m) {
   return '<div class="row" ' + act('openMovForm', m.id) + '>' +
     movIcHtml(m) +
     '<div class="main"><div class="ttl">' + escapeHtml(m.categoria || 'Sin categoría') + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
-    '<div class="meta">' + (c ? (m.descripcion ? escapeHtml(m.descripcion) + ' · ' : '') + escapeHtml(compQuienTxt(c)) : escapeHtml([m.descripcion, m.tipo === 'Gasto' && (m.descripcion || m.metodoPago) ? '' : m.tipo, m.metodoPago].filter(Boolean).join(' · '))) + '</div></div>' +
+    '<div class="meta">' + (c ? escapeHtml([m.subcategoria, m.descripcion].filter(Boolean).concat([compQuienTxt(c)]).join(' · ')) : escapeHtml([m.subcategoria, m.descripcion, m.tipo === 'Factura' ? 'Fijo' : m.tipo === 'Gasto' && (m.subcategoria || m.descripcion || m.metodoPago) ? '' : m.tipo, m.metodoPago].filter(Boolean).join(' · '))) + '</div></div>' +
     '<div class="amt tnum ' + (eff >= 0 ? 'pos' : 'neg') + '">' + moneySigned(m.importe, m.tipo) + (c ? '<div class="amt-sub">tu parte de ' + money(c.importe) + '</div>' : '') + '</div></div>';
 }
 
+function catsPorUso() {
+  const lim = isoDaysAgo(180), uso = {};
+  movsEfectivos().forEach((m) => { if ((m.tipo === 'Gasto' || m.tipo === 'Factura') && (m.fecha || '') >= lim) uso[m.categoria] = (uso[m.categoria] || 0) + 1; });
+  const orden = catsGasto().map((c, i) => ({ n: c.nombre, i, u: uso[c.nombre] || 0 }));
+  return orden.sort((a, b) => b.u - a.u || a.i - b.i).map((x) => x.n);
+}
 function chipsHtml(tipo, current) {
+  if (tipo === 'Gasto' || tipo === 'Factura') {
+    const todas = catsPorUso(), max = 8, verTodas = (FORM && FORM.catTodas) || todas.indexOf(current) >= max;
+    const vis = verTodas ? todas : todas.slice(0, max);
+    return '<div class="chips">' + vis.map((c) => '<button type="button" class="chip ' + (c === current ? 'active' : '') + '" ' + act('pickCat', c) + '>' + (catStd(c) ? '' : '<span class="chip-pers" title="Personalizada">•</span>') + escapeHtml(c) + '</button>').join('') +
+      (todas.length > max ? '<button type="button" class="chip chip-mas" ' + act('catMas') + '>' + (verTodas ? 'Menos' : 'Más (' + (todas.length - max) + ')') + '</button>' : '') + '</div>';
+  }
   const cats = categoriasPorTipo(tipo);
   if (!cats.length) return '';
   return '<div class="chips">' + cats.map((c) => '<button type="button" class="chip ' + (c === current ? 'active' : '') + '" ' + act('pickCat', c) + '>' + escapeHtml(c) + '</button>').join('') + '</div>';
@@ -861,6 +980,30 @@ async function elegirActivo(a) {
   }
   cargarPreview();
 }
+function esGastoForm() { return FORM && (FORM.tipo === 'Gasto' || FORM.tipo === 'Factura'); }
+function fijoHtml() {
+  if (!esGastoForm()) return '';
+  const f = FORM.tipo === 'Factura';
+  return '<div class="segmented fijo-seg"><button type="button" class="' + (f ? '' : 'active') + '" ' + act('pickFijo', '0') + '>Del día a día</button><button type="button" class="' + (f ? 'active' : '') + '" ' + act('pickFijo', '1') + '>Fijo · recibo</button></div>';
+}
+function subFieldHtml(cat, actual) {
+  if (!FORM || !(FORM.tipo === 'Gasto' || FORM.tipo === 'Factura')) return '';
+  const fijo = FORM.tipo === 'Factura', subs = subcatsDe(cat, fijo);
+  return '<label>' + (fijo ? '¿Qué recibo es? <span class="hint">· Alquiler, Spotify, luz…</span>' : 'Detalle <span class="hint">· opcional: Uñas, Golf, Mercadona…</span>') + '</label>' +
+    (subs.length ? '<div class="chips" id="subChips">' + subs.map((s) => '<button type="button" class="chip ' + (normName(s) === normName(actual) ? 'active' : '') + '" ' + act('pickSub', s) + '>' + escapeHtml(s) + '</button>').join('') + '</div>' : '') +
+    '<input id="fSub" type="text" placeholder="' + (fijo ? 'Nombre del recibo' : 'Sin detalle') + '" value="' + escapeHtml(actual || '') + '" ' + onInput('onSubInput') + '>';
+}
+function refrescarSub() { const f = $('#subField'); if (f) { const sub = ($('#fSub') || {}).value || ''; f.innerHTML = subFieldHtml(($('#fCategoria') || {}).value || '', sub); } }
+// Aviso al usar una categoría personalizada: puede que los demás no la tengan
+function refrescarCatAviso() {
+  const box = $('#catAviso'); if (!box) return;
+  const v = (($('#fCategoria') || {}).value || '').trim();
+  if (!esGastoForm() || !v || esCatStd(v) || ALIAS_STD[normName(v)]) { box.innerHTML = ''; return; }
+  const compartiendo = FORM.comp && FORM.comp.on;
+  box.innerHTML = '<div class="cat-aviso' + (compartiendo ? ' fuerte' : '') + '">' + ic('alert') + '<span>' + (compartiendo
+    ? '«' + escapeHtml(v) + '» es una categoría personalizada y no sirve para compartir gastos: elige una de las estándar y pon «' + escapeHtml(v) + '» como detalle.'
+    : (esCatGasto(v) ? '«' + escapeHtml(v) + '» es una categoría personalizada tuya.' : '«' + escapeHtml(v) + '» será una categoría personalizada nueva.') + ' Es posible que otras personas no la tengan y no podrás compartir gastos con ella. Si encaja en una estándar, mejor usa esa y apunta esto como detalle.') + '</span></div>';
+}
 function catLabel(tipo) { return tipo === 'Inversión' ? 'Activo <span class="hint">· ej. VWCE, S&amp;P 500 ETF</span>' : 'Categoría'; }
 function openMovForm(id, pre) {
   if (id && String(id).indexOf('c:') === 0) return openCompForm(String(id).slice(2));
@@ -868,7 +1011,8 @@ function openMovForm(id, pre) {
   const comp = pre && pre.compId ? compPorId(pre.compId) : null;
   if (mio && mio.compartidoId && !comp && compPorId(mio.compartidoId)) return openCompForm(mio.compartidoId);
   // En un gasto compartido se ve el compartido (el total); tu movimiento enlazado se actualiza al guardar.
-  const ex = comp ? Object.assign({}, mio || {}, { id: mio ? mio.id : null, tipo: comp.tipo, importe: comp.importe, categoria: comp.categoria, fecha: comp.fecha, descripcion: comp.descripcion }) : mio;
+  const cnc = comp ? catNorm(comp.tipo, comp.categoria, comp.subcategoria) : null;
+  const ex = comp ? Object.assign({}, mio || {}, { id: mio ? mio.id : null, tipo: comp.tipo, importe: comp.importe, categoria: cnc.categoria, subcategoria: cnc.subcategoria, fecha: comp.fecha, descripcion: comp.descripcion }) : mio;
   const compDest = pre && pre.comp, objPre = pre && pre.objetivo;
   pre = (!ex && pre) || {};
   const tipoIni = ex ? ex.tipo : pre.tipo ? pre.tipo : (S.tab === 'movimientos' && TIPOS.indexOf(S.movFiltroTipo) >= 0 ? S.movFiltroTipo : 'Gasto');
@@ -882,11 +1026,13 @@ function openMovForm(id, pre) {
     '<div class="handle"></div><h2>' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : 'Nuevo movimiento') + '</h2>' +
     (!ex && !compDest && ticketsDisponible() ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto</span>' + badge('ticket') + '</button>' : '') +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
-    TIPOS.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + t + '</button>').join('') + '</div></div>' +
+    TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + t + '</button>').join('') + '</div>' +
+    '<div id="fijoBox">' + fijoHtml() + '</div></div>' +
     '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : (pre.importe != null ? pre.importe : '')) + '" ' + onInput('onImporteInput') + '></div>' +
     '<div id="invFields">' + invFieldsHtml(tipoIni, ex ? ex.tipoActivo : '') + '</div>' +
     '<div class="field" id="catField"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : (pre.categoria || '')) + '</div>' +
-    '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : (pre.categoria || '')) + '" ' + onInput('onCatInput') + '></div>' +
+    '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : (pre.categoria || '')) + '" ' + onInput('onCatInput') + '><div id="catAviso"></div></div>' +
+    '<div class="field" id="subField">' + subFieldHtml(ex ? ex.categoria : (pre.categoria || ''), ex ? ex.subcategoria : (pre.subcategoria || '')) + '</div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : (pre.fecha || todayISO())) + '" ' + onChange('onFechaChange') + '></div>' +
     '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>' +
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
@@ -897,7 +1043,7 @@ function openMovForm(id, pre) {
     (comp ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>'
       : ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteMov') + '>' + ic('trash') + ' Eliminar movimiento</button>' : '')
   );
-  syncCatField();
+  syncCatField(); refrescarCatAviso();
   if (FORM.activo && FORM.activo.activo_id) cargarPreview();
   if (!ex) setTimeout(() => { const el = $('#fImporte'); if (el) el.focus(); }, 80);
 }
@@ -909,13 +1055,20 @@ async function saveMov() {
   const fecha = $('#fFecha').value;
   const auto = invAuto();
   if (auto) { if (!FORM.activo) return toast('Busca y elige el activo'); const c = $('#fCategoria'); if (c) c.value = FORM.activo.nombre; }
-  const categoria = $('#fCategoria').value.trim();
+  let categoria = $('#fCategoria').value.trim();
+  const esG = FORM.tipo === 'Gasto' || FORM.tipo === 'Factura';
+  if (esG && categoria) { const cn = catNorm('Gasto', categoria); categoria = cn.categoria; }
+  const subcategoria = esG ? ((($('#fSub') || {}).value || '').trim() || null) : null;
   if (!isFinite(importe) || importe === 0) return toast('Pon un importe válido');
   if (!categoria) return toast(FORM.tipo === 'Inversión' ? 'Escribe o elige el activo' : 'Elige o escribe una categoría');
   const tipoActivo = FORM.tipo === 'Inversión' ? (auto ? tipoActivoDe(FORM.activo) : (($('#fTipoActivo') || {}).value || '')) : '';
   if (FORM.tipo === 'Inversión' && !tipoActivo) return toast('Elige el tipo de activo');
   if (!fecha) return toast('Elige una fecha');
-  if (FORM.comp && FORM.comp.on && TIPOS_COMPARTIBLES.indexOf(FORM.tipo) >= 0 && compartidosDisponible()) return saveCompartido({ importe, fecha, categoria, descripcion: $('#fDesc').value.trim(), metodoPago: $('#fMetodo').value });
+  if (FORM.comp && FORM.comp.on && TIPOS_COMPARTIBLES.indexOf(FORM.tipo) >= 0 && compartidosDisponible()) {
+    if (esG && !esCatStd(categoria) && ALIAS_STD[normName(categoria)]) categoria = ALIAS_STD[normName(categoria)]; // p. ej. tu «Restaurantes» → «Restaurantes y bares»
+    if (esG && !esCatStd(categoria)) return toast('Para compartir, elige una categoría estándar (pon «' + categoria + '» como detalle)');
+    return saveCompartido({ importe, fecha, categoria, subcategoria, descripcion: $('#fDesc').value.trim(), metodoPago: $('#fMetodo').value });
+  }
   if (FORM.compId && !(await quitarCompartido())) return;
   const ex = FORM.id ? S.movimientos.find((m) => m.id === FORM.id) : null;
   let participaciones = null, activoId = null;
@@ -947,6 +1100,9 @@ async function saveMov() {
       tipo: FORM.tipo, importe, categoria, fecha,
       descripcion: $('#fDesc').value.trim(), metodoPago: $('#fMetodo').value,
     });
+    if (esG) data.subcategoria = subcategoria; else if ('subcategoria' in data) data.subcategoria = null;
+    // una categoría personalizada nueva se añade a tu lista
+    if (esG && !esCatGasto(categoria)) saveConfig({ categoriasGasto: (cfg().categoriasGasto || []).concat([{ nombre: categoria, presupuesto: null }]) });
     if (FORM.articulos) data.articulos = FORM.articulos;
     if (FORM.compQuitado && 'compartidoId' in data) data.compartidoId = null; // ya no está compartido: cuenta entero como tuyo
     if (FORM.tipo === 'Inversión') data.tipoActivo = tipoActivo; else if ('tipoActivo' in data) data.tipoActivo = null;
@@ -1016,7 +1172,7 @@ function tabsAnSheetHtml() {
 function renderAnalisisMensual(enInicio) {
   const k = kpisMes(S.anioSel, S.mesSel);
   const catMap = gastoPorCategoria(k.movs);
-  const cats = (cfg().categoriasGasto || []).filter((c) => c.nombre);
+  const cats = catsGasto();
   const conocidas = new Set(cats.map((c) => c.nombre));
   const extra = Object.keys(catMap).filter((n) => !conocidas.has(n) && catMap[n] !== 0).map((n) => ({ nombre: n, presupuesto: null }));
   const filas = cats.concat(extra);
@@ -1029,7 +1185,7 @@ function renderAnalisisMensual(enInicio) {
     '<button class="icon-btn" aria-label="Mes siguiente" ' + act('moveMes', 1) + '>' + ic('chevR') + '</button></div>' +
     kpiMesHtml(k, S.anioSel, S.mesSel)) +
 
-    '<div class="section-title"><span>En qué gastas <span class="hint">· sin facturas fijas</span></span></div><div class="card">' +
+    '<div class="section-title"><span>En qué gastas <span class="hint">· incluidos los fijos</span></span></div><div class="card">' +
     (hayGasto ? '<div class="chart-wrap" id="donutWrap"></div><div class="legend" id="donutLegend"></div>'
       : '<div style="text-align:center;color:var(--text-faint);font-size:13.5px;">Sin gastos registrados en ' + MESES[S.mesSel - 1].toLowerCase() + '.</div>') + '</div>' +
 
@@ -1046,7 +1202,11 @@ function presupuestoFilasHtml(cats, catMap) {
     .sort((a, b) => b.real - a.real || a.i - b.i);
   const escala = Math.max(1, ...filas.map((f) => Math.max(f.real, f.pres)));
   const pc = (v) => Math.max(0, Math.min(100, v / escala * 100)).toFixed(2);
-  return filas.map(({ c, real, pres }) => {
+  // las que no tienen gasto ni presupuesto se esconden tras un botón (son muchas estándar)
+  const vacias = filas.filter((f) => !f.real && !f.pres);
+  const mostrar = S.presTodas ? filas : filas.filter((f) => f.real || f.pres);
+  const pie = vacias.length ? '<button class="link pres-mas" ' + act('presTodas') + '>' + (S.presTodas ? 'Ocultar las que están a 0' : 'Ver ' + vacias.length + ' categorías sin gasto') + '</button>' : '';
+  return mostrar.map(({ c, real, pres }) => {
     const over = pres > 0 && real > pres, dentro = pres > 0 ? Math.min(real, pres) : real;
     const resto = pres > 0 ? (over ? '<span class="pb-resto neg">' + money(real - pres) + ' de más</span>' : '<span class="pb-resto">quedan ' + money(pres - real) + '</span>') : '';
     return '<div class="budget-row tappable' + (over ? ' over' : '') + (real ? '' : ' cero') + '" ' + act('irMovs', '_gastos', mesClave(S.anioSel, S.mesSel), c.nombre) + '><div class="top"><span class="cat">' + escapeHtml(c.nombre) + '</span>' +
@@ -1054,7 +1214,7 @@ function presupuestoFilasHtml(cats, catMap) {
       '<div class="pbar" title="' + (pres > 0 ? 'Presupuesto: ' + money(pres) : 'Sin presupuesto') + '"><i class="pb-f" style="width:' + pc(dentro) + '%"></i>' +
       (over ? '<i class="pb-over" style="left:' + pc(pres) + '%;width:' + (pc(real) - pc(pres)).toFixed(2) + '%"></i>' : '') +
       (pres > 0 ? '<span class="pb-tick" style="left:' + pc(pres) + '%"></span>' : '') + '</div>' + resto + '</div>';
-  }).join('');
+  }).join('') + pie;
 }
 function renderAnalisisAnual(enInicio) {
   const rows = [];
@@ -1352,7 +1512,8 @@ function movsEfectivos() {
       if (c.tipo === 'Liquidación') return;
       const p = miParte(c); if (!(p > 0)) return;
       const ob = c.objetivoId ? objPorId(c.objetivoId) : null;
-      v.push({ id: 'c:' + c.id, fecha: c.fecha, tipo: c.tipo, categoria: (ob && ob.nombre) || c.categoria || 'Compartido', descripcion: c.descripcion || '', importe: p, metodoPago: '', comp: c });
+      const cn = ob ? { categoria: ob.nombre, subcategoria: null } : catNorm(c.tipo, c.categoria || 'Compartido', c.subcategoria);
+      v.push({ id: 'c:' + c.id, fecha: c.fecha, tipo: c.tipo, categoria: cn.categoria, subcategoria: cn.subcategoria, descripcion: c.descripcion || '', importe: p, metodoPago: '', comp: c });
     });
   }
   S._ef = { m: S.movimientos, c: cs, o: S.objetivos, u: yo, v };
@@ -1612,7 +1773,7 @@ async function saveCompartido(d) {
       if (!g || g === true) return;
       grupoId = g;
     }
-    const datos = { fecha: d.fecha, tipo: FORM.tipo, categoria: ob ? ob.nombre : huerfana ? (previo.categoria || d.categoria) : d.categoria, descripcion: d.descripcion, importe: r2(d.importe), pagadoPor: cp.pagador, reparto: r.reparto, modo: cp.modo, objetivoId: ob ? ob.id : huerfana ? previo.objetivoId : null };
+    const datos = { fecha: d.fecha, tipo: FORM.tipo, categoria: ob ? ob.nombre : huerfana ? (previo.categoria || d.categoria) : d.categoria, subcategoria: ob ? null : (d.subcategoria || null), descripcion: d.descripcion, importe: r2(d.importe), pagadoPor: cp.pagador, reparto: r.reparto, modo: cp.modo, objetivoId: ob ? ob.id : huerfana ? previo.objetivoId : null };
     if (FORM.articulos) datos.articulos = FORM.articulos;
     let c;
     try {
@@ -2121,6 +2282,7 @@ const CAT_ICONOS = [
 const TIPO_ICONO = { Ingreso: 'arrowUp', 'Inversión': 'chart', Ahorro: 'piggy', Deuda: 'card', Factura: 'calendar', Gasto: 'tag' };
 function iconoCat(tipo, categoria, descripcion) {
   if (tipo === 'Ingreso' || tipo === 'Inversión' || tipo === 'Ahorro' || tipo === 'Deuda') return TIPO_ICONO[tipo];
+  if (catStd(categoria)) return catStd(categoria).ic;
   const t = normDesc((categoria || '') + ' ' + (descripcion || ''));
   const m = CAT_ICONOS.find(([re]) => re.test(t));
   return m ? m[1] : TIPO_ICONO[tipo] || 'tag';
@@ -2231,7 +2393,7 @@ function crearHtml() {
     (ticketsDisponible() ? '<button class="crear-ticket tappable" ' + act('crearIr', 'ticket') + '><span class="crear-ic">' + ic('camera') + '</span><span><b>Foto de ticket</b><span>Lee los artículos y el total por ti</span></span>' + badge('ticket') + '</button>' : '') +
     '<div class="crear-grid">' +
     op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
-    (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : op('crearIr', ['factura'], 'calendar', 'Factura', 'k-factura')) +
+    (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : op('crearIr', ['factura'], 'calendar', 'Gasto fijo', 'k-factura')) +
     op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['ahorro'], 'piggy', 'Ahorro', 'k-ahorro') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
 }
@@ -3595,6 +3757,7 @@ function impNuevosConfig(filas) {
   filas.forEach((r) => {
     const k = clave[r.tipo], n = (r.categoria || '').trim();
     if (!k || !n || normName(n) === 'sin categoria' || normName(n) === 'sin categoría') return;
+    if (k === 'categoriasGasto' && (esCatStd(n) || ALIAS_STD[normName(n)])) return; // las estándar ya las tiene todo el mundo
     if (existe[k].includes(normName(n)) || out[k].some((x) => normName(x) === normName(n))) return;
     out[k].push(n);
   });
@@ -3611,7 +3774,7 @@ function impPatchConfig(filas) {
     patch.facturas = (c.facturas || []).concat(nuevos.facturas.map((n) => {
       const mias = filas.filter((r) => r.tipo === 'Factura' && normName(r.categoria) === normName(n)).sort((a, b) => a.fecha.localeCompare(b.fecha));
       const fechas = [...new Set(mias.map((r) => r.fecha))];
-      const it = { nombre: n, importe: mias.length ? Math.abs(mias[mias.length - 1].importe) : null, diaDelMes: null, desde: todayISO() };
+      const it = { nombre: n, categoria: adivinarCatStd(n) || 'Otros', importe: mias.length ? Math.abs(mias[mias.length - 1].importe) : null, diaDelMes: null, desde: todayISO() };
       // regla de fecha: aprendida con 3 o más pagos, o día fijo si al menos 2 coinciden en el mismo día del mes
       const ap = aprenderRegla(fechas);
       if (ap && ap.hits / ap.total >= 0.6) it.regla = Object.assign({}, ap.r, { aprendida: { hits: ap.hits, total: ap.total, fecha: todayISO() } });
@@ -3638,7 +3801,7 @@ async function impEjecutar() {
   Object.assign(I, { paso: 'importando', total: sel.length, lote });
   updateSheet(impHtml());
   const ahora = Date.now();
-  const items = sel.map((r, i) => ({ id: r.id, data: { creadoEn: ahora + i, tipo: r.tipo, importe: Math.round(r.importe * 100) / 100, categoria: r.categoria || 'Sin categoría', fecha: r.fecha, descripcion: r.desc, metodoPago: '', lote } }));
+  const items = sel.map((r, i) => { const cn = catNorm(r.tipo, r.categoria || (r.tipo === 'Gasto' || r.tipo === 'Factura' ? 'Otros' : 'Sin categoría')); const d = { creadoEn: ahora + i, tipo: r.tipo, importe: Math.round(r.importe * 100) / 100, categoria: cn.categoria, fecha: r.fecha, descripcion: r.desc, metodoPago: '', lote }; if (cn.subcategoria) d.subcategoria = cn.subcategoria; return { id: r.id, data: d }; });
   let hechos = 0, fallo = '';
   try {
     const col = S.db.collection('movimientos');
@@ -3803,6 +3966,9 @@ function reglaDe(it) {
   return it && Number(it.diaDelMes) ? { t: 'dia', dia: Number(it.diaDelMes), ajuste: '' } : null;
 }
 // Lista unificada: ingresos fijos (config.cobros) y facturas (config.facturas)
+// Un gasto fijo se reconoce por su recibo (detalle); el resto, por su categoría
+function nombreRec(m) { return m.tipo === 'Factura' ? (m.subcategoria || m.categoria) : m.categoria; }
+function preRec(rc, extra) { return Object.assign(rc.tipo === 'Factura' ? { tipo: rc.tipo, categoria: catDeRecibo(rc.nombre), subcategoria: rc.nombre } : { tipo: rc.tipo, categoria: rc.nombre }, extra); }
 function recurrentes() {
   const c = cfg(), out = [];
   (c.cobros || []).forEach((it, i) => { if (it && it.nombre) out.push({ kind: 'cobro', idx: i, tipo: 'Ingreso', nombre: it.nombre, importe: it.importe, regla: reglaDe(it), extras: it.extras || [], desde: it.desde || null, key: 'c:' + normName(it.nombre) }); });
@@ -3823,7 +3989,7 @@ function toleranciaRegla(r) {
 // Para cada fecha prevista: ¿hay un movimiento que la cubra?, ¿se marcó como «no ha ocurrido»?
 function estadoOcurrencias(rc, occs) {
   const tol = toleranciaRegla(rc.regla), n = normName(rc.nombre), est = cfg().recEstado || {};
-  const movs = movsEfectivos().filter((m) => m.tipo === rc.tipo && m.fecha && normName(m.categoria) === n).map((m) => ({ m, t: uD(m.fecha).getTime() }));
+  const movs = movsEfectivos().filter((m) => m.tipo === rc.tipo && m.fecha && normName(nombreRec(m)) === n).map((m) => ({ m, t: uD(m.fecha).getTime() }));
   const usados = new Set();
   return occs.map((iso) => {
     const t = uD(iso).getTime(); let best = null, bd = Infinity;
@@ -3886,10 +4052,10 @@ function marcarRec(key, iso, v) {
 async function recConfirmar(kind, idx, iso) {
   const rc = recBuscar(kind, idx); if (!rc) return;
   const importe = importePrevisto(rc, iso);
-  if (importe == null) { openMovForm(null, { tipo: rc.tipo, categoria: rc.nombre, fecha: iso }); return; }
+  if (importe == null) { openMovForm(null, preRec(rc, { fecha: iso })); return; }
   const lock = 'rec|' + rc.key + '|' + iso;
   if (_busy.has(lock)) return; _busy.add(lock);
-  const data = { creadoEn: Date.now(), tipo: rc.tipo, importe, categoria: rc.nombre, fecha: iso, descripcion: '', metodoPago: '' };
+  const data = Object.assign({ creadoEn: Date.now(), importe, fecha: iso, descripcion: '', metodoPago: '' }, preRec(rc, {}));
   const ok = await write(() => S.db.collection('movimientos').add(data));
   _busy.delete(lock);
   if (ok) { marcarRec(rc.key, iso, 'ok'); render(); toast((rc.kind === 'cobro' ? 'Cobro' : 'Pago') + ' registrado: ' + money(importe) + '. Puedes editarlo en Movimientos.'); }
@@ -3897,7 +4063,7 @@ async function recConfirmar(kind, idx, iso) {
 // Aprender la regla a partir de las fechas reales (sin servidor): prueba todo el catálogo y se queda con la que mejor explica tus fechas.
 function fechasHistorial(tipo, nombre) {
   const n = normName(nombre), lim = uAdd(todayISO(), -400);
-  return [...new Set(movsEfectivos().filter((m) => m.tipo === tipo && m.fecha && m.fecha >= lim && normName(m.categoria) === n).map((m) => m.fecha))].sort();
+  return [...new Set(movsEfectivos().filter((m) => m.tipo === tipo && m.fecha && m.fecha >= lim && normName(nombreRec(m)) === n).map((m) => m.fecha))].sort();
 }
 function puntuarRegla(r, fechas) {
   const set = new Set(fechas), occ = ocurrencias(r, fechas[0], fechas[fechas.length - 1]);
@@ -3991,6 +4157,7 @@ function recEditorHtml() {
     '<div class="field"><label>Tipo</label><div class="type-toggle"><button type="button" data-t="Ingreso" class="' + (esCobro ? 'active' : '') + '" ' + act('recSetKind', 'cobro') + '>Ingreso</button><button type="button" data-t="Factura" class="' + (!esCobro ? 'active' : '') + '" ' + act('recSetKind', 'factura') + '>Factura o pago</button></div></div>' +
     '<div class="field"><label>Nombre</label>' + (nombres.length ? '<div class="chips">' + nombres.map((nm) => '<button type="button" class="chip ' + (normName(nm) === normName(F.nombre) ? 'active' : '') + '" ' + act('recPickNombre', nm) + '>' + escapeHtml(nm) + '</button>').join('') + '</div>' : '') +
     '<input id="recNombre" type="text" placeholder="' + (esCobro ? 'Nómina' : 'Alquiler') + '" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('recCampo', 'nombre') + '></div>' +
+    (esCobro ? '' : '<div class="field"><label>Categoría</label><select id="recCat" ' + onChange('recCampo', 'categoria') + '>' + catsGasto().map((c) => '<option' + (normName(c.nombre) === normName(F.categoria || catDeRecibo(F.nombre || '')) ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>') +
     '<div class="field"><label>Importe previsto (' + sym() + ') <span class="hint">· opcional</span></label><input id="recImporte" type="number" step="0.01" inputmode="decimal" value="' + (F.importe == null ? '' : escapeHtml(F.importe)) + '" ' + onInput('recCampo', 'importe') + '></div>' +
     '<div class="field"><label>¿Cuándo ' + (esCobro ? 'te suele llegar' : 'se paga') + '?</label><select id="recTipo" ' + onChange('recTipo') + '><option value="">Elige una opción…</option>' +
     REGLA_OPC.map(([v, l]) => '<option value="' + v + '"' + (r && r.t === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
@@ -4027,7 +4194,8 @@ function recGuardar() {
   if (F.idx != null) prev = arrDe(F.origKind)[F.idx] || null;
   const item = Object.assign({}, prev || {}, { nombre, importe, regla, desde: (prev && prev.desde) || (prev ? null : todayISO()) });
   item.diaDelMes = regla && regla.t === 'dia' ? regla.dia : null;
-  if (F.recKind === 'cobro') item.extras = (F.extras || []).map(Number).sort((a, b) => a - b); else delete item.extras;
+  if (F.recKind === 'cobro') { item.extras = (F.extras || []).map(Number).sort((a, b) => a - b); delete item.categoria; }
+  else { delete item.extras; const rcat = ($('#recCat') || {}).value; item.categoria = rcat || catDeRecibo(nombre); }
   if (F.idx != null && F.origKind === F.recKind) arrDe(F.recKind)[F.idx] = item;
   else { if (F.idx != null) arrDe(F.origKind).splice(F.idx, 1); arrDe(F.recKind).push(item); }
   const patch = { cobros, facturas };
@@ -4129,8 +4297,8 @@ function freshOnboardingState(manual) {
   const otro = proy.find((x) => ONB_PROYECTOS.indexOf(x) < 0 && x !== 'Otro') || '';
   return {
     manual: !!manual, step: 0,
-    cats: manual ? names.filter((n) => ONB_CATS.indexOf(n) >= 0) : ONB_CATS.slice(),
-    catsCustom: manual ? names.filter((n) => ONB_CATS.indexOf(n) < 0) : [],
+    cats: [],
+    catsCustom: manual ? names.filter((n) => !esCatStd(n)) : [],
     ingresos: (c.ingresos || []).slice(),
     facturas: clone(c.facturas), ahorro: clone(c.ahorro), deudas: clone(c.deudas),
     proyectos: proy.filter((x) => ONB_PROYECTOS.indexOf(x) >= 0).concat(otro ? ['Otro'] : []),
@@ -4185,11 +4353,13 @@ function obWelcome() {
 }
 function obCats() {
   const ob = S.onboarding;
-  const all = ONB_CATS.concat(ob.catsCustom);
   return '<h2 class="num" style="margin:0 0 6px;">Categorías de gasto</h2>' +
-    '<p style="color:var(--text-faint);font-size:13.5px;margin:0 0 14px;">Marcadas las más habituales. Quita las que no uses o añade las tuyas.</p>' +
-    obChips(all, ob.cats.concat(ob.catsCustom), 'obToggleCat') +
-    '<div class="row2" style="margin-top:14px;"><input id="obCustomCat" placeholder="Otra categoría…"><button class="btn ghost" ' + act('obAddCustomCat') + '>' + ic('plus') + '</button></div>';
+    '<p style="color:var(--text-faint);font-size:13.5px;margin:0 0 12px;">Vienen de serie y son iguales para todos, así podéis compartir gastos sin líos. Dentro de cada una puedes apuntar el detalle que quieras (Uñas, Golf, Mercadona…).</p>' +
+    '<div class="chips">' + CATS_STD.map((c) => '<span class="chip active" style="cursor:default;">' + escapeHtml(c.n) + '</span>').join('') + '</div>' +
+    '<div class="section-title" style="margin-top:16px;">¿Te falta alguna?</div>' +
+    (ob.catsCustom.length ? obChips(ob.catsCustom, ob.catsCustom, 'obToggleCat') : '') +
+    '<div class="cat-aviso" style="margin:6px 0 10px;">' + ic('alert') + '<span>' + AVISO_CAT_PERS + '</span></div>' +
+    '<div class="row2" style="margin-top:4px;"><input id="obCustomCat" placeholder="Categoría personalizada…"><button class="btn ghost" ' + act('obAddCustomCat') + '>' + ic('plus') + '</button></div>';
 }
 function obRowsEditor(kind, rows, defs, amtLabel, addLabel) {
   const body = rows.map((r, i) => {
@@ -4251,8 +4421,9 @@ async function doObFinish(saveData) {
   if (saveData) {
     const old = cfg();
     const oldBy = {}; (old.categoriasGasto || []).forEach((c) => { oldBy[c.nombre] = c; });
-    const names = ONB_CATS.filter((n) => ob.cats.indexOf(n) >= 0).concat(ob.catsCustom);
-    const cats = (old.categoriasGasto || []).filter((c) => names.indexOf(c.nombre) >= 0)
+    // las estándar no hace falta guardarlas (las tiene todo el mundo); solo sus presupuestos y las personalizadas
+    const names = ob.catsCustom.filter((n) => !esCatStd(n));
+    const cats = (old.categoriasGasto || []).filter((c) => (esCatStd(c.nombre) && c.presupuesto != null) || names.indexOf(c.nombre) >= 0)
       .concat(names.filter((n) => !oldBy[n]).map((n) => ({ nombre: n, presupuesto: null })));
     const clean = (arr) => arr.filter((r) => r.nombre && String(r.nombre).trim());
     const proy = ob.proyectos.filter((x) => x !== 'Otro').concat(ob.proyectos.indexOf('Otro') >= 0 ? [ob.proyectoOtro.trim() || 'Otro'] : []);
@@ -4319,7 +4490,27 @@ function extraFieldHtml(key, i, def, value) {
   if (def.type === 'day') return '<input type="number" min="1" max="31" inputmode="numeric" placeholder="' + def.label + '" style="max-width:84px;" value="' + (value == null ? '' : escapeHtml(value)) + '" ' + common + '>';
   return '<input type="text" placeholder="' + def.label + '" value="' + escapeHtml(value || '') + '" ' + common + '>';
 }
+const AVISO_CAT_PERS = 'Las personalizadas son solo tuyas: es posible que otras personas no las tengan y no podrás compartir gastos con ellas. Si encaja en una estándar, usa esa y apunta el detalle (p. ej. «Salud y cuidado personal · Uñas»).';
+function catsEditorHtml() {
+  const lista = catsGasto(), pers = lista.filter((c) => !c.std);
+  const pres = (c) => '<input class="amt" type="number" step="0.01" inputmode="decimal" placeholder="€/mes" aria-label="Presupuesto al mes de ' + escapeHtml(c.nombre) + '" value="' + (c.presupuesto == null ? '' : c.presupuesto) + '" ' + onChange('catPres', c.nombre) + '>';
+  return '<div class="handle"></div><h2>Categorías y presupuestos</h2>' +
+    '<div class="rec-hint" style="margin:-8px 0 12px;">Las estándar son iguales para todos y no se pueden borrar: así un gasto compartido cae en la misma categoría para cada uno. Ponles un presupuesto al mes si quieres.</div>' +
+    '<div class="section-title" style="margin-top:4px;">Estándar</div><div class="card config-list">' +
+    lista.filter((c) => c.std).map((c) => { const s = catStd(c.nombre); return '<div class="cat-std-row"><span class="mov-ic t-expense" aria-hidden="true">' + ic(s.ic) + '</span><div class="cn"><b>' + escapeHtml(c.nombre) + '</b><span>' + escapeHtml(s.d) + '</span></div>' + pres(c) + '</div>'; }).join('') + '</div>' +
+    '<div class="section-title">Tus categorías personalizadas</div>' +
+    (pers.length ? '<div class="card config-list">' + pers.map((c) => '<div class="cat-std-row"><input class="cn-in" value="' + escapeHtml(c.nombre) + '" aria-label="Nombre" ' + onChange('catRenombrar', c.nombre) + '>' + pres(c) +
+      '<button class="rm" aria-label="Quitar ' + escapeHtml(c.nombre) + '" ' + act('catQuitar', c.nombre) + '>' + ic('close') + '</button></div>').join('') + '</div>' : '') +
+    '<div class="cat-aviso" style="margin:10px 0;">' + ic('alert') + '<span>' + AVISO_CAT_PERS + '</span></div>' +
+    '<div class="row2" style="display:flex;gap:8px;"><input id="catNuevaIn" placeholder="Nueva categoría personalizada" style="flex:1;"><button class="btn ghost" ' + act('catNueva') + '>' + ic('plus') + ' Añadir</button></div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+// Guarda: de las estándar solo el presupuesto (si lo tienen); las personalizadas, enteras
+function guardarCats(lista) {
+  saveConfig({ categoriasGasto: lista.filter((c) => !c.std || (c.presupuesto != null && c.presupuesto !== '')).map((c) => ({ nombre: c.nombre, presupuesto: c.presupuesto == null || c.presupuesto === '' ? null : Number(c.presupuesto) })) });
+}
 function listEditorHtml(key) {
+  if (key === 'categoriasGasto') return catsEditorHtml();
   const meta = LIST_META[key];
   const items = (cfg()[key] || []);
   const rows = items.map((it, i) => meta.simple
@@ -4462,9 +4653,21 @@ const H = {
   openMovForm: ([id], el) => { if (el && el.parentNode && el.parentNode.classList && el.parentNode.classList.contains('abierta')) { cerrarSwipe(el.parentNode); return; } S._volverGrupo = null; openMovForm(id || null); },
   movDuplicar: ([id]) => { const m = S.movimientos.find((x) => x.id === id); $$('.swipe.abierta').forEach(cerrarSwipe); if (!m) return; S._volverGrupo = null; openMovForm(null, { tipo: m.tipo, importe: m.importe, categoria: m.categoria, fecha: todayISO(), descripcion: m.descripcion }); toast('Copia lista: revisa y guarda'); },
   movBorrar: ([id]) => { vibrar([10, 30, 10]); borrarMovConDeshacer(id); },
+  pickFijo: ([v]) => {
+    if (!esGastoForm()) return;
+    FORM.tipo = v === '1' ? 'Factura' : 'Gasto';
+    const fb = $('#fijoBox'); if (fb) { fb.innerHTML = fijoHtml(); animarSegmentados(fb); }
+    refrescarSub(); refrescarComp();
+  },
+  pickSub: ([s]) => { const i = $('#fSub'); if (i) i.value = s; $$('#subChips .chip').forEach((b) => b.classList.toggle('active', normName(b.textContent) === normName(s))); },
+  onSubInput: (_a, el) => { $$('#subChips .chip').forEach((b) => b.classList.toggle('active', normName(b.textContent) === normName(el.value))); },
+  catMas: () => { FORM.catTodas = !FORM.catTodas; const chips = $('#catChips'); if (chips) chips.innerHTML = chipsHtml(FORM.tipo, ($('#fCategoria') || {}).value || ''); },
   pickTipo: ([t], el) => {
+    if (t === 'Gasto' && FORM.tipo === 'Factura') return; // ya es un gasto (fijo)
     FORM.tipo = t;
     $$('#tipoToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-t') === t));
+    const fb = $('#fijoBox'); if (fb) { fb.innerHTML = fijoHtml(); animarSegmentados(fb); }
+    setTimeout(() => { refrescarSub(); refrescarCatAviso(); }, 0);
     const chips = $('#catChips'); if (chips) chips.innerHTML = chipsHtml(t, ($('#fCategoria') || {}).value || '');
     const inv = $('#invFields'); if (inv) inv.innerHTML = invFieldsHtml(t, '');
     const cl = $('#catLabel'); if (cl) cl.innerHTML = catLabel(t);
@@ -4494,10 +4697,10 @@ const H = {
   onFechaChange: () => { if (FORM.activo) cargarPreview(); },
   onImporteInput: () => { updatePreview(); if (FORM.comp && FORM.comp.on) { if (FORM.comp.modo === 'igual') { const r = $('#compReparto'); if (r) r.innerHTML = compRepartoHtml(); } else refrescarComp(true); } },
   pickCat: ([c]) => {
-    const inp = $('#fCategoria'); if (inp) inp.value = c; if (FORM) FORM.catAuto = false; setTimeout(refrescarReglaBox, 0);
+    const inp = $('#fCategoria'); if (inp) inp.value = c; if (FORM) FORM.catAuto = false; setTimeout(refrescarReglaBox, 0); refrescarSub(); refrescarCatAviso();
     $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c));
   },
-  onCatInput: (_a, el) => { if (FORM) FORM.catAuto = false; refrescarReglaBox(); $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === el.value.trim())); },
+  onCatInput: (_a, el) => { if (FORM) FORM.catAuto = false; refrescarReglaBox(); refrescarCatAviso(); clearTimeout(S._subT); S._subT = setTimeout(refrescarSub, 300); $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === el.value.trim())); },
   saveMov: () => saveMov(),
   deleteMov: (_a, el) => confirmDelete(el, doDeleteMov),
   // tickets
@@ -4731,7 +4934,7 @@ const H = {
   recEliminar: (_, el) => confirmDelete(el, recEliminar),
   recSi: ([k, i, iso]) => recConfirmar(k, i, iso),
   recNo: ([k, i, iso]) => { const rc = recBuscar(k, i); if (!rc) return; marcarRec(rc.key, iso, 'no'); render(); toast('Anotado: no ha ocurrido'); },
-  recNuevoMov: ([k, i, iso]) => { const rc = recBuscar(k, i); if (!rc) return; openMovForm(null, { tipo: rc.tipo, categoria: rc.nombre, fecha: iso, importe: importePrevisto(rc, iso) }); },
+  recNuevoMov: ([k, i, iso]) => { const rc = recBuscar(k, i); if (!rc) return; openMovForm(null, preRec(rc, { fecha: iso, importe: importePrevisto(rc, iso) })); },
   tRepetirCambio: (_, el) => { verBadge('repetir'); const c = $('#tRepCustom'); if (c) c.innerHTML = el.value === 'custom' ? repCustomHtml(null) : ''; },
   verNovedades: ([t]) => openSheet(novedadesHtml(t === '1')),
   novIr: ([k]) => {
@@ -4775,7 +4978,9 @@ const H = {
   irAnalisis: ([sub]) => { if (sub === 'general') { S.tab = 'inicio'; render(); window.scrollTo(0, 0); return; } H.irDinero([sub]); },
   verMes: ([y, m]) => { S.anioSel = Number(y); S.mesSel = Number(m); S.generalSub = 'mensual'; S.tab = 'inicio'; render(); window.scrollTo(0, 0); },
   volver: () => { const v = S.volverA; S.volverA = null; if (!v) return; S.tab = v.tab; S.inicioSub = v.inicioSub; S.analisisSub = v.analisisSub; S.generalSub = v.generalSub; S.movCat = ''; S.movPeriodo = mesHoyClave(); S.movFiltroTipo = 'Todos'; render(); window.scrollTo(0, 0); },
-  quitarMovCat: () => { S.movCat = ''; render(); },
+  quitarMovCat: () => { S.movCat = ''; S.movSub = ''; render(); },
+  presTodas: () => { S.presTodas = !S.presTodas; render(); },
+  setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = 120; render(); },
   openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
   cuentaAnadir: () => { saveConfig({ cuentas: (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]) }); updateSheet(cuentasHtml()); const ins = $$('#sheetBackdrop .config-list .row2 input:first-child'); if (ins.length) ins[ins.length - 1].focus(); },
   cuentaQuitar: ([i]) => { const cs = (cfg().cuentas || []).slice(); cs.splice(Number(i), 1); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
@@ -4858,6 +5063,20 @@ const H = {
     render();
   },
   // más
+  catPres: ([n], el) => { const v = el.value === '' ? null : parseFloat(el.value); if (v != null && !isFinite(v)) return toast('Revisa el presupuesto'); guardarCats(catsGasto().map((c) => (c.nombre === n ? Object.assign({}, c, { presupuesto: v }) : c))); },
+  catRenombrar: ([n], el) => {
+    const v = el.value.trim(); if (!v || v === n) return;
+    if (esCatStd(v) || ALIAS_STD[normName(v)]) { el.value = n; return toast('«' + v + '» ya es una categoría estándar'); }
+    guardarCats(catsGasto().map((c) => (c.nombre === n ? Object.assign({}, c, { nombre: v }) : c)));
+  },
+  catQuitar: ([n], el) => confirmDelete(el, () => { guardarCats(catsGasto().filter((c) => c.nombre !== n)); setTimeout(() => updateSheet(catsEditorHtml()), 50); }),
+  catNueva: () => {
+    const el = $('#catNuevaIn'), v = ((el && el.value) || '').trim(); if (!v) return toast('Escribe el nombre');
+    if (esCatStd(v) || ALIAS_STD[normName(v)]) return toast('«' + v + '» ya está entre las estándar' + (ALIAS_STD[normName(v)] ? ' (' + ALIAS_STD[normName(v)] + ')' : ''));
+    if (esCatGasto(v)) return toast('Ya la tienes');
+    guardarCats(catsGasto().concat([{ nombre: v, presupuesto: null, std: false }]));
+    setTimeout(() => updateSheet(catsEditorHtml()), 50); toast('Categoría personalizada añadida');
+  },
   openListEditor: ([key]) => { FORM = { kind: 'list', key }; openSheet(listEditorHtml(key)); },
   listAdd: ([key]) => {
     const meta = LIST_META[key];
@@ -4913,8 +5132,8 @@ const H = {
   obAddCustomCat: () => {
     const ob = S.onboarding, el = $('#obCustomCat'); const v = ((el && el.value) || '').trim();
     if (!v) return;
-    if (ONB_CATS.indexOf(v) >= 0) { if (ob.cats.indexOf(v) < 0) ob.cats.push(v); }
-    else if (ob.catsCustom.indexOf(v) < 0) ob.catsCustom.push(v);
+    if (esCatStd(v) || ALIAS_STD[normName(v)]) return toast('«' + v + '» ya está entre las estándar');
+    if (ob.catsCustom.indexOf(v) < 0) ob.catsCustom.push(v);
     render();
   },
   obToggleIngreso: ([n]) => { obToggle(S.onboarding.ingresos, n); render(); },

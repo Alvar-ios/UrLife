@@ -58,3 +58,14 @@ Semáforo por persona (12/10/2026): paradores_luces_por_persona.
   cambia o apaga la suya; todos los del grupo las leen.
 - Las 30 luces que había en `paradores_semaforo` se copiaron a cada miembro activo del grupo.
   `paradores_semaforo` se conserva como copia; la página ya no la usa.
+
+Categorías estándar (12/10/2026): subcategoria_movimientos_compartidos.
+- Columna `subcategoria` (texto, opcional) en `movimientos` y `compartidos`: el detalle dentro de
+  una categoría («Salud y cuidado personal · Uñas») o, en un gasto fijo, el recibo («Vivienda · Alquiler»).
+- Las 16 categorías estándar viven en la app (CATS_STD en app.js), no en la base de datos: son
+  iguales para todos y no se pueden borrar. En `config.app.categoriasGasto` solo se guardan los
+  presupuestos de las estándar y las categorías personalizadas de cada persona.
+- Los recibos (`config.app.facturas`) llevan su `categoria` estándar. Un movimiento de tipo Factura
+  («gasto fijo») guarda la categoría estándar y el nombre del recibo en `subcategoria`.
+- Migración de datos del 12/10 con copias en backup_movimientos_20261012, backup_compartidos_20261012
+  y backup_config_20261012 (las cuentas de prueba no se tocaron).
