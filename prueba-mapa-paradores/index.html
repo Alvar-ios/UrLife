@@ -124,6 +124,13 @@ aside{display:grid;gap:14px;min-width:0}
 footer{color:var(--muted);font-size:.78rem;max-width:80ch}
 
 /* Zoom */
+svg.map{touch-action:pan-y}
+.mapbox.zoomed svg.map{touch-action:none;cursor:grab}
+.mapbox.zoomed svg.map:active{cursor:grabbing}
+.mapzoom{position:absolute;right:10px;top:48px;display:grid;gap:6px}
+.mapzoom button{width:36px;height:36px;font:inherit;font-size:1.2rem;font-weight:600;line-height:1;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.mapzoom button:hover{background:var(--bg)}
+.mapzoom button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .region,.inset,.pin .dot,.pin .ring,.pin .lt{vector-effect:non-scaling-stroke}
 .zoomout{position:absolute;top:10px;right:10px;font:inherit;font-size:.8rem;font-weight:600;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 12px;cursor:pointer}
 .zoomout:hover{background:var(--bg)}
@@ -233,12 +240,14 @@ footer{color:var(--muted);font-size:.78rem;max-width:80ch}
       <div class="tip" id="tip"></div>
       <span class="zoomtag" id="zoomTag" hidden></span>
       <button type="button" class="zoomout" id="zoomOut" hidden>Ver toda España</button>
+      <div class="mapzoom"><button type="button" id="zIn" aria-label="Acercar mapa">+</button><button type="button" id="zOutB" aria-label="Alejar mapa">&minus;</button></div>
       <div class="legend">
         <span><i class="sw" style="background:var(--gold)"></i>Top 10</span>
         <span><i class="sw" style="background:var(--teal)"></i>Pack cubierto</span>
         <span><i class="sw" style="background:var(--paper);border:2px solid var(--teal)"></i>Pack con suplemento</span>
         <span><i class="sw" style="background:var(--closed)"></i>Cerrado / por confirmar</span>
         <span><i class="sw" style="background:var(--warn);border-radius:2px;transform:rotate(45deg);width:9px;height:9px"></i>Majadahonda</span>
+        <span>Pellizca o usa + / − para hacer zoom</span>
         <span>Vuestra luz: <i class="lt-dot" style="background:var(--l-red)"></i>no nos gusta <i class="lt-dot" style="background:var(--l-orange)"></i>sin más <i class="lt-dot" style="background:var(--l-green)"></i>nos gusta <i class="lt-dot gold" style="background:var(--l-gold)"></i>nos flipa</span>
       </div>
     </div>
@@ -275,6 +284,9 @@ const NS='http://www.w3.org/2000/svg';
 const fmt=m=>{if(m==null)return null;const h=Math.floor(m/60),mm=m%60;return h?`${h} h${mm?' '+mm:''}`:`${mm} min`};
 const drive=p=>p.dl||fmt(p.d);
 const q=p=>encodeURIComponent('Parador '+p.n);
+const OFF={'Costa da Morte':'parador-costa-da-morte','Castillo de Monterrei':'parador-castillo-de-monterrei'};
+const offSlug=n=>'parador-de-'+n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/['’]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const oficial=p=>p.n==='Veruela'?null:'https://paradores.es/es/'+(OFF[p.n]||offSlug(p.n));
 const links=p=>({
   fotos:`https://www.google.com/search?tbm=isch&q=${q(p)}`,
   resenas:`https://www.google.com/maps/search/${q(p)}`,
@@ -309,7 +321,7 @@ const gP=document.createElementNS(NS,'g');svg.appendChild(gP);
   if(p.top){const t=document.createElementNS(NS,'text');t.setAttribute('class','num');t.setAttribute('x',p.x);t.setAttribute('y',p.y+.5);t.textContent=p.top;g.appendChild(t);p.num=t}
   const lt=document.createElementNS(NS,'circle');lt.setAttribute('class','lt');lt.setAttribute('r',3.4);lt.setAttribute('cx',p.x+rad*.85);lt.setAttribute('cy',p.y-rad*.85);lt.style.display='none';g.appendChild(lt);
   p.base=rad;p.dot=c;p.ring=ring;p.lt=lt;
-  g.addEventListener('click',()=>select(p.i,true));
+  g.addEventListener('click',()=>{if(mapDragged){mapDragged=false;return}select(p.i,true)});
   g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(p.i,true)}});
   g.addEventListener('mouseenter',()=>showTip(p));g.addEventListener('mouseleave',hideTip);
   g.addEventListener('focus',()=>showTip(p));g.addEventListener('blur',hideTip);
@@ -332,6 +344,7 @@ function applyVB(b){
   home.setAttribute('x',hx-5*k);home.setAttribute('y',hy-5*k);home.setAttribute('width',10*k);home.setAttribute('height',10*k);
   hl.setAttribute('x',hx-9*k);hl.setAttribute('y',hy-9*k);hl.style.fontSize=(11*k)+'px';
   bl.style.fontSize=(10*k)+'px';
+  updZoomUI();
 }
 function targetBox(com){
   if(!com)return {...FULL};
@@ -358,9 +371,39 @@ function zoomTo(t){
 }
 function syncZoom(){
   if(st.com===zoomKey)return;zoomKey=st.com;zoomTo(targetBox(st.com));
-  $('#zoomOut').hidden=!st.com;$('#zoomTag').hidden=!st.com;$('#zoomTag').textContent=st.com;
+  $('#zoomTag').hidden=!st.com;updZoomUI();$('#zoomTag').textContent=st.com;
 }
-$('#zoomOut').onclick=()=>{st.com='';$('#fCom').value='';render()};
+$('#zoomOut').onclick=()=>{if(st.com){st.com='';$('#fCom').value='';render()}else zoomTo({...FULL})};
+// ---- Zoom manual del mapa: pellizco, arrastre, doble toque, botones y Ctrl+rueda ----
+const MINW=GEO.W/14;let mapDragged=false;
+function updZoomUI(){const z=vb.w<GEO.W-1;const mb=document.querySelector('.mapbox');if(mb)mb.classList.toggle('zoomed',z);const b=$('#zoomOut');if(b)b.hidden=!(z||(typeof st!=='undefined'&&st.com))}
+function clampVB(b){b.w=Math.min(GEO.W,Math.max(MINW,b.w));b.h=b.w*GEO.H/GEO.W;b.x=Math.min(GEO.W-b.w,Math.max(0,b.x));b.y=Math.min(GEO.H-b.h,Math.max(0,b.y));return b}
+function toSvg(cx,cy){const r=svg.getBoundingClientRect();return [vb.x+(cx-r.left)/r.width*vb.w,vb.y+(cy-r.top)/r.height*vb.h]}
+function zoomAround(f,sx,sy){cancelAnimationFrame(zoomAnim);const nw=Math.min(GEO.W,Math.max(MINW,vb.w/f)),k=nw/vb.w;applyVB(clampVB({x:sx-(sx-vb.x)*k,y:sy-(sy-vb.y)*k,w:nw,h:nw*GEO.H/GEO.W}))}
+function zoomStep(f){const t={...vb};const nw=Math.min(GEO.W,Math.max(MINW,vb.w/f));const c=[vb.x+vb.w/2,vb.y+vb.h/2];zoomTo(clampVB({x:c[0]-nw/2,y:c[1]-nw*GEO.H/GEO.W/2,w:nw,h:nw*GEO.H/GEO.W}))}
+$('#zIn').onclick=()=>zoomStep(1.6);$('#zOutB').onclick=()=>zoomStep(1/1.6);
+const mp=new Map();let mg=null;
+svg.addEventListener('pointerdown',e=>{
+  mp.set(e.pointerId,{x:e.clientX,y:e.clientY});mapDragged=false;
+  const a=[...mp.values()];
+  if(a.length===2){cancelAnimationFrame(zoomAnim);const [p,q]=a;mg={t:'pinch',d:Math.hypot(p.x-q.x,p.y-q.y)||1,vb:{...vb},m:[(p.x+q.x)/2,(p.y+q.y)/2]};try{svg.setPointerCapture(e.pointerId)}catch(_){}}
+  else mg={t:'pan',sx:e.clientX,sy:e.clientY,vb:{...vb},cap:false};
+});
+svg.addEventListener('pointermove',e=>{
+  if(!mp.has(e.pointerId)||!mg)return;mp.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  const r=svg.getBoundingClientRect();
+  if(mg.t==='pinch'&&mp.size===2){const [p,q]=[...mp.values()];const d=Math.hypot(p.x-q.x,p.y-q.y)||1;const m=[(p.x+q.x)/2,(p.y+q.y)/2];
+    const o=mg.vb,nw=Math.min(GEO.W,Math.max(MINW,o.w*mg.d/d)),nh=nw*GEO.H/GEO.W;
+    const sx=o.x+(mg.m[0]-r.left)/r.width*o.w,sy=o.y+(mg.m[1]-r.top)/r.height*o.h;
+    applyVB(clampVB({x:sx-(m[0]-r.left)/r.width*nw,y:sy-(m[1]-r.top)/r.height*nh,w:nw,h:nh}));mapDragged=true;hideTip();return}
+  if(mg.t==='pan'){const dx=e.clientX-mg.sx,dy=e.clientY-mg.sy;
+    if(!mg.cap){if(Math.hypot(dx,dy)<6||vb.w>=GEO.W-1)return;mg.cap=true;mapDragged=true;cancelAnimationFrame(zoomAnim);try{svg.setPointerCapture(e.pointerId)}catch(_){}hideTip()}
+    const o=mg.vb;applyVB(clampVB({x:o.x-dx/r.width*o.w,y:o.y-dy/r.height*o.h,w:o.w,h:o.h}))}
+});
+function mapEnd(e){mp.delete(e.pointerId);if(mg&&mg.t==='pinch'&&mp.size===1){const [p]=[...mp.values()];mg={t:'pan',sx:p.x,sy:p.y,vb:{...vb},cap:true}}else if(!mp.size)mg=null}
+svg.addEventListener('pointerup',mapEnd);svg.addEventListener('pointercancel',mapEnd);
+svg.addEventListener('wheel',e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();const [sx,sy]=toSvg(e.clientX,e.clientY);zoomAround(e.deltaY<0?1.25:0.8,sx,sy)},{passive:false});
+svg.addEventListener('dblclick',e=>{if(e.target.closest&&e.target.closest('.pin'))return;const [sx,sy]=toSvg(e.clientX,e.clientY);zoomAround(2,sx,sy)});
 window.addEventListener('resize',hideTip);
 function hideTip(){tip.style.opacity=0}
 
@@ -442,7 +485,7 @@ function detail(){
     ${p.s==='suplemento'?'<p class="note" style="color:var(--teal)">El pack Rubí solo descuenta aquí: pagáis la diferencia con la tarifa del día.</p>':''}
     <p class="q">${p.q}</p>
     ${p.plan?`<p class="plan"><b>Plan para el sábado:</b> ${p.plan}</p>`:''}
-    <div class="links"><a href="${L.fotos}" target="_blank" rel="noopener">Fotos</a><a href="${L.resenas}" target="_blank" rel="noopener">Reseñas y mapa</a>${p.d!=null?`<a href="${L.ruta}" target="_blank" rel="noopener">Ruta desde Majadahonda</a>`:''}</div>`;
+    <div class="links">${oficial(p)?`<a href="${oficial(p)}" target="_blank" rel="noopener">Ficha oficial en Paradores</a>`:''}<a href="${L.fotos}" target="_blank" rel="noopener">Fotos</a><a href="${L.resenas}" target="_blank" rel="noopener">Reseñas y mapa</a>${p.d!=null?`<a href="${L.ruta}" target="_blank" rel="noopener">Ruta desde Majadahonda</a>`:''}</div>`;
   loadGal(p);
   D.insertAdjacentHTML('beforeend','<div class="social" id="social"></div>');
   renderSocial();
