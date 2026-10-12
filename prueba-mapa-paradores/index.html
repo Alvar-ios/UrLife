@@ -175,7 +175,27 @@ footer{color:var(--muted);font-size:.78rem;max-width:80ch}
 .gal .none{font-size:.85rem;color:var(--muted);align-self:center}
 .gal-src{font-size:.7rem;color:var(--muted);margin:-8px 0 10px}
 .gal-src a{color:var(--muted)}
-@media (prefers-reduced-motion:reduce){.gal .sk{animation:none}}
+
+/* Visor de fotos a pantalla completa: oscuro a propósito en ambos temas */
+:root{--lb-bg:rgba(9,11,13,.96);--lb-fg:#F2F4F3;--lb-muted:#AEB6B9;--lb-btn:rgba(255,255,255,.12)}
+.lb{position:fixed;inset:0;z-index:100;background:var(--lb-bg);color:var(--lb-fg);display:flex;flex-direction:column;overscroll-behavior:contain}
+.lb-top{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px 8px}
+.lb-n{font-family:var(--f-mono);font-size:.85rem;color:var(--lb-muted)}
+.lb-btn{all:unset;cursor:pointer;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--lb-btn);color:var(--lb-fg);font-size:1.35rem;line-height:1}
+.lb-btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.lb-stage{flex:1;position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;display:grid;place-items:center;min-height:0}
+.lb-stage img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:center center;will-change:transform;-webkit-user-drag:none;pointer-events:none}
+.lb-stage.anim img{transition:transform .2s ease-out}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%)}
+.lb-nav.prev{left:10px}.lb-nav.next{right:10px}
+.lb-bot{padding:8px 16px calc(env(safe-area-inset-bottom,0px) + 12px);display:grid;gap:3px;font-size:.82rem}
+.lb-bot .cap{color:var(--lb-fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-bot .hint{color:var(--lb-muted);font-size:.74rem}
+.lb-bot a{color:var(--lb-muted)}
+.lb-load{position:absolute;inset:auto 0 12px;text-align:center;font-size:.75rem;color:var(--lb-muted)}
+@media (hover:none){.lb-nav{display:none}}
+.gal a.ph{cursor:zoom-in}
+@media (prefers-reduced-motion:reduce){.gal .sk{animation:none}.lb-stage.anim img{transition:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -235,6 +255,14 @@ footer{color:var(--muted);font-size:.78rem;max-width:80ch}
   <footer>Tiempos de coche y clima de noviembre (máx./mín. medias) son aproximados. La valoración (1–5) es orientativa. Comprobad disponibilidad en paradores.es y la previsión real en AEMET a partir del 30 de octubre.</footer>
 </div>
 
+
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Foto ampliada">
+  <div class="lb-top"><span class="lb-n" id="lbN"></span><button type="button" class="lb-btn" id="lbX" aria-label="Cerrar">&#x2715;</button></div>
+  <div class="lb-stage" id="lbStage"><img id="lbImg" alt=""><span class="lb-load" id="lbLoad" hidden>Cargando en alta resolución…</span>
+    <button type="button" class="lb-btn lb-nav prev" id="lbPrev" aria-label="Foto anterior">&#x2039;</button>
+    <button type="button" class="lb-btn lb-nav next" id="lbNext" aria-label="Foto siguiente">&#x203A;</button></div>
+  <div class="lb-bot"><span class="cap" id="lbCap"></span><span class="hint">Pellizca o toca dos veces para hacer zoom · desliza para pasar · <a id="lbLink" href="#" target="_blank" rel="noopener">autor y licencia</a></span></div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="../config.js"></script>
 <script>
@@ -424,21 +452,25 @@ function detail(){
 // ---- Fotos libres de Wikimedia Commons (se cargan al abrir cada ficha) ----
 const galCache={};
 const plain=h=>{try{return (new DOMParser().parseFromString(h||'','text/html').body.textContent||'').trim()}catch(e){return ''}};
-async function commons(q){
-  const u='https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=8'
-   +'&gsrsearch='+encodeURIComponent(q+' filetype:bitmap')+'&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=480&iiextmetadatafilter=Artist|LicenseShortName';
+async function commons(q,lim){
+  const u='https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit='+(lim||12)
+   +'&gsrsearch='+encodeURIComponent(q+' filetype:bitmap')+'&prop=imageinfo&iiprop=url|size|extmetadata&iiurlwidth=480&iiextmetadatafilter=Artist|LicenseShortName';
   const r=await fetch(u);if(!r.ok)throw new Error('commons '+r.status);
   const j=await r.json();const pages=Object.values((j.query&&j.query.pages)||{}).sort((a,b)=>a.index-b.index);
   return pages.filter(pg=>pg.imageinfo&&pg.imageinfo[0]&&pg.imageinfo[0].thumburl).map(pg=>{const ii=pg.imageinfo[0],m=ii.extmetadata||{};
-    return {id:pg.pageid,src:ii.thumburl,page:ii.descriptionurl,autor:plain(m.Artist&&m.Artist.value).slice(0,60)||'Autor desconocido',lic:(m.LicenseShortName&&m.LicenseShortName.value)||''}});
+    const big=ii.width>1600&&/\/480px-/.test(ii.thumburl)?ii.thumburl.replace('/480px-','/1600px-'):(ii.url||ii.thumburl);
+    return {id:pg.pageid,src:ii.thumburl,big,page:ii.descriptionurl,autor:plain(m.Artist&&m.Artist.value).slice(0,60)||'Autor desconocido',lic:(m.LicenseShortName&&m.LicenseShortName.value)||''}});
 }
+const MAXF=12;
 function fotosDe(p){
   if(galCache[p.i])return galCache[p.i];
   galCache[p.i]=(async()=>{
-    let out=await commons('Parador '+p.n).catch(()=>[]);
-    if(out.length<4){const edificio=p.tt.split(',')[0];const extra=await commons(edificio+' '+p.n).catch(()=>[]);
-      const seen=new Set(out.map(f=>f.id));extra.forEach(f=>{if(!seen.has(f.id)){out.push(f);seen.add(f.id)}})}
-    return out.slice(0,6);
+    const out=[],seen=new Set();const add=l=>l.forEach(f=>{if(!seen.has(f.id)&&out.length<MAXF){out.push(f);seen.add(f.id)}});
+    const edificio=p.tt.split(',')[0];
+    const [a,b]=await Promise.all([commons('Parador '+p.n).catch(()=>[]),commons(edificio+' '+p.n).catch(()=>[])]);
+    add(a);add(b);
+    if(out.length<8)add(await commons(p.n+' monumento',10).catch(()=>[]));
+    return out;
   })();
   return galCache[p.i];
 }
@@ -450,13 +482,90 @@ async function loadGal(p){
   const L=links(p);
   if(!fotos.length){g.innerHTML=`<p class="none">No hay fotos libres de este parador. <a href="${L.fotos}" target="_blank" rel="noopener" style="color:var(--teal)">Ver fotos en Google</a></p>`;g.style.minHeight='0';return}
   g.innerHTML='';
-  fotos.forEach(f=>{const fig=document.createElement('figure');
-    const a=document.createElement('a');a.className='ph';a.href=f.page;a.target='_blank';a.rel='noopener';
+  fotos.forEach((f,k)=>{const fig=document.createElement('figure');
+    const a=document.createElement('a');a.className='ph';a.href=f.big;a.setAttribute('aria-label','Ampliar foto '+(k+1));a.onclick=e=>{e.preventDefault();openLB(p,fotos,k)};
     const im=document.createElement('img');im.src=f.src;im.alt='Foto de '+p.n;im.loading='lazy';im.onerror=()=>fig.remove();a.appendChild(im);
     const cap=document.createElement('figcaption');cap.textContent=f.autor+(f.lic?' · '+f.lic:'');cap.title=cap.textContent;
     fig.append(a,cap);g.appendChild(fig)});
-  const src=$('#galSrc');src.hidden=false;src.innerHTML='Fotos libres de <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a> · toca una para ver autor y licencia completos';
+  const src=$('#galSrc');src.hidden=false;src.innerHTML='Fotos libres de <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a> · toca una para verla en grande';
 }
+
+// ---- Visor: pantalla completa con pellizco, doble toque, arrastre y deslizar ----
+const LB={fotos:[],i:0,s:1,x:0,y:0,open:false,name:''};
+const lbEl=$('#lb'),lbStage=$('#lbStage'),lbImg=$('#lbImg');
+function lbApply(anim){lbStage.classList.toggle('anim',!!anim);lbImg.style.transform=`translate(${LB.x}px,${LB.y}px) scale(${LB.s})`}
+function lbClamp(){
+  const r=lbStage.getBoundingClientRect(),w=lbImg.offsetWidth*LB.s,h=lbImg.offsetHeight*LB.s;
+  const mx=Math.max(0,(w-r.width)/2),my=Math.max(0,(h-r.height)/2);
+  LB.x=Math.min(mx,Math.max(-mx,LB.x));LB.y=Math.min(my,Math.max(-my,LB.y));
+}
+function lbShow(i){
+  const n=LB.fotos.length;LB.i=(i+n)%n;const f=LB.fotos[LB.i];
+  LB.s=1;LB.x=0;LB.y=0;lbApply(false);
+  lbImg.src=f.src;lbImg.alt='Foto '+(LB.i+1)+' de '+LB.name;
+  $('#lbN').textContent=(LB.i+1)+' / '+n;$('#lbCap').textContent=f.autor+(f.lic?' · '+f.lic:'');$('#lbLink').href=f.page;
+  $('#lbPrev').hidden=$('#lbNext').hidden=n<2;
+  const load=$('#lbLoad');
+  if(f.big&&f.big!==f.src){load.hidden=false;const im=new Image();im.onload=()=>{if(LB.fotos[LB.i]===f){lbImg.src=f.big;load.hidden=true}};im.onerror=()=>{load.hidden=true};im.src=f.big}else load.hidden=true;
+  [1,-1].forEach(d=>{const g=LB.fotos[(LB.i+d+n)%n];if(g&&g.big){const im=new Image();im.src=g.big}});
+}
+let lbPrevFocus=null;
+function openLB(p,fotos,i){
+  LB.fotos=fotos;LB.name=p.n;LB.open=true;lbPrevFocus=document.activeElement;
+  lbEl.hidden=false;document.documentElement.style.overflow='hidden';
+  try{history.pushState({lb:1},'')}catch(e){}
+  lbShow(i);$('#lbX').focus();
+}
+function closeLB(fromPop){
+  if(!LB.open)return;LB.open=false;lbEl.hidden=true;document.documentElement.style.overflow='';
+  if(!fromPop){try{if(history.state&&history.state.lb)history.back()}catch(e){}}
+  if(lbPrevFocus&&lbPrevFocus.focus)lbPrevFocus.focus();
+}
+window.addEventListener('popstate',()=>{if(LB.open)closeLB(true)});
+$('#lbX').onclick=()=>closeLB();
+$('#lbPrev').onclick=()=>lbShow(LB.i-1);$('#lbNext').onclick=()=>lbShow(LB.i+1);
+document.addEventListener('keydown',e=>{if(!LB.open)return;
+  if(e.key==='Escape')closeLB();else if(e.key==='ArrowLeft')lbShow(LB.i-1);else if(e.key==='ArrowRight')lbShow(LB.i+1)});
+function lbZoomAt(ns,cx,cy){ // cx,cy: punto respecto al centro del visor
+  ns=Math.min(5,Math.max(1,ns));const k=ns/LB.s;
+  LB.x=cx-(cx-LB.x)*k;LB.y=cy-(cy-LB.y)*k;LB.s=ns;if(ns===1){LB.x=0;LB.y=0}lbClamp();
+}
+const ptrs=new Map();let g0=null,lastTap=0,lastTapX=0,lastTapY=0,moved=false;
+const rel=(cx,cy)=>{const r=lbStage.getBoundingClientRect();return [cx-r.left-r.width/2,cy-r.top-r.height/2]};
+lbStage.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.lb-btn'))return;
+  lbStage.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=false;
+  const P2=[...ptrs.values()];
+  if(P2.length===2){const [a,b]=P2;g0={type:'pinch',d:Math.hypot(a.x-b.x,a.y-b.y),s:LB.s,x:LB.x,y:LB.y,m:rel((a.x+b.x)/2,(a.y+b.y)/2)}}
+  else g0={type:LB.s>1?'pan':'swipe',sx:e.clientX,sy:e.clientY,x:LB.x,y:LB.y};
+});
+lbStage.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId)||!g0)return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  const P2=[...ptrs.values()];
+  if(g0.type==='pinch'&&P2.length===2){const [a,b]=P2;const d=Math.hypot(a.x-b.x,a.y-b.y);const m=rel((a.x+b.x)/2,(a.y+b.y)/2);
+    const ns=Math.min(5,Math.max(1,g0.s*d/g0.d)),k=ns/g0.s;
+    LB.s=ns;LB.x=g0.m[0]-(g0.m[0]-g0.x)*k+(m[0]-g0.m[0]);LB.y=g0.m[1]-(g0.m[1]-g0.y)*k+(m[1]-g0.m[1]);lbClamp();lbApply(false);moved=true;return}
+  const dx=e.clientX-g0.sx,dy=e.clientY-g0.sy;if(Math.abs(dx)+Math.abs(dy)>8)moved=true;
+  if(g0.type==='pan'){LB.x=g0.x+dx;LB.y=g0.y+dy;lbClamp();lbApply(false)}
+  else if(g0.type==='swipe'){LB.x=dx;LB.y=0;lbApply(false)}
+});
+function endPtr(e){
+  if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);
+  if(g0&&g0.type==='pinch'){if(ptrs.size===1){const [p1]=ptrs.values();g0={type:LB.s>1?'pan':'swipe',sx:p1.x,sy:p1.y,x:LB.x,y:LB.y}}else g0=null;if(LB.s<1.05){LB.s=1;LB.x=0;LB.y=0;lbApply(true)}return}
+  if(!g0)return;
+  if(g0.type==='swipe'){const dx=e.clientX-g0.sx;
+    if(Math.abs(dx)>60&&LB.fotos.length>1){lbShow(LB.i+(dx<0?1:-1));g0=null;return}
+    LB.x=0;LB.y=0;lbApply(true);
+    if(!moved){const now=Date.now();const [cx,cy]=rel(e.clientX,e.clientY);
+      if(now-lastTap<320&&Math.hypot(e.clientX-lastTapX,e.clientY-lastTapY)<30){lbZoomAt(2.5,cx,cy);lbApply(true);lastTap=0}
+      else{lastTap=now;lastTapX=e.clientX;lastTapY=e.clientY}}}
+  else if(g0.type==='pan'&&!moved){const now=Date.now();
+      if(now-lastTap<320){LB.s=1;LB.x=0;LB.y=0;lbApply(true);lastTap=0}else{lastTap=now;lastTapX=e.clientX;lastTapY=e.clientY}}
+  g0=null;
+}
+lbStage.addEventListener('pointerup',endPtr);lbStage.addEventListener('pointercancel',endPtr);
+lbStage.addEventListener('wheel',e=>{e.preventDefault();const [cx,cy]=rel(e.clientX,e.clientY);lbZoomAt(LB.s*(e.deltaY<0?1.2:1/1.2),cx,cy);lbApply(false)},{passive:false});
+window.addEventListener('resize',()=>{if(LB.open){lbClamp();lbApply(false)}});
 // ---- Semáforo y comentarios (compartidos entre quienes abren el mapa) ----
 const SEM={red:{c:'var(--l-red)',t:'No nos gusta'},orange:{c:'var(--l-orange)',t:'Sin más'},green:{c:'var(--l-green)',t:'Nos gusta'},gold:{c:'var(--l-gold)',t:'Nos flipa'}};
 const slug=p=>p.n.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
