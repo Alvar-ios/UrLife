@@ -46,3 +46,9 @@ Tickets (bloque 8B): tickets_uso_y_articulos y la función `tickets-ia`.
   (nombre, cantidad, importe y, si se reparte, quién lo tomó).
 - Necesita el secreto ANTHROPIC_API_KEY en Supabase → Edge Functions → Secrets. Sin él,
   la app avisa de que la lectura de tickets aún no está activada.
+
+Prueba mapa de paradores (12/10/2026): paradores_notas.
+- Tablas `paradores_semaforo` (una luz por parador y grupo: red/orange/green/gold) y
+  `paradores_comentarios` (texto de 1 a 1.000 caracteres, no se editan).
+- Solo los miembros activos del grupo (`es_miembro`) leen y escriben; cada uno firma con su
+  propia cuenta y solo borra sus comentarios; sin sesión, nada. Página: /prueba-mapa-paradores/.
