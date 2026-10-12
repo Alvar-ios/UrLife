@@ -577,12 +577,22 @@ function render() {
 /* ============================================================
    INICIO
    ============================================================ */
+function empiezaHtml() {
+  if (S.movimientos.length || (S.compartidos || []).length) return '';
+  const paso = (n, t, d, a) => '<button class="empieza-paso" ' + a + '><span class="n">' + n + '</span><span><b>' + t + '</b><span class="d">' + d + '</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
+  let n = 0;
+  return '<div class="empieza"><h3>Empieza aquí 👋</h3><p>En un par de minutos tendrás tus números al día.</p>' +
+    paso(++n, 'Apunta tu primer gasto', 'Con el botón + del centro, cuando quieras.', act('crearIr', 'gasto')) +
+    (ticketsDisponible() ? paso(++n, 'O hazle una foto a un ticket', 'La app lee el total y los artículos por ti.', act('ticketFoto')) : '') +
+    paso(++n, 'Trae tus movimientos del banco', 'Importa el extracto o un Excel, sin duplicados.', act('impAbrir')) +
+    paso(++n, 'Pon tus presupuestos', 'Cuánto quieres gastar al mes en cada cosa.', act('openListEditor', 'categoriasGasto')) + '</div>';
+}
 function renderInicio() {
   const anual = S.generalSub === 'anual', d = new Date(), y = S.anioSel, m = S.mesSel;
   const actual = y === d.getFullYear() && m === d.getMonth() + 1;
   const vencidas = tareasVencidas();
   const excedidas = anual ? [] : presupuestoExcedido(y, m);
-  return heroHtml() +
+  return heroHtml() + empiezaHtml() +
     (actual && !anual ? avisosRecHtml() : '') +
     ((vencidas.length || excedidas.length) ? '<div class="section-title">Avisos</div>' +
       (vencidas.length ? '<div class="alert tappable" ' + act('irAgenda', 'tareas') + '>' + ic('alert') + '<div><b>' + vencidas.length + (vencidas.length > 1 ? ' tareas vencidas' : ' tarea vencida') + '</b>Míralas en Agenda.</div></div>' : '') +
@@ -651,7 +661,7 @@ function movLimites() {
 function movNavHtml(dir) {
   const p = movPerNorm(S.movPeriodo), modo = /^m:/.test(p) ? 'mes' : /^y:/.test(p) ? 'anio' : 'todo', lim = movLimites();
   let lbl = 'Todo', sub = 'tu historial completo', ant = false, sig = false;
-  if (modo === 'mes') { const [y, m] = p.slice(2).split('-').map(Number); lbl = MESES[m - 1]; sub = ' ' + y; ant = p.slice(2) > lim.min; sig = p.slice(2) < lim.max; }
+  if (modo === 'mes') { const [y, m] = p.slice(2).split('-').map(Number); lbl = '<span class="mes-l" data-c="' + MESES_ABR[m - 1] + '">' + MESES[m - 1] + '</span>'; sub = ' ' + y; ant = p.slice(2) > lim.min; sig = p.slice(2) < lim.max; }
   else if (modo === 'anio') { lbl = p.slice(2); sub = ' el año entero'; ant = lbl > lim.min.slice(0, 4); sig = lbl < lim.max.slice(0, 4); }
   const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
   const flecha = (d, ok, icono, aria) => '<button class="mov-flecha" aria-label="' + aria + '" ' + (ok ? act('movPerMover', d) : 'disabled') + '>' + ic(icono) + '</button>';
@@ -720,8 +730,8 @@ function renderMovList() {
   const enTodo = acotado && S.movQuery.trim() ? '<button class="link buscar-todo" ' + act('setMovModo', 'todo') + '>' + ic('search') + ' Buscar en todo el historial</button>' : '';
   if (!movs.length) {
     const donde = /^m:/.test(per) ? ' en ' + periodoTxt(per).toLowerCase() : /^y:/.test(per) ? ' en ' + per.slice(2) : ' aquí';
-    return '<div class="empty"><div class="big">' + ic('wallet') + '</div><b>Sin movimientos' + escapeHtml(donde) + '</b><div style="margin-top:4px;">' + (acotado ? 'Cambia de mes con las flechas o mira todo tu historial.' : 'Cambia el filtro o añade uno nuevo.') + '</div>' +
-      (acotado ? '<div class="cta"><button class="btn ghost" ' + act('setMovModo', 'todo') + '>Ver todo el historial</button></div>' : '') +
+    return '<div class="empty"><div class="big">' + ic('wallet') + '</div><b>Sin movimientos' + escapeHtml(donde) + '</b><div style="margin-top:4px;">' + (!S.movimientos.length ? 'Apunta el primero con el botón + o haz una foto a un ticket.' : acotado ? 'Cambia de mes con las flechas o mira todo tu historial.' : 'Cambia el filtro o añade uno nuevo.') + '</div>' +
+      (acotado && S.movimientos.length ? '<div class="cta"><button class="btn ghost" ' + act('setMovModo', 'todo') + '>Ver todo el historial</button></div>' : '') +
       '<div class="cta"><button class="btn accent" ' + act('openMovForm') + '>' + ic('plus') + ' Añadir movimiento</button>' + (ticketsDisponible() ? ' <button class="btn ghost" ' + act('ticketFoto') + '>' + ic('camera') + ' Foto de ticket</button>' : '') + '</div></div>';
   }
   const net = movs.reduce((a, m) => a + effect(m.importe, m.tipo), 0);
@@ -748,7 +758,7 @@ function renderMovRowBase(m) {
   return '<div class="row" ' + act('openMovForm', m.id) + '>' +
     movIcHtml(m) +
     '<div class="main"><div class="ttl">' + escapeHtml(m.categoria || 'Sin categoría') + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
-    '<div class="meta">' + (m.descripcion ? escapeHtml(m.descripcion) + ' · ' : '') + (c ? escapeHtml(compQuienTxt(c)) : escapeHtml(m.tipo) + (m.metodoPago ? ' · ' + escapeHtml(m.metodoPago) : '')) + '</div></div>' +
+    '<div class="meta">' + (c ? (m.descripcion ? escapeHtml(m.descripcion) + ' · ' : '') + escapeHtml(compQuienTxt(c)) : escapeHtml([m.descripcion, m.tipo === 'Gasto' && (m.descripcion || m.metodoPago) ? '' : m.tipo, m.metodoPago].filter(Boolean).join(' · '))) + '</div></div>' +
     '<div class="amt tnum ' + (eff >= 0 ? 'pos' : 'neg') + '">' + moneySigned(m.importe, m.tipo) + (c ? '<div class="amt-sub">tu parte de ' + money(c.importe) + '</div>' : '') + '</div></div>';
 }
 
@@ -1063,9 +1073,9 @@ function renderAnalisisAnual(enInicio) {
     '<div class="section-title"><span>Ingresos y gastos por mes' + badge('anual') + '</span></div><div class="card"><div class="chart-wrap" id="trendWrap"></div>' +
     '<div class="legend"><span><i style="background:var(--income)"></i>Ingresos</span><span><i style="background:var(--expense)"></i>Gastos</span></div></div>' +
     '<div class="section-title">Detalle</div><div class="list">' +
-    rows.map((r) => '<div class="row' + (r.m > mesesEmpezados(S.anioSel) ? ' futuro' : '') + '" ' + act('verMes', S.anioSel, r.m) + '><div class="main"><div class="ttl">' + MESES[r.m - 1] + '</div></div>' +
-      '<div class="amt pos tnum" style="min-width:88px;text-align:right;">' + moneyShort(r.ingresos) + '</div>' +
-      '<div class="amt neg tnum" style="min-width:88px;text-align:right;">' + moneyShort(r.facturas + r.gastos) + '</div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>' +
+    rows.map((r) => '<div class="row anio-fila' + (r.m > mesesEmpezados(S.anioSel) ? ' futuro' : '') + '" ' + act('verMes', S.anioSel, r.m) + '><div class="main"><div class="ttl"><span class="mes-l">' + MESES[r.m - 1] + '</span><span class="mes-c">' + MESES_ABR[r.m - 1] + '</span></div></div>' +
+      '<div class="amt pos tnum col">' + moneyShort(r.ingresos) + '</div>' +
+      '<div class="amt neg tnum col">' + moneyShort(r.facturas + r.gastos) + '</div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>' +
     '<div class="summary-line">Toca un mes para ver su detalle.</div>';
 }
 /* ============================================================
@@ -1103,7 +1113,7 @@ function renderMetas() {
   const ms = metasStats();
   if (ms.some((r) => r.inv)) asegurarValoracion();
   const cab = '<div style="display:flex;justify-content:flex-end;gap:16px;margin:-4px 0 8px;">' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('plus') + ' Meta compartida' + badge('compartir') + '</button>' : '') + '<button class="link" ' + act('openMetas') + '>Gestionar metas</button></div>';
-  if (!ms.length) return cab + (objCompartidos('ahorro').length ? objCardsHtml('ahorro') : '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Todavía no tienes metas. Créalas en Tú → Metas: de ahorro o de inversión (por ejemplo, la entrada de una casa).</div>');
+  if (!ms.length) return cab + (objCompartidos('ahorro').length ? objCardsHtml('ahorro') : '<div class="card" style="text-align:center;"><div style="font-size:13.5px;color:var(--text-muted);margin-bottom:12px;">Todavía no tienes metas. Pueden ser de ahorro (un colchón, un viaje) o de inversión (la entrada de una casa).</div><button class="btn accent" ' + act('metaNueva') + '>' + ic('plus') + ' Crear mi primera meta</button></div>');
   const generalInv = S.movimientos.filter((x) => x.tipo === 'Inversión' && !(x.metaId && ms.some((r) => r.inv && r.id === x.metaId)));
   const valGeneral = generalInv.reduce((a, x) => { const v = valorMovInv(x); return a + (v == null ? num(x.importe) : v); }, 0);
   return cab + ms.map((r) => {
@@ -2249,11 +2259,12 @@ function buscarResHtml(q0) {
   const pal = q.split(' ').filter(Boolean), casa = (txt) => { const t = normDesc(txt); return pal.every((w) => t.indexOf(w) >= 0); };
   const acc = BUSCAR_ACCIONES.filter(([t, k]) => casa(t + ' ' + k)).slice(0, 5);
   const cats = [...new Set(categoriasPorTipo('Gasto').concat(categoriasPorTipo('Factura')))].filter((c) => casa(c)).slice(0, 4);
+  const hoyD = new Date(), delMes = cats.length ? gastoPorCategoria(kpisMes(hoyD.getFullYear(), hoyD.getMonth() + 1).movs) : {};
   const movs = movsEfectivos().filter((m) => casa([m.categoria, m.descripcion, m.tipo, fmtM(Math.abs(num(m.importe))), String(m.importe)].join(' '))).sort(cmpMov).slice(0, 12);
   const tars = S.tareas.filter((t) => casa([t.nombre, t.categoria].join(' '))).slice(0, 5);
   let h = '';
   if (acc.length) h += '<div class="section-title">Ir a</div><div class="list">' + acc.map(([t, , hd, a]) => '<div class="row" ' + act('buscarIr', hd, ...a) + '><span class="dot" style="background:var(--accent)"></span><div class="main"><div class="ttl">' + escapeHtml(t) + '</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>';
-  if (cats.length) h += '<div class="section-title">Categorías</div><div class="list">' + cats.map((c) => '<div class="row" ' + act('buscarIr', 'irMovs', '_gastos', 'todo', c) + '><span class="dot" style="background:var(--expense)"></span><div class="main"><div class="ttl">' + escapeHtml(c) + '</div><div class="meta">Ver todos sus movimientos</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>';
+  if (cats.length) h += '<div class="section-title">Categorías</div><div class="list">' + cats.map((c) => '<div class="row" ' + act('buscarIr', 'irMovs', '_gastos', 'todo', c) + '><span class="dot" style="background:var(--expense)"></span><div class="main"><div class="ttl">' + escapeHtml(c) + '</div><div class="meta">Este mes: <b class="tnum">' + money(delMes[c] || 0) + '</b> · ver todos sus movimientos</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>';
   if (movs.length) h += '<div class="section-title">Movimientos</div><div class="list">' + movs.map((m) => '<div class="row" ' + act('buscarIr', 'openMovForm', m.id) + '><span class="dot" style="background:var(--' + (TIPO_COLOR[m.tipo] || 'debt') + ')"></span><div class="main"><div class="ttl">' + escapeHtml(m.categoria || m.tipo) + '</div><div class="meta">' + fmtDateShort(m.fecha) + (m.descripcion ? ' · ' + escapeHtml(m.descripcion) : '') + '</div></div><div class="amt tnum">' + moneySigned(m.importe, m.tipo) + '</div></div>').join('') + '</div>';
   if (tars.length) h += '<div class="section-title">Tareas</div><div class="list">' + tars.map((t) => '<div class="row" ' + act('buscarIr', 'openTareaForm', t.id) + '><span class="dot" style="background:var(--bill)"></span><div class="main"><div class="ttl">' + escapeHtml(t.nombre || 'Tarea') + '</div><div class="meta">' + escapeHtml(t.estado || '') + '</div></div></div>').join('') + '</div>';
   return h || '<div class="empty-mini">Nada con «' + escapeHtml(q0) + '». Prueba con otra palabra.</div>';
@@ -3043,7 +3054,7 @@ function drawTrend() {
   wrap.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="100%" role="img" aria-label="Ingresos y gastos por mes"><defs>' +
     degradado('gIng', 'var(--income)', 0.16) + degradado('gGas', 'var(--expense)', 0.14) + revelaSvg('trendClip', W, H, S.anioSel + '|' + hasta, '_trendTraza') + '</defs>' + grid +
     (futuroX != null ? '<rect x="' + futuroX.toFixed(1) + '" y="' + (padT - 4) + '" width="' + (W - padR + 6 - futuroX).toFixed(1) + '" height="' + (alto + 8) + '" rx="10" style="fill:var(--paper-sunken)" opacity=".7"/>' : '') +
-    '<text x="' + padL + '" y="10" font-size="8.5" style="fill:var(--text-faint)" font-family="Work Sans, sans-serif">' + moneyShort(maxV) + '</text>' +
+    (maxV > 1 ? '<text x="' + padL + '" y="10" font-size="8.5" style="fill:var(--text-faint)" font-family="Work Sans, sans-serif">' + moneyShort(maxV) + '</text>' : '') +
     '<g clip-path="url(#trendClip)">' + serie(ing, '--income', 'gIng') + serie(gas, '--expense', 'gGas') + '</g>' +
     (hasta === 0 ? '<text x="' + W / 2 + '" y="' + (padT + alto / 2) + '" font-size="11" text-anchor="middle" style="fill:var(--text-faint)" font-family="Work Sans, sans-serif">Este año aún no ha empezado</text>' : '') +
     MESES_ABR.map((mm, i) => '<text x="' + X(i).toFixed(1) + '" y="' + (H - 6) + '" font-size="8.5" text-anchor="middle" style="fill:var(--text-faint)" opacity="' + (i < hasta ? 1 : 0.4) + '" font-family="Work Sans, sans-serif">' + mm.charAt(0) + '</text>').join('') + '</svg>';
@@ -4354,15 +4365,18 @@ function activarArrastreSheet(sheet) {
   };
   sheet.addEventListener('touchend', fin); sheet.addEventListener('touchcancel', fin);
 }
+// Solo la última fila de botones se queda pegada abajo (las intermedias van con su contenido)
+function fijarAcciones(sh) { if (!sh) return; const a = sh.querySelectorAll('.actions'); if (a.length) a[a.length - 1].classList.add('fija'); }
 function openSheet(html) {
   const host = $('#sheetHost'); if (!host) return;
   _sheetGen++;
   host.innerHTML = '<div class="sheet-backdrop" id="sheetBackdrop" role="dialog" aria-modal="true"><div class="sheet">' + SHEET_X() + html + '</div></div>';
   activarArrastreSheet(host.querySelector('.sheet'));
+  fijarAcciones(host.querySelector('.sheet')); ajustarAlTeclado();
   requestAnimationFrame(() => { const b = $('#sheetBackdrop'); if (b && !b.dataset.cerrando) b.classList.add('open'); animarSegmentados($('#sheetHost')); });
   document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear'));
 }
-function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
+function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; fijarAcciones(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
 function closeSheet() {
   document.body.classList.remove('crear-abierto');
   const b = $('#sheetBackdrop'); if (!b) return;
@@ -4396,7 +4410,7 @@ const H = {
   setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; render(); },
   verAnio: () => { S.tab = 'inicio'; S.generalSub = 'anual'; render(); window.scrollTo(0, 0); },
   openBuscar: () => { FORM = { kind: 'buscar' }; if ($('#sheetBackdrop')) updateSheet(buscarHtml()); else openSheet(buscarHtml()); setTimeout(() => { const el = $('#qBuscar'); if (el) el.focus(); }, 80); },
-  buscarGlobal: (_a, el) => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); },
+  buscarGlobal: (_a, el) => { clearTimeout(S._buscarT); const pintar = () => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); }; if (S.movimientos.length > 800) S._buscarT = setTimeout(pintar, 140); else pintar(); },
   buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
   tuFiltrar: (_a, el) => {
     const q = normDesc(el.value); let n = 0;
@@ -5064,8 +5078,15 @@ function vigilarVersion() {
     if (f && f !== _ver.firma && !$('#sheetBackdrop') && !escribiendo) location.reload();
   });
 }
+function ajustarAlTeclado() {
+  const vv = window.visualViewport, bd = document.getElementById('sheetBackdrop'); if (!vv || !bd) return;
+  const tapado = window.innerHeight - vv.height;
+  if (tapado > 80) { bd.style.top = vv.offsetTop + 'px'; bd.style.height = vv.height + 'px'; bd.style.bottom = 'auto'; }
+  else { bd.style.top = ''; bd.style.height = ''; bd.style.bottom = ''; }
+}
 async function main() {
   applyTheme();
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', ajustarAlTeclado); window.visualViewport.addEventListener('scroll', ajustarAlTeclado); }
   vigilarVersion();
   capturarEnlaceUnirse();
   if (!window.Auth || !window.Data) {
