@@ -977,3 +977,5 @@ button.link::after { content: ''; position: absolute; inset: -10px -6px; }
 @keyframes falta { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 @media (prefers-reduced-motion: reduce) { .field.falta { animation: none; } }
 .pb-edit.sin { color: var(--text-faint); font-weight: 500; }
+
+.asig-todas{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px}.asig-todas small{color:var(--text-faint);font-size:12px}

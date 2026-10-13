@@ -1083,6 +1083,7 @@ function openMovForm(id, pre) {
   if (compDest) { FORM.comp = { on: true, objetivo: objPre || null }; compPrepararDestino(compDest); }
   FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
   FORM.metaSel = ex ? metaDeMov(ex) : (pre.metaSel || '');
+  FORM.metaSels = ex ? metasDeMov(ex.tipo === 'Inversión' ? ex : Object.assign({}, ex, { tipo: 'Inversión', metaIds: ex.metaId ? [ex.metaId] : [] })) : (pre.metaSel ? [pre.metaSel] : []);
   if (ex && ex.activoId) { FORM.activo = { activo_id: ex.activoId, nombre: ex.categoria, tipo: ex.tipoActivo || '', simbolo: '', moneda: '' }; FORM.partOrig = ex.participaciones == null ? null : Number(ex.participaciones); }
   const metodos = cfg().metodosPago || [];
   openSheet(
@@ -1178,12 +1179,16 @@ async function saveMov() {
       if ('participaciones' in data && FORM.tipo !== 'Inversión') data.participaciones = null;
     }
     // meta: inversión → la elegida (o General); ahorro → la meta de ahorro con ese nombre
-    if (FORM.tipo === 'Inversión' || FORM.tipo === 'Ahorro') data.metaId = FORM.metaSel && metaOpciones().some((o) => o.k === FORM.metaSel) ? FORM.metaSel : null;
-    else if ('metaId' in data) data.metaId = null;
+    if (FORM.tipo === 'Inversión') {
+      const validas = metaOpciones().map((o) => o.k), l = (FORM.metaSels || []).filter((k) => validas.indexOf(k) >= 0);
+      const unaComp = []; let lista = l.filter((k) => { if (k.indexOf('g:') !== 0) return true; if (unaComp.length) return false; unaComp.push(k); return true; });
+      data.metaIds = lista; data.metaId = lista[0] || null;
+    } else if (FORM.tipo === 'Ahorro') { data.metaId = FORM.metaSel && metaOpciones().some((o) => o.k === FORM.metaSel) ? FORM.metaSel : null; if ('metaIds' in data) data.metaIds = null; }
+    else { if ('metaId' in data) data.metaId = null; if ('metaIds' in data) data.metaIds = null; }
     const reglaNueva = FORM.recordar && FORM.tipo !== 'Inversión' ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
     let movId = FORM.id;
     const ok = await write(async () => { if (FORM.id) return S.db.collection('movimientos').doc(FORM.id).set(data); const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || movId; return r0; });
-    if (ok && movId && (data.metaId || (S.aportes || []).some((a) => a.movId === movId))) sincronizarAporte(Object.assign({ id: movId }, data));
+    if (ok && movId && (data.metaId || (data.metaIds && data.metaIds.length) || (S.aportes || []).some((a) => a.movId === movId))) sincronizarAporte(Object.assign({ id: movId }, data));
     if (ok) {
       if (reglaNueva && guardarRegla(reglaNueva, categoria, FORM.tipo)) toast('Guardado. Regla creada: «' + normDesc(reglaNueva) + '» → ' + categoria);
       else toast(FORM.compQuitado ? 'Ya no está compartido: cuenta entero como tuyo' : FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido');
@@ -2530,7 +2535,7 @@ function asegurarIdsMetas() {
 }
 function movsDeMeta(m) {
   const n = normName(m.nombre);
-  if (tipoMeta(m) === 'inversion') return S.movimientos.filter((x) => x.tipo === 'Inversión' && m.id && x.metaId === m.id);
+  if (tipoMeta(m) === 'inversion') return S.movimientos.filter((x) => x.tipo === 'Inversión' && m.id && metasDeMov(x).indexOf(m.id) >= 0);
   return movsPersonales().filter((x) => x.tipo === 'Ahorro' && ((m.id && x.metaId === m.id) || (!x.metaId && normName(x.categoria) === n)));
 }
 /* ============================================================
@@ -2541,7 +2546,7 @@ function movsDeMeta(m) {
 function movsMetaPersonal(m) {
   const n = normName(m.nombre);
   return movsPersonales().filter((x) => (x.tipo === 'Ahorro' && ((m.id && x.metaId === m.id) || (!x.metaId && normName(x.categoria) === n))) ||
-    (x.tipo === 'Inversión' && m.id && x.metaId === m.id));
+    (x.tipo === 'Inversión' && m.id && metasDeMov(x).indexOf(m.id) >= 0));
 }
 function aportesDeObj(o) { return (S.aportes || []).filter((a) => a.objetivoId === o.id); }
 function basePersonal(m) {
@@ -2619,12 +2624,24 @@ function metaSelHtml() {
   const ops = metaOpciones();
   const nueva = '<button type="button" class="chip chip-nueva" ' + act('metaNuevaForm') + '>' + ic('plus') + ' Nueva meta</button>';
   if (!ops.length) return FORM && FORM.tipo === 'Ahorro' ? '<div class="field"><label>¿Para qué meta? <span class="hint">· opcional</span></label><div class="chips" id="metaChips">' + nueva + '</div><div class="rec-hint">Apartar es pasar dinero a tu ahorro (no es un gasto). Si es para algo concreto (la casa, un viaje), crea una meta.</div></div>' : '';
-  const sel = (FORM && FORM.metaSel) || '';
+  const inv = FORM && FORM.tipo === 'Inversión', sels = inv ? (FORM.metaSels || []) : [(FORM && FORM.metaSel) || ''];
+  const on = (k) => (k === '' ? (inv ? !sels.length : !sels[0]) : sels.indexOf(k) >= 0);
   return '<div class="field"><label>¿Para qué meta?' + badge('metasH') + ' <span class="hint">· opcional</span></label><div class="chips" id="metaChips">' +
-    [{ k: '', nombre: 'Sin meta' }].concat(ops).map((o) => '<button type="button" class="chip ' + (sel === o.k ? 'active' : '') + '" ' + act('pickMeta', o.k) + '>' + (o.comp ? '👥 ' : '') + escapeHtml(o.nombre) + '</button>').join('') + nueva + '</div>' +
-    (FORM && FORM.tipo === 'Ahorro' ? '<div class="rec-hint">Apartar es pasar dinero a tu ahorro: no cuenta como gasto.</div>' : '') + '</div>';
+    [{ k: '', nombre: 'Sin meta' }].concat(ops).map((o) => '<button type="button" class="chip ' + (on(o.k) ? 'active' : '') + '" ' + act('pickMeta', o.k) + '>' + (o.comp ? '👥 ' : '') + escapeHtml(o.nombre) + '</button>').join('') + nueva + '</div>' +
+    (FORM && FORM.tipo === 'Ahorro' ? '<div class="rec-hint">Apartar es pasar dinero a tu ahorro: no cuenta como gasto.</div>' : '') +
+    (inv ? '<div class="rec-hint">Una inversión puede contar para varias metas a la vez. Aparece siempre en Inversiones.</div>' : '') + '</div>';
+}
+// Una inversión puede estar en varias metas a la vez (metaIds); metaId es la primera. Un apartado, en una sola.
+function metasDeMov(x) {
+  if (x.tipo === 'Inversión') {
+    const l = Array.isArray(x.metaIds) ? x.metaIds.filter(Boolean) : (x.metaId ? [x.metaId] : []);
+    return l.filter((k, i) => l.indexOf(k) === i);
+  }
+  const k = metaDeMov(x);
+  return k ? [k] : [];
 }
 function metaDeMov(x) {
+  if (x.tipo === 'Inversión' && Array.isArray(x.metaIds) && x.metaIds.length) return x.metaIds[0];
   if (x.metaId) return x.metaId;
   if (x.tipo === 'Ahorro') { const m = metasCfg().find((mm) => mm.id && normName(mm.nombre) === normName(x.categoria)); return m ? m.id : ''; }
   return '';
@@ -2632,7 +2649,7 @@ function metaDeMov(x) {
 // El reflejo de un movimiento vinculado a una meta compartida: se crea, se actualiza o se quita
 async function sincronizarAporte(m) {
   if (!S.db || !S.db.aportes || !m || !m.id) return;
-  const k = String(m.metaId || ''), yo = miUid();
+  const k = String(Array.isArray(m.metaIds) ? (m.metaIds.find((z) => String(z).indexOf('g:') === 0) || '') : (m.metaId || '')), yo = miUid();
   const comp = k.indexOf('g:') === 0 && (m.tipo === 'Ahorro' || m.tipo === 'Inversión');
   const tenia = (S.aportes || []).some((a) => a.movId === m.id && (!yo || a.userId === yo));
   try {
@@ -2973,13 +2990,15 @@ function asignarHtml() {
     return '<div class="asig-grupo"><div class="asig-head"><b>' + escapeHtml(g.nombre) + '</b><span>' + g.movs.length + ' · ' + money(g.movs.reduce((a, x) => a + num(x.importe), 0)) + '</span>' +
       '<button type="button" class="btn sm ' + (todas ? 'accent' : 'ghost') + '" ' + act('asigGrupo', k) + '>' + (todas ? '✓ Todas' : 'Todas') + '</button></div>' +
       g.movs.map((x) => {
-        const mk = metaDeMov(x), otra = mk && mk !== F.metaKey && nombres[mk] ? nombres[mk] : '';
-        return '<label class="asig-row"><input type="checkbox" ' + (F.sel.has(x.id) ? 'checked' : '') + ' ' + onChange('asigMov', x.id) + '><span>' + fmtDateShort(x.fecha) + ' ' + (x.fecha || '').slice(0, 4) + (x.descripcion ? ' · ' + escapeHtml(x.descripcion) : '') + '</span><b class="tnum">' + money(x.importe) + '</b>' + (otra ? '<small>ahora en «' + escapeHtml(otra) + '»</small>' : '') + '</label>';
+        const otras = metasDeMov(x).filter((z) => z !== F.metaKey && nombres[z]).map((z) => nombres[z]), otra = otras.join(', ');
+        return '<label class="asig-row"><input type="checkbox" ' + (F.sel.has(x.id) ? 'checked' : '') + ' ' + onChange('asigMov', x.id) + '><span>' + fmtDateShort(x.fecha) + ' ' + (x.fecha || '').slice(0, 4) + (x.descripcion ? ' · ' + escapeHtml(x.descripcion) : '') + '</span><b class="tnum">' + money(x.importe) + '</b>' + (otra ? '<small>' + (x.tipo === 'Inversión' ? 'también en «' : 'ahora en «') + escapeHtml(otra) + '»</small>' : '') + '</label>';
       }).join('') + '</div>';
   }).join('');
   const n = F.sel.size, tot = movs.filter((x) => F.sel.has(x.id)).reduce((a, x) => a + num(x.importe), 0);
+  const invs = movs.filter((x) => x.tipo === 'Inversión'), nInv = invs.length, todasInv = nInv > 0 && invs.every((x) => F.sel.has(x.id));
   return '<div class="handle"></div><h2>Vincular a «' + escapeHtml(mo.nombre) + '»</h2>' +
     '<div style="font-size:13px;color:var(--text-muted);margin:-6px 0 10px;line-height:1.45;">Marca lo que apartaste o invertiste para esta meta.' + (mo.comp ? ' Lo verán los de la meta compartida; en tus números sigue contando como tuyo.' : '') + '</div>' +
+    (nInv ? '<div class="asig-todas"><button type="button" class="btn sm ' + (todasInv ? 'accent' : 'ghost') + '" ' + act('asigTodasInv') + '>' + (todasInv ? '✓ ' : '') + 'Todas las inversiones (' + nInv + ')</button><small>Una inversión puede estar en varias metas a la vez.</small></div>' : '') +
     (html || '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no tienes movimientos de Apartar ni de Inversión.</div>') +
     '<div class="rec-prev">Seleccionados: <b>' + n + '</b> · ' + money(tot) + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('asigGuardar') + '>Guardar</button></div>';
@@ -2987,7 +3006,7 @@ function asignarHtml() {
 async function asigGuardar() {
   const F = FORM, cambios = [];
   movsPersonales().filter((x) => x.tipo === 'Inversión' || x.tipo === 'Ahorro').forEach((x) => {
-    const quiere = F.sel.has(x.id), tiene = metaDeMov(x) === F.metaKey;
+    const quiere = F.sel.has(x.id), tiene = metasDeMov(x).indexOf(F.metaKey) >= 0;
     if (quiere && !tiene) cambios.push([x, F.metaKey]);
     else if (!quiere && tiene) cambios.push([x, null]);
   });
@@ -2997,8 +3016,14 @@ async function asigGuardar() {
   const mo = metaOpciones().find((o) => o.k === F.metaKey);
   for (const [x, metaId] of cambios) {
     const datos = Object.assign(stripId(x), { metaId });
+    if (x.tipo === 'Inversión') {
+      // varias metas a la vez: se añade o se quita solo esta; como mucho una compartida por inversión
+      let l = metasDeMov(x).filter((z) => z !== F.metaKey);
+      if (metaId) { if (String(metaId).indexOf('g:') === 0) l = l.filter((z) => z.indexOf('g:') !== 0); l.push(metaId); }
+      datos.metaIds = l; datos.metaId = l[0] || null;
+    }
     if (x.tipo === 'Ahorro') datos.categoria = metaId && mo ? mo.nombre : (x.metaId ? x.categoria : 'Apartado');
-    if (await write(() => S.db.collection('movimientos').doc(x.id).set(datos))) { ok++; if (metaId || (S.aportes || []).some((a) => a.movId === x.id)) await sincronizarAporte(Object.assign({ id: x.id }, datos)); }
+    if (await write(() => S.db.collection('movimientos').doc(x.id).set(datos))) { ok++; if (metaId || datos.metaId || (S.aportes || []).some((a) => a.movId === x.id)) await sincronizarAporte(Object.assign({ id: x.id }, datos)); }
     else break;
   }
   closeSheet();
@@ -5371,7 +5396,16 @@ const H = {
   metaEditar: ([id]) => metaAbrirEditor(id || null),
   metaVista: ([k, v]) => { metaVistas()[k] = v; lsSet('metaVista', JSON.stringify(metaVistas())); verBadge('hitos'); render(); },
   metaAportar: ([k]) => { verBadge('metasH'); openMovForm(null, { tipo: 'Ahorro', metaSel: k }); },
-  pickMeta: ([k]) => { FORM.metaSel = k || ''; verBadge('metasH'); $$('#metaChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === (k || ''))); },
+  pickMeta: ([k]) => {
+    if (FORM.tipo === 'Inversión') {
+      const l = FORM.metaSels || (FORM.metaSels = []);
+      if (!k) l.length = 0; else { const i = l.indexOf(k); if (i >= 0) l.splice(i, 1); else l.push(k); }
+      FORM.metaSel = l[0] || '';
+      verBadge('metasH');
+      $$('#metaChips .chip').forEach((b) => { const v = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || ''); if ((b.getAttribute('data-click') || '').indexOf('pickMeta') === 0) b.classList.toggle('active', v === '' ? !l.length : l.indexOf(v) >= 0); });
+      return;
+    }
+    FORM.metaSel = k || ''; verBadge('metasH'); $$('#metaChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === (k || ''))); },
   hitoAdd: () => { if (FORM.kind === 'meta') metaLeerForm(); else objLeerForm(); (FORM.hitos = FORM.hitos || []).push({ id: nuevoIdMeta(), nombre: '', importe: null }); verBadge('hitos'); updateSheet(FORM.kind === 'meta' ? metaEditorHtml() : objEditorHtml()); setTimeout(() => { const ins = $$('#hitosBox .hito-row input'); if (ins.length > 1) ins[ins.length - 2].focus(); }, 60); },
   hitoCampo: ([i, f], el) => { const h = (FORM.hitos || [])[Number(i)]; if (h) h[f] = el.value; },
   hitoQuitar: ([i]) => { if (FORM.kind === 'meta') metaLeerForm(); else objLeerForm(); (FORM.hitos || []).splice(Number(i), 1); updateSheet(FORM.kind === 'meta' ? metaEditorHtml() : objEditorHtml()); },
@@ -5383,11 +5417,16 @@ const H = {
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   metaGuardar: () => metaGuardar(),
   metaEliminar: (_, el) => confirmDelete(el, metaEliminar),
-  metaAsignar: ([k]) => { FORM = { kind: 'asignar', metaKey: k, sel: new Set(movsPersonales().filter((x) => (x.tipo === 'Inversión' || x.tipo === 'Ahorro') && metaDeMov(x) === k).map((x) => x.id)) }; openSheet(asignarHtml()); },
+  metaAsignar: ([k]) => { FORM = { kind: 'asignar', metaKey: k, sel: new Set(movsPersonales().filter((x) => (x.tipo === 'Inversión' || x.tipo === 'Ahorro') && metasDeMov(x).indexOf(k) >= 0).map((x) => x.id)) }; openSheet(asignarHtml()); },
   asigMov: ([id], el) => { if (el.checked) FORM.sel.add(id); else FORM.sel.delete(id); updateSheet(asignarHtml()); },
   asigGrupo: ([k]) => {
     const ids = movsPersonales().filter((x) => (k === 'ahorro' ? x.tipo === 'Ahorro' : x.tipo === 'Inversión' && (x.activoId || 'n:' + normName(x.categoria)) === k)).map((x) => x.id);
     const todas = ids.every((id) => FORM.sel.has(id));
+    ids.forEach((id) => { if (todas) FORM.sel.delete(id); else FORM.sel.add(id); });
+    updateSheet(asignarHtml());
+  },
+  asigTodasInv: () => {
+    const ids = movsPersonales().filter((x) => x.tipo === 'Inversión').map((x) => x.id), todas = ids.every((id) => FORM.sel.has(id));
     ids.forEach((id) => { if (todas) FORM.sel.delete(id); else FORM.sel.add(id); });
     updateSheet(asignarHtml());
   },

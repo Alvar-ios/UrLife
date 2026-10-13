@@ -95,3 +95,6 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - Probado con las cuentas de prueba en una transacción que se deshace: añadir amigo, no duplicar,
   rechazar a quien no es amigo o a un ajeno, no tocar relaciones directas, enlace de varios (2 usos y
   sigue abierto; se cierra al 10.º) y enlace normal de un solo uso.
+
+## Inversiones en varias metas (13/10)
+- `movimientos.meta_ids` (jsonb, opcional): lista completa de metas de una inversión. `meta_id` sigue siendo la primera (compatibilidad). Como mucho una meta compartida por inversión (la tabla `objetivo_aportes` es única por usuario+movimiento).
