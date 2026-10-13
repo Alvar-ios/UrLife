@@ -10,6 +10,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------------- Iconos (SVG inline, trazo simple) ---------------- */
 const ICONS = {
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg>',
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
   chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M11 19V4M18 19v-6"/><path d="M3 19h18"/></svg>',
@@ -218,12 +219,24 @@ function confeti() {
   vibrar([12, 40, 12, 40, 24]);
 }
 function celebrarMetas() {
-  if (S.tab !== 'dinero' || reduceMotion()) return;
+  if (S.tab !== 'dinero' || !S.loaded.cfg || !S.db) return;
+  const todas = metasStats().concat(objCompartidos('ahorro'));
+  const marcados = S._hitosMarcados || (S._hitosMarcados = {});
+  todas.forEach((r) => {
+    const nuevos = r.hitos.filter((h) => h.alcanzado && !h.logrado && h.id && !marcados[r.key + '|' + h.id]);
+    if (!nuevos.length) return;
+    nuevos.forEach((h) => { marcados[r.key + '|' + h.id] = 1; });
+    const hoy = todayISO(), marca = (arr) => (arr || []).map((h) => (nuevos.some((x) => x.id === h.id) ? Object.assign({}, h, { logrado: hoy }) : h));
+    if (r.compartida) S.db.objetivos.editar(r.id, { hitos: marca(r.o.hitos) }).then((o) => { objAplicarLocal(o); }).catch((e) => console.error(e));
+    else saveConfig({ ahorro: (cfg().ahorro || []).map((m) => (m && m.id === r.id ? Object.assign({}, m, { hitos: marca(m.hitos) }) : m)) });
+    if (!reduceMotion()) setTimeout(() => { confeti(); toast('¡Hito conseguido: ' + nuevos[nuevos.length - 1].nombre + '!'); }, 350);
+  });
+  if (reduceMotion()) return;
   let hechas = []; try { hechas = JSON.parse(lsGet('metasCelebradas') || '[]'); } catch (e) { hechas = []; }
-  const nuevas = metasStats().filter((r) => !r.inv && r.obj > 0 && r.falta <= 0 && r.id && hechas.indexOf(r.id) < 0);
+  const nuevas = todas.filter((r) => r.obj > 0 && r.falta <= 0 && r.key && hechas.indexOf(r.key) < 0);
   if (!nuevas.length) return;
-  lsSet('metasCelebradas', JSON.stringify(hechas.concat(nuevas.map((r) => r.id))));
-  setTimeout(() => { confeti(); toast('¡Meta cumplida: ' + nuevas[0].nombre + '!'); }, 350);
+  lsSet('metasCelebradas', JSON.stringify(hechas.concat(nuevas.map((r) => r.key))));
+  setTimeout(() => { confeti(); toast('¡Objetivo alcanzado: ' + nuevas[0].nombre + '!'); }, 350);
 }
 /* ---- deslizar un movimiento para duplicarlo o borrarlo ---- */
 const SWIPE_ANCHO = 148;
@@ -256,7 +269,8 @@ async function borrarMovConDeshacer(id) {
   const m = S.movimientos.find((x) => x.id === id); if (!m) return;
   const copia = stripId(m);
   const ok = await write(() => S.db.collection('movimientos').doc(id).delete());
-  if (ok) toast('Movimiento eliminado', { deshacer: async () => { if (await write(() => S.db.collection('movimientos').doc(id).set(copia))) toast('Recuperado'); } });
+  if (ok && (S.aportes || []).some((a) => a.movId === id)) sincronizarAporte({ id, tipo: m.tipo, metaId: null });
+  if (ok) toast('Movimiento eliminado', { deshacer: async () => { if (await write(() => S.db.collection('movimientos').doc(id).set(copia))) { toast('Recuperado'); if (copia.metaId) sincronizarAporte(Object.assign({ id }, copia)); } } });
 }
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
@@ -364,6 +378,7 @@ function subscribeAll() {
     }
     render(); refrescarSheetCompartido();
   }, (e) => { console.error(e); S.compartidos = S.compartidos || []; }));
+  if (S.db.aportes) _unsubs.push(S.db.aportes.suscribir((rows) => { S.aportes = rows; render(); }, (e) => { console.error(e); S.aportes = S.aportes || []; }));
   if (S.db.objetivos) _unsubs.push(S.db.objetivos.suscribir((rows) => { S.objetivos = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.objetivos = S.objetivos || []; }));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
     S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
@@ -502,7 +517,7 @@ function normMov(m) {
   return r.categoria === m.categoria && (r.subcategoria || null) === (m.subcategoria || null) ? m : Object.assign({}, m, r);
 }
 function aplicarMovs() { S.movimientos = (S._movsRaw || []).map(normMov); }
-const tipoTxt = (t) => (t === 'Factura' ? 'Gasto fijo' : t);
+const tipoTxt = (t) => (t === 'Factura' ? 'Gasto fijo' : t === 'Ahorro' ? 'Apartar' : t);
 // Subcategorías que ya has usado en una categoría (y los recibos de esa categoría si es un gasto fijo)
 function subcatsDe(cat, fijo) {
   const k = normName(cat), cuenta = {};
@@ -828,7 +843,7 @@ function renderMovimientos() {
       (S.movCat ? '<button class="chip active" ' + act('quitarMovCat') + '>' + escapeHtml(S.movCat) + ' ✕</button>' : '') + '</div>' : '') +
     subFiltroHtml() +
     '<div class="field" style="margin-bottom:10px;"><input type="search" id="movSearch" placeholder="Buscar categoría, nota o método de pago" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></div>' +
-    '<div class="pill-row">' + [['Todos', 'Todos'], ['Ingreso', 'Ingresos'], ['_gastos', 'Gastos'], ['Factura', 'Fijos'], ['Ahorro', 'Ahorro'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="pill-row">' + [['Todos', 'Todos'], ['Ingreso', 'Ingresos'], ['_gastos', 'Gastos'], ['Factura', 'Fijos'], ['Ahorro', 'Apartado'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
     '<div id="movList" class="' + (dir && !reduceMotion() ? (dir > 0 ? 'desde-der' : 'desde-izq') : '') + '">' + renderMovList() + '</div>';
 }
 function renderMovList() {
@@ -865,7 +880,7 @@ function renderMovRowBase(m) {
   return '<div class="row" ' + act('openMovForm', m.id) + '>' +
     movIcHtml(m) +
     '<div class="main"><div class="ttl">' + escapeHtml(m.categoria || 'Sin categoría') + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
-    '<div class="meta">' + (c ? escapeHtml([m.subcategoria, m.descripcion].filter(Boolean).concat([compQuienTxt(c)]).join(' · ')) : escapeHtml([m.subcategoria, m.descripcion, m.tipo === 'Factura' ? 'Fijo' : m.tipo === 'Gasto' && (m.subcategoria || m.descripcion || m.metodoPago) ? '' : m.tipo, m.metodoPago].filter(Boolean).join(' · '))) + '</div></div>' +
+    '<div class="meta">' + (c ? escapeHtml([m.subcategoria, m.descripcion].filter(Boolean).concat([compQuienTxt(c)]).join(' · ')) : escapeHtml([m.subcategoria, m.descripcion, m.tipo === 'Factura' ? 'Fijo' : m.tipo === 'Gasto' && (m.subcategoria || m.descripcion || m.metodoPago) ? '' : tipoTxt(m.tipo), m.metodoPago].filter(Boolean).join(' · '))) + '</div></div>' +
     '<div class="amt tnum ' + (eff >= 0 ? 'pos' : 'neg') + '">' + moneySigned(m.importe, m.tipo) + (c ? '<div class="amt-sub">tu parte de ' + money(c.importe) + '</div>' : '') + '</div></div>';
 }
 
@@ -912,7 +927,7 @@ function errPrecioMsg(e) {
   return 'No se pudo consultar el precio. Revisa tu conexión o escribe tú las participaciones.';
 }
 function invAuto() { return FORM.tipo === 'Inversión' && FORM.invModo === 'auto' && activosDisponible(); }
-function syncCatField() { const f = $('#catField'); if (f) f.style.display = invAuto() ? 'none' : ''; }
+function syncCatField() { const f = $('#catField'); if (f) f.style.display = invAuto() || (FORM && FORM.tipo === 'Ahorro') ? 'none' : ''; }
 function refreshInvFields() { const el = $('#invFields'); if (el) el.innerHTML = invFieldsHtml(FORM.tipo, FORM.tipoActivoIni || ''); syncCatField(); }
 function activosPropios() {
   const m = {};
@@ -920,8 +935,9 @@ function activosPropios() {
   return Object.entries(m);
 }
 function invFieldsHtml(tipo, actual) {
+  if (tipo === 'Ahorro') return metaSelHtml();
   if (tipo !== 'Inversión') return '';
-  return invFieldsBaseHtml(tipo, actual) + metaInvSelectorHtml();
+  return invFieldsBaseHtml(tipo, actual) + metaSelHtml();
 }
 function invFieldsBaseHtml(tipo, actual) {
   if (!(FORM.invModo === 'auto' && activosDisponible())) {
@@ -954,7 +970,7 @@ function updatePreview() {
   const el = $('#previewPart'); if (!el) return;
   const pr = FORM.precio, imp = parseFloat(($('#fImporte') || {}).value);
   if (FORM.precioCargando) { el.textContent = 'Consultando el precio de ese día…'; return; }
-  if (!pr) { el.textContent = ''; return; }
+  if (!pr || (!pr.error && pr.cierre_eur == null)) { el.textContent = ''; return; }
   if (pr.error) { el.textContent = errPrecioMsg(pr.error); return; }
   const precioTxt = fmt2(pr.cierre) + ' ' + (pr.moneda === 'GBX' ? 'GBX' : pr.moneda) + (pr.moneda !== 'EUR' ? ' (≈ ' + fmt2(pr.cierre_eur) + ' €)' : '');
   el.innerHTML = (isFinite(imp) && imp !== 0 ? '≈ <b>' + (imp / pr.cierre_eur).toLocaleString('es-ES', { maximumFractionDigits: 6 }) + '</b> participaciones · ' : '') +
@@ -1019,14 +1035,14 @@ function openMovForm(id, pre) {
   FORM = { kind: 'mov', id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
   if (compDest) { FORM.comp = { on: true, objetivo: objPre || null }; compPrepararDestino(compDest); }
   FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
-  FORM.metaId = ex && ex.metaId ? ex.metaId : null;
+  FORM.metaSel = ex ? metaDeMov(ex) : (pre.metaSel || '');
   if (ex && ex.activoId) { FORM.activo = { activo_id: ex.activoId, nombre: ex.categoria, tipo: ex.tipoActivo || '', simbolo: '', moneda: '' }; FORM.partOrig = ex.participaciones == null ? null : Number(ex.participaciones); }
   const metodos = cfg().metodosPago || [];
   openSheet(
     '<div class="handle"></div><h2>' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : 'Nuevo movimiento') + '</h2>' +
     (!ex && !compDest && ticketsDisponible() ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto</span>' + badge('ticket') + '</button>' : '') +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
-    TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + t + '</button>').join('') + '</div>' +
+    TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + tipoTxt(t) + '</button>').join('') + '</div>' +
     '<div id="fijoBox">' + fijoHtml() + '</div></div>' +
     '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : (pre.importe != null ? pre.importe : '')) + '" ' + onInput('onImporteInput') + '></div>' +
     '<div id="invFields">' + invFieldsHtml(tipoIni, ex ? ex.tipoActivo : '') + '</div>' +
@@ -1056,6 +1072,7 @@ async function saveMov() {
   const auto = invAuto();
   if (auto) { if (!FORM.activo) return toast('Busca y elige el activo'); const c = $('#fCategoria'); if (c) c.value = FORM.activo.nombre; }
   let categoria = $('#fCategoria').value.trim();
+  if (FORM.tipo === 'Ahorro') { const mo = metaOpciones().find((o) => o.k === FORM.metaSel); categoria = mo ? mo.nombre : (categoria && !metaOpciones().some((o) => normName(o.nombre) === normName(categoria)) ? categoria : 'Apartado'); }
   const esG = FORM.tipo === 'Gasto' || FORM.tipo === 'Factura';
   if (esG && categoria) { const cn = catNorm('Gasto', categoria); categoria = cn.categoria; }
   const subcategoria = esG ? ((($('#fSub') || {}).value || '').trim() || null) : null;
@@ -1113,11 +1130,12 @@ async function saveMov() {
       if ('participaciones' in data && FORM.tipo !== 'Inversión') data.participaciones = null;
     }
     // meta: inversión → la elegida (o General); ahorro → la meta de ahorro con ese nombre
-    if (FORM.tipo === 'Inversión') data.metaId = FORM.metaId && metasCfg().some((m) => m.id === FORM.metaId) ? FORM.metaId : null;
-    else if (FORM.tipo === 'Ahorro') { const mt = metasCfg().find((m) => tipoMeta(m) === 'ahorro' && m.id && normName(m.nombre) === normName(categoria)); data.metaId = mt ? mt.id : null; }
+    if (FORM.tipo === 'Inversión' || FORM.tipo === 'Ahorro') data.metaId = FORM.metaSel && metaOpciones().some((o) => o.k === FORM.metaSel) ? FORM.metaSel : null;
     else if ('metaId' in data) data.metaId = null;
     const reglaNueva = FORM.recordar && FORM.tipo !== 'Inversión' ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
-    const ok = await write(() => FORM.id ? S.db.collection('movimientos').doc(FORM.id).set(data) : S.db.collection('movimientos').add(data));
+    let movId = FORM.id;
+    const ok = await write(async () => { if (FORM.id) return S.db.collection('movimientos').doc(FORM.id).set(data); const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || movId; return r0; });
+    if (ok && movId && (data.metaId || (S.aportes || []).some((a) => a.movId === movId))) sincronizarAporte(Object.assign({ id: movId }, data));
     if (ok) {
       if (reglaNueva && guardarRegla(reglaNueva, categoria, FORM.tipo)) toast('Guardado. Regla creada: «' + normDesc(reglaNueva) + '» → ' + categoria);
       else toast(FORM.compQuitado ? 'Ya no está compartido: cuenta entero como tuyo' : FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido');
@@ -1267,34 +1285,16 @@ function metaStats(m) {
   else { r.estado = 'rojo'; r.texto = 'Al ritmo actual no llegarías'; }
   return r;
 }
-function metasStats() { return metasCfg().map((m) => (tipoMeta(m) === 'inversion' ? metaInvStats(m) : Object.assign(metaStats(m), { id: m.id }))); }
+function metasStats() { return metasCfg().map((m) => statsMetaH(basePersonal(m))); }
 const SEMAFORO_COLOR = { verde: 'var(--income)', amarillo: 'var(--accent)', rojo: 'var(--expense)', gris: 'var(--text-faint)' };
 function semaforoDot(estado) { return '<span class="dot" style="background:' + SEMAFORO_COLOR[estado] + ';flex:none;"></span>'; }
 function renderMetas() {
-  const ms = metasStats();
-  if (ms.some((r) => r.inv)) asegurarValoracion();
+  const ms = metasStats(), comp = objCompartidos('ahorro');
+  if (S.movimientos.some((x) => x.tipo === 'Inversión') || (S.aportes || []).some((a) => a.activoId)) asegurarValoracion();
   const cab = '<div style="display:flex;justify-content:flex-end;gap:16px;margin:-4px 0 8px;">' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('plus') + ' Meta compartida' + badge('compartir') + '</button>' : '') + '<button class="link" ' + act('openMetas') + '>Gestionar metas</button></div>';
-  if (!ms.length) return cab + (objCompartidos('ahorro').length ? objCardsHtml('ahorro') : '<div class="card" style="text-align:center;"><div style="font-size:13.5px;color:var(--text-muted);margin-bottom:12px;">Todavía no tienes metas. Pueden ser de ahorro (un colchón, un viaje) o de inversión (la entrada de una casa).</div><button class="btn accent" ' + act('metaNueva') + '>' + ic('plus') + ' Crear mi primera meta</button></div>');
-  const generalInv = S.movimientos.filter((x) => x.tipo === 'Inversión' && !(x.metaId && ms.some((r) => r.inv && r.id === x.metaId)));
-  const valGeneral = generalInv.reduce((a, x) => { const v = valorMovInv(x); return a + (v == null ? num(x.importe) : v); }, 0);
-  return cab + ms.map((r) => {
-    if (r.inv) return metaInvCardHtml(r);
-    const pctC = r.pct == null ? 0 : Math.max(0, Math.min(100, r.pct));
-    let h = '<div class="card meta-card" style="margin-bottom:12px;">' +
-      '<div class="meta-cab">' + anilloHtml(r.pct, SEMAFORO_COLOR[r.estado], 64) + '<div class="meta-info"><div class="meta-nom">' + escapeHtml(r.nombre) + '</div>' +
-      '<div class="meta-cant tnum">' + money(r.acum) + (r.obj > 0 ? ' de ' + money(r.obj) : '') + '</div>' +
-      '<span class="estado-pill e-' + r.estado + '">' + escapeHtml(r.texto) + '</span></div></div>' +
-      (r.fecha ? '<div class="summary-line" style="margin:10px 2px 4px;">Hasta el ' + fmtDateLong(r.fecha) + '</div>' : '');
-    if (r.mes != null) {
-      h += '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">Necesitas ahorrar aprox. <b class="tnum" style="color:var(--text);">' + money(r.mes) + '/mes</b> · ' + money(r.tri) + '/trimestre · ' + money(r.anio) + '/año.</div>';
-    }
-    if (r.obj > 0 && r.falta > 0) {
-      h += '<div style="font-size:13px;color:var(--text-faint);line-height:1.6;">Tu ritmo (últimos 3 meses): <b class="tnum" style="color:var(--text);">' + money(r.ritmo) + '/mes</b>' +
-        (r.llegada ? ' · al ritmo actual llegarías en ' + fmtMesAnio(r.llegada) : ' · sin ahorro reciente para estimar') + '.</div>';
-    }
-    return h + '<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn sm ghost" ' + act('irMovs', 'Ahorro', 'todo', r.nombre) + '>Ver movimientos</button><button class="btn sm ghost" ' + act('metaEditar', r.id || '') + '>Editar meta</button></div></div>';
-  }).join('') + objCardsHtml('ahorro') + (ms.some((r) => r.inv) && generalInv.length ? '<div class="summary-line">Inversiones sin meta («General»): ' + money(valGeneral) + ' de valor actual.</div>' : '') +
-    '<div class="summary-line">Metas de ahorro: suman tus movimientos de tipo Ahorro de esa meta, más lo que indiques en «Ya ahorrado antes». Metas de inversión: valor actual de las aportaciones que les asignes.</div>';
+  if (!ms.length && !comp.length) return cab + '<div class="card" style="text-align:center;"><div style="font-size:13.5px;color:var(--text-muted);margin-bottom:12px;">Todavía no tienes metas. Una meta junta lo que apartas y lo que inviertes para algo: la casa, un viaje, un colchón.</div><button class="btn accent" ' + act('metaNueva') + '>' + ic('plus') + ' Crear mi primera meta</button></div>';
+  return cab + ms.map(metaCardHtml).join('') + (comp.length ? '<div class="section-title">Compartidas</div>' + comp.map(metaCardHtml).join('') : '') +
+    '<div class="summary-line">Una meta suma lo que apartas y lo que inviertes para ella (a lo que vale hoy), lo que tuvieras antes, y resta lo que hayas usado.</div>';
 }
 function deudaStats(d) {
   const key = (d.nombre || '').trim().toLowerCase();
@@ -1478,8 +1478,8 @@ function unirseHtml() {
      compartidoId y deja de contarse, para no sumar dos veces.
    - Las «Liquidaciones» (Saldar) no son gasto: solo ajustan quién debe a quién.
    ============================================================ */
-const TIPOS_COMPARTIBLES = ['Gasto', 'Factura', 'Ahorro', 'Deuda'];
-const TIPO_OBJ = { Ahorro: 'ahorro', Deuda: 'deuda' }; // tipo de movimiento → tipo de meta/deuda compartida
+const TIPOS_COMPARTIBLES = ['Gasto', 'Factura', 'Deuda'];
+const TIPO_OBJ = { Deuda: 'deuda' }; // tipo de movimiento → deuda compartida (las metas compartidas se alimentan vinculando movimientos: objetivo_aportes)
 function compartidosDisponible() { return !!(S.db && S.db.compartidos && gruposDisponible()); }
 function cents(x) { return Math.round(num(x) * 100); }
 function r2(x) { return Math.round(num(x) * 100) / 100; }
@@ -1938,7 +1938,7 @@ function objStats(o) {
   else { r.estado = 'rojo'; r.texto = deuda ? 'Al ritmo actual no llegaríais a tiempo' : 'Al ritmo actual no llegaríais'; }
   return r;
 }
-function objCompartidos(tipo) { return (S.objetivos || []).filter((o) => o.tipo === tipo && grupoDe(o.grupoId)).map(objStats); }
+function objCompartidos(tipo) { return (S.objetivos || []).filter((o) => o.tipo === tipo && grupoDe(o.grupoId)).map(objStatsAny); }
 // Tu parte de una deuda compartida: según el reparto habitual del grupo (o a partes iguales)
 function miProporcion(o) {
   const g = grupoDe(o.grupoId), yo = miUid(); if (!g || !g.miembros.length) return 0;
@@ -1961,13 +1961,13 @@ function objCardHtml(r) {
 }
 function objCardsHtml(tipo) {
   const rs = objCompartidos(tipo);
-  return rs.length ? '<div class="section-title">Compartidas</div>' + rs.map(objCardHtml).join('') : '';
+  return rs.length ? '<div class="section-title">Compartidas</div>' + rs.map(tipo === 'ahorro' ? metaCardHtml : objCardHtml).join('') : '';
 }
 function objetivosGrupoHtml(g) {
   const os = objetivosDe(g.id);
   let h = '<div class="section-title">Metas y deudas compartidas</div><div class="card">';
   h += os.length ? os.map((o) => {
-    const r = objStats(o);
+    const r = objStatsAny(o);
     return '<div class="budget-row tappable" ' + act('objEditar', o.id, g.id) + '><div class="top"><span class="cat" style="display:flex;align-items:center;gap:8px;">' + semaforoDot(r.estado) + escapeHtml(o.nombre) + ' <span class="hint">· ' + (r.deuda ? 'deuda' : 'meta') + '</span></span>' +
       '<span class="nums"><b class="tnum">' + (r.pct == null ? money(r.acum) : r.pct.toFixed(0) + '%') + '</b></span></div>' +
       '<div class="progress"><div style="width:' + Math.max(0, Math.min(100, r.pct || 0)) + '%;background:' + SEMAFORO_COLOR[r.estado] + ';"></div></div></div>';
@@ -1975,7 +1975,7 @@ function objetivosGrupoHtml(g) {
   return h + '<div style="display:flex;gap:8px;margin-top:12px;"><button class="btn sm ghost block" ' + act('objNueva', 'ahorro', g.id) + '>' + ic('plus') + ' Meta</button><button class="btn sm ghost block" ' + act('objNueva', 'deuda', g.id) + '>' + ic('plus') + ' Deuda</button></div></div>';
 }
 function objEditorHtml() {
-  const F = FORM, deuda = F.tipo === 'deuda', o = F.id ? objPorId(F.id) : null, r = o ? objStats(o) : null;
+  const F = FORM, deuda = F.tipo === 'deuda', o = F.id ? objPorId(F.id) : null, r = o ? objStatsAny(o) : null;
   const v = (x) => (x == null ? '' : escapeHtml(x)), ds = F.id ? [] : destinosCompartir();
   const cancelar = act('objCancelar');
   return '<div class="handle"></div><h2>' + (o ? escapeHtml(o.nombre) : deuda ? 'Nueva deuda compartida' : 'Nueva meta compartida') + '</h2>' +
@@ -1989,6 +1989,7 @@ function objEditorHtml() {
     '<div class="field"><label>' + (deuda ? 'Total de la deuda' : 'Objetivo') + ' (' + sym() + ')</label><input id="oObjetivo" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="oFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
     '<div class="field"><label>' + (deuda ? 'Ya pagado antes' : 'Ya ahorrado antes') + ' (' + sym() + ') <span class="hint">· opcional</span></label><input id="oPrevio" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.previo) + '"><div class="rec-hint">Lo que ya ' + (deuda ? 'habíais pagado' : 'teníais ahorrado') + ' entre todos antes de apuntarlo aquí.</div></div>' +
+    (deuda ? '' : hitosEditorHtml()) +
     '<div class="actions"><button class="btn ghost block" ' + cancelar + '>Cancelar</button><button class="btn accent block" ' + act('objGuardar') + '>Guardar</button></div>' +
     (o ? '<button class="btn danger block" style="margin-top:10px;" ' + act('objEliminar') + '>' + ic('trash') + ' Eliminar ' + (deuda ? 'deuda' : 'meta') + ' compartida</button><div class="rec-hint" style="text-align:center;">Se quita para todos. Lo ya aportado o pagado no se borra.</div>' : '');
 }
@@ -2003,6 +2004,7 @@ async function objGuardar() {
   if (!nombre) return toast('Ponle un nombre');
   const n = (x) => { const y = parseFloat(x); return x === '' || x == null || !isFinite(y) ? null : y; };
   const datos = { nombre, objetivo: n(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, previo: Math.max(0, n(F.previo) || 0) };
+  if (F.tipo !== 'deuda') datos.hitos = limpiarHitos(F.hitos, F.id && objPorId(F.id) ? objPorId(F.id).hitos : []);
   if (datos.objetivo != null && datos.objetivo < 0) return toast('El objetivo no puede ser negativo');
   if (F.id && !objPorId(F.id)) { closeSheet(); return toast('Esa meta o deuda ya no existe: la ha eliminado alguien del grupo'); }
   if (F.guardando) return; F.guardando = true;
@@ -2395,7 +2397,7 @@ function crearHtml() {
     '<div class="crear-grid">' +
     op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
     (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : op('crearIr', ['factura'], 'calendar', 'Gasto fijo', 'k-factura')) +
-    op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['ahorro'], 'piggy', 'Ahorro', 'k-ahorro') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
+    op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
 }
 function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearHtml()); else openSheet(crearHtml()); }
@@ -2453,13 +2455,241 @@ function movsDeMeta(m) {
   if (tipoMeta(m) === 'inversion') return S.movimientos.filter((x) => x.tipo === 'Inversión' && m.id && x.metaId === m.id);
   return movsPersonales().filter((x) => x.tipo === 'Ahorro' && ((m.id && x.metaId === m.id) || (!x.metaId && normName(x.categoria) === n)));
 }
+/* ============================================================
+   METAS HÍBRIDAS (13/10): una meta junta lo que apartas y lo que inviertes para ella (a lo que vale hoy),
+   más lo que tuvieras antes, menos lo que hayas usado. Puede tener hitos y se puede dar por conseguida.
+   Las compartidas reciben «aportes»: el reflejo de un movimiento personal que su dueño vincula a la meta.
+   ============================================================ */
+function movsMetaPersonal(m) {
+  const n = normName(m.nombre);
+  return movsPersonales().filter((x) => (x.tipo === 'Ahorro' && ((m.id && x.metaId === m.id) || (!x.metaId && normName(x.categoria) === n))) ||
+    (x.tipo === 'Inversión' && m.id && x.metaId === m.id));
+}
+function aportesDeObj(o) { return (S.aportes || []).filter((a) => a.objetivoId === o.id); }
+function basePersonal(m) {
+  const yo = miUid() || 'yo';
+  return { id: m.id, nombre: m.nombre, compartida: false, objetivo: m.objetivo, fechaObjetivo: m.fechaObjetivo, previo: m.yaAhorrado, rentabilidad: m.rentabilidad,
+    hitos: m.hitos, usos: m.usos, conseguida: m.conseguida,
+    piezas: movsMetaPersonal(m).map((x) => ({ fecha: x.fecha, tipo: x.tipo, importe: x.importe, valor: x.tipo === 'Inversión' ? valorMovInv(x) : null, quien: yo })) };
+}
+function baseCompartida(o) {
+  return { id: o.id, nombre: o.nombre, compartida: true, o, objetivo: o.objetivo, fechaObjetivo: o.fechaObjetivo, previo: o.previo, rentabilidad: null,
+    hitos: o.hitos, usos: o.usos, conseguida: o.conseguida,
+    piezas: aportesDeObj(o).map((a) => ({ fecha: a.fecha, tipo: a.tipo, importe: a.importe, valor: a.tipo === 'Inversión' ? valorMovInv(a) : null, quien: a.userId })) };
+}
+function statsMetaH(b) {
+  const piezas = (b.piezas || []).filter((x) => x.fecha).sort((a, c) => a.fecha.localeCompare(c.fecha));
+  let apartado = num(b.previo), invAport = 0, invValor = 0, sinValorar = 0;
+  const porPersona = {};
+  piezas.forEach((x) => {
+    const imp = num(x.importe); let v = imp;
+    if (x.tipo === 'Inversión') { invAport += imp; if (x.valor == null) sinValorar++; else v = x.valor; invValor += v; } else apartado += imp;
+    porPersona[x.quien] = (porPersona[x.quien] || 0) + v;
+  });
+  const usos = (b.usos || []).filter((u) => u && num(u.importe) > 0).sort((a, c) => (a.fecha || '').localeCompare(c.fecha || ''));
+  const usado = usos.reduce((a, u) => a + num(u.importe), 0);
+  const valor = apartado + invValor - usado, aportado = apartado + invAport, obj = num(b.objetivo), hoy = todayISO();
+  const invs = piezas.filter((x) => x.tipo === 'Inversión');
+  // rentabilidad de la parte invertida: la que pongas > tu histórico (6 meses o más) > 4 % prudente
+  let rent = null, fuente = '';
+  if (b.rentabilidad != null && b.rentabilidad !== '' && isFinite(Number(b.rentabilidad))) { rent = Number(b.rentabilidad); fuente = 'la que has indicado'; }
+  else if (invs.length) {
+    const meses = (uD(hoy) - uD(invs[0].fecha)) / 864e5 / 30.4375;
+    const r0 = meses >= 6 && !sinValorar ? xirr(invs.map((x) => ({ d: x.fecha, c: -num(x.importe) })).concat([{ d: hoy, c: invValor }])) : null;
+    if (r0 != null && isFinite(r0)) { rent = Math.max(0, Math.min(10, r0 * 100)); fuente = 'según tu histórico de ' + Math.round(meses) + ' meses'; }
+    else { rent = RENT_DEFECTO; fuente = 'estimación prudente: aún no hay 6 meses de histórico'; }
+  }
+  const parteInv = valor > 0 ? Math.max(0, Math.min(1, invValor / valor)) : 0;
+  const i = rent != null ? (Math.pow(1 + rent / 100, 1 / 12) - 1) * parteInv : 0;
+  const desde = isoDaysAgo(90);
+  const ritmo = Math.max(0, piezas.filter((x) => x.fecha > desde && x.fecha <= hoy).reduce((a, x) => a + num(x.importe), 0) / 3);
+  const dias = b.fechaObjetivo ? daysUntil(b.fechaObjetivo) : null;
+  const hitos = (b.hitos || []).filter((h) => h && num(h.importe) > 0).map((h) => Object.assign({}, h, { importe: num(h.importe), alcanzado: valor >= num(h.importe) - 0.005 }))
+    .sort((a, c) => a.importe - c.importe);
+  const vos = b.compartida;
+  const r = { id: b.id, key: b.compartida ? 'g:' + b.id : b.id, nombre: b.nombre, compartida: !!b.compartida, o: b.o || null, deuda: false,
+    inv: invAport > 0, apartado, invAport, invValor, gan: invValor - invAport, usado, usos, valor, aportado, acum: valor, obj,
+    pct: obj > 0 ? valor / obj * 100 : null, falta: Math.max(0, obj - valor), porPersona, mio: porPersona[miUid() || 'yo'] || 0,
+    n: piezas.length, sinValorar, rent, fuente, ritmo, dias, fecha: b.fechaObjetivo || null, necesario: null, mes: null, llegada: null,
+    hitos, sig: hitos.find((h) => !h.alcanzado) || null, conseguida: b.conseguida || null, estado: 'gris', texto: '' };
+  if (obj > 0 && valor < obj && (ritmo > 0 || i > 0)) {
+    let v = Math.max(0, valor);
+    for (let k = 1; k <= 600; k++) { v = v * (1 + i) + ritmo; if (v >= obj) { const d = new Date(); d.setMonth(d.getMonth() + k); r.llegada = d; break; } }
+  }
+  if (r.conseguida) { r.estado = 'verde'; r.texto = 'Conseguida el ' + fmtDateShort(r.conseguida) + ' 🎉'; return r; }
+  if (obj <= 0) { r.texto = 'Sin objetivo definido'; return r; }
+  if (valor >= obj) { r.estado = 'verde'; r.texto = 'Meta lograda'; return r; }
+  if (dias == null) { r.texto = 'Sin fecha objetivo'; return r; }
+  if (dias < 0) { r.estado = 'rojo'; r.texto = 'La fecha ya pasó y faltan ' + money(r.falta); return r; }
+  const nM = Math.max(1, dias / 30.4375), f = Math.pow(1 + i, nM);
+  r.necesario = i > 0 ? Math.max(0, (obj - valor * f) * i / (f - 1)) : Math.max(0, (obj - valor) / nM);
+  r.mes = r.necesario;
+  if (r.necesario <= 0.005) { r.estado = 'verde'; r.texto = 'Con lo que hay llegaríais sin aportar más'.replace('llegaríais', vos ? 'llegaríais' : 'llegarías'); return r; }
+  const ratio = ritmo / r.necesario;
+  if (ratio >= 1) { r.estado = 'verde'; r.texto = vos ? 'Vais bien: ritmo suficiente' : 'Vas bien: ritmo suficiente'; }
+  else if (ratio >= META_UMBRAL_AMARILLO) { r.estado = 'amarillo'; r.texto = 'Ritmo justo: conviene aportar algo más'; }
+  else { r.estado = 'rojo'; r.texto = vos ? 'Al ritmo actual no llegaríais a tiempo' : 'Al ritmo actual no llegarías a tiempo'; }
+  return r;
+}
+function objStatsAny(o) { return o.tipo === 'deuda' ? objStats(o) : statsMetaH(baseCompartida(o)); }
+// Opciones de «¿Para qué meta?»: tus metas y las compartidas de tus grupos
+function metaOpciones() {
+  return metasCfg().filter((m) => m.id).map((m) => ({ k: m.id, nombre: m.nombre, comp: false }))
+    .concat((S.objetivos || []).filter((o) => o.tipo === 'ahorro' && grupoDe(o.grupoId)).map((o) => ({ k: 'g:' + o.id, nombre: o.nombre, comp: true })));
+}
+function metaSelHtml() {
+  const ops = metaOpciones();
+  if (!ops.length) return FORM && FORM.tipo === 'Ahorro' ? '<div class="rec-hint" style="margin:-4px 0 12px;">Apartar es pasar dinero a tu ahorro (no es un gasto). Si es para algo concreto, crea una meta en Dinero → Metas y aquí podrás elegirla.</div>' : '';
+  const sel = (FORM && FORM.metaSel) || '';
+  return '<div class="field"><label>¿Para qué meta?' + badge('metasH') + ' <span class="hint">· opcional</span></label><div class="chips" id="metaChips">' +
+    [{ k: '', nombre: 'Sin meta' }].concat(ops).map((o) => '<button type="button" class="chip ' + (sel === o.k ? 'active' : '') + '" ' + act('pickMeta', o.k) + '>' + (o.comp ? '👥 ' : '') + escapeHtml(o.nombre) + '</button>').join('') + '</div>' +
+    (FORM && FORM.tipo === 'Ahorro' ? '<div class="rec-hint">Apartar es pasar dinero a tu ahorro: no cuenta como gasto.</div>' : '') + '</div>';
+}
+function metaDeMov(x) {
+  if (x.metaId) return x.metaId;
+  if (x.tipo === 'Ahorro') { const m = metasCfg().find((mm) => mm.id && normName(mm.nombre) === normName(x.categoria)); return m ? m.id : ''; }
+  return '';
+}
+// El reflejo de un movimiento vinculado a una meta compartida: se crea, se actualiza o se quita
+async function sincronizarAporte(m) {
+  if (!S.db || !S.db.aportes || !m || !m.id) return;
+  const k = String(m.metaId || ''), yo = miUid();
+  const comp = k.indexOf('g:') === 0 && (m.tipo === 'Ahorro' || m.tipo === 'Inversión');
+  const tenia = (S.aportes || []).some((a) => a.movId === m.id && (!yo || a.userId === yo));
+  try {
+    if (comp) {
+      const row = await S.db.aportes.guardar({ objetivoId: k.slice(2), movId: m.id, fecha: m.fecha, tipo: m.tipo, importe: Number(m.importe),
+        activoId: m.tipo === 'Inversión' ? (m.activoId || null) : null, participaciones: m.tipo === 'Inversión' && m.participaciones != null && m.participaciones !== '' ? Number(m.participaciones) : null });
+      if (row) {
+        const a = { id: row.id, objetivoId: row.objetivo_id, userId: row.user_id, movId: row.mov_id, fecha: row.fecha, tipo: row.tipo, importe: Number(row.importe),
+          activoId: row.activo_id || null, participaciones: row.participaciones == null ? null : Number(row.participaciones) };
+        S.aportes = (S.aportes || []).filter((x) => !(x.movId === a.movId && x.userId === a.userId)).concat([a]);
+      }
+    } else if (tenia) {
+      await S.db.aportes.quitar(m.id);
+      S.aportes = (S.aportes || []).filter((x) => !(x.movId === m.id && (!yo || x.userId === yo)));
+    }
+    render();
+  } catch (e) { console.error(e); toast('Guardado, pero no se pudo actualizar la meta compartida. Vuelve a guardarlo.'); }
+}
+// Hitos: limpiar al guardar (sin nombre o sin importe fuera) y conservar la fecha en que se lograron
+function limpiarHitos(nuevos, viejos) {
+  const prev = {}; (viejos || []).forEach((h) => { if (h && h.id) prev[h.id] = h; });
+  return (nuevos || []).map((h) => ({ id: h.id || nuevoIdMeta(), nombre: String(h.nombre || '').trim(), importe: parseFloat(h.importe) }))
+    .filter((h) => h.nombre && h.importe > 0)
+    .map((h) => (prev[h.id] && prev[h.id].logrado && num(prev[h.id].importe) === h.importe ? Object.assign(h, { logrado: prev[h.id].logrado }) : h))
+    .sort((a, b) => a.importe - b.importe);
+}
+function hitosEditorHtml() {
+  const hs = FORM.hitos || [];
+  return '<div class="field"><label>Hitos' + badge('hitos') + ' <span class="hint">· opcional: «Primeros 100.000 €», «La entrada»…</span></label><div id="hitosBox">' +
+    hs.map((h, i) => '<div class="row2 hito-row"><input placeholder="Nombre del hito" value="' + escapeHtml(h.nombre || '') + '" ' + onChange('hitoCampo', i, 'nombre') + '>' +
+      '<input class="amt" type="number" step="0.01" inputmode="decimal" placeholder="' + sym() + '" value="' + (h.importe == null ? '' : escapeHtml(h.importe)) + '" ' + onChange('hitoCampo', i, 'importe') + '>' +
+      '<button type="button" class="rm" aria-label="Quitar hito" ' + act('hitoQuitar', i) + '>' + ic('close') + '</button></div>').join('') + '</div>' +
+    '<button type="button" class="link" ' + act('hitoAdd') + '>' + ic('plus') + ' Añadir hito</button></div>';
+}
+function hitosBarHtml(r) {
+  const pct = r.obj > 0 ? Math.max(0, Math.min(100, r.valor / r.obj * 100)) : 0;
+  const marcas = r.obj > 0 ? r.hitos.filter((h) => h.importe < r.obj).map((h) => '<i class="hito-m' + (h.alcanzado ? ' ok' : '') + '" style="left:' + (h.importe / r.obj * 100).toFixed(2) + '%" title="' + escapeHtml(h.nombre) + '"></i>').join('') : '';
+  return '<div class="meta-barra"><div class="mb-f" style="width:' + pct.toFixed(2) + '%;background:' + SEMAFORO_COLOR[r.estado] + '"></div>' + marcas + '</div>';
+}
+function metaCardHtml(r) {
+  const g = r.compartida && r.o ? grupoDe(r.o.grupoId) : null, yo = miUid() || 'yo', vos = r.compartida;
+  let h = '<div class="card meta-card' + (r.conseguida ? ' conseguida' : '') + '">' +
+    '<div class="meta-cab">' + anilloHtml(r.pct, SEMAFORO_COLOR[r.estado], 64) + '<div class="meta-info"><div class="meta-nom">' + escapeHtml(r.nombre) +
+    (g ? ' <span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
+    '<div class="meta-cant tnum">' + money(r.valor) + (r.obj > 0 ? ' de ' + money(r.obj) : '') + '</div>' +
+    '<span class="estado-pill e-' + r.estado + '">' + escapeHtml(r.texto) + '</span></div>' +
+    '<button type="button" class="meta-edit" aria-label="Editar meta" title="Editar" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' + (r.obj > 0 ? hitosBarHtml(r) : '');
+  if (r.hitos.length) {
+    const yaDice = (x) => { const d = String(x.nombre).replace(/[.\s]/g, ''), k = x.importe / 1000; return d.indexOf(String(Math.round(x.importe))) >= 0 || (Number.isInteger(k) && new RegExp('(^|\\D)' + k + '(k|mil)', 'i').test(d)); };
+    h += '<div class="hitos">' + r.hitos.map((x) => '<span class="hito' + (x.alcanzado ? ' ok' : '') + '">' + (x.alcanzado ? '✓ ' : '') + escapeHtml(x.nombre) + (yaDice(x) ? '' : ' · ' + moneyShort(x.importe)) + '</span>').join('') + '</div>';
+    if (r.sig && !r.conseguida) h += '<div class="meta-sig">Siguiente hito: <b>' + escapeHtml(r.sig.nombre) + '</b> · faltan <b class="tnum">' + money(r.sig.importe - r.valor) + '</b></div>';
+  }
+  const partes = [];
+  if (r.apartado) partes.push('<span>Apartado</span><b class="tnum">' + money(r.apartado) + '</b>');
+  if (r.invAport) partes.push('<span>Invertido</span><b class="tnum">' + money(r.invAport) + ' → vale ' + money(r.invValor) + ' <em style="color:' + (r.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (r.gan >= 0 ? '+' : '−') + money(Math.abs(r.gan)) + '</em></b>');
+  if (r.usado) partes.push('<span>Usado</span><b class="tnum">−' + money(r.usado) + '</b>');
+  if (partes.length) h += '<div class="meta-comp">' + partes.map((p) => '<div>' + p + '</div>').join('') + '</div>';
+  if (vos) {
+    const ps = Object.keys(r.porPersona).sort((a, b) => (b === yo) - (a === yo)).map((u) => escapeHtml(nombreDe(r.o.grupoId, u)) + ' <b class="tnum">' + money(r.porPersona[u]) + '</b>').join(' · ');
+    h += '<div class="obj-personas">Lo que pone cada uno: ' + (ps || 'aún nada') + (num(r.o.previo) ? ' · antes de la app ' + money(r.o.previo) : '') + '</div>';
+  }
+  if (!r.conseguida) {
+    if (r.fecha) h += '<div class="meta-txt">Hasta el ' + fmtDateLong(r.fecha) + '</div>';
+    if (r.necesario != null && r.necesario > 0.005) h += '<div class="meta-txt">' + (vos ? 'Necesitáis aportar entre todos aprox. ' : 'Necesitas aportar aprox. ') + '<b class="tnum">' + money(r.necesario) + '/mes</b>.</div>';
+    if (r.obj > 0 && r.falta > 0) h += '<div class="meta-txt">Ritmo (últimos 3 meses): <b class="tnum">' + money(r.ritmo) + '/mes</b>' + (r.llegada ? ' · a este ritmo ' + (vos ? 'llegaríais' : 'llegarías') + ' hacia ' + fmtMesAnio(r.llegada) : ' · sin aportaciones recientes para estimar') + '.</div>';
+    if (r.inv && r.rent != null) h += '<div class="meta-est">La parte invertida se proyecta al <b>' + fmt2(r.rent).replace(/,00$/, '') + ' % anual</b> (' + escapeHtml(r.fuente) + '). Es una estimación: las inversiones suben y bajan.' +
+      (r.sinValorar ? ' ' + r.sinValorar + (r.sinValorar === 1 ? ' aportación sin precio automático cuenta' : ' aportaciones sin precio automático cuentan') + ' por lo aportado.' : '') + '</div>';
+  }
+  h += '<div class="meta-acc">' + (r.conseguida ? '' : '<button class="btn sm accent" ' + act('metaAportar', r.key) + '>' + ic('plus') + ' Aportar</button>') +
+    '<button class="btn sm ghost" ' + act('metaAsignar', r.key) + '>Vincular</button>' +
+    '<button class="btn sm ghost" ' + act('usoAbrir', r.key) + '>He usado dinero</button></div>';
+  if (r.usos.length) h += '<div class="meta-usos">' + r.usos.slice(-3).reverse().map((u) => '<div><span>' + fmtDateShort(u.fecha) + ' · <b class="tnum">' + money(u.importe) + '</b> ' + (u.para === 'objetivo' ? 'para el objetivo' : 'para otra cosa') + (u.nota ? ' · ' + escapeHtml(u.nota) : '') + '</span>' +
+    '<button class="link" ' + act('usoQuitar', r.key, u.id) + '>Quitar</button></div>').join('') + '</div>';
+  return h + '</div>';
+}
+// «He usado dinero de la meta»
+function metaRefDe(key) {
+  key = String(key || '');
+  if (key.indexOf('g:') === 0) { const o = objPorId(key.slice(2)); return o ? { compartida: true, o, nombre: o.nombre } : null; }
+  const m = metasCfg().find((x) => x.id === key); return m ? { compartida: false, m, nombre: m.nombre } : null;
+}
+function usoLeer() { const F = FORM, v = (s) => { const e = $(s); return e ? e.value : undefined; }; ['imp', 'fecha', 'nota', 'cat'].forEach((k, i) => { const x = v(['#uImporte', '#uFecha', '#uNota', '#uCat'][i]); if (x !== undefined) F[k] = x; }); }
+function usoHtml() {
+  const F = FORM, ref = metaRefDe(F.key); if (!ref) return '<div class="handle"></div><h2>Esa meta ya no existe</h2>';
+  const obj = F.para === 'objetivo';
+  return '<div class="handle"></div><h2>Usar dinero de «' + escapeHtml(ref.nombre) + '»</h2>' +
+    '<div class="field"><label>¿Cuánto? (' + sym() + ')</label><input id="uImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + escapeHtml(F.imp || '') + '"></div>' +
+    '<div class="field"><label>¿Para qué?</label><div class="segmented" id="usoPara"><button type="button" class="' + (obj ? 'active' : '') + '" ' + act('usoPara', 'objetivo') + '>Para el objetivo</button>' +
+    '<button type="button" class="' + (obj ? '' : 'active') + '" ' + act('usoPara', 'otro') + '>Para otra cosa</button></div>' +
+    '<div class="rec-hint">' + (obj ? 'La meta quedará como <b>conseguida</b> 🎉 (por ejemplo, la entrada de la casa).' : 'Baja lo que tiene la meta y sigue activa (por ejemplo, una urgencia).') + '</div></div>' +
+    '<div class="field"><label>Fecha</label><input id="uFecha" type="date" value="' + escapeHtml(F.fecha || todayISO()) + '"></div>' +
+    '<div class="field"><label>Nota <span class="hint">· opcional</span></label><input id="uNota" type="text" maxlength="80" placeholder="' + (obj ? 'Entrada del piso' : 'Arreglo del coche') + '" value="' + escapeHtml(F.nota || '') + '"></div>' +
+    '<label class="comp-row uso-gasto"><input type="checkbox" ' + (F.gasto ? 'checked' : '') + ' ' + onChange('usoGasto') + '><span>Apuntarlo también como gasto del mes</span></label>' +
+    (F.gasto ? '<div class="field"><label>Categoría del gasto</label><select id="uCat">' + catsGasto().map((c) => '<option' + (c.nombre === F.cat ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>' : '') +
+    '<div class="rec-hint">Por defecto no cuenta como gasto: es dinero que ya tenías apartado o invertido.</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('usoGuardar') + '>Guardar</button></div>';
+}
+async function usoGuardar() {
+  usoLeer();
+  const F = FORM, ref = metaRefDe(F.key); if (!ref) return;
+  const imp = parseFloat(F.imp);
+  if (!(imp > 0)) return toast('Pon cuánto has usado');
+  if (!F.fecha) return toast('Elige la fecha');
+  if (F.guardando) return; F.guardando = true;
+  try {
+    const uso = { id: nuevoIdMeta(), fecha: F.fecha, importe: Math.round(imp * 100) / 100, para: F.para === 'objetivo' ? 'objetivo' : 'otro', nota: String(F.nota || '').trim(), por: miUid() || null };
+    if (ref.compartida) {
+      const datos = { usos: (ref.o.usos || []).concat([uso]) }; if (uso.para === 'objetivo') datos.conseguida = uso.fecha;
+      try { objAplicarLocal(await S.db.objetivos.editar(ref.o.id, datos)); } catch (e) { console.error(e); return toast(errGrupo(e)); }
+    } else {
+      saveConfig({ ahorro: (cfg().ahorro || []).map((m) => (m && m.id === ref.m.id ? Object.assign({}, m, { usos: (m.usos || []).concat([uso]) }, uso.para === 'objetivo' ? { conseguida: uso.fecha } : {}) : m)) });
+    }
+    if (F.gasto) await write(() => S.db.collection('movimientos').add({ creadoEn: Date.now(), tipo: 'Gasto', importe: uso.importe, categoria: F.cat || catsGasto()[0].nombre, fecha: uso.fecha, descripcion: 'De la meta «' + ref.nombre + '»' + (uso.nota ? ' · ' + uso.nota : ''), metodoPago: '' }));
+    closeSheet(); render();
+    if (uso.para === 'objetivo') { confeti(); toast('¡Meta conseguida: ' + ref.nombre + '! 🎉'); }
+    else toast('Apuntado: ' + money(uso.importe) + ' usados de «' + ref.nombre + '»');
+  } finally { F.guardando = false; }
+}
+async function usoQuitar(key, id) {
+  const ref = metaRefDe(key); if (!ref) return;
+  const lista = ((ref.compartida ? ref.o.usos : ref.m.usos) || []), u = lista.find((x) => x.id === id); if (!u) return;
+  const resto = lista.filter((x) => x.id !== id), cons = ref.compartida ? ref.o.conseguida : ref.m.conseguida;
+  const quitaCons = u.para === 'objetivo' && cons === u.fecha;
+  if (ref.compartida) {
+    const datos = { usos: resto }; if (quitaCons) datos.conseguida = null;
+    try { objAplicarLocal(await S.db.objetivos.editar(ref.o.id, datos)); } catch (e) { console.error(e); return toast(errGrupo(e)); }
+  } else saveConfig({ ahorro: (cfg().ahorro || []).map((m) => (m && m.id === ref.m.id ? Object.assign({}, m, { usos: resto }, quitaCons ? { conseguida: null } : {}) : m)) });
+  render(); toast('Quitado');
+}
 function valorMovInv(x) {
   const v = S.valoracion && S.valoracion.valores && x.activoId ? S.valoracion.valores[x.activoId] : null;
   if (!v || v.cierre_eur == null || x.participaciones == null || x.participaciones === '') return null;
   return Number(x.participaciones) * v.cierre_eur;
 }
 function asegurarValoracion() {
-  const ids = [...new Set(S.movimientos.filter((x) => x.tipo === 'Inversión' && x.activoId).map((x) => x.activoId))];
+  const ids = [...new Set(S.movimientos.filter((x) => x.tipo === 'Inversión' && x.activoId).map((x) => x.activoId).concat((S.aportes || []).filter((a) => a.activoId).map((a) => a.activoId)))];
   if (!activosDisponible() || !ids.length || S._valCarga || S._valProg) return;
   const v = S.valoracion, edad = v ? Date.now() - v.ts : Infinity, faltan = v && ids.some((id) => !(v.valores && v.valores[id]));
   if (!v || edad > 600000 || (faltan && edad > 60000)) S._valProg = setTimeout(() => { S._valProg = null; cargarValoracion(ids); }, 0);
@@ -2529,30 +2759,28 @@ function metaInvCardHtml(r) {
 function metasListaHtml() {
   const ms = metasCfg();
   return '<div class="handle"></div><h2>Metas</h2>' +
-    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;"><b>Ahorro:</b> dinero que apartas (movimientos de tipo Ahorro). <b>Inversión:</b> lo que vas invirtiendo para algo (por ejemplo, la entrada de una casa); su progreso es lo que valen hoy esas inversiones.</div>' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Cada meta junta lo que apartas y lo que inviertes para ella. Puedes ponerle hitos y, cuando uses el dinero, apuntarlo.</div>' +
     (ms.length ? '<div class="list">' + ms.map((m) => '<div class="row" ' + act('metaEditar', m.id || '') + '><span class="dot" style="background:var(--savings)"></span><div class="main"><div class="ttl">' + escapeHtml(m.nombre) + '</div><div class="meta">' + (tipoMeta(m) === 'inversion' ? 'Inversión' : 'Ahorro') + (m.fechaObjetivo ? ' · hasta ' + fmtDateShort(m.fechaObjetivo) : '') + '</div></div><div class="amt tnum">' + (num(m.objetivo) > 0 ? money(m.objetivo) : '—') + '</div></div>').join('') + '</div>'
       : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no tienes metas.</div>') +
     '<div class="actions"><button class="btn ghost block" ' + act('metaNueva') + '>' + ic('plus') + ' Nueva meta</button>' + (compartidosDisponible() ? '<button class="btn ghost block" ' + act('objNueva', 'ahorro') + '>' + ic('users') + ' Meta compartida</button>' : '') + '</div>' +
     '<div class="actions" style="margin-top:8px;"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 function metaEditorHtml() {
-  const F = FORM, inv = F.tipoMeta === 'inversion';
-  const v = (x) => (x == null ? '' : escapeHtml(x));
+  const F = FORM, v = (x) => (x == null ? '' : escapeHtml(x));
   return '<div class="handle"></div><h2>' + (F.id ? 'Editar meta' : 'Nueva meta') + '</h2>' +
-    '<div class="field"><label>Tipo</label><div class="type-toggle"><button type="button" data-t="Ahorro" class="' + (!inv ? 'active' : '') + '" ' + act('metaTipo', 'ahorro') + '>Ahorro</button><button type="button" data-t="Inversión" class="' + (inv ? 'active' : '') + '" ' + act('metaTipo', 'inversion') + '>Inversión</button></div></div>' +
-    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="' + (inv ? 'Entrada de la casa' : 'Fondo de emergencia') + '" value="' + v(F.nombre) + '"></div>' +
+    '<div class="rec-hint" style="margin:-8px 0 12px;">Una meta junta lo que apartas y lo que inviertes para ella. Al apuntar un movimiento eliges «¿Para qué meta?».</div>' +
+    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '"></div>' +
     '<div class="field"><label>Objetivo (' + sym() + ')</label><input id="mObjetivo" type="number" step="0.01" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="mFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
-    (inv
-      ? '<div class="field"><label>Rentabilidad anual esperada (%) <span class="hint">· opcional</span></label><input id="mRent" type="number" step="0.1" inputmode="decimal" placeholder="Automática" value="' + v(F.rentabilidad) + '"><div class="rec-hint">Si lo dejas vacío se usa la rentabilidad real de las aportaciones de esta meta cuando haya 6 meses de histórico, y si no, un ' + RENT_DEFECTO + ' % prudente. Siempre es una estimación.</div></div>' +
-        '<div class="field"><label>Valor de lo invertido fuera de la app (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"><div class="rec-hint">Solo si tienes inversiones para esta meta que no apuntas en la app. Lo apuntado se asigna con «Asignar aportaciones».</div></div>'
-      : '<div class="field"><label>Ya ahorrado antes (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"></div>') +
+    '<div class="field"><label>Lo que ya tenías antes (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"></div>' +
+    hitosEditorHtml() +
+    '<div class="field"><label>Rentabilidad anual esperada de lo invertido (%) <span class="hint">· opcional</span></label><input id="mRent" type="number" step="0.1" inputmode="decimal" placeholder="Automática" value="' + v(F.rentabilidad) + '"><div class="rec-hint">Si lo dejas vacío se calcula con tu histórico (o un 4 % prudente).</div></div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('openMetas') + '>Cancelar</button><button class="btn accent block" ' + act('metaGuardar') + '>Guardar</button></div>' +
     (F.id ? '<button class="btn danger block" style="margin-top:10px;" ' + act('metaEliminar') + '>' + ic('trash') + ' Eliminar meta</button><div class="rec-hint" style="text-align:center;">Eliminar la meta no borra ningún movimiento.</div>' : '');
 }
 function metaAbrirEditor(id) {
   const m = id ? metasCfg().find((x) => x.id === id) : null;
-  FORM = { kind: 'meta', id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null };
+  FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null };
   if ($('#sheetBackdrop')) updateSheet(metaEditorHtml()); else openSheet(metaEditorHtml());
 }
 function metaLeerForm() {
@@ -2568,8 +2796,8 @@ async function metaGuardar() {
   const numOrNull = (x) => { const n = parseFloat(x); return x === '' || x == null || !isFinite(n) ? null : n; };
   const idx = F.id ? arr.findIndex((m) => m && m.id === F.id) : -1;
   const prev = idx >= 0 ? arr[idx] : {};
-  const item = Object.assign({}, prev, { id: F.id || nuevoIdMeta(), nombre: F.nombre, tipo: F.tipoMeta, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado) });
-  if (F.tipoMeta === 'inversion') item.rentabilidad = numOrNull(F.rentabilidad); else delete item.rentabilidad;
+  const item = Object.assign({}, prev, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
+  delete item.tipo; // todas las metas son híbridas
   // renombrar: los movimientos de Ahorro que se enlazaban por el nombre antiguo pasan a enlazarse por el identificador
   if (F.id && F.nombreOrig && normName(F.nombreOrig) !== normName(F.nombre)) {
     const ligados = S.movimientos.filter((x) => x.tipo === 'Ahorro' && !x.metaId && normName(x.categoria) === normName(F.nombreOrig));
@@ -2592,41 +2820,47 @@ function metaEliminar() {
 }
 /* ---- asignar aportaciones a una meta de inversión ---- */
 function asignarHtml() {
-  const F = FORM, meta = metasCfg().find((m) => m.id === F.metaId);
-  if (!meta) return '';
-  const nombresMeta = {}; metasCfg().forEach((m) => { if (m.id) nombresMeta[m.id] = m.nombre; });
-  const movs = S.movimientos.filter((x) => x.tipo === 'Inversión').sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  const F = FORM, mo = metaOpciones().find((o) => o.k === F.metaKey);
+  if (!mo) return '<div class="handle"></div><h2>Esa meta ya no existe</h2>';
+  const nombres = {}; metaOpciones().forEach((o) => { nombres[o.k] = o.nombre; });
+  const movs = movsPersonales().filter((x) => x.tipo === 'Inversión' || x.tipo === 'Ahorro').sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
   const grupos = {};
-  movs.forEach((x) => { const k = x.activoId || 'n:' + normName(x.categoria); (grupos[k] = grupos[k] || { nombre: (x.categoria || 'Sin activo').trim(), movs: [] }).movs.push(x); });
+  movs.forEach((x) => { const k = x.tipo === 'Ahorro' ? 'ahorro' : x.activoId || 'n:' + normName(x.categoria); (grupos[k] = grupos[k] || { nombre: x.tipo === 'Ahorro' ? 'Apartados' : (x.categoria || 'Sin activo').trim(), movs: [] }).movs.push(x); });
   const html = Object.entries(grupos).sort((a, b) => b[1].movs.length - a[1].movs.length).map(([k, g]) => {
     const todas = g.movs.every((x) => F.sel.has(x.id));
     return '<div class="asig-grupo"><div class="asig-head"><b>' + escapeHtml(g.nombre) + '</b><span>' + g.movs.length + ' · ' + money(g.movs.reduce((a, x) => a + num(x.importe), 0)) + '</span>' +
       '<button type="button" class="btn sm ' + (todas ? 'accent' : 'ghost') + '" ' + act('asigGrupo', k) + '>' + (todas ? '✓ Todas' : 'Todas') + '</button></div>' +
       g.movs.map((x) => {
-        const otra = x.metaId && x.metaId !== F.metaId && nombresMeta[x.metaId] ? nombresMeta[x.metaId] : '';
-        return '<label class="asig-row"><input type="checkbox" ' + (F.sel.has(x.id) ? 'checked' : '') + ' ' + onChange('asigMov', x.id) + '><span>' + fmtDateShort(x.fecha) + ' ' + (x.fecha || '').slice(0, 4) + (x.descripcion ? ' · ' + escapeHtml(x.descripcion) : '') + (otra ? ' · <i>ahora en «' + escapeHtml(otra) + '»</i>' : '') + '</span><b class="tnum">' + money(x.importe) + '</b></label>';
+        const mk = metaDeMov(x), otra = mk && mk !== F.metaKey && nombres[mk] ? nombres[mk] : '';
+        return '<label class="asig-row"><input type="checkbox" ' + (F.sel.has(x.id) ? 'checked' : '') + ' ' + onChange('asigMov', x.id) + '><span>' + fmtDateShort(x.fecha) + ' ' + (x.fecha || '').slice(0, 4) + (x.descripcion ? ' · ' + escapeHtml(x.descripcion) : '') + '</span><b class="tnum">' + money(x.importe) + '</b>' + (otra ? '<small>ahora en «' + escapeHtml(otra) + '»</small>' : '') + '</label>';
       }).join('') + '</div>';
   }).join('');
   const n = F.sel.size, tot = movs.filter((x) => F.sel.has(x.id)).reduce((a, x) => a + num(x.importe), 0);
-  return '<div class="handle"></div><h2>Asignar a «' + escapeHtml(meta.nombre) + '»</h2>' +
-    '<div style="font-size:13px;color:var(--text-muted);margin:-6px 0 10px;line-height:1.45;">Marca las aportaciones de inversión que son para esta meta. Lo que no asignes a ninguna meta queda en «General».</div>' +
-    (html || '<div class="card" style="color:var(--text-faint);font-size:13.5px;">No tienes movimientos de inversión.</div>') +
-    '<div class="rec-prev">Seleccionadas: <b>' + n + '</b> · ' + money(tot) + ' aportados</div>' +
+  return '<div class="handle"></div><h2>Vincular a «' + escapeHtml(mo.nombre) + '»</h2>' +
+    '<div style="font-size:13px;color:var(--text-muted);margin:-6px 0 10px;line-height:1.45;">Marca lo que apartaste o invertiste para esta meta.' + (mo.comp ? ' Lo verán los de la meta compartida; en tus números sigue contando como tuyo.' : '') + '</div>' +
+    (html || '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no tienes movimientos de Apartar ni de Inversión.</div>') +
+    '<div class="rec-prev">Seleccionados: <b>' + n + '</b> · ' + money(tot) + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('asigGuardar') + '>Guardar</button></div>';
 }
 async function asigGuardar() {
   const F = FORM, cambios = [];
-  S.movimientos.filter((x) => x.tipo === 'Inversión').forEach((x) => {
-    const quiere = F.sel.has(x.id), tiene = x.metaId === F.metaId;
-    if (quiere && !tiene) cambios.push([x, F.metaId]);
+  movsPersonales().filter((x) => x.tipo === 'Inversión' || x.tipo === 'Ahorro').forEach((x) => {
+    const quiere = F.sel.has(x.id), tiene = metaDeMov(x) === F.metaKey;
+    if (quiere && !tiene) cambios.push([x, F.metaKey]);
     else if (!quiere && tiene) cambios.push([x, null]);
   });
   if (!cambios.length) { closeSheet(); return; }
   F.guardando = true;
   let ok = 0;
-  for (const [x, metaId] of cambios) { if (await write(() => S.db.collection('movimientos').doc(x.id).set(Object.assign(stripId(x), { metaId })))) ok++; else break; }
+  const mo = metaOpciones().find((o) => o.k === F.metaKey);
+  for (const [x, metaId] of cambios) {
+    const datos = Object.assign(stripId(x), { metaId });
+    if (x.tipo === 'Ahorro') datos.categoria = metaId && mo ? mo.nombre : (x.metaId ? x.categoria : 'Apartado');
+    if (await write(() => S.db.collection('movimientos').doc(x.id).set(datos))) { ok++; if (metaId || (S.aportes || []).some((a) => a.movId === x.id)) await sincronizarAporte(Object.assign({ id: x.id }, datos)); }
+    else break;
+  }
   closeSheet();
-  toast(ok === cambios.length ? 'Aportaciones asignadas' : 'Solo se guardaron ' + ok + ' de ' + cambios.length + ' cambios');
+  toast(ok === cambios.length ? 'Vinculado' : 'Solo se guardaron ' + ok + ' de ' + cambios.length + ' cambios');
 }
 /* ---- selector de meta en el formulario de inversión ---- */
 function metaInvSelectorHtml() {
@@ -2663,13 +2897,13 @@ function patrimonio() {
   let inv = 0, sinValor = 0;
   const banco = cuentasCfg().reduce((a, c) => a + num(c.saldo), 0);
   S.movimientos.forEach((x) => { if (x.tipo !== 'Inversión') return; const v = valorMovInv(x); if (v == null) { inv += num(x.importe); sinValor++; } else inv += v; });
-  metasCfg().filter((m) => tipoMeta(m) === 'inversion').forEach((m) => { inv += num(m.yaAhorrado); });
-  let ahorro = metasCfg().filter((m) => tipoMeta(m) === 'ahorro').reduce((a, m) => a + metaStats(m).acum, 0);
+  const yo = miUid(), sumUsos = (us, soloMios) => (us || []).reduce((a, u) => a + (!soloMios || u.por === yo ? num(u.importe) : 0), 0);
+  let ahorro = movsPersonales().filter((x) => x.tipo === 'Ahorro').reduce((a, x) => a + num(x.importe), 0) +
+    metasCfg().reduce((a, m) => a + num(m.yaAhorrado) - sumUsos(m.usos), 0) - (S.objetivos || []).filter((o) => o.tipo === 'ahorro').reduce((a, o) => a + sumUsos(o.usos, true), 0);
   let deudas = (cfg().deudas || []).filter((d) => d && d.nombre).map(deudaStats).filter((r) => r.total > 0).reduce((a, r) => a + r.pend, 0);
   // compartido: lo que has aportado a huchas compartidas y tu parte de lo pendiente de deudas compartidas
-  const ahorroComp = objCompartidos('ahorro').reduce((a, r) => a + r.mio, 0);
   const deudaComp = objCompartidos('deuda').filter((r) => r.obj > 0).reduce((a, r) => a + r.falta * miProporcion(r.o), 0);
-  ahorro += ahorroComp; deudas += deudaComp;
+  deudas += deudaComp;
   const fechas = cuentasCfg().map((c) => c.fecha).filter(Boolean).sort();
   return { banco, bancoFecha: fechas.length ? fechas[0] : null, nCuentas: cuentasCfg().length, inv, sinValor, ahorro, deudas, comp: !!(S.objetivos || []).length, total: banco + inv + ahorro - deudas };
 }
@@ -2690,7 +2924,7 @@ function patrimonioHtml() {
     (p.nCuentas ? fila('Dinero en el banco' + (diasBanco != null && diasBanco > 30 ? ' · <span style="color:var(--accent)">actualízalo</span>' : ''), p.banco, p.banco >= 0 ? '+' : '−', 'var(--income)', act('openCuentas'))
       : '<div class="pat-row tappable" ' + act('openCuentas') + '><span>Dinero en el banco</span><b style="color:var(--accent)">Añadir saldo</b><span class="chev-s">' + ic('chevR') + '</span></div>') +
     (p.inv || S.movimientos.some((x) => x.tipo === 'Inversión') ? fila('Inversiones (valor de mercado)' + (cargando ? ' · actualizando…' : ''), p.inv, '+', 'var(--income)', act('irAnalisis', 'inversiones')) : '') +
-    (p.ahorro || metasCfg().some((m) => tipoMeta(m) === 'ahorro') ? fila('Ahorro en metas', p.ahorro, '+', 'var(--income)', act('goMetas')) : '') +
+    (p.ahorro || metasCfg().some((m) => tipoMeta(m) === 'ahorro') ? fila('Ahorro apartado', p.ahorro, '+', 'var(--income)', act('goMetas')) : '') +
     (p.deudas ? fila('Deudas pendientes', p.deudas, '−', 'var(--expense)', act('irAnalisis', 'deudas')) : '') +
     '<div class="pat-note">Solo informativo. El saldo del banco lo pones tú en Tú → Cuentas y saldos' + (p.bancoFecha ? ' (actualizado el ' + fmtDateShort(p.bancoFecha) + ')' : '') + '.' + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo aportado.' : '') + (p.comp ? ' De lo compartido cuenta tu parte: lo que has aportado y, en las deudas, tu parte de lo pendiente según el reparto habitual.' : '') + '</div></div>';
 }
@@ -3393,6 +3627,7 @@ const BADGES = {
   cobros: ['NUEVO', '2026-10-09'], importar: ['NUEVO', '2026-10-09'], reglas: ['NUEVO', '2026-10-09'],
   repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'], compartir: ['NUEVO', '2026-10-10'], ticket: ['NUEVO', '2026-10-10'], metas: ['MEJORADO', '2026-10-10'], patrimonio: ['NUEVO', '2026-10-10'],
   categorias: ['NUEVO', '2026-10-12'], fijo: ['NUEVO', '2026-10-12'], detalle: ['NUEVO', '2026-10-12'], oscuro: ['MEJORADO', '2026-10-12'],
+  metasH: ['NUEVO', '2026-10-13'], hitos: ['NUEVO', '2026-10-13'],
   rentab: ['NUEVO', '2026-10-10'], mesames: ['NUEVO', '2026-10-10'], presup: ['MEJORADO', '2026-10-10'], anual: ['MEJORADO', '2026-10-10'],
 };
 function badgeActivo(k) {
@@ -4769,7 +5004,7 @@ const H = {
   },
   objEditar: ([id, gid]) => {
     const o = objPorId(id); if (!o) return toast('Ya no existe');
-    FORM = { kind: 'obj', tipo: o.tipo, id, volverGrupo: gid || null, dest: 'g:' + o.grupoId, nombre: o.nombre, objetivo: o.objetivo, fechaObjetivo: o.fechaObjetivo, previo: o.previo || '' };
+    FORM = { kind: 'obj', tipo: o.tipo, id, volverGrupo: gid || null, dest: 'g:' + o.grupoId, nombre: o.nombre, objetivo: o.objetivo, fechaObjetivo: o.fechaObjetivo, previo: o.previo || '', hitos: (o.hitos || []).map((h) => Object.assign({}, h)) };
     objAbrir(objEditorHtml());
   },
   objDest: ([k]) => { objLeerForm(); FORM.dest = k; updateSheet(objEditorHtml()); },
@@ -4789,7 +5024,8 @@ const H = {
     const o = objPorId(id); if (!o) return;
     const abierta = $('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando;
     S._volverGrupo = (abierta && FORM && FORM.kind === 'obj' && FORM.volverGrupo) || null;
-    openMovForm(null, { tipo: o.tipo === 'deuda' ? 'Deuda' : 'Ahorro', categoria: o.nombre, comp: 'g:' + o.grupoId, objetivo: o.id });
+    if (o.tipo !== 'deuda') return openMovForm(null, { tipo: 'Ahorro', metaSel: 'g:' + o.id });
+    openMovForm(null, { tipo: 'Deuda', categoria: o.nombre, comp: 'g:' + o.grupoId, objetivo: o.id });
   },
   compModo: ([m]) => { compCambiarModo(m); refrescarComp(); },
   compIncl: ([u], el) => { FORM.comp.incl[u] = !!el.checked; const r = $('#compReparto'); if (r) r.innerHTML = compRepartoHtml(); },
@@ -4983,13 +5219,23 @@ const H = {
   openMetas: () => { verBadge('metas'); FORM = { kind: 'metas' }; if ($('#sheetBackdrop')) updateSheet(metasListaHtml()); else openSheet(metasListaHtml()); },
   metaNueva: () => metaAbrirEditor(null),
   metaEditar: ([id]) => metaAbrirEditor(id || null),
+  metaAportar: ([k]) => { verBadge('metasH'); openMovForm(null, { tipo: 'Ahorro', metaSel: k }); },
+  pickMeta: ([k]) => { FORM.metaSel = k || ''; verBadge('metasH'); $$('#metaChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === (k || ''))); },
+  hitoAdd: () => { if (FORM.kind === 'meta') metaLeerForm(); else objLeerForm(); (FORM.hitos = FORM.hitos || []).push({ id: nuevoIdMeta(), nombre: '', importe: null }); verBadge('hitos'); updateSheet(FORM.kind === 'meta' ? metaEditorHtml() : objEditorHtml()); setTimeout(() => { const ins = $$('#hitosBox .hito-row input'); if (ins.length > 1) ins[ins.length - 2].focus(); }, 60); },
+  hitoCampo: ([i, f], el) => { const h = (FORM.hitos || [])[Number(i)]; if (h) h[f] = el.value; },
+  hitoQuitar: ([i]) => { if (FORM.kind === 'meta') metaLeerForm(); else objLeerForm(); (FORM.hitos || []).splice(Number(i), 1); updateSheet(FORM.kind === 'meta' ? metaEditorHtml() : objEditorHtml()); },
+  usoAbrir: ([k]) => { FORM = { kind: 'uso', key: k, para: 'otro', gasto: false }; openSheet(usoHtml()); },
+  usoPara: ([p]) => { usoLeer(); FORM.para = p; updateSheet(usoHtml()); },
+  usoGasto: (_a, el) => { usoLeer(); FORM.gasto = !!el.checked; updateSheet(usoHtml()); },
+  usoGuardar: () => usoGuardar(),
+  usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   metaGuardar: () => metaGuardar(),
   metaEliminar: (_, el) => confirmDelete(el, metaEliminar),
-  metaAsignar: ([id]) => { FORM = { kind: 'asignar', metaId: id, sel: new Set(S.movimientos.filter((x) => x.tipo === 'Inversión' && x.metaId === id).map((x) => x.id)) }; openSheet(asignarHtml()); },
+  metaAsignar: ([k]) => { FORM = { kind: 'asignar', metaKey: k, sel: new Set(movsPersonales().filter((x) => (x.tipo === 'Inversión' || x.tipo === 'Ahorro') && metaDeMov(x) === k).map((x) => x.id)) }; openSheet(asignarHtml()); },
   asigMov: ([id], el) => { if (el.checked) FORM.sel.add(id); else FORM.sel.delete(id); updateSheet(asignarHtml()); },
   asigGrupo: ([k]) => {
-    const ids = S.movimientos.filter((x) => x.tipo === 'Inversión' && (x.activoId || 'n:' + normName(x.categoria)) === k).map((x) => x.id);
+    const ids = movsPersonales().filter((x) => (k === 'ahorro' ? x.tipo === 'Ahorro' : x.tipo === 'Inversión' && (x.activoId || 'n:' + normName(x.categoria)) === k)).map((x) => x.id);
     const todas = ids.every((id) => FORM.sel.has(id));
     ids.forEach((id) => { if (todas) FORM.sel.delete(id); else FORM.sel.add(id); });
     updateSheet(asignarHtml());
@@ -5295,7 +5541,7 @@ async function enterApp(session) {
 }
 function leaveApp() {
   S.appStarted = false;
-  S.grupos = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S._volverGrupo = null;
+  S.grupos = null; S.aportes = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S._volverGrupo = null;
   S.user = null; S.db = null;
   S.onboarding = null; S._onboardPending = false;
   _unsubs.forEach((u) => { try { u(); } catch (e) { /* noop */ } });
@@ -5342,6 +5588,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { imp: () => IMP, toast, metasStats, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
+window.__APP__ = { imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
 if (!window.__NO_AUTOSTART__) main();
 })();

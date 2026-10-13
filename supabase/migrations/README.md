@@ -69,3 +69,17 @@ Categorías estándar (12/10/2026): subcategoria_movimientos_compartidos.
   («gasto fijo») guarda la categoría estándar y el nombre del recibo en `subcategoria`.
 - Migración de datos del 12/10 con copias en backup_movimientos_20261012, backup_compartidos_20261012
   y backup_config_20261012 (las cuentas de prueba no se tocaron).
+
+Metas híbridas (13/10/2026): metas_hibridas_aportes_hitos_usos, aportes_quitar_si_meta_borrada, aportes_ver_los_propios.
+- `objetivos_compartidos` gana `hitos` (jsonb, lista de {id, nombre, importe, logrado}), `usos`
+  (jsonb, lista de {id, fecha, importe, para: objetivo|otro, nota, por}) y `conseguida` (fecha).
+- Tabla `objetivo_aportes`: el reflejo de un movimiento personal (Apartar o Inversión) que su dueño
+  vincula a una meta compartida. Una fila por persona y movimiento (`unique(user_id, mov_id)`); el
+  movimiento sigue siendo suyo y cuenta solo en sus números. Se «quita» con borrado lógico.
+- Reglas: cada uno ve sus aportes y los de las metas de sus grupos; solo crea, cambia o quita los
+  suyos (el disparador `validar_aporte` fija el autor y no deja cambiar autor ni movimiento); nadie
+  borra filas; sin sesión, nada.
+- Las metas personales siguen en `config.app.ahorro` y ahora también guardan `hitos`, `usos`,
+  `conseguida` y `rentabilidad`. Ya no hay «tipo» de meta: todas suman lo apartado y lo invertido
+  (`movimientos.meta_id` = id de la meta, o `g:<uuid>` si es compartida).
+- No hubo que tocar datos: las metas existentes valen igual y las columnas nuevas empiezan vacías.

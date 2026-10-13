@@ -286,10 +286,25 @@
       importe: Number(r.importe), pagadoPor: r.pagado_por, reparto: r.reparto || {}, modo: r.modo || 'igual', objetivoId: r.objetivo_id || null, articulos: r.articulos || null,
       creadoPor: r.creado_por, createdAt: r.created_at, updatedAt: r.updated_at, editadoPor: r.editado_por };
   }, ['grupo_id']);
-  var objetivos = tablaCompartida('objetivos_compartidos', ['id', 'grupoId', 'tipo', 'nombre', 'objetivo', 'fechaObjetivo', 'previo'], function (r) {
+  var objetivos = tablaCompartida('objetivos_compartidos', ['id', 'grupoId', 'tipo', 'nombre', 'objetivo', 'fechaObjetivo', 'previo', 'hitos', 'usos', 'conseguida'], function (r) {
     return { id: r.id, grupoId: r.grupo_id, tipo: r.tipo, nombre: r.nombre, objetivo: r.objetivo == null ? null : Number(r.objetivo),
-      fechaObjetivo: r.fecha_objetivo || null, previo: Number(r.previo || 0), creadoPor: r.creado_por, createdAt: r.created_at };
+      fechaObjetivo: r.fecha_objetivo || null, previo: Number(r.previo || 0), hitos: r.hitos || [], usos: r.usos || [], conseguida: r.conseguida || null,
+      creadoPor: r.creado_por, createdAt: r.created_at };
   }, ['grupo_id', 'tipo']);
+  /* ---- aportaciones a metas compartidas (12/10): reflejo de un movimiento personal que su dueño vincula a la meta ---- */
+  var aportes = tablaCompartida('objetivo_aportes', ['objetivoId', 'movId', 'fecha', 'tipo', 'importe', 'activoId', 'participaciones'], function (r) {
+    return { id: r.id, objetivoId: r.objetivo_id, userId: r.user_id, movId: r.mov_id, fecha: r.fecha, tipo: r.tipo, importe: Number(r.importe),
+      activoId: r.activo_id || null, participaciones: r.participaciones == null ? null : Number(r.participaciones) };
+  }, []);
+  // guardar = crear o actualizar el reflejo de ese movimiento (y «resucitarlo» si se había quitado)
+  aportes.guardar = function (o) {
+    var row = { user_id: currentUid, objetivo_id: o.objetivoId, mov_id: o.movId, fecha: o.fecha, tipo: o.tipo, importe: o.importe,
+      activo_id: o.activoId || null, participaciones: o.participaciones == null ? null : o.participaciones, borrado: null };
+    return q(sb.from('objetivo_aportes').upsert(row, { onConflict: 'user_id,mov_id' }).select().single());
+  };
+  aportes.quitar = function (movId) {
+    return q(sb.from('objetivo_aportes').update({ borrado: new Date().toISOString() }).eq('user_id', currentUid).eq('mov_id', movId).is('borrado', null).select('id'));
+  };
 
-  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, rpc: rpc, uid: function () { return currentUid; } };
+  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
 })();
