@@ -83,3 +83,15 @@ Metas híbridas (13/10/2026): metas_hibridas_aportes_hitos_usos, aportes_quitar_
   `conseguida` y `rentabilidad`. Ya no hay «tipo» de meta: todas suman lo apartado y lo invertido
   (`movimientos.meta_id` = id de la meta, o `g:<uuid>` si es compartida).
 - No hubo que tocar datos: las metas existentes valen igual y las columnas nuevas empiezan vacías.
+
+Amigos (13/10/2026): amigos_y_enlace_para_varios.
+- «Amigos» = quien comparte contigo algún grupo o relación directa abierta (`son_amigos(a, b)`).
+- `anadir_a_grupo(p_grupo, p_user)`: cualquier miembro de un grupo (no de una relación directa)
+  puede añadir a un amigo suyo sin enlace; entra con el nombre que usa en el grupo más reciente que
+  compartís. Si no sois amigos: `no_es_amigo`. Máximo 30 miembros.
+- `crear_invitacion_varios(p_grupo)`: enlace para hasta 10 personas durante 7 días (columnas nuevas
+  `usos_max` y `usos` en `grupo_invitaciones`; los enlaces de antes siguen siendo de 1 uso).
+- `unirse` suma un uso y da el enlace por gastado al llegar a su máximo.
+- Probado con las cuentas de prueba en una transacción que se deshace: añadir amigo, no duplicar,
+  rechazar a quien no es amigo o a un ajeno, no tocar relaciones directas, enlace de varios (2 usos y
+  sigue abierto; se cierra al 10.º) y enlace normal de un solo uso.

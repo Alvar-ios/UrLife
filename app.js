@@ -282,6 +282,13 @@ async function borrarMovConDeshacer(id) {
   if (ok && (S.aportes || []).some((a) => a.movId === id)) sincronizarAporte({ id, tipo: m.tipo, metaId: null });
   if (ok) toast('Movimiento eliminado', { deshacer: async () => { if (await write(() => S.db.collection('movimientos').doc(id).set(copia))) { toast('Recuperado'); if (copia.metaId) sincronizarAporte(Object.assign({ id }, copia)); } } });
 }
+// Lleva la vista al campo que falta y lo resalta un momento
+function marcarCampo(sel) {
+  const el = $(sel); if (!el) return;
+  try { el.scrollIntoView({ block: 'center', behavior: reduceMotion() ? 'auto' : 'smooth' }); } catch (e) { /* */ }
+  const f = el.closest('.field') || el; f.classList.remove('falta'); void f.offsetWidth; f.classList.add('falta'); setTimeout(() => f.classList.remove('falta'), 1600);
+  if (el.tagName === 'INPUT') try { el.focus({ preventScroll: true }); } catch (e) { /* */ }
+}
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
@@ -697,15 +704,29 @@ function render() {
 /* ============================================================
    INICIO
    ============================================================ */
+// «Empieza aquí»: pasos que desaparecen al hacerlos. Sale mientras quede alguno (y hasta que lo ocultes)
+function empiezaPasos() {
+  const hayMovs = S.movimientos.length > 0;
+  const pasos = [
+    { k: 'gasto', hecho: hayMovs, t: 'Apunta tu primer gasto', d: 'Con el botón + del centro, cuando quieras.', a: act('crearIr', 'gasto') },
+    { k: 'banco', hecho: hayMovs, t: 'Trae tus movimientos del banco', d: 'Importa el extracto o un Excel, sin duplicados.', a: act('impAbrir') },
+    { k: 'pres', hecho: catsGasto().some((c) => num(c.presupuesto) > 0), t: 'Pon tus presupuestos', d: 'Cuánto quieres gastar al mes en cada cosa.', a: act('openListEditor', 'categoriasGasto') },
+    { k: 'meta', hecho: metasCfg().length > 0 || (S.objetivos || []).some((o) => o.tipo === 'ahorro'), t: 'Crea una meta', d: 'La entrada de la casa, un viaje, un colchón…', a: act('metaNueva') },
+    { k: 'amigo', hecho: S.grupos == null || S.grupos.some((g) => g.miembros.length >= 2), t: 'Comparte gastos con alguien', d: 'Invita por WhatsApp a tu pareja o amigos.', a: act('openGrupos') },
+  ];
+  if (!hayMovs && ticketsDisponible()) pasos.splice(1, 0, { k: 'ticket', hecho: false, t: 'O hazle una foto a un ticket', d: 'La app lee el total y los artículos por ti.', a: act('ticketFoto') });
+  return pasos;
+}
 function empiezaHtml() {
-  if (S.movimientos.length || (S.compartidos || []).length) return '';
-  const paso = (n, t, d, a) => '<button class="empieza-paso" ' + a + '><span class="n">' + n + '</span><span><b>' + t + '</b><span class="d">' + d + '</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
-  let n = 0;
-  return '<div class="empieza"><h3>Empieza aquí 👋</h3><p>En un par de minutos tendrás tus números al día.</p>' +
-    paso(++n, 'Apunta tu primer gasto', 'Con el botón + del centro, cuando quieras.', act('crearIr', 'gasto')) +
-    (ticketsDisponible() ? paso(++n, 'O hazle una foto a un ticket', 'La app lee el total y los artículos por ti.', act('ticketFoto')) : '') +
-    paso(++n, 'Trae tus movimientos del banco', 'Importa el extracto o un Excel, sin duplicados.', act('impAbrir')) +
-    paso(++n, 'Pon tus presupuestos', 'Cuánto quieres gastar al mes en cada cosa.', act('openListEditor', 'categoriasGasto')) + '</div>';
+  if (cfg().empiezaOculto) return '';
+  const pasos = empiezaPasos(), pend = pasos.filter((p) => !p.hecho), hechos = pasos.length - pend.length;
+  if (!pend.length) return '';
+  // a quien ya usa la app solo le salen los pasos que le faltan, y no más de 3
+  const paso = (n, p) => '<button class="empieza-paso" ' + p.a + '><span class="n">' + n + '</span><span><b>' + p.t + '</b><span class="d">' + p.d + '</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
+  const nuevo = !S.movimientos.length;
+  return '<div class="empieza"><div class="empieza-cab"><h3>' + (nuevo ? 'Empieza aquí 👋' : 'Sácale más partido') + '</h3><button type="button" class="link" ' + act('empiezaOcultar') + '>Ocultar</button></div>' +
+    '<p>' + (nuevo ? 'En un par de minutos tendrás tus números al día.' : hechos + ' de ' + pasos.length + ' pasos hechos.') + '</p>' +
+    pend.slice(0, nuevo ? 4 : 3).map((p, i) => paso(i + 1, p)).join('') + '</div>';
 }
 function renderInicio() {
   const anual = S.generalSub === 'anual', d = new Date(), y = S.anioSel, m = S.mesSel;
@@ -851,10 +872,19 @@ function renderMovimientos() {
     ((S.movCat || GRUPOS_TIPO[S.movFiltroTipo]) ? '<div class="filtros-activos">' +
       (GRUPOS_TIPO[S.movFiltroTipo] ? '<button class="chip active" ' + act('setMovFiltro', 'Todos') + '>' + GRUPOS_TXT[S.movFiltroTipo] + ' ✕</button>' : '') +
       (S.movCat ? '<button class="chip active" ' + act('quitarMovCat') + '>' + escapeHtml(S.movCat) + ' ✕</button>' : '') + '</div>' : '') +
+    movAddCtxHtml() +
     subFiltroHtml() +
     '<div class="field" style="margin-bottom:10px;"><input type="search" id="movSearch" placeholder="Buscar categoría, nota o método de pago" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></div>' +
     '<div class="pill-row">' + [['Todos', 'Todos'], ['Ingreso', 'Ingresos'], ['_gastos', 'Gastos'], ['Factura', 'Fijos'], ['Ahorro', 'Apartado'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
     '<div id="movList" class="' + (dir && !reduceMotion() ? (dir > 0 ? 'desde-der' : 'desde-izq') : '') + '">' + renderMovList() + '</div>';
+}
+// Si miras solo un tipo (o una categoría), un botón para apuntar justo eso: es lo que se busca al tocar «Gastos» en Inicio
+function movAddCtxHtml() {
+  const f = S.movFiltroTipo, cat = S.movCat || '';
+  const t = cat || f === '_gastos' || f === 'Gasto' ? 'Gasto' : f === 'Ingreso' ? 'Ingreso' : f === '_ahorro' || f === 'Ahorro' ? 'Ahorro' : f === 'Factura' ? 'Factura' : f === 'Inversión' ? 'Inversión' : f === 'Deuda' ? 'Deuda' : '';
+  if (!t) return '';
+  const txt = { Gasto: cat ? 'Apuntar un gasto en ' + cat : 'Apuntar un gasto', Ingreso: 'Apuntar un ingreso', Ahorro: 'Apartar dinero', Factura: 'Apuntar un gasto fijo', 'Inversión': 'Apuntar una inversión', Deuda: 'Apuntar un pago de deuda' }[t];
+  return '<button type="button" class="btn sm accent mov-add-ctx" ' + act('movAddCtx', t, cat) + '>' + ic('plus') + ' ' + escapeHtml(txt) + '</button>';
 }
 function renderMovList() {
   const movs = movsFiltrados();
@@ -1058,20 +1088,21 @@ function openMovForm(id, pre) {
   openSheet(
     '<div class="handle"></div><h2>' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : 'Nuevo movimiento') + '</h2>' +
     (!ex && !compDest && ticketsDisponible() ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto</span>' + badge('ticket') + '</button>' : '') +
+    (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
+    '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : (pre.importe != null ? pre.importe : '')) + '" ' + onInput('onImporteInput') + '></div>' +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
     TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + tipoTxt(t) + '</button>').join('') + '</div>' +
     '<div id="fijoBox">' + fijoHtml() + '</div></div>' +
-    '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : (pre.importe != null ? pre.importe : '')) + '" ' + onInput('onImporteInput') + '></div>' +
     '<div id="invFields">' + invFieldsHtml(tipoIni, ex ? ex.tipoActivo : '') + '</div>' +
     '<div class="field" id="catField"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : (pre.categoria || '')) + '</div>' +
     '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : (pre.categoria || '')) + '" ' + onInput('onCatInput') + '><div id="catAviso"></div></div>' +
+    '<div class="field" id="compField">' + compFieldHtml() + '</div>' +
     '<div class="field" id="subField">' + subFieldHtml(ex ? ex.categoria : (pre.categoria || ''), ex ? ex.subcategoria : (pre.subcategoria || '')) + '</div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : (pre.fecha || todayISO())) + '" ' + onChange('onFechaChange') + '></div>' +
     '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>' +
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
     metodos.map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' +
     '<div id="artField">' + artFieldHtml(comp || ex) + '</div>' +
-    '<div class="field" id="compField">' + compFieldHtml() + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + (S._volverGrupo ? act('grupoVer', S._volverGrupo) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
     (comp ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>'
       : ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteMov') + '>' + ic('trash') + ' Eliminar movimiento</button>' : '')
@@ -1093,8 +1124,8 @@ async function saveMov() {
   const esG = FORM.tipo === 'Gasto' || FORM.tipo === 'Factura';
   if (esG && categoria) { const cn = catNorm('Gasto', categoria); categoria = cn.categoria; }
   const subcategoria = esG ? ((($('#fSub') || {}).value || '').trim() || null) : null;
-  if (!isFinite(importe) || importe === 0) return toast('Pon un importe válido');
-  if (!categoria) return toast(FORM.tipo === 'Inversión' ? 'Escribe o elige el activo' : 'Elige o escribe una categoría');
+  if (!isFinite(importe) || importe === 0) { marcarCampo('#fImporte'); return toast('Pon un importe válido'); }
+  if (!categoria) { marcarCampo('#catField'); return toast(FORM.tipo === 'Inversión' ? 'Escribe o elige el activo' : 'Elige o escribe una categoría'); }
   const tipoActivo = FORM.tipo === 'Inversión' ? (auto ? tipoActivoDe(FORM.activo) : (($('#fTipoActivo') || {}).value || '')) : '';
   if (FORM.tipo === 'Inversión' && !tipoActivo) return toast('Elige el tipo de activo');
   if (!fecha) return toast('Elige una fecha');
@@ -1249,7 +1280,8 @@ function presupuestoFilasHtml(cats, catMap) {
   const pie = vacias.length ? '<button class="link pres-mas" ' + act('presTodas') + '>' + (S.presTodas ? 'Ocultar las que están a 0' : 'Ver ' + vacias.length + ' categorías sin gasto') + '</button>' : '';
   return mostrar.map(({ c, real, pres }) => {
     const over = pres > 0 && real > pres, dentro = pres > 0 ? Math.min(real, pres) : real;
-    const resto = pres > 0 ? (over ? '<span class="pb-resto neg">' + money(real - pres) + ' de más</span>' : '<span class="pb-resto">quedan ' + money(pres - real) + '</span>') : '';
+    const resto = '<span class="pb-pie">' + (pres > 0 ? (over ? '<span class="pb-resto neg">' + money(real - pres) + ' de más</span>' : '<span class="pb-resto">quedan ' + money(pres - real) + '</span>') : '') +
+      '<button type="button" class="link pb-edit' + (pres > 0 ? '' : ' sin') + '" aria-label="Cambiar el presupuesto de ' + escapeHtml(c.nombre) + '" ' + act('presEditar', c.nombre) + '>' + (pres > 0 ? 'Cambiar' : '+ Presupuesto') + '</button></span>';
     return '<div class="budget-row tappable' + (over ? ' over' : '') + (real ? '' : ' cero') + '" ' + act('irMovs', '_gastos', mesClave(S.anioSel, S.mesSel), c.nombre) + '><div class="top"><span class="cat">' + escapeHtml(c.nombre) + '</span>' +
       '<span class="nums"><b class="tnum">' + money(real) + '</b>' + (pres > 0 ? ' / ' + money(pres) : '') + '</span></div>' +
       '<div class="pbar" title="' + (pres > 0 ? 'Presupuesto: ' + money(pres) : 'Sin presupuesto') + '"><i class="pb-f" style="width:' + pc(dentro) + '%"></i>' +
@@ -1381,7 +1413,7 @@ function nombreSugerido() {
   const e = ((S.user && S.user.email) || '').split('@')[0].replace(/[._\-]+/g, ' ').replace(/\d+/g, '').trim().split(' ')[0] || 'Yo';
   return e.charAt(0).toUpperCase() + e.slice(1);
 }
-const ERR_GRUPO = { no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
+const ERR_GRUPO = { no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
   demasiadas_invitaciones: 'Hay demasiados enlaces pendientes. Anula alguno.', demasiados_grupos: 'Has creado muchos grupos hoy. Prueba mañana.', usa_salir: 'Para irte tú, usa «Salir del grupo».', sin_sesion: 'Tienes que iniciar sesión.',
   saldo_pendiente: 'Hay cuentas pendientes. Saldadlas antes (botón «Saldar»).', reparto_no_cuadra: 'El reparto no suma el total.', reparto_no_valido: 'Revisa el reparto: solo puede incluir a miembros.', pagador_no_valido: 'Quien pagó tiene que ser del grupo.', compartido_borrado: 'Ese gasto ya se había eliminado.', objetivo_no_valido: 'Elige una meta o deuda de ese grupo.', objetivo_borrado: 'Esa meta o deuda ya se había eliminado.' };
 function errGrupo(e) { const m = String((e && (e.message || (e.original && e.original.message))) || ''); const k = Object.keys(ERR_GRUPO).find((x) => m.indexOf(x) >= 0); return k ? ERR_GRUPO[k] : 'No se pudo completar. Revisa tu conexión.'; }
@@ -1410,16 +1442,24 @@ function gruposListaHtml() {
       : '<div class="section-title">Grupos</div>' + (gs.length ? '<div class="list">' + gs.map((g) => '<div class="row" ' + act('grupoVer', g.id) + '><div class="avatars">' + g.miembros.slice(0, 4).map(avatarHtml).join('') + '</div>' +
         '<div class="main"><div class="ttl">' + escapeHtml(g.nombre) + '</div><div class="meta">' + g.miembros.map((m) => escapeHtml(m.nombre)).join(', ') + saldoMeta(g) + '</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>'
         : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no estás en ningún grupo. Crea uno e invita por WhatsApp.</div>') +
-      '<div class="section-title">Personas</div>' + (ps.length ? '<div class="list">' + ps.map((g) => { const o = otroDe(g); return '<div class="row" ' + act('grupoVer', g.id) + '>' + (o ? avatarHtml(o, 2) : '<span class="avatar" style="background:var(--text-faint)">…</span>') +
-        '<div class="main"><div class="ttl">' + escapeHtml(o ? o.nombre : 'Invitación pendiente') + '</div><div class="meta">' + (o ? 'Sin grupo' + saldoMeta(g) : 'Esperando a que la acepte') + '</div></div><span class="chev-s">' + ic('chevR') + '</span></div>'; }).join('') + '</div>'
-        : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Para compartir gastos con alguien sin crear un grupo. Con quien ya esté en tus grupos puedes compartir directamente al apuntar un gasto.</div>')) +
+      '<div class="section-title">Amigos' + badge('amigos') + '</div>' + amigosListaHtml(ps, saldoMeta)) +
     '<div class="actions"><button class="btn ghost block" ' + act('grupoNuevo') + '>' + ic('plus') + ' Crear grupo</button><button class="btn ghost block" ' + act('personaNueva') + '>' + ic('plus') + ' Invitar a una persona</button></div>' +
     '<div class="actions" style="margin-top:8px;"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+function amigosListaHtml(ps, saldoMeta) {
+  const am = amigos(), pend = ps.filter((g) => !otroDe(g));
+  if (!am.length && !pend.length) return '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Invita a alguien una vez y ya será tu amigo aquí: podrás compartir gastos con él y meterlo en cualquier grupo sin volver a invitarle.</div>';
+  return '<div class="list">' + am.map((a, i) => { const d = directoCon(a.uid), gsx = (S.grupos || []).filter((g) => g.tipo === 'grupo' && g.miembros.some((m) => m.user_id === a.uid)).map((g) => g.nombre);
+    return '<div class="row" ' + (d ? act('grupoVer', d.id) : act('amigoVer', a.uid)) + '>' + avatarHtml({ nombre: a.nombre }, i + 1) +
+      '<div class="main"><div class="ttl">' + escapeHtml(a.nombre) + '</div><div class="meta">' + (gsx.length ? 'En ' + escapeHtml(gsx.join(', ')) : 'Sin grupo') + (d ? saldoMeta(d) : '') + '</div></div><span class="chev-s">' + ic('chevR') + '</span></div>'; }).join('') +
+    pend.map((g) => '<div class="row" ' + act('grupoVer', g.id) + '><span class="avatar" style="background:var(--text-faint)">…</span><div class="main"><div class="ttl">Invitación pendiente</div><div class="meta">Esperando a que la acepte</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>';
 }
 function grupoNuevoHtml() {
   return '<div class="handle"></div><h2>Nuevo grupo</h2>' +
     '<div class="field"><label>Nombre del grupo</label><input id="gNombre" type="text" maxlength="60" placeholder="Casa"></div>' +
-    '<div class="field"><label>Tu nombre en el grupo</label><input id="gMiNombre" type="text" maxlength="40" value="' + escapeHtml(nombreSugerido()) + '"><div class="rec-hint">Es como te verán los demás.</div></div>' +
+    '<div class="field"><label>Tu nombre en el grupo</label><input id="gMiNombre" type="text" maxlength="40" value="' + escapeHtml(miNombreAlguno()) + '"><div class="rec-hint">Es como te verán los demás.</div></div>' +
+    (amigos().length ? '<div class="field"><label>Añadir ya a tus amigos <span class="hint">· sin volver a invitarles</span></label><div class="amigos-sel">' +
+      amigos().map((a) => '<label class="comp-row"><input type="checkbox" class="amigo-chk" value="' + escapeHtml(a.uid) + '"><span>' + escapeHtml(a.nombre) + '</span></label>').join('') + '</div></div>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('openGrupos') + '>Cancelar</button><button class="btn accent block" ' + act('grupoCrear') + '>Crear</button></div>';
 }
 function grupoHtml(id) {
@@ -1436,18 +1476,25 @@ function grupoHtml(id) {
       (g.soyAdmin && m.user_id !== yo ? '<button class="btn sm ghost" ' + act('grupoQuitar', g.id, m.user_id) + '>Quitar</button>' : '') + '</div>').join('') + '</div>' +
     (g.miembros.length >= 2 ? repartoHabitualHtml(g) : '') +
     '<div class="field" style="margin-top:12px;"><label>Tu nombre en este grupo</label><div style="display:flex;gap:8px;"><input id="gMiNombreEd" type="text" maxlength="40" value="' + escapeHtml(g.miNombre) + '"><button class="btn sm ghost" ' + act('grupoMiNombre', g.id) + '>Guardar</button></div></div>' +
-    '<div class="section-title">Invitar</div><div class="card">' +
-    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin-bottom:10px;">Se crea un enlace que vale para <b>una persona</b> y caduca en <b>7 días</b>. Al abrirlo, se une con la cuenta con la que esté (o con la que inicie sesión).</div>' +
+    grupoAnadirAmigosHtml(g) +
+    '<div class="section-title">Invitar a gente nueva</div><div class="card">' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin-bottom:10px;">' + (FORM && FORM.enlaceVarios ? 'Este enlace vale para <b>hasta 10 personas</b> durante <b>7 días</b>: puedes mandarlo al grupo de WhatsApp.' : 'Un enlace vale para <b>una persona</b> y caduca en <b>7 días</b>. Si es para varios, usa el enlace para varios.') + ' Al abrirlo, cada uno se une con su cuenta.</div>' +
     (FORM && FORM.ultimoEnlace
       ? '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(FORM.ultimoMsg || FORM.ultimoEnlace) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
         '<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn ghost block" ' + act('grupoCopiar') + '>Copiar enlace</button>' + (navigator.share ? '<button class="btn ghost block" ' + act('grupoCompartir') + '>Compartir…</button>' : '') + '</div>' +
         '<div class="enlace-box">' + escapeHtml(FORM.ultimoEnlace) + '</div>' +
-        '<button type="button" class="link" style="margin-top:8px;" ' + act('grupoInvitar', g.id) + '>Crear otro enlace (para otra persona)</button>'
-      : '<button class="btn accent block" ' + act('grupoInvitar', g.id) + '>Crear enlace de invitación</button>') +
+        '<button type="button" class="link" style="margin-top:8px;" ' + act('grupoInvitar', g.id) + '>Crear otro enlace (para una persona)</button>'
+      : '<button class="btn accent block" ' + act('grupoInvitarVarios', g.id) + '>Enlace para varios (grupo de WhatsApp)</button><button class="btn ghost block" style="margin-top:8px;" ' + act('grupoInvitar', g.id) + '>Enlace para una persona</button>') +
     (pendientes.length ? '<div class="rec-hint" style="margin-top:10px;">' + pendientes.length + (pendientes.length === 1 ? ' enlace pendiente' : ' enlaces pendientes') + ' · <button type="button" class="link" ' + act('grupoAnularTodos', g.id) + '>Anularlos</button></div>' : '') + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('openGrupos') + '>Volver</button></div>' +
     '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Salir del grupo</button>' +
     (g.soyAdmin && g.miembros.length > 1 ? '<button class="btn danger block" style="margin-top:8px;" ' + act('grupoCerrar', g.id) + '>Cerrar el grupo para todos</button>' : '');
+}
+function grupoAnadirAmigosHtml(g) {
+  const fuera = amigos().filter((a) => !g.miembros.some((m) => m.user_id === a.uid));
+  if (!fuera.length) return '';
+  return '<div class="section-title">Añadir a tus amigos' + badge('amigos') + '</div><div class="card"><div class="rec-hint" style="margin:0 0 8px;">Ya compartes con ellos: entran al momento, sin enlace.</div><div class="chips">' +
+    fuera.map((a) => '<button type="button" class="chip" ' + act('grupoAnadir', g.id, a.uid) + '>' + ic('plus') + ' ' + escapeHtml(a.nombre) + '</button>').join('') + '</div></div>';
 }
 async function abrirGrupo(id) {
   FORM = { kind: 'grupo', id, invitaciones: [] };
@@ -1510,6 +1557,13 @@ function fmtPct(x) { return num(x).toLocaleString('es-ES', { maximumFractionDigi
 function compPorId(id) { return (S.compartidos || []).find((c) => c.id === id) || null; }
 function miParte(c) { const v = c && c.reparto ? c.reparto[miUid()] : null; return v == null ? 0 : num(v); }
 function grupoDe(id) { return (S.grupos || []).find((g) => g.id === id) || null; }
+// Amigos: todas las personas con las que compartes algún grupo o relación directa
+function amigos() {
+  const yo = miUid(), out = {};
+  (S.grupos || []).forEach((g) => g.miembros.forEach((m) => { if (m.user_id !== yo && !out[m.user_id]) out[m.user_id] = { uid: m.user_id, nombre: m.nombre }; }));
+  return Object.values(out).sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
+function directoCon(uid) { return (S.grupos || []).find((g) => g.tipo === 'directo' && g.miembros.length === 2 && g.miembros.some((m) => m.user_id === uid)) || null; }
 function otroDe(g) { const yo = miUid(); return ((g && g.miembros) || []).find((m) => m.user_id !== yo) || null; }
 function nombreDestino(g) {
   if (!g) return 'Grupo anterior';
@@ -1706,8 +1760,8 @@ function compFieldHtml() {
       '<button type="button" class="btn sm ghost" style="margin-top:10px;" ' + act('objNueva', t) + '>' + ic('plus') + (t === 'deuda' ? ' Crear deuda compartida' : ' Crear meta compartida') + '</button></div>';
   }
   if (!ds.length) {
-    return h + '<div class="rec-hint">Aún no compartes con nadie. Crea un grupo o invita a una persona y, cuando acepte, podrás compartir con ella.</div>' +
-      '<button type="button" class="btn sm ghost" style="margin-top:10px;" ' + act('compIrGrupos') + '>Ir a Grupos y personas</button></div>';
+    return h + '<div class="rec-hint">Aún no compartes con nadie. Invita a una persona por WhatsApp y, cuando acepte, podréis compartir gastos.</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;"><button type="button" class="btn sm accent" ' + act('compInvitar') + '>' + ic('plus') + ' Invitar a una persona</button><button type="button" class="btn sm ghost" ' + act('compIrGrupos') + '>Grupos</button></div></div>';
   }
   h += '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('compDest', d.k) + '>' + (d.grupo ? '👥 ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>';
   if (!cp.dest) return h + '<div class="rec-hint">Elige con quién lo compartes.</div></div>';
@@ -2447,12 +2501,14 @@ function buscarResHtml(q0) {
   const acc = BUSCAR_ACCIONES.filter(([t, k]) => casa(t + ' ' + k)).slice(0, 5);
   const cats = [...new Set(categoriasPorTipo('Gasto').concat(categoriasPorTipo('Factura')))].filter((c) => casa(c)).slice(0, 4);
   const hoyD = new Date(), delMes = cats.length ? gastoPorCategoria(kpisMes(hoyD.getFullYear(), hoyD.getMonth() + 1).movs) : {};
-  const movs = movsEfectivos().filter((m) => casa([m.categoria, m.descripcion, m.tipo, fmtM(Math.abs(num(m.importe))), String(m.importe)].join(' '))).sort(cmpMov).slice(0, 12);
+  const todos = movsEfectivos().filter((m) => casa([m.categoria, m.subcategoria, m.descripcion, m.tipo, fmtM(Math.abs(num(m.importe))), String(m.importe)].join(' '))).sort(cmpMov);
+  const movs = todos.slice(0, 12), mk = mesHoyClave().slice(2), esG = (m) => m.tipo === 'Gasto' || m.tipo === 'Factura';
+  const totG = todos.filter(esG).reduce((a, m) => a + num(m.importe), 0), totMes = todos.filter((m) => esG(m) && (m.fecha || '').slice(0, 7) === mk).reduce((a, m) => a + num(m.importe), 0);
   const tars = S.tareas.filter((t) => casa([t.nombre, t.categoria].join(' '))).slice(0, 5);
   let h = '';
   if (acc.length) h += '<div class="section-title">Ir a</div><div class="list">' + acc.map(([t, , hd, a]) => '<div class="row" ' + act('buscarIr', hd, ...a) + '><span class="dot" style="background:var(--accent)"></span><div class="main"><div class="ttl">' + escapeHtml(t) + '</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>';
   if (cats.length) h += '<div class="section-title">Categorías</div><div class="list">' + cats.map((c) => '<div class="row" ' + act('buscarIr', 'irMovs', '_gastos', 'todo', c) + '><span class="dot" style="background:var(--expense)"></span><div class="main"><div class="ttl">' + escapeHtml(c) + '</div><div class="meta">Este mes: <b class="tnum">' + money(delMes[c] || 0) + '</b> · ver todos sus movimientos</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>';
-  if (movs.length) h += '<div class="section-title">Movimientos</div><div class="list">' + movs.map((m) => '<div class="row" ' + act('buscarIr', 'openMovForm', m.id) + '><span class="dot" style="background:var(--' + (TIPO_COLOR[m.tipo] || 'debt') + ')"></span><div class="main"><div class="ttl">' + escapeHtml(m.categoria || m.tipo) + '</div><div class="meta">' + fmtDateShort(m.fecha) + (m.descripcion ? ' · ' + escapeHtml(m.descripcion) : '') + '</div></div><div class="amt tnum">' + moneySigned(m.importe, m.tipo) + '</div></div>').join('') + '</div>';
+  if (movs.length) h += '<div class="section-title">Movimientos</div>' + (todos.some(esG) ? '<div class="buscar-total">' + todos.length + (todos.length === 1 ? ' movimiento' : ' movimientos') + ' · gastado <b class="tnum">' + money(totG) + '</b> · este mes <b class="tnum">' + money(totMes) + '</b></div>' : '') + '<div class="list">' + movs.map((m) => '<div class="row" ' + act('buscarIr', 'openMovForm', m.id) + '><span class="dot" style="background:var(--' + (TIPO_COLOR[m.tipo] || 'debt') + ')"></span><div class="main"><div class="ttl">' + escapeHtml(m.categoria || m.tipo) + '</div><div class="meta">' + fmtDateShort(m.fecha) + (m.descripcion ? ' · ' + escapeHtml(m.descripcion) : '') + '</div></div><div class="amt tnum">' + moneySigned(m.importe, m.tipo) + '</div></div>').join('') + '</div>';
   if (tars.length) h += '<div class="section-title">Tareas</div><div class="list">' + tars.map((t) => '<div class="row" ' + act('buscarIr', 'openTareaForm', t.id) + '><span class="dot" style="background:var(--bill)"></span><div class="main"><div class="ttl">' + escapeHtml(t.nombre || 'Tarea') + '</div><div class="meta">' + escapeHtml(t.estado || '') + '</div></div></div>').join('') + '</div>';
   return h || '<div class="empty-mini">Nada con «' + escapeHtml(q0) + '». Prueba con otra palabra.</div>';
 }
@@ -2561,10 +2617,11 @@ function metaOpciones() {
 }
 function metaSelHtml() {
   const ops = metaOpciones();
-  if (!ops.length) return FORM && FORM.tipo === 'Ahorro' ? '<div class="rec-hint" style="margin:-4px 0 12px;">Apartar es pasar dinero a tu ahorro (no es un gasto). Si es para algo concreto, crea una meta en Dinero → Metas y aquí podrás elegirla.</div>' : '';
+  const nueva = '<button type="button" class="chip chip-nueva" ' + act('metaNuevaForm') + '>' + ic('plus') + ' Nueva meta</button>';
+  if (!ops.length) return FORM && FORM.tipo === 'Ahorro' ? '<div class="field"><label>¿Para qué meta? <span class="hint">· opcional</span></label><div class="chips" id="metaChips">' + nueva + '</div><div class="rec-hint">Apartar es pasar dinero a tu ahorro (no es un gasto). Si es para algo concreto (la casa, un viaje), crea una meta.</div></div>' : '';
   const sel = (FORM && FORM.metaSel) || '';
   return '<div class="field"><label>¿Para qué meta?' + badge('metasH') + ' <span class="hint">· opcional</span></label><div class="chips" id="metaChips">' +
-    [{ k: '', nombre: 'Sin meta' }].concat(ops).map((o) => '<button type="button" class="chip ' + (sel === o.k ? 'active' : '') + '" ' + act('pickMeta', o.k) + '>' + (o.comp ? '👥 ' : '') + escapeHtml(o.nombre) + '</button>').join('') + '</div>' +
+    [{ k: '', nombre: 'Sin meta' }].concat(ops).map((o) => '<button type="button" class="chip ' + (sel === o.k ? 'active' : '') + '" ' + act('pickMeta', o.k) + '>' + (o.comp ? '👥 ' : '') + escapeHtml(o.nombre) + '</button>').join('') + nueva + '</div>' +
     (FORM && FORM.tipo === 'Ahorro' ? '<div class="rec-hint">Apartar es pasar dinero a tu ahorro: no cuenta como gasto.</div>' : '') + '</div>';
 }
 function metaDeMov(x) {
@@ -2888,6 +2945,8 @@ async function metaGuardar() {
   }
   if (idx >= 0) arr[idx] = item; else arr.push(item);
   saveConfig({ ahorro: arr });
+  const bm = S._borradorMeta; S._borradorMeta = null;
+  if (bm && !F.id) { toast('Meta creada: ' + item.nombre); return openMovForm(null, { tipo: bm.tipo, importe: bm.importe, fecha: bm.fecha, descripcion: bm.descripcion, metaSel: item.id }); }
   FORM = { kind: 'metas' };
   updateSheet(metasListaHtml());
   render();
@@ -3710,7 +3769,7 @@ const BADGES = {
   cobros: ['NUEVO', '2026-10-09'], importar: ['NUEVO', '2026-10-09'], reglas: ['NUEVO', '2026-10-09'],
   repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'], compartir: ['NUEVO', '2026-10-10'], ticket: ['NUEVO', '2026-10-10'], metas: ['MEJORADO', '2026-10-10'], patrimonio: ['NUEVO', '2026-10-10'],
   categorias: ['NUEVO', '2026-10-12'], fijo: ['NUEVO', '2026-10-12'], detalle: ['NUEVO', '2026-10-12'], oscuro: ['MEJORADO', '2026-10-12'],
-  metasH: ['NUEVO', '2026-10-13'], hitos: ['NUEVO', '2026-10-13'],
+  metasH: ['NUEVO', '2026-10-13'], amigos: ['NUEVO', '2026-10-14'], hitos: ['NUEVO', '2026-10-13'],
   rentab: ['NUEVO', '2026-10-10'], mesames: ['NUEVO', '2026-10-10'], presup: ['MEJORADO', '2026-10-10'], anual: ['MEJORADO', '2026-10-10'],
 };
 function badgeActivo(k) {
@@ -4953,7 +5012,7 @@ const H = {
     else if (k === 'ingreso') openMovForm(null, { tipo: 'Ingreso' });
     else if (k === 'factura') openMovForm(null, { tipo: 'Factura' });
     else if (k === 'ahorro') openMovForm(null, { tipo: 'Ahorro' });
-    else if (k === 'compartido') { const d = destinoPorDefecto(); openMovForm(null, d ? { tipo: 'Gasto', comp: d } : { tipo: 'Gasto' }); if (!d) H.compOn([]); }
+    else if (k === 'compartido') { const d = destinoPorDefecto(); openMovForm(null, d ? { tipo: 'Gasto', comp: d, compArriba: true } : { tipo: 'Gasto', compArriba: true }); if (!d) H.compOn([]); }
     else if (k === 'tarea') openTareaForm();
     else if (k === 'importar') H.impAbrir([]);
   },
@@ -5115,6 +5174,7 @@ const H = {
   compIncl: ([u], el) => { FORM.comp.incl[u] = !!el.checked; const r = $('#compReparto'); if (r) r.innerHTML = compRepartoHtml(); },
   compVal: ([u], el) => { FORM.comp.vals = FORM.comp.vals || {}; FORM.comp.vals[u] = el.value; refrescarComp(true); },
   compIrGrupos: () => H.openGrupos([]),
+  compInvitar: () => { FORM = { kind: 'personaNueva' }; updateSheet(personaNuevaHtml()); },
   deleteComp: (_a, el) => confirmDelete(el, doDeleteComp),
   compAbrir: ([id, gid]) => { S._volverGrupo = gid || null; openCompForm(id); },
   compNuevoEn: ([gid]) => { S._volverGrupo = gid; openMovForm(null, { tipo: 'Gasto', comp: 'g:' + gid }); },
@@ -5300,7 +5360,13 @@ const H = {
       else if (k === 'anual') { verBadge('anual'); H.goTab(['inicio']); H.setGeneralSub(['anual']); }
     }, 260);
   },
-  openMetas: () => { verBadge('metas'); FORM = { kind: 'metas' }; if ($('#sheetBackdrop')) updateSheet(metasListaHtml()); else openSheet(metasListaHtml()); },
+  metaNuevaForm: () => {
+    S._borradorMeta = { tipo: FORM.tipo, importe: ($('#fImporte') || {}).value, fecha: ($('#fFecha') || {}).value, descripcion: ($('#fDesc') || {}).value };
+    metaAbrirEditor(null);
+  },
+  openMetas: () => {
+    const bm = S._borradorMeta; if (bm && FORM && FORM.kind === 'meta' && !FORM.id) { S._borradorMeta = null; return openMovForm(null, { tipo: bm.tipo, importe: bm.importe, fecha: bm.fecha, descripcion: bm.descripcion }); }
+    verBadge('metas'); FORM = { kind: 'metas' }; if ($('#sheetBackdrop')) updateSheet(metasListaHtml()); else openSheet(metasListaHtml()); },
   metaNueva: () => metaAbrirEditor(null),
   metaEditar: ([id]) => metaAbrirEditor(id || null),
   metaVista: ([k, v]) => { metaVistas()[k] = v; lsSet('metaVista', JSON.stringify(metaVistas())); verBadge('hitos'); render(); },
@@ -5331,7 +5397,27 @@ const H = {
   irAnalisis: ([sub]) => { if (sub === 'general') { S.tab = 'inicio'; render(); window.scrollTo(0, 0); return; } H.irDinero([sub]); },
   verMes: ([y, m]) => { S.anioSel = Number(y); S.mesSel = Number(m); S.generalSub = 'mensual'; S.tab = 'inicio'; render(); window.scrollTo(0, 0); },
   volver: () => { const v = S.volverA; S.volverA = null; if (!v) return; S.tab = v.tab; S.inicioSub = v.inicioSub; S.analisisSub = v.analisisSub; S.generalSub = v.generalSub; S.movCat = ''; S.movPeriodo = mesHoyClave(); S.movFiltroTipo = 'Todos'; render(); window.scrollTo(0, 0); },
+  movAddCtx: ([t, cat]) => openMovForm(null, Object.assign({ tipo: t }, cat ? { categoria: cat } : {})),
   quitarMovCat: () => { S.movCat = ''; S.movSub = ''; render(); },
+  presEditar: ([n]) => {
+    const c = catsGasto().find((x) => x.nombre === n) || { nombre: n, presupuesto: null };
+    const k = kpisMes(S.anioSel, S.mesSel), real = Math.max(0, gastoPorCategoria(k.movs)[n] || 0);
+    FORM = { kind: 'presEditar', cat: n };
+    openSheet('<div class="handle"></div><h2>Presupuesto de ' + escapeHtml(n) + '</h2>' +
+      '<div class="field"><label>Al mes (' + sym() + ')</label><input id="presIn" class="importe-grande" type="number" step="1" inputmode="decimal" placeholder="Sin presupuesto" value="' + (num(c.presupuesto) > 0 ? num(c.presupuesto) : '') + '"></div>' +
+      '<div class="rec-hint">Este mes llevas ' + money(real) + '. Déjalo vacío para quitar el presupuesto.</div>' +
+      '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('presGuardar') + '>Guardar</button></div>');
+    setTimeout(() => { const el = $('#presIn'); if (el) el.focus(); }, 80);
+  },
+  presGuardar: () => {
+    const n = FORM && FORM.cat, el = $('#presIn'); if (!n || !el) return;
+    const v = el.value === '' ? null : parseFloat(el.value);
+    if (v != null && (!isFinite(v) || v < 0)) return toast('Revisa el presupuesto');
+    const cs = catsGasto(), existe = cs.some((c) => c.nombre === n);
+    guardarCats(existe ? cs.map((c) => (c.nombre === n ? Object.assign({}, c, { presupuesto: v }) : c)) : cs.concat([{ nombre: n, presupuesto: v }]));
+    closeSheet(); render(); toast(v ? 'Presupuesto de ' + n + ': ' + money(v) + ' al mes' : 'Presupuesto quitado');
+  },
+  empiezaOcultar: () => { saveConfig({ empiezaOculto: todayISO() }); render(); toast('Oculto. Lo tienes todo en Tú.'); },
   presTodas: () => { S.presTodas = !S.presTodas; render(); },
   setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = 120; render(); },
   openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
@@ -5350,11 +5436,35 @@ const H = {
     const n = ($('#gNombre').value || '').trim(), yo = ($('#gMiNombre').value || '').trim();
     if (!n) return toast('Ponle un nombre al grupo');
     if (FORM.creando) return; FORM.creando = true;
-    const id = await accionGrupo(() => S.db.rpc('crear_grupo', { p_nombre: n, p_mi_nombre: yo || nombreSugerido() }), 'Grupo creado');
+    const sel = $$('.amigo-chk').filter((c) => c.checked).map((c) => c.value);
+    const id = await accionGrupo(() => S.db.rpc('crear_grupo', { p_nombre: n, p_mi_nombre: yo || nombreSugerido() }), sel.length ? null : 'Grupo creado');
+    if (id && id !== true && sel.length) {
+      let ok = 0; for (const u of sel) { try { await S.db.rpc('anadir_a_grupo', { p_grupo: id, p_user: u }); ok++; } catch (e) { console.error(e); } }
+      await cargarGrupos(); toast(ok === sel.length ? 'Grupo creado con ' + ok + (ok === 1 ? ' amigo' : ' amigos') : 'Grupo creado; no se pudo añadir a todos');
+    }
     FORM.creando = false;
     if (id) abrirGrupo(id); render();
   },
   grupoVer: ([id]) => abrirGrupo(id),
+  grupoAnadir: async ([gid, uid]) => {
+    if (FORM.anadiendo) return; FORM.anadiendo = true;
+    const a = amigos().find((x) => x.uid === uid);
+    const ok = await accionGrupo(() => S.db.rpc('anadir_a_grupo', { p_grupo: gid, p_user: uid }), (a ? a.nombre : 'Amigo') + ' ya está en el grupo');
+    FORM.anadiendo = false; verBadge('amigos');
+    if (ok) abrirGrupo(gid);
+  },
+  amigoVer: async ([uid]) => { const g = await accionGrupo(() => S.db.rpc('crear_directo', { p_user: uid })); if (g && g !== true) abrirGrupo(g); },
+  grupoInvitarVarios: async ([id]) => {
+    if (FORM.creandoEnlace) return; FORM.creandoEnlace = true;
+    const t = await accionGrupo(() => S.db.rpc('crear_invitacion_varios', { p_grupo: id }));
+    FORM.creandoEnlace = false;
+    if (!t || t === true) return;
+    const g = (S.grupos || []).find((x) => x.id === id), url = APP_URL + '?unirse=' + encodeURIComponent(t);
+    FORM.ultimoEnlace = url; FORM.enlaceVarios = true;
+    FORM.ultimoMsg = 'Os invito a mi grupo «' + (g ? g.nombre : '') + '» en PalomApp para compartir gastos. Entrad aquí (vale 7 días, para hasta 10 personas): ' + url;
+    try { FORM.invitaciones = await S.db.grupos.invitaciones(id); } catch (e) { /* */ }
+    if (FORM.kind === 'grupo') updateSheet(grupoHtml(id));
+  },
   grupoRenombrar: async ([id]) => { const n = ($('#gRenombrar').value || '').trim(); if (!n) return toast('Pon un nombre'); if (await accionGrupo(() => S.db.grupos.renombrar(id, n), 'Nombre cambiado')) abrirGrupo(id); },
   grupoMiNombre: async ([id]) => { const n = ($('#gMiNombreEd').value || '').trim(); if (!n) return toast('Pon un nombre'); if (await accionGrupo(() => S.db.grupos.miNombre(id, n), 'Guardado')) abrirGrupo(id); },
   grupoInvitar: async ([id]) => {
@@ -5363,7 +5473,7 @@ const H = {
     FORM.creandoEnlace = false;
     if (!t || t === true) return;
     const g = (S.grupos || []).find((x) => x.id === id), url = APP_URL + '?unirse=' + encodeURIComponent(t);
-    FORM.ultimoEnlace = url;
+    FORM.ultimoEnlace = url; FORM.enlaceVarios = false;
     FORM.ultimoMsg = 'Te invito a mi grupo «' + (g ? g.nombre : '') + '» en PalomApp para compartir gastos. Ábrelo aquí (vale 7 días y para una sola persona): ' + url;
     try { FORM.invitaciones = await S.db.grupos.invitaciones(id); } catch (e) { /* */ }
     if (FORM.kind === 'grupo') updateSheet(grupoHtml(id));

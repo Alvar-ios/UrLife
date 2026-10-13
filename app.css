@@ -960,3 +960,20 @@ button.link::after { content: ''; position: absolute; inset: -10px -6px; }
 .menu-item.static { flex-wrap: wrap; row-gap: 8px; }
 .hero-tile { justify-content: space-between; }
 .hero-tile .l { line-height: 1.2; }
+
+/* Pruebas de uso simuladas (13/10) */
+.importe-grande { font-size: 22px !important; font-weight: 650; font-variant-numeric: tabular-nums; }
+.edit-aviso { font-size: 12.5px; color: var(--text-muted); background: var(--paper-sunken); border-radius: 10px; padding: 8px 10px; margin: -4px 0 12px; line-height: 1.4; }
+.mov-add-ctx { margin: 0 0 10px; }
+.pb-pie { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 3px; }
+.pb-pie .pb-resto { margin: 0; }
+.pb-edit { font-size: 12.5px; }
+.buscar-total { font-size: 13px; color: var(--text-muted); margin: -2px 0 8px; }
+.empieza-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.empieza-cab .link { font-size: 12.5px; }
+.amigos-sel { display: grid; gap: 6px; }
+.chip-nueva { border-style: dashed !important; }
+.field.falta { animation: falta .5s ease 2; border-radius: 12px; box-shadow: 0 0 0 2px var(--expense); }
+@keyframes falta { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) { .field.falta { animation: none; } }
+.pb-edit.sin { color: var(--text-faint); font-weight: 500; }
