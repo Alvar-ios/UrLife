@@ -2507,7 +2507,7 @@ function statsMetaH(b) {
   const hitos = (b.hitos || []).filter((h) => h && num(h.importe) > 0).map((h) => Object.assign({}, h, { importe: num(h.importe), alcanzado: valor >= num(h.importe) - 0.005 }))
     .sort((a, c) => a.importe - c.importe);
   const vos = b.compartida;
-  const r = { id: b.id, key: b.compartida ? 'g:' + b.id : b.id, nombre: b.nombre, compartida: !!b.compartida, o: b.o || null, deuda: false,
+  const r = { b, id: b.id, key: b.compartida ? 'g:' + b.id : b.id, nombre: b.nombre, compartida: !!b.compartida, o: b.o || null, deuda: false,
     inv: invAport > 0, apartado, invAport, invValor, gan: invValor - invAport, usado, usos, valor, aportado, acum: valor, obj,
     pct: obj > 0 ? valor / obj * 100 : null, falta: Math.max(0, obj - valor), porPersona, mio: porPersona[miUid() || 'yo'] || 0,
     n: piezas.length, sinValorar, rent, fuente, ritmo, dias, fecha: b.fechaObjetivo || null, necesario: null, mes: null, llegada: null,
@@ -2575,17 +2575,20 @@ async function sincronizarAporte(m) {
 // Hitos: limpiar al guardar (sin nombre o sin importe fuera) y conservar la fecha en que se lograron
 function limpiarHitos(nuevos, viejos) {
   const prev = {}; (viejos || []).forEach((h) => { if (h && h.id) prev[h.id] = h; });
-  return (nuevos || []).map((h) => ({ id: h.id || nuevoIdMeta(), nombre: String(h.nombre || '').trim(), importe: parseFloat(h.importe) }))
+  return (nuevos || []).map((h) => Object.assign({ id: h.id || nuevoIdMeta(), nombre: String(h.nombre || '').trim(), importe: parseFloat(h.importe) },
+    /^\d{4}-\d{2}-\d{2}$/.test(h.fecha || '') ? { fecha: h.fecha } : {}))
     .filter((h) => h.nombre && h.importe > 0)
     .map((h) => (prev[h.id] && prev[h.id].logrado && num(prev[h.id].importe) === h.importe ? Object.assign(h, { logrado: prev[h.id].logrado }) : h))
     .sort((a, b) => a.importe - b.importe);
 }
 function hitosEditorHtml() {
   const hs = FORM.hitos || [];
-  return '<div class="field"><label>Hitos' + badge('hitos') + ' <span class="hint">· opcional: «Primeros 100.000 €», «La entrada»…</span></label><div id="hitosBox">' +
-    hs.map((h, i) => '<div class="row2 hito-row"><input placeholder="Nombre del hito" value="' + escapeHtml(h.nombre || '') + '" ' + onChange('hitoCampo', i, 'nombre') + '>' +
-      '<input class="amt" type="number" step="0.01" inputmode="decimal" placeholder="' + sym() + '" value="' + (h.importe == null ? '' : escapeHtml(h.importe)) + '" ' + onChange('hitoCampo', i, 'importe') + '>' +
+  return '<div class="field"><label>Hitos' + badge('hitos') + ' <span class="hint">· opcional: «Primeros 100.000 €», «La entrada»… Cada uno funciona como una meta dentro de la meta</span></label><div id="hitosBox">' +
+    hs.map((h, i) => '<div class="hito-row"><input class="hn" placeholder="Nombre del hito" aria-label="Nombre del hito" value="' + escapeHtml(h.nombre || '') + '" ' + onChange('hitoCampo', i, 'nombre') + '>' +
+      '<input class="amt" type="number" step="0.01" inputmode="decimal" aria-label="Importe del hito" placeholder="Importe ' + sym() + '" value="' + (h.importe == null ? '' : escapeHtml(h.importe)) + '" ' + onChange('hitoCampo', i, 'importe') + '>' +
+      '<input class="hf" type="date" aria-label="Fecha del hito (opcional)" title="Fecha (opcional)" value="' + escapeHtml(h.fecha || '') + '" ' + onChange('hitoCampo', i, 'fecha') + '>' +
       '<button type="button" class="rm" aria-label="Quitar hito" ' + act('hitoQuitar', i) + '>' + ic('close') + '</button></div>').join('') + '</div>' +
+    (hs.length ? '<div class="rec-hint" style="margin-top:2px;">La fecha es opcional: con ella verás si llegas a tiempo a ese hito.</div>' : '') +
     '<button type="button" class="link" ' + act('hitoAdd') + '>' + ic('plus') + ' Añadir hito</button></div>';
 }
 function hitosBarHtml(r) {
@@ -2593,17 +2596,44 @@ function hitosBarHtml(r) {
   const marcas = r.obj > 0 ? r.hitos.filter((h) => h.importe < r.obj).map((h) => '<i class="hito-m' + (h.alcanzado ? ' ok' : '') + '" style="left:' + (h.importe / r.obj * 100).toFixed(2) + '%" title="' + escapeHtml(h.nombre) + '"></i>').join('') : '';
   return '<div class="meta-barra"><div class="mb-f" style="width:' + pct.toFixed(2) + '%;background:' + SEMAFORO_COLOR[r.estado] + '"></div>' + marcas + '</div>';
 }
+// Un hito se calcula exactamente igual que una meta: lo que vale hoy la meta, hacia el importe y la fecha del hito
+function statsHito(r, h) {
+  const s = statsMetaH(Object.assign({}, r.b, { objetivo: h.importe, fechaObjetivo: h.fecha || null, conseguida: null, hitos: [], usos: r.b.usos }));
+  s.hito = h; s.idx = r.hitos.findIndex((x) => x.id === h.id) + 1;
+  if (h.alcanzado) { s.estado = 'verde'; s.texto = h.logrado ? 'Logrado el ' + fmtDateShort(h.logrado) + ' ✓' : 'Hito logrado ✓'; }
+  else if (!h.fecha) s.texto = s.llegada ? 'Sin fecha · a este ritmo, ' + fmtMesAnio(s.llegada) : 'Sin fecha para este hito';
+  return s;
+}
+let _metaVista = null;
+function metaVistas() { if (!_metaVista) { try { _metaVista = JSON.parse(lsGet('metaVista') || '{}') || {}; } catch (e) { _metaVista = {}; } } return _metaVista; }
+// Qué enseña la tarjeta: 'meta' o el id de un hito. Por defecto, el siguiente hito por lograr.
+function vistaDeMeta(r) {
+  if (!r.hitos.length || r.conseguida) return 'meta';
+  const v = metaVistas()[r.key];
+  if (v === 'meta') return 'meta';
+  if (v && r.hitos.some((h) => h.id === v)) return v;
+  return r.sig ? r.sig.id : 'meta';
+}
+function metaLineasHtml(r, vos, sujeto) {
+  let h = '';
+  if (r.fecha) h += '<div class="meta-txt">Hasta el ' + fmtDateLong(r.fecha) + '</div>';
+  if (r.necesario != null && r.necesario > 0.005) h += '<div class="meta-txt">' + (vos ? 'Necesitáis aportar entre todos aprox. ' : 'Necesitas aportar aprox. ') + '<b class="tnum">' + money(r.necesario) + '/mes</b>' + (sujeto ? ' para ' + sujeto : '') + '.</div>';
+  if (r.obj > 0 && r.falta > 0) h += '<div class="meta-txt">Ritmo (últimos 3 meses): <b class="tnum">' + money(r.ritmo) + '/mes</b>' + (r.llegada ? ' · a este ritmo ' + (vos ? 'llegaríais' : 'llegarías') + ' hacia ' + fmtMesAnio(r.llegada) : ' · sin aportaciones recientes para estimar') + '.</div>';
+  return h;
+}
 function metaCardHtml(r) {
   const g = r.compartida && r.o ? grupoDe(r.o.grupoId) : null, yo = miUid() || 'yo', vos = r.compartida;
+  const vista = vistaDeMeta(r), hv = vista !== 'meta' ? r.hitos.find((x) => x.id === vista) : null;
+  if (hv) return metaHitoCardHtml(r, statsHito(r, hv), g, vos);
   let h = '<div class="card meta-card' + (r.conseguida ? ' conseguida' : '') + '">' +
     '<div class="meta-cab">' + anilloHtml(r.pct, SEMAFORO_COLOR[r.estado], 64) + '<div class="meta-info"><div class="meta-nom">' + escapeHtml(r.nombre) +
     (g ? ' <span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
     '<div class="meta-cant tnum">' + money(r.valor) + (r.obj > 0 ? ' de ' + money(r.obj) : '') + '</div>' +
     '<span class="estado-pill e-' + r.estado + '">' + escapeHtml(r.texto) + '</span></div>' +
-    '<button type="button" class="meta-edit" aria-label="Editar meta" title="Editar" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' + (r.obj > 0 ? hitosBarHtml(r) : '');
+    '<button type="button" class="meta-edit" aria-label="Editar meta" title="Editar" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
+    metaVistaSegHtml(r, 'meta') + (r.obj > 0 ? hitosBarHtml(r) : '');
   if (r.hitos.length) {
-    const yaDice = (x) => { const d = String(x.nombre).replace(/[.\s]/g, ''), k = x.importe / 1000; return d.indexOf(String(Math.round(x.importe))) >= 0 || (Number.isInteger(k) && new RegExp('(^|\\D)' + k + '(k|mil)', 'i').test(d)); };
-    h += '<div class="hitos">' + r.hitos.map((x) => '<span class="hito' + (x.alcanzado ? ' ok' : '') + '">' + (x.alcanzado ? '✓ ' : '') + escapeHtml(x.nombre) + (yaDice(x) ? '' : ' · ' + moneyShort(x.importe)) + '</span>').join('') + '</div>';
+    h += hitosChipsHtml(r, null);
     if (r.sig && !r.conseguida) h += '<div class="meta-sig">Siguiente hito: <b>' + escapeHtml(r.sig.nombre) + '</b> · faltan <b class="tnum">' + money(r.sig.importe - r.valor) + '</b></div>';
   }
   const partes = [];
@@ -2616,18 +2646,49 @@ function metaCardHtml(r) {
     h += '<div class="obj-personas">Lo que pone cada uno: ' + (ps || 'aún nada') + (num(r.o.previo) ? ' · antes de la app ' + money(r.o.previo) : '') + '</div>';
   }
   if (!r.conseguida) {
-    if (r.fecha) h += '<div class="meta-txt">Hasta el ' + fmtDateLong(r.fecha) + '</div>';
-    if (r.necesario != null && r.necesario > 0.005) h += '<div class="meta-txt">' + (vos ? 'Necesitáis aportar entre todos aprox. ' : 'Necesitas aportar aprox. ') + '<b class="tnum">' + money(r.necesario) + '/mes</b>.</div>';
-    if (r.obj > 0 && r.falta > 0) h += '<div class="meta-txt">Ritmo (últimos 3 meses): <b class="tnum">' + money(r.ritmo) + '/mes</b>' + (r.llegada ? ' · a este ritmo ' + (vos ? 'llegaríais' : 'llegarías') + ' hacia ' + fmtMesAnio(r.llegada) : ' · sin aportaciones recientes para estimar') + '.</div>';
+    h += metaLineasHtml(r, vos, '');
     if (r.inv && r.rent != null) h += '<div class="meta-est">La parte invertida se proyecta al <b>' + fmt2(r.rent).replace(/,00$/, '') + ' % anual</b> (' + escapeHtml(r.fuente) + '). Es una estimación: las inversiones suben y bajan.' +
       (r.sinValorar ? ' ' + r.sinValorar + (r.sinValorar === 1 ? ' aportación sin precio automático cuenta' : ' aportaciones sin precio automático cuentan') + ' por lo aportado.' : '') + '</div>';
   }
-  h += '<div class="meta-acc">' + (r.conseguida ? '' : '<button class="btn sm accent" ' + act('metaAportar', r.key) + '>' + ic('plus') + ' Aportar</button>') +
+  return h + metaAccHtml(r) + '</div>';
+}
+function metaAccHtml(r) {
+  let h = '<div class="meta-acc">' + (r.conseguida ? '' : '<button class="btn sm accent" ' + act('metaAportar', r.key) + '>' + ic('plus') + ' Aportar</button>') +
     '<button class="btn sm ghost" ' + act('metaAsignar', r.key) + '>Vincular</button>' +
     '<button class="btn sm ghost" ' + act('usoAbrir', r.key) + '>He usado dinero</button></div>';
   if (r.usos.length) h += '<div class="meta-usos">' + r.usos.slice(-3).reverse().map((u) => '<div><span>' + fmtDateShort(u.fecha) + ' · <b class="tnum">' + money(u.importe) + '</b> ' + (u.para === 'objetivo' ? 'para el objetivo' : 'para otra cosa') + (u.nota ? ' · ' + escapeHtml(u.nota) : '') + '</span>' +
     '<button class="link" ' + act('usoQuitar', r.key, u.id) + '>Quitar</button></div>').join('') + '</div>';
-  return h + '</div>';
+  return h;
+}
+function hitoNombreDice(x) { const d = String(x.nombre).replace(/[.\s]/g, ''), k = x.importe / 1000; return d.indexOf(String(Math.round(x.importe))) >= 0 || (Number.isInteger(k) && new RegExp('(^|\\D)' + k + '(k|mil)', 'i').test(d)); }
+// Chips de los hitos: tocar uno abre su vista
+function hitosChipsHtml(r, activo) {
+  return '<div class="hitos">' + r.hitos.map((x) => '<button type="button" class="hito' + (x.alcanzado ? ' ok' : '') + (activo === x.id ? ' activo' : '') + '" ' + act('metaVista', r.key, x.id) + '>' + (x.alcanzado ? '✓ ' : '') + escapeHtml(x.nombre) + (hitoNombreDice(x) ? '' : ' · ' + moneyShort(x.importe)) + (x.fecha ? ' · ' + fmtMesAnio(new Date(x.fecha + 'T12:00:00')) : '') + '</button>').join('') + '</div>';
+}
+function metaVistaSegHtml(r, actual) {
+  if (!r.hitos.length) return '';
+  const hid = actual !== 'meta' ? actual : (r.sig ? r.sig.id : r.hitos[r.hitos.length - 1].id);
+  return '<div class="meta-vista" role="tablist" aria-label="Vista de la meta"><button type="button" role="tab" aria-selected="' + (actual !== 'meta') + '" class="' + (actual !== 'meta' ? 'on' : '') + '" ' + act('metaVista', r.key, hid) + '>🎯 Hito</button>' +
+    '<button type="button" role="tab" aria-selected="' + (actual === 'meta') + '" class="' + (actual === 'meta' ? 'on' : '') + '" ' + act('metaVista', r.key, 'meta') + '>Meta completa</button></div>';
+}
+function metaHitoCardHtml(r, s, g, vos) {
+  const hv = s.hito, pctBar = Math.max(0, Math.min(100, s.pct || 0));
+  let h = '<div class="card meta-card meta-card-hito">' +
+    '<div class="meta-cab">' + anilloHtml(s.pct, SEMAFORO_COLOR[s.estado], 64) + '<div class="meta-info"><div class="meta-nom">' + escapeHtml(r.nombre) +
+    (g ? ' <span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
+    '<div class="meta-hito-nom">🎯 ' + escapeHtml(hv.nombre) + ' <span>· hito ' + s.idx + ' de ' + r.hitos.length + '</span></div>' +
+    '<div class="meta-cant tnum">' + money(s.valor) + ' de ' + money(hv.importe) + '</div>' +
+    '<span class="estado-pill e-' + s.estado + '">' + escapeHtml(s.texto) + '</span></div>' +
+    '<button type="button" class="meta-edit" aria-label="Editar meta" title="Editar" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
+    metaVistaSegHtml(r, hv.id) +
+    '<div class="meta-barra"><div class="mb-f" style="width:' + pctBar.toFixed(2) + '%;background:' + SEMAFORO_COLOR[s.estado] + '"></div></div>' +
+    hitosChipsHtml(r, hv.id);
+  if (!hv.alcanzado) {
+    h += '<div class="meta-txt">Faltan <b class="tnum">' + money(s.falta) + '</b> para este hito.</div>' + metaLineasHtml(s, vos, 'llegar a este hito');
+    if (s.inv && s.rent != null) h += '<div class="meta-est">La parte invertida se proyecta al <b>' + fmt2(s.rent).replace(/,00$/, '') + ' % anual</b> (' + escapeHtml(s.fuente) + '). Es una estimación.</div>';
+  }
+  h += '<button type="button" class="meta-resumen" ' + act('metaVista', r.key, 'meta') + '><span>Meta completa: <b class="tnum">' + money(r.valor) + '</b>' + (r.obj > 0 ? ' de ' + money(r.obj) + ' · ' + Math.round(r.pct || 0) + ' %' : '') + '</span>' + ic('chevR') + '</button>';
+  return h + metaAccHtml(r) + '</div>';
 }
 // «He usado dinero de la meta»
 function metaRefDe(key) {
@@ -5219,6 +5280,7 @@ const H = {
   openMetas: () => { verBadge('metas'); FORM = { kind: 'metas' }; if ($('#sheetBackdrop')) updateSheet(metasListaHtml()); else openSheet(metasListaHtml()); },
   metaNueva: () => metaAbrirEditor(null),
   metaEditar: ([id]) => metaAbrirEditor(id || null),
+  metaVista: ([k, v]) => { metaVistas()[k] = v; lsSet('metaVista', JSON.stringify(metaVistas())); verBadge('hitos'); render(); },
   metaAportar: ([k]) => { verBadge('metasH'); openMovForm(null, { tipo: 'Ahorro', metaSel: k }); },
   pickMeta: ([k]) => { FORM.metaSel = k || ''; verBadge('metasH'); $$('#metaChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === (k || ''))); },
   hitoAdd: () => { if (FORM.kind === 'meta') metaLeerForm(); else objLeerForm(); (FORM.hitos = FORM.hitos || []).push({ id: nuevoIdMeta(), nombre: '', importe: null }); verBadge('hitos'); updateSheet(FORM.kind === 'meta' ? metaEditorHtml() : objEditorHtml()); setTimeout(() => { const ins = $$('#hitosBox .hito-row input'); if (ins.length > 1) ins[ins.length - 2].focus(); }, 60); },
