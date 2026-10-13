@@ -70,7 +70,9 @@ const TIPO_COLOR = { Ingreso: 'income', Factura: 'bill', Gasto: 'expense', Ahorr
 const TIPO_SIGNO = { Ingreso: 1, Factura: -1, Gasto: -1, Ahorro: -1, 'Inversión': -1, Deuda: -1 };
 
 function num(v) { const n = Number(v); return isFinite(n) ? n : 0; }
-function fmt2(n) { return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+// es-ES no agrupa los números de 4 cifras («3240,00»): lo forzamos para que todos se lean igual («3.240,00»)
+function agrupar(s) { return String(s).replace(/^(-?)(\d{4,})/, (m, sg, d) => sg + d.replace(/\B(?=(\d{3})+(?!\d))/g, '.')); }
+function fmt2(n) { return agrupar(n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
 /* Moneda de la cuenta (solo símbolo y formato: NO convierte importes). Se guarda en config.moneda. */
 const MONEDAS = {
   EUR: { s: '€', dec: 2, n: 'Euro' }, USD: { s: '$', dec: 2, n: 'Dólar estadounidense' }, GBP: { s: '£', dec: 2, n: 'Libra esterlina' },
@@ -79,11 +81,13 @@ const MONEDAS = {
 };
 function monedaCod() { const c = S && S.config && S.config.moneda; return MONEDAS[c] ? c : 'EUR'; }
 function sym() { return MONEDAS[monedaCod()].s; }
-function fmtM(n) { const d = MONEDAS[monedaCod()].dec; return n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmtM(n) { const d = MONEDAS[monedaCod()].dec; return agrupar(n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d })); }
 function money(n) { return fmtM(num(n)) + ' ' + sym(); }
+// Rótulo de lo que apartas e inviertes (antes «Ahorro»)
+function apInvTxt() { return 'Apartado e invertido'; }
 function moneyShort(n) {
   n = num(n);
-  return Math.abs(n) >= 100 ? n.toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' ' + sym() : money(n);
+  return Math.abs(n) >= 100 ? agrupar(n.toLocaleString('es-ES', { maximumFractionDigits: 0 })) + ' ' + sym() : money(n);
 }
 // Importe con signo según el efecto real sobre tu dinero (una devolución = gasto negativo = suma)
 function moneySigned(importe, tipo) {
@@ -91,6 +95,12 @@ function moneySigned(importe, tipo) {
   return (eff >= 0 ? '+' : '−') + fmtM(Math.abs(eff)) + ' ' + sym();
 }
 function effect(importe, tipo) { return (TIPO_SIGNO[tipo] || 1) * num(importe); }
+// Apartar e invertir mueven tu dinero, no lo gastan: en las listas van aparte (color de ahorro y una flecha)
+const esApartado = (tipo) => tipo === 'Ahorro' || tipo === 'Inversión';
+function importeFilaHtml(importe, tipo) {
+  if (esApartado(tipo)) return '<span class="sav-flecha" aria-hidden="true">→ </span>' + fmtM(Math.abs(num(importe))) + ' ' + sym();
+  return moneySigned(importe, tipo);
+}
 
 function pad2(n) { return String(n).padStart(2, '0'); }
 function mesHoyClave() { const d = new Date(); return 'm:' + d.getFullYear() + '-' + pad2(d.getMonth() + 1); }
@@ -678,7 +688,7 @@ function render() {
   if (S.tab === 'inicio' && S.generalSub === 'anual') drawTrend();
   if (S.tab === 'dinero' && dineroSub() === 'inversiones') bindInvChart();
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
-  animarHero(); animarSegmentados(c); celebrarMetas();
+  limitarBadges(c); animarHero(); animarSegmentados(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
 }
 
@@ -734,7 +744,7 @@ function heroHtml() {
     '<div class="hero-seg">' + [['mensual', 'Mes'], ['anual', 'Año']].map(([id, l]) => '<button class="' + ((anual ? 'anual' : 'mensual') === id ? 'active' : '') + '" ' + act('setGeneralSub', id) + '>' + l + '</button>').join('') + '</div></div>' +
     '<button class="hero-main tappable" ' + act('irMovs', 'Todos', mk) + '><span class="hero-k">' + dispTxt + '</span><span class="hero-v tnum' + (disp < 0 ? ' neg' : '') + '">' + money(disp) + '</span></button>' +
     '<div class="hero-bar" aria-hidden="true"><i class="g" style="width:' + w(gas) + '"></i><i class="a" style="width:' + w(aho) + '"></i><i class="d" style="width:' + w(deu) + '"></i></div>' +
-    '<div class="hero-tiles">' + tile('Ingresos', ing, 'pos', act('irMovs', 'Ingreso', mk)) + tile('Gastos', gas, 'neg', act('irMovs', '_gastos', mk)) + tile('Ahorro', aho, 'sav', act('irMovs', '_ahorro', mk)) + '</div></section>';
+    '<div class="hero-tiles">' + tile('Ingresos', ing, 'pos', act('irMovs', 'Ingreso', mk)) + tile('Gastos', gas, 'neg', act('irMovs', '_gastos', mk)) + tile(apInvTxt(), aho, 'sav', act('irMovs', '_ahorro', mk)) + '</div></section>';
 }
 // «Lo próximo»: tareas, cobros y pagos de los próximos 14 días
 function proximoHtml() {
@@ -793,7 +803,7 @@ function inPeriodo(m) {
   return true;
 }
 const GRUPOS_TIPO = { _gastos: ['Gasto', 'Factura'], _ahorro: ['Ahorro', 'Inversión'] };
-const GRUPOS_TXT = { _gastos: 'Gastos y facturas', _ahorro: 'Ahorro e inversión' };
+const GRUPOS_TXT = { _gastos: 'Gastos y facturas', _ahorro: 'Apartado e invertido' };
 function periodoTxt(p) {
   if (/^m:/.test(p)) { const [y, m] = p.slice(2).split('-').map(Number); return MESES[m - 1] + ' ' + y; }
   if (/^y:/.test(p)) return 'Año ' + p.slice(2);
@@ -856,13 +866,20 @@ function renderMovList() {
       (acotado && S.movimientos.length ? '<div class="cta"><button class="btn ghost" ' + act('setMovModo', 'todo') + '>Ver todo el historial</button></div>' : '') +
       '<div class="cta"><button class="btn accent" ' + act('openMovForm') + '>' + ic('plus') + ' Añadir movimiento</button>' + (ticketsDisponible() ? ' <button class="btn ghost" ' + act('ticketFoto') + '>' + ic('camera') + ' Foto de ticket</button>' : '') + '</div></div>';
   }
-  const net = movs.reduce((a, m) => a + effect(m.importe, m.tipo), 0);
+  const net = movs.reduce((a, m) => a + (esApartado(m.tipo) ? 0 : effect(m.importe, m.tipo)), 0);
+  const apartadoTot = movs.reduce((a, m) => a + (esApartado(m.tipo) ? num(m.importe) : 0), 0);
+  const soloApartado = movs.every((m) => esApartado(m.tipo));
   const shown = movs.slice(0, S.movLimit);
-  let html = '<div class="summary-line">' + movs.length + (movs.length === 1 ? ' movimiento' : ' movimientos') + ' · balance ' + (net >= 0 ? '+' : '−') + fmtM(Math.abs(net)) + ' ' + sym() + '</div>' + enTodo;
+  let html = '<div class="summary-line">' + movs.length + (movs.length === 1 ? ' movimiento' : ' movimientos') +
+    (soloApartado ? '' : ' · balance ' + (net >= 0 ? '+' : '−') + fmtM(Math.abs(net)) + ' ' + sym()) +
+    (apartadoTot ? ' · apartado e invertido ' + fmtM(apartadoTot) + ' ' + sym() : '') + '</div>' + enTodo;
   let last = null;
-  const totDia = {}; shown.forEach((m) => { totDia[m.fecha] = (totDia[m.fecha] || 0) + effect(m.importe, m.tipo); });
+  const totDia = {}, apDia = {};
+  shown.forEach((m) => { if (esApartado(m.tipo)) apDia[m.fecha] = (apDia[m.fecha] || 0) + num(m.importe); else totDia[m.fecha] = (totDia[m.fecha] || 0) + effect(m.importe, m.tipo); });
+  const totDiaHtml = (f) => (f in totDia ? '<span class="tnum ' + (totDia[f] >= 0 ? 'pos' : 'neg') + '">' + (totDia[f] >= 0 ? '+' : '−') + fmtM(Math.abs(totDia[f])) + ' ' + sym() + '</span>'
+    : '<span class="tnum sav">→ ' + fmtM(apDia[f] || 0) + ' ' + sym() + '</span>');
   shown.forEach((m) => {
-    if (m.fecha !== last) { if (last !== null) html += '</div>'; const t = totDia[m.fecha] || 0; html += '<div class="date-sep"><span>' + fmtDateGroup(m.fecha) + '</span><span class="tnum ' + (t >= 0 ? 'pos' : 'neg') + '">' + (t >= 0 ? '+' : '−') + fmtM(Math.abs(t)) + ' ' + sym() + '</span></div><div class="list">'; last = m.fecha; }
+    if (m.fecha !== last) { if (last !== null) html += '</div>'; html += '<div class="date-sep"><span>' + fmtDateGroup(m.fecha) + '</span>' + totDiaHtml(m.fecha) + '</div><div class="list">'; last = m.fecha; }
     html += renderMovRow(m);
   });
   if (last !== null) html += '</div>';
@@ -881,7 +898,7 @@ function renderMovRowBase(m) {
     movIcHtml(m) +
     '<div class="main"><div class="ttl">' + escapeHtml(m.categoria || 'Sin categoría') + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
     '<div class="meta">' + (c ? escapeHtml([m.subcategoria, m.descripcion].filter(Boolean).concat([compQuienTxt(c)]).join(' · ')) : escapeHtml([m.subcategoria, m.descripcion, m.tipo === 'Factura' ? 'Fijo' : m.tipo === 'Gasto' && (m.subcategoria || m.descripcion || m.metodoPago) ? '' : tipoTxt(m.tipo), m.metodoPago].filter(Boolean).join(' · '))) + '</div></div>' +
-    '<div class="amt tnum ' + (eff >= 0 ? 'pos' : 'neg') + '">' + moneySigned(m.importe, m.tipo) + (c ? '<div class="amt-sub">tu parte de ' + money(c.importe) + '</div>' : '') + '</div></div>';
+    '<div class="amt tnum ' + (esApartado(m.tipo) ? 'sav' : eff >= 0 ? 'pos' : 'neg') + '">' + importeFilaHtml(m.importe, m.tipo) + (c ? '<div class="amt-sub">tu parte de ' + money(c.importe) + '</div>' : '') + '</div></div>';
 }
 
 function catsPorUso() {
@@ -1197,6 +1214,11 @@ function renderAnalisisMensual(enInicio) {
   const filas = cats.concat(extra);
   const totPres = cats.reduce((a, c) => a + num(c.presupuesto), 0);
   const totReal = Object.values(catMap).reduce((a, v) => a + v, 0);
+  const conPres = cats.filter((c) => num(c.presupuesto) > 0), gastoConPres = conPres.reduce((a, c) => a + num(catMap[c.nombre]), 0), fueraPres = totReal - gastoConPres;
+  const resumenPres = totPres ? 'En lo presupuestado llevas <b class="tnum">' + money(gastoConPres) + '</b> de ' + money(totPres) +
+    (gastoConPres > totPres ? ' · te has pasado ' + money(gastoConPres - totPres) : ' · quedan ' + money(totPres - gastoConPres)) +
+    (fueraPres > 0.005 ? '<br>Sin presupuesto: ' + money(fueraPres) + ' (total del mes ' + money(totReal) + ')' : '')
+    : 'Gastado ' + money(totReal) + ' · pon presupuestos en Tú → Categorías y presupuestos';
   const hayGasto = Object.values(catMap).some((v) => v > 0);
 
   return (enInicio ? '' : '<div class="month-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('moveMes', -1) + '>' + ic('chevL') + '</button>' +
@@ -1209,7 +1231,7 @@ function renderAnalisisMensual(enInicio) {
       : '<div style="text-align:center;color:var(--text-faint);font-size:13.5px;">Sin gastos registrados en ' + MESES[S.mesSel - 1].toLowerCase() + '.</div>') + '</div>' +
 
     '<div class="section-title"><span>Presupuesto por categoría' + badge('presup') + '</span></div><div class="card">' +
-    (filas.length ? '<div class="summary-line" style="margin-top:0;">Gastado ' + money(totReal) + (totPres ? ' de ' + money(totPres) + ' presupuestados' : '') + '</div>' +
+    (filas.length ? '<div class="summary-line" style="margin-top:0;">' + resumenPres + '</div>' +
       presupuestoFilasHtml(filas, catMap)
       : '<div style="color:var(--text-faint);font-size:13.5px;">Añade categorías en Tú → Categorías de gasto.</div>') + '</div>' +
     articulosTopHtml(k.movs);
@@ -1242,13 +1264,13 @@ function renderAnalisisAnual(enInicio) {
   const totGas = rows.reduce((a, r) => a + r.facturas + r.gastos, 0);
   const totAho = rows.reduce((a, r) => a + r.ahorro + r.inversion, 0);
   const tasa = totIng > 0 ? totAho / totIng * 100 : 0;
-  return (enInicio ? '<div class="summary-line" style="margin-top:12px;">Tasa de ahorro del año: <b>' + tasa.toFixed(0) + '%</b> de tus ingresos.</div>' : '<div class="month-nav"><button class="icon-btn" aria-label="Año anterior" ' + act('moveAnio', -1) + '>' + ic('chevL') + '</button>' +
+  return (enInicio ? '<div class="summary-line" style="margin-top:12px;">Has apartado e invertido el <b>' + tasa.toFixed(0) + ' %</b> de lo que te ha entrado este año' + (tasa > 100 ? ' (más de lo que ha entrado: parte venía de antes)' : '') + '.</div>' : '<div class="month-nav"><button class="icon-btn" aria-label="Año anterior" ' + act('moveAnio', -1) + '>' + ic('chevL') + '</button>' +
     '<div class="lbl" style="min-width:90px;">' + S.anioSel + '</div>' +
     '<button class="icon-btn" aria-label="Año siguiente" ' + act('moveAnio', 1) + '>' + ic('chevR') + '</button></div>' +
     '<div class="kpi-row">' +
     '<div class="kpi income tappable" ' + act('irMovs', 'Ingreso', 'y:' + S.anioSel) + '><div class="v tnum">' + moneyShort(totIng) + '</div><div class="l">Ingresos</div></div>' +
     '<div class="kpi expense tappable" ' + act('irMovs', '_gastos', 'y:' + S.anioSel) + '><div class="v tnum">' + moneyShort(totGas) + '</div><div class="l">Gastos</div></div>' +
-    '<div class="kpi avail tappable" ' + act('irMovs', '_ahorro', 'y:' + S.anioSel) + '><div class="v tnum">' + tasa.toFixed(0) + '%</div><div class="l">Tasa de ahorro</div></div></div>') +
+    '<div class="kpi avail tappable" ' + act('irMovs', '_ahorro', 'y:' + S.anioSel) + '><div class="v tnum">' + tasa.toFixed(0) + ' %</div><div class="l">Apartado / ingresos</div></div></div>') +
     '<div class="section-title"><span>Ingresos y gastos por mes' + badge('anual') + '</span></div><div class="card"><div class="chart-wrap" id="trendWrap"></div>' +
     '<div class="legend"><span><i style="background:var(--income)"></i>Ingresos</span><span><i style="background:var(--expense)"></i>Gastos</span></div></div>' +
     '<div class="section-title">Detalle</div><div class="list">' +
@@ -2381,7 +2403,7 @@ function renderTu() {
       it('exportBackup', [], 'download', 'Copia de seguridad (.json)', '', 'exportar backup')]) +
     grupo('Tareas', [lista('categoriasTareas', '')]) +
     grupo('App', ['<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
-      '<div class="segmented" style="margin-left:auto;">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button style="padding:6px 12px;" class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
+      '<div class="segmented tema-seg">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
       it('openMoneda', [], 'chart', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
       mfaDisponible() ? it('openSeguridad', [], 'alert', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
       it('verNovedades', ['1'], 'flag', 'Qué hay de nuevo', '<span class="menu-extra">' + (NOVEDADES[0] ? escapeHtml(NOVEDADES[0].titulo) : '') + '</span>', 'novedades parche'),
@@ -2821,7 +2843,7 @@ function metasListaHtml() {
   const ms = metasCfg();
   return '<div class="handle"></div><h2>Metas</h2>' +
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Cada meta junta lo que apartas y lo que inviertes para ella. Puedes ponerle hitos y, cuando uses el dinero, apuntarlo.</div>' +
-    (ms.length ? '<div class="list">' + ms.map((m) => '<div class="row" ' + act('metaEditar', m.id || '') + '><span class="dot" style="background:var(--savings)"></span><div class="main"><div class="ttl">' + escapeHtml(m.nombre) + '</div><div class="meta">' + (tipoMeta(m) === 'inversion' ? 'Inversión' : 'Ahorro') + (m.fechaObjetivo ? ' · hasta ' + fmtDateShort(m.fechaObjetivo) : '') + '</div></div><div class="amt tnum">' + (num(m.objetivo) > 0 ? money(m.objetivo) : '—') + '</div></div>').join('') + '</div>'
+    (ms.length ? '<div class="list">' + ms.map((m) => '<div class="row" ' + act('metaEditar', m.id || '') + '><span class="dot" style="background:var(--savings)"></span><div class="main"><div class="ttl">' + escapeHtml(m.nombre) + '</div><div class="meta">' + ((m.hitos || []).length ? (m.hitos.length === 1 ? '1 hito' : m.hitos.length + ' hitos') : 'Meta') + (m.fechaObjetivo ? ' · hasta ' + fmtDateShort(m.fechaObjetivo) : '') + '</div></div><div class="amt tnum">' + (num(m.objetivo) > 0 ? money(m.objetivo) : '—') + '</div></div>').join('') + '</div>'
       : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no tienes metas.</div>') +
     '<div class="actions"><button class="btn ghost block" ' + act('metaNueva') + '>' + ic('plus') + ' Nueva meta</button>' + (compartidosDisponible() ? '<button class="btn ghost block" ' + act('objNueva', 'ahorro') + '>' + ic('users') + ' Meta compartida</button>' : '') + '</div>' +
     '<div class="actions" style="margin-top:8px;"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
@@ -3128,7 +3150,7 @@ function inflacionHtml() {
     '<div style="font-size:26px;font-weight:700;" class="tnum">' + fmt2(d.tasa) + ' %</div>' +
     '<div style="font-size:11.5px;color:var(--text-faint);line-height:1.5;margin-top:6px;">' + escapeHtml(d.que) + ' · ' + escapeHtml(d.periodo) + ' · Fuente: ' + escapeHtml(d.fuente) + ' · Dato obtenido el ' + fmtDateLong(d.obtenido) + '.</div></div>';
 }
-const eur0 = (n) => n.toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
+const eur0 = (n) => agrupar(n.toLocaleString('es-ES', { maximumFractionDigits: 0 })) + ' €';
 const eur2 = (n) => fmt2(n) + ' €';
 function valorDeGrupo(g) {
   if (!g.activoId || g.conPart !== g.n || !S.valoracion) return null;
@@ -3696,6 +3718,7 @@ function badgeActivo(k) {
   if (uAdd(b[1], 21) < todayISO()) return false;
   return !((cfg().badgesVistos || {})[k]);
 }
+function limitarBadges(root) { if (!root || root.querySelector('.nov-hero')) return; [...root.querySelectorAll('.badge-new')].slice(3).forEach((b) => b.remove()); }
 function badge(k) { return badgeActivo(k) ? ' <span class="badge-new ' + (BADGES[k][0] === 'NUEVO' ? '' : 'mejor') + '">' + BADGES[k][0] + '</span>' : ''; }
 function badgeDot(k) { return badgeActivo(k) ? '<span class="badge-dot"></span>' : ''; }
 function verBadge(k) {
@@ -4878,11 +4901,11 @@ function openSheet(html) {
   _sheetGen++;
   host.innerHTML = '<div class="sheet-backdrop" id="sheetBackdrop" role="dialog" aria-modal="true"><div class="sheet">' + SHEET_X() + html + '</div></div>';
   activarArrastreSheet(host.querySelector('.sheet'));
-  fijarAcciones(host.querySelector('.sheet')); ajustarAlTeclado();
+  limitarBadges(host.querySelector('.sheet')); fijarAcciones(host.querySelector('.sheet')); ajustarAlTeclado();
   requestAnimationFrame(() => { const b = $('#sheetBackdrop'); if (b && !b.dataset.cerrando) b.classList.add('open'); animarSegmentados($('#sheetHost')); });
   document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear'));
 }
-function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; fijarAcciones(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
+function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; limitarBadges(s); fijarAcciones(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
 function closeSheet() {
   document.body.classList.remove('crear-abierto');
   const b = $('#sheetBackdrop'); if (!b) return;
