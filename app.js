@@ -279,8 +279,45 @@ async function borrarMovConDeshacer(id) {
   const m = S.movimientos.find((x) => x.id === id); if (!m) return;
   const copia = stripId(m);
   const ok = await write(() => S.db.collection('movimientos').doc(id).delete());
+  if (ok) papeleraAnadir('mov', id, copia);
   if (ok && (S.aportes || []).some((a) => a.movId === id)) sincronizarAporte({ id, tipo: m.tipo, metaId: null });
-  if (ok) toast('Movimiento eliminado', { deshacer: async () => { if (await write(() => S.db.collection('movimientos').doc(id).set(copia))) { toast('Recuperado'); if (copia.metaId) sincronizarAporte(Object.assign({ id }, copia)); } } });
+  if (ok) toast('Movimiento eliminado', { deshacer: async () => { if (await write(() => S.db.collection('movimientos').doc(id).set(copia))) { papeleraQuitar('mov', id); toast('Recuperado'); if (copia.metaId) sincronizarAporte(Object.assign({ id }, copia)); } } });
+}
+/* ---- Papelera: lo que borras (movimientos y tareas) se guarda 15 días y se puede recuperar ---- */
+const PAPELERA_DIAS = 15, PAPELERA_MAX = 60;
+function papeleraItems() { const lim = Date.now() - PAPELERA_DIAS * 864e5; return (cfg().papelera || []).filter((x) => x && x.en > lim && x.copia); }
+function papeleraAnadir(k, id, copia) {
+  try {
+    const items = papeleraItems().filter((x) => !(x.k === k && x.id === id)); items.push({ k, id, copia: JSON.parse(JSON.stringify(copia)), en: Date.now() });
+    saveConfig({ papelera: items.slice(-PAPELERA_MAX) });
+  } catch (e) { console.error(e); }
+}
+function papeleraQuitar(k, id) {
+  if (!(cfg().papelera || []).some((x) => x && x.k === k && x.id === id)) return;
+  saveConfig({ papelera: papeleraItems().filter((x) => !(x.k === k && x.id === id)) });
+}
+function papeleraHtml() {
+  const items = papeleraItems().slice().reverse();
+  const fila = (x) => {
+    const c = x.copia, dias = Math.max(1, Math.ceil((x.en + PAPELERA_DIAS * 864e5 - Date.now()) / 864e5));
+    const t = x.k === 'tarea' ? escapeHtml(c.nombre || 'Tarea') : escapeHtml(c.categoria || c.tipo || 'Movimiento') + (c.descripcion ? ' · ' + escapeHtml(c.descripcion) : '');
+    const d = x.k === 'tarea' ? 'Tarea' + (c.fechaLimite ? ' · para el ' + fechaCortaU(c.fechaLimite) : '') : (c.fecha ? fechaCortaU(c.fecha) + ' · ' : '') + money(c.importe);
+    return '<div class="row static"><div class="main"><div class="ttl">' + t + '</div><div class="meta">' + d + ' · se borra del todo en ' + dias + (dias === 1 ? ' día' : ' días') + '</div></div>' +
+      '<button class="btn sm accent" ' + act('papeleraRecuperar', x.k, x.id) + '>Recuperar</button></div>';
+  };
+  return '<div class="handle"></div><h2>Papelera</h2>' +
+    (items.length ? '<div class="list">' + items.map(fila).join('') + '</div>' : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Está vacía. Lo que borres (movimientos y tareas) aparecerá aquí durante ' + PAPELERA_DIAS + ' días.</div>') +
+    '<div class="rec-hint" style="margin-top:10px;">Pasados ' + PAPELERA_DIAS + ' días se borra para siempre. Lo que quitas al deshacer una importación no pasa por aquí.</div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+async function papeleraRecuperar(k, id) {
+  const x = papeleraItems().find((y) => y.k === k && y.id === id); if (!x) return;
+  const ok = await write(() => S.db.collection(k === 'tarea' ? 'tareas' : 'movimientos').doc(id).set(x.copia));
+  if (!ok) return;
+  papeleraQuitar(k, id);
+  if (k === 'mov' && x.copia.metaId) sincronizarAporte(Object.assign({ id }, x.copia));
+  toast(k === 'tarea' ? 'Tarea recuperada' : 'Movimiento recuperado');
+  if (FORM && FORM.kind === 'papelera') updateSheet(papeleraHtml());
 }
 // Lleva la vista al campo que falta y lo resalta un momento
 function marcarCampo(sel) {
@@ -687,14 +724,13 @@ function render() {
   document.body.classList.toggle('en-tu', S.tab === 'tu');
   const title = $('#pageTitle'); if (title) title.textContent = TITULOS[S.tab];
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
-  const E = estructura();
-  if (S.tab === 'inicio') c.innerHTML = estrAviso() + (E ? renderInicioNuevo() : renderInicio());
-  else if (S.tab === 'movimientos') c.innerHTML = estrAviso() + (E && S.movVista === 'resumen' ? renderMovResumen() : renderMovimientos());
-  else if (S.tab === 'dinero') c.innerHTML = estrAviso() + renderDinero();
-  else if (S.tab === 'agenda') c.innerHTML = estrAviso() + renderAgenda();
-  else if (S.tab === 'juntos') c.innerHTML = estrAviso() + renderJuntos();
+  if (S.tab === 'inicio') c.innerHTML = renderInicioNuevo();
+  else if (S.tab === 'movimientos') c.innerHTML = S.movVista === 'resumen' ? renderMovResumen() : renderMovimientos();
+  else if (S.tab === 'dinero') c.innerHTML = renderDinero();
+  else if (S.tab === 'agenda') c.innerHTML = renderAgenda();
+  else if (S.tab === 'juntos') c.innerHTML = renderJuntos();
   else if (S.tab === 'tu') c.innerHTML = renderTu();
-  const resumen = E ? S.tab === 'movimientos' && S.movVista === 'resumen' : S.tab === 'inicio', resAnual = E ? /^y:/.test(movPerNorm(S.movPeriodo)) : S.generalSub === 'anual';
+  const resumen = S.tab === 'movimientos' && S.movVista === 'resumen', resAnual = /^y:/.test(movPerNorm(S.movPeriodo));
   if (resumen && !resAnual) drawDonut();
   if (resumen && resAnual) drawTrend();
   if (S.tab === 'dinero' && dineroSub() === 'inversiones') bindInvChart();
@@ -836,7 +872,7 @@ function periodoTxt(p) {
 }
 // Atajo: abre Movimientos con un filtro (tipo o grupo, periodo y categoría) y recuerda de dónde vienes para poder volver
 function irMovs(o) {
-  S.volverA = { tab: S.tab, inicioSub: S.inicioSub, analisisSub: S.analisisSub, generalSub: S.generalSub, label: TITULOS[S.tab] || 'atrás' };
+  S.volverA = { tab: S.tab, inicioSub: S.inicioSub, analisisSub: S.analisisSub, generalSub: S.generalSub, label: S.tab === 'movimientos' && S.movVista === 'resumen' ? 'Resumen' : (TITULOS[S.tab] || 'atrás'), movVista: S.movVista, movPeriodo: S.movPeriodo, movCat: S.movCat, movFiltroTipo: S.movFiltroTipo };
   S.tab = 'movimientos'; S.movVista = 'lista';
   S.movFiltroTipo = o.tipo || 'Todos';
   S.movPeriodo = o.periodo || 'todo';
@@ -2512,11 +2548,10 @@ function renderAgendaSemana() {
 const DINERO_SUBS = [['metas', 'Metas'], ['inversiones', 'Inversiones'], ['deudas', 'Deudas'], ['compartido', 'Compartido']];
 function dineroSub() { return DINERO_SUBS.some((x) => x[0] === S.dineroSub) ? S.dineroSub : 'metas'; }
 function renderDinero() {
-  const E = estructura();
-  let sub = dineroSub(); if (E === 'B' && sub === 'compartido') sub = 'metas';
-  const subs = E === 'B' ? DINERO_SUBS.filter((x) => x[0] !== 'compartido') : E === 'A' ? DINERO_SUBS.map((x) => (x[0] === 'compartido' ? ['compartido', 'Juntos'] : x)) : DINERO_SUBS;
-  const body = sub === 'metas' ? renderMetas() : sub === 'inversiones' ? renderInversiones() : sub === 'deudas' ? renderDeudas() : (E ? renderJuntos() : renderCompartidoDinero());
-  return (E ? patrimonioMiniHtml() : (patrimonioHtml() || '')) +
+  let sub = dineroSub(); if (sub === 'compartido') sub = 'metas'; // lo compartido vive en su pestaña, Juntos
+  const subs = DINERO_SUBS.filter((x) => x[0] !== 'compartido');
+  const body = sub === 'metas' ? renderMetas() : sub === 'inversiones' ? renderInversiones() : renderDeudas();
+  return patrimonioMiniHtml() +
     '<div class="chips-nav" role="tablist">' + subs.map(([id, l]) => '<button role="tab" class="chip-nav ' + (sub === id ? 'active' : '') + '" ' + act('setDineroSub', id) + '>' + l + (badgeActivo(id) ? '<span class="badge-dot"></span>' : '') + '</button>').join('') + '</div>' +
     '<div class="dinero-body">' + body + '</div>';
 }
@@ -2545,7 +2580,6 @@ function renderTu() {
   return '<div class="profile-tile"><div class="av">' + inicialUsuario() + '</div><div><div class="t">' + escapeHtml(S.grupos ? miNombreAlguno() : nombreSugerido()) + '</div>' +
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · tus datos son privados.</div></div></div>' +
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
-    (estrPuedeProbar() ? grupo('Fase 2', [it('estrAbrir', [], 'flag', 'Probar estructura', '<span class="menu-extra">' + escapeHtml(ESTR_OPC.find((o) => o[0] === estructura())[1]) + '</span>', 'fase prototipo pestañas estructura')]) : '') +
     grupo('Compartir', [it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir paloma invitar whatsapp')]) +
     grupo('Tu dinero', [it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
       it('openRecurrentes', [], 'calendar', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas'),
@@ -2554,6 +2588,7 @@ function renderTu() {
       it('openCuentas', [], 'bank', 'Cuentas y saldos', badge('patrimonio'), 'banco saldo patrimonio')]) +
     grupo('Herramientas', [it('impAbrir', [], 'download', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
       it('openLotes', [], 'list', 'Importaciones', '', 'deshacer'),
+      it('openPapelera', [], 'trash', 'Papelera', badge('papelera') + '<span class="menu-extra">' + (papeleraItems().length ? papeleraItems().length + ' dentro' : 'vacía') + '</span>', 'borrados recuperar eliminados'),
       it('openReglas', [], 'tag', 'Reglas de categorías', badge('reglas'), 'automatico'),
       it('exportBackup', [], 'download', 'Copia de seguridad (.json)', '', 'exportar backup')]) +
     grupo('Tareas', [lista('categoriasTareas', '')]) +
@@ -2571,38 +2606,10 @@ function renderTu() {
    A · Inicio ligero  ·  B · Juntos al frente. Solo cambia lo que se ve en ESTE dispositivo;
    los datos son los mismos. Sin elegir nada, la app de siempre.
    ============================================================ */
-const ESTR_UIDS = ['d07f5b4e-1b10-41f8-8e76-89df0bef8a2a']; // quién ve «Probar estructura» en Tú sin enlace
-const ESTR_OPC = [
-  ['', 'Actual', 'Como hasta hoy: Inicio con todo (resumen, avisos, compartido, en qué gastas y presupuestos), Dinero con Patrimonio y cuatro apartados, y Agenda.'],
-  ['A', 'A · Inicio ligero', 'Inicio solo con lo de hoy: cuánto te queda, lo pendiente y lo próximo. «En qué gastas» y los presupuestos pasan a Movimientos → Resumen. Lo compartido vive en Dinero → Juntos.'],
-  ['B', 'B · Juntos al frente', 'Una pestaña propia, «Juntos», con amigos, grupos, saldos y metas compartidas. La Agenda pasa a Inicio (Hoy · Semana y tareas · Calendario). El Resumen, en Movimientos, como en la A.'],
-];
-function estructura() {
-  if (S.estr === undefined) {
-    let v = lsGet('estructura') || '';
-    try { const u = new URLSearchParams(location.search).get('estructura'); if (u) { v = /^[ab]$/i.test(u) ? u.toUpperCase() : ''; lsSet('estructura', v || 'actual'); lsSet('estructuraProbar', '1'); } } catch (e) { /* sin URL */ }
-    S.estr = v === 'A' || v === 'B' ? v : '';
-  }
-  return S.estr;
-}
-function estrPuedeProbar() { return ESTR_UIDS.indexOf(miUid()) >= 0 || !!estructura() || lsGet('estructuraProbar') === '1'; }
-function tabsNav() { return estructura() === 'B' ? [TABS[0], TABS[1], { id: 'juntos', label: 'Juntos', icon: 'users' }, TABS[2]] : TABS; }
+/* Estructura (fase 2, decidida el 14/10): Inicio ligero · Movimientos (Lista | Resumen) · Juntos · Dinero; la Agenda vive dentro de Inicio. */
+function tabsNav() { return [TABS[0], TABS[1], { id: 'juntos', label: 'Juntos', icon: 'users' }, TABS[2]]; }
 function estrAjustarTab() {
-  const E = estructura();
-  if (S.tab === 'juntos' && E !== 'B') { S.tab = 'dinero'; S.dineroSub = 'compartido'; }
-  if (S.tab === 'agenda' && E === 'B') { S.tab = 'inicio'; S.inicioVista = S.agendaSub === 'calendario' ? 'calendario' : 'tareas'; }
-}
-function estrAviso() {
-  const E = estructura(); if (!E) return '';
-  return '<div class="estr-aviso"><span>Probando la estructura <b>' + escapeHtml(ESTR_OPC.find((o) => o[0] === E)[1]) + '</b></span><button type="button" class="link" ' + act('estrAbrir') + '>Cambiar</button></div>';
-}
-function estrHtml() {
-  const E = estructura();
-  return '<div class="handle"></div><h2>Probar estructura</h2>' +
-    '<p class="estr-intro">Elige cómo se organizan las pestañas. Solo cambia lo que ves en este dispositivo: tus datos y lo que ven los demás no cambian. Puedes volver a «Actual» cuando quieras.</p>' +
-    ESTR_OPC.map(([k, t, d]) => '<button type="button" class="estr-opc' + (E === k ? ' on' : '') + '" ' + act('estrPoner', k || 'actual') + '><b>' + escapeHtml(t) + (E === k ? ' <span class="estr-ya">en uso</span>' : '') + '</b><span>' + escapeHtml(d) + '</span></button>').join('') +
-    '<p class="estr-intro" style="margin-top:12px;">En A y B también: el botón + tiene Invertir, Gasto fijo y Pago de deuda, y el Patrimonio de Dinero sale plegado en una línea.</p>' +
-    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+  if (S.tab === 'agenda') { S.tab = 'inicio'; S.inicioVista = S.agendaSub === 'calendario' ? 'calendario' : 'tareas'; }
 }
 function irResumen(p) {
   S.tab = 'movimientos'; S.movVista = 'resumen'; S.volverA = null; S.movCat = ''; S.movFiltroTipo = 'Todos'; S.movQuery = '';
@@ -2611,32 +2618,35 @@ function irResumen(p) {
 }
 /* ---- Inicio en A y B: como mucho tres bloques (lo que te queda, lo pendiente, lo próximo) ---- */
 function renderInicioNuevo() {
-  const E = estructura();
   const vista = ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? S.inicioVista : 'hoy';
-  const seg = E === 'B' ? '<div class="segmented inicio-seg">' + [['hoy', 'Hoy'], ['tareas', 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (vista === id ? 'active' : '') + '" ' + act('setInicioVista', id) + '>' + l + '</button>').join('') + '</div>' : '';
-  if (E === 'B' && vista !== 'hoy') { S.agendaSub = vista; return seg + (vista === 'calendario' ? renderCalendario() : renderAgendaSemana()); }
+  const seg = '<div class="segmented inicio-seg">' + [['hoy', 'Hoy'], ['tareas', 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (vista === id ? 'active' : '') + '" ' + act('setInicioVista', id) + '>' + l + '</button>').join('') + '</div>';
+  if (vista !== 'hoy') { S.agendaSub = vista; return seg + (vista === 'calendario' ? renderCalendario() : renderAgendaSemana()); }
   const anual = S.generalSub === 'anual', d = new Date(), y = S.anioSel, m = S.mesSel;
   const actual = y === d.getFullYear() && m === d.getMonth() + 1;
   const vencidas = tareasVencidas(), excedidas = anual ? [] : presupuestoExcedido(y, m);
-  const fila = (cls, t, det, a) => '<button class="aten-fila ' + cls + '" ' + a + '>' + ic('alert') + '<span class="aten-t"><b>' + t + '</b><span>' + det + '</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
-  let aten = '';
-  if (vencidas.length) aten += fila('mal', vencidas.length + (vencidas.length > 1 ? ' tareas vencidas' : ' tarea vencida'), escapeHtml(vencidas.map((t) => t.nombre).slice(0, 2).join(', ')), act('irAgenda', 'tareas'));
-  excedidas.forEach((c) => { aten += fila('warn', escapeHtml(c.categoria) + ' por encima del presupuesto', money(c.real) + ' de ' + money(c.presupuesto) + ' este mes', act('irMovs', '_gastos', mesClave(y, m), c.categoria)); });
-  let juntosLink = '';
-  if (E === 'A' && compartidosDisponible()) {
-    const ids = [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id));
-    const tot = r2(ids.reduce((a, id) => a + miSaldo(id), 0));
-    if (ids.length && Math.abs(tot) < 0.005) juntosLink = '<button class="resumen-link tappable" ' + act('irDinero', 'compartido') + '>' + ic('users') + '<span><b>Lo que compartes</b><span>Estás en paz con todos · en Dinero → Juntos</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
-    if (Math.abs(tot) >= 0.005) aten += '<button class="aten-fila juntos" ' + act('irDinero', 'compartido') + '>' + ic('users') + '<span class="aten-t"><b style="color:' + saldoColor(tot) + '">' + (tot > 0 ? 'Te deben ' + money(tot) : 'Debes ' + money(-tot)) + '</b><span>En lo que compartes · Dinero → Juntos</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
+  // Pendiente: filas compactas por prioridad; se ven 3 como mucho y el resto se despliega (así Inicio no pide scroll)
+  const fila = (cls, t, det, a, extra) => '<div class="aten-fila ' + cls + '"><button type="button" class="aten-main" ' + a + '>' + ic(cls === 'ok' ? 'checkCircle' : cls === 'juntos' ? 'users' : cls === 'rec' ? 'calendar' : 'alert') + '<span class="aten-t"><b>' + t + '</b><span>' + det + '</span></span>' + (extra ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' + (extra || '') + '</div>';
+  const imp = (x) => (x.importe == null ? '' : ' · ' + money(x.importe));
+  const ra = actual && !anual ? avisosRecurrentes() : { pasados: [], hoy: [], manana: [], revisar: [] };
+  const filas = [];
+  ra.pasados.forEach((x) => filas.push(fila('rec mal', escapeHtml(x.rc.nombre) + imp(x), (x.rc.kind === 'cobro' ? 'Cobro' : 'Pago') + ' previsto el ' + fechaCortaU(x.iso) + ' · ¿Se ha producido?', act('openRecurrentes'),
+    '<span class="aten-btns"><button type="button" class="btn sm accent" ' + act('recSi', x.rc.kind, x.rc.idx, x.iso) + '>Sí</button><button type="button" class="btn sm ghost" ' + act('recNo', x.rc.kind, x.rc.idx, x.iso) + '>No</button></span>')));
+  ra.hoy.filter((x) => x.estado !== 'ok').forEach((x) => filas.push(fila('rec', 'Hoy: ' + escapeHtml(x.rc.nombre) + imp(x), (x.rc.kind === 'cobro' ? 'Cobro' : 'Pago') + ' previsto para hoy', act('openRecurrentes'),
+    '<span class="aten-btns"><button type="button" class="btn sm accent" ' + act('recSi', x.rc.kind, x.rc.idx, x.iso) + '>Confirmar</button></span>')));
+  if (vencidas.length) filas.push(fila('mal', vencidas.length + (vencidas.length > 1 ? ' tareas vencidas' : ' tarea vencida'), escapeHtml(vencidas.map((t) => t.nombre).slice(0, 2).join(', ')), act('irAgenda', 'tareas')));
+  excedidas.forEach((c) => filas.push(fila('warn', escapeHtml(c.categoria) + ' por encima del presupuesto', money(c.real) + ' de ' + money(c.presupuesto) + ' este mes', act('irMovs', '_gastos', mesClave(y, m), c.categoria))));
+  if (compartidosDisponible()) {
+    const ids = [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id)), tot = r2(ids.reduce((a, id) => a + miSaldo(id), 0));
+    if (Math.abs(tot) >= 0.005) filas.push(fila('juntos', '<span style="color:' + saldoColor(tot) + '">' + (tot > 0 ? 'Te deben ' + money(tot) : 'Debes ' + money(-tot)) + '</span>', 'En lo que compartes', act('goTab', 'juntos')));
   }
-  const rec = actual && !anual ? avisosRecHtml(true) : '';
-  const pend = rec || aten ? '<div class="section-title">Pendiente' + (rec ? ' <button class="link" ' + act('openRecurrentes') + '>Cobros y pagos</button>' : '') + '</div>' + (aten ? '<div class="card aten">' + aten + '</div>' : '') + rec : '';
-  return seg + heroHtml() + empiezaHtml() + pend + (anual ? '' : proximoHtml()) +
-    '<button class="resumen-link tappable" ' + act('irResumen') + '>' + ic('chart') + '<span><b>En qué gastas y presupuestos</b><span>' + (anual ? 'Todo ' + y : MESES[m - 1] + (y !== d.getFullYear() ? ' ' + y : '')) + ' · en Movimientos → Resumen</span></span><span class="chev-s">' + ic('chevR') + '</span></button>' + juntosLink;
+  ra.revisar.forEach((x) => filas.push(fila('rec', escapeHtml(x.rc.nombre) + ': revisa la regla', 'Tus últimos movimientos encajan mejor con otra', act('recEditar', x.rc.kind, x.rc.idx))));
+  ra.manana.forEach((x) => filas.push(fila('rec', 'Mañana: ' + escapeHtml(x.rc.nombre) + imp(x), (x.rc.kind === 'cobro' ? 'Cobro' : 'Pago') + ' previsto', act('openRecurrentes'))));
+  const todas = !!S.pendTodos, CAP = 3, ver = todas || filas.length <= CAP ? filas : filas.slice(0, CAP - 1).concat([fila('mas', 'Y ' + (filas.length - CAP + 1) + ' avisos más', 'Toca para verlos', act('verPendiente'))]);
+  const pend = ver.length ? '<div class="section-title">Pendiente' + (todas && filas.length > CAP ? ' <button class="link" ' + act('verPendiente') + '>Ver menos</button>' : '') + '</div><div class="card aten">' + ver.join('') + '</div>' : '';
+  return seg + heroHtml() + empiezaHtml() + pend + (anual ? '' : proximoHtml());
 }
 /* ---- Movimientos: Lista | Resumen (lo que antes estaba abajo en Inicio) ---- */
 function movVistaSegHtml() {
-  if (!estructura()) return '';
   const v = S.movVista === 'resumen' ? 'resumen' : 'lista';
   return '<div class="segmented mov-vista">' + [['lista', 'Lista'], ['resumen', 'Resumen']].map(([id, l]) => '<button class="' + (v === id ? 'active' : '') + '" ' + act('setMovVista', id) + '>' + l + '</button>').join('') + '</div>';
 }
@@ -2679,10 +2689,9 @@ function crearHtml() {
     (ticketsDisponible() ? '<button class="crear-ticket tappable" ' + act('crearIr', 'ticket') + '><span class="crear-ic">' + ic('camera') + '</span><span><b>Foto de ticket</b><span>Lee los artículos y el total por ti</span></span>' + badge('ticket') + '</button>' : '') +
     '<div class="crear-grid">' +
     op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
-    (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : estructura() ? '' : op('crearIr', ['factura'], 'calendar', 'Gasto fijo', 'k-factura')) +
-    (estructura() ? op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Gasto fijo', 'k-factura') +
-      op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp')
-      : op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp')) +
+    (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') +
+    op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Gasto fijo', 'k-factura') +
+    op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
 }
 function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearHtml()); else openSheet(crearHtml()); }
@@ -3960,7 +3969,9 @@ async function saveTarea() {
   if (ok) { closeSheet(); toast(sig ? 'Hecha. La siguiente: ' + fechaCortaU(sig) : (FORM.id ? 'Tarea actualizada' : 'Tarea añadida')); }
 }
 async function doDeleteTarea() {
-  const ok = await write(() => S.db.collection('tareas').doc(FORM.id).delete());
+  const id = FORM.id, t = S.tareas.find((x) => x.id === id), copia = t ? stripId(t) : null;
+  const ok = await write(() => S.db.collection('tareas').doc(id).delete());
+  if (ok && copia) papeleraAnadir('tarea', id, copia);
   if (ok) { closeSheet(); toast('Tarea eliminada'); }
 }
 
@@ -4036,7 +4047,7 @@ const BADGES = {
   cobros: ['NUEVO', '2026-10-09'], importar: ['NUEVO', '2026-10-09'], reglas: ['NUEVO', '2026-10-09'],
   repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'], compartir: ['NUEVO', '2026-10-10'], ticket: ['NUEVO', '2026-10-10'], metas: ['MEJORADO', '2026-10-10'], patrimonio: ['NUEVO', '2026-10-10'],
   categorias: ['NUEVO', '2026-10-12'], fijo: ['NUEVO', '2026-10-12'], detalle: ['NUEVO', '2026-10-12'], oscuro: ['MEJORADO', '2026-10-12'],
-  metasH: ['NUEVO', '2026-10-13'], amigos: ['NUEVO', '2026-10-14'], hitos: ['NUEVO', '2026-10-13'],
+  papelera: ['NUEVO', '2026-10-14'], juntos: ['NUEVO', '2026-10-14'], metasH: ['NUEVO', '2026-10-13'], amigos: ['NUEVO', '2026-10-14'], hitos: ['NUEVO', '2026-10-13'],
   rentab: ['NUEVO', '2026-10-10'], mesames: ['NUEVO', '2026-10-10'], presup: ['MEJORADO', '2026-10-10'], anual: ['MEJORADO', '2026-10-10'],
 };
 function badgeActivo(k) {
@@ -5262,9 +5273,9 @@ const H = {
   agendaDia: ([iso]) => { S.agendaDia = iso; render(); },
   agendaSemana: ([d]) => { S.agendaDia = uAdd(S.agendaDia || todayISO(), 7 * Number(d)); render(); },
   irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
-  irDinero: ([sub]) => { if (sub === 'compartido' && estructura() === 'B') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
+  irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
   setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; render(); },
-  verAnio: () => { if (estructura()) return irResumen('y:' + new Date().getFullYear()); S.tab = 'inicio'; S.generalSub = 'anual'; render(); window.scrollTo(0, 0); },
+  verAnio: () => irResumen('y:' + new Date().getFullYear()),
   openBuscar: () => { FORM = { kind: 'buscar' }; if ($('#sheetBackdrop')) updateSheet(buscarHtml()); else openSheet(buscarHtml()); setTimeout(() => { const el = $('#qBuscar'); if (el) el.focus(); }, 80); },
   buscarGlobal: (_a, el) => { clearTimeout(S._buscarT); const pintar = () => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); }; if (S.movimientos.length > 800) S._buscarT = setTimeout(pintar, 140); else pintar(); },
   buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
@@ -5294,13 +5305,7 @@ const H = {
     return openMovForm();
   },
   closeSheet: () => closeSheet(),
-  estrAbrir: () => { FORM = { kind: 'estr' }; if ($('#sheetBackdrop')) updateSheet(estrHtml()); else openSheet(estrHtml()); },
-  estrPoner: ([k]) => {
-    const v = k === 'A' || k === 'B' ? k : '';
-    lsSet('estructura', v || 'actual'); S.estr = v; S.movVista = 'lista'; S.inicioVista = 'hoy';
-    if (S.tab === 'juntos' && v !== 'B') S.tab = 'dinero';
-    closeSheet(); setTimeout(() => { renderShell(); S._entrando = true; render(); window.scrollTo(0, 0); toast(v ? 'Estructura ' + v + ' activada en este dispositivo' : 'Vuelves a la estructura actual'); }, 260);
-  },
+  verPendiente: () => { S.pendTodos = !S.pendTodos; render(); },
   setInicioVista: ([v]) => { S.inicioVista = ['tareas', 'calendario'].indexOf(v) >= 0 ? v : 'hoy'; S._entrando = true; render(); window.scrollTo(0, 0); },
   setMovVista: ([v]) => { S.movVista = v === 'resumen' ? 'resumen' : 'lista'; if (S.movVista === 'resumen') { S.movCat = ''; S.movFiltroTipo = 'Todos'; S.movQuery = ''; } S._entrando = true; render(); },
   irResumen: () => irResumen(),
@@ -5611,6 +5616,8 @@ const H = {
   impEjecutar: () => impEjecutar(),
   impAnadirCfg: (_, el) => { IMP.anadirConfig = el.checked; },
   impDeshacer: async ([lote]) => { if (await deshacerLote(lote)) closeSheet(); },
+  openPapelera: () => { verBadge('papelera'); FORM = { kind: 'papelera' }; openSheet(papeleraHtml()); },
+  papeleraRecuperar: ([k, id]) => papeleraRecuperar(k, id),
   openLotes: () => { FORM = { kind: 'lotes' }; openSheet(lotesHtml()); },
   loteDeshacer: ([id], el) => confirmDelete(el, async () => { if (await deshacerLote(id)) setTimeout(() => updateSheet(lotesHtml()), 400); }),
   openReglas: () => { verBadge('reglas'); FORM = { kind: 'reglas' }; openSheet(reglasHtml()); },
@@ -5722,9 +5729,11 @@ const H = {
   asigGuardar: () => { if (!FORM.guardando) asigGuardar(); },
   pickMetaInv: ([id]) => { FORM.metaId = id || null; $$('#invFields .chips .chip').forEach((b) => { const a = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || ''); if ((b.getAttribute('data-click') || '').indexOf('pickMetaInv') === 0) b.classList.toggle('active', a === (id || '')); }); },
   irMovs: ([tipo, periodo, cat]) => irMovs({ tipo, periodo, cat }),
-  irAnalisis: ([sub]) => { if (sub === 'general' && estructura()) return irResumen(); if (sub === 'general') { S.tab = 'inicio'; render(); window.scrollTo(0, 0); return; } H.irDinero([sub]); },
-  verMes: ([y, m]) => { if (estructura()) return irResumen(mesClave(Number(y), Number(m))); S.anioSel = Number(y); S.mesSel = Number(m); S.generalSub = 'mensual'; S.tab = 'inicio'; render(); window.scrollTo(0, 0); },
-  volver: () => { const v = S.volverA; S.volverA = null; if (!v) return; S.tab = v.tab; S.inicioSub = v.inicioSub; S.analisisSub = v.analisisSub; S.generalSub = v.generalSub; S.movCat = ''; S.movPeriodo = mesHoyClave(); S.movFiltroTipo = 'Todos'; render(); window.scrollTo(0, 0); },
+  irAnalisis: ([sub]) => { if (sub === 'general') return irResumen(); H.irDinero([sub]); },
+  verMes: ([y, m]) => irResumen(mesClave(Number(y), Number(m))),
+  volver: () => { const v = S.volverA; S.volverA = null; if (!v) return; S.tab = v.tab; S.inicioSub = v.inicioSub; S.analisisSub = v.analisisSub; S.generalSub = v.generalSub; S.movCat = ''; S.movPeriodo = mesHoyClave(); S.movFiltroTipo = 'Todos';
+    if (v.movVista === 'resumen') { S.movVista = 'resumen'; S.movPeriodo = v.movPeriodo || S.movPeriodo; } // vuelves al Resumen donde estabas
+    render(); window.scrollTo(0, 0); },
   movAddCtx: ([t, cat]) => openMovForm(null, Object.assign({ tipo: t }, cat ? { categoria: cat } : {})),
   quitarMovCat: () => { S.movCat = ''; S.movSub = ''; render(); },
   presEditar: ([n]) => {

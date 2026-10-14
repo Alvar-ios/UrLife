@@ -994,9 +994,12 @@ button.link::after { content: ''; position: absolute; inset: -10px -6px; }
 .card.aten { padding: 4px; margin-bottom: 10px; }
 .aten-fila { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: none; border-radius: 10px; padding: 10px; cursor: pointer; }
 .aten-fila + .aten-fila { border-top: 1px solid var(--line); border-radius: 0; }
-.aten-fila > svg.i { font-size: 18px; flex: none; color: var(--accent); }
-.aten-fila.mal > svg.i { color: var(--expense); }
-.aten-fila.juntos > svg.i { color: var(--savings); }
+.aten-main { display: flex; flex: 1; min-width: 0; align-items: center; gap: 10px; background: none; border: none; font: inherit; color: inherit; text-align: left; padding: 0; cursor: pointer; }
+.aten-main > svg.i { font-size: 18px; flex: none; color: var(--accent); }
+.aten-fila.mal .aten-main > svg.i { color: var(--expense); }
+.aten-fila.juntos .aten-main > svg.i { color: var(--savings); }
+.aten-btns { display: flex; gap: 6px; flex: none; }
+.aten-fila.mas .aten-main > svg.i { display: none; }
 .aten-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .aten-t b { font-size: 14px; }
 .aten-t span { font-size: 12.5px; color: var(--text-muted); }
@@ -1049,3 +1052,22 @@ button.link::after { content: ''; position: absolute; inset: -10px -6px; }
 .un-v.libre { color: var(--text-faint); font-weight: 500; }
 .un-auto { width: 34px; font-size: 11px; color: var(--accent); }
 .inv-inline { margin-top: 10px; padding: 10px; border: 1px dashed var(--line); border-radius: 12px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+/* Inicio sin scroll: en pantallas bajitas se aprieta un poco el resumen */
+@media (max-height: 760px) {
+  .hero { padding: 12px 14px 12px; gap: 8px; border-radius: 22px; }
+  .hero-v { font-size: 36px; }
+  .inicio-seg { margin-bottom: 10px; }
+  .prox-card { padding: 10px; }
+}
+@media (max-height: 700px) {
+  .hero { padding: 10px 12px 10px; gap: 6px; }
+  .hero-v { font-size: 30px; }
+  .hero-tile { padding: 6px 8px; }
+  .hero-tile .l { font-size: 11px; }
+  .hero-bar { height: 6px; }
+  .inicio-seg button { white-space: nowrap; padding-left: 4px; padding-right: 4px; font-size: 12px; }
+  .inicio-seg { margin-bottom: 8px; }
+  #content .section-title { margin-top: 12px; margin-bottom: 6px; }
+  .aten-fila { padding: 7px 8px; }
+  .prox-card { width: 150px; padding: 8px 10px; }
+}
