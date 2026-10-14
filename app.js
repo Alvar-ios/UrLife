@@ -1773,7 +1773,7 @@ function compFieldHtml() {
     return h + '<div class="rec-hint">Aún no compartes con nadie. Invita a una persona por WhatsApp y, cuando acepte, podréis compartir gastos.</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;"><button type="button" class="btn sm accent" ' + act('compInvitar') + '>' + ic('plus') + ' Invitar a una persona</button><button type="button" class="btn sm ghost" ' + act('compIrGrupos') + '>Grupos</button></div></div>';
   }
-  h += '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('compDest', d.k) + '>' + (d.grupo ? '👥 ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>';
+  h += '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('compDest', d.k) + '>' + (d.grupo ? '👥 ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('f') + '</div>' + invInlineHtml('f');
   if (!cp.dest) return h + '<div class="rec-hint">Elige con quién lo compartes.</div></div>';
   const ms = miembrosComp();
   if (t) {
@@ -2234,15 +2234,86 @@ function miembrosDeDestino(k) {
   return [{ uid: yo, nombre: miNombreAlguno() }, { uid: k.slice(2), nombre: nombreDe(null, k.slice(2)) }];
 }
 // Reparto por artículo: cada artículo se divide a partes iguales entre quienes lo marcan (al céntimo).
-function tkReparto(F) {
-  const ms = miembrosDeDestino(F.rep.dest).map((m) => m.uid), tot = {};
-  ms.forEach((u) => { tot[u] = 0; });
-  F.t.articulos.forEach((a) => {
-    let qs = (a.quien || ms).filter((u) => ms.indexOf(u) >= 0); if (!qs.length) qs = ms;
-    const c = cents(a.importe), base = Math.trunc(c / qs.length); let resto = c - base * qs.length;
-    qs.forEach((u) => { let v = base; if (resto > 0) { v++; resto--; } else if (resto < 0) { v--; resto++; } tot[u] += v; });
-  });
+/* Reparto por artículo. Cada artículo se reparte en proporción a «pesos»:
+   - artículo de 1 unidad (o sin unidades repartidas): a partes iguales entre quienes lo marcan;
+   - artículo de varias unidades (p. ej. 5 Coca-Colas): cada persona toma n unidades (a.unid);
+     las que no se asignan se reparten a partes iguales entre quienes no han puesto nada,
+     y si solo queda una persona, se le asigna el resto automáticamente. */
+function artQ(a) { const q = num(a.cantidad); return q >= 2 && Math.abs(q - Math.round(q)) < 1e-9 ? Math.round(q) : 0; }
+function artPesos(a, uids) {
+  const Q = artQ(a), w = {};
+  if (Q && a.unid && uids.some((u) => a.unid[u] != null)) {
+    let s = 0; const libres = [];
+    uids.forEach((u) => { if (a.unid[u] != null) { w[u] = Math.max(0, num(a.unid[u])); s += w[u]; } else libres.push(u); });
+    const resto = Math.max(0, Q - s);
+    libres.forEach((u) => { w[u] = resto / libres.length; });
+    if (uids.reduce((t, u) => t + (w[u] || 0), 0) > 0) return w;
+  }
+  let qs = (a.quien || uids).filter((u) => uids.indexOf(u) >= 0); if (!qs.length) qs = uids;
+  uids.forEach((u) => { w[u] = qs.indexOf(u) >= 0 ? 1 : 0; });
+  return w;
+}
+function repartoCents(c, w, uids) {
+  const W = uids.reduce((t, u) => t + w[u], 0), sg = c < 0 ? -1 : 1, ab = Math.abs(c);
+  const raw = uids.map((u) => ab * w[u] / W), base = raw.map(Math.floor);
+  let resto = ab - base.reduce((a, b) => a + b, 0);
+  raw.map((r, i) => [r - base[i], i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]).forEach(([, i]) => { if (resto > 0) { base[i]++; resto--; } });
+  return base.map((v) => v * sg);
+}
+function repartoArticulos(arts, uids) {
+  const tot = {}; uids.forEach((u) => { tot[u] = 0; });
+  arts.forEach((a) => { const r = repartoCents(cents(a.importe), artPesos(a, uids), uids); uids.forEach((u, i) => { tot[u] += r[i]; }); });
   return tot; // céntimos
+}
+function tkReparto(F) { return repartoArticulos(F.t.articulos, miembrosDeDestino(F.rep.dest).map((m) => m.uid)); }
+const fmtUn = (n) => (Math.round(n * 100) / 100).toLocaleString('es-ES');
+// Controles de «quién toma esto» para un artículo. ctx: 't' (hoja del ticket) o 'f' (formulario ya con el gasto)
+function artQuienHtml(a, i, ms, ctx) {
+  const yo = miUid(), uids = ms.map((m) => m.uid), nm = (m) => (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)), Q = artQ(a);
+  if (!Q) return '<div class="tk-quien" id="artq-' + ctx + i + '">' + ms.map((m) => '<button type="button" class="chip ' + (!a.quien || a.quien.indexOf(m.uid) >= 0 ? 'active' : '') + '" ' + act('artQuien', ctx, i, m.uid) + '>' + nm(m) + '</button>').join('') + '</div>';
+  return '<div class="tk-quien tk-unid" id="artq-' + ctx + i + '">' + artUnidInner(a, i, ms, ctx) + '</div>';
+}
+function artUnidDatos(a, uids) {
+  const Q = artQ(a), ex = a.unid || {}; let s = 0;
+  uids.forEach((u) => { if (ex[u] != null) s += num(ex[u]); });
+  const libres = uids.filter((u) => ex[u] == null), resto = Q - s;
+  return { Q, ex, s, libres, resto, disp: (u) => (ex[u] != null ? num(ex[u]) : libres.length ? Math.max(0, resto) / libres.length : 0) };
+}
+function artUnidInner(a, i, ms, ctx) {
+  const yo = miUid(), uids = ms.map((m) => m.uid), d = artUnidDatos(a, uids);
+  let h = '<div class="un-cab">' + d.Q + ' uds. · reparte las unidades</div>' + ms.map((m) => {
+    const libre = d.ex[m.uid] == null, v = d.disp(m.uid), auto = libre && d.libres.length === 1 && d.s > 0;
+    return '<div class="un-fila"><span class="n">' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</span>' +
+      '<button type="button" class="un-b" aria-label="Menos" ' + act('artUnid', ctx, i, m.uid, '-1') + '>−</button>' +
+      '<b class="un-v tnum' + (libre ? ' libre' : '') + '">' + fmtUn(v) + '</b>' +
+      '<button type="button" class="un-b" aria-label="Más" ' + act('artUnid', ctx, i, m.uid, '1') + '>+</button>' +
+      '<span class="un-auto">' + (auto ? 'auto' : '') + '</span></div>';
+  }).join('');
+  if (d.s > d.Q) h += '<div class="tk-warn" style="margin-top:6px;">Has repartido ' + fmtUn(d.s) + ' y solo hay ' + d.Q + ' unidades.</div>';
+  else if (d.libres.length > 1 && d.s > 0) h += '<div class="rec-hint">Quedan ' + fmtUn(d.resto) + ' sin asignar: se reparten a partes iguales entre quienes no han puesto nada.</div>';
+  else if (!d.s) h += '<div class="rec-hint">Sin tocar nada: a partes iguales. Pon las unidades de cada uno si no es así.</div>';
+  if (d.s) h += '<button type="button" class="link" ' + act('artUnidReset', ctx, i) + '>Volver a partes iguales</button>';
+  return h;
+}
+function artsDeCtx(ctx) { return ctx === 't' ? (FORM.t ? FORM.t.articulos : []) : (FORM.articulos || []); }
+function msDeCtx(ctx) { return ctx === 't' ? miembrosDeDestino(FORM.rep.dest) : miembrosComp(); }
+function artRefrescar(ctx, i) {
+  const a = artsDeCtx(ctx)[i], ms = msDeCtx(ctx), box = document.getElementById('artq-' + ctx + i);
+  if (box && a) { const tmp = document.createElement('div'); tmp.innerHTML = artQuienHtml(a, i, ms, ctx); box.replaceWith(tmp.firstChild); }
+  if (ctx === 't') tkRefrescarParcial(); else artFormAplicar();
+}
+// En el formulario: el reparto por artículos pasa al reparto «por importe» del gasto
+function artFormAplicar() {
+  const cp = FORM.comp; if (!cp || !cp.on || !cp.dest || !FORM.articulos) return;
+  const ms = miembrosComp(), uids = ms.map((m) => m.uid);
+  const suma = r2(FORM.articulos.reduce((t, a) => t + num(a.importe), 0)), info = document.getElementById('artInfo');
+  if (Math.abs(suma - importeForm()) >= 0.01) { if (info) info.innerHTML = '<div class="tk-warn">Los artículos suman ' + money(suma) + ' y el importe es ' + money(importeForm()) + ': no se puede repartir por artículos.</div>'; return; }
+  if (info) info.innerHTML = '';
+  const tot = repartoArticulos(FORM.articulos, uids);
+  cp.modo = 'importe'; cp.vals = {}; cp.incl = {};
+  uids.forEach((u) => { cp.vals[u] = tot[u] > 0 ? String(tot[u] / 100) : ''; cp.incl[u] = tot[u] > 0; });
+  FORM.articulos.forEach((a) => { const w = artPesos(a, uids); a.quien = uids.filter((u) => w[u] > 0); if (artQ(a) && a.unid) { a.unid = {}; uids.forEach((u) => { a.unid[u] = Math.round(w[u] * 100) / 100; }); } });
+  refrescarComp();
 }
 function tkCuadreHtml(F) {
   const sum = tkSuma(F), tot = r2(F.t.total), dif = r2(tot - sum);
@@ -2266,7 +2337,7 @@ function ticketHtml() {
         : F.foto && F.error !== 'no_ticket' ? '<button class="btn accent block" ' + act('tkReintentar') + '>Reintentar</button>' : '<button class="btn accent block" ' + act('ticketFoto') + '>Otra foto</button>') + '</div>';
   }
   const t = F.t, rep = F.rep, ds = compartidosDisponible() ? destinosCompartir() : [], ms = rep.on ? miembrosDeDestino(rep.dest) : [];
-  const chipsQuien = (a, i) => '<div class="tk-quien">' + ms.map((m) => '<button type="button" class="chip ' + (!a.quien || a.quien.indexOf(m.uid) >= 0 ? 'active' : '') + '" ' + act('tkQuien', i, m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>';
+  const chipsQuien = (a, i) => artQuienHtml(a, i, ms, 't');
   return '<div class="handle"></div><h2>Revisa el ticket</h2>' +
     (F.error ? '<div class="tk-warn" style="margin-bottom:10px;">' + escapeHtml(errTicket(F.error)) + '</div>' : '') +
     '<div class="field"><label>Comercio</label><input id="tkComercio" type="text" maxlength="60" value="' + escapeHtml(t.comercio) + '" ' + onInput('tkCampo', 'comercio') + '></div>' +
@@ -2283,12 +2354,12 @@ function ticketHtml() {
     '<button type="button" class="link" style="margin-top:8px;" ' + act('tkAnadir') + '>' + ic('plus') + ' Añadir artículo</button>' +
     '<div id="tkCuadre" style="margin-top:12px;">' + tkCuadreHtml(F) + '</div>' +
     (t.notas ? '<div class="rec-hint" style="margin-top:8px;">Nota de la lectura: ' + escapeHtml(t.notas) + '</div>' : '') +
-    (ds.length ? '<div class="field" style="margin-top:14px;">' + (!rep.on
+    ((ds.length || compartidosDisponible()) ? '<div class="field" style="margin-top:14px;">' + (!rep.on
       ? '<button type="button" class="comp-toggle" ' + act('tkRep', '1') + '>' + ic('users') + '<span>Repartir la cuenta por artículos</span></button>'
       : '<div class="comp-box"><div class="comp-head"><b>' + ic('users') + ' Repartir por artículos</b><button type="button" class="link" ' + act('tkRep', '0') + '>No repartir</button></div>' +
-        '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (rep.dest === d.k ? 'active' : '') + '" ' + act('tkDest', d.k) + '>' + (d.grupo ? '👥 ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>' +
+        '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (rep.dest === d.k ? 'active' : '') + '" ' + act('tkDest', d.k) + '>' + (d.grupo ? '👥 ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('t') + '</div>' + invInlineHtml('t') +
         (rep.dest ? '<div class="comp-lbl">Pagó</div><div class="chips">' + ms.map((m) => '<button type="button" class="chip ' + (rep.pagador === m.uid ? 'active' : '') + '" ' + act('tkPagador', m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>' +
-          '<div class="rec-hint" style="margin-top:8px;">En cada artículo, marca quién lo toma. Lo que marquéis varios se divide a partes iguales.</div>' +
+          '<div class="rec-hint" style="margin-top:8px;">En cada artículo, marca quién lo toma (lo que marquéis varios se divide a partes iguales). Si hay varias unidades, pon cuántas toma cada uno.</div>' +
           '<div id="tkResumen">' + tkResumenHtml(F) + '</div>' : '<div class="rec-hint" style="margin-top:6px;">Elige con quién compartes la cuenta.</div>') + '</div>') + '</div>' : '') +
     (F.limite ? '<div class="rec-hint" style="margin-top:10px;">Lecturas este mes: ' + F.usados + ' de ' + F.limite + '. La foto no se ha guardado.</div>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('tkContinuar') + '>Continuar</button></div>';
@@ -2311,7 +2382,11 @@ function tkContinuar() {
     if (Math.abs(r2(total - tkSuma(F))) >= 0.01) return toast('Para repartir por artículos, la suma tiene que cuadrar con el total');
     const uids = miembrosDeDestino(F.rep.dest).map((m) => m.uid), tot = tkReparto(F);
     if (Object.values(tot).some((v) => v < 0)) return toast('A alguien le sale un importe negativo: revisa los descuentos');
-    arts.forEach((a, i) => { a.quien = (vivos[i].quien || uids).filter((u) => uids.indexOf(u) >= 0); });
+    arts.forEach((a, i) => {
+      const w = artPesos(vivos[i], uids);
+      a.quien = uids.filter((u) => w[u] > 0);
+      if (artQ(vivos[i]) && vivos[i].unid && uids.some((u) => vivos[i].unid[u] != null)) { a.unid = {}; uids.forEach((u) => { a.unid[u] = Math.round(w[u] * 100) / 100; }); }
+    });
     comp = { on: true, dest: F.rep.dest, pagador: F.rep.pagador || miUid(), modo: 'importe', incl: {}, vals: {} };
     uids.forEach((u) => { comp.incl[u] = tot[u] > 0; comp.vals[u] = tot[u] > 0 ? String(tot[u] / 100) : ''; });
   }
@@ -2324,10 +2399,23 @@ function tkContinuar() {
 }
 // En el formulario: los artículos del ticket (solo lectura)
 function artFieldHtml(ex) {
+  if (FORM && !FORM.articulos && ex && ex.articulos && ex.articulos.length) FORM.articulos = JSON.parse(JSON.stringify(ex.articulos)); // para poder cambiar el reparto
   const arts = (FORM && FORM.articulos) || (ex && ex.articulos) || null;
   if (!arts || !arts.length) return '';
-  return '<details class="tk-det"><summary>🧾 ' + arts.length + (arts.length === 1 ? ' artículo' : ' artículos') + ' del ticket</summary><div class="tk-det-l">' +
-    arts.map((a) => '<div class="tk-det-r"><span>' + (num(a.cantidad) && num(a.cantidad) !== 1 ? num(a.cantidad).toLocaleString('es-ES') + ' × ' : '') + escapeHtml(a.nombre) + '</span><b class="tnum">' + money(a.importe) + '</b></div>').join('') + '</div></details>';
+  const cp = FORM && FORM.comp, edita = !!(cp && cp.on && cp.dest && FORM.articulos && miembrosComp().length > 1), ms = edita ? miembrosComp() : [];
+  return '<details class="tk-det"' + (FORM && FORM.artAbierto ? ' open' : '') + '><summary>🧾 ' + arts.length + (arts.length === 1 ? ' artículo' : ' artículos') + ' del ticket' + (edita ? ' · cambiar reparto' : '') + '</summary><div class="tk-det-l">' +
+    arts.map((a, i) => '<div class="tk-det-r"><span>' + (num(a.cantidad) && num(a.cantidad) !== 1 ? num(a.cantidad).toLocaleString('es-ES') + ' × ' : '') + escapeHtml(a.nombre) + '</span><b class="tnum">' + money(a.importe) + '</b></div>' + (edita ? artQuienHtml(a, i, ms, 'f') : '')).join('') + '</div><div id="artInfo"></div></details>';
+}
+/* «+ Otra persona»: invitar sin salir de lo que estás creando */
+function otraPersonaChip(ctx) { return '<button type="button" class="chip nueva" ' + act('invAbrir', ctx) + '>+ Otra persona</button>'; }
+function invInlineHtml(ctx) {
+  const v = S._inv;
+  if (!v || v.ctx !== ctx) return '';
+  if (v.url) return '<div class="inv-inline"><b>Enlace listo</b><div class="rec-hint">Mándaselo por WhatsApp. Cuando lo acepte, aparecerá aquí en «Con» y podrás repartir con esa persona.</div>' +
+    '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(v.msg) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
+    '<button type="button" class="link" ' + act('invCerrar') + '>Cerrar</button></div>';
+  return '<div class="inv-inline"><div class="rec-hint">Invita a alguien que aún no tienes: le llega un enlace por WhatsApp. Lo que estás creando no se pierde.</div>' +
+    '<button type="button" class="btn sm accent" ' + act('invCrear', ctx) + '>' + (v.creando ? 'Creando…' : 'Crear enlace de invitación') + '</button> <button type="button" class="link" ' + act('invCerrar') + '>Cancelar</button></div>';
 }
 // Análisis mensual: en qué artículos se va el dinero (solo de gastos con ticket; con lo compartido, tu parte)
 function articulosTopHtml(movs) {
@@ -2337,7 +2425,7 @@ function articulosTopHtml(movs) {
     const c = m.comp, arts = (c ? c.articulos : m.articulos) || [];
     arts.forEach((a) => {
       let v = num(a.importe);
-      if (c) { if (Array.isArray(a.quien) && a.quien.length) v = a.quien.indexOf(yo) >= 0 ? v / a.quien.length : 0; else v = num(c.importe) ? v * miParte(c) / num(c.importe) : 0; }
+      if (c) { if (a.unid && Object.keys(a.unid).length) { const sw = Object.values(a.unid).reduce((t, x) => t + num(x), 0); v = sw ? v * num(a.unid[yo]) / sw : 0; } else if (Array.isArray(a.quien) && a.quien.length) v = a.quien.indexOf(yo) >= 0 ? v / a.quien.length : 0; else v = num(c.importe) ? v * miParte(c) / num(c.importe) : 0; }
       if (!v) return;
       const k = normName(a.nombre); (mapa[k] = mapa[k] || { nombre: a.nombre, v: 0, n: 0 }); mapa[k].v += v; mapa[k].n += num(a.cantidad) || 1;
     });
@@ -3801,8 +3889,8 @@ function openTareaForm(id) {
   const tg = (attrName, valores, sel, action) => '<div class="type-toggle" id="' + attrName + 'Toggle">' + valores.map((v) => '<button type="button" ' + (attrName === 'prio' ? 'data-p' : 'data-e') + '="' + v + '" class="' + (v === sel ? 'active' : '') + '" ' + act(action, v) + '>' + v + '</button>').join('') + '</div>';
   openSheet(
     '<div class="handle"></div><h2>' + (ex ? 'Editar tarea' : 'Nueva tarea') + '</h2>' +
-    '<div class="field"><label>Tarea</label><input id="tNombre" type="text" placeholder="¿Qué hay que hacer?" value="' + escapeHtml(ex ? ex.nombre : '') + '"></div>' +
-    '<div class="field"><label>Categoría</label><select id="tCategoria"><option value="">—</option>' + cats.filter(Boolean).map((c) => '<option ' + (ex && ex.categoria === c ? 'selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select></div>' +
+    '<div class="field"><label>Tarea</label><input id="tNombre" type="text" placeholder="¿Qué hay que hacer?" value="' + escapeHtml(ex ? ex.nombre : '') + '" ' + onInput('tNombreInput') + '></div>' +
+    '<div class="field"><label>Categoría <span class="hint">· opcional</span></label><input type="hidden" id="tCategoria" value="' + escapeHtml(ex ? (ex.categoria || '') : '') + '"><div id="tCatChips"></div></div>' +
     '<div class="field"><label>Prioridad</label>' + tg('prio', ['Baja', 'Media', 'Alta'], FORM.prioridad, 'pickPrio') + '</div>' +
     (ex ? '<div class="field"><label>Estado</label>' + tg('est', ['Pendiente', 'Iniciado', 'Completado'], FORM.estado, 'pickEstado') + '</div>' : '') +
     '<div class="field"><label>Fecha límite <span class="hint">· opcional</span></label><input id="tFecha" type="date" value="' + (ex && ex.fechaLimite ? ex.fechaLimite : '') + '"></div>' +
@@ -3811,7 +3899,41 @@ function openTareaForm(id) {
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTarea') + '>Guardar</button></div>' +
     (ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTarea') + '>' + ic('trash') + ' Eliminar tarea</button>' : '')
   );
+  tCatPintar();
   if (!ex) setTimeout(() => { const el = $('#tNombre'); if (el) el.focus(); }, 80);
+}
+/* categorías de tarea: chips, sugerencia por las palabras de la tarea y «+ Nueva» */
+const TCAT_BASICAS = ['Casa', 'Trabajo', 'Salud', 'Papeleo', 'Compras', 'Personal'];
+const TCAT_PALABRAS = [
+  ['Papeleo', /\b(ibi|iva|irpf|impuesto|hacienda|declaraci|banco|seguro|multa|dni|pasaporte|renov|gestor|tr[aá]mite|factura|contrato|cita previa|ayuntamiento|notar)/],
+  ['Salud', /\b(m[eé]dic|dentist|doctor|anal[ií]tic|revisi[oó]n|farmacia|fisio|oculista|vacuna|pastilla|psic[oó]log|gimnasio|deporte)/],
+  ['Compras', /\b(comprar|compra|supermercado|mercadona|regalo|pedido|amazon|tienda|recoger)/],
+  ['Casa', /\b(casa|limpi|arreglar|fontaner|electricista|lavadora|cocina|ba[ñn]o|piso|alquiler|comunidad|bombilla|plantas?|coche|itv|taller)/],
+  ['Trabajo', /\b(trabajo|reuni[oó]n|informe|cliente|jefe|email|correo|proyecto|entrega|presentaci[oó]n|oficina)/],
+];
+function tCatNorm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
+function tCatSugerida(nombre, lista) {
+  const n = String(nombre || '').toLowerCase();
+  for (const [cat, re] of TCAT_PALABRAS) {
+    if (re.test(n)) { const m = lista.find((c) => tCatNorm(c) === tCatNorm(cat)); if (m) return m; }
+  }
+  return '';
+}
+function tCatLista() {
+  const propias = (cfg().categoriasTareas || []).filter(Boolean);
+  const lista = propias.length ? propias.slice() : TCAT_BASICAS.slice();
+  const cur = ($('#tCategoria') || {}).value || '';
+  if (cur && !lista.some((c) => tCatNorm(c) === tCatNorm(cur))) lista.push(cur);
+  return lista;
+}
+function tCatPintar() {
+  const box = $('#tCatChips'); if (!box) return;
+  const lista = tCatLista();
+  const cur = $('#tCategoria').value;
+  const sug = cur ? '' : tCatSugerida(($('#tNombre') || {}).value, lista);
+  box.innerHTML = '<div class="chips tcat-chips">' + lista.map((c) => '<button type="button" class="chip' + (c === cur ? ' active' : '') + (c === sug ? ' sugerida' : '') + '" ' + act('tCatPick', c) + '>' + escapeHtml(c) + (c === sug ? ' · sugerida' : '') + '</button>').join('') +
+    '<button type="button" class="chip nueva" ' + act('tCatNueva') + '>+ Nueva</button></div>' +
+    (FORM.tCatNueva ? '<div class="tcat-nueva"><input id="tCatNuevaIn" type="text" maxlength="30" placeholder="Nombre de la categoría"><button type="button" class="btn accent" ' + act('tCatAdd') + '>Añadir</button></div>' : '');
 }
 async function saveTarea() {
   const nombre = $('#tNombre').value.trim();
@@ -3831,6 +3953,10 @@ async function saveTarea() {
     data.repetir = null; // la repetición pasa a la tarea nueva
   }
   const ok = await write(() => FORM.id ? S.db.collection('tareas').doc(FORM.id).set(data) : S.db.collection('tareas').add(data));
+  if (ok && data.categoria) {
+    const propias = (cfg().categoriasTareas || []).filter(Boolean);
+    if (!propias.some((c) => tCatNorm(c) === tCatNorm(data.categoria))) saveConfig({ categoriasTareas: propias.concat([data.categoria]) });
+  }
   if (ok) { closeSheet(); toast(sig ? 'Hecha. La siguiente: ' + fechaCortaU(sig) : (FORM.id ? 'Tarea actualizada' : 'Tarea añadida')); }
 }
 async function doDeleteTarea() {
@@ -5267,8 +5393,36 @@ const H = {
   tkAnadir: () => { FORM.t.articulos.push({ nombre: '', cantidad: 1, importe: 0, quien: null }); updateSheet(ticketHtml()); const ns = $$('#sheetBackdrop .tk-n'); if (ns.length) ns[ns.length - 1].focus(); },
   tkTotalSuma: () => { FORM.t.total = tkSuma(FORM); const el = $('#tkTotal'); if (el) el.value = FORM.t.total; tkRefrescarParcial(); },
   tkRep: ([on]) => { const R = FORM.rep; R.on = on === '1'; if (R.on && !R.dest) { const k = destinoPorDefecto(); if (k) R.dest = k; } updateSheet(ticketHtml()); },
-  tkDest: ([k]) => { const R = FORM.rep; R.dest = k; if (!miembrosDeDestino(k).some((m) => m.uid === R.pagador)) R.pagador = miUid(); FORM.t.articulos.forEach((a) => { a.quien = null; }); updateSheet(ticketHtml()); },
+  tkDest: ([k]) => { const R = FORM.rep; R.dest = k; if (!miembrosDeDestino(k).some((m) => m.uid === R.pagador)) R.pagador = miUid(); FORM.t.articulos.forEach((a) => { a.quien = null; a.unid = null; }); updateSheet(ticketHtml()); },
   tkPagador: ([u]) => { FORM.rep.pagador = u; updateSheet(ticketHtml()); },
+  artQuien: ([ctx, i, u]) => {
+    const arts = artsDeCtx(ctx), a = arts[Number(i)]; if (!a) return;
+    const todos = msDeCtx(ctx).map((m) => m.uid), q = (a.quien || todos).slice(), j = q.indexOf(u);
+    if (j >= 0) { if (q.length === 1) return toast('Al menos una persona tiene que tomarlo'); q.splice(j, 1); } else q.push(u);
+    a.quien = q.length === todos.length ? null : q;
+    artRefrescar(ctx, Number(i));
+  },
+  artUnid: ([ctx, i, u, d]) => {
+    const a = artsDeCtx(ctx)[Number(i)]; if (!a) return;
+    const uids = msDeCtx(ctx).map((m) => m.uid), dt = artUnidDatos(a, uids);
+    a.unid = a.unid || {};
+    const base = dt.ex[u] != null ? num(dt.ex[u]) : (dt.libres.length === 1 && dt.s > 0 ? Math.round(dt.disp(u)) : 0); // quien aún no ha puesto nada empieza en 0
+    a.unid[u] = Math.min(dt.Q, Math.max(0, base + Number(d)));
+    artRefrescar(ctx, Number(i));
+  },
+  artUnidReset: ([ctx, i]) => { const a = artsDeCtx(ctx)[Number(i)]; if (!a) return; a.unid = null; a.quien = null; artRefrescar(ctx, Number(i)); },
+  invAbrir: ([ctx]) => { S._inv = { ctx }; if (ctx === 't') updateSheet(ticketHtml()); else refrescarComp(); },
+  invCerrar: () => { const c = S._inv && S._inv.ctx; S._inv = null; if (c === 't') updateSheet(ticketHtml()); else refrescarComp(); },
+  invCrear: async ([ctx]) => {
+    const v = S._inv; if (!v || v.creando) return;
+    v.creando = true;
+    const t = await accionGrupo(() => S.db.rpc('invitar_persona', { p_mi_nombre: miNombreAlguno() }));
+    v.creando = false;
+    if (!t || t === true) return;
+    const url = APP_URL + '?unirse=' + encodeURIComponent(t);
+    v.url = url; v.msg = mensajePersona(url);
+    if (ctx === 't') updateSheet(ticketHtml()); else refrescarComp();
+  },
   tkQuien: ([i, u], el) => {
     const a = FORM.t.articulos[Number(i)], todos = miembrosDeDestino(FORM.rep.dest).map((m) => m.uid);
     const q = (a.quien || todos).slice(), j = q.indexOf(u);
@@ -5392,6 +5546,10 @@ const H = {
     setTimeout(() => toggleTarea(id), 430);
   },
   openTareaForm: ([id]) => openTareaForm(id || null),
+  tNombreInput: () => { if (FORM.kind === 'tarea' && !$('#tCategoria').value) tCatPintar(); },
+  tCatPick: ([c]) => { const el = $('#tCategoria'); el.value = el.value === c ? '' : c; FORM.tCatNueva = false; tCatPintar(); },
+  tCatNueva: () => { FORM.tCatNueva = !FORM.tCatNueva; tCatPintar(); const i = $('#tCatNuevaIn'); if (i) i.focus(); },
+  tCatAdd: () => { const i = $('#tCatNuevaIn'); const v = i ? i.value.trim() : ''; if (!v) return toast('Escribe el nombre'); $('#tCategoria').value = v; FORM.tCatNueva = false; tCatPintar(); },
   pickPrio: ([p]) => { FORM.prioridad = p; $$('#prioToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-p') === p)); },
   pickEstado: ([e]) => { FORM.estado = e; $$('#estToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-e') === e)); },
   saveTarea: () => saveTarea(),
@@ -5953,6 +6111,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
+window.__APP__ = { form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
 if (!window.__NO_AUTOSTART__) main();
 })();
