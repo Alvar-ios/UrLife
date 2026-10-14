@@ -2754,7 +2754,7 @@ function renderTu() {
       it('openReglas', [], 'tag', 'Reglas de categorías', badge('reglas'), 'automatico'),
       it('exportBackup', [], 'download', 'Copia de seguridad (.json)', '', 'exportar backup')]) +
     grupo('Tareas', [lista('categoriasTareas', '')]) +
-    grupo('App', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', '<span class="menu-extra">' + (S.look === 'nuevo' ? (PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1] : 'Clásico') + '</span>', 'aspecto color paleta tipografia cifras fuente vibracion sonido clasico nuevo estilo'),
+    grupo('App', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', badge('aspecto') + '<span class="menu-extra">' + (S.look === 'nuevo' ? (PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1] : 'Clásico') + '</span>', 'aspecto color paleta tipografia cifras fuente vibracion sonido clasico nuevo estilo'),
       '<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
       '<div class="segmented tema-seg">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
       it('openMoneda', [], 'chart', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
@@ -4172,6 +4172,23 @@ async function doDeleteTarea() {
    (con su fecha) y, si hace falta, nuevas claves en BADGES.
    ============================================================ */
 const NOVEDADES = [
+  { id: '2026-10-14', titulo: 'Parche 6 · Juntos y nuevo aspecto',
+    destacados: [
+      { em: '🤝', titulo: 'Juntos: quién debe a quién', color: 'savings', ir: 'juntos', boton: 'Ir a Juntos',
+        texto: 'Una pestaña propia para los gastos compartidos. Arriba ves de un vistazo cuánto debes y cuánto te deben, y puedes saldar con una persona en un toque.',
+        puntos: ['Barra con lo que debes y lo que te deben', 'Saldar en un toque, y ¡cuentas a cero! con confeti', 'Ticket por unidades con una barra que se mueve al repartir'] },
+      { em: '🎨', titulo: 'La app, a tu gusto', color: 'accent', ir: 'aspecto', boton: 'Elegir mi aspecto',
+        texto: 'Un aspecto nuevo con 5 colores y 5 tipos de letra para las cifras. Y si lo prefieres, vuelves al de siempre con un toque.',
+        puntos: ['Violeta, Cobalto, Turquesa, Frambuesa o Esmeralda', 'Sonido y vibración suaves (los puedes apagar)', 'Las animaciones salen cuando llegas a verlas'] },
+    ],
+    items: [
+      ['🎯', 'Metas con hitos', 'Cada meta tiene sus hitos con fecha y su ritmo para llegar.', 'metas'],
+      ['🏠', 'Inicio sin scroll', 'Lo que te queda este mes y lo próximo, de un vistazo. La Agenda ahora está dentro.', ''],
+      ['🗑️', 'Papelera de 15 días', 'Si borras un movimiento o tarea sin querer, puedes recuperarlo.', 'papelera'],
+      ['👥', 'Amigos', 'Añade a tus amigos y comparte con ellos sin crear un grupo.', 'juntos'],
+      ['🧾', 'Ticket por unidades', 'Si hay 5 colas, decide cuántas toma cada uno.', ''],
+      ['📱', 'Mejor en iPhone', 'Ya no se hace zoom al escribir en los campos.', ''],
+    ] },
   { id: '2026-10-12', titulo: 'Parche 5 · Categorías para todos',
     destacados: [
       { em: '🏷️', titulo: 'Categorías iguales para todos', color: 'accent', ir: 'categorias', boton: 'Ver mis categorías',
@@ -4238,7 +4255,7 @@ const BADGES = {
   cobros: ['NUEVO', '2026-10-09'], importar: ['NUEVO', '2026-10-09'], reglas: ['NUEVO', '2026-10-09'],
   repetir: ['NUEVO', '2026-10-09'], inversiones: ['MEJORADO', '2026-10-09'], grupos: ['NUEVO', '2026-10-10'], compartir: ['NUEVO', '2026-10-10'], ticket: ['NUEVO', '2026-10-10'], metas: ['MEJORADO', '2026-10-10'], patrimonio: ['NUEVO', '2026-10-10'],
   categorias: ['NUEVO', '2026-10-12'], fijo: ['NUEVO', '2026-10-12'], detalle: ['NUEVO', '2026-10-12'], oscuro: ['MEJORADO', '2026-10-12'],
-  papelera: ['NUEVO', '2026-10-14'], juntos: ['NUEVO', '2026-10-14'], metasH: ['NUEVO', '2026-10-13'], amigos: ['NUEVO', '2026-10-14'], hitos: ['NUEVO', '2026-10-13'],
+  papelera: ['NUEVO', '2026-10-14'], juntos: ['NUEVO', '2026-10-14'], aspecto: ['NUEVO', '2026-10-14'], metasH: ['NUEVO', '2026-10-13'], amigos: ['NUEVO', '2026-10-14'], hitos: ['NUEVO', '2026-10-13'],
   rentab: ['NUEVO', '2026-10-10'], mesames: ['NUEVO', '2026-10-10'], presup: ['MEJORADO', '2026-10-10'], anual: ['MEJORADO', '2026-10-10'],
 };
 function badgeActivo(k) {
@@ -5877,6 +5894,9 @@ const H = {
       else if (k === 'movimientos') H.goTab(['movimientos']);
       else if (k === 'rentab') { S.invModo = 'rentab'; lsSet('invModo', 'rentab'); verBadge('rentab'); H.irDinero(['inversiones']); }
       else if (k === 'presup') { verBadge('presup'); S.generalSub = 'mensual'; H.goTab(['inicio']); setTimeout(() => { const el = $('.budget-row'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 120); }
+      else if (k === 'juntos') { verBadge('juntos'); H.goTab(['juntos']); }
+      else if (k === 'aspecto') { verBadge('aspecto'); H.openAspecto([]); }
+      else if (k === 'papelera') H.openPapelera([]);
       else if (k === 'anual') { verBadge('anual'); H.goTab(['inicio']); H.setGeneralSub(['anual']); }
     }, 260);
   },
@@ -6117,7 +6137,7 @@ const H = {
     if (items.length !== (cfg()[key] || []).length) saveConfig({ [key]: items });
     closeSheet();
   },
-  openAspecto: () => { FORM = { kind: 'aspecto' }; TIPOS_CIFRA.forEach((t) => cargarFuente(t[0])); openSheet(aspectoHtml()); },
+  openAspecto: () => { verBadge('aspecto'); FORM = { kind: 'aspecto' }; TIPOS_CIFRA.forEach((t) => cargarFuente(t[0])); openSheet(aspectoHtml()); },
   setLook: ([v]) => { S.look = v === 'clasico' ? 'clasico' : 'nuevo'; lsSet('look', S.look); applyLook(true); sentir('toque'); refrescarAspecto(); render(); },
   setPaleta: ([id]) => { S.paleta = id; lsSet('paleta', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
   setTipo: ([id]) => { S.tipo = id; lsSet('tipo', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
