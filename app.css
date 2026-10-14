@@ -979,3 +979,46 @@ button.link::after { content: ''; position: absolute; inset: -10px -6px; }
 .pb-edit.sin { color: var(--text-faint); font-weight: 500; }
 
 .asig-todas{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px}.asig-todas small{color:var(--text-faint);font-size:12px}
+
+/* ===== Fase 2 · prueba de estructura (14/10) ===== */
+.estr-aviso { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; color: var(--text-muted); background: var(--accent-soft); border-radius: 10px; padding: 7px 12px; margin: 0 0 12px; }
+.estr-aviso b { color: var(--text); }
+.estr-aviso .link { font-size: 12.5px; font-weight: 700; color: var(--accent); background: none; border: none; cursor: pointer; padding: 0; }
+.estr-intro { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: -4px 0 12px; }
+.estr-opc { display: flex; flex-direction: column; gap: 4px; width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--paper-raised); border: 1.5px solid var(--line); border-radius: var(--radius-m); padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+.estr-opc b { font-size: 15px; }
+.estr-opc > span { font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+.estr-opc.on { border-color: var(--accent); background: var(--accent-soft); }
+.estr-ya { font-size: 11px; font-weight: 700; color: var(--accent); margin-left: 6px; text-transform: uppercase; letter-spacing: .04em; }
+.inicio-seg, .mov-vista { margin-bottom: 14px; }
+.card.aten { padding: 4px; margin-bottom: 10px; }
+.aten-fila { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: var(--text); background: none; border: none; border-radius: 10px; padding: 10px; cursor: pointer; }
+.aten-fila + .aten-fila { border-top: 1px solid var(--line); border-radius: 0; }
+.aten-fila > svg.i { font-size: 18px; flex: none; color: var(--accent); }
+.aten-fila.mal > svg.i { color: var(--expense); }
+.aten-fila.juntos > svg.i { color: var(--savings); }
+.aten-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.aten-t b { font-size: 14px; }
+.aten-t span { font-size: 12.5px; color: var(--text-muted); }
+.resumen-link { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--paper-raised); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 14px 16px; margin-top: 18px; cursor: pointer; }
+.resumen-link > svg.i { font-size: 20px; color: var(--accent); flex: none; }
+.resumen-link > span:nth-child(2) { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.resumen-link b { font-size: 14.5px; }
+.resumen-link > span > span { font-size: 12.5px; color: var(--text-muted); }
+.pat-mini { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 4px 10px; width: 100%; text-align: left; font: inherit; color: var(--text); background: var(--paper-raised); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 12px 16px; margin-bottom: 14px; cursor: pointer; }
+.pat-mini .l { font-size: 13.5px; font-weight: 600; color: var(--text-muted); }
+.pat-mini b { font-size: 17px; }
+.pat-mini .pat-barra { grid-column: 1 / -1; margin: 4px 0 0; }
+.juntos-cab { margin-bottom: 4px; }
+.juntos-acc { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.juntos-acc .btn { flex: 1; min-width: 140px; }
+.amigos-fila { display: flex; gap: 14px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; }
+.amigos-fila::-webkit-scrollbar { display: none; }
+.amigo-av { display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; font: inherit; color: var(--text); cursor: pointer; padding: 0; flex: none; min-width: 52px; }
+.amigo-av .avatar { width: 44px; height: 44px; font-size: 14px; }
+.amigo-av > span:last-child { font-size: 12px; color: var(--text-muted); max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.juntos-cab .comp-total.vacio { font-size: 17px; font-family: var(--font-ui); font-weight: 600; color: var(--text-muted) !important; }
+.juntos-acc .btn { white-space: nowrap; }
+.inicio-seg button { font-size: 12.5px; }
+.juntos-acc .btn { flex: 1 1 0; min-width: 0; padding: 10px 8px; font-size: 13.5px; justify-content: center; }
+.resumen-link + .resumen-link { margin-top: 8px; }
