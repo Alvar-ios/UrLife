@@ -1022,3 +1022,12 @@ button.link::after { content: ''; position: absolute; inset: -10px -6px; }
 .inicio-seg button { font-size: 12.5px; }
 .juntos-acc .btn { flex: 1 1 0; min-width: 0; padding: 10px 8px; font-size: 13.5px; justify-content: center; }
 .resumen-link + .resumen-link { margin-top: 8px; }
+
+/* iPhone/Android: un campo con letra menor de 16 px hace que el navegador amplíe la pantalla al tocarlo (Paloma, 14/10) */
+@media (pointer: coarse) {
+  input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea,
+  .config-list input, .tk-row input, .cat-std-row input.amt, .cat-std-row input.cn-in, .comp-row input.comp-val,
+  .field .regla-box input[type=text], .regla-box input[type=text], .imp-file select, .imp-sels select, .imp-map select { font-size: 16px !important; }
+  .tk-row input { padding: 9px 8px; }
+  .cat-std-row input.amt { width: 100px; }
+}
