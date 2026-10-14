@@ -13,8 +13,22 @@
 <title>Mis Finanzas y Tareas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css">
+<!-- Aspecto nuevo (Fase 3): solo actúa con <html data-look="nuevo">. Con «clásico» la app queda como antes. -->
+<link rel="stylesheet" href="look.css">
+<script>
+/* Antes de pintar nada: aspecto, paleta y tipografía de cifras elegidos en este dispositivo */
+(function () {
+  try {
+    var d = document.documentElement, g = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    var look = g('look') === 'clasico' ? 'clasico' : 'nuevo', tipo = g('tipo') || 'bricolage';
+    d.setAttribute('data-look', look); d.setAttribute('data-paleta', g('paleta') || 'violeta'); d.setAttribute('data-tipo', tipo);
+    var F = { space: 'Space+Grotesk:wght@500..700', outfit: 'Outfit:wght@500..700', nunito: 'Nunito:wght@600..900' };
+    if (look === 'nuevo' && F[tipo]) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + F[tipo] + '&display=swap'; document.head.appendChild(l); }
+  } catch (e) { /* sin almacenamiento: aspecto nuevo por defecto */ }
+})();
+</script>
 </head>
 <body>
 <div id="app"></div>

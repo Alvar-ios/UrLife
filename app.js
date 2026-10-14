@@ -53,6 +53,8 @@ const ICONS = {
   shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.9 7.5-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></svg>',
   paw: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5c1-2 2.2-3 3.5-3s2.5 1 3.5 3 1 4.5-1.5 4.5c-1 0-1.3-.6-2-.6s-1 .6-2 .6c-2.5 0-2.5-2.5-1.5-4.5z"/><circle cx="7" cy="9.5" r="1.6"/><circle cx="10.2" cy="6.3" r="1.6"/><circle cx="13.8" cy="6.3" r="1.6"/><circle cx="17" cy="9.5" r="1.6"/></svg>',
   repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V9a3 3 0 0 1 3-3h12"/><path d="m16 3 3 3-3 3"/><path d="M20 13v2a3 3 0 0 1-3 3H5"/><path d="m8 21-3-3 3-3"/></svg>',
+  palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3Z"/><circle cx="7.6" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.4" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.4" r="1.1" fill="currentColor" stroke="none"/></svg>',
+  sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7L19 16Z"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
 };
 function ic(name) {
@@ -131,7 +133,7 @@ function reducirPuntos(arr, max) {
 function revelaSvg(id, W, H, clave, prop) {
   const nueva = S[prop] !== clave; S[prop] = clave;
   return '<clipPath id="' + id + '"><rect x="-4" y="-10" height="' + (H + 20) + '" width="' + (nueva && !reduceMotion() ? 0 : W + 8) + '">' +
-    (nueva && !reduceMotion() ? '<animate attributeName="width" from="0" to="' + (W + 8) + '" dur="0.95s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".25 .8 .3 1"/>' : '') + '</rect></clipPath>';
+    (nueva && !reduceMotion() ? '<animate class="rv" attributeName="width" from="0" to="' + (W + 8) + '" dur="0.95s" begin="indefinite" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".25 .8 .3 1"/>' : '') + '</rect></clipPath>';
 }
 function degradado(id, color, op) {
   return '<linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:' + color + ';stop-opacity:' + op + '"/><stop offset="1" style="stop-color:' + color + ';stop-opacity:0"/></linearGradient>';
@@ -177,19 +179,60 @@ function toast(msg, opts) {
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   clearTimeout(toast._t);
   toast._t = setTimeout(() => el.classList.remove('show'), opts.deshacer ? 5000 : 2600);
-  vibrar(aviso ? [18, 50, 18] : 10);
+  sentir(opts.sens || (aviso ? 'aviso' : 'ok'));
 }
 /* ---- microinteracciones (Bloque 9C) ---- */
 function reduceMotion() { try { return !window.matchMedia || window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return true; } }
-function vibrar(p) { try { if (navigator.vibrate && !reduceMotion()) navigator.vibrate(p); } catch (e) { /* sin vibración */ } }
+/* ---- Sensaciones: vibración y sonido (se activan o no en Tú → Aspecto y sensaciones) ---- */
+function vibraOn() { return lsGet('vibra') !== '0'; }
+function sonidoOn() { return lsGet('sonido') !== '0'; }
+function vibrar(p) { try { if (vibraOn() && navigator.vibrate && !reduceMotion()) navigator.vibrate(p); } catch (e) { /* sin vibración */ } }
+// v: patrón de vibración; s: notas [frecuencia Hz, inicio s, duración s, volumen] (sonidos suaves, sintetizados: no hay archivos)
+const SENS = {
+  toque: { v: 6 }, tic: { v: 4 },
+  ok: { v: 10, s: [[659, 0, .1, .06], [880, .075, .17, .06]] },
+  aviso: { v: [18, 50, 18], s: [[311, 0, .11, .05], [233, .09, .2, .05]] },
+  borrar: { v: [10, 30, 10], s: [[440, 0, .07, .045], [294, .06, .14, .045]] },
+  hito: { v: [12, 40, 12, 40, 24], s: [[523, 0, .12, .07], [659, .09, .12, .07], [784, .18, .12, .07], [1047, .27, .38, .07]] },
+  paz: { v: [10, 60, 16], s: [[587, 0, .12, .06], [880, .1, .34, .06]] },
+};
+let _ac = null;
+function audioCtx() {
+  try { if (!_ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; _ac = new C(); } if (_ac.state === 'suspended') _ac.resume(); return _ac; } catch (e) { return null; }
+}
+function tono(ac, f, t0, dur, vol) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = 'sine'; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + dur + 0.03);
+}
+// iPhone: Safari no deja vibrar a las webs. Hay un truco (iOS 17.4+): al cambiar un interruptor del sistema suena un «toque» háptico.
+function esIOS() { const u = navigator.userAgent || ''; return /iP(hone|ad|od)/.test(u) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+function iosToque() {
+  try {
+    if (navigator.vibrate || !esIOS()) return;
+    let l = document.getElementById('haptico');
+    if (!l) { l = document.createElement('label'); l.id = 'haptico'; l.setAttribute('aria-hidden', 'true'); l.innerHTML = '<input type="checkbox" switch tabindex="-1">'; document.body.appendChild(l); }
+    l.click();
+  } catch (e) { /* sin háptico */ }
+}
+function sentir(k, forzar) {
+  const d = SENS[k]; if (!d) return;
+  try {
+    if (vibraOn() && (forzar || !reduceMotion())) { if (navigator.vibrate) navigator.vibrate(d.v); else iosToque(); }
+    if (sonidoOn() && d.s) { const ac = audioCtx(); if (ac) { const t = ac.currentTime + 0.01; d.s.forEach((n) => tono(ac, n[0], t + n[1], n[2], n[3])); } }
+  } catch (e) { /* sin sensaciones */ }
+}
 // Cifra principal de Inicio: rueda y cuenta desde el valor anterior al cambiar de mes o año
 function numDeTexto(t) { const n = parseFloat(String(t).replace(/[^\d,−-]/g, '').replace('−', '-').replace(',', '.')); return isFinite(n) ? n : null; }
 function animarHero() {
   const v = $('#content .hero-v'); if (!v) { S._heroPrev = null; return; }
   const nuevo = v.textContent, clave = S.generalSub + '|' + S.anioSel + '|' + S.mesSel, prev = S._heroPrev;
   S._heroPrev = { clave, txt: nuevo };
-  if (!prev || prev.clave === clave || reduceMotion()) return;
-  v.classList.add((S._heroDir || 1) < 0 ? 'rueda-abajo' : 'rueda-arriba');
+  if (!prev || reduceMotion()) return;
+  const mismo = prev.clave === clave;
+  if (mismo && prev.txt === nuevo) return;
+  if (!mismo) v.classList.add((S._heroDir || 1) < 0 ? 'rueda-abajo' : 'rueda-arriba');
   const de = numDeTexto(prev.txt), a = numDeTexto(nuevo); if (de == null || a == null || de === a) return;
   const t0 = performance.now(), dur = 560;
   const paso = (t) => { if (!v.isConnected) return; const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); v.textContent = k < 1 ? money(de + (a - de) * e) : nuevo; if (k < 1) requestAnimationFrame(paso); };
@@ -213,11 +256,71 @@ function animarSegmentados(root) {
     set(pos);
   });
 }
+/* ---- Animaciones que esperan a que las veas (barras, aros, gráficos y cifras) ----
+   Las barras de presupuesto, los aros de las metas o el gráfico del año no se animan al entrar en la pantalla sino cuando
+   aparecen de verdad en tu vista (si están más abajo, al llegar a ellas). Cada una se anima una vez por visita; si la app
+   se repinta por datos nuevos no se repiten. Sin IntersectionObserver o con «reducir movimiento» todo se ve ya. */
+const REV = [
+  ['.progress > div, .hero-bar i, .pat-barra i, .pb-f, .mb-f, .jb-bar i, .jb-trk i', 'va-bar'],
+  ['.pb-over, .pb-tick', 'va-fade'],
+  ['.anillo-v', 'va-ring'],
+  ['#donutWrap > svg', 'va-pop'],
+];
+let _io = null, _ioSvg = null, _vistosPag = '';
+const _vistos = Object.create(null), _contados = Object.create(null);
+function ioDisponible() { return typeof IntersectionObserver !== 'undefined' && !reduceMotion(); }
+function revelarAlVer(raiz, visitaNueva) {
+  if (_io) { _io.disconnect(); _io = null; }
+  if (!raiz || !ioDisponible()) return;
+  const pag = [S.tab, S.inicioVista, S.movVista, S.dineroSub, S.agendaSub].join('|');
+  if (visitaNueva || pag !== _vistosPag) { Object.keys(_vistos).forEach((k) => { delete _vistos[k]; }); _vistosPag = pag; }
+  const pend = [];
+  REV.forEach(([sel, cls], g) => raiz.querySelectorAll(sel).forEach((el, i) => {
+    const k = g + ':' + i;
+    el.classList.add(cls);
+    if (_vistos[k]) { el.classList.add('ya'); return; }
+    el.setAttribute('data-vak', k); pend.push(el);
+  }));
+  if (!pend.length) return;
+  _io = new IntersectionObserver((ents) => {
+    let n = 0;
+    ents.forEach((e) => { if (!e.isIntersecting) return; const el = e.target; _io.unobserve(el); _vistos[el.getAttribute('data-vak')] = 1; el.style.animationDelay = (n++ * 70) + 'ms'; el.classList.add('visto'); });
+  }, { threshold: 0.2, rootMargin: '0px 0px -90px 0px' });
+  pend.forEach((el) => _io.observe(el));
+}
+// Gráficos dibujados con SMIL: arrancan cuando el gráfico se ve
+function iniciarReveladas(raiz) {
+  if (_ioSvg) { _ioSvg.disconnect(); _ioSvg = null; }
+  const anims = raiz ? [...raiz.querySelectorAll('animate.rv')] : [];
+  if (!anims.length) return;
+  const arrancar = (a) => { try { if (typeof a.beginElement === 'function') a.beginElement(); } catch (e) { /* sin SMIL */ } };
+  if (typeof IntersectionObserver === 'undefined') { anims.forEach(arrancar); return; }
+  _ioSvg = new IntersectionObserver((ents) => { ents.forEach((e) => { if (!e.isIntersecting) return; _ioSvg.unobserve(e.target); (e.target._rv || []).forEach(arrancar); }); }, { threshold: 0.3, rootMargin: '0px 0px -90px 0px' });
+  anims.forEach((a) => { const sv = a.ownerSVGElement || a.closest('svg'); if (!sv) return arrancar(a); (sv._rv = sv._rv || []).push(a); _ioSvg.observe(sv); });
+}
+// Cifras grandes: cuentan hasta su valor la primera vez que las ves en la sesión
+function animarNumero(el, fin, txt) {
+  const t0 = performance.now(), dur = 950;
+  el.classList.remove('cuenta-espera');
+  const paso = (t) => { if (!el.isConnected) return; const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = k < 1 ? money(fin * e) : txt; if (k < 1) requestAnimationFrame(paso); };
+  requestAnimationFrame(paso);
+}
+function contarAlVer(raiz) {
+  if (!raiz || !ioDisponible()) return;
+  raiz.querySelectorAll('.hero-v, .pat-total').forEach((el, i) => {
+    const k = S.tab + '|' + (el.classList.contains('hero-v') ? 'h' : 'p') + i; if (_contados[k]) return;
+    const txt = el.textContent, fin = numDeTexto(txt);
+    if (fin == null || fin === 0 || money(fin) !== txt) { _contados[k] = 1; return; }
+    el.classList.add('cuenta-espera');
+    const io = new IntersectionObserver((ents) => { if (!ents.some((e) => e.isIntersecting)) return; io.disconnect(); if (_contados[k] || !el.isConnected) { el.classList.remove('cuenta-espera'); return; } _contados[k] = 1; animarNumero(el, fin, txt); }, { threshold: 0.5, rootMargin: '0px 0px -90px 0px' });
+    io.observe(el);
+  });
+}
 // Confeti al cumplir una meta (una vez por meta y dispositivo)
-function confeti() {
+function confeti(n, sens) {
   if (reduceMotion() || !document.body.animate) return;
-  const cols = ['#C97A2C', '#2F7A57', '#7A5AA8', '#3D6BA5', '#E7B577', '#E78B6B'], cx = window.innerWidth / 2, cy = Math.min(window.innerHeight * 0.4, 320);
-  for (let i = 0; i < 34; i++) {
+  const cols = S.look === 'nuevo' ? ['#6D5BF0', '#1FA67A', '#F29A2E', '#E86A9A', '#2E9BD6', '#FFD166'] : ['#C97A2C', '#2F7A57', '#7A5AA8', '#3D6BA5', '#E7B577', '#E78B6B'], cx = window.innerWidth / 2, cy = Math.min(window.innerHeight * 0.4, 320);
+  for (let i = 0; i < (n || 34); i++) {
     const p = document.createElement('i'); p.className = 'confeti';
     p.style.background = cols[i % cols.length]; p.style.left = cx + 'px'; p.style.top = cy + 'px';
     document.body.appendChild(p);
@@ -226,7 +329,7 @@ function confeti() {
       { duration: 1100 + Math.random() * 500, easing: 'cubic-bezier(.2,.8,.3,1)', fill: 'forwards' });
     anim.onfinish = () => p.remove();
   }
-  vibrar([12, 40, 12, 40, 24]);
+  if (sens !== null) sentir(sens || 'hito');
 }
 function celebrarMetas() {
   if (S.tab !== 'dinero' || !S.loaded.cfg || !S.db) return;
@@ -281,7 +384,7 @@ async function borrarMovConDeshacer(id) {
   const ok = await write(() => S.db.collection('movimientos').doc(id).delete());
   if (ok) papeleraAnadir('mov', id, copia);
   if (ok && (S.aportes || []).some((a) => a.movId === id)) sincronizarAporte({ id, tipo: m.tipo, metaId: null });
-  if (ok) toast('Movimiento eliminado', { deshacer: async () => { if (await write(() => S.db.collection('movimientos').doc(id).set(copia))) { papeleraQuitar('mov', id); toast('Recuperado'); if (copia.metaId) sincronizarAporte(Object.assign({ id }, copia)); } } });
+  if (ok) toast('Movimiento eliminado', { sens: 'borrar', deshacer: async () => { if (await write(() => S.db.collection('movimientos').doc(id).set(copia))) { papeleraQuitar('mov', id); toast('Recuperado'); if (copia.metaId) sincronizarAporte(Object.assign({ id }, copia)); } } });
 }
 /* ---- Papelera: lo que borras (movimientos y tareas) se guarda 15 días y se puede recuperar ---- */
 const PAPELERA_DIAS = 15, PAPELERA_MAX = 60;
@@ -353,6 +456,7 @@ const S = {
   movFiltroTipo: 'Todos', movPeriodo: mesHoyClave(), movQuery: '', movLimit: 120,
   invModo: lsGet('invModo') === 'rentab' ? 'rentab' : 'valor',
   theme: lsGet('theme') || 'auto',
+  look: lsGet('look') === 'clasico' ? 'clasico' : 'nuevo', paleta: lsGet('paleta') || 'violeta', tipo: lsGet('tipo') || 'bricolage',
   loadingMsg: 'Cargando tus datos…',
   onboarding: null, _onboardPending: false,
 };
@@ -364,6 +468,46 @@ function applyTheme() {
   if (S.theme === 'light' || S.theme === 'dark') { root.setAttribute('data-theme', S.theme); _themeSetByApp = true; }
   else if (_themeSetByApp) { root.removeAttribute('data-theme'); _themeSetByApp = false; }
 }
+
+/* ---- Aspecto (Fase 3): estilo nuevo/clásico, paleta y tipografía de las cifras. Se guarda en este dispositivo. ---- */
+const PALETAS = [['violeta', 'Violeta', '#6D3FE0', '#A98BFF'], ['cobalto', 'Cobalto', '#1F63E0', '#6FA2FF'], ['turquesa', 'Turquesa', '#07797C', '#34D1C8'], ['frambuesa', 'Frambuesa', '#CC2065', '#FF6B9F'], ['esmeralda', 'Esmeralda', '#0A7A42', '#3EE08C']];
+const TIPOS_CIFRA = [
+  ['bricolage', 'Con carácter', "'Bricolage Grotesque', sans-serif", 'Bricolage+Grotesque:opsz,wght@12..96,500..800'],
+  ['fraunces', 'Clásica', "'Fraunces', serif", null],
+  ['space', 'Técnica', "'Space Grotesk', sans-serif", 'Space+Grotesk:wght@500..700'],
+  ['outfit', 'Geométrica', "'Outfit', sans-serif", 'Outfit:wght@500..700'],
+  ['nunito', 'Redondeada', "'Nunito', sans-serif", 'Nunito:wght@600..900'],
+];
+function cargarFuente(id) {
+  const t = TIPOS_CIFRA.find((x) => x[0] === id);
+  if (!t || !t[3] || id === 'bricolage' || document.querySelector('link[data-fuente="' + id + '"]')) return;
+  const l = document.createElement('link'); l.rel = 'stylesheet'; l.setAttribute('data-fuente', id); l.href = 'https://fonts.googleapis.com/css2?family=' + t[3] + '&display=swap'; document.head.appendChild(l);
+}
+function applyLook(suave) {
+  const r = document.documentElement;
+  if (!PALETAS.some((x) => x[0] === S.paleta)) S.paleta = 'violeta';
+  if (!TIPOS_CIFRA.some((x) => x[0] === S.tipo)) S.tipo = 'bricolage';
+  if (suave && !reduceMotion()) { r.classList.add('cambiando'); clearTimeout(applyLook._t); applyLook._t = setTimeout(() => r.classList.remove('cambiando'), 600); }
+  r.setAttribute('data-look', S.look); r.setAttribute('data-paleta', S.paleta); r.setAttribute('data-tipo', S.tipo);
+  if (S.look === 'nuevo') cargarFuente(S.tipo);
+  try { document.querySelectorAll('meta[name="theme-color"]').forEach((m) => { const osc = /dark/.test(m.getAttribute('media') || ''); m.setAttribute('content', S.look === 'nuevo' ? (osc ? '#0A0A0C' : '#F5F5F2') : (osc ? '#14172A' : '#F1EFE8')); }); } catch (e) { /* sin meta */ }
+}
+function aspectoHtml() {
+  const nuevo = S.look === 'nuevo', v = vibraOn(), so = sonidoOn(), sw = (k, on) => '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + (k === 'vibra' ? 'Vibración' : 'Sonido') + '" ' + act('setSens', k) + '></button>';
+  const pal = PALETAS.map(([id, n, l, d]) => '<button type="button" class="asp-sw' + (S.paleta === id ? ' on' : '') + '" ' + act('setPaleta', id) + '><i style="background:linear-gradient(135deg,' + l + ' 50%,' + d + ' 50%)">' + ic('check') + '</i>' + n + '</button>').join('');
+  const tip = TIPOS_CIFRA.map(([id, n, f]) => '<button type="button" class="asp-tp' + (S.tipo === id ? ' on' : '') + '" ' + act('setTipo', id) + '><span class="n" style="--asp-f:' + f + '">' + money(1234.56) + '</span><span class="l">' + n + '</span></button>').join('');
+  return '<div class="handle"></div><h2>Aspecto y sensaciones</h2>' +
+    '<div class="asp-sec"><div class="section-title" style="margin-top:0;">Estilo</div><div class="segmented">' + [['nuevo', 'Nuevo'], ['clasico', 'Clásico']].map(([id, l]) => '<button class="' + (S.look === id ? 'active' : '') + '" ' + act('setLook', id) + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="rec-hint">«Clásico» es la app tal y como estaba antes. Puedes cambiar cuando quieras: no se toca ningún dato.</div></div>' +
+    '<div class="asp-sec asp-solo-nuevo"><div class="section-title">Color</div><div class="asp-pal">' + pal + '</div></div>' +
+    '<div class="asp-sec asp-solo-nuevo"><div class="section-title">Cifras y titulares</div><div class="asp-tipos">' + tip + '</div></div>' +
+    '<div class="asp-sec"><div class="section-title" style="margin-top:0;">Sensaciones</div>' +
+    '<div class="asp-fila"><div class="t">Vibración<span>Un toque suave al guardar, completar o conseguir una meta.</span></div><button type="button" class="link" ' + act('probarSens', 'ok') + '>Probar</button>' + sw('vibra', v) + '</div>' +
+    '<div class="asp-fila"><div class="t">Sonido<span>Sonidos cortos y suaves. Se pueden apagar aquí en cualquier momento.</span></div><button type="button" class="link" ' + act('probarSens', 'hito') + '>Probar</button>' + sw('sonido', so) + '</div>' +
+    (typeof navigator !== 'undefined' && !navigator.vibrate ? '<div class="asp-nota">Este dispositivo no deja que las páginas web vibren (pasa en iPhone). Probamos un truco de iOS 17.4 o más que puede funcionar o no. En Android, y en la app instalada, sí funciona.</div>' : '') + '</div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+function refrescarAspecto() { if (FORM && FORM.kind === 'aspecto' && $('#sheetBackdrop')) { const sc = $('#sheetBackdrop .sheet'), y = sc ? sc.scrollTop : 0; updateSheet(aspectoHtml()); const sh = $('#sheetBackdrop .sheet'); if (sh) sh.scrollTop = y; } }
 
 const DEFAULT_CONFIG = {
   categoriasGasto: [], facturas: [], ahorro: [], deudas: [], ingresos: [],
@@ -734,8 +878,10 @@ function render() {
   if (resumen && !resAnual) drawDonut();
   if (resumen && resAnual) drawTrend();
   if (S.tab === 'dinero' && dineroSub() === 'inversiones') bindInvChart();
+  const _ent = S._entrando;
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
-  limitarBadges(c); animarHero(); animarSegmentados(c); celebrarMetas();
+  if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
+  limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
 }
 
@@ -797,6 +943,7 @@ function heroHtml() {
     dispTxt = actual ? 'Te queda este mes' : 'Te quedó en ' + MESES[S.mesSel - 1].toLowerCase();
   }
   const disp = ing - gas - aho - deu, base = Math.max(ing, gas + aho + deu, 1);
+  if (disp < 0) { const hoyMes = anual ? S.anioSel === d.getFullYear() : S.anioSel === d.getFullYear() && S.mesSel === d.getMonth() + 1; dispTxt = hoyMes ? (anual ? 'Este año vas por encima de tus ingresos' : 'Este mes vas por encima de tus ingresos') : (anual ? 'En ' + S.anioSel + ' gastaste más de lo ingresado' : 'En ' + MESES[S.mesSel - 1].toLowerCase() + ' gastaste más de lo ingresado'); }
   const w = (v) => Math.max(0, Math.min(100, v / base * 100)).toFixed(1) + '%';
   const tile = (l, v, cls, a) => '<button class="hero-tile tappable" ' + a + '><span class="l">' + l + '</span><b class="tnum ' + cls + '">' + moneyShort(v) + '</b></button>';
   return '<section class="hero" aria-label="Resumen">' +
@@ -914,7 +1061,7 @@ function renderMovimientos() {
       (S.movCat ? '<button class="chip active" ' + act('quitarMovCat') + '>' + escapeHtml(S.movCat) + ' ✕</button>' : '') + '</div>' : '') +
     movAddCtxHtml() +
     subFiltroHtml() +
-    '<div class="field" style="margin-bottom:10px;"><input type="search" id="movSearch" placeholder="Buscar categoría, nota o método de pago" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></div>' +
+    '<div class="field" style="margin-bottom:10px;"><input type="search" id="movSearch" placeholder="Buscar en esta lista" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></div>' +
     '<div class="pill-row">' + [['Todos', 'Todos'], ['Ingreso', 'Ingresos'], ['_gastos', 'Gastos'], ['Factura', 'Fijos'], ['Ahorro', 'Apartado'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
     '<div id="movList" class="' + (dir && !reduceMotion() ? (dir > 0 ? 'desde-der' : 'desde-izq') : '') + '">' + renderMovList() + '</div>';
 }
@@ -964,7 +1111,7 @@ function renderMovRow(m) {
 }
 function renderMovRowBase(m) {
   const eff = effect(m.importe, m.tipo), c = m.comp;
-  return '<div class="row" ' + act('openMovForm', m.id) + '>' +
+  return '<div class="row' + (S._aterriza && S._aterriza === m.id ? ' aterriza' : '') + '" ' + act('openMovForm', m.id) + '>' +
     movIcHtml(m) +
     '<div class="main"><div class="ttl">' + escapeHtml(m.categoria || 'Sin categoría') + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
     '<div class="meta">' + (c ? escapeHtml([m.subcategoria, m.descripcion].filter(Boolean).concat([compQuienTxt(c)]).join(' · ')) : escapeHtml([m.subcategoria, m.descripcion, m.tipo === 'Factura' ? 'Fijo' : m.tipo === 'Gasto' && (m.subcategoria || m.descripcion || m.metodoPago) ? '' : tipoTxt(m.tipo), m.metodoPago].filter(Boolean).join(' · '))) + '</div></div>' +
@@ -1232,6 +1379,7 @@ async function saveMov() {
     if (ok) {
       if (reglaNueva && guardarRegla(reglaNueva, categoria, FORM.tipo)) toast('Guardado. Regla creada: «' + normDesc(reglaNueva) + '» → ' + categoria);
       else toast(FORM.compQuitado ? 'Ya no está compartido: cuenta entero como tuyo' : FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido');
+      S._aterriza = movId || null;
       terminarForm();
     }
   } finally { FORM.guardando = false; }
@@ -1476,8 +1624,8 @@ async function cargarGrupos() {
   } catch (e) { console.error(e); S.grupos = S.grupos || []; }
 }
 function iniciales(n) { return String(n || '?').trim().split(/\s+/).map((x) => x.charAt(0)).join('').slice(0, 2).toUpperCase(); }
-const COLORES_PERSONA = ['#B8752A', '#2F6F52', '#7A5AA8', '#A8452F', '#3B6EA8', '#8A6D1F'];
-function avatarHtml(m, i) { return '<span class="avatar" style="background:' + COLORES_PERSONA[i % COLORES_PERSONA.length] + '" title="' + escapeHtml(m.nombre) + '">' + escapeHtml(iniciales(m.nombre)) + '</span>'; }
+const COLORES_PERSONA = ['#B8752A', '#2F6F52', '#7A5AA8', '#A8452F', '#3B6EA8', '#8A6D1F'], COLORES_PERSONA_NUEVO = ['#6D5BF0', '#1FA67A', '#E86A9A', '#F29A2E', '#2E9BD6', '#C25BD8'];
+function avatarHtml(m, i) { const CP = S.look === 'nuevo' ? COLORES_PERSONA_NUEVO : COLORES_PERSONA; return '<span class="avatar" style="background:' + CP[i % CP.length] + '" title="' + escapeHtml(m.nombre) + '">' + escapeHtml(iniciales(m.nombre)) + '</span>'; }
 function gruposListaHtml() {
   const gs = (S.grupos || []).filter((g) => g.tipo === 'grupo');
   const ps = (S.grupos || []).filter((g) => g.tipo === 'directo');
@@ -2358,10 +2506,23 @@ function tkCuadreHtml(F) {
     '<div class="tk-acciones">' + (F.foto && F.modelo === 'rapido' ? '<button type="button" class="btn sm accent" ' + act('tkPreciso') + '>Leer con más precisión</button>' : '') +
     '<button type="button" class="btn sm ghost" ' + act('tkTotalSuma') + '>Usar la suma como total</button></div>';
 }
+function colorPersona(i) { const CP = S.look === 'nuevo' ? COLORES_PERSONA_NUEVO : COLORES_PERSONA; return CP[i % CP.length]; }
 function tkResumenHtml(F) {
   if (!F.rep || !F.rep.on || !F.rep.dest) return '';
   const tot = tkReparto(F), ms = miembrosDeDestino(F.rep.dest), yo = miUid();
-  return '<div class="comp-lbl">A cada uno le toca</div>' + ms.map((m) => '<div class="comp-row"><span class="n">' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</span><b class="tnum">' + money((tot[m.uid] || 0) / 100) + '</b></div>').join('');
+  return '<div class="comp-lbl">A cada uno le toca</div>' + ms.map((m, i) => '<div class="comp-row"><i class="dot" style="background:' + colorPersona(i) + '"></i><span class="n">' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</span><b class="tnum">' + money((tot[m.uid] || 0) / 100) + '</b></div>').join('');
+}
+// Barra del reparto: un tramo de color por persona que se redimensiona en vivo al marcar quién toma cada artículo
+function tkBarraSegmentos(F) { const tot = tkReparto(F), ms = miembrosDeDestino(F.rep.dest); return ms.map((m, i) => '<i style="flex-grow:' + ((tot[m.uid] || 0) / 100).toFixed(2) + ';background:' + colorPersona(i) + '"></i>').join(''); }
+function tkBarraHtml(F) {
+  if (!F.rep || !F.rep.on || !F.rep.dest) return '';
+  return '<div class="rep-barra" id="tkBarra" aria-hidden="true" data-ids="' + escapeHtml(miembrosDeDestino(F.rep.dest).map((m) => m.uid).join(',')) + '">' + tkBarraSegmentos(F) + '</div>';
+}
+function tkBarraActualizar(F) {
+  const w = $('#tkBarra'); if (!w || !F.rep || !F.rep.dest) return;
+  const ms = miembrosDeDestino(F.rep.dest), ids = ms.map((m) => m.uid).join(',');
+  if (w.getAttribute('data-ids') !== ids || w.children.length !== ms.length) { w.setAttribute('data-ids', ids); w.innerHTML = tkBarraSegmentos(F); return; }
+  const tot = tkReparto(F); ms.forEach((m, i) => { w.children[i].style.flexGrow = ((tot[m.uid] || 0) / 100).toFixed(2); });
 }
 function ticketHtml() {
   const F = FORM, yo = miUid();
@@ -2396,7 +2557,7 @@ function ticketHtml() {
         '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (rep.dest === d.k ? 'active' : '') + '" ' + act('tkDest', d.k) + '>' + (d.grupo ? '👥 ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('t') + '</div>' + invInlineHtml('t') +
         (rep.dest ? '<div class="comp-lbl">Pagó</div><div class="chips">' + ms.map((m) => '<button type="button" class="chip ' + (rep.pagador === m.uid ? 'active' : '') + '" ' + act('tkPagador', m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>' +
           '<div class="rec-hint" style="margin-top:8px;">En cada artículo, marca quién lo toma (lo que marquéis varios se divide a partes iguales). Si hay varias unidades, pon cuántas toma cada uno.</div>' +
-          '<div id="tkResumen">' + tkResumenHtml(F) + '</div>' : '<div class="rec-hint" style="margin-top:6px;">Elige con quién compartes la cuenta.</div>') + '</div>') + '</div>' : '') +
+          tkBarraHtml(F) + '<div id="tkResumen">' + tkResumenHtml(F) + '</div>' : '<div class="rec-hint" style="margin-top:6px;">Elige con quién compartes la cuenta.</div>') + '</div>') + '</div>' : '') +
     (F.limite ? '<div class="rec-hint" style="margin-top:10px;">Lecturas este mes: ' + F.usados + ' de ' + F.limite + '. La foto no se ha guardado.</div>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('tkContinuar') + '>Continuar</button></div>';
 }
@@ -2404,6 +2565,7 @@ function tkRefrescarParcial() {
   const F = FORM; if (!F || F.kind !== 'ticket' || !F.t) return;
   const c = $('#tkCuadre'); if (c) c.innerHTML = tkCuadreHtml(F);
   const r = $('#tkResumen'); if (r) r.innerHTML = tkResumenHtml(F);
+  tkBarraActualizar(F);
 }
 // Pasa lo revisado al formulario de siempre (ahí se elige categoría y se guarda, compartido o no).
 function tkContinuar() {
@@ -2592,7 +2754,8 @@ function renderTu() {
       it('openReglas', [], 'tag', 'Reglas de categorías', badge('reglas'), 'automatico'),
       it('exportBackup', [], 'download', 'Copia de seguridad (.json)', '', 'exportar backup')]) +
     grupo('Tareas', [lista('categoriasTareas', '')]) +
-    grupo('App', ['<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
+    grupo('App', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', '<span class="menu-extra">' + (S.look === 'nuevo' ? (PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1] : 'Clásico') + '</span>', 'aspecto color paleta tipografia cifras fuente vibracion sonido clasico nuevo estilo'),
+      '<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
       '<div class="segmented tema-seg">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
       it('openMoneda', [], 'chart', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
       mfaDisponible() ? it('openSeguridad', [], 'alert', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
@@ -2667,15 +2830,41 @@ function patrimonioMiniHtml() {
   if (!p.inv && !p.ahorro && !p.deudas && !p.nCuentas) return '';
   return '<button class="pat-mini tappable" ' + act('patToggle') + '><span class="l">Patrimonio' + badge('patrimonio') + '</span><b class="tnum">' + money(p.total) + '</b><span class="chev-s">' + ic('chevR') + '</span>' + patBarraHtml(p) + '</button>';
 }
+/* ---- Juntos: balance de «quién debe a quién», por persona y sumando todos tus grupos ---- */
+function juntosPersonas() {
+  const yo = miUid(), mapa = {}, gids = [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id));
+  gids.forEach((gid) => deudasDe(gid).forEach((d) => {
+    if (d.de !== yo && d.a !== yo) return;
+    const otro = d.de === yo ? d.a : d.de, x = mapa[otro] || (mapa[otro] = { uid: otro, nombre: nombreDe(gid, otro), neto: 0, deudas: [] });
+    x.neto = r2(x.neto + (d.de === yo ? -d.importe : d.importe)); x.deudas.push({ gid, de: d.de, a: d.a, importe: d.importe });
+  }));
+  return Object.keys(mapa).map((k) => mapa[k]).filter((x) => Math.abs(x.neto) >= 0.005).sort((a, b) => Math.abs(b.neto) - Math.abs(a.neto));
+}
+function juntosBalanzaHtml() {
+  const hayComp = [...new Set((S.compartidos || []).map((c) => c.grupoId))].some((id) => grupoDe(id));
+  const acciones = '<div class="juntos-acc">' + (compartidosDisponible() ? '<button class="btn accent" ' + act('crearIr', 'compartido') + '>' + ic('plus') + ' Compartir un gasto</button>' : '') +
+    '<button class="btn ghost" ' + act('juntosInvitar') + '>' + ic('users') + ' Invitar</button></div>';
+  if (!hayComp) return '<div class="card juntos-cab jb"><div class="jb-v comp-total tnum vacio" style="color:var(--text-muted)">Aún no compartes gastos</div><div class="rec-hint" style="margin:6px 0 0;">Divide una cena, un viaje o la casa con quien quieras; aquí verás quién debe a quién.</div>' + acciones + '</div>';
+  const ps = juntosPersonas(), yo = miUid();
+  const debes = r2(ps.filter((x) => x.neto < 0).reduce((a, x) => a - x.neto, 0)), teDeben = r2(ps.filter((x) => x.neto > 0).reduce((a, x) => a + x.neto, 0)), tot = r2(teDeben - debes);
+  if (!ps.length) return '<div class="card juntos-cab jb"><div class="jb-paz"><span class="jb-ic">' + ic('checkCircle') + '</span><div><div class="jb-v comp-total tnum" style="color:var(--income)">Estás en paz con todos</div><div class="rec-hint" style="margin:2px 0 0;">Nadie debe nada a nadie.</div></div></div>' + acciones + '</div>';
+  const base = debes + teDeben, max = Math.max(...ps.map((x) => Math.abs(x.neto)));
+  const barra = '<div class="jb-bar" aria-hidden="true">' + (debes ? '<i class="de va-bar" style="width:' + (debes / base * 100).toFixed(1) + '%"></i>' : '') + (teDeben ? '<i class="te va-bar" style="width:' + (teDeben / base * 100).toFixed(1) + '%"></i>' : '') + '</div>';
+  const leg = '<div class="jb-leg"><span><i class="dot" style="background:var(--expense)"></i>Debes <b class="tnum">' + money(debes) + '</b></span><span>Te deben <b class="tnum">' + money(teDeben) + '</b><i class="dot" style="background:var(--income);margin:0 0 0 6px"></i></span></div>';
+  const filas = ps.map((x, i) => {
+    const te = x.neto > 0, w = (Math.abs(x.neto) / max * 50).toFixed(1);
+    return '<button type="button" class="jb-p" ' + act('juntosPersona', x.uid) + '>' + avatarHtml({ nombre: x.nombre }, i + 2) +
+      '<div class="jb-n">' + escapeHtml(x.nombre) + '<span>' + (te ? 'te debe' : 'le debes') + '</span></div><b class="jb-m tnum" style="color:' + (te ? 'var(--income)' : 'var(--expense)') + '">' + money(Math.abs(x.neto)) + '</b>' +
+      '<div class="jb-trk" aria-hidden="true"><i class="' + (te ? 'te' : 'de') + ' va-bar" style="width:' + w + '%"></i></div></button>';
+  }).join('');
+  return '<div class="card juntos-cab jb"><div class="jb-top"><div><div class="jb-k">Balance con tus personas</div><div class="jb-v comp-total tnum" style="color:' + saldoColor(tot) + '">' + (Math.abs(tot) < 0.005 ? 'Estás en paz con todos' : tot > 0 ? 'Te deben ' + money(tot) : 'Debes ' + money(-tot)) + '</div></div></div>' +
+    barra + leg + '<div class="jb-gente">' + filas + '</div>' + acciones + '</div>';
+}
 /* ---- Juntos: todo lo compartido en un sitio (pestaña en B, apartado de Dinero en A) ---- */
 function renderJuntos() {
   if (!gruposDisponible()) return '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Compartir no está disponible aquí.</div>';
-  const ids = [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id));
-  const tot = r2(ids.reduce((a, id) => a + miSaldo(id), 0)), amg = amigos();
-  const cab = '<div class="card juntos-cab"><div class="comp-total tnum' + (ids.length ? '' : ' vacio') + '" style="color:' + saldoColor(ids.length ? tot : 0) + '">' +
-    (!ids.length ? 'Aún no compartes gastos' : Math.abs(tot) < 0.005 ? 'Estás en paz con todos' : tot > 0 ? 'Te deben ' + money(tot) : 'Debes ' + money(-tot)) + '</div>' +
-    '<div class="juntos-acc">' + (compartidosDisponible() ? '<button class="btn accent" ' + act('crearIr', 'compartido') + '>' + ic('plus') + ' Compartir un gasto</button>' : '') +
-    '<button class="btn ghost" ' + act('juntosInvitar') + '>' + ic('users') + ' Invitar</button></div></div>';
+  const amg = amigos();
+  const cab = juntosBalanzaHtml();
   const amigosH = amg.length ? '<div class="section-title">Amigos' + badge('amigos') + '</div><div class="amigos-fila">' +
     amg.map((a, i) => '<button type="button" class="amigo-av" ' + act('amigoVer', a.uid) + '>' + avatarHtml(a, i + 2) + '<span>' + escapeHtml(String(a.nombre || '').split(' ')[0]) + '</span></button>').join('') + '</div>' : '';
   const rec = movsEfectivos().filter((m) => m.comp).sort(cmpMov).slice(0, 5);
@@ -2705,7 +2894,7 @@ const BUSCAR_ACCIONES = [
   ['Importar extracto o Excel', 'banco csv', 'impAbrir', []], ['Reglas de categorías', 'automatico', 'openReglas', []],
   ['Calendario', 'agenda mes semana', 'irAgenda', ['calendario']], ['Tareas', 'pendientes', 'irAgenda', ['tareas']],
   ['Análisis del año', 'anual resumen', 'verAnio', []], ['Copia de seguridad', 'exportar backup json', 'exportBackup', []],
-  ['Tema oscuro o claro', 'apariencia', 'goTab', ['tu']], ['Moneda', 'euro dolar', 'openMoneda', []], ['Qué hay de nuevo', 'novedades parche', 'verNovedades', ['1']],
+  ['Tema oscuro o claro', 'apariencia', 'goTab', ['tu']], ['Aspecto y sensaciones', 'color paleta tipografia cifras vibracion sonido clasico nuevo estilo', 'openAspecto', []], ['Moneda', 'euro dolar', 'openMoneda', []], ['Qué hay de nuevo', 'novedades parche', 'verNovedades', ['1']],
 ];
 function buscarHtml() {
   return '<div class="handle"></div><div class="field buscar-campo"><input type="search" id="qBuscar" placeholder="Buscar: Mercadona, luz, 42,50, metas…" aria-label="Buscar en la app" autocomplete="off" ' + onInput('buscarGlobal') + '></div>' +
@@ -3785,7 +3974,9 @@ async function doDeleteGolf() {
 }
 
 /* ---- gráficos SVG propios ---- */
-const PALETTE = ['#B8752A', '#A8452F', '#2F6F52', '#7A5AA8', '#3D6BA5', '#C7823C', '#8C5A3C', '#5A8C6B', '#B0568C', '#5A7A8C', '#9C8C3C', '#7A3C5A'];
+const PALETTE_CLASICA = ['#B8752A', '#A8452F', '#2F6F52', '#7A5AA8', '#3D6BA5', '#C7823C', '#8C5A3C', '#5A8C6B', '#B0568C', '#5A7A8C', '#9C8C3C', '#7A3C5A'];
+const PALETTE_NUEVA = ['#6D5BF0', '#F29A2E', '#1FA67A', '#E5534B', '#2E9BD6', '#C25BD8', '#E6B422', '#E86A9A', '#4FB3A9', '#8A7BE8', '#F26B38', '#7C8794'];
+const colGraf = (i) => { const P = S.look === 'nuevo' ? PALETTE_NUEVA : PALETTE_CLASICA; return P[i % P.length]; };
 function drawDonut() {
   const wrap = $('#donutWrap'); if (!wrap) return;
   const k = kpisMes(S.anioSel, S.mesSel);
@@ -3798,7 +3989,7 @@ function drawDonut() {
     const sweep = Math.min(359.99, val / total * 360);
     const a1 = angle * Math.PI / 180, a2 = (angle + sweep) * Math.PI / 180;
     const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
-    paths += '<path d="M' + cx + ',' + cy + ' L' + x1.toFixed(2) + ',' + y1.toFixed(2) + ' A' + r + ',' + r + ' 0 ' + (sweep > 180 ? 1 : 0) + ' 1 ' + x2.toFixed(2) + ',' + y2.toFixed(2) + ' Z" fill="' + PALETTE[i % PALETTE.length] + '"><title>' + escapeHtml(name) + '</title></path>';
+    paths += '<path d="M' + cx + ',' + cy + ' L' + x1.toFixed(2) + ',' + y1.toFixed(2) + ' A' + r + ',' + r + ' 0 ' + (sweep > 180 ? 1 : 0) + ' 1 ' + x2.toFixed(2) + ',' + y2.toFixed(2) + ' Z" fill="' + colGraf(i) + '"><title>' + escapeHtml(name) + '</title></path>';
     angle += sweep;
   });
   wrap.innerHTML = '<svg viewBox="0 0 200 190" width="100%" height="100%" role="img" aria-label="Reparto del gasto por categoría">' + paths +
@@ -3806,7 +3997,7 @@ function drawDonut() {
     '<text x="' + cx + '" y="' + (cy - 3) + '" text-anchor="middle" font-size="14" font-weight="700" style="fill:var(--text)" font-family="Work Sans, sans-serif">' + moneyShort(total) + '</text>' +
     '<text x="' + cx + '" y="' + (cy + 13) + '" text-anchor="middle" font-size="9.5" style="fill:var(--text-faint)" font-family="Work Sans, sans-serif">gastado</text></svg>';
   const leg = $('#donutLegend');
-  if (leg) leg.innerHTML = entries.slice(0, 9).map(([name, val], i) => '<span class="tappable" ' + act('irMovs', '_gastos', mesClave(S.anioSel, S.mesSel), name) + '><i style="background:' + PALETTE[i % PALETTE.length] + '"></i>' + escapeHtml(name) + ' · ' + Math.round(val / total * 100) + '%</span>').join('');
+  if (leg) leg.innerHTML = entries.slice(0, 9).map(([name, val], i) => '<span class="tappable" ' + act('irMovs', '_gastos', mesClave(S.anioSel, S.mesSel), name) + '><i style="background:' + colGraf(i) + '"></i>' + escapeHtml(name) + ' · ' + Math.round(val / total * 100) + '%</span>').join('');
 }
 function mesesEmpezados(anio) { const d = new Date(), y = d.getFullYear(); return anio < y ? 12 : anio > y ? 0 : d.getMonth() + 1; }
 function drawTrend() {
@@ -5336,7 +5527,7 @@ const H = {
   movMore: () => { S.movLimit += 150; const l = $('#movList'); if (l) l.innerHTML = renderMovList(); },
   openMovForm: ([id], el) => { if (el && el.parentNode && el.parentNode.classList && el.parentNode.classList.contains('abierta')) { cerrarSwipe(el.parentNode); return; } S._volverGrupo = null; openMovForm(id || null); },
   movDuplicar: ([id]) => { const m = S.movimientos.find((x) => x.id === id); $$('.swipe.abierta').forEach(cerrarSwipe); if (!m) return; S._volverGrupo = null; openMovForm(null, { tipo: m.tipo, importe: m.importe, categoria: m.categoria, fecha: todayISO(), descripcion: m.descripcion }); toast('Copia lista: revisa y guarda'); },
-  movBorrar: ([id]) => { vibrar([10, 30, 10]); borrarMovConDeshacer(id); },
+  movBorrar: ([id]) => { borrarMovConDeshacer(id); },
   pickFijo: ([v]) => {
     if (!esGastoForm()) return;
     FORM.tipo = v === '1' ? 'Factura' : 'Gasto'; if (v === '1') verBadge('fijo');
@@ -5494,6 +5685,11 @@ const H = {
   compAbrir: ([id, gid]) => { S._volverGrupo = gid || null; openCompForm(id); },
   compNuevoEn: ([gid]) => { S._volverGrupo = gid; openMovForm(null, { tipo: 'Gasto', comp: 'g:' + gid }); },
   compVerTodos: ([gid]) => { FORM.verTodos = true; updateSheet(grupoHtml(gid)); },
+  juntosPersona: ([uid]) => {
+    const x = juntosPersonas().find((p) => p.uid === uid); if (!x) return;
+    if (x.deudas.length === 1) { const d = x.deudas[0]; FORM = { kind: 'saldar', gid: d.gid, de: d.de, a: d.a, max: r2(d.importe), rapido: true }; openSheet(saldarHtml(FORM)); }
+    else abrirGrupo(x.deudas.slice().sort((a, b) => b.importe - a.importe)[0].gid);
+  },
   saldarAbrir: ([gid, de, a, imp]) => { FORM = { kind: 'saldar', gid, de, a, max: r2(Number(imp)) }; updateSheet(saldarHtml(FORM)); },
   saldarGuardar: async () => {
     const f = FORM, imp = r2(numCampo(($('#sImporte') || {}).value)), fecha = ($('#sFecha') || {}).value || todayISO();
@@ -5502,7 +5698,10 @@ const H = {
     if (f.guardando) return; f.guardando = true;
     try {
       const c = await S.db.compartidos.crear({ grupoId: f.gid, fecha, tipo: 'Liquidación', categoria: 'Liquidación', descripcion: '', importe: imp, pagadoPor: f.de, reparto: { [f.a]: imp }, modo: 'importe' });
-      compAplicarLocal(c); toast('Pago registrado'); render(); abrirGrupo(f.gid);
+      compAplicarLocal(c); render();
+      const yo = miUid(), quedan = deudasDe(f.gid).some((d) => d.de === yo || d.a === yo);
+      if (!quedan) { toast('Pago registrado: ¡cuentas a cero!', { sens: 'paz' }); confeti(26, null); } else toast('Pago registrado');
+      if (f.rapido) closeSheet(); else abrirGrupo(f.gid);
     } catch (e) { console.error(e); toast(errGrupo(e)); } finally { f.guardando = false; }
   },
   liqEliminar: ([id], el) => confirmDelete(el, async () => {
@@ -5547,8 +5746,8 @@ const H = {
     if (!el || !t || t.estado === 'Completado' || reduceMotion()) return toggleTarea(id);
     el.classList.add('marcando'); el.innerHTML = ic('check');
     const row = el.closest('.row'); if (row) row.classList.add('hecha-anim');
-    vibrar([8, 40, 14]);
-    setTimeout(() => toggleTarea(id), 430);
+    if (S.look === 'nuevo' && row) setTimeout(() => { if (row.isConnected) row.classList.add('sale'); }, 380);
+    setTimeout(() => toggleTarea(id), S.look === 'nuevo' ? 800 : 430);
   },
   openTareaForm: ([id]) => openTareaForm(id || null),
   tNombreInput: () => { if (FORM.kind === 'tarea' && !$('#tCategoria').value) tCatPintar(); },
@@ -5918,6 +6117,12 @@ const H = {
     if (items.length !== (cfg()[key] || []).length) saveConfig({ [key]: items });
     closeSheet();
   },
+  openAspecto: () => { FORM = { kind: 'aspecto' }; TIPOS_CIFRA.forEach((t) => cargarFuente(t[0])); openSheet(aspectoHtml()); },
+  setLook: ([v]) => { S.look = v === 'clasico' ? 'clasico' : 'nuevo'; lsSet('look', S.look); applyLook(true); sentir('toque'); refrescarAspecto(); render(); },
+  setPaleta: ([id]) => { S.paleta = id; lsSet('paleta', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
+  setTipo: ([id]) => { S.tipo = id; lsSet('tipo', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
+  setSens: ([k]) => { const clave = k === 'vibra' ? 'vibra' : 'sonido', on = lsGet(clave) !== '0'; lsSet(clave, on ? '0' : '1'); if (!on) sentir('ok', true); refrescarAspecto(); },
+  probarSens: ([k]) => sentir(SENS[k] ? k : 'ok', true),
   setTheme: ([t]) => { verBadge('oscuro'); S.theme = t; lsSet('theme', t); applyTheme(); render(); },
   exportBackup: () => exportBackup(),
   // onboarding
@@ -6045,7 +6250,7 @@ function dispatch(kind, e) {
   const parts = el.getAttribute('data-' + kind).split('|');
   const fn = H[parts[0]];
   if (kind === 'click' && parts[0] === 'openMovForm' && Date.now() < (S._swipeHasta || 0)) return; // venía de deslizar
-  if (kind === 'click' && VIBRA.has(parts[0])) vibrar(6);
+  if (kind === 'click' && VIBRA.has(parts[0])) sentir('toque');
   if (fn) fn(parts.slice(1).map(decodeURIComponent), el, e);
 }
 document.addEventListener('click', (e) => {
@@ -6104,7 +6309,9 @@ function ajustarAlTeclado() {
   else { bd.style.top = ''; bd.style.height = ''; bd.style.bottom = ''; }
 }
 async function main() {
-  applyTheme();
+  applyTheme(); applyLook();
+  window.addEventListener('scroll', () => { const t = $('.topbar'); if (t) t.classList.toggle('scrolled', window.scrollY > 4); }, { passive: true });
+  ['pointerdown', 'touchend', 'keydown'].forEach((ev) => document.addEventListener(ev, () => { if (sonidoOn()) audioCtx(); }, { passive: true, once: true })); // el navegador solo deja sonar tras un toque
   if (window.visualViewport) { window.visualViewport.addEventListener('resize', ajustarAlTeclado); window.visualViewport.addEventListener('scroll', ajustarAlTeclado); }
   vigilarVersion();
   capturarEnlaceUnirse();
