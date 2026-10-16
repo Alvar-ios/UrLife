@@ -55,6 +55,7 @@ const ICONS = {
   repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11V9a3 3 0 0 1 3-3h12"/><path d="m16 3 3 3-3 3"/><path d="M20 13v2a3 3 0 0 1-3 3H5"/><path d="m8 21-3-3 3-3"/></svg>',
   palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3Z"/><circle cx="7.6" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.4" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.4" r="1.1" fill="currentColor" stroke="none"/></svg>',
   sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7L19 16Z"/></svg>',
+  swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m7 4-4 4 4 4"/><path d="M3 8h14"/><path d="m17 12 4 4-4 4"/><path d="M21 16H7"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
 };
 function ic(name) {
@@ -379,12 +380,12 @@ document.addEventListener('touchend', () => {
   S._swipeHasta = Date.now() + 400;
 });
 async function borrarMovConDeshacer(id) {
-  const m = S.movimientos.find((x) => x.id === id); if (!m) return;
+  const m = S.movimientos.find((x) => x.id === id) || (S.traspasos || []).find((x) => x.id === id); if (!m) return;
   const copia = stripId(m);
   const ok = await write(() => S.db.collection('movimientos').doc(id).delete());
   if (ok) papeleraAnadir('mov', id, copia);
   if (ok && (S.aportes || []).some((a) => a.movId === id)) sincronizarAporte({ id, tipo: m.tipo, metaId: null });
-  if (ok) toast('Movimiento eliminado', { sens: 'borrar', deshacer: async () => { if (await write(() => S.db.collection('movimientos').doc(id).set(copia))) { papeleraQuitar('mov', id); toast('Recuperado'); if (copia.metaId) sincronizarAporte(Object.assign({ id }, copia)); } } });
+  if (ok) toast(esTraspaso(m) ? 'Traspaso eliminado' : 'Movimiento eliminado', { sens: 'borrar', deshacer: async () => { if (await write(() => S.db.collection('movimientos').doc(id).set(copia))) { papeleraQuitar('mov', id); toast('Recuperado'); if (copia.metaId) sincronizarAporte(Object.assign({ id }, copia)); } } });
 }
 /* ---- Papelera: lo que borras (movimientos y tareas) se guarda 15 días y se puede recuperar ---- */
 const PAPELERA_DIAS = 15, PAPELERA_MAX = 60;
@@ -446,7 +447,7 @@ const onChange = (n, ...a) => attr('change', n, ...a);
 const now0 = new Date();
 const S = {
   appStarted: false, db: null, user: null,
-  movimientos: [], tareas: [], golf: [], config: null,
+  movimientos: [], traspasos: [], tareas: [], golf: [], config: null,
   loaded: { mov: false, tar: false, golf: false, cfg: false },
   tab: 'inicio',
   analisisSub: 'general', generalSub: 'mensual', inicioSub: 'dashboard', dineroSub: 'metas', agendaSub: 'tareas',
@@ -714,7 +715,9 @@ function normMov(m) {
   const r = catNorm(m.tipo, m.categoria, m.subcategoria);
   return r.categoria === m.categoria && (r.subcategoria || null) === (m.subcategoria || null) ? m : Object.assign({}, m, r);
 }
-function aplicarMovs() { S.movimientos = (S._movsRaw || []).map(normMov); }
+// Los traspasos entre cuentas van aparte: no son gasto ni ingreso, así ninguna suma los ve
+function esTraspaso(m) { return !!m && m.tipo === 'Traspaso'; }
+function aplicarMovs() { const raw = S._movsRaw || []; S.traspasos = raw.filter(esTraspaso); S.movimientos = raw.filter((m) => !esTraspaso(m)).map(normMov); }
 const tipoTxt = (t) => (t === 'Factura' ? 'Gasto fijo' : t === 'Ahorro' ? 'Apartar' : t);
 // Subcategorías que ya has usado en una categoría (y los recibos de esa categoría si es un gasto fijo)
 function subcatsDe(cat, fijo) {
@@ -1073,11 +1076,23 @@ function movAddCtxHtml() {
   const txt = { Gasto: cat ? 'Apuntar un gasto en ' + cat : 'Apuntar un gasto', Ingreso: 'Apuntar un ingreso', Ahorro: 'Apartar dinero', Factura: 'Apuntar un gasto fijo', 'Inversión': 'Apuntar una inversión', Deuda: 'Apuntar un pago de deuda' }[t];
   return '<button type="button" class="btn sm accent mov-add-ctx" ' + act('movAddCtx', t, cat) + '>' + ic('plus') + ' ' + escapeHtml(txt) + '</button>';
 }
+// Traspasos en la lista: solo en «Todos» (sin categoría), en gris y sin sumar al balance
+function traspasosFiltrados() {
+  if (S.movFiltroTipo !== 'Todos' || S.movCat) return [];
+  const q = S.movQuery.trim().toLowerCase();
+  return (S.traspasos || []).filter(inPeriodo).filter((t) => !q || [t.descripcion, 'traspaso', nombreCuenta(t.cuentaId), nombreCuenta(t.cuentaDestinoId)].some((x) => (x || '').toLowerCase().includes(q)));
+}
+function renderTraspasoRow(t) {
+  return '<div class="swipe"><div class="swipe-acc uno"><button class="sw-del" ' + act('movBorrar', t.id) + '>' + ic('trash') + '<span>Borrar</span></button></div>' +
+    '<div class="row traspaso' + (S._aterriza && S._aterriza === t.id ? ' aterriza' : '') + '" ' + act('openTraspaso', t.id) + '><span class="mov-ic t-tras" aria-hidden="true">' + ic('swap') + '</span>' +
+    '<div class="main"><div class="ttl">' + escapeHtml(nombreCuenta(t.cuentaId) + ' → ' + nombreCuenta(t.cuentaDestinoId)) + '</div><div class="meta">' + escapeHtml(['Traspaso', t.descripcion].filter(Boolean).join(' · ')) + '</div></div>' +
+    '<div class="amt tnum tras">' + money(t.importe) + '</div></div></div>';
+}
 function renderMovList() {
-  const movs = movsFiltrados();
+  const movs = movsFiltrados(), tras = traspasosFiltrados();
   const per = movPerNorm(S.movPeriodo), acotado = per !== 'todo';
   const enTodo = acotado && S.movQuery.trim() ? '<button class="link buscar-todo" ' + act('setMovModo', 'todo') + '>' + ic('search') + ' Buscar en todo el historial</button>' : '';
-  if (!movs.length) {
+  if (!movs.length && !tras.length) {
     const donde = /^m:/.test(per) ? ' en ' + periodoTxt(per).toLowerCase() : /^y:/.test(per) ? ' en ' + per.slice(2) : ' aquí';
     return '<div class="empty"><div class="big">' + ic('wallet') + '</div><b>Sin movimientos' + escapeHtml(donde) + '</b><div style="margin-top:4px;">' + (!S.movimientos.length ? 'Apunta el primero con el botón + o haz una foto a un ticket.' : acotado ? 'Cambia de mes con las flechas o mira todo tu historial.' : 'Cambia el filtro o añade uno nuevo.') + '</div>' +
       (acotado && S.movimientos.length ? '<div class="cta"><button class="btn ghost" ' + act('setMovModo', 'todo') + '>Ver todo el historial</button></div>' : '') +
@@ -1086,21 +1101,22 @@ function renderMovList() {
   const net = movs.reduce((a, m) => a + (esApartado(m.tipo) ? 0 : effect(m.importe, m.tipo)), 0);
   const apartadoTot = movs.reduce((a, m) => a + (esApartado(m.tipo) ? num(m.importe) : 0), 0);
   const soloApartado = movs.every((m) => esApartado(m.tipo));
-  const shown = movs.slice(0, S.movLimit);
-  let html = '<div class="summary-line">' + movs.length + (movs.length === 1 ? ' movimiento' : ' movimientos') +
+  const lista = tras.length ? movs.concat(tras).sort(cmpMov) : movs;
+  const shown = lista.slice(0, S.movLimit);
+  let html = '<div class="summary-line">' + movs.length + (movs.length === 1 ? ' movimiento' : ' movimientos') + (tras.length ? ' · ' + tras.length + (tras.length === 1 ? ' traspaso' : ' traspasos') : '') +
     (soloApartado ? '' : ' · balance ' + (net >= 0 ? '+' : '−') + fmtM(Math.abs(net)) + ' ' + sym()) +
     (apartadoTot ? ' · apartado e invertido ' + fmtM(apartadoTot) + ' ' + sym() : '') + '</div>' + enTodo;
   let last = null;
   const totDia = {}, apDia = {};
-  shown.forEach((m) => { if (esApartado(m.tipo)) apDia[m.fecha] = (apDia[m.fecha] || 0) + num(m.importe); else totDia[m.fecha] = (totDia[m.fecha] || 0) + effect(m.importe, m.tipo); });
-  const totDiaHtml = (f) => (f in totDia ? '<span class="tnum ' + (totDia[f] >= 0 ? 'pos' : 'neg') + '">' + (totDia[f] >= 0 ? '+' : '−') + fmtM(Math.abs(totDia[f])) + ' ' + sym() + '</span>'
+  shown.forEach((m) => { if (esTraspaso(m)) return; if (esApartado(m.tipo)) apDia[m.fecha] = (apDia[m.fecha] || 0) + num(m.importe); else totDia[m.fecha] = (totDia[m.fecha] || 0) + effect(m.importe, m.tipo); });
+  const totDiaHtml = (f) => (!(f in totDia) && !(f in apDia) ? '' : f in totDia ? '<span class="tnum ' + (totDia[f] >= 0 ? 'pos' : 'neg') + '">' + (totDia[f] >= 0 ? '+' : '−') + fmtM(Math.abs(totDia[f])) + ' ' + sym() + '</span>'
     : '<span class="tnum sav">→ ' + fmtM(apDia[f] || 0) + ' ' + sym() + '</span>');
   shown.forEach((m) => {
     if (m.fecha !== last) { if (last !== null) html += '</div>'; html += '<div class="date-sep"><span>' + fmtDateGroup(m.fecha) + '</span>' + totDiaHtml(m.fecha) + '</div><div class="list">'; last = m.fecha; }
-    html += renderMovRow(m);
+    html += esTraspaso(m) ? renderTraspasoRow(m) : renderMovRow(m);
   });
   if (last !== null) html += '</div>';
-  if (movs.length > shown.length) html += '<div style="margin-top:14px;"><button class="btn ghost block" ' + act('movMore') + '>Mostrar más (' + (movs.length - shown.length) + ')</button></div>';
+  if (lista.length > shown.length) html += '<div style="margin-top:14px;"><button class="btn ghost block" ' + act('movMore') + '>Mostrar más (' + (lista.length - shown.length) + ')</button></div>';
   return html;
 }
 function renderMovRow(m) {
@@ -1266,6 +1282,7 @@ function refrescarCuentaField() { const f = $('#cuentaField'); if (f) f.innerHTM
 function proponerCuenta(cat) { if (!FORM || FORM.id || FORM.cuentaTocada) return; const id = cuentaRecordada(cat); if (id !== FORM.cuenta) { FORM.cuenta = id; refrescarCuentaField(); } }
 function openMovForm(id, pre) {
   if (id && String(id).indexOf('c:') === 0) return openCompForm(String(id).slice(2));
+  if (id && (S.traspasos || []).some((t) => t.id === id)) return openTraspasoForm(id);
   const mio = id ? S.movimientos.find((m) => m.id === id) : null;
   const comp = pre && pre.compId ? compPorId(pre.compId) : null;
   if (mio && mio.compartidoId && !comp && compPorId(mio.compartidoId)) return openCompForm(mio.compartidoId);
@@ -2895,6 +2912,7 @@ function crearHtml() {
     '<div class="crear-grid">' +
     op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
     (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') +
+    (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') +
     op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Gasto fijo', 'k-factura') +
     op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
@@ -3477,14 +3495,88 @@ function cuentaPrincipal() { const cs = cuentasCfg(); return cs.find((c) => c.pr
 function hayVariasCuentas() { return cuentasCfg().length >= 2; }
 // última cuenta usada con esa categoría (o la principal)
 function cuentaRecordada(cat) { const id = (cfg().cuentaPorCat || {})[normName(cat || '')]; if (cuentaPorId(id)) return id; const pc = cuentaPrincipal(); return pc ? pc.id : null; }
+/* Saldo calculado: el saldo que pusiste (en su fecha) más lo que entra y menos lo que sale de esa cuenta después.
+   Cuenta lo apuntado con fecha posterior, o del mismo día pero apuntado después de poner el saldo. */
+function posteriorA(m, c) { const f = m.fecha || ''; return !!c.fecha && (f > c.fecha || (f === c.fecha && c.ts != null && num(m.creadoEn) > c.ts)); }
+function saldoCuenta(c) {
+  if (!c || c.saldo == null || !isFinite(Number(c.saldo))) return null;
+  const pc = cuentaPrincipal(), ids = new Set(cuentasCfg().map((x) => x.id)), esPrincipal = !!pc && pc.id === c.id;
+  let s = num(c.saldo);
+  S.movimientos.forEach((m) => {
+    const mia = m.cuentaId && ids.has(m.cuentaId) ? m.cuentaId === c.id : esPrincipal; // sin cuenta (o de una cuenta quitada) = la principal
+    if (mia && posteriorA(m, c)) s += num(m.importe) * (TIPO_SIGNO[m.tipo] || 0);
+  });
+  (S.traspasos || []).forEach((t) => { if (!posteriorA(t, c)) return; if (t.cuentaId === c.id) s -= num(t.importe); if (t.cuentaDestinoId === c.id) s += num(t.importe); });
+  return Math.round(s * 100) / 100;
+}
+function fechaLarga(iso) { return fmtDateShort(iso) + ' ' + iso.slice(0, 4); }
+function cuentaFechaTxt(c) {
+  if (c.cuadre && c.cuadre.fecha === c.fecha) return 'Cuadrado el ' + fechaLarga(c.cuadre.fecha);
+  return 'Calculado desde el saldo del ' + fechaLarga(c.fecha);
+}
+/* «Cuadrar»: escribes lo que dice el banco y la app enseña la diferencia; al guardar, el saldo vuelve a contar desde hoy */
+function cuadrarDifHtml(c, banco) {
+  const calc = saldoCuenta(c);
+  if (!isFinite(banco)) return 'La app calcula <b class="tnum">' + money(calc) + '</b>.';
+  const dif = Math.round((banco - calc) * 100) / 100;
+  if (!dif) return '<span class="cuadra-ok">Cuadra: la app y el banco dicen lo mismo.</span>';
+  return 'La app calcula <b class="tnum">' + money(calc) + '</b>. Diferencia: <b class="tnum ' + (dif > 0 ? 'pos' : 'neg') + '">' + (dif > 0 ? '+' : '−') + money(Math.abs(dif)) + '</b>.' +
+    '<div class="rec-hint">Si falta algún movimiento, apúntalo antes y vuelve a cuadrar. Si no, al guardar la diferencia se queda como ajuste (no cuenta como gasto ni como ingreso).</div>';
+}
+function cuadrarHtml(i) {
+  const c = (cfg().cuentas || [])[i] || {};
+  return '<div class="handle"></div><h2>Cuadrar ' + escapeHtml(c.nombre || 'cuenta') + '</h2>' +
+    '<div class="field"><label>¿Cuánto dice el banco hoy?</label><input id="fBanco" class="importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" ' + onInput('cuadrarInput') + '></div>' +
+    '<div id="cuadrarDif" class="cuadrar-dif">' + cuadrarDifHtml(c, NaN) + '</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('openCuentas') + '>Cancelar</button><button class="btn accent block" ' + act('cuadrarOk') + '>Guardar</button></div>';
+}
+/* ---- traspaso entre cuentas: no es gasto ni ingreso ---- */
+function nombreCuenta(id) { const c = cuentaPorId(id); return c ? c.nombre : 'Cuenta quitada'; }
+function trasChipsHtml(campo) {
+  return '<div class="chips" id="tras-' + campo + '">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (FORM[campo] === c.id ? ' active' : '') + '" ' + act('pickTrasCuenta', campo, c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div>';
+}
+function openTraspasoForm(id, pre) {
+  const t = id ? (S.traspasos || []).find((x) => x.id === id) : null, pc = cuentaPrincipal();
+  pre = pre || {};
+  const desde = t ? t.cuentaId : (pre.desde || (pc && pc.id));
+  FORM = { kind: 'traspaso', id: t ? t.id : null, desde, a: t ? t.cuentaDestinoId : (pre.a || (cuentasCfg().find((c) => c.id !== desde) || {}).id) };
+  const h = '<div class="handle"></div><h2>' + (t ? 'Editar traspaso' : 'Traspaso entre cuentas') + '</h2>' +
+    '<div class="rec-hint" style="margin:-6px 0 12px;">Pasar dinero de una cuenta tuya a otra (también sacar del cajero). No es gasto ni ingreso: no cambia «Te queda este mes».</div>' +
+    '<div class="field"><label>Importe (' + sym() + ')</label><input id="fImporte" class="importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (t ? t.importe : '') + '"></div>' +
+    '<div class="field"><label>Desde</label>' + trasChipsHtml('desde') + '</div>' +
+    '<div class="field"><label>A</label>' + trasChipsHtml('a') + '</div>' +
+    '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (t ? t.fecha : todayISO()) + '"></div>' +
+    '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="p. ej. Para el alquiler" value="' + escapeHtml(t ? t.descripcion || '' : '') + '"></div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTraspaso') + '>Guardar</button></div>' +
+    (t ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTraspaso') + '>' + ic('trash') + ' Eliminar traspaso</button>' : '');
+  if ($('#sheetBackdrop')) updateSheet(h); else openSheet(h);
+  if (!t) setTimeout(() => { const el = $('#fImporte'); if (el) el.focus(); }, 80);
+}
+async function saveTraspaso() {
+  if (!FORM || FORM.kind !== 'traspaso' || FORM.guardando) return;
+  const importe = parseFloat($('#fImporte').value), fecha = $('#fFecha').value;
+  if (!isFinite(importe) || importe <= 0) { marcarCampo('#fImporte'); return toast('Pon un importe válido'); }
+  if (!cuentaPorId(FORM.desde) || !cuentaPorId(FORM.a)) return toast('Elige las dos cuentas');
+  if (FORM.desde === FORM.a) return toast('Elige dos cuentas distintas');
+  if (!fecha) return toast('Elige una fecha');
+  const ex = FORM.id ? (S.traspasos || []).find((x) => x.id === FORM.id) : null;
+  const data = Object.assign(ex ? stripId(ex) : { creadoEn: Date.now() }, { tipo: 'Traspaso', categoria: 'Traspaso', importe, fecha, cuentaId: FORM.desde, cuentaDestinoId: FORM.a, descripcion: $('#fDesc').value.trim() });
+  FORM.guardando = true;
+  try {
+    let movId = FORM.id;
+    const ok = await write(async () => { if (FORM.id) return S.db.collection('movimientos').doc(FORM.id).set(data); const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || movId; return r0; });
+    if (ok) { toast(FORM.id ? 'Traspaso actualizado' : 'Traspaso apuntado'); S._aterriza = movId || null; terminarForm(); }
+  } finally { if (FORM) FORM.guardando = false; }
+}
 function cuentasHtml() {
   const cs = cfg().cuentas || [], varias = cs.filter((c) => c && c.nombre).length >= 2, pc = cuentaPrincipal();
   return '<div class="handle"></div><h2>Cuentas y saldos</h2>' +
-    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Pon cuánto tienes ahora en cada cuenta del banco. Se suma a tu patrimonio. Actualízalo de vez en cuando (más adelante podrá venir solo del banco).</div>' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Pon cuánto tienes hoy en cada cuenta. Desde ahí la app suma y resta los movimientos de esa cuenta. De vez en cuando, toca «Cuadrar» y escribe lo que dice el banco.</div>' +
     '<div class="card config-list">' + (cs.length ? cs.map((c, i) => '<div class="cuenta-ed"><div class="row2"><span class="dot" style="background:' + colorCuenta(c) + '"></span><input value="' + escapeHtml(c.nombre || '') + '" placeholder="Cuenta (p. ej. Santander)" ' + onChange('cuentaCampo', i, 'nombre') + '>' +
-      '<input class="amt" type="number" step="0.01" inputmode="decimal" placeholder="Saldo" value="' + (c.saldo == null ? '' : escapeHtml(c.saldo)) + '" ' + onChange('cuentaCampo', i, 'saldo') + '>' +
+      (saldoCuenta(c) == null ? '<input class="amt" type="number" step="0.01" inputmode="decimal" placeholder="Saldo" value="" ' + onChange('cuentaCampo', i, 'saldo') + '>'
+        : '<b class="cuenta-saldo tnum">' + money(saldoCuenta(c)) + '</b>') +
       '<button class="rm" aria-label="Quitar" ' + act('cuentaQuitar', i) + '>' + ic('close') + '</button></div>' +
-      (c.fecha ? '<div class="cuenta-fecha">Actualizado el ' + fmtDateShort(c.fecha) + ' ' + c.fecha.slice(0, 4) + '</div>' : '') +
+      (saldoCuenta(c) != null ? '<div class="cuenta-fecha">' + cuentaFechaTxt(c) + ' <button type="button" class="link" ' + act('cuadrarAbrir', i) + '>Cuadrar</button></div>' : '') +
       '<div class="cuenta-ops"><select aria-label="Tipo de cuenta" ' + onChange('cuentaCampo', i, 'tipo') + '>' + TIPOS_CUENTA.map(([k, l]) => '<option value="' + k + '"' + (tipoCuenta(c) === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
       '<span class="cuenta-colores">' + COLORES_CUENTA.map((col) => '<button type="button" class="cuenta-color' + (colorCuenta(c) === col ? ' on' : '') + '" style="background:' + col + '" aria-label="Color" ' + act('cuentaColor', i, col) + '></button>').join('') + '</span></div>' +
       '<div class="cuenta-ops">' + (varias && c.nombre ? '<button type="button" class="chip' + (pc && pc.id === c.id ? ' active' : '') + '" ' + act('cuentaPrincipal', i) + '>' + (pc && pc.id === c.id ? 'Principal' : 'Hacer principal') + '</button>' : '') +
@@ -5388,7 +5480,7 @@ function renderMas() {
     '<div class="section-title">Cuenta</div><div class="card menu"><button class="menu-item" ' + act('doLogout') + '><span class="ic">' + ic('close') + '</span>Cerrar sesión</button></div>';
 }
 function exportBackup() {
-  const payload = { exportadoEl: new Date().toISOString(), movimientos: S.movimientos, tareas: S.tareas, golf: S.golf, config: S.config, compartidos: S.compartidos || [], objetivosCompartidos: S.objetivos || [] };
+  const payload = { exportadoEl: new Date().toISOString(), movimientos: S.movimientos.concat(S.traspasos || []), tareas: S.tareas, golf: S.golf, config: S.config, compartidos: S.compartidos || [], objetivosCompartidos: S.objetivos || [] };
   try {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -5535,6 +5627,7 @@ const H = {
     else if (k === 'ahorro') openMovForm(null, { tipo: 'Ahorro' });
     else if (k === 'inversion') openMovForm(null, { tipo: 'Inversión' });
     else if (k === 'deuda') openMovForm(null, { tipo: 'Deuda' });
+    else if (k === 'traspaso') openTraspasoForm(null);
     else if (k === 'compartido') { const d = destinoPorDefecto(); openMovForm(null, d ? { tipo: 'Gasto', comp: d, compArriba: true } : { tipo: 'Gasto', compArriba: true }); if (!d) H.compOn([]); }
     else if (k === 'tarea') openTareaForm();
     else if (k === 'importar') H.impAbrir([]);
@@ -5628,6 +5721,10 @@ const H = {
   },
   onCatInput: (_a, el) => { if (FORM) FORM.catAuto = false; proponerCuenta(el.value.trim()); refrescarReglaBox(); refrescarCatAviso(); clearTimeout(S._subT); S._subT = setTimeout(refrescarSub, 300); $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === el.value.trim())); },
   saveMov: () => saveMov(),
+  openTraspaso: ([id]) => { S._volverGrupo = null; openTraspasoForm(id); },
+  pickTrasCuenta: ([campo, id]) => { if (!FORM || FORM.kind !== 'traspaso') return; FORM[campo] = id; $$('#tras-' + campo + ' .chip').forEach((b) => b.classList.toggle('active', b.getAttribute('data-click') === 'pickTrasCuenta|' + campo + '|' + encodeURIComponent(id))); },
+  saveTraspaso: () => saveTraspaso(),
+  deleteTraspaso: (_a, el) => confirmDelete(el, async () => { const id = FORM.id; closeSheet(); await borrarMovConDeshacer(id); }),
   pickCuenta: ([id]) => { if (!FORM) return; FORM.cuenta = id; FORM.cuentaTocada = true; $$('#cuentaChips .chip').forEach((b) => b.classList.toggle('active', b.getAttribute('data-click') === 'pickCuenta|' + encodeURIComponent(id))); },
   deleteMov: (_a, el) => confirmDelete(el, doDeleteMov),
   // tickets
@@ -6022,7 +6119,7 @@ const H = {
   },
   cuentaCampo: ([i, f], el) => {
     const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {});
-    if (f === 'saldo') { const n = parseFloat(el.value); c.saldo = el.value === '' || !isFinite(n) ? null : n; c.fecha = todayISO(); }
+    if (f === 'saldo') { const n = parseFloat(el.value); c.saldo = el.value === '' || !isFinite(n) ? null : n; c.fecha = todayISO(); c.ts = Date.now(); }
     else if (f === 'tipo') c.tipo = el.value;
     else c.nombre = el.value.trim();
     cs[Number(i)] = c; saveConfig({ cuentas: cs }); if (f !== 'saldo' && f !== 'nombre') updateSheet(cuentasHtml()); render();
@@ -6030,6 +6127,19 @@ const H = {
   cuentaColor: ([i, col]) => { const cs = (cfg().cuentas || []).slice(); cs[Number(i)] = Object.assign({}, cs[Number(i)] || {}, { color: col }); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
   cuentaPrincipal: ([i]) => { const cs = (cfg().cuentas || []).map((c, j) => Object.assign({}, c, { principal: j === Number(i) })); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
   cuentaTengo: ([i]) => { const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {}); c.enTengo = !cuentaEnTengo(c); cs[Number(i)] = c; saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
+  cuadrarAbrir: ([i]) => { FORM = { kind: 'cuadrar', i: Number(i) }; updateSheet(cuadrarHtml(Number(i))); setTimeout(() => { const el = $('#fBanco'); if (el) el.focus(); }, 60); },
+  cuadrarInput: (_a, el) => { const box = $('#cuadrarDif'); if (box && FORM) box.innerHTML = cuadrarDifHtml((cfg().cuentas || [])[FORM.i] || {}, el.value === '' ? NaN : parseFloat(el.value)); },
+  cuadrarOk: () => {
+    if (!FORM || FORM.kind !== 'cuadrar') return;
+    const banco = parseFloat(($('#fBanco') || {}).value);
+    if (!isFinite(banco)) { marcarCampo('#fBanco'); return toast('Escribe lo que dice el banco'); }
+    const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[FORM.i] || {}), calc = saldoCuenta(c), hoy = todayISO();
+    const dif = calc == null ? 0 : Math.round((banco - calc) * 100) / 100;
+    Object.assign(c, { saldo: banco, fecha: hoy, ts: Date.now(), cuadre: { fecha: hoy, dif } });
+    cs[FORM.i] = c; saveConfig({ cuentas: cs }); sentir('ok');
+    toast(dif ? 'Cuadrado. Ajuste de ' + (dif > 0 ? '+' : '−') + money(Math.abs(dif)) : 'Cuadrado: todo coincide');
+    H.openCuentas([]); render();
+  },
   cuentasListo: () => { const cs = (cfg().cuentas || []).filter((c) => c && (c.nombre || c.saldo != null)).map((c) => Object.assign({}, c, c.nombre ? {} : { nombre: 'Cuenta' }, c.id ? {} : { id: nuevoIdMeta() })); saveConfig({ cuentas: cs }); closeSheet(); render(); },
   openGrupos: () => { verBadge('grupos'); FORM = { kind: 'grupos' }; if ($('#sheetBackdrop')) updateSheet(gruposListaHtml()); else openSheet(gruposListaHtml()); cargarGrupos().then(() => { if (FORM && FORM.kind === 'grupos') updateSheet(gruposListaHtml()); render(); }); },
   grupoNuevo: () => { FORM = { kind: 'grupoNuevo' }; updateSheet(grupoNuevoHtml()); setTimeout(() => { const el = $('#gNombre'); if (el) el.focus(); }, 60); },
@@ -6333,7 +6443,7 @@ async function enterApp(session) {
   S.user = session.user;
   S.db = window.Data;
   S.appStarted = true; S._inicioApp = Date.now(); S._novRevisado = false;
-  S.movimientos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S.objetivos = null; S._gruposVistos = {};
+  S.movimientos = []; S.traspasos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S.objetivos = null; S._gruposVistos = {};
   S.loaded = { mov: false, tar: false, golf: false, cfg: false };
   renderShell();
   $('#content').innerHTML = loadingHtml();
@@ -6392,6 +6502,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio };
+window.__APP__ = { form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta };
 if (!window.__NO_AUTOSTART__) main();
 })();
