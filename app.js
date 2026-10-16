@@ -1255,6 +1255,15 @@ function refrescarCatAviso() {
     : (esCatGasto(v) ? '«' + escapeHtml(v) + '» es una categoría personalizada tuya.' : '«' + escapeHtml(v) + '» será una categoría personalizada nueva.') + ' Es posible que otras personas no la tengan y no podrás compartir gastos con ella. Si encaja en una estándar, mejor usa esa y apunta esto como detalle.') + '</span></div>';
 }
 function catLabel(tipo) { return tipo === 'Inversión' ? 'Activo <span class="hint">· ej. VWCE, S&amp;P 500 ETF</span>' : 'Categoría'; }
+// «Desde la cuenta» / «A la cuenta»: solo con 2 o más cuentas (los compartidos, más adelante)
+function cuentaFieldHtml() {
+  if (!FORM || !hayVariasCuentas() || (FORM.comp && FORM.comp.on)) return '';
+  return '<div class="field"><label id="cuentaLabel">' + (FORM.tipo === 'Ingreso' ? 'A la cuenta' : 'Desde la cuenta') + '</label><div class="chips" id="cuentaChips">' +
+    cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === FORM.cuenta ? ' active' : '') + '" ' + act('pickCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>';
+}
+function refrescarCuentaField() { const f = $('#cuentaField'); if (f) f.innerHTML = cuentaFieldHtml(); }
+// en un movimiento nuevo, al cambiar la categoría se propone la última cuenta usada con ella
+function proponerCuenta(cat) { if (!FORM || FORM.id || FORM.cuentaTocada) return; const id = cuentaRecordada(cat); if (id !== FORM.cuenta) { FORM.cuenta = id; refrescarCuentaField(); } }
 function openMovForm(id, pre) {
   if (id && String(id).indexOf('c:') === 0) return openCompForm(String(id).slice(2));
   const mio = id ? S.movimientos.find((m) => m.id === id) : null;
@@ -1271,6 +1280,7 @@ function openMovForm(id, pre) {
   FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
   FORM.metaSel = ex ? metaDeMov(ex) : (pre.metaSel || '');
   FORM.metaSels = ex ? metasDeMov(ex.tipo === 'Inversión' ? ex : Object.assign({}, ex, { tipo: 'Inversión', metaIds: ex.metaId ? [ex.metaId] : [] })) : (pre.metaSel ? [pre.metaSel] : []);
+  FORM.cuenta = ex ? (cuentaPorId(ex.cuentaId) ? ex.cuentaId : cuentaRecordada('')) : (pre.cuentaId && cuentaPorId(pre.cuentaId) ? pre.cuentaId : cuentaRecordada(pre.categoria));
   if (ex && ex.activoId) { FORM.activo = { activo_id: ex.activoId, nombre: ex.categoria, tipo: ex.tipoActivo || '', simbolo: '', moneda: '' }; FORM.partOrig = ex.participaciones == null ? null : Number(ex.participaciones); }
   const metodos = cfg().metodosPago || [];
   openSheet(
@@ -1287,6 +1297,7 @@ function openMovForm(id, pre) {
     '<div class="field" id="compField">' + compFieldHtml() + '</div>' +
     '<div class="field" id="subField">' + subFieldHtml(ex ? ex.categoria : (pre.categoria || ''), ex ? ex.subcategoria : (pre.subcategoria || '')) + '</div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : (pre.fecha || todayISO())) + '" ' + onChange('onFechaChange') + '></div>' +
+    '<div id="cuentaField">' + cuentaFieldHtml() + '</div>' +
     '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>' +
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
     metodos.map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' +
@@ -1358,6 +1369,9 @@ async function saveMov() {
     // una categoría personalizada nueva se añade a tu lista
     if (esG && !esCatGasto(categoria)) saveConfig({ categoriasGasto: (cfg().categoriasGasto || []).concat([{ nombre: categoria, presupuesto: null }]) });
     if (FORM.articulos) data.articulos = FORM.articulos;
+    // cuenta: en uno nuevo, la elegida; al editar, solo si la cambias (los antiguos siguen «sin cuenta» = la principal)
+    const ponCuenta = hayVariasCuentas() && cuentaPorId(FORM.cuenta) && (!ex || FORM.cuentaTocada);
+    if (ponCuenta) data.cuentaId = FORM.cuenta;
     if (FORM.compQuitado && 'compartidoId' in data) data.compartidoId = null; // ya no está compartido: cuenta entero como tuyo
     if (FORM.tipo === 'Inversión') data.tipoActivo = tipoActivo; else if ('tipoActivo' in data) data.tipoActivo = null;
     if (auto) { data.activoId = activoId; data.participaciones = participaciones; }
@@ -1376,6 +1390,7 @@ async function saveMov() {
     let movId = FORM.id;
     const ok = await write(async () => { if (FORM.id) return S.db.collection('movimientos').doc(FORM.id).set(data); const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || movId; return r0; });
     if (ok && movId && (data.metaId || (data.metaIds && data.metaIds.length) || (S.aportes || []).some((a) => a.movId === movId))) sincronizarAporte(Object.assign({ id: movId }, data));
+    if (ok && ponCuenta && categoria) { const pc = cfg().cuentaPorCat || {}, k = normName(categoria); if (pc[k] !== FORM.cuenta) saveConfig({ cuentaPorCat: Object.assign({}, pc, { [k]: FORM.cuenta }) }); }
     if (ok) {
       if (reglaNueva && guardarRegla(reglaNueva, categoria, FORM.tipo)) toast('Guardado. Regla creada: «' + normDesc(reglaNueva) + '» → ' + categoria);
       else toast(FORM.compQuitado ? 'Ya no está compartido: cuenta entero como tuyo' : FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido');
@@ -1995,6 +2010,7 @@ function compResumenHtml() {
 function refrescarComp(soloResumen) {
   if (soloResumen) { const r = $('#compResumen'); if (r) { r.innerHTML = compResumenHtml(); return; } }
   const f = $('#compField'); if (f) f.innerHTML = compFieldHtml();
+  refrescarCuentaField();
 }
 function openCompForm(cid) {
   const c = compPorId(cid);
@@ -3448,15 +3464,33 @@ function kpiMesHtml(k, y, m) {
     '<div class="kpi avail tappable" ' + act('irMovs', 'Todos', mk) + '><div class="v tnum">' + moneyShort(k.disponible) + '</div><div class="l">Disponible</div></div></div>';
 }
 /* ---- cuentas y saldos (dinero en el banco, a mano hasta conectar el banco) ---- */
+// Varias cuentas (fase 1, ver docs/PLAN_CUENTAS.md): tipo, color, principal y si suma en «En tus cuentas».
+const TIPOS_CUENTA = [['corriente', 'Corriente'], ['ahorro', 'Ahorro'], ['efectivo', 'Efectivo'], ['broker', 'Bróker'], ['otra', 'Otra']];
+const COLORES_CUENTA = ['#3B6EA8', '#2F6F52', '#B8752A', '#7A5AA8', '#A8452F', '#5F6B73'];
+function tipoCuenta(c) { return c && TIPOS_CUENTA.some((t) => t[0] === c.tipo) ? c.tipo : 'corriente'; }
+// por defecto suman las corrientes y el efectivo; cada cuenta tiene su interruptor
+function cuentaEnTengo(c) { return c.enTengo != null ? !!c.enTengo : ['corriente', 'efectivo'].indexOf(tipoCuenta(c)) >= 0; }
+function colorCuenta(c) { if (c.color) return c.color; const i = (cfg().cuentas || []).findIndex((x) => x && x.id === c.id); return COLORES_CUENTA[Math.max(0, i) % COLORES_CUENTA.length]; }
+function cuentaPorId(id) { return id ? cuentasCfg().find((c) => c.id === id) || null : null; }
+// la marcada como principal o, si no hay ninguna, la primera
+function cuentaPrincipal() { const cs = cuentasCfg(); return cs.find((c) => c.principal) || cs[0] || null; }
+function hayVariasCuentas() { return cuentasCfg().length >= 2; }
+// última cuenta usada con esa categoría (o la principal)
+function cuentaRecordada(cat) { const id = (cfg().cuentaPorCat || {})[normName(cat || '')]; if (cuentaPorId(id)) return id; const pc = cuentaPrincipal(); return pc ? pc.id : null; }
 function cuentasHtml() {
-  const cs = cfg().cuentas || [];
+  const cs = cfg().cuentas || [], varias = cs.filter((c) => c && c.nombre).length >= 2, pc = cuentaPrincipal();
   return '<div class="handle"></div><h2>Cuentas y saldos</h2>' +
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Pon cuánto tienes ahora en cada cuenta del banco. Se suma a tu patrimonio. Actualízalo de vez en cuando (más adelante podrá venir solo del banco).</div>' +
-    '<div class="card config-list">' + (cs.length ? cs.map((c, i) => '<div class="row2"><input value="' + escapeHtml(c.nombre || '') + '" placeholder="Cuenta (p. ej. Santander)" ' + onChange('cuentaCampo', i, 'nombre') + '>' +
+    '<div class="card config-list">' + (cs.length ? cs.map((c, i) => '<div class="cuenta-ed"><div class="row2"><span class="dot" style="background:' + colorCuenta(c) + '"></span><input value="' + escapeHtml(c.nombre || '') + '" placeholder="Cuenta (p. ej. Santander)" ' + onChange('cuentaCampo', i, 'nombre') + '>' +
       '<input class="amt" type="number" step="0.01" inputmode="decimal" placeholder="Saldo" value="' + (c.saldo == null ? '' : escapeHtml(c.saldo)) + '" ' + onChange('cuentaCampo', i, 'saldo') + '>' +
       '<button class="rm" aria-label="Quitar" ' + act('cuentaQuitar', i) + '>' + ic('close') + '</button></div>' +
-      (c.fecha ? '<div class="cuenta-fecha">Actualizado el ' + fmtDateShort(c.fecha) + ' ' + c.fecha.slice(0, 4) + '</div>' : '')).join('')
+      (c.fecha ? '<div class="cuenta-fecha">Actualizado el ' + fmtDateShort(c.fecha) + ' ' + c.fecha.slice(0, 4) + '</div>' : '') +
+      '<div class="cuenta-ops"><select aria-label="Tipo de cuenta" ' + onChange('cuentaCampo', i, 'tipo') + '>' + TIPOS_CUENTA.map(([k, l]) => '<option value="' + k + '"' + (tipoCuenta(c) === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
+      '<span class="cuenta-colores">' + COLORES_CUENTA.map((col) => '<button type="button" class="cuenta-color' + (colorCuenta(c) === col ? ' on' : '') + '" style="background:' + col + '" aria-label="Color" ' + act('cuentaColor', i, col) + '></button>').join('') + '</span></div>' +
+      '<div class="cuenta-ops">' + (varias && c.nombre ? '<button type="button" class="chip' + (pc && pc.id === c.id ? ' active' : '') + '" ' + act('cuentaPrincipal', i) + '>' + (pc && pc.id === c.id ? 'Principal' : 'Hacer principal') + '</button>' : '') +
+      '<span class="cuenta-tengo">Sumar en «En tus cuentas»<button type="button" class="switch' + (cuentaEnTengo(c) ? ' on' : '') + '" role="switch" aria-checked="' + cuentaEnTengo(c) + '" aria-label="Sumar en En tus cuentas" ' + act('cuentaTengo', i) + '></button></span></div></div>').join('')
       : '<div style="padding:16px;color:var(--text-faint);font-size:13.5px;">Aún no has añadido ninguna cuenta.</div>') + '</div>' +
+    (varias ? '<div class="rec-hint" style="margin-top:8px;">Los movimientos sin cuenta cuentan como de la principal.</div>' : '') +
     '<div style="margin-top:12px;"><button class="btn ghost block" ' + act('cuentaAnadir') + '>' + ic('plus') + ' Añadir cuenta</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('cuentasListo') + '>Listo</button></div>';
 }
@@ -5543,7 +5577,7 @@ const H = {
   onMovSearch: (_a, el) => debouncedSearch(el.value),
   movMore: () => { S.movLimit += 150; const l = $('#movList'); if (l) l.innerHTML = renderMovList(); },
   openMovForm: ([id], el) => { if (el && el.parentNode && el.parentNode.classList && el.parentNode.classList.contains('abierta')) { cerrarSwipe(el.parentNode); return; } S._volverGrupo = null; openMovForm(id || null); },
-  movDuplicar: ([id]) => { const m = S.movimientos.find((x) => x.id === id); $$('.swipe.abierta').forEach(cerrarSwipe); if (!m) return; S._volverGrupo = null; openMovForm(null, { tipo: m.tipo, importe: m.importe, categoria: m.categoria, fecha: todayISO(), descripcion: m.descripcion }); toast('Copia lista: revisa y guarda'); },
+  movDuplicar: ([id]) => { const m = S.movimientos.find((x) => x.id === id); $$('.swipe.abierta').forEach(cerrarSwipe); if (!m) return; S._volverGrupo = null; openMovForm(null, { tipo: m.tipo, importe: m.importe, categoria: m.categoria, fecha: todayISO(), descripcion: m.descripcion, cuentaId: m.cuentaId }); toast('Copia lista: revisa y guarda'); },
   movBorrar: ([id]) => { borrarMovConDeshacer(id); },
   pickFijo: ([v]) => {
     if (!esGastoForm()) return;
@@ -5589,11 +5623,12 @@ const H = {
   onFechaChange: () => { if (FORM.activo) cargarPreview(); },
   onImporteInput: () => { updatePreview(); if (FORM.comp && FORM.comp.on) { if (FORM.comp.modo === 'igual') { const r = $('#compReparto'); if (r) r.innerHTML = compRepartoHtml(); } else refrescarComp(true); } },
   pickCat: ([c]) => {
-    const inp = $('#fCategoria'); if (inp) inp.value = c; if (FORM) FORM.catAuto = false; setTimeout(refrescarReglaBox, 0); refrescarSub(); refrescarCatAviso();
+    const inp = $('#fCategoria'); if (inp) inp.value = c; if (FORM) FORM.catAuto = false; setTimeout(refrescarReglaBox, 0); refrescarSub(); refrescarCatAviso(); proponerCuenta(c);
     $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c));
   },
-  onCatInput: (_a, el) => { if (FORM) FORM.catAuto = false; refrescarReglaBox(); refrescarCatAviso(); clearTimeout(S._subT); S._subT = setTimeout(refrescarSub, 300); $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === el.value.trim())); },
+  onCatInput: (_a, el) => { if (FORM) FORM.catAuto = false; proponerCuenta(el.value.trim()); refrescarReglaBox(); refrescarCatAviso(); clearTimeout(S._subT); S._subT = setTimeout(refrescarSub, 300); $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === el.value.trim())); },
   saveMov: () => saveMov(),
+  pickCuenta: ([id]) => { if (!FORM) return; FORM.cuenta = id; FORM.cuentaTocada = true; $$('#cuentaChips .chip').forEach((b) => b.classList.toggle('active', b.getAttribute('data-click') === 'pickCuenta|' + encodeURIComponent(id))); },
   deleteMov: (_a, el) => confirmDelete(el, doDeleteMov),
   // tickets
   ticketFoto: () => elegirFotoTicket(),
@@ -5978,14 +6013,24 @@ const H = {
   setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = 120; render(); },
   openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
   cuentaAnadir: () => { saveConfig({ cuentas: (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]) }); updateSheet(cuentasHtml()); const ins = $$('#sheetBackdrop .config-list .row2 input:first-child'); if (ins.length) ins[ins.length - 1].focus(); },
-  cuentaQuitar: ([i]) => { const cs = (cfg().cuentas || []).slice(); cs.splice(Number(i), 1); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
+  cuentaQuitar: ([i], el) => {
+    const cs = (cfg().cuentas || []).slice(), c = cs[Number(i)] || {};
+    const n = c.id ? S.movimientos.filter((m) => m.cuentaId === c.id).length : 0;
+    // si tiene movimientos, pide un segundo toque: esos movimientos pasan a contar como de la principal
+    if (n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Tiene ' + n + (n === 1 ? ' movimiento: contará' : ' movimientos: contarán') + ' como de la cuenta principal. Toca ✕ otra vez para quitarla.'); }
+    cs.splice(Number(i), 1); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render();
+  },
   cuentaCampo: ([i, f], el) => {
     const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {});
     if (f === 'saldo') { const n = parseFloat(el.value); c.saldo = el.value === '' || !isFinite(n) ? null : n; c.fecha = todayISO(); }
+    else if (f === 'tipo') c.tipo = el.value;
     else c.nombre = el.value.trim();
-    cs[Number(i)] = c; saveConfig({ cuentas: cs }); render();
+    cs[Number(i)] = c; saveConfig({ cuentas: cs }); if (f !== 'saldo' && f !== 'nombre') updateSheet(cuentasHtml()); render();
   },
-  cuentasListo: () => { const cs = (cfg().cuentas || []).filter((c) => c && (c.nombre || c.saldo != null)).map((c) => (c.nombre ? c : Object.assign({}, c, { nombre: 'Cuenta' }))); saveConfig({ cuentas: cs }); closeSheet(); render(); },
+  cuentaColor: ([i, col]) => { const cs = (cfg().cuentas || []).slice(); cs[Number(i)] = Object.assign({}, cs[Number(i)] || {}, { color: col }); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
+  cuentaPrincipal: ([i]) => { const cs = (cfg().cuentas || []).map((c, j) => Object.assign({}, c, { principal: j === Number(i) })); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
+  cuentaTengo: ([i]) => { const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {}); c.enTengo = !cuentaEnTengo(c); cs[Number(i)] = c; saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
+  cuentasListo: () => { const cs = (cfg().cuentas || []).filter((c) => c && (c.nombre || c.saldo != null)).map((c) => Object.assign({}, c, c.nombre ? {} : { nombre: 'Cuenta' }, c.id ? {} : { id: nuevoIdMeta() })); saveConfig({ cuentas: cs }); closeSheet(); render(); },
   openGrupos: () => { verBadge('grupos'); FORM = { kind: 'grupos' }; if ($('#sheetBackdrop')) updateSheet(gruposListaHtml()); else openSheet(gruposListaHtml()); cargarGrupos().then(() => { if (FORM && FORM.kind === 'grupos') updateSheet(gruposListaHtml()); render(); }); },
   grupoNuevo: () => { FORM = { kind: 'grupoNuevo' }; updateSheet(grupoNuevoHtml()); setTimeout(() => { const el = $('#gNombre'); if (el) el.focus(); }, 60); },
   grupoCrear: async () => {
