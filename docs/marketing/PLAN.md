@@ -2,6 +2,8 @@
 
 Lo lleva el departamento de Marketing y Comunicación, **un paso por semana**. Cada paso se entrega como un documento en esta carpeta siguiendo `docs/FORMATO_INFORMES.md`. Marca `[x]` al terminar y enlaza el documento.
 
+> **En pausa desde el 16-10-2026, por decisión del dueño.** Hasta que la app esté funcionando no se avanza ningún paso. Cuando se reanude, se sigue por el paso 3.
+
 ## Cómo se trabaja este plan (leer antes de cada paso)
 
 **La app no sale mañana.** Todavía no hay app en las tiendas, ni conexión con el banco, y seguimos puliendo pantallas. El lanzamiento está a meses vista. Por eso:
@@ -99,7 +101,7 @@ Se apuntan aquí según se van tomando. Las pendientes bloquean los pasos que se
 
 | Decisión | Estado | Bloquea |
 |---|---|---|
-| ¿App de finanzas que reparte gastos, o al revés? | Pendiente | Paso 8 |
-| ¿Primer público: parejas que conviven? | Pendiente | Pasos 7 y 8 |
-| ¿La lectura de tickets es gratis, con límite o de pago? | Pendiente | Paso 11 |
-| ¿Hacemos las entrevistas del paso 6? | Pendiente | Paso 7 |
+| ¿Por dónde entramos? | **Decidido (16-10-2026):** por el reparto de gastos, porque es lo más social, lo más fácil de compartir y lo que hace crecer la app al principio. Es obligatorio diferenciarse de Tricount y Splitwise. | — |
+| ¿Primer público? | **Decidido (16-10-2026):** primero una persona sola; después la pareja como centro de Juntos; luego los grupos de amigos; y explorar los viajes. | — |
+| ¿Hacemos las entrevistas del paso 6? | **Aparcado (16-10-2026):** más adelante. Los pasos 6 y 7 esperan. | Pasos 6 y 7 |
+| ¿La lectura de tickets es gratis, con límite o de pago? | **Aparcado (16-10-2026):** el estudio de costes y el modelo de negocio, cuando la app esté funcionando. | Paso 11 |
