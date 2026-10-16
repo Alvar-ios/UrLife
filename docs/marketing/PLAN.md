@@ -6,7 +6,7 @@ Lo lleva el departamento de Marketing y Comunicación. Cada paso se entrega como
 
 - [x] **1. Competencia y benchmarking** → [`01-competencia.md`](01-competencia.md) (16-10-2026)
   Apps de finanzas personales y de gastos compartidos que usa la gente en España y fuera: por ejemplo Fintonic, Wallet (BudgetBakers), Money Manager, YNAB, Monarch, Spendee, Tricount, Splitwise, Settle Up, apps de los bancos (BBVA, Santander, Revolut). Para cada una: qué hace, precio, en qué es fuerte, de qué se queja la gente (reseñas), descargas o valoración. Tabla comparativa de funciones frente a PalomApp y huecos que nadie cubre bien.
-- [ ] **2. Público objetivo** → `02-publico.md`
+- [x] **2. Público objetivo** → [`02-publico.md`](02-publico.md) (16-10-2026)
   Quién la usaría primero (parejas que comparten gastos, pisos compartidos, gente joven que empieza a ahorrar…), qué problema le duele más y cómo lo resuelve hoy.
 - [ ] **3. Posicionamiento y propuesta de valor** → `03-posicionamiento.md`
   Una frase que explique PalomApp, en qué se diferencia, y propuestas de nombre y tono de marca (sin decidir).
