@@ -18,6 +18,9 @@ Decidido con el dueño el 16/10/2026. El estudio completo está en el documento 
 4. **Movimientos antiguos**: se quedan sin cuenta (cuentan como la principal). En la vista de cada cuenta hay un modo **«Asignar movimientos»**: lista de movimientos sin cuenta, se marcan uno a uno o con **«Seleccionar todos»**, y se asignan a esa cuenta (con confirmación y opción de deshacer).
 5. **Cuenta conjunta con pareja**: no se usa ahora; queda para cuando la app salga al público (fase 3).
 6. **Orden**: la fase 1 de cuentas va **antes** del pulido pantalla a pantalla.
+7. **El saldo de cada cuenta debe parecerse al del banco real** (decidido el 16/10):
+   - «Apartar» no saca dinero de la cuenta (es ahorro «de cabeza»); invertir sí.
+   - En un compartido, la cuenta refleja lo que pagaste o recibiste de verdad: si pagas tú la cena de 100 €, baja 100 €; si paga otro, no baja; al saldar, baja o sube lo que se envía. De momento todo eso va a la cuenta principal (elegir la cuenta en Juntos, en la fase 2).
 
 ## Fase 1 (ahora)
 

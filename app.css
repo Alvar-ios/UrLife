@@ -477,6 +477,22 @@ button.link { font-family: inherit; font-size: 13px; font-weight: 600; color: va
 .swipe-acc.uno button { width: 148px; }
 .row.traspaso .ttl, .row.traspaso .amt { color: var(--text-muted); }
 .mov-ic.t-tras { background: var(--paper-sunken); color: var(--text-faint); }
+.hero-cuentas { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; color: inherit; font: inherit; font-size: 14px; padding: 2px 0 8px; cursor: pointer; text-align: left; opacity: .9; }
+.hero-cuentas b { font-weight: 700; }
+.hero-cuentas .i { width: 14px; height: 14px; opacity: .7; }
+.cuentas-total { font-size: 28px; font-weight: 700; margin: 0 0 8px; }
+.cuentas-card .cuentas-total { padding: 0 2px; }
+.cuenta-fila, .asignar-fila { width: 100%; text-align: left; background: none; border: none; font: inherit; color: inherit; }
+.cuenta-fila .dot { margin-right: 10px; width: 11px; height: 11px; }
+.cuenta-dot { margin-right: 6px; vertical-align: 1px; width: 8px; height: 8px; }
+.cuenta-filtro .pill .dot { width: 8px; height: 8px; }
+.asignar-aviso { margin-top: 14px; }
+.cuenta-acc { display: flex; gap: 10px; margin-bottom: 6px; }
+.cuenta-acc .btn { flex: 1; }
+.asignar-lista { margin-top: 8px; }
+.asignar-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--line); flex: none; display: grid; place-items: center; margin-right: 10px; }
+.asignar-fila.on .asignar-check { background: var(--accent); border-color: var(--accent); color: var(--on-solid); }
+.asignar-check .i { width: 14px; height: 14px; }
 .k-tras .crear-ic { background: var(--paper-sunken); color: var(--text-muted); }
 /* hojas: botón de cerrar */
 .sheet { position: relative; }
