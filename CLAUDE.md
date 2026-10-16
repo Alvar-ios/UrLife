@@ -12,7 +12,7 @@ Habla siempre en **español sencillo**, sin jerga: el dueño no es programador.
 4. **Nunca escribas claves ni contraseñas** en el chat, en el código ni en el repositorio (el repositorio es **público**). Las claves van solo a los secretos de Supabase o de GitHub.
 5. **No modifiques `auth-signup.js`.**
 6. Mantén las palabras que ya usa la app (por ejemplo «Aportar»).
-7. **Publicar:** trabaja en una rama; cuando el dueño diga «publica», fusiona a `main` y comprueba que la web sirve la versión nueva.
+7. **Publicar:** trabaja siempre en una rama y **déjala sin fusionar**. Todo lo que entra en `main` sale publicado en la web para los usuarios reales en un par de minutos, así que **solo se fusiona a `main` cuando el dueño dice «publica»**, nunca por iniciativa propia ni porque las pruebas pasen. Al terminar, di en qué rama está y qué falta. Los documentos de `docs/` son la excepción: no afectan a la web y pueden ir directos a `main`.
 8. Al terminar cada tarea: resumen corto en español de qué cambia para el usuario y qué no se ha probado. Sin recapitular los pasos.
 
 ### «Cerramos día»

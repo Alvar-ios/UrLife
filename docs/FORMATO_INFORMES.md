@@ -16,6 +16,10 @@ Un archivo `.md` en `docs/` (o `docs/marketing/` si es del plan de marketing), c
 6. **Lo que no hemos podido averiguar o confirmar** — obligatorio, aunque esté vacío. Es lo que más confianza da.
 7. **Fuentes** — enlace y fecha de consulta de cada una. Marca si una fuente tiene interés propio (un blog de la competencia, una encuesta de un rival).
 
+## Largo
+
+**Breve.** El delegado lo convierte en un PDF de 4 páginas como mucho, así que escribe lo justo: la conclusión, las tablas que hagan falta y poco más. Si tienes mucho material de apoyo, resúmelo y di dónde está el detalle. Un informe largo no es mejor informe.
+
 ## Reglas
 
 - **Español sencillo**, frases cortas, sin jerga.
@@ -23,3 +27,4 @@ Un archivo `.md` en `docs/` (o `docs/marketing/` si es del plan de marketing), c
 - Cada cifra lleva su fuente y su fecha.
 - **Nada de datos personales** de usuarios reales: el repositorio es público.
 - Si hay una idea que se vería mejor en un dibujo (un mapa de mercado, un embudo, un calendario), dilo en una línea al final: «Para el PDF: …». El delegado lo dibuja.
+- El PDF va en fondo oscuro y cada departamento tiene su color y su carácter: ver `docs/ESTILO_PDF.md`.
