@@ -95,11 +95,12 @@ const sinBanco = (p) => JSON.stringify({ inv: p.inv, ahorro: p.ahorro, deudas: p
   ok(A.kpisMes(Y, M).gastos === 50, 'el mes cuenta tu parte (50)');
   ok(A.saldoCuenta(A.cfg().cuentas[0]) === 900, 'la cuenta principal baja lo que pagaste de verdad (100)');
   H.cuentaVer(['c1']); await sleep(15);
-  const compEnFicha = /50,00/.test(sh(e));
+  const compEnFicha = /900,00/.test(sh(e)) && /950,00/.test(sh(e));
+  ok(compEnFicha, 'la ficha enseña las dos cifras: lo que sale del banco (900 €) y tu saldo solo con tu parte (950 €)');
   H.closeSheet([]); await sleep(260);
   H.irMovsCuenta(['c1']); await sleep(260); H.setMovModo(['todo']); await sleep(15);
   const filasCuenta = e.doc.querySelectorAll('#movList .row').length;
-  console.log('INFO compartido y cuenta principal: en la ficha de la cuenta aparece tu parte de 50 € = ' + compEnFicha + ' · «Ver movimientos» de esa cuenta enseña ' + filasCuenta + ' filas (el saldo sí usó los 100 €)');
+  console.log('INFO «Ver movimientos» de la cuenta enseña ' + filasCuenta + ' filas con el compartido (hueco 4 de la revisión, pendiente)');
   ok(A.saldoCuenta(A.cfg().cuentas[0]) === 900, 'el saldo no cambia por mirar la lista');
 
   /* 5. Cambiar la cuenta principal mueve de golpe todos los movimientos sin cuenta */
@@ -108,10 +109,16 @@ const sinBanco = (p) => JSON.stringify({ inv: p.inv, ahorro: p.ahorro, deudas: p
   const antes = [A.saldoCuenta(A.cfg().cuentas[0]), A.saldoCuenta(A.cfg().cuentas[1]), A.enTusCuentas()];
   A.H.openCuentas([]); await sleep(10);
   click(e, 'cuentaPrincipal', '1'); await sleep(20);
+  ok(!A.cfg().cuentas[1].principal, 'al pulsar «Hacer principal» todavía no cambia nada');
+  ok(/Sí, cambiar/.test(sh(e)) && /movimiento sin cuenta/.test(sh(e)), 'pide confirmación y dice cuántos movimientos se mueven');
+  click(e, 'cuentaPrincipalNo'); await sleep(20);
+  ok(!A.cfg().cuentas[1].principal, 'cancelar lo deja como estaba');
+  click(e, 'cuentaPrincipal', '1'); await sleep(20);
+  click(e, 'cuentaPrincipalSi', '1'); await sleep(20);
   const despues = [A.saldoCuenta(A.cfg().cuentas[0]), A.saldoCuenta(A.cfg().cuentas[1]), A.enTusCuentas()];
-  console.log('INFO «Hacer principal» en la Hucha: antes [Banco, Hucha, En tus cuentas] = ' + antes.join(', ') + ' → después = ' + despues.join(', ') + ' (los movimientos sin cuenta se mudan y no avisa en ese momento)');
+  console.log('INFO tras confirmar: [Banco, Hucha, En tus cuentas] = ' + despues.join(', '));
   ok(JSON.stringify(e.store.movimientos.g1) === JSON.stringify({ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 100, fecha: d2 }), 'cambiar la principal no toca ningún movimiento guardado');
-  click(e, 'cuentaPrincipal', '0'); await sleep(20);
+  click(e, 'cuentaPrincipal', '0'); await sleep(20); click(e, 'cuentaPrincipalSi', '0'); await sleep(20);
   ok(JSON.stringify([A.saldoCuenta(A.cfg().cuentas[0]), A.saldoCuenta(A.cfg().cuentas[1]), A.enTusCuentas()]) === JSON.stringify(antes), 'y se deshace volviendo a marcar la de antes');
 
   /* 6. Cuenta con saldo pero sin fecha (una configuración rara o restaurada) */
@@ -135,7 +142,7 @@ const sinBanco = (p) => JSON.stringify({ inv: p.inv, ahorro: p.ahorro, deudas: p
   const filas = A.imp().filas;
   const fGasto = filas.find((r) => /MERCADONA/.test(r.desc || '')), fCajero = filas.find((r) => /CAJERO/.test(r.desc || ''));
   ok(fGasto && fGasto.estado === 'dup' && !fGasto.incluir, 'al importar, un gasto que ya tienes sale marcado como posible duplicado');
-  console.log('INFO importar: el reintegro de 100 € que ya está apuntado como traspaso sale como «' + (fCajero ? fCajero.estado : '?') + '»' + (fCajero && fCajero.incluir ? ' y marcado para importar (se contaría como gasto: hueco conocido)' : ''));
+  ok(fCajero && fCajero.estado === 'dup' && !fCajero.incluir, 'un reintegro de cajero ya apuntado como traspaso sale como repetido y no se importa');
 
   console.log(fails ? 'FAILED ' + fails : 'ALL PASS');
   process.exit(fails ? 1 : 0);

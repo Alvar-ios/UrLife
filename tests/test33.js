@@ -28,7 +28,7 @@ async function guardar(e,importe,cat){e.doc.querySelector('#fImporte').value=Str
  const sw=[...doc.querySelectorAll('#sheetHost .cuenta-ed .switch')];
  ok(sw.length===3&&sw[0].classList.contains('on')&&sw[1].classList.contains('on')&&!sw[2].classList.contains('on'),'por defecto suman las corrientes y no la de ahorro');
  ok(/Principal/.test(sh())&&doc.querySelectorAll('#sheetHost [data-click^="cuentaPrincipal"]').length===3,'con varias cuentas se puede elegir la principal (por defecto, la primera)');
- click(e,'cuentaPrincipal','1');await sleep(5);
+ click(e,'cuentaPrincipal','1');await sleep(5);click(e,'cuentaPrincipalSi','1');await sleep(5); // ahora pide confirmación
  let cs=e.store.cfg.app.cuentas;ok(cs[1].principal===true&&cs[0].principal===false&&A.cfg().cuentas[1].principal,'«Hacer principal» marca solo esa');
  click(e,'cuentaTengo','2');await sleep(5);cs=e.store.cfg.app.cuentas;ok(cs[2].enTengo===true,'el interruptor de la hucha la suma');
  click(e,'cuentaColor','0','#A8452F');await sleep(5);cs=e.store.cfg.app.cuentas;ok(cs[0].color==='#A8452F'&&doc.querySelector('#sheetHost .cuenta-color.on[style*="#A8452F"]'),'se cambia el color de una cuenta');
