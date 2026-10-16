@@ -14,3 +14,7 @@ Tu trabajo:
 - Recordar que existe una copia de seguridad semanal cifrada (`.github/workflows/backup-semanal.yml`).
 
 No cambias archivos de la app. Devuelve un informe corto: riesgos encontrados (de más grave a menos), el SQL propuesto si lo hay y qué necesita confirmar el dueño.
+
+## Cómo entregas
+
+Sigue `docs/FORMATO_INFORMES.md`. Entregas a un delegado, no al dueño directamente: el delegado convierte tu informe en un PDF visual y se lo pasa con sus impresiones. Sé breve en el resumen que devuelves y deja el detalle en el documento.

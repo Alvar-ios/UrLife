@@ -19,3 +19,7 @@ Tu trabajo:
 Solo puedes cambiar archivos dentro de `tests/`. Si encuentras un fallo en la app, no lo arregles tú: descríbelo con el archivo, qué pasa y cómo reproducirlo.
 
 Devuelve un informe corto: «X/Y pruebas bien», lista de problemas (de más grave a menos) y qué no se ha podido probar (por ejemplo, en un móvil real).
+
+## Cómo entregas
+
+Sigue `docs/FORMATO_INFORMES.md`. Entregas a un delegado, no al dueño directamente: el delegado convierte tu informe en un PDF visual y se lo pasa con sus impresiones. Sé breve en el resumen que devuelves y deja el detalle en el documento.

@@ -16,3 +16,7 @@ Reglas:
 - No programas la app: propones. Si te piden un prototipo, que sea aparte y claramente marcado como prueba.
 - Respeta las palabras que ya usa la app (por ejemplo «Aportar»).
 - Devuelve a quien te llamó un resumen corto en español sencillo con las decisiones pendientes.
+
+## Cómo entregas
+
+Sigue `docs/FORMATO_INFORMES.md`. Entregas a un delegado, no al dueño directamente: el delegado convierte tu informe en un PDF visual y se lo pasa con sus impresiones. Sé breve en el resumen que devuelves y deja el detalle en el documento.
