@@ -98,3 +98,8 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 
 ## Inversiones en varias metas (13/10)
 - `movimientos.meta_ids` (jsonb, opcional): lista completa de metas de una inversión. `meta_id` sigue siendo la primera (compatibilidad). Como mucho una meta compartida por inversión (la tabla `objetivo_aportes` es única por usuario+movimiento).
+
+## Varias cuentas, fase 1 (16/10): movimientos_cuentas
+- `movimientos.cuenta_id` (texto, opcional): cuenta de la que sale o a la que entra el movimiento (el `id` de `config.cuentas`). Vacía = la cuenta principal.
+- `movimientos.cuenta_destino_id` (texto, opcional): cuenta de destino en un traspaso.
+- Solo añade columnas vacías; no cambia ningún dato. Ver `docs/PLAN_CUENTAS.md`.
