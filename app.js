@@ -3507,8 +3507,9 @@ function hayVariasCuentas() { return cuentasCfg().length >= 2; }
 // última cuenta usada con esa categoría (o la principal)
 function cuentaRecordada(cat) { const id = (cfg().cuentaPorCat || {})[normName(cat || '')]; if (cuentaPorId(id)) return id; const pc = cuentaPrincipal(); return pc ? pc.id : null; }
 /* Saldo calculado: el saldo que pusiste (en su fecha) más lo que entra y menos lo que sale de esa cuenta después.
-   Cuenta lo apuntado con fecha posterior, o del mismo día pero apuntado después de poner el saldo. */
-function posteriorA(m, c) { const f = m.fecha || ''; return !!c.fecha && (f > c.fecha || (f === c.fecha && c.ts != null && num(m.creadoEn) > c.ts)); }
+   Cuenta lo apuntado con fecha posterior (hasta hoy), o del mismo día pero apuntado después de poner el saldo. */
+// lo apuntado con fecha futura (p. ej. la nómina de fin de mes) cuenta cuando llega ese día
+function posteriorA(m, c) { const f = m.fecha || ''; return !!c.fecha && f <= todayISO() && (f > c.fecha || (f === c.fecha && c.ts != null && num(m.creadoEn) > c.ts)); }
 // Apartar no saca dinero del banco (es ahorro «de cabeza»); invertir sí
 const SIGNO_CUENTA = Object.assign({}, TIPO_SIGNO, { Ahorro: 0 });
 function tocaCuenta(m) { return !!SIGNO_CUENTA[m.tipo]; }
@@ -3577,7 +3578,7 @@ function lineaCuentasHtml() {
 function cuentasHojaHtml() {
   return '<div class="handle"></div><h2>En tus cuentas</h2>' +
     '<div class="cuentas-total tnum">' + money(enTusCuentas()) + '</div>' +
-    '<div class="rec-hint" style="margin:-4px 0 10px;">Suma de las cuentas que tienen activado «Sumar en "En tus cuentas"».</div>' +
+    '<div class="rec-hint" style="margin:-4px 0 10px;">Suma las cuentas que tienen activado «Sumar». Lo cambias en Editar cuentas.</div>' +
     '<div class="list">' + cuentasCfg().map(cuentaFilaHtml).join('') + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('openCuentas') + '>Editar cuentas</button><button class="btn accent block" ' + act('crearIr', 'traspaso') + '>' + ic('swap') + ' Traspaso</button></div>';
 }
@@ -3621,16 +3622,28 @@ function asigCuentaHtml() {
     '<button class="btn accent block" ' + (n ? '' : 'disabled ') + act('asigCuentaOk') + '>' + (F.confirmar ? 'Toca otra vez para asignar ' + n : 'Asignar ' + n) + '</button></div>';
 }
 async function asigCuentaGuardar() {
-  const F = FORM, id = F.cuenta, movs = S.movimientos.filter((m) => F.sel.has(m.id));
+  const F = FORM, id = F.cuenta;
+  // se parte de la fila tal como está guardada (no de la versión «ordenada» que se ve), para no cambiar nada más que la cuenta
+  const raw = new Map((S._movsRaw || []).map((m) => [m.id, m]));
+  const movs = S.movimientos.filter((m) => F.sel.has(m.id)).map((m) => raw.get(m.id) || m);
   if (!movs.length || !cuentaPorId(id)) return;
-  // para deshacer: cuentaId explícito (null), porque guardar solo cambia los campos que se envían
-  const antes = movs.map((m) => ({ id: m.id, copia: Object.assign(stripId(m), { cuentaId: m.cuentaId || null }) }));
   F.guardando = true;
-  const ok = await write(() => Promise.all(movs.map((m) => S.db.collection('movimientos').doc(m.id).set(Object.assign(stripId(m), { cuentaId: id })))));
+  const hechos = [];
+  let fallos = 0, err = null;
+  // de 20 en 20: si algo falla, lo ya guardado se puede deshacer
+  for (let k = 0; k < movs.length; k += 20) {
+    const grupo = movs.slice(k, k + 20);
+    const res = await Promise.allSettled(grupo.map((m) => withRetry(() => S.db.collection('movimientos').doc(m.id).set(Object.assign(stripId(m), { cuentaId: id })))));
+    res.forEach((r, x) => { if (r.status === 'fulfilled') hechos.push(grupo[x]); else { fallos++; err = r.reason; } });
+  }
   F.guardando = false;
-  if (!ok) return;
-  sentir('ok');
-  toast(movs.length + (movs.length === 1 ? ' movimiento asignado' : ' movimientos asignados') + ' a ' + nombreCuenta(id), { deshacer: async () => { if (await write(() => Promise.all(antes.map((x) => S.db.collection('movimientos').doc(x.id).set(x.copia))))) toast('Deshecho'); } });
+  if (err) console.error(err);
+  if (!hechos.length) { toast(errMsg(err)); return; }
+  // para deshacer: cuentaId explícito (null), porque guardar solo cambia los campos que se envían
+  const antes = hechos.map((m) => ({ id: m.id, copia: Object.assign(stripId(m), { cuentaId: m.cuentaId || null }) }));
+  const deshacer = async () => { if (await write(() => Promise.all(antes.map((x) => S.db.collection('movimientos').doc(x.id).set(x.copia))))) toast('Deshecho'); };
+  sentir(fallos ? 'aviso' : 'ok');
+  toast(hechos.length + (hechos.length === 1 ? ' movimiento asignado' : ' movimientos asignados') + ' a ' + nombreCuenta(id) + (fallos ? '. ' + fallos + ' no se pudieron guardar: vuelve a intentarlo' : ''), { deshacer });
   H.cuentaVer([id]);
 }
 /* ---- traspaso entre cuentas: no es gasto ni ingreso ---- */
@@ -6215,10 +6228,11 @@ const H = {
   cuentaAnadir: () => { saveConfig({ cuentas: (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]) }); updateSheet(cuentasHtml()); const ins = $$('#sheetBackdrop .config-list .row2 input:first-child'); if (ins.length) ins[ins.length - 1].focus(); },
   cuentaQuitar: ([i], el) => {
     const cs = (cfg().cuentas || []).slice(), c = cs[Number(i)] || {};
-    const n = c.id ? S.movimientos.filter((m) => m.cuentaId === c.id).length : 0;
+    const n = c.id ? S.movimientos.filter((m) => m.cuentaId === c.id).length + (S.traspasos || []).filter((t) => t.cuentaId === c.id || t.cuentaDestinoId === c.id).length : 0;
     // si tiene movimientos, pide un segundo toque: esos movimientos pasan a contar como de la principal
-    if (n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Tiene ' + n + (n === 1 ? ' movimiento: contará' : ' movimientos: contarán') + ' como de la cuenta principal. Toca ✕ otra vez para quitarla.'); }
-    cs.splice(Number(i), 1); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render();
+    if (n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Tiene ' + n + (n === 1 ? ' movimiento' : ' movimientos') + '. Los movimientos pasarán a la cuenta principal y los traspasos dirán «Cuenta quitada». Toca ✕ otra vez para quitarla.'); }
+    const fijas = cs.map((x) => (x && x.id && !x.color ? Object.assign({}, x, { color: colorCuenta(x) }) : x)); // que las demás no cambien de color
+    fijas.splice(Number(i), 1); saveConfig({ cuentas: fijas }); updateSheet(cuentasHtml()); render();
   },
   cuentaCampo: ([i, f], el) => {
     const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {});
