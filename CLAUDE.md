@@ -22,6 +22,17 @@ Solo cuando el dueño lo diga:
 - Actualizar las pruebas de novedades (`tests/test11.js`, `tests/test23.js`).
 - Una nota en imagen JPG (vertical, fondo oscuro, estilo de las anteriores) para el grupo de WhatsApp.
 
+## Departamentos (subagentes en `.claude/agents/`)
+
+La sesión principal hace de **Desarrollo** (programa) y de jefe de proyecto: reparte el trabajo a los departamentos.
+
+- `producto-diseno` — antes de programar una pantalla o función nueva: propuesta de cómo debe ser.
+- `calidad` — **siempre** antes de dar una tarea por terminada o publicar: pruebas y revisión con ojos frescos.
+- `datos-seguridad` — antes de cualquier cambio en Supabase o en cómo se guardan, importan o borran datos.
+- `marketing-comunicacion` — «cerramos día», textos para usuarios y el plan de marketing (`docs/marketing/PLAN.md`).
+
+Los documentos dentro de `docs/` no afectan a la web: se pueden subir directamente a `main`.
+
 ## Cómo está hecha
 
 - Sin frameworks ni compilación: `index.html` + `app.js` (toda la lógica, ~6.400 líneas) + `app.css` (diseño clásico) + `look.css` (aspecto «Nuevo») + `data-layer.js` (único archivo que habla con Supabase).
