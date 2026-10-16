@@ -3540,6 +3540,21 @@ function saldoCuenta(c) {
   (S.traspasos || []).forEach((t) => { if (!posteriorA(t, c)) return; if (t.cuentaId === c.id) s -= num(t.importe); if (t.cuentaDestinoId === c.id) s += num(t.importe); });
   return Math.round(s * 100) / 100;
 }
+// Gastos compartidos desde la cuenta principal: lo que te deben (+) o debes (−) en el periodo de la cuenta.
+// Pagar una deuda o recibirla no cambia tu saldo «de verdad»: se resta/suma igual en el banco y en la deuda.
+function compartidosCuenta(c) {
+  const pc = cuentaPrincipal(); let neto = 0, n = 0;
+  if (!pc || pc.id !== c.id) return { neto: 0, n: 0 };
+  const yo = miUid();
+  (S.compartidos || []).forEach((x) => {
+    const esLiq = x.tipo === 'Liquidación';
+    if (!esLiq && !SIGNO_CUENTA[x.tipo]) return;
+    if (!posteriorA({ fecha: x.fecha, creadoEn: x.createdAt ? Date.parse(x.createdAt) : 0 }, c)) return;
+    const pagoYo = x.pagadoPor === yo ? num(x.importe) : 0, miaReparto = miParte(x);
+    neto += pagoYo - miaReparto; n++;
+  });
+  return { neto: Math.round(neto * 100) / 100, n };
+}
 function fechaLarga(iso) { return fmtDateShort(iso) + ' ' + iso.slice(0, 4); }
 function cuentaFechaTxt(c) {
   if (c.cuadre && c.cuadre.fecha === c.fecha) return 'Cuadrado el ' + fechaLarga(c.cuadre.fecha);
@@ -3595,12 +3610,21 @@ function movsSinCuenta() {
   const vivos = new Set((S.compartidos || []).map((x) => x.id));
   return S.movimientos.filter((m) => tocaCuenta(m) && !cuentaPorId(m.cuentaId) && !(m.compartidoId && vivos.has(m.compartidoId))).sort(cmpMov);
 }
+// Dos cifras cuando hay gastos compartidos pagados desde esta cuenta: lo que salió del banco y tu saldo (solo tu parte)
+function cuentaDosSaldosHtml(c, real) {
+  const k = compartidosCuenta(c), tuyo = Math.round((real + k.neto) * 100) / 100;
+  return '<div class="card" style="margin:0 0 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+    '<div><div class="meta">Lo que sale del banco</div><b class="tnum">' + money(real) + '</b></div>' +
+    '<div><div class="meta">Tu saldo</div><b class="tnum">' + money(tuyo) + '</b></div>' +
+    '<div class="rec-hint" style="grid-column:1/-1;margin:0;">«Tu saldo» suma lo que te deben y resta lo que debes en gastos compartidos. ' + (k.neto ? (k.neto > 0 ? 'Ahora te deben ' + money(k.neto) + ' netos.' : 'Ahora debes ' + money(-k.neto) + ' netos.') : 'Ahora mismo estáis en paz.') + '</div></div>';
+}
 function cuentaVerHtml(id) {
   const c = cuentaPorId(id); if (!c) return '';
   const i = (cfg().cuentas || []).findIndex((x) => x && x.id === id), v = saldoCuenta(c), ult = movsDeCuenta(id).slice(0, 5), sin = movsSinCuenta().length;
   return '<div class="handle"></div><h2><span class="dot" style="background:' + colorCuenta(c) + ';width:12px;height:12px;margin-right:8px;"></span>' + escapeHtml(c.nombre) + '</h2>' +
     '<div class="cuentas-total tnum">' + (v == null ? '—' : money(v)) + '</div>' +
     '<div class="rec-hint" style="margin:-4px 0 12px;">' + escapeHtml(tipoCuentaTxt(c)) + (v == null ? ' · aún no has puesto su saldo' : ' · ' + cuentaFechaTxt(c)) + '</div>' +
+    (v != null && compartidosCuenta(c).n ? cuentaDosSaldosHtml(c, v) : '') +
     '<div class="cuenta-acc">' + (v == null ? '<button class="btn accent block" ' + act('openCuentas') + '>Poner el saldo</button>' : '<button class="btn accent block" ' + act('cuadrarAbrir', i, id) + '>Cuadrar</button>') +
     '<button class="btn ghost block" ' + act('irMovsCuenta', id) + '>Ver movimientos</button></div>' +
     (ult.length ? '<div class="section-title">Últimos movimientos</div><div class="list">' + ult.map((m) => esTraspaso(m) ? renderTraspasoRow(m, true) : renderMovRowBase(m)).join('') + '</div>' : '') +
@@ -3684,6 +3708,13 @@ async function saveTraspaso() {
     if (ok) { toast(FORM.id ? 'Traspaso actualizado' : 'Traspaso apuntado'); S._aterriza = movId || null; terminarForm(); }
   } finally { if (FORM) FORM.guardando = false; }
 }
+let principalPendiente = null; // cuenta que se va a hacer principal, pendiente de confirmar
+function confirmarPrincipalHtml(i) {
+  const c = (cfg().cuentas || [])[i] || {}, n = movsSinCuenta().length;
+  return '<div class="card asignar-aviso"><b>¿Cambiar la cuenta principal a «' + escapeHtml(c.nombre || '') + '»?</b>' +
+    '<div class="rec-hint">' + (n ? (n === 1 ? 'Un movimiento sin cuenta pasará a esa cuenta' : n + ' movimientos sin cuenta pasarán a esa cuenta') + ', y los saldos de las cuentas cambiarán.' : 'Ningún movimiento cambia de cuenta, pero los saldos sí pueden cambiar.') + ' Para deshacerlo, vuelve a marcar la anterior.</div>' +
+    '<div class="actions" style="margin-top:8px;"><button class="btn ghost block" ' + act('cuentaPrincipalNo') + '>Cancelar</button><button class="btn accent block" ' + act('cuentaPrincipalSi', i) + '>Sí, cambiar</button></div></div>';
+}
 function cuentasHtml() {
   const cs = cfg().cuentas || [], varias = cs.filter((c) => c && c.nombre).length >= 2, pc = cuentaPrincipal();
   return '<div class="handle"></div><h2>Cuentas y saldos</h2>' +
@@ -3699,6 +3730,7 @@ function cuentasHtml() {
       '<span class="cuenta-tengo">Sumar en «En tus cuentas»<button type="button" class="switch' + (cuentaEnTengo(c) ? ' on' : '') + '" role="switch" aria-checked="' + cuentaEnTengo(c) + '" aria-label="Sumar en En tus cuentas" ' + act('cuentaTengo', i) + '></button></span></div></div>').join('')
       : '<div style="padding:16px;color:var(--text-faint);font-size:13.5px;">Aún no has añadido ninguna cuenta.</div>') + '</div>' +
     (varias ? '<div class="rec-hint" style="margin-top:8px;">Los movimientos sin cuenta cuentan como de la principal.</div>' : '') +
+    (principalPendiente != null ? confirmarPrincipalHtml(principalPendiente) : '') +
     '<div style="margin-top:12px;"><button class="btn ghost block" ' + act('cuentaAnadir') + '>' + ic('plus') + ' Añadir cuenta</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('cuentasListo') + '>Listo</button></div>';
 }
@@ -4835,8 +4867,10 @@ function impPrepararHoja(i) {
 function impProcesar() {
   const I = IMP, m = I.map, filas = I.hoja.filas.slice(I.cab + 1);
   const uid = (S.user && S.user.id) || '';
-  const existentes = new Set(S.movimientos.map((x) => x.id));
-  const porFechaImp = {}; S.movimientos.forEach((x) => { const k = x.fecha + '|' + Math.abs(num(x.importe)).toFixed(2); porFechaImp[k] = (porFechaImp[k] || 0) + 1; });
+  // los traspasos también cuentan para detectar repetidos (un cajero ya apuntado como traspaso no debe entrar otra vez como gasto)
+  const yaApuntados = S.movimientos.concat(S.traspasos || []);
+  const existentes = new Set(yaApuntados.map((x) => x.id));
+  const porFechaImp = {}; yaApuntados.forEach((x) => { const k = x.fecha + '|' + Math.abs(num(x.importe)).toFixed(2); porFechaImp[k] = (porFechaImp[k] || 0) + 1; });
   const usados = {}, ocurr = {}, out = [];
   const col = (f, k) => (k == null || k === '' ? '' : f[k]);
   // Con columna Tipo: ¿los gastos vienen en negativo (extracto) o en positivo (tu Excel)? Lo contrario es una devolución.
@@ -6224,7 +6258,7 @@ const H = {
   empiezaOcultar: () => { saveConfig({ empiezaOculto: todayISO() }); render(); toast('Oculto. Lo tienes todo en Tú.'); },
   presTodas: () => { S.presTodas = !S.presTodas; render(); },
   setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = 120; render(); },
-  openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
+  openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; principalPendiente = null; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
   cuentaAnadir: () => { saveConfig({ cuentas: (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]) }); updateSheet(cuentasHtml()); const ins = $$('#sheetBackdrop .config-list .row2 input:first-child'); if (ins.length) ins[ins.length - 1].focus(); },
   cuentaQuitar: ([i], el) => {
     const cs = (cfg().cuentas || []).slice(), c = cs[Number(i)] || {};
@@ -6242,7 +6276,9 @@ const H = {
     cs[Number(i)] = c; saveConfig({ cuentas: cs }); if (f !== 'saldo' && f !== 'nombre') updateSheet(cuentasHtml()); render();
   },
   cuentaColor: ([i, col]) => { const cs = (cfg().cuentas || []).slice(); cs[Number(i)] = Object.assign({}, cs[Number(i)] || {}, { color: col }); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
-  cuentaPrincipal: ([i]) => { const cs = (cfg().cuentas || []).map((c, j) => Object.assign({}, c, { principal: j === Number(i) })); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
+  cuentaPrincipal: ([i]) => { principalPendiente = Number(i); updateSheet(cuentasHtml()); },
+  cuentaPrincipalNo: () => { principalPendiente = null; updateSheet(cuentasHtml()); },
+  cuentaPrincipalSi: ([i]) => { const cs = (cfg().cuentas || []).map((c, j) => Object.assign({}, c, { principal: j === Number(i) })); principalPendiente = null; saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
   cuentaTengo: ([i]) => { const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {}); c.enTengo = !cuentaEnTengo(c); cs[Number(i)] = c; saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
   cuadrarAbrir: ([i, volver]) => { FORM = { kind: 'cuadrar', i: Number(i), volver: volver || null }; updateSheet(cuadrarHtml(Number(i))); setTimeout(() => { const el = $('#fBanco'); if (el) el.focus(); }, 60); },
   cuadrarInput: (_a, el) => { const box = $('#cuadrarDif'); if (box && FORM) box.innerHTML = cuadrarDifHtml((cfg().cuentas || [])[FORM.i] || {}, el.value === '' ? NaN : parseFloat(el.value)); },
@@ -6628,6 +6664,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas };
+window.__APP__ = { form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta };
 if (!window.__NO_AUTOSTART__) main();
 })();
