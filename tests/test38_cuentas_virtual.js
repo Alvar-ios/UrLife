@@ -34,10 +34,10 @@ const G = (id, pagadoPor, importe, reparto) => ({ id, grupoId: 'gr', fecha: d2, 
   e = await env([G('s5', 'yo', 100, { yo: 50, otro: 50 })]); A = e.w.__APP__;
   A.H.cuentaVer(['c1']); await sleep(15);
   const txt = e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, ' ');
-  ok(/Lo que sale del banco/.test(txt) && /900,00/.test(txt) && /950,00/.test(txt), 'la ficha enseña «Lo que sale del banco» 900 € y «Tu saldo» 950 €');
+  ok(/Saldo real · lo que dice tu banco/.test(txt) && /Saldo virtual/.test(txt) && /900,00/.test(txt) && /950,00/.test(txt), 'la ficha enseña el saldo real (banco) 900 € y el virtual (contando Juntos) 950 €');
   // 6. Sin compartidos no aparece nada extra
   e = await env([]); A = e.w.__APP__; A.H.cuentaVer(['c1']); await sleep(15);
-  ok(!/Tu saldo/.test(e.doc.querySelector('#sheetHost').textContent), 'sin gastos compartidos la ficha no cambia');
+  ok(!/Saldo virtual/.test(e.doc.querySelector('#sheetHost').textContent), 'sin gastos compartidos la ficha no cambia');
   console.log(fails ? 'FAILED ' + fails : 'ALL PASS');
   process.exit(fails ? 1 : 0);
 })().catch((x) => { console.error(x); console.log('CRASH ' + (x && x.stack)); process.exit(1); });
