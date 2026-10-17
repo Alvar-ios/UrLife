@@ -232,14 +232,18 @@
   function q(p) { return p.then(function (res) { if (res.error) throw pgError(res.error); return res.data; }); }
   var grupos = {
     listar: function () {
-      return Promise.all([q(sb.from('grupos').select('*')), q(sb.from('grupo_miembros').select('*'))]).then(function (r) {
-        return { grupos: r[0] || [], miembros: r[1] || [] };
+      // personas sin cuenta: si la tabla aún no existe (o falla), se sigue sin ellas
+      var sinCuenta = q(sb.from('grupo_invitados').select('*')).catch(function () { return []; });
+      return Promise.all([q(sb.from('grupos').select('*')), q(sb.from('grupo_miembros').select('*')), sinCuenta]).then(function (r) {
+        return { grupos: r[0] || [], miembros: r[1] || [], sinCuenta: r[2] || [] };
       });
     },
     invitaciones: function (grupoId) { return q(sb.from('grupo_invitaciones').select('token,expira,usada_en,created_at').eq('grupo_id', grupoId).order('created_at', { ascending: false })); },
     renombrar: function (grupoId, nombre) { return q(sb.from('grupos').update({ nombre: nombre }).eq('id', grupoId)); },
     miNombre: function (grupoId, nombre) { return q(sb.from('grupo_miembros').update({ nombre: nombre }).eq('grupo_id', grupoId).eq('user_id', currentUid)); },
     // reparto habitual del grupo: { user_id: porcentaje } o null (a partes iguales). Solo administradores.
+    // quién puede editar los gastos del grupo: 'todos' o 'autor' (y los administradores). Solo administradores.
+    edicion: function (grupoId, valor) { return q(sb.from('grupos').update({ edicion: valor }).eq('id', grupoId).select('id')).then(function (d) { if (!d || !d.length) throw new Error('no_autorizado'); return d; }); },
     reparto: function (grupoId, reparto) { return q(sb.from('grupos').update({ reparto: reparto }).eq('id', grupoId).select('id')).then(function (d) { if (!d || !d.length) throw new Error('no_autorizado'); return d; }); },
   };
   function rpc(fn, params) { return q(sb.rpc(fn, params || {})); }
