@@ -1,5 +1,69 @@
 # Fase 4 · Inicio: propuesta de Producto y diseño (17/10/2026)
 
+## Versión 2 (17/10/2026, tras la respuesta del dueño)
+
+Bocetos (prueba, no son la app; 375 × 667 px, datos inventados) en `docs/img/`:
+- `inicio-boceto-v2-oscuro.png`: con datos, «Tu mes» desde que cobras.
+- `inicio-boceto-v2-claro.png`: los mismos datos con el mes del 1 al 31, para ver la línea «Previsto».
+- `inicio-boceto-v2-tu-mes.png`: la hoja para cambiar el mes.
+- `inicio-boceto-v2-nuevo.png`: usuario nuevo.
+
+**Ya decidido por el dueño:** cada usuario elige su mes (del 1 al 31, o desde el día que cobra); se quita el selector «Hoy · Semana y tareas · Calendario»; no se da ninguna cifra por día.
+
+### Conclusión
+
+1. Inicio se queda en **dos preguntas**: «¿Cómo voy este mes?» (una cifra) y «¿Qué tengo que hacer estos días?» (3 filas). Todo lo demás se ve al tocar.
+2. **La cifra grande es siempre real.** Lo que se calcula con la nómina sale aparte, en una línea con borde de puntos y la etiqueta **PREVISTO**. Nunca se suma a la cifra grande.
+3. El mes se cambia de un toque: la píldora «Octubre · desde el 28 sep ⌄» de la tarjeta abre la hoja «Tu mes». La misma hoja está en Tú y es una pregunta del asistente de bienvenida.
+
+### Qué cambia respecto a la versión 1, y por qué
+
+| Se quita o cambia | Por qué |
+|---|---|
+| Las tres cifras Ingresos / Gastos / Apartado | No responden a «¿cómo voy?» de un vistazo; están a un toque (la cifra grande abre Movimientos → Resumen) |
+| La barra de colores | Repetía las tres cifras en otro formato |
+| «Faltan 11 días» y «unos 54 € al día» | Decisión del dueño; el periodo ya se lee en la píldora |
+| «Lo próximo» y «Pendiente», juntos en «Estos días» | Una sola lista, **3 filas** (antes 4), más altas (62 px) y con más aire |
+| Las filas de más | Ya no hay fila «Y N más»: el enlace de la cabecera dice «Ver los 4 ›» y abre la lista entera agrupada (Por confirmar · Vencido · Próximos días). Si no hay más, dice «Agenda ›» |
+| «Mañana» en texto | Ahora es una hojita de calendario («OCT 18») en ámbar; el rojo queda solo para lo vencido |
+| Usuario nuevo | Sin ceros llamativos: la cifra en gris, una frase («Apunta lo que cobras y lo que gastas, y aquí verás cómo vas») y solo 2 pasos. «¿Qué día cobras?» pasa al asistente de bienvenida |
+
+### La línea PREVISTO
+
+- Sale **solo si falta por llegar un cobro recurrente antes de que acabe tu mes**. Con el mes del 1 al 31 y la nómina el 28, sale casi todo el mes; con «desde que cobro», casi nunca: la pantalla queda más limpia.
+- Su cifra es la real, más los cobros previstos y menos los pagos recurrentes que faltan. En el ejemplo: −1.200,10 + 1.800 (nómina) − 55 (luz) − 35 (gimnasio) = 509,90 €.
+- Al tocarla se abre el desglose: cada línea marcada como «previsto» y el importe de la nómina tomado del cobro recurrente, con la nota «Tu nómina puede variar».
+- Cuando llega el cobro de verdad, la línea desaparece y la cifra grande ya lo incluye.
+- Los límites del mes se fijan **por el día** de cobro, nunca por el importe. Que la nómina cambie de un mes a otro solo afecta a la línea PREVISTO.
+
+### Con poco y con mucho
+
+| Situación | Qué se ve |
+|---|---|
+| Usuario nuevo | Tarjeta con la cifra en gris y una frase; «Empieza aquí» con 2 pasos |
+| Nada pendiente | «Estos días» dice «Todo al día ✓» y muestra lo próximo en una sola línea |
+| Muchos avisos | Siempre 3 filas, por urgencia: confirmar un pago, lo vencido, el presupuesto pasado, lo de Juntos y lo próximo. El resto, en «Ver los N ›» |
+| Una sola cuenta | Sin la línea «En tus cuentas»: la tarjeta queda aún más corta |
+
+### Riesgos
+
+- Ocultar Ingresos / Gastos / Apartado puede hacer que alguien no encuentre «cuánto he gastado». Se mitiga porque la cifra grande lleva al Resumen; conviene comprobarlo con la pareja y los amigos.
+- La línea PREVISTO depende de que los cobros recurrentes estén bien apuntados. Si no hay ninguno, no sale.
+
+### Preguntas que debe decidir el dueño
+
+1. **(Bloquea)** ¿Quitamos de verdad Ingresos / Gastos / Apartado de Inicio y los dejamos a un toque, en el Resumen?
+2. ¿La línea PREVISTO resta también los pagos recurrentes que faltan (luz, gimnasio…), o solo suma la nómina prevista? Recomiendo lo primero: es más realista para planificarse.
+
+### Lo que no hemos podido averiguar o confirmar
+
+- Los bocetos usan las fuentes del sistema, no las de la app, y no se han probado en un móvil real.
+- No se ha medido con el texto grande del sistema activado.
+
+---
+
+## Versión 1
+
 Capturas «antes» y boceto «después» en `docs/img/` (móvil de 375 × 667 px, modo oscuro, datos de ejemplo inventados). El boceto es una **prueba** dibujada aparte: no es la app.
 
 ## Conclusión
