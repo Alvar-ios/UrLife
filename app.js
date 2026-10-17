@@ -1687,7 +1687,9 @@ async function cargarGrupos() {
       sc.forEach((i) => { if (i.reclamado_por) { alias[i.id] = i.reclamado_por; if (i.reclamado_por === yo && i.historial !== false) misAlias.add(i.id); } });
       const sinCuenta = sc.filter((i) => !i.baja && !i.reclamado_por).map((i) => ({ user_id: i.id, nombre: i.nombre, rol: 'sin_cuenta', sinCuenta: true, creado_por: i.creado_por, created_at: i.created_at }));
       const nombres = sc.map((i) => ({ user_id: i.id, nombre: i.nombre, sinCuenta: true }));
-      return { id: g.id, nombre: g.nombre, tipo: g.tipo, reparto: g.reparto, edicion: g.edicion || 'todos', alias,
+      let reparto = g.reparto;
+      if (reparto && typeof reparto === 'object' && Object.keys(alias).length) { reparto = {}; Object.keys(g.reparto).forEach((k) => { const u = alias[k] || k; reparto[u] = num(reparto[u]) + num(g.reparto[k]); }); }
+      return { id: g.id, nombre: g.nombre, tipo: g.tipo, reparto, edicion: g.edicion || 'todos', alias,
         miembros: activos.concat(sinCuenta).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || '')), todos: ms.concat(nombres), soyAdmin: !!(mio && mio.rol === 'admin'), miNombre: mio ? mio.nombre : '' };
     }).sort((a, b) => a.nombre.localeCompare(b.nombre));
     S._misAlias = misAlias; S._ef = null; // «tu parte» puede cambiar si ocupaste el sitio de alguien
@@ -1835,7 +1837,7 @@ function reclamarHtml() {
   return '<div class="handle"></div><h2>Te han guardado un sitio</h2>' +
     '<div class="unirse-card"><div class="unirse-nombre">' + escapeHtml(i.nombre_grupo || '') + '</div><div class="unirse-meta">Entrarás como <b>' + escapeHtml(i.nombre || '') + '</b>' + (n ? ' · ' + n + (n === 1 ? ' gasto apuntado a tu nombre' : ' gastos apuntados a tu nombre') : '') + '</div></div>' +
     (n ? '<div class="field"><label>¿Esos gastos cuentan también en tus números?</label>' +
-      '<div class="rec-hint" style="margin:0 0 8px;">En las cuentas del grupo cuentan siempre. Aquí decides si también salen en tu Inicio y tus Movimientos, en los meses en que se hicieron.</div>' +
+      '<div class="rec-hint" style="margin:0 0 8px;">En las cuentas del grupo cuentan siempre. Aquí decides si también salen en tu Inicio y tus Movimientos, en los meses en que se hicieron. <b>Si ya los habías apuntado tú en la app, elige «No»</b> para no contarlos dos veces.</div>' +
       '<div class="chips">' + [['1', 'Sí, que cuenten'], ['0', 'No, solo en el grupo']].map(([k, l]) => '<button type="button" class="chip' + ((FORM.historial ? '1' : '0') === k ? ' active' : '') + '" ' + act('reclamarHistorial', k) + '>' + l + '</button>').join('') + '</div></div>' : '') +
     '<div class="rec-hint" style="margin-bottom:6px;">Tus movimientos siguen siendo privados: el grupo solo verá lo que compartas en él.</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('reclamarCerrar', '') + '>Ahora no</button><button class="btn accent block" ' + act('reclamarConfirmar') + '>Entrar</button></div>';
@@ -1976,7 +1978,7 @@ function destinosCompartir() {
   const yo = miUid(), gs = S.grupos || [], out = [], vistos = new Set();
   gs.filter((g) => g.tipo === 'grupo' && g.miembros.length >= 2).forEach((g) => out.push({ k: 'g:' + g.id, label: g.nombre, grupo: true }));
   gs.filter((g) => g.tipo === 'directo' && g.miembros.length === 2).forEach((g) => { const o = otroDe(g); if (o && !vistos.has(o.user_id)) { vistos.add(o.user_id); out.push({ k: 'g:' + g.id, label: o.nombre }); } });
-  gs.filter((g) => g.tipo === 'grupo').forEach((g) => g.miembros.forEach((m) => { if (m.user_id !== yo && !vistos.has(m.user_id)) { vistos.add(m.user_id); out.push({ k: 'u:' + m.user_id, label: m.nombre }); } }));
+  gs.filter((g) => g.tipo === 'grupo').forEach((g) => g.miembros.forEach((m) => { if (m.user_id !== yo && !m.sinCuenta && !vistos.has(m.user_id)) { vistos.add(m.user_id); out.push({ k: 'u:' + m.user_id, label: m.nombre }); } }));
   return out;
 }
 // Por defecto: con quien compartiste la última vez; si no, tu único grupo.
@@ -1996,7 +1998,7 @@ function miembrosComp() {
   if (k.indexOf('g:') === 0) {
     const gid = k.slice(2), g = grupoDe(gid), c = FORM.compId ? compPorId(FORM.compId) : null;
     ms = g ? g.miembros.map((m) => ({ uid: m.user_id, nombre: m.nombre })) : [];
-    if (c && c.grupoId === gid) [c.pagadoPor].concat(Object.keys(c.reparto || {})).forEach((u) => { if (!ms.some((m) => m.uid === u)) ms.push({ uid: u, nombre: nombreDe(gid, u) }); });
+    if (c && c.grupoId === gid) [c.pagadoPor].concat(Object.keys(c.reparto || {})).map((u) => aliasDe(gid, u)).forEach((u) => { if (!ms.some((m) => m.uid === u)) ms.push({ uid: u, nombre: nombreDe(gid, u) }); });
   } else if (k.indexOf('u:') === 0) ms = [{ uid: yo, nombre: miNombreAlguno() }, { uid: k.slice(2), nombre: nombreDe(null, k.slice(2)) }];
   return ms.sort((a, b) => (b.uid === yo) - (a.uid === yo)); // tú primero
 }
@@ -2027,11 +2029,13 @@ function calcReparto(cp, imp, ms) {
   return { reparto: out };
 }
 function compFormDesde(c) {
-  const cp = { on: true, dest: 'g:' + c.grupoId, pagador: c.pagadoPor, modo: c.modo || 'igual', incl: {}, vals: {}, objetivo: c.objetivoId || null, clase: claseComp(c.tipo) };
-  const ks = Object.keys(c.reparto || {});
-  ks.forEach((u) => { cp.incl[u] = num(c.reparto[u]) > 0; });
-  if (cp.modo === 'porcentaje') { const p = pctsCuadrados(ks.map((u) => ({ u, x: num(c.reparto[u]) }))); ks.forEach((u) => { cp.vals[u] = String(p[u]); }); }
-  else ks.forEach((u) => { cp.vals[u] = String(num(c.reparto[u])); });
+  const al = (u) => aliasDe(c.grupoId, u), rep = {};
+  Object.keys(c.reparto || {}).forEach((u) => { rep[al(u)] = num(rep[al(u)]) + num(c.reparto[u]); });
+  const cp = { on: true, dest: 'g:' + c.grupoId, pagador: al(c.pagadoPor), modo: c.modo || 'igual', incl: {}, vals: {}, objetivo: c.objetivoId || null, clase: claseComp(c.tipo) };
+  const ks = Object.keys(rep);
+  ks.forEach((u) => { cp.incl[u] = rep[u] > 0; });
+  if (cp.modo === 'porcentaje') { const p = pctsCuadrados(ks.map((u) => ({ u, x: rep[u] }))); ks.forEach((u) => { cp.vals[u] = String(p[u]); }); }
+  else ks.forEach((u) => { cp.vals[u] = String(r2(rep[u])); });
   return cp;
 }
 function claseComp(tipo) { return TIPO_OBJ[tipo] || 'gasto'; }
@@ -2135,7 +2139,7 @@ function refrescarComp(soloResumen) {
 function puedeEditarComp(c) {
   const g = c && grupoDe(c.grupoId);
   if (!g) return false;
-  return g.edicion !== 'autor' || !c.creadoPor || c.creadoPor === miUid() || g.soyAdmin;
+  return g.edicion !== 'autor' || (!!c.creadoPor && c.creadoPor === miUid()) || g.soyAdmin;
 }
 const AVISO_PERMISO = 'En este grupo solo quien lo apuntó o un administrador puede cambiarlo.';
 function openCompForm(cid) {
@@ -2239,14 +2243,14 @@ function deudaTxt(d, gid) {
   return n(d.de) + ' debe <b class="tnum">' + money(d.importe) + '</b> a ' + n(d.a);
 }
 function compRowGrupo(c) {
-  const yo = miUid(), n = (u) => escapeHtml(nombreDe(c.grupoId, u));
+  const n = (u) => escapeHtml(nombreDe(c.grupoId, u)), mio = (u) => esMio(c.grupoId, u);
   if (c.tipo === 'Liquidación') {
     const a = Object.keys(c.reparto || {})[0];
-    const t = c.pagadoPor === yo ? 'Pagaste a ' + n(a) : a === yo ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a);
+    const t = mio(c.pagadoPor) ? 'Pagaste a ' + n(a) : mio(a) ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a);
     return '<div class="row" ' + act('compAbrir', c.id, c.grupoId) + '><span class="dot" style="background:var(--text-faint)"></span><div class="main"><div class="ttl">' + t + '</div><div class="meta">' + fmtDateShort(c.fecha) + ' · para saldar cuentas</div></div><div class="amt tnum">' + money(c.importe) + '</div></div>';
   }
   return '<div class="row" ' + act('compAbrir', c.id, c.grupoId) + '><span class="dot" style="background:var(--' + (TIPO_COLOR[c.tipo] || 'debt') + ')"></span><div class="main"><div class="ttl">' + escapeHtml(c.categoria || c.tipo) + '</div>' +
-    '<div class="meta">' + fmtDateShort(c.fecha) + (c.descripcion ? ' · ' + escapeHtml(c.descripcion) : '') + ' · ' + (c.tipo === 'Ahorro' ? (c.pagadoPor === yo ? 'aportaste tú' : 'aportó ' + n(c.pagadoPor)) : (c.pagadoPor === yo ? 'pagaste tú' : 'pagó ' + n(c.pagadoPor))) + '</div></div>' +
+    '<div class="meta">' + fmtDateShort(c.fecha) + (c.descripcion ? ' · ' + escapeHtml(c.descripcion) : '') + ' · ' + (c.tipo === 'Ahorro' ? (mio(c.pagadoPor) ? 'aportaste tú' : 'aportó ' + n(c.pagadoPor)) : (mio(c.pagadoPor) ? 'pagaste tú' : 'pagó ' + n(c.pagadoPor))) + '</div></div>' +
     '<div class="amt tnum">' + money(c.importe) + '<div class="amt-sub">tu parte ' + money(miParte(c)) + '</div></div></div>';
 }
 function cuentasGrupoHtml(g) {
@@ -2333,7 +2337,7 @@ function objAplicarLocal(o) { S.objetivos = (S.objetivos || []).filter((x) => x.
 function objQuitarLocal(id) { S.objetivos = (S.objetivos || []).filter((x) => x.id !== id); }
 function objStats(o) {
   const cs = aportesDe(o), deuda = o.tipo === 'deuda', porPersona = {};
-  cs.forEach((c) => Object.keys(c.reparto || {}).forEach((u) => { porPersona[u] = (porPersona[u] || 0) + num(c.reparto[u]); }));
+  cs.forEach((c) => Object.keys(c.reparto || {}).forEach((u0) => { const u = aliasDe(o.grupoId, u0); porPersona[u] = (porPersona[u] || 0) + num(c.reparto[u0]); }));
   const acum = num(o.previo) + cs.reduce((a, c) => a + num(c.importe), 0);
   const obj = num(o.objetivo), falta = Math.max(0, obj - acum), pct = obj > 0 ? acum / obj * 100 : null;
   const hoy = todayISO(), desde = isoDaysAgo(90);
