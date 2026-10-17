@@ -65,6 +65,7 @@ npm test        # ejecuta todas; node run.js 31 ejecuta solo las que contienen �
 - Hecho: **varias cuentas, fase 1** y sus arreglos (17/10/2026) → ver `docs/PLAN_CUENTAS.md`. Incluye traspasos, «Convertir en traspaso», «Tu saldo» (banco + lo que dice Juntos) y la hoja de cada cuenta.
 - Hecho (17/10/2026): **personas sin cuenta en los grupos**, administradores y «quién puede cambiar los gastos» (migración `personas_sin_cuenta`).
 - Ahora: **fase 4, pulir pantalla a pantalla**. Primera: Inicio (`docs/01-inicio.md`). «Tu mes» (`cfg().mesInicio`: del 1 al 31 o desde el día que cobras) se calcula SIEMPRE con `mesDe(fecha)` / `rangoMes(y, m)`: no uses `fecha.slice(0, 7)` para saber el mes de un movimiento. Lo «previsto» (con la nómina) se enseña siempre aparte y como previsión, nunca como dato real.
+- Hecho (17/10/2026): **Movimientos** (`docs/02-movimientos.md`): se entra en el Resumen; vistas Resumen | Lista | Calendario con la misma cabecera; anillo con máx. 6 colores y subcategorías; colores fijos por categoría (`colorCat`); filtros raros en la hoja «Filtros»; el cambio de vista o de mes desliza solo el cuerpo (`movDeslizar`), nunca repintar con `entra`.
 - Solo existe el aspecto «Nuevo» (el Clásico está oculto desde el 17/10/2026).
 - Más adelante: fase 2 de cuentas (importar por cuenta, recurrentes por cuenta, saldar desde una cuenta); paso a APK.
 - Marketing: **en pausa** hasta que la app esté funcionando (ver `docs/marketing/PLAN.md`).
