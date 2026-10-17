@@ -1035,7 +1035,7 @@ function irMovs(o) {
 const mesClave = (y, m) => 'm:' + y + '-' + pad2(m);
 function movsFiltrados() {
   let movs = movsEfectivos().filter(inPeriodo);
-  if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta));
+  if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta)).concat(flujosJuntosFilas(S.movCuenta).filter(inPeriodo));
   if (S.movFiltroTipo === '_comp') movs = movs.filter((m) => m.comp);
   else if (S.movFiltroTipo === '_ticket') movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
   else if (GRUPOS_TIPO[S.movFiltroTipo]) movs = movs.filter((m) => GRUPOS_TIPO[S.movFiltroTipo].includes(m.tipo));
@@ -1087,6 +1087,18 @@ function movAddCtxHtml() {
 // Traspasos en la lista: solo en «Todos» (sin categoría), en gris y sin sumar al balance
 // un gasto compartido sale de una cuenta si lo pagaste tú (de momento, siempre desde la principal)
 function compSaleDeCuenta(c, id) { const pc = cuentaPrincipal(); return !!c && c.pagadoPor === miUid() && !!SIGNO_CUENTA[c.tipo] && !!pc && pc.id === id; }
+// Lo que mueve dinero en la cuenta principal desde Juntos y no está en tus movimientos: lo que pagaste entero por otros
+// (tu parte es 0) y lo que pagas o recibes al saldar. Importe 0 en tus números: solo se enseña lo que salió o entró.
+function flujosJuntosFilas(id) {
+  const pc = cuentaPrincipal(), yo = miUid(); if (!pc || pc.id !== id) return [];
+  const out = [];
+  (S.compartidos || []).forEach((c) => {
+    const liq = c.tipo === 'Liquidación';
+    if (liq ? !(c.pagadoPor === yo || (c.reparto && c.reparto[yo] != null)) : !(compSaleDeCuenta(c, id) && !(miParte(c) > 0))) return;
+    out.push({ id: 'c:' + c.id, fecha: c.fecha, tipo: liq ? 'Liquidación' : c.tipo, categoria: liq ? 'Saldar deudas' : (c.categoria || 'Compartido'), descripcion: c.descripcion || '', importe: 0, comp: c, flujo: true });
+  });
+  return out;
+}
 function movCuentaActiva() { return !!S.movCuenta && hayVariasCuentas() && !!cuentaPorId(S.movCuenta); }
 function traspasosFiltrados() {
   if (S.movFiltroTipo !== 'Todos' || S.movCat) return [];
@@ -1139,11 +1151,16 @@ function renderMovRow(m) {
 }
 function renderMovRowBase(m) {
   const eff = effect(m.importe, m.tipo), c = m.comp;
-  return '<div class="row' + (S._aterriza && S._aterriza === m.id ? ' aterriza' : '') + '" ' + act('openMovForm', m.id) + '>' +
+  // un pago al saldar se ve en su grupo de Juntos (no es un gasto que se edite aquí)
+  const abrir = c && c.tipo === 'Liquidación' && m.flujo ? act('grupoVer', c.grupoId) : act('openMovForm', m.id);
+  return '<div class="row' + (S._aterriza && S._aterriza === m.id ? ' aterriza' : '') + '" ' + abrir + '>' +
     movIcHtml(m) +
     '<div class="main"><div class="ttl">' + (!c && hayVariasCuentas() && tocaCuenta(m) && cuentaPorId(cuentaIdDe(m)) ? '<span class="dot cuenta-dot" title="' + escapeHtml(nombreCuenta(cuentaIdDe(m))) + '" style="background:' + colorCuenta(cuentaPorId(cuentaIdDe(m))) + '"></span>' : '') + escapeHtml(m.categoria || 'Sin categoría') + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
     '<div class="meta">' + (c ? escapeHtml([m.subcategoria, m.descripcion].filter(Boolean).concat([compQuienTxt(c)]).join(' · ')) : escapeHtml([m.subcategoria, m.descripcion, m.tipo === 'Factura' ? 'Fijo' : m.tipo === 'Gasto' && (m.subcategoria || m.descripcion || m.metodoPago) ? '' : tipoTxt(m.tipo), m.metodoPago].filter(Boolean).join(' · '))) + '</div></div>' +
-    (c && movCuentaActiva() && compSaleDeCuenta(c, S.movCuenta)
+    (c && c.tipo === 'Liquidación' && m.flujo
+      ? (() => { const sale = c.pagadoPor === miUid(), v = sale ? num(c.importe) : num((c.reparto || {})[miUid()]);
+        return '<div class="amt tnum ' + (sale ? 'neg' : 'pos') + '">' + (sale ? '−' : '+') + money(v) + '<div class="amt-sub">' + (sale ? 'pagaste al saldar' : 'te pagaron al saldar') + '</div></div></div>'; })()
+      : c && movCuentaActiva() && compSaleDeCuenta(c, S.movCuenta)
       ? '<div class="amt tnum neg">' + importeFilaHtml(c.importe, m.tipo) + '<div class="amt-sub">pagaste tú · tu parte ' + money(m.importe) + '</div></div></div>'
       : '<div class="amt tnum ' + (esApartado(m.tipo) ? 'sav' : eff >= 0 ? 'pos' : 'neg') + '">' + importeFilaHtml(m.importe, m.tipo) + (c ? '<div class="amt-sub">tu parte de ' + money(c.importe) + '</div>' : '') + '</div></div>');
 }
@@ -3547,20 +3564,14 @@ function saldoCuenta(c) {
   (S.traspasos || []).forEach((t) => { if (!posteriorA(t, c)) return; if (t.cuentaId === c.id) s -= num(t.importe); if (t.cuentaDestinoId === c.id) s += num(t.importe); });
   return Math.round(s * 100) / 100;
 }
-// Gastos compartidos desde la cuenta principal: lo que te deben (+) o debes (−) en el periodo de la cuenta.
-// Pagar una deuda o recibirla no cambia tu saldo «de verdad»: se resta/suma igual en el banco y en la deuda.
+// «Tu saldo» de la cuenta principal: lo que hay en el banco más lo que dice Juntos (te deben +, debes −), en todos tus grupos.
+// Pagar o recibir una deuda no lo cambia: lo que entra o sale del banco se compensa con la deuda.
 function compartidosCuenta(c) {
-  const pc = cuentaPrincipal(); let neto = 0, n = 0;
+  const pc = cuentaPrincipal();
   if (!pc || pc.id !== c.id) return { neto: 0, n: 0 };
-  const yo = miUid();
-  (S.compartidos || []).forEach((x) => {
-    const esLiq = x.tipo === 'Liquidación';
-    if (!esLiq && !SIGNO_CUENTA[x.tipo]) return;
-    if (!posteriorA({ fecha: x.fecha, creadoEn: x.createdAt ? Date.parse(x.createdAt) : 0 }, c)) return;
-    const pagoYo = x.pagadoPor === yo ? num(x.importe) : 0, miaReparto = miParte(x);
-    neto += pagoYo - miaReparto; n++;
-  });
-  return { neto: Math.round(neto * 100) / 100, n };
+  const cs = S.compartidos || [], grupos = [...new Set(cs.map((x) => x.grupoId).filter(Boolean))];
+  const neto = grupos.reduce((a, g) => a + miSaldo(g), 0);
+  return { neto: Math.round(neto * 100) / 100, n: cs.length };
 }
 function fechaLarga(iso) { return fmtDateShort(iso) + ' ' + iso.slice(0, 4); }
 function cuentaFechaTxt(c) {
@@ -3698,7 +3709,12 @@ function trasChipsHtml(campo) {
 }
 // Un gasto o ingreso normal (sin compartir, sin meta, sin inversión) se puede pasar a traspaso si hay 2 o más cuentas
 function convertibleATraspaso(m) {
-  return !!m && hayVariasCuentas() && ['Gasto', 'Factura', 'Ingreso'].includes(m.tipo) && !m.compartidoId && !m.metaId && !(m.metaIds && m.metaIds.length) && !m.activoId;
+  return !!m && hayVariasCuentas() && ['Gasto', 'Factura', 'Ingreso'].includes(m.tipo) && !m.compartidoId && !m.metaId && !(m.metaIds && m.metaIds.length) && !m.activoId && !esDeRecurrente(m);
+}
+// ¿es la nómina, un recibo u otro cobro o pago fijo de los que Inicio pregunta «¿Se ha producido?»?
+function esDeRecurrente(m) {
+  const n = normName(nombreRec(m));
+  return recurrentes().some((rc) => rc.tipo === m.tipo && normName(rc.nombre) === n);
 }
 function openTraspasoForm(id, pre) {
   const t = id ? (S.traspasos || []).find((x) => x.id === id) : null, pc = cuentaPrincipal();
@@ -3729,7 +3745,7 @@ async function saveTraspaso() {
   const orig = FORM.convertir ? S.movimientos.find((x) => x.id === FORM.convertir) : null;
   if (FORM.convertir && !orig) return toast('No encuentro el movimiento');
   const data = Object.assign(ex ? stripId(ex) : { creadoEn: orig ? (orig.creadoEn || Date.now()) : Date.now() }, { tipo: 'Traspaso', categoria: 'Traspaso', importe, fecha, cuentaId: FORM.desde, cuentaDestinoId: FORM.a, descripcion: $('#fDesc').value.trim() },
-    orig ? { subcategoria: null, metodoPago: null, articulos: null } : {});
+    orig ? { subcategoria: null, metodoPago: null, articulos: null, lote: null } : {});
   const idGuardar = FORM.id || FORM.convertir;
   FORM.guardando = true;
   try {
@@ -6304,7 +6320,12 @@ const H = {
   },
   cuentaCampo: ([i, f], el) => {
     const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {});
-    if (f === 'saldo') { const n = parseFloat(el.value); c.saldo = el.value === '' || !isFinite(n) ? null : n; c.fecha = todayISO(); c.ts = Date.now(); }
+    if (f === 'saldo') {
+      const n = parseFloat(el.value);
+      // casilla vacía o rara: no se borra el saldo que ya había (se vuelve a enseñar)
+      if (el.value === '' || !isFinite(n)) { if (c.saldo != null) { el.value = saldoCuenta(c) == null ? '' : saldoCuenta(c); toast('Para cambiar el saldo, escribe una cantidad'); } return; }
+      c.saldo = n; c.fecha = todayISO(); c.ts = Date.now();
+    }
     else if (f === 'tipo') c.tipo = el.value;
     else c.nombre = el.value.trim();
     cs[Number(i)] = c; saveConfig({ cuentas: cs }); if (f !== 'saldo' && f !== 'nombre') updateSheet(cuentasHtml()); render();
@@ -6314,7 +6335,7 @@ const H = {
   movAtraspaso: ([id]) => {
     const m = S.movimientos.find((x) => x.id === id); if (!convertibleATraspaso(m)) return;
     const suya = cuentaIdDe(m), otra = (cuentasCfg().find((c) => c.id !== suya) || {}).id;
-    const ingreso = m.tipo === 'Ingreso';
+    const ingreso = (m.tipo === 'Ingreso') !== (num(m.importe) < 0); // una devolución de un gasto es dinero que entra
     openTraspasoForm(null, { convertir: m.id, desde: ingreso ? otra : suya, a: ingreso ? suya : otra, importe: Math.abs(num(m.importe)), fecha: m.fecha, descripcion: m.descripcion || '' });
   },
   cuentaPrincipalNo: () => { principalPendiente = null; updateSheet(cuentasHtml()); },
