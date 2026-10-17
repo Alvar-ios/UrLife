@@ -3197,7 +3197,7 @@ function heroMesHtml() {
     '<div class="hero2-top"><button type="button" class="mes-pill' + anim + '" ' + act('tuMesAbrir') + '><b>' + MESES[m - 1] + (y !== mesActual().y ? ' ' + y : '') + '</b><span>· ' + mesPillTxt(y, m) + '</span><span class="mes-pill-ic">' + ic('chevR') + '</span></button>' +
     '<span class="hero2-flechas"><button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
     '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
-    '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (actual ? 'Te queda este mes' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (disp < 0 ? ' neg' : '') + (nuevo ? ' vacio' : '') + '">' + cifraHtml(disp) + '</span></button>' +
+    '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (disp < 0 ? ' neg' : '') + (nuevo ? ' vacio' : '') + '">' + cifraHtml(disp) + '</span></button>' +
     (nuevo ? '<p class="hero-nuevo">Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.</p>' : heroBarraHtml(k)) +
     (pv ? '<button type="button" class="hero-prev tappable" ' + act('previstoAbrir') + '><span class="prev-tag">Previsto</span><span class="prev-l">a fin de mes</span><b class="tnum">' + money(pv.total) + '</b>' + ic('chevR') + '</button>' : '') +
     (nuevo || !actual ? '' : lineaCuentasHtml()) + '</section>';
@@ -3227,7 +3227,8 @@ function insightsHtml() {
   const card = (tono, icono, t, d, a) => cards.push('<button type="button" class="ins-card tappable ' + tono + '" ' + a + '><span class="ins-ic">' + ic(icono) + '</span><span class="ins-t">' + t + '</span><span class="ins-d">' + d + '</span></button>');
   if (g.antes.t > 0 && g.ahora.t > 0) {
     const dif = g.ahora.t - g.antes.t, pct = Math.round(dif / g.antes.t * 100);
-    card(pct > 5 ? 'malo' : pct < -5 ? 'bueno' : '', pct > 0 ? 'arrowUp' : 'arrowDown', Math.abs(pct) < 1 ? 'Igual que en ' + mesAnt : (pct > 0 ? '+' : '−') + Math.abs(pct) + ' % de gasto',
+    if (g.antes.t < 30 || Math.abs(pct) > 300) card(dif > 0 ? 'malo' : 'bueno', dif > 0 ? 'arrowUp' : 'arrowDown', money(g.ahora.t) + ' gastados', (dif > 0 ? money(dif) + ' más' : money(-dif) + ' menos') + ' que en ' + mesAnt + (g.enCurso ? ' a estas alturas' : ''), act('heroResumen'));
+    else card(pct > 5 ? 'malo' : pct < -5 ? 'bueno' : '', pct > 0 ? 'arrowUp' : 'arrowDown', Math.abs(pct) < 1 ? 'Igual que en ' + mesAnt : (pct > 0 ? '+' : '−') + Math.abs(pct) + ' % de gasto',
       (Math.abs(pct) < 1 ? 'Vas al mismo ritmo' : (pct > 0 ? money(dif) + ' más' : money(-dif) + ' menos')) + ' que en ' + mesAnt + (g.enCurso ? ' a estas alturas' : ''), act('heroResumen'));
   }
   const subida = Object.keys(g.ahora.o).map((c) => ({ c, d: g.ahora.o[c] - (g.antes.o[c] || 0) })).filter((x) => x.d >= 10).sort((a, b) => b.d - a.d)[0];
@@ -3238,15 +3239,15 @@ function insightsHtml() {
   const justa = pres.filter((x) => x.r <= x.p && x.r >= x.p * 0.8).sort((a, b) => b.r / b.p - a.r / a.p)[0];
   if (pasada) card('malo', 'alert', 'Te has pasado en ' + escapeHtml(pasada.c), money(pasada.r - pasada.p) + ' por encima de su presupuesto', act('irMovs', '_gastos', mk, pasada.c));
   else if (justa && actual) card('aviso', 'alert', escapeHtml(justa.c) + ' va justo', 'Te quedan ' + money(justa.p - justa.r) + ' de ' + money(justa.p), act('irMovs', '_gastos', mk, justa.c));
-  else if (pres.length && pres.every((x) => x.r <= x.p)) card('bueno', 'checkCircle', 'Dentro de tus presupuestos', 'En todas las categorías con presupuesto', act('heroResumen'));
+  else if (pres.length && pres.some((x) => x.r > 0) && pres.every((x) => x.r <= x.p)) card('bueno', 'checkCircle', 'Dentro de tus presupuestos', 'En todas las categorías con presupuesto', act('heroResumen'));
   if (actual && (S.compartidos || []).length) {
     const pc = cuentaPrincipal(), neto = pc ? compartidosCuenta(pc).neto : [...new Set((S.compartidos || []).map((x) => x.grupoId).filter(Boolean))].reduce((a, gid) => a + miSaldo(gid), 0);
     if (Math.abs(neto) >= 0.01) card(neto > 0 ? 'bueno' : 'aviso', 'users', neto > 0 ? 'Te deben ' + money(neto) : 'Debes ' + money(-neto), 'En Juntos, sumando tus grupos', act('goTab', 'juntos'));
   }
   const r = rangoMes(y, m), hoy = todayISO(), conGasto = new Set(kpisMes(y, m).movs.filter((x) => x.tipo === 'Gasto').map((x) => (x.fecha || '').slice(0, 10)));
   let primero = '9999'; S.movimientos.forEach((x) => { if (x.fecha && x.fecha.slice(0, 10) < primero) primero = x.fecha.slice(0, 10); });
-  let sin = 0; for (let f = r.desde > primero ? r.desde : primero; f <= r.hasta && f <= hoy; f = addDaysISO(f, 1)) if (!conGasto.has(f)) sin++;
-  if (sin >= 2) card('bueno', 'sparkle', sin + ' días sin gastos', actual ? 'Este mes, sin contar los fijos' : 'En ' + MESES[m - 1].toLowerCase() + ', sin contar los fijos', act('irMovsCal', mk));
+  let sin = 0; for (let f = r.desde > primero ? r.desde : primero; f <= r.hasta && f < hoy; f = addDaysISO(f, 1)) if (!conGasto.has(f)) sin++; // hoy aún no ha terminado
+  if (sin >= 2 && conGasto.size) card('bueno', 'sparkle', sin + ' días sin gastos', actual ? 'Este mes, sin contar los fijos' : 'En ' + MESES[m - 1].toLowerCase() + ', sin contar los fijos', act('irMovsCal', mk));
   if (!cards.length) return '';
   return '<div class="section-title">Así vas</div><div class="ins-scroll">' + cards.slice(0, 5).join('') + '</div>';
 }
@@ -4108,6 +4109,7 @@ function cuentaVerHtml(id) {
     (v == null ? '' : '<div class="sv-real-l">Saldo real · lo que dice tu banco</div>') + '<div class="cuentas-total tnum">' + (v == null ? '—' : money(v)) + '</div>' +
     '<div class="rec-hint" style="margin:-4px 0 12px;">' + escapeHtml(tipoCuentaTxt(c)) + (v == null ? ' · aún no has puesto su saldo' : ' · ' + cuentaFechaTxt(c)) + '</div>' +
     (v != null && compartidosCuenta(c).n ? cuentaDosSaldosHtml(c, v) : '') +
+    ((S.compartidos || []).length && cuentaPrincipal() && cuentaPrincipal().id !== c.id ? '<div class="rec-hint" style="margin:0 2px 12px;">Ojo: de momento, lo que pagas en Juntos cuenta siempre en tu cuenta principal (' + escapeHtml(cuentaPrincipal().nombre) + '), aunque lo pagues con esta.</div>' : '') +
     '<div class="cuenta-acc">' + (v == null ? '<button class="btn accent block" ' + act('cuentaEditar', i) + '>Poner el saldo</button>' : '<button class="btn accent block" ' + act('cuadrarAbrir', i, id) + '>Cuadrar</button>') +
     '<button class="btn ghost block" ' + act('irMovsCuenta', id) + '>Ver movimientos</button></div>' +
     (ult.length ? '<div class="section-title">Últimos movimientos</div><div class="list">' + ult.map((m) => esTraspaso(m) ? renderTraspasoRow(m, true) : renderMovRowBase(m)).join('') + '</div>' : '') +

@@ -1,6 +1,6 @@
 // Calidad (17/10/2026): revisión de la rama fase4/feedback-paloma.
 // Parte 1: casos raros que ya funcionan (saldo real y virtual, Inicio con cambio de mes, «Así vas», anillo).
-// Parte 2 («FALLO CONOCIDO»): fallos encontrados en la revisión. Fallan a propósito hasta que Desarrollo los arregle.
+// Parte 2 («Arreglado»): fallos encontrados en la revisión. Fallan a propósito hasta que Desarrollo los arregle.
 // Sin datos reales: importes, nombres e ids inventados.
 console.error = () => {};
 const { makeEnv, sleep, click } = require('./harness.js');
@@ -130,15 +130,15 @@ const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   A.H.donutSel(['Ocio']); await sleep(5); A.H.donutSel(['Ocio']); await sleep(10);
   ok(A.S.tab === 'movimientos' && A.S.movVista === 'lista' && A.S.movCat === 'Ocio', 'tocar dos veces una categoría sin subcategorías lleva a sus movimientos');
 
-  /* ===== 5. FALLO CONOCIDO ===== */
+  /* ===== 5. Arreglado ===== */
   // 5a. A primeros de mes, si el mes anterior «a estas alturas» casi no tenía gasto, sale un porcentaje absurdo (+29900 %)
   e = await env({ hoy: '2026-10-02', cuentas: [], movs: [{ id: 'a', tipo: 'Gasto', categoria: 'Super', importe: 1, fecha: '2026-09-01' }, { id: 'b', tipo: 'Gasto', categoria: 'Ocio', importe: 300, fecha: '2026-10-01' }] });
   const pcts = cards(e).map((c) => (c.match(/[+−](\d+) % de gasto/) || [])[1]).filter(Boolean).map(Number);
-  ok(!pcts.some((p) => p > 999), 'FALLO CONOCIDO: «Así vas» no debe enseñar porcentajes de 4-5 cifras cuando el mes anterior casi no tenía gasto (sale: ' + cards(e).join(' | ') + ')');
+  ok(!pcts.some((p) => p > 999), 'Arreglado: «Así vas» no debe enseñar porcentajes de 4-5 cifras cuando el mes anterior casi no tenía gasto (sale: ' + cards(e).join(' | ') + ')');
   // 5b. Un mes pasado sin ningún gasto apuntado (la persona no usó la app) presume de «30 días sin gastos» y «Dentro de tus presupuestos»
   e = await env({ cuentas: [], movs: [{ id: 'a', tipo: 'Gasto', categoria: 'Super', importe: 20, fecha: '2026-08-10' }, { id: 'b', tipo: 'Gasto', categoria: 'Super', importe: 30, fecha: '2026-10-02' }] });
   e.w.__APP__.H.inicioMes(['-1']); await sleep(5);
-  ok(/^Septiembre/.test(pill(e)) && !cards(e).some((c) => /días sin gastos|Dentro de tus presupuestos/.test(c)), 'FALLO CONOCIDO: en un mes sin ningún gasto apuntado no debe decir «días sin gastos» ni «Dentro de tus presupuestos» (sale: ' + cards(e).join(' | ') + ')');
+  ok(/^Septiembre/.test(pill(e)) && !cards(e).some((c) => /días sin gastos|Dentro de tus presupuestos/.test(c)), 'Arreglado: en un mes sin ningún gasto apuntado no debe decir «días sin gastos» ni «Dentro de tus presupuestos» (sale: ' + cards(e).join(' | ') + ')');
 
   console.log(fails ? 'FAILED ' + fails : 'ALL PASS'); process.exit(fails ? 1 : 0);
 })().catch((x) => { console.log('CRASH', x && x.stack); process.exit(1); });
