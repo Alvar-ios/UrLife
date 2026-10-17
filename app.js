@@ -116,16 +116,21 @@ function inicioTramo(y, m, dia) {
   return dateISO(d);
 }
 // a qué mes pertenece una fecha ('AAAA-MM'). Con «desde que cobro» el mes se llama por el mes en que termina: lo del 28 de septiembre ya es de octubre
+// Si cobras a final de mes (día 16–31), el mes se llama por el mes en que termina (del 28 sep al 27 oct = octubre);
+// si cobras a principio (día 2–15), por el mes en que empieza (del 5 oct al 4 nov = octubre)
+const COBRO_FIN = 16;
 function mesDe(iso) {
   if (!iso || iso.length < 7) return '';
   const c = mesCfg(); if (c.modo !== 'cobro') return iso.slice(0, 7);
   let y = Number(iso.slice(0, 4)), m = Number(iso.slice(5, 7)); const f = iso.slice(0, 10);
   for (let i = 0; i < 2 && f >= inicioTramo(y, m, c.dia); i++) { m++; if (m > 12) { m = 1; y++; } }
+  if (c.dia < COBRO_FIN) { m--; if (m < 1) { m = 12; y--; } }
   return y + '-' + pad2(m);
 }
 function rangoMes(y, m, c0) {
   const c = c0 || mesCfg();
   if (c.modo !== 'cobro') return { desde: y + '-' + pad2(m) + '-01', hasta: y + '-' + pad2(m) + '-' + pad2(new Date(y, m, 0).getDate()) };
+  if (c.dia < COBRO_FIN) { m++; if (m > 12) { m = 1; y++; } } // el tramo que se llama «m» acaba en el mes siguiente
   return { desde: inicioTramo(m === 1 ? y - 1 : y, m === 1 ? 12 : m - 1, c.dia), hasta: addDaysISO(inicioTramo(y, m, c.dia), -1) };
 }
 function mesActual() { const k = mesDe(todayISO()); return { y: Number(k.slice(0, 4)), m: Number(k.slice(5, 7)) }; }
@@ -1021,7 +1026,7 @@ function movLimites() {
 function movNavHtml(dir, sinTodo) {
   const p = movPerNorm(S.movPeriodo), modo = /^m:/.test(p) ? 'mes' : /^y:/.test(p) ? 'anio' : 'todo', lim = movLimites();
   let lbl = 'Todo', sub = 'tu historial completo', ant = false, sig = false;
-  if (modo === 'mes') { const [y, m] = p.slice(2).split('-').map(Number); lbl = '<span class="mes-l" data-c="' + MESES_ABR[m - 1] + '">' + MESES[m - 1] + '</span>'; sub = mesCfg().modo === 'cobro' ? ' ' + rangoTxt(y, m) : ' ' + y; ant = p.slice(2) > lim.min; sig = p.slice(2) < lim.max; }
+  if (modo === 'mes') { const [y, m] = p.slice(2).split('-').map(Number); lbl = '<span class="mes-l" data-c="' + MESES_ABR[m - 1] + '">' + MESES[m - 1] + '</span>'; sub = mesCfg().modo === 'cobro' ? ' ' + y + ' · ' + rangoTxt(y, m) : ' ' + y; ant = p.slice(2) > lim.min; sig = p.slice(2) < lim.max; }
   else if (modo === 'anio') { lbl = p.slice(2); sub = ' el año entero'; ant = lbl > lim.min.slice(0, 4); sig = lbl < lim.max.slice(0, 4); }
   const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
   const flecha = (d, ok, icono, aria) => '<button class="mov-flecha" aria-label="' + aria + '" ' + (ok ? act('movPerMover', d) : 'disabled') + '>' + ic(icono) + '</button>';
@@ -2992,19 +2997,21 @@ function heroMesHtml() {
    Es una previsión (la nómina puede variar): solo sale si todavía falta algún cobro en tu mes. */
 function previstoMes(y, m) {
   const r = rangoMes(y, m), hoy = todayISO(); if (hoy > r.hasta) return null;
-  const items = [];
+  const items = [], sinImporte = [];
   recurrentes().forEach((rc) => {
     if (!rc.regla) return;
+    const base = rc.desde || '2026-10-01'; // como los avisos: solo desde que existe el fijo
     estadoOcurrencias(rc, ocurrencias(rc.regla, uAdd(r.desde, -40), r.hasta)).forEach((o) => {
-      if (o.iso < r.desde || o.iso > r.hasta || o.estado !== 'pend') return;
-      const imp = importePrevisto(rc, o.iso); if (imp == null || !(imp > 0)) return;
+      if (o.iso < r.desde || o.iso > r.hasta || o.iso < base || o.estado !== 'pend') return;
+      const imp = importePrevisto(rc, o.iso);
+      if (imp == null || !(imp > 0)) { if (sinImporte.indexOf(rc.nombre) < 0) sinImporte.push(rc.nombre); return; }
       items.push({ nombre: rc.nombre, iso: o.iso, imp, signo: rc.kind === 'cobro' ? 1 : -1 });
     });
   });
   if (!items.some((x) => x.signo > 0)) return null;
   items.sort((a, b) => a.iso.localeCompare(b.iso));
   const hoyV = kpisMes(y, m).disponible;
-  return { hoy: hoyV, items, total: r2(hoyV + items.reduce((a, x) => a + x.signo * x.imp, 0)) };
+  return { hoy: hoyV, items, sinImporte, total: r2(hoyV + items.reduce((a, x) => a + x.signo * x.imp, 0)) };
 }
 function previstoHtml() {
   const { y, m } = mesActual(), pv = previstoMes(y, m), hoy = todayISO();
@@ -3013,7 +3020,8 @@ function previstoHtml() {
     '<div class="rec-hint" style="margin:-8px 0 12px;">Tu mes: ' + rangoTxt(y, m) + '</div>' +
     (pv ? '<div class="card prev-lista">' + fila('Te queda hoy', 'Lo apuntado hasta ahora', money(pv.hoy), '') +
       pv.items.map((x) => fila((x.signo > 0 ? '+ ' : '− ') + escapeHtml(x.nombre), fmtDateShort(x.iso).toLowerCase() + (x.iso < hoy ? ' · sin confirmar' : '') + ' · ' + (x.signo > 0 ? 'cobro fijo' : 'pago fijo'), money(x.imp), x.signo > 0 ? 'pos' : 'neg')).join('') +
-      fila('Previsto a fin de mes', '', money(pv.total), 'total') + '</div>'
+      fila('Previsto a fin de mes', '', money(pv.total), 'total') + '</div>' +
+      (pv.sinImporte.length ? '<div class="rec-hint" style="margin:-4px 0 12px;">' + escapeHtml(pv.sinImporte.join(', ')) + ': sin importe guardado, no se cuenta' + (pv.sinImporte.length > 1 ? 'n' : '') + '.</div>' : '')
       : '<div class="card" style="font-size:14px;">Ahora mismo no queda ningún cobro fijo por llegar en tu mes.</div>') +
     '<div class="info-card"><span class="info-ic">' + ic('sparkle') + '</span><div><b>Es una previsión, no un dato real.</b> Se calcula con el importe de tus cobros y pagos fijos, y tu nómina puede variar de un mes a otro. Sirve para planificarte.</div></div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('openRecurrentes') + '>Ver mis fijos</button><button class="btn accent block" ' + act('closeSheet') + '>Entendido</button></div>';
@@ -3028,7 +3036,7 @@ function tuMesHtml() {
     op('natural', 'Del 1 al 31', 'El mes del calendario. ' + ej({ modo: 'natural', dia: 1 }) + '.') +
     op('cobro', 'Desde el día que cobro', 'Tu mes va de nómina a nómina. ' + ej({ modo: 'cobro', dia: F.dia }) + '.',
       '<div class="field tumes-dia"><label>Cobro el día</label><select id="fTuMesDia" ' + onChange('tuMesDia') + '>' + dias.map((d) => '<option value="' + d + '"' + (d === F.dia ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' +
-      '<div class="rec-hint" style="margin:-4px 0 10px;">Si ese día cae en fin de semana, tu mes empieza el viernes anterior. Si el mes no tiene ese día, el último.</div>') +
+      '<div class="rec-hint" style="margin:-4px 0 10px;">Elige el día más temprano en que sueles cobrar. Si cae en fin de semana, tu mes empieza el viernes anterior; si el mes no tiene ese día, el último.</div>') +
     '<div class="actions"><button class="btn accent block" ' + act('tuMesGuardar') + '>Listo</button></div>';
 }
 /* «Estos días»: lo que hay que hacer o mirar (como mucho 3 a la vista) */
@@ -6033,7 +6041,7 @@ const H = {
   irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
   irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
   setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; render(); },
-  verAnio: () => irResumen('y:' + new Date().getFullYear()),
+  verAnio: () => irResumen('y:' + mesActual().y),
   openBuscar: () => { FORM = { kind: 'buscar' }; if ($('#sheetBackdrop')) updateSheet(buscarHtml()); else openSheet(buscarHtml()); setTimeout(() => { const el = $('#qBuscar'); if (el) el.focus(); }, 80); },
   buscarGlobal: (_a, el) => { clearTimeout(S._buscarT); const pintar = () => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); }; if (S.movimientos.length > 800) S._buscarT = setTimeout(pintar, 140); else pintar(); },
   buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
@@ -6801,7 +6809,7 @@ const H = {
   // onboarding
   startOnboardingManually: () => { S.onboarding = freshOnboardingState(true); render(); },
   obMesModo: ([v]) => { const ob = S.onboarding; if (!ob) return; ob.mesModo = v === 'Desde el día que cobro' ? 'cobro' : 'natural'; render(); },
-  obMesDia: (_a, el) => { const ob = S.onboarding; if (!ob) return; ob.mesDia = Math.min(31, Math.max(2, Math.round(Number(el.value)) || 28)); },
+  obMesDia: (_a, el) => { const ob = S.onboarding; if (!ob) return; const d = Math.round(Number(el.value)) || 28; if (d <= 1) { ob.mesModo = 'natural'; ob.mesDia = 28; render(); return; } ob.mesDia = Math.min(31, d); },
   obNext: () => { const ob = S.onboarding; if (ob && ob.step < ONB_STEPS - 1) { ob.step++; render(); } },
   obBack: () => { const ob = S.onboarding; if (ob && ob.step > 0) { ob.step--; render(); } },
   obToggleCat: ([n]) => {

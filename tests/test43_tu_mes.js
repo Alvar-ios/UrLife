@@ -78,6 +78,20 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
   click(e, 'infoTeQuedaCerrar'); await sleep(10);
   ok(!/Así sale/.test(txt(e)), '«Entendido» la quita');
 
+  /* 6b. Arreglos de la revisión de Calidad */
+  e = await env({ mesInicio: { modo: 'cobro', dia: 5 } }); A = e.w.__APP__;
+  ok(A.mesDe('2026-10-05') === '2026-10' && A.mesDe('2026-11-04') === '2026-10' && A.rangoMes(2026, 10).desde === '2026-10-05' && A.rangoMes(2026, 10).hasta === '2026-11-04', 'cobro a principio de mes (día 5): «octubre» va del 5 oct al 4 nov, no se llama «noviembre»');
+  ok(A.mesDe('2026-12-31') === '2026-12' && A.mesDe('2027-01-04') === '2026-12' && A.rangoMes(2026, 12).hasta === '2027-01-04', 'y cruza bien el año');
+  const hoyD = Number(hace(0).slice(8, 10));
+  if (hoyD >= 3) {
+    const viejo = { cobros: [{ nombre: 'Nómina', importe: 1800, regla: { t: 'dia', dia: hoyD - 2, ajuste: '' }, desde: hace(0) }, { nombre: 'Extra', importe: 100, regla: { t: 'dia', dia: Math.min(28, hoyD + 1), ajuste: '' }, desde: hace(40) }],
+      facturas: [{ nombre: 'Agua', regla: { t: 'dia', dia: Math.min(28, hoyD + 1), ajuste: '' }, desde: hace(40) }] };
+    e = await env(viejo, []); A = e.w.__APP__;
+    const ma2 = A.mesActual(), pv2 = A.previstoMes(ma2.y, ma2.m);
+    ok(!pv2 || !pv2.items.some((x) => x.nombre === 'Nómina'), 'un cobro fijo recién creado no cuenta su fecha de este mes que ya pasó');
+    if (pv2) { A.H.previstoAbrir([]); await sleep(10); ok(/Agua: sin importe guardado, no se cuenta/.test(sh(e)), 'los pagos fijos sin importe se avisan en el desglose'); A.H.closeSheet([]); await sleep(260); }
+  }
+
   /* 7. Usuario nuevo y bienvenida */
   e = await env({}, []); A = e.w.__APP__;
   ok(/Apunta lo que cobras y lo que gastas/.test(txt(e)) && e.doc.querySelectorAll('.empieza-paso').length === 2, 'usuario nuevo: una frase y dos pasos');
