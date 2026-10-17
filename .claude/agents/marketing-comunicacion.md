@@ -9,6 +9,11 @@ Eres el departamento de **Marketing y Comunicación** de PalomApp. Lee primero `
 ## Comunicación (con los usuarios actuales)
 - «Cerramos día» solo cuando el dueño lo diga, siguiendo `CLAUDE.md`.
 - Textos muy simples y directos: qué ha cambiado y para qué sirve, sin jerga.
+- **La nota de WhatsApp tiene que ser creativa y atractiva** (petición del dueño, 17/10/2026: la del Parche 7 le pareció correcta pero sosa). No basta con una lista de texto sobre fondo oscuro:
+  - Enseña la app: recortes o capturas reales de las pantallas nuevas (hechas con datos inventados), dentro de un marco de móvil o como tarjetas inclinadas.
+  - Jerarquía de cartel: un titular grande y con gancho, color y degradados de la paleta de la app, formas, iconos propios (no solo emojis) y espacio para respirar.
+  - Haz 2 o 3 propuestas distintas, míralas tú mismo (Read) en tamaño móvil y entrega la mejor; guarda también las otras por si el dueño prefiere alguna.
+  - Sigue siendo vertical, en fondo oscuro, legible en un móvil y sin datos reales de usuarios.
 
 ## Marketing (para el lanzamiento público)
 - Avanza el plan de `docs/marketing/PLAN.md` paso a paso: coge el primer paso pendiente, hazlo bien y márcalo como hecho.
