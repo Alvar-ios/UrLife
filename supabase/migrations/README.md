@@ -103,3 +103,8 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - `movimientos.cuenta_id` (texto, opcional): cuenta de la que sale o a la que entra el movimiento (el `id` de `config.cuentas`). Vacía = la cuenta principal.
 - `movimientos.cuenta_destino_id` (texto, opcional): cuenta de destino en un traspaso.
 - Solo añade columnas vacías; no cambia ningún dato. Ver `docs/PLAN_CUENTAS.md`.
+
+## Traspasos (17/10): movimientos_tipo_traspaso
+- La regla `movimientos_tipo_check` admite ahora también `tipo = 'Traspaso'` (antes solo Ingreso, Factura, Gasto, Ahorro, Inversión y Deuda). Sin esto, la base de datos rechazaba cada traspaso.
+- Solo amplía la lista de tipos permitidos; no cambia ningún dato.
+- Probado con una inserción dentro de una transacción que se deshace: se acepta y no queda nada guardado.
