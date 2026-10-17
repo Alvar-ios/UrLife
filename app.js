@@ -457,7 +457,7 @@ const S = {
   movFiltroTipo: 'Todos', movCuenta: '', movPeriodo: mesHoyClave(), movQuery: '', movLimit: 120,
   invModo: lsGet('invModo') === 'rentab' ? 'rentab' : 'valor',
   theme: lsGet('theme') || 'auto',
-  look: lsGet('look') === 'clasico' ? 'clasico' : 'nuevo', paleta: lsGet('paleta') || 'violeta', tipo: lsGet('tipo') || 'bricolage',
+  look: 'nuevo', paleta: lsGet('paleta') || 'violeta', tipo: lsGet('tipo') || 'bricolage',
   loadingMsg: 'Cargando tus datos…',
   onboarding: null, _onboardPending: false,
 };
@@ -498,11 +498,9 @@ function aspectoHtml() {
   const pal = PALETAS.map(([id, n, l, d]) => '<button type="button" class="asp-sw' + (S.paleta === id ? ' on' : '') + '" ' + act('setPaleta', id) + '><i style="background:linear-gradient(135deg,' + l + ' 50%,' + d + ' 50%)">' + ic('check') + '</i>' + n + '</button>').join('');
   const tip = TIPOS_CIFRA.map(([id, n, f]) => '<button type="button" class="asp-tp' + (S.tipo === id ? ' on' : '') + '" ' + act('setTipo', id) + '><span class="n" style="--asp-f:' + f + '">' + money(1234.56) + '</span><span class="l">' + n + '</span></button>').join('');
   return '<div class="handle"></div><h2>Aspecto y sensaciones</h2>' +
-    '<div class="asp-sec"><div class="section-title" style="margin-top:0;">Estilo</div><div class="segmented">' + [['nuevo', 'Nuevo'], ['clasico', 'Clásico']].map(([id, l]) => '<button class="' + (S.look === id ? 'active' : '') + '" ' + act('setLook', id) + '>' + l + '</button>').join('') + '</div>' +
-    '<div class="rec-hint">«Clásico» es la app tal y como estaba antes. Puedes cambiar cuando quieras: no se toca ningún dato.</div></div>' +
-    '<div class="asp-sec asp-solo-nuevo"><div class="section-title">Color</div><div class="asp-pal">' + pal + '</div></div>' +
+    '<div class="asp-sec"><div class="section-title" style="margin-top:0;">Color</div><div class="asp-pal">' + pal + '</div></div>' +
     '<div class="asp-sec asp-solo-nuevo"><div class="section-title">Cifras y titulares</div><div class="asp-tipos">' + tip + '</div></div>' +
-    '<div class="asp-sec"><div class="section-title" style="margin-top:0;">Sensaciones</div>' +
+    '<div class="asp-sec"><div class="section-title">Sensaciones</div>' +
     '<div class="asp-fila"><div class="t">Vibración<span>Un toque suave al guardar, completar o conseguir una meta.</span></div><button type="button" class="link" ' + act('probarSens', 'ok') + '>Probar</button>' + sw('vibra', v) + '</div>' +
     '<div class="asp-fila"><div class="t">Sonido<span>Sonidos cortos y suaves. Se pueden apagar aquí en cualquier momento.</span></div><button type="button" class="link" ' + act('probarSens', 'hito') + '>Probar</button>' + sw('sonido', so) + '</div>' +
     (typeof navigator !== 'undefined' && !navigator.vibrate ? '<div class="asp-nota">Este dispositivo no deja que las páginas web vibren (pasa en iPhone). Probamos un truco de iOS 17.4 o más que puede funcionar o no. En Android, y en la app instalada, sí funciona.</div>' : '') + '</div>' +
@@ -885,7 +883,7 @@ function render() {
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
   if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
-  if (!S._novRevisado || lsGet('unirse')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
+  if (!S._novRevisado || lsGet('unirse') || lsGet('soy')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
 }
 
 
@@ -1036,7 +1034,8 @@ const mesClave = (y, m) => 'm:' + y + '-' + pad2(m);
 function movsFiltrados() {
   let movs = movsEfectivos().filter(inPeriodo);
   if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta)).concat(flujosJuntosFilas(S.movCuenta).filter(inPeriodo));
-  if (S.movFiltroTipo === '_comp') movs = movs.filter((m) => m.comp);
+  if (S.movFiltroTipo === '_tras') movs = [];
+  else if (S.movFiltroTipo === '_comp') movs = movs.filter((m) => m.comp);
   else if (S.movFiltroTipo === '_ticket') movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
   else if (GRUPOS_TIPO[S.movFiltroTipo]) movs = movs.filter((m) => GRUPOS_TIPO[S.movFiltroTipo].includes(m.tipo));
   else if (S.movFiltroTipo !== 'Todos') movs = movs.filter((m) => m.tipo === S.movFiltroTipo);
@@ -1067,7 +1066,7 @@ function renderMovimientos() {
     movAddCtxHtml() +
     subFiltroHtml() + movCuentaFiltroHtml() +
     '<div class="field" style="margin-bottom:10px;"><input type="search" id="movSearch" placeholder="Buscar en esta lista" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></div>' +
-    '<div class="pill-row">' + [['Todos', 'Todos'], ['Ingreso', 'Ingresos'], ['_gastos', 'Gastos'], ['Factura', 'Fijos'], ['Ahorro', 'Apartado'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="pill-row">' + [['Todos', 'Todos'], ['Ingreso', 'Ingresos'], ['_gastos', 'Gastos'], ['Factura', 'Fijos'], ['Ahorro', 'Apartado'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat((S.traspasos || []).length ? [['_tras', 'Traspasos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
     '<div id="movList" class="' + (dir && !reduceMotion() ? (dir > 0 ? 'desde-der' : 'desde-izq') : '') + '">' + renderMovList() + '</div>';
 }
 function movCuentaFiltroHtml() {
@@ -1101,7 +1100,7 @@ function flujosJuntosFilas(id) {
 }
 function movCuentaActiva() { return !!S.movCuenta && hayVariasCuentas() && !!cuentaPorId(S.movCuenta); }
 function traspasosFiltrados() {
-  if (S.movFiltroTipo !== 'Todos' || S.movCat) return [];
+  if ((S.movFiltroTipo !== 'Todos' && S.movFiltroTipo !== '_tras') || S.movCat) return [];
   const q = S.movQuery.trim().toLowerCase(), cu = movCuentaActiva() ? S.movCuenta : null;
   return (S.traspasos || []).filter(inPeriodo).filter((t) => !cu || t.cuentaId === cu || t.cuentaDestinoId === cu).filter((t) => !q || [t.descripcion, 'traspaso', nombreCuenta(t.cuentaId), nombreCuenta(t.cuentaDestinoId)].some((x) => (x || '').toLowerCase().includes(q)));
 }
@@ -1351,7 +1350,7 @@ function openMovForm(id, pre) {
     metodos.map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' +
     '<div id="artField">' + artFieldHtml(comp || ex) + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + (S._volverGrupo ? act('grupoVer', S._volverGrupo) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
-    (comp ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>'
+    (comp ? (puedeEditarComp(comp) ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>' : '<div class="rec-hint" style="margin-top:10px;">' + AVISO_PERMISO + '</div>')
       : ex ? (convertibleATraspaso(ex) ? '<button class="btn ghost block" style="margin-top:10px;" ' + act('movAtraspaso', ex.id) + '>' + ic('swap') + ' Convertir en traspaso</button>' : '') +
         '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteMov') + '>' + ic('trash') + ' Eliminar movimiento</button>' : '')
   );
@@ -1671,20 +1670,29 @@ function nombreSugerido() {
   const e = ((S.user && S.user.email) || '').split('@')[0].replace(/[._\-]+/g, ' ').replace(/\d+/g, '').trim().split(' ')[0] || 'Yo';
   return e.charAt(0).toUpperCase() + e.slice(1);
 }
-const ERR_GRUPO = { no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
+const ERR_GRUPO = { 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
   demasiadas_invitaciones: 'Hay demasiados enlaces pendientes. Anula alguno.', demasiados_grupos: 'Has creado muchos grupos hoy. Prueba mañana.', usa_salir: 'Para irte tú, usa «Salir del grupo».', sin_sesion: 'Tienes que iniciar sesión.',
   saldo_pendiente: 'Hay cuentas pendientes. Saldadlas antes (botón «Saldar»).', reparto_no_cuadra: 'El reparto no suma el total.', reparto_no_valido: 'Revisa el reparto: solo puede incluir a miembros.', pagador_no_valido: 'Quien pagó tiene que ser del grupo.', compartido_borrado: 'Ese gasto ya se había eliminado.', objetivo_no_valido: 'Elige una meta o deuda de ese grupo.', objetivo_borrado: 'Esa meta o deuda ya se había eliminado.' };
 function errGrupo(e) { const m = String((e && (e.message || (e.original && e.original.message))) || ''); const k = Object.keys(ERR_GRUPO).find((x) => m.indexOf(x) >= 0); return k ? ERR_GRUPO[k] : 'No se pudo completar. Revisa tu conexión.'; }
 async function cargarGrupos() {
   if (!gruposDisponible()) return;
   try {
-    const r = await S.db.grupos.listar(), yo = miUid();
+    const r = await S.db.grupos.listar(), yo = miUid(), misAlias = new Set();
     S.grupos = r.grupos.filter((g) => !g.cerrado).map((g) => {
       const ms = r.miembros.filter((m) => m.grupo_id === g.id);
       const activos = ms.filter((m) => !m.baja);
       const mio = activos.find((m) => m.user_id === yo);
-      return { id: g.id, nombre: g.nombre, tipo: g.tipo, reparto: g.reparto, miembros: activos.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || '')), todos: ms, soyAdmin: !!(mio && mio.rol === 'admin'), miNombre: mio ? mio.nombre : '' };
+      // personas sin cuenta: entran como un miembro más (sin cuenta); si alguien ocupó su sitio, su id es un «alias» de esa persona
+      const sc = (r.sinCuenta || []).filter((i) => i.grupo_id === g.id), alias = {};
+      sc.forEach((i) => { if (i.reclamado_por) { alias[i.id] = i.reclamado_por; if (i.reclamado_por === yo && i.historial !== false) misAlias.add(i.id); } });
+      const sinCuenta = sc.filter((i) => !i.baja && !i.reclamado_por).map((i) => ({ user_id: i.id, nombre: i.nombre, rol: 'sin_cuenta', sinCuenta: true, creado_por: i.creado_por, created_at: i.created_at }));
+      const nombres = sc.map((i) => ({ user_id: i.id, nombre: i.nombre, sinCuenta: true }));
+      let reparto = g.reparto;
+      if (reparto && typeof reparto === 'object' && Object.keys(alias).length) { reparto = {}; Object.keys(g.reparto).forEach((k) => { const u = alias[k] || k; reparto[u] = num(reparto[u]) + num(g.reparto[k]); }); }
+      return { id: g.id, nombre: g.nombre, tipo: g.tipo, reparto, edicion: g.edicion || 'todos', alias,
+        miembros: activos.concat(sinCuenta).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || '')), todos: ms.concat(nombres), soyAdmin: !!(mio && mio.rol === 'admin'), miNombre: mio ? mio.nombre : '' };
     }).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    S._misAlias = misAlias; S._ef = null; // «tu parte» puede cambiar si ocupaste el sitio de alguien
   } catch (e) { console.error(e); S.grupos = S.grupos || []; }
 }
 function iniciales(n) { return String(n || '?').trim().split(/\s+/).map((x) => x.charAt(0)).join('').slice(0, 2).toUpperCase(); }
@@ -1729,9 +1737,9 @@ function grupoHtml(id) {
   return '<div class="handle"></div><h2>' + escapeHtml(g.nombre) + '</h2>' +
     (g.miembros.length >= 2 ? cuentasGrupoHtml(g) + objetivosGrupoHtml(g) : '') +
     (g.soyAdmin ? '<div class="field" style="margin-top:14px;"><label>Nombre del grupo</label><div style="display:flex;gap:8px;"><input id="gRenombrar" type="text" maxlength="60" value="' + escapeHtml(g.nombre) + '"><button class="btn sm ghost" ' + act('grupoRenombrar', g.id) + '>Guardar</button></div></div>' : '') +
-    '<div class="section-title">Miembros (' + g.miembros.length + ')</div><div class="list">' +
-    g.miembros.map((m, i) => '<div class="row static">' + avatarHtml(m, i) + '<div class="main"><div class="ttl">' + escapeHtml(m.nombre) + (m.user_id === yo ? ' <span class="hint">(tú)</span>' : '') + '</div><div class="meta">' + (m.rol === 'admin' ? 'Administrador' : 'Miembro') + '</div></div>' +
-      (g.soyAdmin && m.user_id !== yo ? '<button class="btn sm ghost" ' + act('grupoQuitar', g.id, m.user_id) + '>Quitar</button>' : '') + '</div>').join('') + '</div>' +
+    '<div class="section-title">Miembros (' + g.miembros.length + ')</div><div class="list miembros-lista">' +
+    g.miembros.map((m, i) => miembroFilaHtml(g, m, i)).join('') + '</div>' +
+    sinCuentaAnadirHtml(g) + permisosGrupoHtml(g) +
     (g.miembros.length >= 2 ? repartoHabitualHtml(g) : '') +
     '<div class="field" style="margin-top:12px;"><label>Tu nombre en este grupo</label><div style="display:flex;gap:8px;"><input id="gMiNombreEd" type="text" maxlength="40" value="' + escapeHtml(g.miNombre) + '"><button class="btn sm ghost" ' + act('grupoMiNombre', g.id) + '>Guardar</button></div></div>' +
     grupoAnadirAmigosHtml(g) +
@@ -1748,6 +1756,30 @@ function grupoHtml(id) {
     '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Salir del grupo</button>' +
     (g.soyAdmin && g.miembros.length > 1 ? '<button class="btn danger block" style="margin-top:8px;" ' + act('grupoCerrar', g.id) + '>Cerrar el grupo para todos</button>' : '');
 }
+function miembroFilaHtml(g, m, i) {
+  const yo = miUid(), sc = !!m.sinCuenta, puedeQuitarSc = sc && (g.soyAdmin || m.creado_por === yo);
+  const enl = FORM && FORM.enlaceSC && FORM.enlaceSC.id === m.user_id ? FORM.enlaceSC : null;
+  const botones = sc
+    ? '<button class="btn sm ghost" ' + act('sinCuentaEnlace', g.id, m.user_id) + '>Invitarle a la app</button>' + (puedeQuitarSc ? '<button class="btn sm ghost" ' + act('sinCuentaQuitar', g.id, m.user_id) + '>Quitar</button>' : '')
+    : (g.soyAdmin && m.user_id !== yo ? '<button class="btn sm ghost" ' + act('rolCambiar', g.id, m.user_id, m.rol === 'admin' ? '0' : '1') + '>' + (m.rol === 'admin' ? 'Quitar admin' : 'Hacer admin') + '</button><button class="btn sm ghost" ' + act('grupoQuitar', g.id, m.user_id) + '>Quitar</button>' : '');
+  return '<div class="row static miembro-fila' + (sc ? ' sin-cuenta' : '') + '">' + avatarHtml(m, i) + '<div class="main"><div class="ttl">' + escapeHtml(m.nombre) + (m.user_id === yo ? ' <span class="hint">(tú)</span>' : '') + '</div>' +
+    '<div class="meta">' + (sc ? '<span class="tag-sincuenta">sin cuenta</span>' : m.rol === 'admin' ? 'Administrador' : 'Miembro') + '</div>' +
+    (botones ? '<div class="miembro-acc">' + botones + '</div>' : '') +
+    (enl ? '<div class="sc-enlace"><a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(enl.msg) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a><button class="btn ghost block" style="margin-top:6px;" ' + act('sinCuentaCopiar') + '>Copiar enlace</button><div class="rec-hint" style="margin-top:6px;">Vale para ' + escapeHtml(m.nombre) + ', una sola vez y durante 7 días. Al abrirlo ocupa su sitio y se queda con sus gastos.</div></div>' : '') +
+    '</div></div>';
+}
+function sinCuentaAnadirHtml(g) {
+  if (g.tipo !== 'grupo') return '';
+  return '<div class="card sc-anadir"><div class="rec-hint" style="margin:0 0 8px;">¿Alguien no tiene la app? Añádelo solo con su nombre y apúntale gastos como a cualquiera. Si un día se la instala, se queda con todo lo suyo.</div>' +
+    '<div class="field" style="display:flex;gap:8px;align-items:center;margin:0;"><input id="gSinCuenta" type="text" maxlength="40" placeholder="Nombre (p. ej. Marta)"><button class="btn sm accent" style="flex:none;" ' + act('sinCuentaAnadir', g.id) + '>' + ic('plus') + ' Añadir</button></div></div>';
+}
+function permisosGrupoHtml(g) {
+  if (g.tipo !== 'grupo' || g.miembros.length < 2) return '';
+  const autor = g.edicion === 'autor';
+  return '<div class="section-title">Quién puede cambiar los gastos</div><div class="card">' +
+    (g.soyAdmin ? '<div class="seg-mini">' + [['todos', 'Todos'], ['autor', 'Quien lo apuntó']].map(([k, l]) => '<button type="button" class="chip' + (g.edicion === k ? ' active' : '') + '" ' + act('grupoEdicion', g.id, k) + '>' + l + '</button>').join('') + '</div>' : '') +
+    '<div class="rec-hint" style="margin:' + (g.soyAdmin ? '8px' : '0') + ' 0 0;">' + (autor ? 'Cada gasto solo lo puede cambiar o borrar quien lo apuntó, y también los administradores.' : 'Cualquier miembro puede cambiar o borrar cualquier gasto del grupo.') + (g.soyAdmin ? '' : ' Lo deciden los administradores.') + '</div></div>';
+}
 function grupoAnadirAmigosHtml(g) {
   const fuera = amigos().filter((a) => !g.miembros.some((m) => m.user_id === a.uid));
   if (!fuera.length) return '';
@@ -1758,6 +1790,8 @@ async function abrirGrupo(id) {
   FORM = { kind: 'grupo', id, invitaciones: [] };
   if ($('#sheetBackdrop')) updateSheet(grupoHtml(id)); else openSheet(grupoHtml(id));
   try { FORM.invitaciones = await S.db.grupos.invitaciones(id); if (FORM.kind === 'grupo' && FORM.id === id) updateSheet(grupoHtml(id)); } catch (e) { /* sin lista de enlaces */ }
+  // al entrar, se refresca el grupo (miembros, personas sin cuenta, administradores y ajustes) por si otro lo cambió
+  const f0 = FORM; await cargarGrupos(); if (FORM === f0 && FORM.kind === 'grupo' && FORM.id === id) { updateSheet(grupoHtml(id)); render(); }
 }
 async function accionGrupo(fn, okMsg) {
   try { const r = await fn(); if (okMsg) toast(okMsg); await cargarGrupos(); return r == null || r === '' ? true : r; }
@@ -1768,9 +1802,13 @@ function capturarEnlaceUnirse() {
   try {
     const u = new URL(window.location.href), t = u.searchParams.get('unirse');
     if (t && /^[A-Za-z0-9_-]{16,64}$/.test(t)) { lsSet('unirse', t); u.searchParams.delete('unirse'); window.history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); }
+    const s2 = u.searchParams.get('soy');
+    if (s2 && /^[A-Za-z0-9_-]{16,64}$/.test(s2)) { lsSet('soy', s2); u.searchParams.delete('soy'); window.history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); }
   } catch (e) { /* sin URL */ }
 }
 async function maybeUnirse() {
+  const soy = lsGet('soy');
+  if (soy && !lsGet('unirse')) return maybeReclamar(soy);
   const t = lsGet('unirse');
   if (!t || S._uniendo || S.onboarding || !allLoaded() || !gruposDisponible()) return;
   S._uniendo = true;
@@ -1778,6 +1816,31 @@ async function maybeUnirse() {
   try { info = await S.db.rpc('ver_invitacion', { p_token: t }); } catch (e) { console.error(e); S._uniendo = false; return; }
   FORM = { kind: 'unirse', token: t, info };
   openSheet(unirseHtml());
+}
+// Ocupar el sitio de una persona sin cuenta con su enlace personal
+async function maybeReclamar(t) {
+  if (S._uniendo || S.onboarding || !allLoaded() || !gruposDisponible()) return;
+  S._uniendo = true;
+  let info = null;
+  try { info = await S.db.rpc('ver_enlace_sin_cuenta', { p_token: t }); } catch (e) { console.error(e); S._uniendo = false; return; }
+  FORM = { kind: 'reclamar', token: t, info: info || {}, historial: true };
+  openSheet(reclamarHtml());
+}
+function reclamarHtml() {
+  const i = FORM.info || {};
+  if (!i.valida) {
+    const txt = i.motivo === 'ya_miembro' ? 'Ya eres miembro de «' + escapeHtml(i.nombre || '') + '».' : i.motivo === 'caducada' ? 'Este enlace ha caducado. Pide uno nuevo a quien te lo mandó.' : i.motivo === 'usada' ? 'Este enlace ya se ha usado.' : 'Este enlace no es válido.';
+    return '<div class="handle"></div><h2>Invitación</h2><div class="card" style="font-size:14px;line-height:1.5;">' + txt + '</div>' +
+      '<div class="actions"><button class="btn accent block" ' + act('reclamarCerrar', i.motivo === 'ya_miembro' ? i.grupo || '' : '') + '>Entendido</button></div>';
+  }
+  const n = Number(i.gastos) || 0;
+  return '<div class="handle"></div><h2>Te han guardado un sitio</h2>' +
+    '<div class="unirse-card"><div class="unirse-nombre">' + escapeHtml(i.nombre_grupo || '') + '</div><div class="unirse-meta">Entrarás como <b>' + escapeHtml(i.nombre || '') + '</b>' + (n ? ' · ' + n + (n === 1 ? ' gasto apuntado a tu nombre' : ' gastos apuntados a tu nombre') : '') + '</div></div>' +
+    (n ? '<div class="field"><label>¿Esos gastos cuentan también en tus números?</label>' +
+      '<div class="rec-hint" style="margin:0 0 8px;">En las cuentas del grupo cuentan siempre. Aquí decides si también salen en tu Inicio y tus Movimientos, en los meses en que se hicieron. <b>Si ya los habías apuntado tú en la app, elige «No»</b> para no contarlos dos veces.</div>' +
+      '<div class="chips">' + [['1', 'Sí, que cuenten'], ['0', 'No, solo en el grupo']].map(([k, l]) => '<button type="button" class="chip' + ((FORM.historial ? '1' : '0') === k ? ' active' : '') + '" ' + act('reclamarHistorial', k) + '>' + l + '</button>').join('') + '</div></div>' : '') +
+    '<div class="rec-hint" style="margin-bottom:6px;">Tus movimientos siguen siendo privados: el grupo solo verá lo que compartas en él.</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('reclamarCerrar', '') + '>Ahora no</button><button class="btn accent block" ' + act('reclamarConfirmar') + '>Entrar</button></div>';
 }
 function unirseHtml() {
   const i = FORM.info || {};
@@ -1813,12 +1876,17 @@ function r2(x) { return Math.round(num(x) * 100) / 100; }
 function numCampo(v) { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : 0; }
 function fmtPct(x) { return num(x).toLocaleString('es-ES', { maximumFractionDigits: 2 }) + ' %'; }
 function compPorId(id) { return (S.compartidos || []).find((c) => c.id === id) || null; }
-function miParte(c) { const v = c && c.reparto ? c.reparto[miUid()] : null; return v == null ? 0 : num(v); }
+function miParte(c) {
+  if (!c || !c.reparto) return 0;
+  let t = num(c.reparto[miUid()]);
+  if (S._misAlias && S._misAlias.size) Object.keys(c.reparto).forEach((k) => { if (S._misAlias.has(k)) t += num(c.reparto[k]); });
+  return t;
+}
 function grupoDe(id) { return (S.grupos || []).find((g) => g.id === id) || null; }
 // Amigos: todas las personas con las que compartes algún grupo o relación directa
 function amigos() {
   const yo = miUid(), out = {};
-  (S.grupos || []).forEach((g) => g.miembros.forEach((m) => { if (m.user_id !== yo && !out[m.user_id]) out[m.user_id] = { uid: m.user_id, nombre: m.nombre }; }));
+  (S.grupos || []).forEach((g) => g.miembros.forEach((m) => { if (m.user_id !== yo && !m.sinCuenta && !out[m.user_id]) out[m.user_id] = { uid: m.user_id, nombre: m.nombre }; }));
   return Object.values(out).sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 function directoCon(uid) { return (S.grupos || []).find((g) => g.tipo === 'directo' && g.miembros.length === 2 && g.miembros.some((m) => m.user_id === uid)) || null; }
@@ -1830,6 +1898,7 @@ function nombreDestino(g) {
 }
 function nombreDe(grupoId, uid) {
   if (uid === miUid()) return 'Tú';
+  if (grupoId && aliasDe(grupoId, uid) !== uid) return nombreDe(grupoId, aliasDe(grupoId, uid));
   const busca = (x) => ((x && (x.todos || x.miembros)) || []).find((m) => m.user_id === uid);
   const m = busca(grupoDe(grupoId)) || (S.grupos || []).map(busca).find(Boolean);
   return m ? m.nombre : 'Alguien';
@@ -1865,14 +1934,17 @@ function compAplicarLocal(c, quitarId) { S.compartidos = (S.compartidos || []).f
 function compQuitarLocal(id) { S.compartidos = (S.compartidos || []).filter((x) => x.id !== id); }
 /* ---- quién debe a quién (en céntimos, para que cuadre exacto) ---- */
 function saldosDe(grupoId) {
-  const s = {};
+  const s = {}, al = (u) => aliasDe(grupoId, u);
   (S.compartidos || []).forEach((c) => {
     if (c.grupoId !== grupoId) return;
-    s[c.pagadoPor] = (s[c.pagadoPor] || 0) + cents(c.importe);
-    Object.keys(c.reparto || {}).forEach((u) => { s[u] = (s[u] || 0) - cents(c.reparto[u]); });
+    const p = al(c.pagadoPor); s[p] = (s[p] || 0) + cents(c.importe);
+    Object.keys(c.reparto || {}).forEach((u0) => { const u = al(u0); s[u] = (s[u] || 0) - cents(c.reparto[u0]); });
   });
   return s;
 }
+// la persona sin cuenta cuyo sitio ocupó alguien cuenta como esa persona
+function aliasDe(grupoId, id) { const g = grupoDe(grupoId); return (g && g.alias && g.alias[id]) || id; }
+function esMio(grupoId, id) { return aliasDe(grupoId, id) === miUid(); }
 function miSaldo(grupoId) { return (saldosDe(grupoId)[miUid()] || 0) / 100; }
 // Simplifica: el que más debe paga al que más le deben, y así hasta cuadrar (pocos pagos).
 function deudasDe(grupoId) {
@@ -1891,7 +1963,7 @@ function deudasDe(grupoId) {
 }
 function saldoTxt(v) { return v > 0.004 ? 'te deben ' + money(v) : v < -0.004 ? 'debes ' + money(-v) : 'en paz'; }
 function saldoColor(v) { return v > 0.004 ? 'var(--income)' : v < -0.004 ? 'var(--expense)' : 'var(--text-faint)'; }
-function compQuienTxt(c) { const ap = c.tipo === 'Ahorro'; return nombreDestino(grupoDe(c.grupoId)) + ' · ' + (c.pagadoPor === miUid() ? (ap ? 'aportaste tú' : 'pagaste tú') : (ap ? 'aportó ' : 'pagó ') + nombreDe(c.grupoId, c.pagadoPor)); }
+function compQuienTxt(c) { const ap = c.tipo === 'Ahorro'; return nombreDestino(grupoDe(c.grupoId)) + ' · ' + (esMio(c.grupoId, c.pagadoPor) ? (ap ? 'aportaste tú' : 'pagaste tú') : (ap ? 'aportó ' : 'pagó ') + nombreDe(c.grupoId, c.pagadoPor)); }
 // Porcentajes con 2 decimales que suman exactamente 100 (el ajuste va al mayor)
 function pctsCuadrados(vals) {
   const tot = vals.reduce((a, v) => a + v.x, 0) || 1, out = {};
@@ -1906,7 +1978,7 @@ function destinosCompartir() {
   const yo = miUid(), gs = S.grupos || [], out = [], vistos = new Set();
   gs.filter((g) => g.tipo === 'grupo' && g.miembros.length >= 2).forEach((g) => out.push({ k: 'g:' + g.id, label: g.nombre, grupo: true }));
   gs.filter((g) => g.tipo === 'directo' && g.miembros.length === 2).forEach((g) => { const o = otroDe(g); if (o && !vistos.has(o.user_id)) { vistos.add(o.user_id); out.push({ k: 'g:' + g.id, label: o.nombre }); } });
-  gs.filter((g) => g.tipo === 'grupo').forEach((g) => g.miembros.forEach((m) => { if (m.user_id !== yo && !vistos.has(m.user_id)) { vistos.add(m.user_id); out.push({ k: 'u:' + m.user_id, label: m.nombre }); } }));
+  gs.filter((g) => g.tipo === 'grupo').forEach((g) => g.miembros.forEach((m) => { if (m.user_id !== yo && !m.sinCuenta && !vistos.has(m.user_id)) { vistos.add(m.user_id); out.push({ k: 'u:' + m.user_id, label: m.nombre }); } }));
   return out;
 }
 // Por defecto: con quien compartiste la última vez; si no, tu único grupo.
@@ -1926,7 +1998,7 @@ function miembrosComp() {
   if (k.indexOf('g:') === 0) {
     const gid = k.slice(2), g = grupoDe(gid), c = FORM.compId ? compPorId(FORM.compId) : null;
     ms = g ? g.miembros.map((m) => ({ uid: m.user_id, nombre: m.nombre })) : [];
-    if (c && c.grupoId === gid) [c.pagadoPor].concat(Object.keys(c.reparto || {})).forEach((u) => { if (!ms.some((m) => m.uid === u)) ms.push({ uid: u, nombre: nombreDe(gid, u) }); });
+    if (c && c.grupoId === gid) [c.pagadoPor].concat(Object.keys(c.reparto || {})).map((u) => aliasDe(gid, u)).forEach((u) => { if (!ms.some((m) => m.uid === u)) ms.push({ uid: u, nombre: nombreDe(gid, u) }); });
   } else if (k.indexOf('u:') === 0) ms = [{ uid: yo, nombre: miNombreAlguno() }, { uid: k.slice(2), nombre: nombreDe(null, k.slice(2)) }];
   return ms.sort((a, b) => (b.uid === yo) - (a.uid === yo)); // tú primero
 }
@@ -1957,11 +2029,13 @@ function calcReparto(cp, imp, ms) {
   return { reparto: out };
 }
 function compFormDesde(c) {
-  const cp = { on: true, dest: 'g:' + c.grupoId, pagador: c.pagadoPor, modo: c.modo || 'igual', incl: {}, vals: {}, objetivo: c.objetivoId || null, clase: claseComp(c.tipo) };
-  const ks = Object.keys(c.reparto || {});
-  ks.forEach((u) => { cp.incl[u] = num(c.reparto[u]) > 0; });
-  if (cp.modo === 'porcentaje') { const p = pctsCuadrados(ks.map((u) => ({ u, x: num(c.reparto[u]) }))); ks.forEach((u) => { cp.vals[u] = String(p[u]); }); }
-  else ks.forEach((u) => { cp.vals[u] = String(num(c.reparto[u])); });
+  const al = (u) => aliasDe(c.grupoId, u), rep = {};
+  Object.keys(c.reparto || {}).forEach((u) => { rep[al(u)] = num(rep[al(u)]) + num(c.reparto[u]); });
+  const cp = { on: true, dest: 'g:' + c.grupoId, pagador: al(c.pagadoPor), modo: c.modo || 'igual', incl: {}, vals: {}, objetivo: c.objetivoId || null, clase: claseComp(c.tipo) };
+  const ks = Object.keys(rep);
+  ks.forEach((u) => { cp.incl[u] = rep[u] > 0; });
+  if (cp.modo === 'porcentaje') { const p = pctsCuadrados(ks.map((u) => ({ u, x: rep[u] }))); ks.forEach((u) => { cp.vals[u] = String(p[u]); }); }
+  else ks.forEach((u) => { cp.vals[u] = String(r2(rep[u])); });
   return cp;
 }
 function claseComp(tipo) { return TIPO_OBJ[tipo] || 'gasto'; }
@@ -2061,6 +2135,13 @@ function refrescarComp(soloResumen) {
   const f = $('#compField'); if (f) f.innerHTML = compFieldHtml();
   refrescarCuentaField();
 }
+// ¿puedo cambiar o borrar este gasto del grupo? Según el ajuste del grupo: todos, o quien lo apuntó (y los administradores)
+function puedeEditarComp(c) {
+  const g = c && grupoDe(c.grupoId);
+  if (!g) return false;
+  return g.edicion !== 'autor' || (!!c.creadoPor && c.creadoPor === miUid()) || g.soyAdmin;
+}
+const AVISO_PERMISO = 'En este grupo solo quien lo apuntó o un administrador puede cambiarlo.';
 function openCompForm(cid) {
   const c = compPorId(cid);
   if (!c) return toast('Ese gasto compartido ya no existe');
@@ -2097,6 +2178,7 @@ async function saveCompartido(d) {
   const r = calcReparto(cp, d.importe, miembrosComp());
   if (r.error) return toast(r.error);
   const t = TIPO_OBJ[FORM.tipo], previo = FORM.compId ? compPorId(FORM.compId) : null;
+  if (previo && !puedeEditarComp(previo)) return toast(AVISO_PERMISO);
   const ob = t ? objPorId(cp.objetivo) : null;
   const huerfana = t && previo && previo.objetivoId && cp.objetivo === previo.objetivoId && !ob && cp.dest === 'g:' + previo.grupoId;
   if (t && !huerfana && (!ob || ob.tipo !== t || cp.dest !== 'g:' + ob.grupoId)) return toast(t === 'deuda' ? 'Elige la deuda compartida' : 'Elige la meta compartida');
@@ -2147,6 +2229,7 @@ async function quitarCompartido() {
 }
 async function doDeleteComp() {
   const id = FORM.compId, mio = FORM.id;
+  if (!puedeEditarComp(compPorId(id))) return toast(AVISO_PERMISO);
   try { await S.db.compartidos.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
   compQuitarLocal(id);
   if (mio) await write(() => S.db.collection('movimientos').doc(mio).delete());
@@ -2160,14 +2243,14 @@ function deudaTxt(d, gid) {
   return n(d.de) + ' debe <b class="tnum">' + money(d.importe) + '</b> a ' + n(d.a);
 }
 function compRowGrupo(c) {
-  const yo = miUid(), n = (u) => escapeHtml(nombreDe(c.grupoId, u));
+  const n = (u) => escapeHtml(nombreDe(c.grupoId, u)), mio = (u) => esMio(c.grupoId, u);
   if (c.tipo === 'Liquidación') {
     const a = Object.keys(c.reparto || {})[0];
-    const t = c.pagadoPor === yo ? 'Pagaste a ' + n(a) : a === yo ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a);
+    const t = mio(c.pagadoPor) ? 'Pagaste a ' + n(a) : mio(a) ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a);
     return '<div class="row" ' + act('compAbrir', c.id, c.grupoId) + '><span class="dot" style="background:var(--text-faint)"></span><div class="main"><div class="ttl">' + t + '</div><div class="meta">' + fmtDateShort(c.fecha) + ' · para saldar cuentas</div></div><div class="amt tnum">' + money(c.importe) + '</div></div>';
   }
   return '<div class="row" ' + act('compAbrir', c.id, c.grupoId) + '><span class="dot" style="background:var(--' + (TIPO_COLOR[c.tipo] || 'debt') + ')"></span><div class="main"><div class="ttl">' + escapeHtml(c.categoria || c.tipo) + '</div>' +
-    '<div class="meta">' + fmtDateShort(c.fecha) + (c.descripcion ? ' · ' + escapeHtml(c.descripcion) : '') + ' · ' + (c.tipo === 'Ahorro' ? (c.pagadoPor === yo ? 'aportaste tú' : 'aportó ' + n(c.pagadoPor)) : (c.pagadoPor === yo ? 'pagaste tú' : 'pagó ' + n(c.pagadoPor))) + '</div></div>' +
+    '<div class="meta">' + fmtDateShort(c.fecha) + (c.descripcion ? ' · ' + escapeHtml(c.descripcion) : '') + ' · ' + (c.tipo === 'Ahorro' ? (mio(c.pagadoPor) ? 'aportaste tú' : 'aportó ' + n(c.pagadoPor)) : (mio(c.pagadoPor) ? 'pagaste tú' : 'pagó ' + n(c.pagadoPor))) + '</div></div>' +
     '<div class="amt tnum">' + money(c.importe) + '<div class="amt-sub">tu parte ' + money(miParte(c)) + '</div></div></div>';
 }
 function cuentasGrupoHtml(g) {
@@ -2254,7 +2337,7 @@ function objAplicarLocal(o) { S.objetivos = (S.objetivos || []).filter((x) => x.
 function objQuitarLocal(id) { S.objetivos = (S.objetivos || []).filter((x) => x.id !== id); }
 function objStats(o) {
   const cs = aportesDe(o), deuda = o.tipo === 'deuda', porPersona = {};
-  cs.forEach((c) => Object.keys(c.reparto || {}).forEach((u) => { porPersona[u] = (porPersona[u] || 0) + num(c.reparto[u]); }));
+  cs.forEach((c) => Object.keys(c.reparto || {}).forEach((u0) => { const u = aliasDe(o.grupoId, u0); porPersona[u] = (porPersona[u] || 0) + num(c.reparto[u0]); }));
   const acum = num(o.previo) + cs.reduce((a, c) => a + num(c.importe), 0);
   const obj = num(o.objetivo), falta = Math.max(0, obj - acum), pct = obj > 0 ? acum / obj * 100 : null;
   const hoy = todayISO(), desde = isoDaysAgo(90);
@@ -3590,7 +3673,7 @@ function cuadrarDifHtml(c, banco) {
     (c.id ? '<button type="button" class="link" ' + act('irMovsCuenta', c.id) + '>Buscar lo que falta en sus movimientos</button>' : '');
 }
 function cuadrarHtml(i) {
-  const c = (cfg().cuentas || [])[i] || {}, atras = FORM && FORM.volver ? act('cuentaVer', FORM.volver) : act('openCuentas');
+  const c = (cfg().cuentas || [])[i] || {}, atras = FORM && FORM.volver ? act('cuentaVer', FORM.volver) : FORM && FORM.volverEd ? act('cuentaEditar', i) : act('openCuentas');
   return '<div class="handle"></div><h2>Cuadrar ' + escapeHtml(c.nombre || 'cuenta') + '</h2>' +
     '<div class="field"><label>¿Cuánto dice el banco hoy?</label><input id="fBanco" class="importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" ' + onInput('cuadrarInput') + '></div>' +
     '<div id="cuadrarDif" class="cuadrar-dif">' + cuadrarDifHtml(c, NaN) + '</div>' +
@@ -3649,7 +3732,7 @@ function cuentaVerHtml(id) {
     '<div class="cuentas-total tnum">' + (v == null ? '—' : money(v)) + '</div>' +
     '<div class="rec-hint" style="margin:-4px 0 12px;">' + escapeHtml(tipoCuentaTxt(c)) + (v == null ? ' · aún no has puesto su saldo' : ' · ' + cuentaFechaTxt(c)) + '</div>' +
     (v != null && compartidosCuenta(c).n ? cuentaDosSaldosHtml(c, v) : '') +
-    '<div class="cuenta-acc">' + (v == null ? '<button class="btn accent block" ' + act('openCuentas') + '>Poner el saldo</button>' : '<button class="btn accent block" ' + act('cuadrarAbrir', i, id) + '>Cuadrar</button>') +
+    '<div class="cuenta-acc">' + (v == null ? '<button class="btn accent block" ' + act('cuentaEditar', i) + '>Poner el saldo</button>' : '<button class="btn accent block" ' + act('cuadrarAbrir', i, id) + '>Cuadrar</button>') +
     '<button class="btn ghost block" ' + act('irMovsCuenta', id) + '>Ver movimientos</button></div>' +
     (ult.length ? '<div class="section-title">Últimos movimientos</div><div class="list">' + ult.map((m) => esTraspaso(m) ? renderTraspasoRow(m, true) : renderMovRowBase(m)).join('') + '</div>' : '') +
     (sin && hayVariasCuentas() ? '<div class="card asignar-aviso"><b>' + sin + (sin === 1 ? ' movimiento sin cuenta' : ' movimientos sin cuenta') + '</b><div class="rec-hint">Ahora cuentan como de la principal. Puedes pasar a «' + escapeHtml(c.nombre) + '» los que sean suyos.</div>' +
@@ -3754,32 +3837,59 @@ async function saveTraspaso() {
     if (ok) { toast(FORM.convertir ? 'Convertido en traspaso' : FORM.id ? 'Traspaso actualizado' : 'Traspaso apuntado'); S._aterriza = movId || null; terminarForm(); }
   } finally { if (FORM) FORM.guardando = false; }
 }
-let principalPendiente = null; // cuenta que se va a hacer principal, pendiente de confirmar
+/* ---- ventana emergente pequeña (confirmaciones), encima de la hoja ---- */
+function abrirPopup(html) {
+  cerrarPopup();
+  const host = $('#sheetBackdrop') || document.body;
+  const d = document.createElement('div');
+  d.className = 'popup-backdrop'; d.id = 'popupBackdrop'; d.setAttribute('data-click', 'popupCerrar');
+  d.innerHTML = '<div class="popup" role="alertdialog" aria-modal="true" data-click="popupNada">' + html + '</div>';
+  host.appendChild(d);
+  requestAnimationFrame(() => d.classList.add('open'));
+}
+function cerrarPopup() { const d = $('#popupBackdrop'); if (d) d.remove(); }
 function confirmarPrincipalHtml(i) {
   const c = (cfg().cuentas || [])[i] || {}, n = movsSinCuenta().length;
-  return '<div class="card asignar-aviso"><b>¿Cambiar la cuenta principal a «' + escapeHtml(c.nombre || '') + '»?</b>' +
-    '<div class="rec-hint">' + (n ? (n === 1 ? 'Un movimiento sin cuenta pasará a esa cuenta' : n + ' movimientos sin cuenta pasarán a esa cuenta') + ', y los saldos de las cuentas cambiarán.' : 'Ningún movimiento cambia de cuenta, pero los saldos sí pueden cambiar.') + ' Para deshacerlo, vuelve a marcar la anterior.</div>' +
-    '<div class="actions" style="margin-top:8px;"><button class="btn ghost block" ' + act('cuentaPrincipalNo') + '>Cancelar</button><button class="btn accent block" ' + act('cuentaPrincipalSi', i) + '>Sí, cambiar</button></div></div>';
+  return '<h3>¿Hacer principal «' + escapeHtml(c.nombre || '') + '»?</h3>' +
+    '<p>' + (n ? (n === 1 ? 'Un movimiento sin cuenta pasará a esta cuenta' : n + ' movimientos sin cuenta pasarán a esta cuenta') + ', y los saldos cambiarán.' : 'Ningún movimiento cambia de cuenta, pero los saldos pueden cambiar.') + ' Para deshacerlo, vuelve a marcar la anterior.</p>' +
+    '<div class="popup-btns"><button class="btn ghost block" ' + act('cuentaPrincipalNo') + '>Cancelar</button><button class="btn accent block" ' + act('cuentaPrincipalSi', i) + '>Sí, cambiar</button></div>';
 }
+/* ---- Cuentas y saldos: lista limpia; cada cuenta se edita en su propia hoja ---- */
 function cuentasHtml() {
-  const cs = cfg().cuentas || [], varias = cs.filter((c) => c && c.nombre).length >= 2, pc = cuentaPrincipal();
+  const cs = cfg().cuentas || [];
   return '<div class="handle"></div><h2>Cuentas y saldos</h2>' +
-    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Pon cuánto tienes hoy en cada cuenta. Desde ahí la app suma y resta los movimientos de esa cuenta. De vez en cuando, toca «Cuadrar» y escribe lo que dice el banco.</div>' +
-    '<div class="card config-list">' + (cs.length ? cs.map((c, i) => '<div class="cuenta-ed"><div class="row2"><span class="dot" style="background:' + colorCuenta(c) + '"></span><input value="' + escapeHtml(c.nombre || '') + '" placeholder="Cuenta (p. ej. Santander)" ' + onChange('cuentaCampo', i, 'nombre') + '>' +
-      // el saldo se puede escribir siempre: es lo que tienes hoy y desde ahí la app sigue sumando y restando
-      '<input class="amt" type="number" step="0.01" inputmode="decimal" placeholder="Saldo" aria-label="Saldo de hoy" value="' + (saldoCuenta(c) == null ? '' : saldoCuenta(c)) + '" ' + onChange('cuentaCampo', i, 'saldo') + '>' +
-      '<button class="rm" aria-label="Quitar" ' + act('cuentaQuitar', i) + '>' + ic('close') + '</button></div>' +
-      (saldoCuenta(c) != null ? '<div class="cuenta-fecha">' + cuentaFechaTxt(c) + ' <button type="button" class="link" ' + act('cuadrarAbrir', i) + '>Cuadrar</button></div>' : '') +
-      '<div class="cuenta-ops"><select aria-label="Tipo de cuenta" ' + onChange('cuentaCampo', i, 'tipo') + '>' + TIPOS_CUENTA.map(([k, l]) => '<option value="' + k + '"' + (tipoCuenta(c) === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
-      '<span class="cuenta-colores">' + COLORES_CUENTA.map((col) => '<button type="button" class="cuenta-color' + (colorCuenta(c) === col ? ' on' : '') + '" style="background:' + col + '" aria-label="Color" ' + act('cuentaColor', i, col) + '></button>').join('') + '</span></div>' +
-      '<div class="cuenta-ops">' + (varias && c.nombre ? '<button type="button" class="chip' + (pc && pc.id === c.id ? ' active' : '') + '" ' + act('cuentaPrincipal', i) + '>' + (pc && pc.id === c.id ? 'Principal' : 'Hacer principal') + '</button>' : '') +
-      '<span class="cuenta-tengo">Sumar en «En tus cuentas»<button type="button" class="switch' + (cuentaEnTengo(c) ? ' on' : '') + '" role="switch" aria-checked="' + cuentaEnTengo(c) + '" aria-label="Sumar en En tus cuentas" ' + act('cuentaTengo', i) + '></button></span></div></div>').join('')
-      : '<div style="padding:16px;color:var(--text-faint);font-size:13.5px;">Aún no has añadido ninguna cuenta.</div>') + '</div>' +
-    (varias ? '<div class="rec-hint" style="margin-top:8px;">Los movimientos sin cuenta cuentan como de la principal.</div>' : '') +
-    (principalPendiente != null ? confirmarPrincipalHtml(principalPendiente) : '') +
+    '<div class="rec-hint" style="margin:-8px 0 12px;">Toca una cuenta para cambiar su saldo, su tipo o su color.</div>' +
+    (cs.length ? '<div class="card cuentas-lista">' + cs.map((c, i) => {
+      const v = saldoCuenta(c), pc = cuentaPrincipal();
+      return '<button class="row cuenta-fila tappable" ' + act('cuentaEditar', i) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' +
+        '<div class="main"><div class="ttl">' + escapeHtml(c.nombre || 'Cuenta sin nombre') + '</div><div class="meta">' + escapeHtml([tipoCuentaTxt(c), pc && pc.id === c.id && cuentasCfg().length >= 2 ? 'principal' : '', cuentaEnTengo(c) ? '' : 'no suma'].filter(Boolean).join(' · ')) + '</div></div>' +
+        '<div class="amt tnum">' + (v == null ? '<span style="color:var(--accent)">Pon el saldo</span>' : money(v)) + '</div><span class="chev-s">' + ic('chevR') + '</span></button>';
+    }).join('') + '</div>'
+      : '<div class="card" style="padding:16px;color:var(--text-faint);font-size:13.5px;">Aún no has añadido ninguna cuenta.</div>') +
+    (cuentasCfg().length >= 2 ? '<div class="rec-hint" style="margin-top:8px;">Los movimientos sin cuenta cuentan como de la principal.</div>' : '') +
     '<div style="margin-top:12px;"><button class="btn ghost block" ' + act('cuentaAnadir') + '>' + ic('plus') + ' Añadir cuenta</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('cuentasListo') + '>Listo</button></div>';
 }
+function cuentaEdHtml(i) {
+  const c = (cfg().cuentas || [])[i] || {}, v = saldoCuenta(c), pc = cuentaPrincipal(), varias = cuentasCfg().length >= 2, esP = !!pc && pc.id === c.id;
+  return '<div class="handle"></div><button class="link volver" ' + act('cuentasVolver') + '>' + ic('chevL') + ' Cuentas y saldos</button>' +
+    '<h2 style="display:flex;align-items:center;gap:8px;"><span class="dot" style="background:' + colorCuenta(c) + ';width:12px;height:12px;"></span>' + escapeHtml(c.nombre || 'Cuenta nueva') + '</h2>' +
+    '<div class="cuenta-ed">' +
+    '<div class="field"><label>Nombre</label><input id="fCuentaNombre" value="' + escapeHtml(c.nombre || '') + '" placeholder="p. ej. Santander" ' + onChange('cuentaCampo', i, 'nombre') + '></div>' +
+    '<div class="field"><label>Saldo de hoy</label><input class="amt importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Saldo de hoy" value="' + (v == null ? '' : v) + '" ' + onChange('cuentaCampo', i, 'saldo') + '>' +
+      '<div class="rec-hint" style="margin-top:6px;">' + (v == null ? 'Escribe lo que tienes hoy en esta cuenta. Desde ahí la app suma y resta sus movimientos.' : escapeHtml(cuentaFechaTxt(c)) + ' · <button type="button" class="link" ' + act('cuadrarAbrir', i, '', 'ed') + '>Cuadrar con el banco</button>') + '</div></div>' +
+    '<div class="field"><label>Tipo</label><select aria-label="Tipo de cuenta" ' + onChange('cuentaCampo', i, 'tipo') + '>' + TIPOS_CUENTA.map(([k, l]) => '<option value="' + k + '"' + (tipoCuenta(c) === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div>' +
+    '<div class="field"><label>Color</label><span class="cuenta-colores">' + COLORES_CUENTA.map((col) => '<button type="button" class="cuenta-color' + (colorCuenta(c) === col ? ' on' : '') + '" style="background:' + col + '" aria-label="Color" ' + act('cuentaColor', i, col) + '></button>').join('') + '</span></div>' +
+    '<div class="card cuenta-ajustes">' +
+      '<div class="cuenta-ajuste"><div><b>Sumar en «En tus cuentas»</b><div class="rec-hint" style="margin:2px 0 0;">Para las cuentas del día a día. El ahorro y el bróker, mejor fuera.</div></div><button type="button" class="switch' + (cuentaEnTengo(c) ? ' on' : '') + '" role="switch" aria-checked="' + cuentaEnTengo(c) + '" aria-label="Sumar en En tus cuentas" ' + act('cuentaTengo', i) + '></button></div>' +
+      (varias && c.nombre ? '<div class="cuenta-ajuste"><div><b>Cuenta principal</b><div class="rec-hint" style="margin:2px 0 0;">' + (esP ? 'Es tu cuenta principal: aquí van los movimientos sin cuenta y los compartidos.' : 'Aquí irían los movimientos sin cuenta y los compartidos.') + '</div></div>' +
+        (esP ? '<span class="chip active">Principal</span>' : '<button type="button" class="chip" ' + act('cuentaPrincipal', i) + '>Hacer principal</button>') + '</div>' : '') +
+    '</div></div>' +
+    '<button class="btn danger block" style="margin-top:14px;" aria-label="Quitar" ' + act('cuentaQuitar', i) + '>' + ic('trash') + ' Quitar esta cuenta</button>' +
+    '<div class="actions"><button class="btn accent block" ' + act('cuentasVolver') + '>Listo</button></div>';
+}
+// repinta la hoja que esté abierta: la lista o la cuenta que se está editando
+function cuentasRefrescar() { updateSheet(FORM && FORM.kind === 'cuentaEd' ? cuentaEdHtml(FORM.i) : cuentasHtml()); }
 /* ---- patrimonio (solo informativo) ---- */
 function cuentasCfg() { return (cfg().cuentas || []).filter((c) => c && c.nombre); }
 function patrimonio() {
@@ -6055,6 +6165,7 @@ const H = {
   },
   liqEliminar: ([id], el) => confirmDelete(el, async () => {
     const c = compPorId(id);
+    if (c && !puedeEditarComp(c)) return toast(AVISO_PERMISO);
     try { await S.db.compartidos.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
     compQuitarLocal(id); toast('Pago eliminado'); render();
     if (c && grupoDe(c.grupoId)) abrirGrupo(c.grupoId); else closeSheet();
@@ -6308,15 +6419,15 @@ const H = {
   empiezaOcultar: () => { saveConfig({ empiezaOculto: todayISO() }); render(); toast('Oculto. Lo tienes todo en Tú.'); },
   presTodas: () => { S.presTodas = !S.presTodas; render(); },
   setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = 120; render(); },
-  openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; principalPendiente = null; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
-  cuentaAnadir: () => { saveConfig({ cuentas: (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]) }); updateSheet(cuentasHtml()); const ins = $$('#sheetBackdrop .config-list .row2 input:first-child'); if (ins.length) ins[ins.length - 1].focus(); },
+  openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
+  cuentaAnadir: () => { const cs = (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]); saveConfig({ cuentas: cs }); H.cuentaEditar([cs.length - 1]); setTimeout(() => { const el = $('#fCuentaNombre'); if (el) el.focus(); }, 60); },
   cuentaQuitar: ([i], el) => {
     const cs = (cfg().cuentas || []).slice(), c = cs[Number(i)] || {};
     const n = c.id ? S.movimientos.filter((m) => m.cuentaId === c.id).length + (S.traspasos || []).filter((t) => t.cuentaId === c.id || t.cuentaDestinoId === c.id).length : 0;
     // si tiene movimientos, pide un segundo toque: esos movimientos pasan a contar como de la principal
-    if (n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Tiene ' + n + (n === 1 ? ' movimiento' : ' movimientos') + '. Los movimientos pasarán a la cuenta principal y los traspasos dirán «Cuenta quitada». Toca ✕ otra vez para quitarla.'); }
+    if (n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Tiene ' + n + (n === 1 ? ' movimiento' : ' movimientos') + '. Los movimientos pasarán a la cuenta principal y los traspasos dirán «Cuenta quitada». Toca «Quitar» otra vez para quitarla.'); }
     const fijas = cs.map((x) => (x && x.id && !x.color ? Object.assign({}, x, { color: colorCuenta(x) }) : x)); // que las demás no cambien de color
-    fijas.splice(Number(i), 1); saveConfig({ cuentas: fijas }); updateSheet(cuentasHtml()); render();
+    fijas.splice(Number(i), 1); saveConfig({ cuentas: fijas }); FORM = { kind: 'cuentas' }; updateSheet(cuentasHtml()); render();
   },
   cuentaCampo: ([i, f], el) => {
     const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {});
@@ -6328,20 +6439,29 @@ const H = {
     }
     else if (f === 'tipo') c.tipo = el.value;
     else c.nombre = el.value.trim();
-    cs[Number(i)] = c; saveConfig({ cuentas: cs }); if (f !== 'saldo' && f !== 'nombre') updateSheet(cuentasHtml()); render();
+    cs[Number(i)] = c; saveConfig({ cuentas: cs }); if (f !== 'saldo') cuentasRefrescar(); render();
   },
-  cuentaColor: ([i, col]) => { const cs = (cfg().cuentas || []).slice(); cs[Number(i)] = Object.assign({}, cs[Number(i)] || {}, { color: col }); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
-  cuentaPrincipal: ([i]) => { principalPendiente = Number(i); updateSheet(cuentasHtml()); },
+  cuentaColor: ([i, col]) => { const cs = (cfg().cuentas || []).slice(); cs[Number(i)] = Object.assign({}, cs[Number(i)] || {}, { color: col }); saveConfig({ cuentas: cs }); cuentasRefrescar(); render(); },
+  cuentaEditar: ([i]) => { FORM = { kind: 'cuentaEd', i: Number(i) }; updateSheet(cuentaEdHtml(Number(i))); },
+  cuentasVolver: () => {
+    // una cuenta nueva que se deja sin nombre ni saldo no se queda en la lista
+    const cs = cfg().cuentas || [], i = FORM && FORM.kind === 'cuentaEd' ? FORM.i : -1, c = cs[i];
+    if (c && !c.nombre && c.saldo == null) { const fijas = cs.slice(); fijas.splice(i, 1); saveConfig({ cuentas: fijas }); }
+    FORM = { kind: 'cuentas' }; updateSheet(cuentasHtml()); render();
+  },
+  popupCerrar: () => cerrarPopup(),
+  popupNada: () => {},
+  cuentaPrincipal: ([i]) => abrirPopup(confirmarPrincipalHtml(Number(i))),
   movAtraspaso: ([id]) => {
     const m = S.movimientos.find((x) => x.id === id); if (!convertibleATraspaso(m)) return;
     const suya = cuentaIdDe(m), otra = (cuentasCfg().find((c) => c.id !== suya) || {}).id;
     const ingreso = (m.tipo === 'Ingreso') !== (num(m.importe) < 0); // una devolución de un gasto es dinero que entra
     openTraspasoForm(null, { convertir: m.id, desde: ingreso ? otra : suya, a: ingreso ? suya : otra, importe: Math.abs(num(m.importe)), fecha: m.fecha, descripcion: m.descripcion || '' });
   },
-  cuentaPrincipalNo: () => { principalPendiente = null; updateSheet(cuentasHtml()); },
-  cuentaPrincipalSi: ([i]) => { const cs = (cfg().cuentas || []).map((c, j) => Object.assign({}, c, { principal: j === Number(i) })); principalPendiente = null; saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
-  cuentaTengo: ([i]) => { const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {}); c.enTengo = !cuentaEnTengo(c); cs[Number(i)] = c; saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
-  cuadrarAbrir: ([i, volver]) => { FORM = { kind: 'cuadrar', i: Number(i), volver: volver || null }; updateSheet(cuadrarHtml(Number(i))); setTimeout(() => { const el = $('#fBanco'); if (el) el.focus(); }, 60); },
+  cuentaPrincipalNo: () => cerrarPopup(),
+  cuentaPrincipalSi: ([i]) => { const cs = (cfg().cuentas || []).map((c, j) => Object.assign({}, c, { principal: j === Number(i) })); cerrarPopup(); saveConfig({ cuentas: cs }); sentir('ok'); cuentasRefrescar(); render(); },
+  cuentaTengo: ([i]) => { const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {}); c.enTengo = !cuentaEnTengo(c); cs[Number(i)] = c; saveConfig({ cuentas: cs }); cuentasRefrescar(); render(); },
+  cuadrarAbrir: ([i, volver, ed]) => { FORM = { kind: 'cuadrar', i: Number(i), volver: volver || null, volverEd: ed === 'ed' }; updateSheet(cuadrarHtml(Number(i))); setTimeout(() => { const el = $('#fBanco'); if (el) el.focus(); }, 60); },
   cuadrarInput: (_a, el) => { const box = $('#cuadrarDif'); if (box && FORM) box.innerHTML = cuadrarDifHtml((cfg().cuentas || [])[FORM.i] || {}, el.value === '' ? NaN : parseFloat(el.value)); },
   cuadrarOk: () => {
     if (!FORM || FORM.kind !== 'cuadrar') return;
@@ -6352,7 +6472,7 @@ const H = {
     Object.assign(c, { saldo: banco, fecha: hoy, ts: Date.now(), cuadre: { fecha: hoy, dif } });
     cs[FORM.i] = c; saveConfig({ cuentas: cs }); sentir('ok');
     toast(dif ? 'Cuadrado. Ajuste de ' + (dif > 0 ? '+' : '−') + money(Math.abs(dif)) : 'Cuadrado: todo coincide');
-    if (FORM.volver) H.cuentaVer([FORM.volver]); else H.openCuentas([]); render();
+    if (FORM.volver) H.cuentaVer([FORM.volver]); else if (FORM.volverEd) H.cuentaEditar([FORM.i]); else H.openCuentas([]); render();
   },
   cuentasHoja: () => { FORM = { kind: 'cuentasHoja' }; if ($('#sheetBackdrop')) updateSheet(cuentasHojaHtml()); else openSheet(cuentasHojaHtml()); },
   cuentaVer: ([id]) => { if (!cuentaPorId(id)) return; FORM = { kind: 'cuentaVer', id }; if ($('#sheetBackdrop')) updateSheet(cuentaVerHtml(id)); else openSheet(cuentaVerHtml(id)); },
@@ -6431,6 +6551,35 @@ const H = {
     lsSet('unirse', ''); S._uniendo = false;
     render(); abrirGrupo(id);
   },
+  reclamarHistorial: ([k]) => { if (!FORM || FORM.kind !== 'reclamar') return; FORM.historial = k === '1'; updateSheet(reclamarHtml()); },
+  reclamarConfirmar: async () => {
+    if (!FORM || FORM.kind !== 'reclamar' || FORM.uniendo) return; FORM.uniendo = true;
+    const id = await accionGrupo(() => S.db.rpc('reclamar_sin_cuenta', { p_token: FORM.token, p_historial: !!FORM.historial }), '¡Ya estás en el grupo!');
+    if (FORM) FORM.uniendo = false;
+    if (!id) return;
+    lsSet('soy', ''); S._uniendo = false; S._ef = null;
+    render(); abrirGrupo(id);
+  },
+  reclamarCerrar: ([grupoId]) => { lsSet('soy', ''); S._uniendo = false; if (grupoId) { cargarGrupos().then(() => abrirGrupo(grupoId)); } else closeSheet(); },
+  sinCuentaAnadir: async ([gid]) => {
+    const el = $('#gSinCuenta'), nombre = ((el && el.value) || '').trim();
+    if (!nombre) { marcarCampo('#gSinCuenta'); return toast('Escribe su nombre'); }
+    if (FORM && FORM.anadiendo) return; if (FORM) FORM.anadiendo = true;
+    const r = await accionGrupo(() => S.db.rpc('crear_sin_cuenta', { p_grupo: gid, p_nombre: nombre }), nombre + ' está en el grupo');
+    if (FORM) FORM.anadiendo = false;
+    if (r) { S._ef = null; abrirGrupo(gid); }
+  },
+  sinCuentaEnlace: async ([gid, id]) => {
+    const t = await accionGrupo(() => S.db.rpc('enlace_sin_cuenta', { p_id: id }));
+    if (!t || t === true) return;
+    const g = grupoDe(gid), m = g && g.miembros.find((x) => x.user_id === id), url = APP_URL + '?soy=' + encodeURIComponent(t);
+    FORM.enlaceSC = { id, url, msg: '¡Hola' + (m ? ' ' + m.nombre : '') + '! Te he guardado un sitio en «' + (g ? g.nombre : '') + '» en PalomApp, con los gastos que llevamos. Entra aquí (vale 7 días): ' + url };
+    updateSheet(grupoHtml(gid));
+  },
+  sinCuentaCopiar: async () => { try { await navigator.clipboard.writeText(FORM.enlaceSC.url); toast('Enlace copiado'); } catch (e) { toast('No se pudo copiar'); } },
+  sinCuentaQuitar: ([gid, id], el) => confirmDelete(el, async () => { if (await accionGrupo(() => S.db.rpc('quitar_sin_cuenta', { p_id: id }), 'Quitado del grupo')) { S._ef = null; abrirGrupo(gid); } }),
+  rolCambiar: async ([gid, uid, admin]) => { if (await accionGrupo(() => S.db.rpc('cambiar_rol', { p_grupo: gid, p_user: uid, p_admin: admin === '1' }), admin === '1' ? 'Ahora es administrador' : 'Ya no es administrador')) abrirGrupo(gid); },
+  grupoEdicion: async ([gid, v]) => { if (await accionGrupo(() => S.db.grupos.edicion(gid, v), v === 'autor' ? 'Solo quien lo apuntó (y los administradores) podrá cambiar cada gasto' : 'Todos pueden cambiar los gastos')) abrirGrupo(gid); },
   unirseCerrar: ([grupoId]) => { lsSet('unirse', ''); S._uniendo = false; if (grupoId) { cargarGrupos().then(() => abrirGrupo(grupoId)); } else closeSheet(); },
   unirseOtraCuenta: async () => { closeSheet(); S._uniendo = false; await window.Auth.signOut(); toast('Inicia sesión con la otra cuenta y se completará la invitación'); },
   setInvPeriodo: ([k]) => { if (PERIODOS_INV.some((x) => x[0] === k)) { S.invPeriodo = k; render(); } },
@@ -6516,7 +6665,7 @@ const H = {
     closeSheet();
   },
   openAspecto: () => { verBadge('aspecto'); FORM = { kind: 'aspecto' }; TIPOS_CIFRA.forEach((t) => cargarFuente(t[0])); openSheet(aspectoHtml()); },
-  setLook: ([v]) => { S.look = v === 'clasico' ? 'clasico' : 'nuevo'; lsSet('look', S.look); applyLook(true); sentir('toque'); refrescarAspecto(); render(); },
+  setLook: ([v]) => { S.look = 'nuevo'; lsSet('look', S.look); applyLook(true); sentir('toque'); refrescarAspecto(); render(); },
   setPaleta: ([id]) => { S.paleta = id; lsSet('paleta', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
   setTipo: ([id]) => { S.tipo = id; lsSet('tipo', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
   setSens: ([k]) => { const clave = k === 'vibra' ? 'vibra' : 'sonido', on = lsGet(clave) !== '0'; lsSet(clave, on ? '0' : '1'); if (!on) sentir('ok', true); refrescarAspecto(); },
@@ -6657,7 +6806,7 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('input', (e) => dispatch('input', e));
 document.addEventListener('change', (e) => dispatch('change', e));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if ($('#popupBackdrop')) cerrarPopup(); else closeSheet(); } });
 
 /* ============================================================
    ARRANQUE
@@ -6725,6 +6874,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta };
+window.__APP__ = { form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte };
 if (!window.__NO_AUTOSTART__) main();
 })();

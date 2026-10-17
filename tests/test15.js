@@ -35,9 +35,9 @@ const movs=[{id:'i1',tipo:'Ingreso',categoria:'Nómina',importe:1500,fecha:hoy},
  e.w.__APP__.H.goTab(['dinero']);await sleep(10);e.w.__APP__.H.patToggle([]);await sleep(5);
  ok(/Añadir saldo/.test(txt()),'patrimonio invita a añadir el saldo del banco');
  click(e,'openCuentas');await sleep(5);click(e,'cuentaAnadir');await sleep(5);
- const ins=doc.querySelectorAll('#sheetHost .row2 input');ins[0].value='Santander';ins[0].dispatchEvent(new e.w.Event('change',{bubbles:true}));
- const ins2=doc.querySelectorAll('#sheetHost .row2 input');ins2[1].value='2500';ins2[1].dispatchEvent(new e.w.Event('change',{bubbles:true}));await sleep(5);
- click(e,'cuentasListo');await sleep(260);
+ const ins=doc.querySelector('#fCuentaNombre');ins.value='Santander';ins.dispatchEvent(new e.w.Event('change',{bubbles:true}));await sleep(5);
+ const ins2=doc.querySelector('#sheetHost .cuenta-ed input.amt');ins2.value='2500';ins2.dispatchEvent(new e.w.Event('change',{bubbles:true}));await sleep(5);
+ click(e,'cuentasVolver');await sleep(5);click(e,'cuentasListo');await sleep(260);
  const c=e.store.cfg.app.cuentas;ok(c.length===1&&c[0].nombre==='Santander'&&c[0].saldo===2500&&c[0].fecha===hoy,'cuenta guardada con fecha de actualización');
  const p=A.patrimonio();ok(p.banco===2500&&p.total===2500+100-500,'el patrimonio suma el banco: '+p.total);
  ok(/Dinero en el banco/.test(txt())&&/2\.500,00 €/.test(txt()),'fila del banco en la tarjeta');

@@ -22,7 +22,7 @@
 (function () {
   try {
     var d = document.documentElement, g = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
-    var look = g('look') === 'clasico' ? 'clasico' : 'nuevo', tipo = g('tipo') || 'bricolage';
+    var look = 'nuevo', tipo = g('tipo') || 'bricolage'; // el aspecto «Clásico» está oculto desde el 17/10/2026
     d.setAttribute('data-look', look); d.setAttribute('data-paleta', g('paleta') || 'violeta'); d.setAttribute('data-tipo', tipo);
     var F = { space: 'Space+Grotesk:wght@500..700', outfit: 'Outfit:wght@500..700', nunito: 'Nunito:wght@600..900' };
     if (look === 'nuevo' && F[tipo]) { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=' + F[tipo] + '&display=swap'; document.head.appendChild(l); }

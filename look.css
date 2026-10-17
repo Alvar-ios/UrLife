@@ -311,3 +311,29 @@ html[data-look="nuevo"] .juntos-acc .btn:first-child:not(:only-child) { flex: 1.
 @media (prefers-reduced-motion: reduce) {
   html[data-look="nuevo"] .badge-new { animation: none; }
 }
+
+/* ---- Novedades 17/10/2026: cuentas, traspasos, ventana emergente y personas sin cuenta ---- */
+html[data-look="nuevo"] .hero-cuentas { font-size: var(--fs-s); padding: 2px 0 var(--sp-3); gap: 6px; }
+html[data-look="nuevo"] .hero-cuentas b { font-family: var(--font-display); font-weight: var(--num-peso); font-size: var(--fs-m); font-variant-numeric: tabular-nums; }
+html[data-look="nuevo"] .cuentas-total { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: var(--num-peso); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+html[data-look="nuevo"] .cuentas-card, html[data-look="nuevo"] .cuentas-lista, html[data-look="nuevo"] .cuenta-ajustes { border-radius: var(--r-l); }
+html[data-look="nuevo"] .cuentas-lista { padding: 0; overflow: hidden; }
+html[data-look="nuevo"] .cuentas-lista .cuenta-fila { padding: 14px var(--sp-4); }
+html[data-look="nuevo"] .cuenta-fila .dot { width: 12px; height: 12px; box-shadow: 0 0 0 3px var(--paper-sunken); }
+html[data-look="nuevo"] .cuenta-fila .amt { font-family: var(--font-display); font-weight: var(--num-peso); }
+html[data-look="nuevo"] .cuenta-ed .field select { border-radius: var(--r-m); background: var(--paper-raised); }
+html[data-look="nuevo"] .cuenta-ed .cuenta-color { width: 32px; height: 32px; transition: transform .25s var(--ease-spring); }
+html[data-look="nuevo"] .cuenta-ed .cuenta-color.on { transform: scale(1.12); border-color: var(--text); }
+html[data-look="nuevo"] .cuenta-ajuste { padding: 14px var(--sp-4); }
+html[data-look="nuevo"] .cuenta-ajuste b { font-weight: 600; font-size: var(--fs-m); }
+html[data-look="nuevo"] .asignar-aviso { border-radius: var(--r-l); background: var(--accent-soft); border-color: transparent; }
+html[data-look="nuevo"] .row.traspaso .mov-ic.t-tras { background: var(--paper-sunken); }
+html[data-look="nuevo"] .amt-sub { font-size: var(--fs-xs); font-family: var(--font-ui); font-weight: 500; }
+
+html[data-look="nuevo"] .popup-backdrop { z-index: calc(var(--z-sheet) + 10); background: rgba(10,12,28,.5); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); transition: opacity .2s ease; }
+html[data-look="nuevo"] .popup { border-radius: var(--r-xl); padding: var(--sp-6) var(--sp-5) var(--sp-5); box-shadow: var(--shadow-2); transform: scale(.94); transition: transform .35s var(--ease-spring); }
+html[data-look="nuevo"] .popup h3 { font-family: var(--font-display); font-size: var(--fs-l); font-weight: var(--num-peso); letter-spacing: -.01em; }
+html[data-look="nuevo"] .popup p { font-size: var(--fs-s); }
+
+/* personas sin cuenta y administradores en un grupo */
+html[data-look="nuevo"] .row.sin-cuenta .avatar { outline: 2px dashed var(--text-faint); outline-offset: 2px; box-shadow: none; }

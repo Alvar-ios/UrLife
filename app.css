@@ -1150,3 +1150,44 @@ html:not([data-look="nuevo"]) .asp-solo-nuevo { display: none; }
 .cuenta-espera { opacity: 0; }
 /* al cambiar de paleta o de estilo, los colores se funden en vez de saltar */
 html.cambiando *, html.cambiando *::before, html.cambiando *::after { transition: background-color .45s ease, color .45s ease, border-color .45s ease, box-shadow .45s ease, fill .45s ease, stroke .45s ease !important; }
+
+/* Cuentas y saldos: lista y hoja de cada cuenta */
+.cuentas-lista .cuenta-fila { padding: 13px 14px; }
+.cuentas-lista .cuenta-fila + .cuenta-fila { border-top: 1px solid var(--line); }
+.cuentas-lista .cuenta-fila .chev-s { margin-left: 6px; color: var(--text-faint); }
+.cuenta-ed .field select { width: 100%; font-size: 15px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper-raised); color: var(--text); }
+.cuenta-ed .cuenta-colores { display: flex; flex-wrap: wrap; gap: 10px; }
+.cuenta-ed .cuenta-color { width: 30px; height: 30px; }
+.cuenta-ajustes { padding: 0; margin-top: 6px; }
+.cuenta-ajuste { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; font-size: 14px; }
+.cuenta-ajuste + .cuenta-ajuste { border-top: 1px solid var(--line); }
+.cuenta-ajuste .chip { flex: none; margin: 0; }
+
+/* Ventana emergente (confirmaciones), centrada encima de la hoja */
+.popup-backdrop {
+  position: fixed; inset: 0; z-index: 70; background: rgba(10,12,24,.5);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  opacity: 0; transition: opacity .15s ease;
+}
+.popup-backdrop.open { opacity: 1; }
+.popup {
+  background: var(--paper); color: var(--text); width: 100%; max-width: 360px; border-radius: 18px;
+  padding: 20px 18px 16px; box-shadow: var(--shadow); border: 1px solid var(--line); transform: scale(.96); transition: transform .15s ease;
+}
+.popup-backdrop.open .popup { transform: scale(1); }
+.popup h3 { margin: 0 0 8px; font-size: 17px; font-weight: 600; }
+.popup p { margin: 0 0 16px; font-size: 14px; line-height: 1.45; color: var(--text-muted); }
+.popup-btns { display: flex; gap: 10px; }
+@media (prefers-reduced-motion: reduce) { .popup-backdrop, .popup { transition: none; } }
+
+/* Personas sin cuenta y administradores en un grupo */
+.miembro-acc { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.miembro-acc .btn.sm { padding: 6px 10px; font-size: 12.5px; }
+.sc-enlace { margin-top: 10px; }
+.tag-sincuenta { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--paper-sunken); color: var(--text-muted); }
+.row.sin-cuenta .avatar { opacity: .85; box-shadow: inset 0 0 0 2px var(--paper), 0 0 0 1.5px var(--text-faint); }
+.sc-anadir { margin-top: 10px; }
+.sc-anadir input { flex: 1; min-width: 0; }
+.seg-mini { display: flex; gap: 8px; flex-wrap: wrap; }
+.seg-mini .chip { margin: 0; }
+.miembro-fila .avatar { align-self: flex-start; margin-top: 2px; }
