@@ -37,7 +37,7 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
   /* 3. Inicio: dos bloques, la píldora del mes y «Estos días» */
   e = await env({ mesInicio: { modo: 'cobro', dia: 28 } }, [{ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 50, fecha: hace(1) }]); A = e.w.__APP__;
   ok(!!e.doc.querySelector('.hero2 [data-click="tuMesAbrir"]') && /desde el /.test(e.doc.querySelector('.mes-pill').textContent), 'la tarjeta enseña el mes y desde cuándo cuenta');
-  ok(!e.doc.querySelector('.hero-tile') && !e.doc.querySelector('.hero-bar') && !e.doc.querySelector('.inicio-seg') && !e.doc.querySelector('.prox-scroll'), 'Inicio limpio: sin las tres cifras, sin barra, sin selector de arriba y sin carrusel');
+  ok(!e.doc.querySelector('.hero-tile') && !!e.doc.querySelector('.hero-bar') && !e.doc.querySelector('.inicio-seg') && !e.doc.querySelector('.prox-scroll'), 'Inicio: sin las tres cifras ni el selector de arriba; la barra vuelve (lo pidió Paloma, 17/10)');
   ok(/Estos días/.test(txt(e)) && !!e.doc.querySelector('.dias-tit [data-click="setInicioVista|tareas"]'), '«Estos días» con «Agenda ›»');
   click(e, 'setInicioVista', 'tareas'); await sleep(10);
   ok(!!e.doc.querySelector('[data-click="setInicioVista|hoy"]') && /Semana y tareas/.test(txt(e)), 'la Agenda se abre y tiene «‹ Inicio» para volver');

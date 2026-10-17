@@ -1741,9 +1741,9 @@ function renderAnalisisMensual(enInicio) {
     '<div class="lbl">' + MESES[S.mesSel - 1] + ' ' + S.anioSel + '</div>' +
     '<button class="icon-btn" aria-label="Mes siguiente" ' + act('moveMes', 1) + '>' + ic('chevR') + '</button></div>' +
     kpiMesHtml(k, S.anioSel, S.mesSel)) +
-    '<div class="section-title"><span>En qué gastas</span>' + (hayGasto ? '<span class="hint">toca un color</span>' : '') + '</div><div class="card dn-card">' +
-    (hayGasto ? '<div class="dn-graf" id="donutWrap"></div><div class="dn-ley" id="donutLegend"></div>'
-      : '<div class="dn-vacio">Sin gastos registrados en ' + MESES[S.mesSel - 1].toLowerCase() + '.</div>') + '</div>' +
+    '<div class="section-title"><span>En qué gastas</span>' + (hayGasto ? '<span class="hint">toca el gráfico</span>' : '') + '</div>' +
+    (hayGasto ? '<div class="dn-zona"><div class="dn-graf" id="donutWrap"></div><div class="dn-ley" id="donutLegend"></div></div>'
+      : '<div class="card dn-vacio">Sin gastos registrados en ' + MESES[S.mesSel - 1].toLowerCase() + '.</div>') +
     '<div class="section-title"><span>Presupuestos</span><button class="link" ' + act('openListEditor', 'categoriasGasto') + '>Editar</button></div><div class="card pres-card">' +
     (filas.length ? resumenPres + presupuestoFilasHtml(filas, catMap)
       : '<div style="color:var(--text-faint);font-size:13.5px;">Añade categorías en Tú → Categorías de gasto.</div>') + '</div>' +
@@ -3179,22 +3179,76 @@ function renderInicioNuevo() {
       (vista === 'calendario' ? renderCalendario() : renderAgendaSemana());
   }
   // los primeros pasos solo para quien empieza: a quien ya usa la app no le quitan sitio en Inicio
-  return heroMesHtml() + (S.movimientos.length ? '' : empiezaHtml()) + estosDiasHtml();
+  return heroMesHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtml() + estosDiasHtml();
 }
 // la cifra grande, con los céntimos más pequeños
 function cifraHtml(v) { const t = money(v), i = t.lastIndexOf(','); return i < 0 ? escapeHtml(t) : escapeHtml(t.slice(0, i)) + '<small>' + escapeHtml(t.slice(i)) + '</small>'; }
 function mesPillTxt(y, m) { const mc = mesCfg(); return mc.modo === 'cobro' ? 'desde el ' + fmtDateShort(rangoMes(y, m).desde).toLowerCase() : 'del 1 al ' + new Date(y, m, 0).getDate(); }
 /* Inicio responde a dos preguntas: «¿cómo voy este mes?» (la tarjeta) y «¿qué tengo que hacer estos días?» (la lista) */
+// mes que se mira en Inicio (por defecto, el actual)
+function inicioYM() { const a = mesActual(), p = S.inicioMes; if (p && /^m:\d{4}-\d{2}$/.test(p)) { const [y, m] = p.slice(2).split('-').map(Number); if (y * 12 + m <= a.y * 12 + a.m) return { y, m, actual: y === a.y && m === a.m }; } return { y: a.y, m: a.m, actual: true }; }
 function heroMesHtml() {
-  const { y, m } = mesActual(), disp = kpisMes(y, m).disponible;
+  const { y, m, actual } = inicioYM(), k = kpisMes(y, m), disp = k.disponible, lim = movLimites();
   const nuevo = !S.movimientos.length && !(S.compartidos || []).length;
-  const pv = nuevo ? null : previstoMes(y, m);
+  const pv = nuevo || !actual ? null : previstoMes(y, m);
+  const ant = (y + '-' + pad2(m)) > lim.min, dir = S._inicioDir || 0; S._inicioDir = 0;
+  const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
   return '<section class="hero hero2" aria-label="Cómo vas este mes">' +
-    '<button type="button" class="mes-pill" ' + act('tuMesAbrir') + '><b>' + MESES[m - 1] + '</b><span>· ' + mesPillTxt(y, m) + '</span><span class="mes-pill-ic">' + ic('chevR') + '</span></button>' +
-    '<button type="button" class="hero-main tappable" ' + act('heroResumen') + '><span class="hero-k">Te queda este mes</span><span class="hero-v tnum' + (disp < 0 ? ' neg' : '') + (nuevo ? ' vacio' : '') + '">' + cifraHtml(disp) + '</span></button>' +
-    (nuevo ? '<p class="hero-nuevo">Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.</p>' : '') +
+    '<div class="hero2-top"><button type="button" class="mes-pill' + anim + '" ' + act('tuMesAbrir') + '><b>' + MESES[m - 1] + (y !== mesActual().y ? ' ' + y : '') + '</b><span>· ' + mesPillTxt(y, m) + '</span><span class="mes-pill-ic">' + ic('chevR') + '</span></button>' +
+    '<span class="hero2-flechas"><button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
+    '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
+    '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (actual ? 'Te queda este mes' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (disp < 0 ? ' neg' : '') + (nuevo ? ' vacio' : '') + '">' + cifraHtml(disp) + '</span></button>' +
+    (nuevo ? '<p class="hero-nuevo">Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.</p>' : heroBarraHtml(k)) +
     (pv ? '<button type="button" class="hero-prev tappable" ' + act('previstoAbrir') + '><span class="prev-tag">Previsto</span><span class="prev-l">a fin de mes</span><b class="tnum">' + money(pv.total) + '</b>' + ic('chevR') + '</button>' : '') +
-    (nuevo ? '' : lineaCuentasHtml()) + '</section>';
+    (nuevo || !actual ? '' : lineaCuentasHtml()) + '</section>';
+}
+// La barra de en qué se va lo que entra: gastos, apartado, deudas y lo que queda (como antes, con su leyenda)
+function heroBarraHtml(k) {
+  const gas = k.facturas + k.gastos, aho = k.ahorro + k.inversion, deu = k.deuda, ing = k.ingresos;
+  const base = Math.max(ing, gas + aho + deu); if (!(base > 0)) return '';
+  const queda = Math.max(0, ing - gas - aho - deu), pc = (v) => Math.max(0, v / base * 100);
+  const trozos = [['g', 'Gastos', gas], ['a', 'Apartado', aho], ['d', 'Deudas', deu], ['q', 'Te queda', queda]].filter((t) => t[2] > 0.004);
+  return '<div class="hero-barra"><div class="hero-bar" aria-hidden="true">' + trozos.map(([c, , v]) => '<i class="' + c + '" style="width:' + pc(v).toFixed(1) + '%"></i>').join('') + '</div>' +
+    '<div class="hero-ley">' + trozos.map(([c, l, v]) => '<span><i class="' + c + '"></i>' + l + ' <b class="tnum">' + (ing > 0 ? Math.round(v / ing * 100) + ' %' : moneyShort(v)) + '</b></span>').join('') + '</div></div>';
+}
+/* «Así vas»: unas pocas frases con datos de verdad del mes (nunca previsiones): ritmo frente al mes anterior,
+   la categoría que más sube, el presupuesto más justo, lo que dice Juntos y los días sin gastos */
+function gastoComparado(y, m) {
+  let py = y, pm = m - 1; if (pm < 1) { pm = 12; py--; }
+  const r = rangoMes(y, m), rp = rangoMes(py, pm), hoy = todayISO(), enCurso = hoy >= r.desde && hoy <= r.hasta;
+  const lim = enCurso ? addDaysISO(rp.desde, Math.round((parseISO(hoy) - parseISO(r.desde)) / 86400000)) : null;
+  const porCat = (movs, hasta) => { const o = {}; let t = 0; movs.forEach((x) => { if ((x.tipo === 'Gasto' || x.tipo === 'Factura') && (!hasta || (x.fecha || '') <= hasta)) { o[x.categoria] = (o[x.categoria] || 0) + num(x.importe); t += num(x.importe); } }); return { o, t }; };
+  const ahora = porCat(kpisMes(y, m).movs, enCurso ? hoy : null), antes = porCat(kpisMes(py, pm).movs, lim);
+  return { ahora, antes, py, pm, enCurso };
+}
+function insightsHtml() {
+  if (!S.movimientos.length) return '';
+  const { y, m, actual } = inicioYM(), mk = mesClave(y, m), g = gastoComparado(y, m), cards = [], mesAnt = MESES[g.pm - 1].toLowerCase();
+  const card = (tono, icono, t, d, a) => cards.push('<button type="button" class="ins-card tappable ' + tono + '" ' + a + '><span class="ins-ic">' + ic(icono) + '</span><span class="ins-t">' + t + '</span><span class="ins-d">' + d + '</span></button>');
+  if (g.antes.t > 0 && g.ahora.t > 0) {
+    const dif = g.ahora.t - g.antes.t, pct = Math.round(dif / g.antes.t * 100);
+    card(pct > 5 ? 'malo' : pct < -5 ? 'bueno' : '', pct > 0 ? 'arrowUp' : 'arrowDown', Math.abs(pct) < 1 ? 'Igual que en ' + mesAnt : (pct > 0 ? '+' : '−') + Math.abs(pct) + ' % de gasto',
+      (Math.abs(pct) < 1 ? 'Vas al mismo ritmo' : (pct > 0 ? money(dif) + ' más' : money(-dif) + ' menos')) + ' que en ' + mesAnt + (g.enCurso ? ' a estas alturas' : ''), act('heroResumen'));
+  }
+  const subida = Object.keys(g.ahora.o).map((c) => ({ c, d: g.ahora.o[c] - (g.antes.o[c] || 0) })).filter((x) => x.d >= 10).sort((a, b) => b.d - a.d)[0];
+  if (subida && g.antes.t > 0) card('malo', 'tag', escapeHtml(subida.c), money(subida.d) + ' más que en ' + mesAnt + (g.enCurso ? ' a estas alturas' : '') + '. Es lo que más sube', act('irMovs', '_gastos', mk, subida.c));
+  const catMap = gastoPorCategoria(kpisMes(y, m).movs);
+  const pres = catsGasto().filter((c) => num(c.presupuesto) > 0).map((c) => ({ c: c.nombre, p: num(c.presupuesto), r: Math.max(0, catMap[c.nombre] || 0) }));
+  const pasada = pres.filter((x) => x.r > x.p).sort((a, b) => (b.r - b.p) - (a.r - a.p))[0];
+  const justa = pres.filter((x) => x.r <= x.p && x.r >= x.p * 0.8).sort((a, b) => b.r / b.p - a.r / a.p)[0];
+  if (pasada) card('malo', 'alert', 'Te has pasado en ' + escapeHtml(pasada.c), money(pasada.r - pasada.p) + ' por encima de su presupuesto', act('irMovs', '_gastos', mk, pasada.c));
+  else if (justa && actual) card('aviso', 'alert', escapeHtml(justa.c) + ' va justo', 'Te quedan ' + money(justa.p - justa.r) + ' de ' + money(justa.p), act('irMovs', '_gastos', mk, justa.c));
+  else if (pres.length && pres.every((x) => x.r <= x.p)) card('bueno', 'checkCircle', 'Dentro de tus presupuestos', 'En todas las categorías con presupuesto', act('heroResumen'));
+  if (actual && (S.compartidos || []).length) {
+    const pc = cuentaPrincipal(), neto = pc ? compartidosCuenta(pc).neto : [...new Set((S.compartidos || []).map((x) => x.grupoId).filter(Boolean))].reduce((a, gid) => a + miSaldo(gid), 0);
+    if (Math.abs(neto) >= 0.01) card(neto > 0 ? 'bueno' : 'aviso', 'users', neto > 0 ? 'Te deben ' + money(neto) : 'Debes ' + money(-neto), 'En Juntos, sumando tus grupos', act('goTab', 'juntos'));
+  }
+  const r = rangoMes(y, m), hoy = todayISO(), conGasto = new Set(kpisMes(y, m).movs.filter((x) => x.tipo === 'Gasto').map((x) => (x.fecha || '').slice(0, 10)));
+  let primero = '9999'; S.movimientos.forEach((x) => { if (x.fecha && x.fecha.slice(0, 10) < primero) primero = x.fecha.slice(0, 10); });
+  let sin = 0; for (let f = r.desde > primero ? r.desde : primero; f <= r.hasta && f <= hoy; f = addDaysISO(f, 1)) if (!conGasto.has(f)) sin++;
+  if (sin >= 2) card('bueno', 'sparkle', sin + ' días sin gastos', actual ? 'Este mes, sin contar los fijos' : 'En ' + MESES[m - 1].toLowerCase() + ', sin contar los fijos', act('irMovsCal', mk));
+  if (!cards.length) return '';
+  return '<div class="section-title">Así vas</div><div class="ins-scroll">' + cards.slice(0, 5).join('') + '</div>';
 }
 /* Lo previsto a fin de mes: lo que te queda hoy + cobros fijos que faltan − pagos fijos que faltan.
    Es una previsión (la nómina puede variar): solo sale si todavía falta algún cobro en tu mes. */
@@ -4013,7 +4067,7 @@ function tipoCuentaTxt(c) { return (TIPOS_CUENTA.find((t) => t[0] === tipoCuenta
 function cuentaFilaHtml(c) {
   const v = saldoCuenta(c), pc = cuentaPrincipal();
   return '<button class="row cuenta-fila tappable" ' + act('cuentaVer', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' +
-    '<div class="main"><div class="ttl">' + escapeHtml(c.nombre) + '</div><div class="meta">' + escapeHtml([tipoCuentaTxt(c), pc && pc.id === c.id ? 'principal' : '', cuentaEnTengo(c) ? '' : 'no suma'].filter(Boolean).join(' · ')) + '</div></div>' +
+    '<div class="main"><div class="ttl">' + escapeHtml(c.nombre) + '</div><div class="meta">' + escapeHtml([tipoCuentaTxt(c), pc && pc.id === c.id ? 'principal' : '', cuentaEnTengo(c) ? '' : 'no suma', v != null && pc && pc.id === c.id && compartidosCuenta(c).neto ? 'virtual ' + money(saldoVirtual(c, v).v) : ''].filter(Boolean).join(' · ')) + '</div></div>' +
     '<div class="amt tnum">' + (v == null ? '<span style="color:var(--accent)">Pon el saldo</span>' : money(v)) + '</div></button>';
 }
 function lineaCuentasHtml() {
@@ -4040,19 +4094,18 @@ function movsSinCuenta() {
   const vivos = new Set((S.compartidos || []).map((x) => x.id));
   return S.movimientos.filter((m) => tocaCuenta(m) && !cuentaPorId(m.cuentaId) && !(m.compartidoId && vivos.has(m.compartidoId))).sort(cmpMov);
 }
-// Dos cifras cuando hay gastos compartidos pagados desde esta cuenta: lo que salió del banco y tu saldo (solo tu parte)
+// Saldo real (lo que dice el banco, con lo que pagaste entero por Juntos) y saldo virtual (contando lo que te deben y debes en Juntos)
+function saldoVirtual(c, real) { const k = compartidosCuenta(c); return { neto: k.neto, n: k.n, v: Math.round((real + k.neto) * 100) / 100 }; }
 function cuentaDosSaldosHtml(c, real) {
-  const k = compartidosCuenta(c), tuyo = Math.round((real + k.neto) * 100) / 100;
-  return '<div class="card" style="margin:0 0 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-    '<div><div class="meta">Lo que sale del banco</div><b class="tnum">' + money(real) + '</b></div>' +
-    '<div><div class="meta">Tu saldo</div><b class="tnum">' + money(tuyo) + '</b></div>' +
-    '<div class="rec-hint" style="grid-column:1/-1;margin:0;">«Tu saldo» suma lo que te deben y resta lo que debes en gastos compartidos. ' + (k.neto ? (k.neto > 0 ? 'Ahora te deben ' + money(k.neto) + ' netos.' : 'Ahora debes ' + money(-k.neto) + ' netos.') : 'Ahora mismo estáis en paz.') + '</div></div>';
+  const k = saldoVirtual(c, real);
+  return '<div class="saldo-virtual"><div><span class="sv-l">Saldo virtual</span><span class="sv-d">contando Juntos: ' + (k.neto ? (k.neto > 0 ? 'te deben ' + money(k.neto) : 'debes ' + money(-k.neto)) : 'estáis en paz') + '</span></div><b class="tnum">' + money(k.v) + '</b></div>' +
+    '<div class="rec-hint" style="margin:6px 2px 12px;">El saldo real es lo que pone tu app del banco: un gasto compartido que pagas tú baja entero, y sube cuando te lo devuelven al saldar (Bizum). El virtual es lo que tendrías si saldarais ahora.</div>';
 }
 function cuentaVerHtml(id) {
   const c = cuentaPorId(id); if (!c) return '';
   const i = (cfg().cuentas || []).findIndex((x) => x && x.id === id), v = saldoCuenta(c), ult = movsDeCuenta(id).slice(0, 5), sin = movsSinCuenta().length;
   return '<div class="handle"></div><h2><span class="dot" style="background:' + colorCuenta(c) + ';width:12px;height:12px;margin-right:8px;"></span>' + escapeHtml(c.nombre) + '</h2>' +
-    '<div class="cuentas-total tnum">' + (v == null ? '—' : money(v)) + '</div>' +
+    (v == null ? '' : '<div class="sv-real-l">Saldo real · lo que dice tu banco</div>') + '<div class="cuentas-total tnum">' + (v == null ? '—' : money(v)) + '</div>' +
     '<div class="rec-hint" style="margin:-4px 0 12px;">' + escapeHtml(tipoCuentaTxt(c)) + (v == null ? ' · aún no has puesto su saldo' : ' · ' + cuentaFechaTxt(c)) + '</div>' +
     (v != null && compartidosCuenta(c).n ? cuentaDosSaldosHtml(c, v) : '') +
     '<div class="cuenta-acc">' + (v == null ? '<button class="btn accent block" ' + act('cuentaEditar', i) + '>Poner el saldo</button>' : '<button class="btn accent block" ' + act('cuadrarAbrir', i, id) + '>Cuadrar</button>') +
@@ -4766,53 +4819,78 @@ function donutPartes(sl, gastos) {
   let i = 0;
   return subs.map((x) => ({ n: x.sub || 'Sin detalle', v: x.v, sub: x.sub, cat: sl.n, color: sl.color, op: x.sub ? [1, 0.68, 0.46, 0.32, 0.24][Math.min(4, i++)] : 0.16 }));
 }
-let _donutAnim = '';
+let _donutAnim = '', _donutPrev = null;
 function drawDonut() {
   const wrap = $('#donutWrap'); if (!wrap) return;
   const d = donutDatos(); if (!d.total) return;
   let sel = S._donutSel ? d.slices.find((x) => x.n === S._donutSel) : null;
   if (!sel) S._donutSel = '';
   const partes = donutPartes(sel, d.gastos), anillo = partes || d.slices, totAnillo = anillo.reduce((a, x) => a + x.v, 0);
-  const R = 62, C = 2 * Math.PI * R, SW = 15, HUECO = 3.2;
+  const R = 62, C = 2 * Math.PI * R, SW = 15, HUECO = 3.2, conjunto = partes ? 'p:' + sel.n : 'g';
+  // si solo cambia cuál está elegida, se pinta como estaba y luego se anima hacia lo nuevo
+  const prev = _donutPrev && _donutPrev.conjunto === conjunto && _donutPrev.per === S.movPeriodo ? _donutPrev.sel : null;
+  _donutPrev = { conjunto, per: S.movPeriodo, sel: partes ? null : (sel ? sel.n : '') };
   let ini = 0;
   const arcos = anillo.map((x, i) => {
     const len = x.v / totAnillo * C, redondo = len > SW + HUECO + 1;
     const vis = anillo.length === 1 ? C : redondo ? len - HUECO - SW : Math.max(0.6, len - HUECO);
     const off = anillo.length === 1 ? 0 : ini + (redondo ? (HUECO + SW) / 2 : HUECO / 2);
+    const th = (ini + len / 2) / R, dx = (Math.cos(th) * 7).toFixed(2), dy = (Math.sin(th) * 7).toFixed(2);
     ini += len;
-    const elegido = !partes && sel && sel.n === x.n, apagado = !partes && sel && !elegido;
+    const estado = (n) => (!partes && n ? (n === x.n ? ' sel' : ' off') : '');
     const clic = partes ? act('donutIr', x.cat, x.sub != null ? (x.sub || '-') : '') : act('donutSel', x.n);
-    return '<circle class="dn-s' + (elegido ? ' sel' : '') + (apagado ? ' off' : '') + '" cx="80" cy="80" r="' + R + '" fill="none" stroke="' + x.color + '"' + (x.op ? ' stroke-opacity="' + x.op + '"' : '') +
-      ' stroke-width="' + SW + '" stroke-linecap="' + (redondo && anillo.length > 1 ? 'round' : 'butt') + '" stroke-dasharray="' + vis.toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" data-vis="' + vis.toFixed(2) + '" data-i="' + i + '" ' + clic + '><title>' + escapeHtml(x.n) + '</title></circle>';
+    return '<circle class="dn-s' + estado(prev != null ? prev : (sel ? sel.n : '')) + '" data-n="' + escapeHtml(x.n) + '" data-dx="' + dx + '" data-dy="' + dy + '" cx="80" cy="80" r="' + R + '" fill="none" stroke="' + x.color + '"' + (x.op ? ' stroke-opacity="' + x.op + '"' : '') +
+      ' stroke-width="' + SW + '" stroke-linecap="' + (redondo && anillo.length > 1 ? 'round' : 'butt') + '" stroke-dasharray="' + vis.toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" data-vis="' + vis.toFixed(2) + '" ' + clic + '><title>' + escapeHtml(x.l || x.n) + '</title></circle>';
   }).join('');
-  const centro = sel ? [sel.n.length > 16 ? sel.n.slice(0, 15) + '…' : sel.n, moneyShort(sel.v), Math.round(sel.v / d.total * 100) + ' % del gasto'] : ['', moneyShort(d.total), 'gastado'];
-  wrap.innerHTML = '<svg viewBox="0 0 160 160" width="100%" height="100%" role="img" aria-label="Reparto del gasto por categoría"><g transform="rotate(-90 80 80)"><g class="dn-giro">' + arcos + '</g></g>' +
-    (centro[0] ? '<text class="dn-c1" x="80" y="64" text-anchor="middle">' + escapeHtml(centro[0]) + '</text>' : '') +
-    '<text class="dn-c2" x="80" y="' + (centro[0] ? 85 : 80) + '" text-anchor="middle">' + escapeHtml(centro[1]) + '</text>' +
-    '<text class="dn-c3" x="80" y="' + (centro[0] ? 101 : 97) + '" text-anchor="middle">' + escapeHtml(centro[2]) + '</text></svg>';
+  const nom = sel ? (sel.l || sel.n) : '';
+  const centro = sel ? [nom.length > 16 ? nom.slice(0, 15) + '…' : nom, moneyShort(sel.v), Math.round(sel.v / d.total * 100) + ' % del gasto'] : ['', moneyShort(d.total), 'gastado'];
+  wrap.innerHTML = '<svg viewBox="-6 -6 172 172" width="100%" height="100%" role="img" aria-label="Reparto del gasto por categoría">' +
+    '<circle class="dn-fondo" cx="80" cy="80" r="62" fill="none" stroke-width="15"/>' +
+    '<g transform="rotate(-90 80 80)"><g class="dn-giro">' + arcos + '</g></g>' +
+    '<circle class="dn-centro" cx="80" cy="80" r="46" ' + act('donutSel', '') + '/>' +
+    '<g class="dn-txt' + (S._donutTxtAnim ? ' entra' : '') + '">' + (centro[0] ? '<text class="dn-c1" x="80" y="64" text-anchor="middle">' + escapeHtml(centro[0]) + '</text>' : '') +
+    '<text class="dn-c2" x="80" y="' + (centro[0] ? 85 : 81) + '" text-anchor="middle">' + escapeHtml(centro[1]) + '</text>' +
+    '<text class="dn-c3" x="80" y="' + (centro[0] ? 101 : 98) + '" text-anchor="middle">' + escapeHtml(centro[2]) + '</text></g></svg>';
+  S._donutTxtAnim = false;
   const leg = $('#donutLegend');
   if (leg) {
     const pct = (v) => Math.round(v / d.total * 100) + ' %';
-    const fila = (x, a, cls, valor) => '<button type="button" class="dn-f' + (cls || '') + '" ' + a + '><i style="background:' + x.color + (x.op ? ';opacity:' + x.op : '') + '"></i><span class="dn-n">' + escapeHtml(x.l || x.n) + '</span><b class="tnum">' + valor + '</b></button>';
+    const fila = (x, a, cls, valor) => '<button type="button" class="dn-f' + (cls || '') + '" style="--dc:' + x.color + '" ' + a + '><i style="background:' + x.color + (x.op ? ';opacity:' + x.op : '') + '"></i><span class="dn-n">' + escapeHtml(x.l || x.n) + '</span><b class="tnum">' + valor + '</b></button>';
     const per = mesClave(S.anioSel, S.mesSel);
-    if (partes) leg.innerHTML = '<button type="button" class="dn-volver" ' + act('donutSel', '') + '>' + ic('chevL') + ' Todas</button>' +
-      partes.slice(0, 7).map((x) => fila(x, act('donutIr', x.cat, x.sub != null ? (x.sub || '-') : ''), '', moneyShort(x.v))).join('') +
+    if (partes) leg.innerHTML = '<button type="button" class="dn-volver" ' + act('donutSel', '') + '>' + ic('chevL') + ' Todas las categorías</button>' +
+      partes.slice(0, 8).map((x) => fila(x, act('donutIr', x.cat, x.sub != null ? (x.sub || '-') : ''), '', moneyShort(x.v))).join('') +
       (sel.otras ? '' : '<button type="button" class="dn-ver" ' + act('irMovs', '_gastos', per, sel.n) + '>Ver sus movimientos ' + ic('chevR') + '</button>');
     else leg.innerHTML = d.slices.map((x) => fila(x, act('donutSel', x.n), sel ? (sel.n === x.n ? ' sel' : ' off') : '', pct(x.v))).join('') +
       (sel && !sel.otras ? '<button type="button" class="dn-ver" ' + act('irMovs', '_gastos', per, sel.n) + '>Ver sus movimientos ' + ic('chevR') + '</button>' : '');
   }
-  // entra girando y los trozos se dibujan uno tras otro; si vienes deslizando, cuando termina el deslizamiento
-  const clave = S.movPeriodo + '|' + (partes ? S._donutSel : '');
-  if (clave === _donutAnim || reduceMotion()) return;
+  const ss = [...wrap.querySelectorAll('.dn-s')], C2 = C.toFixed(2);
+  const ponerSel = () => ss.forEach((el) => {
+    const n = el.getAttribute('data-n'), on = !partes && sel && n === sel.n;
+    el.classList.toggle('sel', !!on); el.classList.toggle('off', !partes && !!sel && !on);
+    el.style.transform = on ? 'translate(' + el.getAttribute('data-dx') + 'px,' + el.getAttribute('data-dy') + 'px)' : '';
+  });
+  // entra girando y los trozos se dibujan uno tras otro (tras el deslizamiento); la primera vez, una «ola» que invita a tocar
+  const clave = S.movPeriodo + '|' + conjunto;
+  if (reduceMotion() || typeof requestAnimationFrame === 'undefined') { ponerSel(); return; }
+  if (clave === _donutAnim) {
+    if (prev != null && prev !== (sel ? sel.n : '')) { ss.forEach((el) => { if (el.getAttribute('data-n') === prev) el.style.transform = 'translate(' + el.getAttribute('data-dx') + 'px,' + el.getAttribute('data-dy') + 'px)'; }); void wrap.offsetWidth; requestAnimationFrame(ponerSel); }
+    else ponerSel();
+    return;
+  }
   _donutAnim = clave;
-  const g = wrap.querySelector('.dn-giro'), ss = [...wrap.querySelectorAll('.dn-s')], espera = S._deslizando ? 300 : 0;
-  if (!g || typeof requestAnimationFrame === 'undefined') return;
-  ss.forEach((el) => { el.style.transition = 'none'; el.style.strokeDasharray = '0 ' + C.toFixed(2); });
-  g.style.transition = 'none'; g.style.transform = partes ? 'rotate(0deg)' : 'rotate(-70deg)'; g.style.transformOrigin = '80px 80px';
+  const g = wrap.querySelector('.dn-giro'), espera = S._deslizando ? 300 : 0, ola = !partes && !S._donutOla;
+  if (!g) return;
+  ss.forEach((el) => { el.style.transition = 'none'; el.style.strokeDasharray = '0 ' + C2; });
+  g.style.transition = 'none'; g.style.transformOrigin = '80px 80px'; g.style.transform = partes ? 'rotate(0deg) scale(.9)' : 'rotate(-80deg) scale(.86)';
   void wrap.offsetWidth;
   setTimeout(() => requestAnimationFrame(() => {
-    g.style.transition = 'transform .9s cubic-bezier(.22,1,.36,1)'; g.style.transform = 'rotate(0deg)';
-    ss.forEach((el, i) => { el.style.transition = 'stroke-dasharray .55s cubic-bezier(.22,1,.36,1) ' + (i * 0.09).toFixed(2) + 's, stroke-width .3s ease, opacity .3s ease'; el.style.strokeDasharray = el.getAttribute('data-vis') + ' ' + C.toFixed(2); });
+    g.style.transition = 'transform 1s cubic-bezier(.22,1,.36,1)'; g.style.transform = 'rotate(0deg) scale(1)';
+    ss.forEach((el, i) => { el.style.transition = 'stroke-dasharray .6s cubic-bezier(.22,1,.36,1) ' + (i * 0.08).toFixed(2) + 's'; el.style.strokeDasharray = el.getAttribute('data-vis') + ' ' + C2; });
+    setTimeout(() => {
+      ss.forEach((el) => { el.style.transition = ''; });
+      ponerSel();
+      if (ola) { S._donutOla = true; ss.forEach((el, i) => { el.style.animationDelay = (i * 0.07).toFixed(2) + 's'; el.classList.add('ola'); setTimeout(() => el.classList.remove('ola'), 900 + i * 70); }); }
+    }, 650 + ss.length * 80);
   }), espera);
 }
 function mesesEmpezados(anio) { const { y, m } = mesActual(); return anio < y ? 12 : anio > y ? 0 : m; }
@@ -6304,7 +6382,7 @@ const H = {
     S.volverA = null; if (id === 'movimientos') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S.movVista = 'resumen'; S.movPeriodo = mesHoyClave(); S._donutSel = ''; _donutAnim = ''; }
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
     const nueva = TAB_ALIAS[id] || id; if (nueva !== S.tab) S._entrando = true;
-    if (nueva === 'inicio') S.inicioVista = 'hoy';
+    if (nueva === 'inicio') { S.inicioVista = 'hoy'; S.inicioMes = ''; }
     S.tab = nueva; render(); window.scrollTo(0, 0);
   },
   agendaDia: ([iso]) => { S.agendaDia = iso; render(); },
@@ -6354,7 +6432,9 @@ const H = {
     closeSheet(); render();
   },
   previstoAbrir: () => { FORM = { kind: 'previsto' }; openSheet(previstoHtml()); },
-  heroResumen: () => { S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = mesHoyClave(); S._infoTeQueda = true; S._entrando = true; render(); window.scrollTo(0, 0); },
+  heroResumen: () => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = mesClave(im.y, im.m); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._donutSel = ''; S._infoTeQueda = im.actual; S._entrando = true; render(); window.scrollTo(0, 0); },
+  inicioMes: ([d]) => { const im = inicioYM(); let y = im.y, m = im.m + (Number(d) || 0); if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } const a = mesActual(); S.inicioMes = y === a.y && m === a.m ? '' : mesClave(y, m); S._inicioDir = Number(d) || 0; sentir('tic'); render(); },
+  irMovsCal: ([p]) => { S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = p || mesHoyClave(); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S.movCalDia = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
   infoTeQuedaCerrar: () => { S._infoTeQueda = false; render(); },
   setInicioVista: ([v]) => { S.inicioVista = ['tareas', 'calendario'].indexOf(v) >= 0 ? v : 'hoy'; S._entrando = true; render(); window.scrollTo(0, 0); },
   setMovVista: ([v]) => {
@@ -6394,7 +6474,7 @@ const H = {
   },
   donutSel: ([n]) => {
     if (n && n === S._donutSel) { const d = donutDatos(), sl = d.slices.find((x) => x.n === n); if (sl && !sl.otras && !donutPartes(sl, d.gastos)) return irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat: n }); }
-    S._donutSel = n || ''; sentir('tic'); drawDonut();
+    S._donutSel = n || ''; S._donutTxtAnim = true; sentir('tic'); drawDonut();
   },
   donutIr: ([cat, sub]) => { irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat, sub: sub === '-' ? SIN_DETALLE : sub }); },
   movCalDia: ([f]) => { S.movCalDia = f; render(); },
