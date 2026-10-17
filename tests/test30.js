@@ -13,7 +13,7 @@ const tabs=e=>[...e.doc.querySelectorAll('.tabbar [data-tab]')].map(b=>b.getAttr
 (async()=>{
  let e=await env();let H=e.w.__APP__.H,A=e.w.__APP__,doc=e.doc,txt=()=>doc.querySelector('#content').textContent;
  ok(tabs(e)==='inicio,movimientos,juntos,dinero','pestañas: Inicio, Movimientos, Juntos, Dinero');
- ok(!doc.querySelector('.estr-aviso')&&!doc.querySelector('#donutWrap')&&/Hoy/.test(doc.querySelector('.inicio-seg').textContent)&&/Calendario/.test(doc.querySelector('.inicio-seg').textContent),'Inicio ligero: sin gráficos y con Hoy · Semana y tareas · Calendario');
+ ok(!doc.querySelector('.estr-aviso')&&!doc.querySelector('#donutWrap')&&!doc.querySelector('.inicio-seg')&&!!doc.querySelector('.dias-tit [data-click="setInicioVista|tareas"]'),'Inicio ligero: sin gráficos y con Hoy · Semana y tareas · Calendario');
  H.goTab(['tu']);await sleep(10);
  ok(!/Probar estructura/.test(txt())&&/Papelera/.test(txt()),'Tú: ya no hay selector de estructura y sí Papelera');
  H.onFab([]);await sleep(10);ok(!!doc.querySelector('[data-click="crearIr|inversion"]')&&!!doc.querySelector('[data-click="crearIr|deuda"]')&&!!doc.querySelector('[data-click="crearIr|factura"]'),'el + trae Invertir, Gasto fijo y Pago de deuda');
@@ -25,8 +25,8 @@ const tabs=e=>[...e.doc.querySelectorAll('.tabbar [data-tab]')].map(b=>b.getAttr
  const m2=movs.concat([{id:'g2',tipo:'Gasto',categoria:'Ocio',importe:40,fecha:mk+'-02'}]);
  cfg.app.facturas=[{nombre:'Alquiler',importe:500,diaDelMes:HOY.getDate()}];cfg.app.ingresos=['Nómina'];
  e=await env(cfg,m2,tareas);H=e.w.__APP__.H;A=e.w.__APP__;doc=e.doc;txt=()=>doc.querySelector('#content').textContent;
- const filas=()=>doc.querySelectorAll('.card.aten .aten-fila').length;
- ok(filas()===3&&/Y \d+ avisos más/.test(txt()),'Pendiente: se ven 3 filas y «Y N avisos más» ('+filas()+')');
+ const filas=()=>doc.querySelectorAll('.dias-lista .dia-fila').length;
+ ok(filas()===3&&/Ver los \d+/.test(txt()),'Estos días: se ven 3 filas y «Ver los N» ('+filas()+')');
  click(e,'verPendiente');await sleep(10);
  ok(filas()>3&&/Ver menos/.test(txt()),'al tocar «avisos más» se despliega todo');
  click(e,'verPendiente');await sleep(10);ok(filas()===3,'y se vuelve a plegar');

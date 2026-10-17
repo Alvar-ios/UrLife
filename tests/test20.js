@@ -11,7 +11,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  // Inicio
  ok(/Te queda este mes/.test(txt())&&/1939,50|1.939,50/.test(doc.querySelector('.hero-v').textContent),'Inicio: «Te queda este mes» con lo que queda ('+doc.querySelector('.hero-v').textContent+')');
  ok(/Renovar seguro/.test(txt()),'Lo próximo incluye la tarea de mañana');
- click(e,'moveMes','-1');ok(/Te quedó en/.test(txt()),'mes anterior: «Te quedó en …»');click(e,'moveMes','1');
+ ok(!!doc.querySelector('[data-click="tuMesAbrir"]')&&!doc.querySelector('[data-click^="moveMes"]'),'Inicio: el mes se ve en una píldora (sin flechas: los meses anteriores están en el Resumen)');
  // botón +
  click(e,'onFab');await sleep(10);
  ok(/¿Qué quieres apuntar\?/.test(sh())&&doc.querySelectorAll('#sheetHost .crear-op').length>=8,'el + abre «¿Qué quieres apuntar?» con todas las opciones (incluye Invertir, Gasto fijo y Pago de deuda)');

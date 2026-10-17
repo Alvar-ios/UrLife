@@ -8,13 +8,13 @@ const movs=[{id:'i1',tipo:'Ingreso',categoria:'Nómina',importe:1500,fecha:hoy},
  await sleep(100);const A=e.w.__APP__,S=A.S,H=A.H,doc=e.doc;const list=()=>doc.querySelector('#movList').textContent,txt=()=>doc.querySelector('#content').textContent;
  // Dashboard: Ingresos del mes
  e.w.__APP__.H.goTab(['inicio']);await sleep(10);
- ok(doc.querySelectorAll('#content .hero-tile.tappable').length===3&&!!doc.querySelector('#content .hero-main.tappable'),'Inicio: la cifra principal y las 3 cifras se pueden pinchar');
- click(e,'irMovs','Ingreso','m:'+Y+'-'+pad(M));await sleep(10);
+ ok(!doc.querySelector('#content .hero-tile')&&!!doc.querySelector('#content .hero-main.tappable'),'Inicio: la cifra principal se puede pinchar (ingresos, gastos y apartado están en el Resumen)');
+ H.irMovs(['Ingreso','m:'+Y+'-'+pad(M)]);await sleep(10);
  ok(S.tab==='movimientos'&&/1 movimiento/.test(list())&&/Nómina/.test(list()),'Ingresos → movimientos de ingresos de este mes');
  ok(/Volver a Inicio/.test(txt())&&new RegExp(['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][M-1]+' '+Y).test(txt()),'chip del mes y botón Volver');
  click(e,'volver');await sleep(10);ok(S.tab==='inicio'&&S.inicioSub==='dashboard','Volver regresa al Dashboard');
  // Gastos (gastos + facturas)
- click(e,'irMovs','_gastos','m:'+Y+'-'+pad(M));await sleep(10);
+ H.irMovs(['_gastos','m:'+Y+'-'+pad(M)]);await sleep(10);
  ok(/2 movimientos/.test(list())&&/Gastos y facturas/.test(txt()),'Gastos → gastos y facturas del mes');
  click(e,'setMovFiltro','Todos');await sleep(5);ok(/3 movimientos/.test(list()),'quitar el filtro de grupo');
  // Análisis mensual de junio

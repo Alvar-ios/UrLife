@@ -91,8 +91,8 @@ function conGrupos(w,estado){ // estado: {grupos:[], miembros:[]} mutable
  H.goTab(['inicio']);await sleep(10);
  ok(!doc.querySelector('#content .empieza'),'con movimientos, meta, grupo y presupuesto: ya no sale (no falta nada)');
  const e3=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'Supermercado'}]},meta:{onboarded:true}},movs:[{id:'x',tipo:'Gasto',categoria:'Supermercado',importe:5,fecha:ym+'-01'}]});await sleep(80);
- ok(/Sácale más partido/.test(e3.doc.querySelector('#content').textContent)&&/Pon tus presupuestos/.test(e3.doc.querySelector('#content').textContent)&&/Crea una meta/.test(e3.doc.querySelector('#content').textContent),'a quien ya apunta le salen los pasos que le faltan');
- click(e3,'empiezaOcultar');await sleep(20);
- ok(!e3.doc.querySelector('#content .empieza')&&e3.store.cfg.app.empiezaOculto,'«Ocultar» lo quita para siempre');
+ ok(!e3.doc.querySelector('#content .empieza'),'a quien ya apunta no le quitan sitio en Inicio los primeros pasos');
+ e2.w.__APP__.H.closeSheet([]);await sleep(260);e2.w.__APP__.H.goTab(['inicio']);await sleep(20);click(e2,'empiezaOcultar');await sleep(20);
+ ok(!e2.doc.querySelector('#content .empieza')&&e2.store.cfg.app.empiezaOculto,'«Ocultar» lo quita para siempre');
  console.log(fails?'FAILED '+fails:'ALL PASS');process.exit(fails?1:0);
 })().catch(x=>{console.error(x);process.exit(1)});
