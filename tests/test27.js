@@ -10,7 +10,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  await sleep(100);
  const A=e.w.__APP__,H=A.H,doc=e.doc,txt=()=>doc.querySelector('#content').textContent;
  // números con separador de miles
- ok(/\+3\.240,00 €/.test((H.goTab(['movimientos']),txt())),'4 cifras con punto de miles: +3.240,00 €');
+ ok(/\+3\.240,00 €/.test((H.goTab(['movimientos']),H.setMovVista(['lista']),txt())),'4 cifras con punto de miles: +3.240,00 €');
  // Apartar en Movimientos
  const fila=[...doc.querySelectorAll('#movList .row')].find(r=>/Colchón/.test(r.textContent)&&/200,00/.test(r.textContent));
  const amt=fila.querySelector('.amt');
@@ -22,7 +22,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  // Presupuestos
  H.irResumen([]);await sleep(20);
  const res=doc.querySelector('.budget-row').closest('.card').querySelector('.summary-line').textContent;
- ok(/En lo presupuestado llevas 100,00 € de 300,00 € · quedan 200,00 €/.test(res)&&/Sin presupuesto: 850,00 €/.test(res),'presupuestos: compara solo lo presupuestado ('+res+')');
+ ok(/Llevas 100,00 € de 300,00 € presupuestados · quedan 200,00 €/.test(res),'presupuestos: compara solo lo presupuestado ('+res+')');
  // Inicio: rótulos
  H.irResumen([]);await sleep(10);
  ok(/Apartado e invertido/.test(txt()),'Resumen: «Apartado e invertido» en lugar de «Ahorro»');

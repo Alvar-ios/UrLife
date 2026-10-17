@@ -34,7 +34,7 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  await sleep(60);
  const S=e.w.__APP__.S,doc=e.doc,c=()=>doc.querySelector('#content');
  const setv=(sel,v)=>{const el=doc.querySelector(sel);el.value=v;el.dispatchEvent(new e.w.Event('input',{bubbles:true}));el.dispatchEvent(new e.w.Event('change',{bubbles:true}))};
- e.w.__APP__.H.goTab(['movimientos']);
+ e.w.__APP__.H.goTab(['movimientos']);e.w.__APP__.H.setMovVista(['lista']);
  ok([...doc.querySelectorAll('.pill')].some(b=>b.textContent==='Inversión'),'filtro Inversión existe');
  e.w.__APP__.H.onFabAntiguo([]);
  ok([...doc.querySelectorAll('#tipoToggle button')].some(b=>b.textContent==='Inversión'),'tipo Inversión en formulario');
@@ -68,7 +68,7 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  ok(S.tab==='movimientos'&&S.movFiltroTipo==='Inversión'&&doc.querySelectorAll('#movList .row').length===2,'verActivo filtra a 2 movimientos');
  // cambiar tipo de inversión a gasto limpia tipoActivo
  const id=Object.keys(e.store.movimientos).find(i=>e.store.movimientos[i].categoria==='Bitcoin');
- S.movQuery='';S.movFiltroTipo='Todos';e.w.__APP__.H.goTab(['movimientos']);click(e,'openMovForm',id);ok(doc.querySelector('#fTipoActivo').value==='Criptomoneda','editar precarga tipo activo');
+ S.movQuery='';S.movFiltroTipo='Todos';e.w.__APP__.H.goTab(['movimientos']);e.w.__APP__.H.setMovVista(['lista']);click(e,'openMovForm',id);ok(doc.querySelector('#fTipoActivo').value==='Criptomoneda','editar precarga tipo activo');
  click(e,'pickTipo','Gasto');ok(!doc.querySelector('#fTipoActivo'),'cambiar a Gasto oculta campo');click(e,'saveMov');await sleep(30);
  ok(e.store.movimientos[id].tipo==='Gasto'&&e.store.movimientos[id].tipoActivo===null,'tipoActivo limpiado al cambiar de tipo');
  // regresión: gasto normal no añade campo tipoActivo

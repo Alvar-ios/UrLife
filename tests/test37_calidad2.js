@@ -68,8 +68,9 @@ const sinBanco = (p) => JSON.stringify({ inv: p.inv, ahorro: p.ahorro, deudas: p
   ok(!e.doc.querySelector('.row.traspaso'), 'ni con el filtro «Ingresos»');
   H.setMovFiltro(['Todos']); await sleep(10);
   ok(!!e.doc.querySelector('.row.traspaso'), 'sí se ve en «Todos»');
-  ok(!!e.doc.querySelector('[data-click="setMovFiltro|_tras"]'), 'hay un filtro «Traspasos»');
-  H.setMovFiltro(['_tras']); await sleep(10);
+  H.movFiltrosAbrir([]); await sleep(5);
+  ok(!!e.doc.querySelector('#sheetHost [data-click="setMovFiltro|_tras"]'), 'hay un filtro «Traspasos» (en la hoja Filtros)');
+  H.setMovFiltro(['_tras']); await sleep(10); H.closeSheet([]); await sleep(260);
   ok(e.doc.querySelectorAll('#movList .row.traspaso').length === 1 && e.doc.querySelectorAll('#movList .row:not(.traspaso)').length === 0, 'con el filtro «Traspasos» solo salen los traspasos');
   H.setMovFiltro(['Todos']); await sleep(10);
   // calendario con los movimientos activados
@@ -142,7 +143,7 @@ const sinBanco = (p) => JSON.stringify({ inv: p.inv, ahorro: p.ahorro, deudas: p
   A = e.w.__APP__; H = A.H;
   const [dd, mm] = [d2.slice(8, 10), d2.slice(5, 7)];
   const csv = ['Fecha;Concepto;Importe', dd + '/' + mm + '/' + d2.slice(0, 4) + ';COMPRA MERCADONA;-32,40', dd + '/' + mm + '/' + d2.slice(0, 4) + ';REINTEGRO CAJERO;-100,00'].join('\r\n');
-  H.goTab(['movimientos']); await sleep(10); click(e, 'impAbrir'); await sleep(10);
+  H.goTab(['movimientos']); await sleep(10); (e.w||e.w).__APP__.H.impAbrir([]); await sleep(10);
   await H.impArchivo([], { files: [file('extracto.csv', ab(Buffer.from(csv, 'latin1')))] }); await sleep(40);
   H.impRevisar(); await sleep(20);
   const filas = A.imp().filas;

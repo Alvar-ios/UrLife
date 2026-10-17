@@ -25,7 +25,7 @@ const movs=[
  ok(/Apartado/.test(txt())&&/Invertido/.test(txt())&&/vale 1300,00|vale 1\.300,00/.test(txt())&&/\+300,00/.test(txt()),'la tarjeta lo enseña: Apartado · Invertido → vale (+300 €)');
  ok(!!doc.querySelector('[data-click="metaAportar|casa"]')&&!!doc.querySelector('[data-click="metaAsignar|casa"]')&&!!doc.querySelector('[data-click="usoAbrir|casa"]'),'botones: Aportar, Vincular y He usado dinero');
  // 2. «Apartar» en lugar de «Ahorro»
- H.goTab(['movimientos']);await sleep(10);
+ H.goTab(['movimientos']);H.setMovVista(['lista']);await sleep(10);
  const metas=[...doc.querySelectorAll('#movList .row .meta')].map(x=>x.textContent).join(' | ');
  ok(/Apartar/.test(metas)&&!/\bAhorro\b/.test(metas),'en la lista se llama «Apartar» ('+metas+')');
  H.goTab(['dinero']);H.setDineroSub(['metas']);await sleep(10);

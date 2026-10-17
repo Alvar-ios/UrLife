@@ -38,7 +38,8 @@ const tabs=e=>[...e.doc.querySelectorAll('.tabbar [data-tab]')].map(b=>b.getAttr
  click(e,'setInicioVista','hoy');await sleep(10);
  // Movimientos: lista y resumen; volver desde el resumen
  H.goTab(['movimientos']);await sleep(10);
- ok(/Mercadona/.test(txt())&&!!doc.querySelector('.mov-vista'),'Movimientos: la lista y el selector Lista | Resumen');
+ ok(/En qué gastas/.test(txt())&&doc.querySelectorAll('.mov-vista button').length===3,'Movimientos abre en el Resumen, con Resumen | Lista | Calendario');
+ click(e,'setMovVista','lista');await sleep(15);ok(/Mercadona/.test(txt()),'Lista: los movimientos');
  click(e,'setMovVista','resumen');await sleep(15);ok(/En qué gastas/.test(txt()),'Movimientos → Resumen: en qué gastas y presupuestos');
  const bud=doc.querySelector('.budget-row.tappable');bud.click();await sleep(10);
  ok(/Volver a Resumen/.test(txt()),'al entrar en una categoría, «Volver a Resumen»');

@@ -117,7 +117,7 @@ const clicks = (e, pre) => [...e.doc.querySelectorAll('[data-click^="' + pre + '
   C.H.closeSheet([]); await sleep(260);
 
   // Movimientos de Carla: el taxi que pagó Marta dice «pagaste tú»
-  ok(/pagaste tú/.test(c.w.__APP__.S.compartidos.length ? (() => { C.S.tab = 'movimientos'; C.render(); return c.doc.querySelector('#app').textContent; })() : ''), 'Movimientos: el taxi que pagó Marta sale como «pagaste tú»');
+  ok(/pagaste tú/.test(c.w.__APP__.S.compartidos.length ? (() => { C.S.tab = 'movimientos'; C.S.movVista = 'lista'; C.render(); return c.doc.querySelector('#app').textContent; })() : ''), 'Movimientos: el taxi que pagó Marta sale como «pagaste tú»');
 
   // Carla abre el taxi para cambiarlo: no debe salir dos veces ella misma («Yo» y «Tú»)
   C.H.openMovForm(['c:cTaxi']); await sleep(40);

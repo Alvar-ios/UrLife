@@ -73,12 +73,12 @@ const toastTxt=e=>(e.doc.querySelector('#toast')||{}).textContent||'';
  const mirror=Object.values(DB.movs.uA)[0];
  ok(Object.keys(DB.movs.uA).length===1&&mirror.compartidoId===c1.id&&mirror.importe===60,'Álvaro guarda su cargo del banco (60 €) enlazado al compartido');
  ok(gastos(A).gastos===30,'en los números de Álvaro cuenta solo su parte (30 €), no 60 ni 90 ('+gastos(A).gastos+')');
- a.w.__APP__.H.goTab(['movimientos']);await sleep(20);
+ a.w.__APP__.H.goTab(['movimientos']);a.w.__APP__.H.setMovVista(['lista']);await sleep(20);
  const fila=da.querySelector('#movList .row');
  ok(da.querySelectorAll('#movList .row').length===1&&/tu parte de 60,00/.test(fila.textContent)&&/−30,00/.test(fila.textContent)&&/pagaste tú/.test(fila.textContent),'en Movimientos: una sola fila, −30 €, «tu parte de 60 €»');
  await sleep(30);
  ok(gastos(P).gastos===30,'Paloma también ve 30 € de gasto en sus números ('+gastos(P).gastos+')');
- p.w.__APP__.H.goTab(['movimientos']);await sleep(20);
+ p.w.__APP__.H.goTab(['movimientos']);p.w.__APP__.H.setMovVista(['lista']);await sleep(20);
  ok(/pagó Alvaro/.test(dp.querySelector('#movList').textContent),'Paloma ve «pagó Alvaro»');
  // --- 2. cuentas del grupo
  P.H.grupoVer(['g1']);await sleep(30);

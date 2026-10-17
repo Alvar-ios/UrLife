@@ -68,10 +68,10 @@ const txt=e=>e.doc.querySelector('#content').textContent,sh=e=>e.doc.querySelect
  // 5. Movimientos: filtro por cuenta y punto de color
  H.goTab(['movimientos']);await sleep(5);H.setMovModo(['todo']);await sleep(10);
  ok(!!doc.querySelector('.cuenta-filtro')&&doc.querySelectorAll('#movList .row .cuenta-dot').length===4,'cada fila lleva el punto de su cuenta (apartar no): '+doc.querySelectorAll('#movList .row .cuenta-dot').length);
- click(e,'setMovCuenta','c2');await sleep(10);
+ ok(/Todas las cuentas/.test(doc.querySelector('.cuenta-filtro').textContent),'las cuentas, en una píldora bajo el mes');click(e,'movCuentaElegir');await sleep(5);click(e,'setMovCuenta','c2');await sleep(10);ok(/Banco B/.test(doc.querySelector('.cuenta-filtro').textContent),'la píldora dice la cuenta elegida');
  const ttl=[...doc.querySelectorAll('#movList .row .ttl')].map(x=>x.textContent);
  ok(ttl.length===2&&ttl.some(t=>/Ocio/.test(t))&&ttl.some(t=>/Banco A → Banco B/.test(t)),'filtrar por «Banco B» enseña su gasto y el traspaso que le entra: '+ttl.join(' | '));
- una.w.__APP__.H.goTab(['movimientos']);await sleep(10);
+ una.w.__APP__.H.goTab(['movimientos']);una.w.__APP__.H.setMovVista(['lista']);await sleep(10);
  ok(!una.doc.querySelector('.cuenta-filtro')&&!una.doc.querySelector('.cuenta-dot'),'con una cuenta, Movimientos no cambia');
 
  // 6. Apartar no pregunta la cuenta

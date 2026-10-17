@@ -37,8 +37,8 @@ const ab=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);
   '30/09/2026;30/09/2026;CAFETERÍA LA ESQUINA;-3,50;4.861,88',
   '30/09/2026;;TOTAL;;'].join('\r\n');
  const csvBuf=ab(Buffer.from(csv,'latin1'));
- e.w.__APP__.H.goTab(['movimientos']);await sleep(10);
- click(e,'impAbrir');await sleep(10);
+ e.w.__APP__.H.goTab(['movimientos']);e.w.__APP__.H.setMovVista(['lista']);await sleep(10);
+ e.w.__APP__.H.impAbrir([]);await sleep(10);
  ok(/Importar movimientos/.test(sh()),'abre el asistente desde Movimientos');
  await H.impArchivo([],{files:[file('extracto_septiembre.csv',csvBuf)]});await sleep(20);
  let I=A.imp();
@@ -73,7 +73,7 @@ const ab=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);
  ok(/Importado/.test(sh()),'pantalla final');
  H.closeSheet([]);await sleep(250);
  // ---------- reimportar el mismo archivo: no duplica
- click(e,'impAbrir');await H.impArchivo([],{files:[file('extracto_septiembre.csv',csvBuf)]});await sleep(20);I=A.imp();
+ e.w.__APP__.H.impAbrir([]);await H.impArchivo([],{files:[file('extracto_septiembre.csv',csvBuf)]});await sleep(20);I=A.imp();
  ok(I.perfil===true,'reconoce el formato la segunda vez');
  H.impRevisar();await sleep(5);I=A.imp();
  ok(I.filas.filter(r=>r.estado==='importado').length===6&&I.filas.filter(r=>r.id&&r.incluir&&r.estado!=='importado').length===0,'todo ya importado: nada que importar');
@@ -90,7 +90,7 @@ const ab=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);
  const ws=XLSX.utils.aoa_to_sheet([['Mis gastos 2026'],[],['Fecha','Tipo','Categoría','Descripción','Importe'],[46235,'Gasto','Ocio','Cine',12],[46235,'Ingreso','Nómina','',1500],['15/08/2026','Factura','Luz','',60],['','','','','']]);
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['otra hoja']]),'Notas');XLSX.utils.book_append_sheet(wb,ws,'Movimientos');
  const xbuf=XLSX.write(wb,{type:'array',bookType:'xlsx'});
- click(e,'impAbrir');await H.impArchivo([],{files:[file('MisGastos.xlsx',xbuf)]});await sleep(20);I=A.imp();
+ e.w.__APP__.H.impAbrir([]);await H.impArchivo([],{files:[file('MisGastos.xlsx',xbuf)]});await sleep(20);I=A.imp();
  ok(I.hojas.length===2,'Excel con 2 hojas');
  H.impHoja([],{value:'1'});await sleep(5);I=A.imp();
  ok(I.map.fecha===0&&I.map.tipo===1&&I.map.cat===2&&I.map.desc===3&&I.map.importe===4,'columnas del Excel personal: '+JSON.stringify(I.map));
@@ -100,14 +100,14 @@ const ab=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);
  H.closeSheet([]);await sleep(250);
  // ---------- CSV inglés con cargos y abonos separados
  const csv2='Date,Description,Debit,Credit\n2026-09-01,"Coffee, shop",3.50,\n2026-09-02,Salary,,"2,000.00"\n';
- click(e,'impAbrir');await H.impArchivo([],{files:[file('bank.csv',ab(Buffer.from(csv2,'utf8')))]});await sleep(20);I=A.imp();
+ e.w.__APP__.H.impAbrir([]);await H.impArchivo([],{files:[file('bank.csv',ab(Buffer.from(csv2,'utf8')))]});await sleep(20);I=A.imp();
  ok(I.modoImporte==='dos'&&I.map.cargo===2&&I.map.abono===3&&I.map.desc===1,'cargos y abonos separados detectados: '+JSON.stringify(I.map));
  H.impRevisar();await sleep(5);I=A.imp();
  const v3=I.filas.filter(r=>r.id);
  ok(v3.length===2&&v3[0].desc==='Coffee, shop'&&v3[0].tipo==='Gasto'&&v3[0].importe===3.5&&v3[1].tipo==='Ingreso'&&v3[1].importe===2000,'comillas y signos correctos');
  H.closeSheet([]);await sleep(250);
  // ---------- formulario: autocategoría y «Recordar»
- e.w.__APP__.H.goTab(['movimientos']);e.w.__APP__.H.onFabAntiguo([]);await sleep(10);
+ e.w.__APP__.H.goTab(['movimientos']);e.w.__APP__.H.setMovVista(['lista']);e.w.__APP__.H.onFabAntiguo([]);await sleep(10);
  const setv=(sel,v)=>{const el=doc.querySelector(sel);el.value=v;el.dispatchEvent(new e.w.Event('input',{bubbles:true}))};
  setv('#fImporte','18');setv('#fDesc','Mercadona centro');await sleep(5);
  ok(doc.querySelector('#fCategoria').value==='Alimentación','autocategoría por historial al escribir la descripción');
