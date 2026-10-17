@@ -1094,7 +1094,8 @@ function irMovs(o) {
 const mesClave = (y, m) => 'm:' + y + '-' + pad2(m);
 // Busca también por importe: «39,60», «39.6» o «39» encuentran el de 39,60 €
 function casaImporte(m, q) {
-  const n = q.replace(/\s|€/g, '').replace(',', '.'); if (!/^\d+(\.\d{0,2})?$/.test(n)) return false;
+  let n = q.replace(/\s|€/g, ''); if (/^\d{1,3}(\.\d{3})+(,\d*)?$/.test(n)) n = n.replace(/\./g, ''); // «1.200» con el punto de los miles
+  n = n.replace(',', '.'); if (!/^\d+(\.\d{0,2})?$/.test(n)) return false;
   const v = Math.abs(num(m.importe)), [ent, dec] = n.split('.');
   if (dec == null || dec === '') return Math.floor(v) === Number(ent);
   return Math.abs(v - Number(n)) < 0.005 || v.toFixed(2).indexOf(n) === 0;
@@ -1110,12 +1111,13 @@ function movsFiltrados() {
   if (S.movSoloTicket) movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
   if (S.movSoloComp) movs = movs.filter((m) => m.comp);
   if (S.movCat) movs = movs.filter((m) => normName(m.categoria) === normName(S.movCat));
-  if (S.movCat && S.movSub) movs = movs.filter((m) => normName(m.subcategoria) === normName(S.movSub));
+  if (S.movCat && S.movSub) movs = movs.filter((m) => S.movSub === SIN_DETALLE ? !String(m.subcategoria || '').trim() : normName(m.subcategoria) === normName(S.movSub));
   const q = S.movQuery.trim().toLowerCase();
   if (q) movs = movs.filter((m) => [m.categoria, m.subcategoria, m.descripcion, m.metodoPago].some((x) => (x || '').toLowerCase().includes(q)) || casaImporte(m, q));
   return movs.sort(cmpMov);
 }
 // Dentro de una categoría: chips con sus detalles (Uñas, Pelu…) para afinar
+const SIN_DETALLE = '(sin detalle)';
 function subFiltroHtml() {
   if (!S.movCat) return '';
   const cuenta = {};
@@ -1123,7 +1125,8 @@ function subFiltroHtml() {
   const subs = Object.keys(cuenta).sort((a, b) => cuenta[b] - cuenta[a]);
   if (!subs.length) return '';
   return '<div class="pill-row sub-row"><button class="pill sm ' + (!S.movSub ? 'active' : '') + '" ' + act('setMovSub', '') + '>Todo ' + escapeHtml(S.movCat) + '</button>' +
-    subs.map((s) => '<button class="pill sm ' + (normName(S.movSub) === normName(s) ? 'active' : '') + '" ' + act('setMovSub', s) + '>' + escapeHtml(s) + '</button>').join('') + '</div>';
+    subs.map((s) => '<button class="pill sm ' + (normName(S.movSub) === normName(s) ? 'active' : '') + '" ' + act('setMovSub', s) + '>' + escapeHtml(s) + '</button>').join('') +
+    '<button class="pill sm ' + (S.movSub === SIN_DETALLE ? 'active' : '') + '" ' + act('setMovSub', SIN_DETALLE) + '>Sin detalle</button></div>';
 }
 /* ---- Movimientos: Resumen | Lista | Calendario, con la misma cabecera. Al cambiar de vista solo se desliza el cuerpo ---- */
 const MOV_VISTAS = [['resumen', 'Resumen'], ['lista', 'Lista'], ['calendario', 'Calendario']];
@@ -1224,14 +1227,17 @@ function movCuentaElegirHtml() {
 function movFiltrosHtml() {
   const n = movsFiltrados().length + traspasosFiltrados().length;
   const tipos = [['Todos', 'Todos'], ['_gastos', 'Gastos'], ['Ingreso', 'Ingresos'], ['Factura', 'Fijos'], ['Ahorro', 'Apartado'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat((S.traspasos || []).length ? [['_tras', 'Traspasos']] : []);
+  const tAct = S.movFiltroTipo === '_comp' || S.movFiltroTipo === '_ticket' ? 'Todos' : S.movFiltroTipo;
+  if (!tipos.some((t) => t[0] === tAct)) tipos.splice(4, 0, [tAct, { _ahorro: 'Apartado e invertido' }[tAct] || tipoTxt(tAct)]);
+  const soloT = !!S.movSoloTicket || S.movFiltroTipo === '_ticket', soloC = !!S.movSoloComp || S.movFiltroTipo === '_comp';
   const sw = (on, a, t, d) => '<div class="filt-sw"><div><b>' + t + '</b><span>' + d + '</span></div><button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + t + '" ' + act(a) + '></button></div>';
   const gasto = {}; movsEfectivos().filter(inPeriodo).forEach((m) => { if ((m.tipo === 'Gasto' || m.tipo === 'Factura') && m.categoria) gasto[m.categoria] = (gasto[m.categoria] || 0) + Math.abs(num(m.importe)); });
   const cats = Object.keys(gasto).sort((a, b) => gasto[b] - gasto[a]);
   if (S.movCat && !cats.some((c) => normName(c) === normName(S.movCat))) cats.unshift(S.movCat);
   return '<div class="handle"></div><div class="filt-cab"><h2>Filtros</h2><button type="button" class="link" ' + act('movFiltrosQuitar') + '>Quitar todos</button></div>' +
-    '<div class="filt-tit">Qué movimientos</div><div class="chips">' + tipos.map(([t, l]) => '<button type="button" class="chip ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
-    '<div class="filt-tit">Solo los que…</div>' + sw(!!S.movSoloTicket, 'movSoloTicket', 'Tienen ticket', 'Con foto y artículos') +
-    (compartidosDisponible() ? sw(!!S.movSoloComp, 'movSoloComp', 'Son compartidos', 'Vienen de Juntos') : '') +
+    '<div class="filt-tit">Qué movimientos</div><div class="chips">' + tipos.map(([t, l]) => '<button type="button" class="chip ' + (tAct === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="filt-tit">Solo los que…</div>' + sw(soloT, 'movSoloTicket', 'Tienen ticket', 'Con foto y artículos') +
+    (compartidosDisponible() || soloC ? sw(soloC, 'movSoloComp', 'Son compartidos', 'Vienen de Juntos') : '') +
     (cats.length ? '<div class="filt-tit">Categoría</div><div class="chips">' + '<button type="button" class="chip ' + (!S.movCat ? 'active' : '') + '" ' + act('setMovCatFiltro', '') + '>Todas</button>' +
       cats.map((c) => '<button type="button" class="chip ' + (normName(S.movCat) === normName(c) ? 'active' : '') + '" ' + act('setMovCatFiltro', c) + '><span class="dot" style="background:' + colorCat(c) + '"></span> ' + escapeHtml(c) + '</button>').join('') + '</div>' : '') +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>' + (n ? 'Ver ' + n + (n === 1 ? ' movimiento' : ' movimientos') : 'No hay movimientos con estos filtros') + '</button></div>';
@@ -1253,12 +1259,13 @@ function renderMovCal() {
   const lunes = addDaysISO(r.desde, -dowMon(parseISO(r.desde))), fin = addDaysISO(r.hasta, 6 - dowMon(parseISO(r.hasta)));
   if (S.movCalDia && (S.movCalDia < r.desde || S.movCalDia > r.hasta)) S.movCalDia = '';
   const sel = S.movCalDia || (hoy >= r.desde && hoy <= r.hasta ? hoy : '');
-  let celdas = '', sinGasto = 0, gastadoDia = 0;
+  let celdas = '', sinGasto = 0, gastadoDia = 0, primerDia = '9999';
+  S.movimientos.forEach((x) => { if (x.fecha && x.fecha.slice(0, 10) < primerDia) primerDia = x.fecha.slice(0, 10); });
   for (let f = lunes; f <= fin; f = addDaysISO(f, 1)) {
     const d = parseISO(f), fuera = f < r.desde || f > r.hasta;
     if (fuera) { celdas += '<span class="cal-d fuera"><span class="cal-n">' + d.getDate() + '</span></span>'; continue; }
     const o = dia[f] || { g: 0 }, fut = f > hoy, g = Math.max(0, o.g);
-    if (!fut && g <= 0.004) sinGasto++;
+    if (!fut && g <= 0.004 && f >= primerDia) sinGasto++;
     gastadoDia += g;
     const nivel = g > 0.004 && max > 0 ? Math.min(4, 1 + Math.floor(g / max * 3.999)) : 0;
     const etiqueta = d.getDate() === 1 || f === r.desde ? d.getDate() + ' ' + MESES_ABR[d.getMonth()].toLowerCase() : String(d.getDate());
@@ -1304,7 +1311,7 @@ function flujosJuntosFilas(id) {
 }
 function movCuentaActiva() { return !!S.movCuenta && hayVariasCuentas() && !!cuentaPorId(S.movCuenta); }
 function traspasosFiltrados() {
-  if ((S.movFiltroTipo !== 'Todos' && S.movFiltroTipo !== '_tras') || S.movCat) return [];
+  if ((S.movFiltroTipo !== 'Todos' && S.movFiltroTipo !== '_tras') || S.movCat || S.movSoloTicket || S.movSoloComp) return [];
   const q = S.movQuery.trim().toLowerCase(), cu = movCuentaActiva() ? S.movCuenta : null;
   return (S.traspasos || []).filter(inPeriodo).filter((t) => !cu || t.cuentaId === cu || t.cuentaDestinoId === cu).filter((t) => !q || [t.descripcion, 'traspaso', nombreCuenta(t.cuentaId), nombreCuenta(t.cuentaDestinoId)].some((x) => (x || '').toLowerCase().includes(q)));
 }
@@ -4743,8 +4750,8 @@ function donutDatos() {
   const k = kpisMes(S.anioSel, S.mesSel), gastos = k.movs.filter((m) => m.tipo === 'Gasto' || m.tipo === 'Factura');
   const ents = Object.entries(gastoPorCategoria(k.movs)).filter((e) => e[1] > 0.004).sort((a, b) => b[1] - a[1]);
   const total = ents.reduce((a, e) => a + e[1], 0);
-  const trozo = ([n, v]) => ({ n, v, color: colorCat(n) });
-  const slices = ents.length <= 6 ? ents.map(trozo) : ents.slice(0, 5).map(trozo).concat([{ n: 'Otras', v: ents.slice(5).reduce((a, e) => a + e[1], 0), color: COLOR_OTRAS, otras: ents.slice(5).map(trozo) }]);
+  const trozo = ([n, v]) => ({ n, v, color: colorCat(n), l: n && n !== 'undefined' && n !== 'null' ? n : 'Sin categoría' });
+  const slices = ents.length <= 6 ? ents.map(trozo) : ents.slice(0, 5).map(trozo).concat([{ n: ents.slice(0, 5).some((e) => normName(e[0]) === 'otras') ? 'Otras categorías' : 'Otras', v: ents.slice(5).reduce((a, e) => a + e[1], 0), color: COLOR_OTRAS, otras: ents.slice(5).map(trozo) }]);
   return { total, slices, gastos };
 }
 // Las partes de una categoría: sus subcategorías (en tonos de su color) o, en «Otras», las categorías que agrupa
@@ -4774,7 +4781,7 @@ function drawDonut() {
     const off = anillo.length === 1 ? 0 : ini + (redondo ? (HUECO + SW) / 2 : HUECO / 2);
     ini += len;
     const elegido = !partes && sel && sel.n === x.n, apagado = !partes && sel && !elegido;
-    const clic = partes ? (x.sub != null ? act('donutIr', x.cat, x.sub || '-') : act('donutSel', x.cat)) : act('donutSel', x.n);
+    const clic = partes ? act('donutIr', x.cat, x.sub != null ? (x.sub || '-') : '') : act('donutSel', x.n);
     return '<circle class="dn-s' + (elegido ? ' sel' : '') + (apagado ? ' off' : '') + '" cx="80" cy="80" r="' + R + '" fill="none" stroke="' + x.color + '"' + (x.op ? ' stroke-opacity="' + x.op + '"' : '') +
       ' stroke-width="' + SW + '" stroke-linecap="' + (redondo && anillo.length > 1 ? 'round' : 'butt') + '" stroke-dasharray="' + vis.toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" data-vis="' + vis.toFixed(2) + '" data-i="' + i + '" ' + clic + '><title>' + escapeHtml(x.n) + '</title></circle>';
   }).join('');
@@ -4786,10 +4793,10 @@ function drawDonut() {
   const leg = $('#donutLegend');
   if (leg) {
     const pct = (v) => Math.round(v / d.total * 100) + ' %';
-    const fila = (x, a, cls, valor) => '<button type="button" class="dn-f' + (cls || '') + '" ' + a + '><i style="background:' + x.color + (x.op ? ';opacity:' + x.op : '') + '"></i><span class="dn-n">' + escapeHtml(x.n) + '</span><b class="tnum">' + valor + '</b></button>';
+    const fila = (x, a, cls, valor) => '<button type="button" class="dn-f' + (cls || '') + '" ' + a + '><i style="background:' + x.color + (x.op ? ';opacity:' + x.op : '') + '"></i><span class="dn-n">' + escapeHtml(x.l || x.n) + '</span><b class="tnum">' + valor + '</b></button>';
     const per = mesClave(S.anioSel, S.mesSel);
     if (partes) leg.innerHTML = '<button type="button" class="dn-volver" ' + act('donutSel', '') + '>' + ic('chevL') + ' Todas</button>' +
-      partes.slice(0, 7).map((x) => fila(x, x.sub != null ? act('donutIr', x.cat, x.sub || '-') : act('donutSel', x.cat), '', moneyShort(x.v))).join('') +
+      partes.slice(0, 7).map((x) => fila(x, act('donutIr', x.cat, x.sub != null ? (x.sub || '-') : ''), '', moneyShort(x.v))).join('') +
       (sel.otras ? '' : '<button type="button" class="dn-ver" ' + act('irMovs', '_gastos', per, sel.n) + '>Ver sus movimientos ' + ic('chevR') + '</button>');
     else leg.innerHTML = d.slices.map((x) => fila(x, act('donutSel', x.n), sel ? (sel.n === x.n ? ' sel' : ' off') : '', pct(x.v))).join('') +
       (sel && !sel.otras ? '<button type="button" class="dn-ver" ' + act('irMovs', '_gastos', per, sel.n) + '>Ver sus movimientos ' + ic('chevR') + '</button>' : '');
@@ -6294,7 +6301,7 @@ function confirmDelete(el, fn) {
 const H = {
   goTab: ([id]) => {
     S._infoTeQueda = false;
-    S.volverA = null; if (id === 'movimientos') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S.movVista = 'resumen'; S._donutSel = ''; _donutAnim = ''; }
+    S.volverA = null; if (id === 'movimientos') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S.movVista = 'resumen'; S.movPeriodo = mesHoyClave(); S._donutSel = ''; _donutAnim = ''; }
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
     const nueva = TAB_ALIAS[id] || id; if (nueva !== S.tab) S._entrando = true;
     if (nueva === 'inicio') S.inicioVista = 'hoy';
@@ -6353,7 +6360,7 @@ const H = {
   setMovVista: ([v]) => {
     const orden = MOV_VISTAS.map((x) => x[0]), nueva = orden.indexOf(v) >= 0 ? v : 'lista', antes = movVistaAct();
     if (nueva === antes && S.movVista === nueva) return;
-    if (nueva === 'resumen') { S.movCat = ''; movLimpiarFiltros(); S._donutSel = ''; }
+    if (nueva === 'resumen') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S._donutSel = ''; }
     if (nueva === 'calendario' && !/^m:/.test(movPerNorm(S.movPeriodo))) { const p = movPerNorm(S.movPeriodo), ya = mesActual().y; S.movPeriodo = /^y:/.test(p) && Number(p.slice(2)) !== ya ? mesClave(Number(p.slice(2)), 12) : mesHoyClave(); }
     S._movBuscando = false; _donutAnim = '';
     movDeslizar(() => { S.movVista = nueva; }, orden.indexOf(nueva) > orden.indexOf(antes) ? 1 : -1);
@@ -6366,8 +6373,8 @@ const H = {
     if (t === '_ticket') { S.movFiltroTipo = 'Todos'; S.movSoloTicket = true; } else if (t === '_comp') { S.movFiltroTipo = 'Todos'; S.movSoloComp = true; } else S.movFiltroTipo = t;
     S.movVista = 'lista'; S.movLimit = 120; movRefrescar();
   },
-  movSoloTicket: () => { S.movSoloTicket = !S.movSoloTicket; S.movLimit = 120; movRefrescar(); },
-  movSoloComp: () => { S.movSoloComp = !S.movSoloComp; S.movLimit = 120; movRefrescar(); },
+  movSoloTicket: () => { if (S.movFiltroTipo === '_ticket') { S.movFiltroTipo = 'Todos'; S.movSoloTicket = true; } S.movSoloTicket = !S.movSoloTicket; S.movLimit = 120; movRefrescar(); },
+  movSoloComp: () => { if (S.movFiltroTipo === '_comp') { S.movFiltroTipo = 'Todos'; S.movSoloComp = true; } S.movSoloComp = !S.movSoloComp; S.movLimit = 120; movRefrescar(); },
   setMovCatFiltro: ([c]) => { S.movCat = c || ''; S.movSub = ''; S.movLimit = 120; movRefrescar(); },
   movFiltrosAbrir: () => { FORM = { kind: 'movFiltros' }; openSheet(movFiltrosHtml()); },
   movFiltrosQuitar: () => { S.movFiltroTipo = 'Todos'; S.movSoloTicket = false; S.movSoloComp = false; S.movCat = ''; S.movSub = ''; movRefrescar(); },
@@ -6389,7 +6396,7 @@ const H = {
     if (n && n === S._donutSel) { const d = donutDatos(), sl = d.slices.find((x) => x.n === n); if (sl && !sl.otras && !donutPartes(sl, d.gastos)) return irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat: n }); }
     S._donutSel = n || ''; sentir('tic'); drawDonut();
   },
-  donutIr: ([cat, sub]) => { irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat, sub: sub === '-' ? '' : sub }); },
+  donutIr: ([cat, sub]) => { irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat, sub: sub === '-' ? SIN_DETALLE : sub }); },
   movCalDia: ([f]) => { S.movCalDia = f; render(); },
   movDonde: ([d]) => { irMovs({ tipo: '_gastos', periodo: S.movPeriodo }); S.movQuery = d; S._movBuscando = true; render(); },
   setMovPeriodo: ([p]) => { S.movPeriodo = movPerNorm(p); S.movLimit = 120; render(); },
@@ -6836,7 +6843,8 @@ const H = {
   quitarMovCat: () => { S.movCat = ''; S.movSub = ''; movRefrescar(); },
   presEditar: ([n]) => {
     const c = catsGasto().find((x) => x.nombre === n) || { nombre: n, presupuesto: null };
-    const k = kpisMes(S.anioSel, S.mesSel), real = Math.max(0, gastoPorCategoria(k.movs)[n] || 0);
+    const pp = movPerNorm(S.movPeriodo), mm = S.tab === 'movimientos' && /^m:/.test(pp) ? pp.slice(2).split('-').map(Number) : [S.anioSel, S.mesSel];
+    const k = kpisMes(mm[0], mm[1]), real = Math.max(0, gastoPorCategoria(k.movs)[n] || 0);
     FORM = { kind: 'presEditar', cat: n };
     openSheet('<div class="handle"></div><h2>Presupuesto de ' + escapeHtml(n) + '</h2>' +
       '<div class="field"><label>Al mes (' + sym() + ')</label><input id="presIn" class="importe-grande" type="number" step="1" inputmode="decimal" placeholder="Sin presupuesto" value="' + (num(c.presupuesto) > 0 ? num(c.presupuesto) : '') + '"></div>' +

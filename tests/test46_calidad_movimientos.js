@@ -152,29 +152,29 @@ async function buscar(e, q) {
   H.goTab(['movimientos']); await sleep(5); H.setMovVista(['lista']); await sleep(5);
   // B1. «Tienen ticket» / «Son compartidos» enseñan también los traspasos (traspasosFiltrados no mira esos dos filtros)
   H.movSoloTicket([]); await sleep(5);
-  ok(!/traspaso/.test(e.doc.querySelector('#movList .summary-line').textContent), 'FALLO CONOCIDO B1: con «Tienen ticket» no deben salir traspasos (' + e.doc.querySelector('#movList .summary-line').textContent + ')');
+  ok(!/traspaso/.test(e.doc.querySelector('#movList .summary-line').textContent), 'Arreglado B1: con «Tienen ticket» no deben salir traspasos (' + e.doc.querySelector('#movList .summary-line').textContent + ')');
   H.movSoloTicket([]); await sleep(5);
   // B2. «Cambiar» presupuesto en la Lista de otro mes enseña lo gastado del mes que se vio en el Resumen
   H.irMovs(['_gastos', 'm:' + ym, 'Supermercado']); await sleep(5);
   H.movPerMover([-1]); await sleep(5);
   click(e, 'presEditar'); await sleep(5);
-  ok(/llevas 0,00 €/.test(sh(e)), 'FALLO CONOCIDO B2: el presupuesto abierto desde la Lista del mes anterior debe decir lo de ese mes (0 €), no lo de este (' + (sh(e).match(/llevas [\d.,]+ €/) || [''])[0] + ')');
+  ok(/llevas 0,00 €/.test(sh(e)), 'Arreglado B2: el presupuesto abierto desde la Lista del mes anterior debe decir lo de ese mes (0 €), no lo de este (' + (sh(e).match(/llevas [\d.,]+ €/) || [''])[0] + ')');
   H.closeSheet([]); await sleep(250);
   // B3. Dentro de «Otras», tocar una categoría no hace nada: el anillo vuelve al general sin elegirla
   H.goTab(['movimientos']); await sleep(5);
   H.donutSel(['Otras']); await sleep(5);
   const dentro = [...e.doc.querySelectorAll('#donutLegend .dn-f')].find((x) => /Seguros/.test(x.textContent));
   if (dentro) dentro.click(); await sleep(10);
-  ok(S._donutSel === 'Seguros' || (S.movVista === 'lista' && S.movCat === 'Seguros'), 'FALLO CONOCIDO B3: tocar «Seguros» dentro de «Otras» debe elegirla o abrir su lista (ahora no hace nada)');
+  ok(S._donutSel === 'Seguros' || (S.movVista === 'lista' && S.movCat === 'Seguros'), 'Arreglado B3: tocar «Seguros» dentro de «Otras» debe elegirla o abrir su lista (ahora no hace nada)');
   // B4. Buscar con el punto de los miles («1.200») no encuentra el gasto de 1.200 €
   H.goTab(['movimientos']); await sleep(5); H.setMovVista(['lista']); await sleep(5);
   const r12 = await buscar(e, '1.200');
-  ok(r12.join() === 'Compra grande', 'FALLO CONOCIDO B4: buscar «1.200» debe encontrar el gasto de 1.200 € (' + (r12.join() || 'nada') + ')');
+  ok(r12.join() === 'Compra grande', 'Arreglado B4: buscar «1.200» debe encontrar el gasto de 1.200 € (' + (r12.join() || 'nada') + ')');
   H.movBuscarCerrar([]); await sleep(5);
   // B5. Llegar con un filtro que no está en la hoja (Compartidos desde Juntos, Apartado desde Inicio): la hoja no enseña nada marcado
   H.irMovs(['_ahorro', 'm:' + ym]); await sleep(5); H.movFiltrosAbrir([]); await sleep(5);
   const marcado = [...e.doc.querySelectorAll('#sheetHost .chips')][0].querySelector('.chip.active');
-  ok(!!marcado, 'FALLO CONOCIDO B5: viniendo de «Apartado e invertido», la hoja «Filtros» debe marcar qué movimientos estás viendo');
+  ok(!!marcado, 'Arreglado B5: viniendo de «Apartado e invertido», la hoja «Filtros» debe marcar qué movimientos estás viendo');
   H.closeSheet([]); await sleep(250);
 
   console.log(fails ? 'FAILED ' + fails : 'ALL PASS'); process.exit(fails ? 1 : 0);

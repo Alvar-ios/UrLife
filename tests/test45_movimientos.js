@@ -50,6 +50,9 @@ const MOVS = [
   ok(S.movVista === 'lista' && S.movCat === 'Salud y cuidado personal' && S.movSub === 'Uñas' && /1 movimiento\b/.test(txt(e)), 'tocar «Uñas» abre la lista de esa subcategoría');
   click(e, 'volver'); await sleep(10);
   ok(S.movVista === 'resumen', '«Volver» deja otra vez en el Resumen');
+  H.donutIr(['Salud y cuidado personal', '-']); await sleep(10);
+  ok(/1 movimiento\b/.test(txt(e)) && !!doc.querySelector('.sub-row .pill.active') && /Sin detalle/.test(doc.querySelector('.sub-row .pill.active').textContent), '«Sin detalle» abre solo los gastos sin subcategoría');
+  click(e, 'volver'); await sleep(10);
   H.donutSel(['Otras']); await sleep(5);
   ok(/Ocio/.test(doc.querySelector('#donutLegend').textContent) && /Mascotas/.test(doc.querySelector('#donutLegend').textContent), '«Otras» enseña las categorías que agrupa');
   H.donutSel(['']); await sleep(5);
