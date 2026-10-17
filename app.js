@@ -900,7 +900,7 @@ function render() {
   if (!TITULOS[S.tab]) S.tab = 'inicio';
   estrAjustarTab();
   $$('[data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === S.tab));
-  const nuevoTu = ['grupos', 'patrimonio', 'metas', 'importar', 'reglas', 'cobros'].some(badgeActivo);
+  const nuevoTu = ['grupos', 'patrimonio', 'cuentas', 'tumes', 'metas', 'importar', 'reglas', 'cobros'].some(badgeActivo);
   $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
   const av = $('#tbAvatar'); if (av) av.textContent = inicialUsuario();
   document.body.classList.toggle('en-tu', S.tab === 'tu');
@@ -1971,7 +1971,7 @@ function grupoHtml(id) {
   return '<div class="handle"></div><h2>' + escapeHtml(g.nombre) + '</h2>' +
     (g.miembros.length >= 2 ? cuentasGrupoHtml(g) + objetivosGrupoHtml(g) : '') +
     (g.soyAdmin ? '<div class="field" style="margin-top:14px;"><label>Nombre del grupo</label><div style="display:flex;gap:8px;"><input id="gRenombrar" type="text" maxlength="60" value="' + escapeHtml(g.nombre) + '"><button class="btn sm ghost" ' + act('grupoRenombrar', g.id) + '>Guardar</button></div></div>' : '') +
-    '<div class="section-title">Miembros (' + g.miembros.length + ')</div><div class="list miembros-lista">' +
+    '<div class="section-title">Miembros (' + g.miembros.length + ')' + badge('sincuenta') + '</div><div class="list miembros-lista">' +
     g.miembros.map((m, i) => miembroFilaHtml(g, m, i)).join('') + '</div>' +
     sinCuentaAnadirHtml(g) + permisosGrupoHtml(g) +
     (g.miembros.length >= 2 ? repartoHabitualHtml(g) : '') +
@@ -3133,10 +3133,10 @@ function renderTu() {
     grupo('Compartir', [it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir paloma invitar whatsapp')]) +
     grupo('Tu dinero', [it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
       it('openRecurrentes', [], 'calendar', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas'),
-      it('tuMesAbrir', [], 'calendar', 'Tu mes', '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
+      it('tuMesAbrir', [], 'calendar', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
       it('openMetas', [], 'flag', 'Metas', badge('metas') + '<span class="menu-extra">ahorro e inversión</span>', 'objetivos hucha'),
       lista('deudas', 'prestamo hipoteca'), lista('ingresos', 'nomina'), lista('metodosPago', 'tarjeta bizum efectivo'),
-      it('openCuentas', [], 'bank', 'Cuentas y saldos', badge('patrimonio'), 'banco saldo patrimonio')]) +
+      it('openCuentas', [], 'bank', 'Cuentas y saldos', badge('cuentas') || badge('patrimonio'), 'banco saldo patrimonio')]) +
     grupo('Herramientas', [it('impAbrir', [], 'download', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
       it('openLotes', [], 'list', 'Importaciones', '', 'deshacer'),
       it('openPapelera', [], 'trash', 'Papelera', badge('papelera') + '<span class="menu-extra">' + (papeleraItems().length ? papeleraItems().length + ' dentro' : 'vacía') + '</span>', 'borrados recuperar eliminados'),
@@ -3224,7 +3224,7 @@ function gastoComparado(y, m) {
 function insightsHtml() {
   if (!S.movimientos.length) return '';
   const { y, m, actual } = inicioYM(), mk = mesClave(y, m), g = gastoComparado(y, m), cards = [], mesAnt = MESES[g.pm - 1].toLowerCase();
-  const card = (tono, icono, t, d, a) => cards.push('<button type="button" class="ins-card tappable ' + tono + '" ' + a + '><span class="ins-ic">' + ic(icono) + '</span><span class="ins-t">' + t + '</span><span class="ins-d">' + d + '</span></button>');
+  const card = (tono, icono, t, d, a) => cards.push('<button type="button" class="ins-card tappable ' + tono + '" ' + a.replace('data-click="', 'data-click="insIr|') + '><span class="ins-ic">' + ic(icono) + '</span><span class="ins-t">' + t + '</span><span class="ins-d">' + d + '</span></button>');
   if (g.antes.t > 0 && g.ahora.t > 0) {
     const dif = g.ahora.t - g.antes.t, pct = Math.round(dif / g.antes.t * 100);
     if (g.antes.t < 30 || Math.abs(pct) > 300) card(dif > 0 ? 'malo' : 'bueno', dif > 0 ? 'arrowUp' : 'arrowDown', money(g.ahora.t) + ' gastados', (dif > 0 ? money(dif) + ' más' : money(-dif) + ' menos') + ' que en ' + mesAnt + (g.enCurso ? ' a estas alturas' : ''), act('heroResumen'));
@@ -3249,7 +3249,7 @@ function insightsHtml() {
   let sin = 0; for (let f = r.desde > primero ? r.desde : primero; f <= r.hasta && f < hoy; f = addDaysISO(f, 1)) if (!conGasto.has(f)) sin++; // hoy aún no ha terminado
   if (sin >= 2 && conGasto.size) card('bueno', 'sparkle', sin + ' días sin gastos', actual ? 'Este mes, sin contar los fijos' : 'En ' + MESES[m - 1].toLowerCase() + ', sin contar los fijos', act('irMovsCal', mk));
   if (!cards.length) return '';
-  return '<div class="section-title">Así vas</div><div class="ins-scroll">' + cards.slice(0, 5).join('') + '</div>';
+  return '<div class="section-title">Así vas' + badge('asivas') + '</div><div class="ins-scroll">' + cards.slice(0, 5).join('') + '</div>';
 }
 /* Lo previsto a fin de mes: lo que te queda hoy + cobros fijos que faltan − pagos fijos que faltan.
    Es una previsión (la nómina puede variar): solo sale si todavía falta algún cobro en tu mes. */
@@ -5068,6 +5068,23 @@ async function doDeleteTarea() {
    (con su fecha) y, si hace falta, nuevas claves en BADGES.
    ============================================================ */
 const NOVEDADES = [
+  { id: '2026-10-17', titulo: 'Parche 7 · Tus cuentas y un Inicio nuevo',
+    destacados: [
+      { em: '🏦', titulo: 'Tus cuentas, como en el banco', color: 'accent', ir: 'cuentas', boton: 'Crear mis cuentas',
+        texto: 'Crea tus cuentas (banco, efectivo…) y elige en cuál va cada movimiento. Tu saldo real es el mismo que ves en el banco: si pagas tú un gasto compartido baja entero, y sube cuando te hacen el Bizum al saldar. El saldo virtual cuenta además lo que te deben y lo que debes en Juntos.',
+        puntos: ['Traspasos entre cuentas y «Convertir en traspaso»', '«Cuadrar» con lo que dice tu banco', '«En tus cuentas» en Inicio y filtro por cuenta'] },
+      { em: '📊', titulo: 'Movimientos, más claro', color: 'savings', ir: 'movimientos', boton: 'Ver mis movimientos',
+        texto: 'Se abre en un resumen de tu mes. Arriba eliges Resumen, Lista o Calendario, y cada categoría tiene siempre el mismo color. Ya no hay pantallazo negro al cambiar de vista.',
+        puntos: ['Un gráfico grande que se toca y se abre en uñas, pelo, perfume…', 'Lista más limpia, botón «Filtros» y lupa que busca también por importe', 'Calendario con lo que gastas cada día y «Dónde más gastas»'] },
+    ],
+    items: [
+      ['🏠', 'Inicio nuevo', 'Lo que te queda este mes, en qué se va lo que entra y flechas para ver otros meses.', ''],
+      ['📈', 'Así vas', 'Si gastas más o menos que el mes pasado, lo que más sube, tus presupuestos, lo que te deben y los días sin gastos.', ''],
+      ['🗓️', 'Tu mes', 'Del 1 al 31 o desde el día que cobras. Lo previsto a fin de mes sale aparte, como previsión.', 'tumes'],
+      ['🤝', 'Gente sin la app en Juntos', 'Añade a alguien solo con su nombre. Si un día se la instala, con un enlace se queda su sitio.', 'grupos'],
+      ['🛡️', 'Administradores', 'Cada grupo tiene sus administradores, que eligen quién puede cambiar los gastos.', 'grupos'],
+      ['🎨', 'Un solo aspecto', 'El aspecto Clásico se ha ido: queda solo el nuevo.', ''],
+    ] },
   { id: '2026-10-14', titulo: 'Parche 6 · Juntos y nuevo aspecto',
     destacados: [
       { em: '🤝', titulo: 'Juntos: quién debe a quién', color: 'savings', ir: 'juntos', boton: 'Ir a Juntos',
@@ -5153,6 +5170,7 @@ const BADGES = {
   categorias: ['NUEVO', '2026-10-12'], fijo: ['NUEVO', '2026-10-12'], detalle: ['NUEVO', '2026-10-12'], oscuro: ['MEJORADO', '2026-10-12'],
   papelera: ['NUEVO', '2026-10-14'], juntos: ['NUEVO', '2026-10-14'], aspecto: ['NUEVO', '2026-10-14'], metasH: ['NUEVO', '2026-10-13'], amigos: ['NUEVO', '2026-10-14'], hitos: ['NUEVO', '2026-10-13'],
   rentab: ['NUEVO', '2026-10-10'], mesames: ['NUEVO', '2026-10-10'], presup: ['MEJORADO', '2026-10-10'], anual: ['MEJORADO', '2026-10-10'],
+  cuentas: ['NUEVO', '2026-10-17'], tumes: ['NUEVO', '2026-10-17'], asivas: ['NUEVO', '2026-10-17'], sincuenta: ['NUEVO', '2026-10-17'],
 };
 function badgeActivo(k) {
   const b = BADGES[k]; if (!b) return false;
@@ -6424,7 +6442,7 @@ const H = {
   },
   closeSheet: () => closeSheet(),
   verPendiente: () => { S.pendTodos = !S.pendTodos; render(); },
-  tuMesAbrir: () => { const mc = mesCfg(), t = cfg().mesInicio || {}; FORM = { kind: 'tuMes', modo: mc.modo, dia: mc.modo === 'cobro' ? mc.dia : (Number(t.dia) >= 2 ? Number(t.dia) : 28) }; if ($('#sheetBackdrop')) updateSheet(tuMesHtml()); else openSheet(tuMesHtml()); },
+  tuMesAbrir: () => { verBadge('tumes'); const mc = mesCfg(), t = cfg().mesInicio || {}; FORM = { kind: 'tuMes', modo: mc.modo, dia: mc.modo === 'cobro' ? mc.dia : (Number(t.dia) >= 2 ? Number(t.dia) : 28) }; if ($('#sheetBackdrop')) updateSheet(tuMesHtml()); else openSheet(tuMesHtml()); },
   tuMesModo: ([k]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.modo = k === 'cobro' ? 'cobro' : 'natural'; updateSheet(tuMesHtml()); },
   tuMesDia: (_a, el) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.dia = Math.min(31, Math.max(2, Number(el.value) || 28)); updateSheet(tuMesHtml()); },
   tuMesGuardar: () => {
@@ -6436,6 +6454,8 @@ const H = {
   previstoAbrir: () => { FORM = { kind: 'previsto' }; openSheet(previstoHtml()); },
   heroResumen: () => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = mesClave(im.y, im.m); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._donutSel = ''; S._infoTeQueda = im.actual; S._entrando = true; render(); window.scrollTo(0, 0); },
   inicioMes: ([d]) => { const im = inicioYM(); let y = im.y, m = im.m + (Number(d) || 0); if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } const a = mesActual(); S.inicioMes = y === a.y && m === a.m ? '' : mesClave(y, m); S._inicioDir = Number(d) || 0; sentir('tic'); render(); },
+  // las tarjetas de «Así vas» llevan delante insIr: quitan su etiqueta y hacen lo de siempre
+  insIr: ([accion, ...args], el, e) => { verBadge('asivas'); if (VIBRA.has(accion)) sentir('toque'); if (H[accion]) H[accion](args, el, e); },
   irMovsCal: ([p]) => { S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = p || mesHoyClave(); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S.movCalDia = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
   infoTeQuedaCerrar: () => { S._infoTeQueda = false; render(); },
   setInicioVista: ([v]) => { S.inicioVista = ['tareas', 'calendario'].indexOf(v) >= 0 ? v : 'hoy'; S._entrando = true; render(); window.scrollTo(0, 0); },
@@ -6848,6 +6868,7 @@ const H = {
       if (k === 'grupos') H.openGrupos([]);
       else if (k === 'metas') { verBadge('metas'); H.goMetas([]); }
       else if (k === 'cuentas') { verBadge('patrimonio'); H.openCuentas([]); }
+      else if (k === 'tumes') H.tuMesAbrir([]);
       else
       if (k === 'inversiones') H.irDinero(['inversiones']);
       else if (k === 'cobros') H.openRecurrentes([]);
@@ -6945,7 +6966,7 @@ const H = {
   empiezaOcultar: () => { saveConfig({ empiezaOculto: todayISO() }); render(); toast('Oculto. Lo tienes todo en Tú.'); },
   presTodas: () => { S.presTodas = !S.presTodas; render(); },
   setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = 120; render(); },
-  openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
+  openCuentas: () => { verBadge('patrimonio'); verBadge('cuentas'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
   cuentaAnadir: () => { const cs = (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]); saveConfig({ cuentas: cs }); H.cuentaEditar([cs.length - 1]); setTimeout(() => { const el = $('#fCuentaNombre'); if (el) el.focus(); }, 60); },
   cuentaQuitar: ([i], el) => {
     const cs = (cfg().cuentas || []).slice(), c = cs[Number(i)] || {};
@@ -7088,6 +7109,7 @@ const H = {
   },
   reclamarCerrar: ([grupoId]) => { lsSet('soy', ''); S._uniendo = false; if (grupoId) { cargarGrupos().then(() => abrirGrupo(grupoId)); } else closeSheet(); },
   sinCuentaAnadir: async ([gid]) => {
+    verBadge('sincuenta');
     const el = $('#gSinCuenta'), nombre = ((el && el.value) || '').trim();
     if (!nombre) { marcarCampo('#gSinCuenta'); return toast('Escribe su nombre'); }
     if (FORM && FORM.anadiendo) return; if (FORM) FORM.anadiendo = true;
