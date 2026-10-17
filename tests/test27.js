@@ -24,8 +24,8 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  const res=doc.querySelector('.budget-row').closest('.card').querySelector('.summary-line').textContent;
  ok(/En lo presupuestado llevas 100,00 € de 300,00 € · quedan 200,00 €/.test(res)&&/Sin presupuesto: 850,00 €/.test(res),'presupuestos: compara solo lo presupuestado ('+res+')');
  // Inicio: rótulos
- H.goTab(['inicio']);await sleep(10);
- ok(/Apartado e invertido/.test(doc.querySelector('.hero-tiles').textContent)&&!/Ahorro/.test(doc.querySelector('.hero-tiles').textContent),'Inicio: «Apartado e invertido» en lugar de «Ahorro»');
+ H.irResumen([]);await sleep(10);
+ ok(/Apartado e invertido/.test(txt()),'Resumen: «Apartado e invertido» en lugar de «Ahorro»');
  H.verAnio([]);await sleep(20);
  ok(/\d+ %Apartado \/ ingresos/.test(txt())&&!/Tasa de ahorro/.test(txt()),'año: frase de lo apartado sobre lo ingresado');
  // Tú: tema dentro de la tarjeta

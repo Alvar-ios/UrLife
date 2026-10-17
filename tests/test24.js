@@ -6,7 +6,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  const v=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'Supermercado',presupuesto:300}]},meta:{onboarded:true}}});
  await sleep(80);
  let A=v.w.__APP__,doc=v.doc,txt=()=>doc.querySelector('#content').textContent;
- ok(/Empieza aquí/.test(txt())&&doc.querySelectorAll('.empieza-paso').length>=3,'usuario nuevo: «Empieza aquí» con sus pasos');
+ ok(/Empieza aquí/.test(txt())&&doc.querySelectorAll('.empieza-paso').length===2,'usuario nuevo: «Empieza aquí» con sus dos primeros pasos');
  click(v,'crearIr','gasto');await sleep(20);ok(/Nuevo movimiento/.test(doc.querySelector('#sheetHost').textContent),'«Apunta tu primer gasto» abre el formulario');
  A.H.closeSheet([]);await sleep(250);
  A.H.goTab(['movimientos']);await sleep(10);

@@ -337,3 +337,11 @@ html[data-look="nuevo"] .popup p { font-size: var(--fs-s); }
 
 /* personas sin cuenta y administradores en un grupo */
 html[data-look="nuevo"] .row.sin-cuenta .avatar { outline: 2px dashed var(--text-faint); outline-offset: 2px; box-shadow: none; }
+html[data-look="nuevo"] .hero2 { padding: var(--sp-4) var(--sp-5) var(--sp-3); gap: 8px; }
+html[data-look="nuevo"] .hero2 .hero-v { font-family: var(--font-display); }
+html[data-look="nuevo"] .mes-pill { font-family: var(--font-ui); }
+html[data-look="nuevo"] .dias-lista, html[data-look="nuevo"] .prev-lista { border-radius: var(--r-l); }
+html[data-look="nuevo"] .dia-ic, html[data-look="nuevo"] .dia-fecha { border-radius: var(--r-m); }
+html[data-look="nuevo"] .dia-fecha b { font-family: var(--font-display); }
+html[data-look="nuevo"] .tumes-op { border-radius: var(--r-l); }
+html[data-look="nuevo"] .info-card { border-radius: var(--r-l); }
