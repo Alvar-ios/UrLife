@@ -79,7 +79,7 @@ const txt = (e) => e.doc.querySelector('#content').textContent.replace(/\s+/g, '
   e = await env(DOS, [], (w) => { w.TextDecoder = TextDecoder; }); A = e.w.__APP__;
   const f = d2.slice(8, 10) + '/' + d2.slice(5, 7) + '/' + d2.slice(0, 4);
   const csv = ['Fecha;Concepto;Importe;Tipo', f + ';MERCADONA;-32,40;Gasto', f + ';A LA HUCHA;-200,00;Traspaso'].join('\r\n');
-  A.H.goTab(['movimientos']); await sleep(10); click(e, 'impAbrir'); await sleep(10);
+  A.H.goTab(['movimientos']); await sleep(10); (e.w||e.w).__APP__.H.impAbrir([]); await sleep(10);
   await A.H.impArchivo([], { files: [file('mio.csv', ab(Buffer.from(csv, 'latin1')))] }); await sleep(40);
   const I = A.imp();
   console.log('INFO columna tipo detectada: ' + (I.map && I.map.tipo != null && I.map.tipo !== ''));

@@ -11,9 +11,9 @@ const jwt=aal=>'h.'+b64({aal})+'.s';
  click(e,'openMoneda');click(e,'setMoneda','USD');await sleep(40);
  ok(e.store.cfg.app.moneda==='USD'&&e.store.cfg.app.categoriasGasto.length===1,'USD guardado sin tocar resto');
  click(e,'closeSheet');e.w.__APP__.H.goTab(['inicio']);ok(/1\.235 \$|1\.234,50 \$/.test(txt())&&!/€/.test(txt()),'dashboard en $');
- e.w.__APP__.H.goTab(['movimientos']);ok(/\+1\.234,50 \$/.test(txt()),'movimientos en $');
+ e.w.__APP__.H.goTab(['movimientos']);e.w.__APP__.H.setMovVista(['lista']);ok(/\+1\.234,50 \$/.test(txt()),'movimientos en $');
  e.w.__APP__.H.onFabAntiguo([]);ok(/Importe \(\$\)/.test(doc.querySelector('#sheetHost').textContent),'etiqueta importe ($)');click(e,'closeSheet');
- e.w.__APP__.H.goTab(['mas']);click(e,'openMoneda');click(e,'setMoneda','JPY');await sleep(40);click(e,'closeSheet');e.w.__APP__.H.goTab(['movimientos']);
+ e.w.__APP__.H.goTab(['mas']);click(e,'openMoneda');click(e,'setMoneda','JPY');await sleep(40);click(e,'closeSheet');e.w.__APP__.H.goTab(['movimientos']);e.w.__APP__.H.setMovVista(['lista']);
  ok(/\+1\.23[45] ¥/.test(txt()),'JPY sin decimales');
  ok(true,'sin supabase: sin entrada 2FA='+!/Verificación en dos pasos/.test((e.w.__APP__.H.goTab(['mas']),txt())));
  // ---- 2FA

@@ -11,22 +11,22 @@ const movs=[{id:'i1',tipo:'Ingreso',categoria:'Nómina',importe:1500,fecha:hoy},
  ok(!doc.querySelector('#content .hero-tile')&&!!doc.querySelector('#content .hero-main.tappable'),'Inicio: la cifra principal se puede pinchar (ingresos, gastos y apartado están en el Resumen)');
  H.irMovs(['Ingreso','m:'+Y+'-'+pad(M)]);await sleep(10);
  ok(S.tab==='movimientos'&&/1 movimiento/.test(list())&&/Nómina/.test(list()),'Ingresos → movimientos de ingresos de este mes');
- ok(/Volver a Inicio/.test(txt())&&new RegExp(['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][M-1]+' '+Y).test(txt()),'chip del mes y botón Volver');
+ ok(/Volver a Inicio/.test(txt())&&new RegExp(['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][M-1]+'.*'+Y).test(txt()),'mes y botón Volver');
  click(e,'volver');await sleep(10);ok(S.tab==='inicio'&&S.inicioSub==='dashboard','Volver regresa al Dashboard');
  // Gastos (gastos + facturas)
  H.irMovs(['_gastos','m:'+Y+'-'+pad(M)]);await sleep(10);
- ok(/2 movimientos/.test(list())&&/Gastos y facturas/.test(txt()),'Gastos → gastos y facturas del mes');
+ ok(/2 movimientos/.test(list())&&/Gastos/.test(doc.querySelector('.mov-tipos .pill.active').textContent),'Gastos → gastos y facturas del mes (con «Gastos» marcado)');
  click(e,'setMovFiltro','Todos');await sleep(5);ok(/3 movimientos/.test(list()),'quitar el filtro de grupo');
  // Análisis mensual de junio
  e.w.__APP__.H.verMes(['2026','6']);await sleep(10);
  const bud=doc.querySelector('.budget-row.tappable');ok(!!bud,'presupuesto por categoría pinchable');
  bud.click();await sleep(10);
- ok(S.movCat==='Ocio'&&S.movPeriodo==='m:2026-06'&&/1 movimiento/.test(list())&&/Junio 2026/.test(txt()),'categoría Ocio en junio');
+ ok(S.movCat==='Ocio'&&S.movPeriodo==='m:2026-06'&&/1 movimiento/.test(list())&&/Junio.*2026/.test(txt()),'categoría Ocio en junio');
  click(e,'quitarMovCat');await sleep(5);ok(!S.movCat,'quitar la categoría');
  click(e,'volver');await sleep(10);ok(S.tab==='movimientos'&&S.movVista==='resumen'&&S.generalSub==='mensual','Volver regresa al Resumen');
  // Anual
  e.w.__APP__.H.verAnio([]);S.anioSel=2026;e.w.__APP__.H.irAnalisis(['general']);S.movPeriodo='y:2026';A.render();await sleep(10);
- click(e,'irMovs','_ahorro','y:2026');await sleep(10);ok(/1 movimiento/.test(list())&&/2026 el año entero/.test(txt()),'tasa de ahorro → ahorro e inversión del año');
+ click(e,'irMovs','_ahorro','y:2026');await sleep(10);ok(/1 movimiento/.test(list())&&/2026\s*el año entero/.test(txt()),'tasa de ahorro → ahorro e inversión del año');
  click(e,'volver');await sleep(10);
  click(e,'verMes','2026','6');await sleep(10);ok(S.generalSub==='mensual'&&S.mesSel===6,'tocar un mes del detalle anual abre ese mes');
  // Cambiar de pestaña a mano limpia el «Volver»

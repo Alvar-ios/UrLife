@@ -14,7 +14,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  const A=e.w.__APP__,H=A.H,doc=e.doc;
  // esqueleto de carga
  ok(/skel/.test(A.loadingHtml?A.loadingHtml():doc.documentElement.innerHTML)||true,'(esqueleto: se comprueba en capturas)');
- H.goTab(['movimientos']);await sleep(20);
+ H.goTab(['movimientos']);H.setMovVista(['lista']);await sleep(20);
  const sw=doc.querySelectorAll('#content .swipe');
  ok(sw.length===2&&sw[0].querySelector('[data-click^="movBorrar"]')&&sw[0].querySelector('[data-click^="movDuplicar"]'),'cada movimiento tiene Duplicar y Borrar al deslizar ('+sw.length+')');
  // borrar con deshacer

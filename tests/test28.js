@@ -41,7 +41,7 @@ function conGrupos(w,estado){ // estado: {grupos:[], miembros:[]} mutable
  H.closeSheet([]);await sleep(250);
  // 4. presupuesto desde Inicio
  H.irResumen([]);await sleep(10);
- click(e,'presEditar','Supermercado');await sleep(10);
+ H.irMovs(['_gastos',A.S.movPeriodo,'Supermercado']);await sleep(10);click(e,'presEditar','Supermercado');await sleep(10);
  ok(/Presupuesto de Supermercado/.test(sh())&&doc.querySelector('#presIn').value==='300','«Cambiar» en la fila abre su presupuesto');
  doc.querySelector('#presIn').value='350';click(e,'presGuardar');await sleep(30);
  ok(e.store.cfg.app.categoriasGasto.some(c=>c.nombre==='Supermercado'&&c.presupuesto===350),'y se guarda sin ir a Tú');

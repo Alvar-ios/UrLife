@@ -56,6 +56,8 @@ const ICONS = {
   palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3Z"/><circle cx="7.6" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.4" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.4" r="1.1" fill="currentColor" stroke="none"/></svg>',
   sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7L19 16Z"/></svg>',
   swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m7 4-4 4 4 4"/><path d="M3 8h14"/><path d="m17 12 4 4-4 4"/><path d="M21 16H7"/></svg>',
+  sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>',
+  chevD: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
 };
 function ic(name) {
@@ -300,7 +302,6 @@ const REV = [
   ['.progress > div, .hero-bar i, .pat-barra i, .pb-f, .mb-f, .jb-bar i, .jb-trk i', 'va-bar'],
   ['.pb-over, .pb-tick', 'va-fade'],
   ['.anillo-v', 'va-ring'],
-  ['#donutWrap > svg', 'va-pop'],
 ];
 let _io = null, _ioSvg = null, _vistosPag = '';
 const _vistos = Object.create(null), _contados = Object.create(null);
@@ -489,7 +490,7 @@ const S = {
   calVista: 'mes', calFecha: null, calFiltros: { tareas: true, facturas: true, hitos: true, movs: false },
   mesSel: now0.getMonth() + 1, anioSel: now0.getFullYear(),
   tareasSub: 'activas',
-  movFiltroTipo: 'Todos', movCuenta: '', movPeriodo: mesHoyClave(), movQuery: '', movLimit: 120,
+  movVista: 'resumen', movFiltroTipo: 'Todos', movCuenta: '', movPeriodo: mesHoyClave(), movQuery: '', movLimit: 120,
   invModo: lsGet('invModo') === 'rentab' ? 'rentab' : 'valor',
   theme: lsGet('theme') || 'auto',
   look: 'nuevo', paleta: lsGet('paleta') || 'violeta', tipo: lsGet('tipo') || 'bricolage',
@@ -906,7 +907,7 @@ function render() {
   const title = $('#pageTitle'); if (title) title.textContent = TITULOS[S.tab];
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
   if (S.tab === 'inicio') c.innerHTML = renderInicioNuevo();
-  else if (S.tab === 'movimientos') c.innerHTML = S.movVista === 'resumen' ? renderMovResumen() : renderMovimientos();
+  else if (S.tab === 'movimientos') c.innerHTML = renderMovTab();
   else if (S.tab === 'dinero') c.innerHTML = renderDinero();
   else if (S.tab === 'agenda') c.innerHTML = renderAgenda();
   else if (S.tab === 'juntos') c.innerHTML = renderJuntos();
@@ -915,6 +916,7 @@ function render() {
   if (resumen && !resAnual) drawDonut();
   if (resumen && resAnual) drawTrend();
   if (S.tab === 'dinero' && dineroSub() === 'inversiones') bindInvChart();
+  if (S.tab === 'movimientos') movGestos(c);
   const _ent = S._entrando;
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
   if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
@@ -1023,18 +1025,41 @@ function movLimites() {
   S.movimientos.forEach((m) => { const k = mesDe(m.fecha || ''); if (k.length === 7) { if (k < min) min = k; if (k > max) max = k; } });
   return { min, max };
 }
-function movNavHtml(dir, sinTodo) {
+// Cabecera de Movimientos (la misma en las tres vistas): «Octubre ⌄» grande, las fechas de tu mes y dos flechas discretas.
+// Tocar el nombre abre «Elegir mes»; deslizar el dedo sobre ella cambia de mes.
+function movCabHtml(dir) {
   const p = movPerNorm(S.movPeriodo), modo = /^m:/.test(p) ? 'mes' : /^y:/.test(p) ? 'anio' : 'todo', lim = movLimites();
   let lbl = 'Todo', sub = 'tu historial completo', ant = false, sig = false;
-  if (modo === 'mes') { const [y, m] = p.slice(2).split('-').map(Number); lbl = '<span class="mes-l" data-c="' + MESES_ABR[m - 1] + '">' + MESES[m - 1] + '</span>'; sub = mesCfg().modo === 'cobro' ? ' ' + y + ' · ' + rangoTxt(y, m) : ' ' + y; ant = p.slice(2) > lim.min; sig = p.slice(2) < lim.max; }
-  else if (modo === 'anio') { lbl = p.slice(2); sub = ' el año entero'; ant = lbl > lim.min.slice(0, 4); sig = lbl < lim.max.slice(0, 4); }
+  if (modo === 'mes') { const [y, m] = p.slice(2).split('-').map(Number); lbl = MESES[m - 1]; sub = rangoTxt(y, m) + ' · ' + y; ant = p.slice(2) > lim.min; sig = p.slice(2) < lim.max; }
+  else if (modo === 'anio') { lbl = p.slice(2); sub = 'el año entero'; ant = lbl > lim.min.slice(0, 4); sig = lbl < lim.max.slice(0, 4); }
   const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
   const flecha = (d, ok, icono, aria) => '<button class="mov-flecha" aria-label="' + aria + '" ' + (ok ? act('movPerMover', d) : 'disabled') + '>' + ic(icono) + '</button>';
-  return '<div class="mov-nav' + (modo === 'todo' ? ' todo' : '') + '"><div class="mov-per">' + flecha(-1, ant, 'chevL', modo === 'anio' ? 'Año anterior' : 'Mes anterior') +
-    '<button class="mov-per-lbl' + anim + '" ' + act('movPerHoy') + '><b>' + lbl + '</b><span>' + sub + badge('mesames') + '</span></button>' +
-    flecha(1, sig, 'chevR', modo === 'anio' ? 'Año siguiente' : 'Mes siguiente') + '</div>' +
-    '<div class="segmented mov-modo">' + [['mes', 'Mes'], ['anio', 'Año']].concat(sinTodo ? [] : [['todo', 'Todo']]).map(([k, l]) => '<button class="' + (modo === k ? 'active' : '') + '" ' + act('setMovModo', k) + '>' + l + '</button>').join('') + '</div></div>';
+  return '<div class="mov-cab' + (modo === 'todo' ? ' todo' : '') + '"><div class="mov-cab-txt"><button class="mov-per-lbl' + anim + '" aria-label="Elegir mes" ' + act('movMesAbrir') + '><b>' + lbl + '</b><span class="mov-chev">' + ic('chevD') + '</span></button>' +
+    '<div class="mov-cab-sub' + anim + '">' + sub + '</div></div>' +
+    (modo === 'todo' ? '' : '<div class="mov-flechas">' + flecha(-1, ant, 'chevL', modo === 'anio' ? 'Año anterior' : 'Mes anterior') + flecha(1, sig, 'chevR', modo === 'anio' ? 'Año siguiente' : 'Mes siguiente') + '</div>') + '</div>';
 }
+// Hoja «Elegir mes»: un mes, un año entero o (en la Lista) todo tu historial
+function movMesHtml() {
+  const vista = movVistaAct(), p = movPerNorm(S.movPeriodo), lim = movLimites();
+  const modo = FORM.modo, y = FORM.anio, conMovs = {};
+  S.movimientos.forEach((m) => { const k = mesDe(m.fecha || ''); if (k) conMovs[k] = 1; });
+  const modos = [['mes', 'Mes']].concat(vista !== 'calendario' ? [['anio', 'Año entero']] : []).concat(vista === 'lista' ? [['todo', 'Todo']] : []);
+  let cuerpo = '';
+  if (modo === 'mes') {
+    cuerpo = '<div class="mm-anio"><button class="mov-flecha" aria-label="Año anterior" ' + (String(y) > lim.min.slice(0, 4) ? act('movMesAnio', -1) : 'disabled') + '>' + ic('chevL') + '</button><b>' + y + '</b>' +
+      '<button class="mov-flecha" aria-label="Año siguiente" ' + (String(y) < lim.max.slice(0, 4) ? act('movMesAnio', 1) : 'disabled') + '>' + ic('chevR') + '</button></div>' +
+      '<div class="mm-meses">' + MESES.map((n, i) => { const k = y + '-' + pad2(i + 1), ok = k >= lim.min && k <= lim.max;
+        return '<button type="button" class="mm-mes' + (p === 'm:' + k ? ' active' : '') + (conMovs[k] ? ' con' : '') + '" ' + (ok ? act('movMesElegir', 'm:' + k) : 'disabled') + '>' + MESES_ABR[i] + '</button>'; }).join('') + '</div>';
+  } else if (modo === 'anio') {
+    const anios = []; for (let a = Number(lim.max.slice(0, 4)); a >= Number(lim.min.slice(0, 4)); a--) anios.push(a);
+    cuerpo = '<div class="mm-meses">' + anios.map((a) => '<button type="button" class="mm-mes' + (p === 'y:' + a ? ' active' : '') + '" ' + act('movMesElegir', 'y:' + a) + '>' + a + '</button>').join('') + '</div>';
+  } else cuerpo = '<p class="rec-hint">Todos tus movimientos, del primero al último.</p><div class="actions"><button class="btn accent block" ' + act('movMesElegir', 'todo') + '>Ver todo tu historial</button></div>';
+  const mc = mesCfg();
+  return '<div class="handle"></div><h2>Elegir mes</h2>' +
+    (modos.length > 1 ? '<div class="segmented mm-modo">' + modos.map(([k, l]) => '<button class="' + (modo === k ? 'active' : '') + '" ' + act('movMesModo', k) + '>' + l + '</button>').join('') + '</div>' : '') + cuerpo +
+    '<div class="mm-tumes">' + ic('calendar') + '<span>' + (mc.modo === 'cobro' ? 'Tu mes va del día ' + mc.dia + ' al ' + (mc.dia - 1) + ' (desde que cobras)' : 'Tu mes va del 1 al último día') + '</span><button type="button" class="link" ' + act('tuMesAbrir') + '>Cambiar</button></div>';
+}
+function movVistaAct() { return S.movVista === 'resumen' ? 'resumen' : S.movVista === 'calendario' ? 'calendario' : 'lista'; }
 function inPeriodo(m) {
   const p = movPerNorm(S.movPeriodo);
   if (p === 'todo') return true;
@@ -1060,13 +1085,21 @@ function irMovs(o) {
   S.tab = 'movimientos'; S.movVista = 'lista';
   S.movFiltroTipo = o.tipo || 'Todos';
   S.movPeriodo = o.periodo || 'todo';
-  S.movCat = o.cat || ''; S.movSub = '';
+  S.movCat = o.cat || ''; S.movSub = o.cat && o.sub ? o.sub : '';
   S.movCuenta = o.cuenta || '';
-  S.movQuery = '';
+  S.movQuery = ''; S.movSoloTicket = false; S.movSoloComp = false; S._movBuscando = false;
   S.movLimit = 120;
   render(); window.scrollTo(0, 0);
 }
 const mesClave = (y, m) => 'm:' + y + '-' + pad2(m);
+// Busca también por importe: «39,60», «39.6» o «39» encuentran el de 39,60 €
+function casaImporte(m, q) {
+  let n = q.replace(/\s|€/g, ''); if (/^\d{1,3}(\.\d{3})+(,\d*)?$/.test(n)) n = n.replace(/\./g, ''); // «1.200» con el punto de los miles
+  n = n.replace(',', '.'); if (!/^\d+(\.\d{0,2})?$/.test(n)) return false;
+  const v = Math.abs(num(m.importe)), [ent, dec] = n.split('.');
+  if (dec == null || dec === '') return Math.floor(v) === Number(ent);
+  return Math.abs(v - Number(n)) < 0.005 || v.toFixed(2).indexOf(n) === 0;
+}
 function movsFiltrados() {
   let movs = movsEfectivos().filter(inPeriodo);
   if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta)).concat(flujosJuntosFilas(S.movCuenta).filter(inPeriodo));
@@ -1075,13 +1108,16 @@ function movsFiltrados() {
   else if (S.movFiltroTipo === '_ticket') movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
   else if (GRUPOS_TIPO[S.movFiltroTipo]) movs = movs.filter((m) => GRUPOS_TIPO[S.movFiltroTipo].includes(m.tipo));
   else if (S.movFiltroTipo !== 'Todos') movs = movs.filter((m) => m.tipo === S.movFiltroTipo);
+  if (S.movSoloTicket) movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
+  if (S.movSoloComp) movs = movs.filter((m) => m.comp);
   if (S.movCat) movs = movs.filter((m) => normName(m.categoria) === normName(S.movCat));
-  if (S.movCat && S.movSub) movs = movs.filter((m) => normName(m.subcategoria) === normName(S.movSub));
+  if (S.movCat && S.movSub) movs = movs.filter((m) => S.movSub === SIN_DETALLE ? !String(m.subcategoria || '').trim() : normName(m.subcategoria) === normName(S.movSub));
   const q = S.movQuery.trim().toLowerCase();
-  if (q) movs = movs.filter((m) => [m.categoria, m.subcategoria, m.descripcion, m.metodoPago].some((x) => (x || '').toLowerCase().includes(q)));
+  if (q) movs = movs.filter((m) => [m.categoria, m.subcategoria, m.descripcion, m.metodoPago].some((x) => (x || '').toLowerCase().includes(q)) || casaImporte(m, q));
   return movs.sort(cmpMov);
 }
 // Dentro de una categoría: chips con sus detalles (Uñas, Pelu…) para afinar
+const SIN_DETALLE = '(sin detalle)';
 function subFiltroHtml() {
   if (!S.movCat) return '';
   const cuenta = {};
@@ -1089,27 +1125,166 @@ function subFiltroHtml() {
   const subs = Object.keys(cuenta).sort((a, b) => cuenta[b] - cuenta[a]);
   if (!subs.length) return '';
   return '<div class="pill-row sub-row"><button class="pill sm ' + (!S.movSub ? 'active' : '') + '" ' + act('setMovSub', '') + '>Todo ' + escapeHtml(S.movCat) + '</button>' +
-    subs.map((s) => '<button class="pill sm ' + (normName(S.movSub) === normName(s) ? 'active' : '') + '" ' + act('setMovSub', s) + '>' + escapeHtml(s) + '</button>').join('') + '</div>';
+    subs.map((s) => '<button class="pill sm ' + (normName(S.movSub) === normName(s) ? 'active' : '') + '" ' + act('setMovSub', s) + '>' + escapeHtml(s) + '</button>').join('') +
+    '<button class="pill sm ' + (S.movSub === SIN_DETALLE ? 'active' : '') + '" ' + act('setMovSub', SIN_DETALLE) + '>Sin detalle</button></div>';
+}
+/* ---- Movimientos: Resumen | Lista | Calendario, con la misma cabecera. Al cambiar de vista solo se desliza el cuerpo ---- */
+const MOV_VISTAS = [['resumen', 'Resumen'], ['lista', 'Lista'], ['calendario', 'Calendario']];
+function movVistaSegHtml() {
+  const v = movVistaAct();
+  return '<div class="segmented mov-vista">' + MOV_VISTAS.map(([id, l]) => '<button class="' + (v === id ? 'active' : '') + '" ' + act('setMovVista', id) + '>' + l + '</button>').join('') + '</div>';
+}
+function renderMovTab() {
+  const v = movVistaAct(), dir = S._movDir || 0; S._movDir = 0;
+  if (v !== 'lista') { const p = movPerNorm(S.movPeriodo); if (!/^m:/.test(p) && !(v === 'resumen' && /^y:/.test(p))) S.movPeriodo = mesHoyClave(); }
+  const cuerpo = v === 'resumen' ? renderMovResumen() : v === 'calendario' ? renderMovCal() : renderMovimientos();
+  return movVistaSegHtml() + (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
+    movCabHtml(dir) + '<div class="mov-marco"><div id="movCuerpo" class="mov-cuerpo-' + v + '">' + cuerpo + '</div></div>';
+}
+function movLimpiarFiltros() { S.movFiltroTipo = 'Todos'; S.movQuery = ''; S.movSub = ''; S.movSoloTicket = false; S.movSoloComp = false; S._movBuscando = false; S.movLimit = 120; }
+// repinta y, si está abierta la hoja «Filtros», la pone al día (el botón cuenta en vivo)
+function movRefrescar() { render(); const b = $('#sheetBackdrop'); if (FORM && FORM.kind === 'movFiltros' && b && !b.dataset.cerrando) updateSheet(movFiltrosHtml()); }
+// Cambiar de vista o de mes: la cabecera se queda quieta y el cuerpo se desliza entero, sin transparencias (antes: «pantallazo negro»)
+function movDeslizar(cambio, dir) {
+  const viejo = S.tab === 'movimientos' ? $('#movCuerpo') : null, html = viejo ? viejo.innerHTML : null;
+  const cab = $('.mov-cab'); if (cab && cab.getBoundingClientRect().top < 56 && window.scrollY > 0) window.scrollTo(0, 0);
+  cambio();
+  S._deslizando = html != null && !reduceMotion();
+  try { render(); if (S._deslizando) deslizarCuerpo(html, dir); } finally { S._deslizando = false; }
+}
+function deslizarCuerpo(html, dir) {
+  const nuevo = $('#movCuerpo'); if (!nuevo || typeof nuevo.animate !== 'function') return;
+  const marco = nuevo.parentNode, fantasma = document.createElement('div');
+  fantasma.className = 'mov-fantasma'; fantasma.setAttribute('aria-hidden', 'true'); fantasma.innerHTML = html;
+  fantasma.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+  fantasma.querySelectorAll('[data-click],[data-input],[data-change]').forEach((el) => { el.removeAttribute('data-click'); el.removeAttribute('data-input'); el.removeAttribute('data-change'); });
+  marco.classList.add('deslizando'); marco.appendChild(fantasma);
+  const opt = { duration: 320, easing: 'cubic-bezier(.22,1,.36,1)' };
+  let hecho = false;
+  const fin = () => { if (hecho) return; hecho = true; fantasma.remove(); marco.classList.remove('deslizando'); };
+  try {
+    fantasma.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(' + (-dir * 104) + '%)' }], opt);
+    nuevo.animate([{ transform: 'translateX(' + (dir * 104) + '%)' }, { transform: 'translateX(0)' }], opt).onfinish = fin;
+  } catch (e) { fin(); }
+  setTimeout(fin, 520);
+}
+// Deslizar el dedo sobre la cabecera (o el calendario) cambia de mes
+function movGestos(c) {
+  c.querySelectorAll('.mov-cab, .cal-card').forEach((el) => {
+    let x0 = null, y0 = 0;
+    el.addEventListener('touchstart', (e) => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+      if (x0 == null) return; const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      const d = dx < 0 ? 1 : -1, b = c.querySelector('.mov-flechas .mov-flecha:' + (d > 0 ? 'last-child' : 'first-child'));
+      if (b && !b.disabled) { S._swipeT = Date.now(); H.movPerMover([d]); }
+    }, { passive: true });
+  });
+}
+// cuántos filtros hay puestos además de «Todos / Gastos / Ingresos» (para el número del botón «Filtros»)
+function movFiltrosN() {
+  return (['Todos', '_gastos', 'Ingreso'].indexOf(S.movFiltroTipo) < 0 ? 1 : 0) + (S.movSoloTicket ? 1 : 0) + (S.movSoloComp ? 1 : 0) + (S.movCat ? 1 : 0);
 }
 function renderMovimientos() {
-  const dir = S._movDir || 0; S._movDir = 0;
-  return movVistaSegHtml() + '<div class="mov-tools">' + (ticketsDisponible() ? '<button class="tool-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Foto de ticket</span>' + badge('ticket') + '</button>' : '') + '<button class="tool-btn" ' + act('impAbrir') + '>' + ic('download') + '<span>Importar extracto o Excel</span>' + badge('importar') + '</button></div>' +
-    (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
-    movNavHtml(dir) +
-    ((S.movCat || GRUPOS_TIPO[S.movFiltroTipo]) ? '<div class="filtros-activos">' +
-      (GRUPOS_TIPO[S.movFiltroTipo] ? '<button class="chip active" ' + act('setMovFiltro', 'Todos') + '>' + GRUPOS_TXT[S.movFiltroTipo] + ' ✕</button>' : '') +
-      (S.movCat ? '<button class="chip active" ' + act('quitarMovCat') + '>' + escapeHtml(S.movCat) + ' ✕</button>' : '') + '</div>' : '') +
-    movAddCtxHtml() +
-    subFiltroHtml() + movCuentaFiltroHtml() +
-    '<div class="field" style="margin-bottom:10px;"><input type="search" id="movSearch" placeholder="Buscar en esta lista" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></div>' +
-    '<div class="pill-row">' + [['Todos', 'Todos'], ['Ingreso', 'Ingresos'], ['_gastos', 'Gastos'], ['Factura', 'Fijos'], ['Ahorro', 'Apartado'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat((S.traspasos || []).length ? [['_tras', 'Traspasos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
-    '<div id="movList" class="' + (dir && !reduceMotion() ? (dir > 0 ? 'desde-der' : 'desde-izq') : '') + '">' + renderMovList() + '</div>';
+  const buscando = S._movBuscando || !!S.movQuery, nF = movFiltrosN();
+  const tipoTxtF = { Factura: 'Fijos', Ahorro: 'Apartado', 'Inversión': 'Inversión', Deuda: 'Deuda', _tras: 'Traspasos', _ahorro: 'Apartado e invertido', _comp: 'Compartidos', _ticket: 'Con ticket' }[S.movFiltroTipo];
+  const chipsAct = [tipoTxtF ? '<button class="chip active" ' + act('setMovFiltro', 'Todos') + '>' + tipoTxtF + ' ✕</button>' : '',
+    S.movSoloTicket ? '<button class="chip active" ' + act('movSoloTicket') + '>Con ticket ✕</button>' : '',
+    S.movSoloComp ? '<button class="chip active" ' + act('movSoloComp') + '>Compartidos ✕</button>' : '',
+    S.movCat ? '<button class="chip active" ' + act('quitarMovCat') + '>' + escapeHtml(S.movCat) + ' ✕</button>' : ''].join('');
+  return movCuentaFiltroHtml() +
+    '<div class="mov-filtros' + (buscando ? ' buscando' : '') + '">' + (buscando
+      ? '<label class="mov-buscar">' + ic('search') + '<input type="search" id="movSearch" placeholder="Busca por texto o importe" autocomplete="off" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></label><button type="button" class="link" ' + act('movBuscarCerrar') + '>Cancelar</button>'
+      : '<div class="mov-tipos">' + [['Todos', 'Todos'], ['_gastos', 'Gastos'], ['Ingreso', 'Ingresos']].map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
+        '<button type="button" class="mov-ib" aria-label="Buscar" ' + act('movBuscarAbrir') + '>' + ic('search') + '</button>' +
+        '<button type="button" class="mov-ib' + (nF ? ' on' : '') + '" aria-label="Filtros' + (nF ? ' (' + nF + ')' : '') + '" ' + act('movFiltrosAbrir') + '>' + ic('sliders') + (nF ? '<span class="mov-ib-n">' + nF + '</span>' : '') + '</button>') + '</div>' +
+    (chipsAct ? '<div class="filtros-activos">' + chipsAct + '</div>' : '') +
+    movPresCatHtml() + movAddCtxHtml() + subFiltroHtml() +
+    '<div id="movList">' + renderMovList() + '</div>';
 }
+// Con una categoría elegida: su presupuesto, con «Cambiar» (antes iba en cada fila del Resumen)
+function movPresCatHtml() {
+  if (!S.movCat || !/^m:/.test(movPerNorm(S.movPeriodo)) || !esCatGasto(S.movCat)) return '';
+  const c = catsGasto().find((x) => normName(x.nombre) === normName(S.movCat)); if (!c) return '';
+  const pres = num(c.presupuesto);
+  return '<div class="mov-pres">' + (pres > 0 ? 'Presupuesto: <b class="tnum">' + money(pres) + '</b> al mes' : 'Sin presupuesto') + ' <button type="button" class="link" ' + act('presEditar', c.nombre) + '>' + (pres > 0 ? 'Cambiar' : 'Ponerle uno') + '</button></div>';
+}
+// Cuentas: una píldora bajo el mes (solo con 2 o más). Al tocarla, eliges la cuenta
 function movCuentaFiltroHtml() {
   if (!hayVariasCuentas()) return '';
-  const act0 = movCuentaActiva() ? S.movCuenta : '';
-  return '<div class="pill-row sub-row cuenta-filtro"><button class="pill sm ' + (!act0 ? 'active' : '') + '" ' + act('setMovCuenta', '') + '>Todas las cuentas</button>' +
-    cuentasCfg().map((c) => '<button class="pill sm ' + (act0 === c.id ? 'active' : '') + '" ' + act('setMovCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span> ' + escapeHtml(c.nombre) + '</button>').join('') + '</div>';
+  const c = movCuentaActiva() ? cuentaPorId(S.movCuenta) : null;
+  if (c) return '<div class="cuenta-filtro"><span class="cuenta-pill on"><button type="button" ' + act('movCuentaElegir') + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button><button type="button" class="cp-x" aria-label="Ver todas las cuentas" ' + act('setMovCuenta', '') + '>' + ic('close') + '</button></span></div>';
+  return '<div class="cuenta-filtro"><span class="cuenta-pill"><button type="button" ' + act('movCuentaElegir') + '><span class="cp-dots">' + cuentasCfg().slice(0, 3).map((x) => '<span class="dot" style="background:' + colorCuenta(x) + '"></span>').join('') + '</span>Todas las cuentas' + ic('chevD') + '</button></span></div>';
+}
+function movCuentaElegirHtml() {
+  const a = movCuentaActiva() ? S.movCuenta : '';
+  return '<div class="handle"></div><h2>¿Qué cuenta?</h2><div class="cuenta-elegir">' +
+    [{ id: '', nombre: 'Todas las cuentas' }].concat(cuentasCfg()).map((c) => '<button type="button" class="ce-op' + (a === c.id ? ' active' : '') + '" ' + act('setMovCuenta', c.id) + '>' +
+      (c.id ? '<span class="dot" style="background:' + colorCuenta(c) + '"></span>' : '<span class="cp-dots">' + cuentasCfg().slice(0, 3).map((x) => '<span class="dot" style="background:' + colorCuenta(x) + '"></span>').join('') + '</span>') +
+      '<span>' + escapeHtml(c.nombre) + '</span>' + (a === c.id ? ic('check') : '') + '</button>').join('') + '</div>';
+}
+// Hoja «Filtros»: todo lo que antes obligaba a deslizar la fila. Se aplica al momento y el botón cuenta en vivo
+function movFiltrosHtml() {
+  const n = movsFiltrados().length + traspasosFiltrados().length;
+  const tipos = [['Todos', 'Todos'], ['_gastos', 'Gastos'], ['Ingreso', 'Ingresos'], ['Factura', 'Fijos'], ['Ahorro', 'Apartado'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat((S.traspasos || []).length ? [['_tras', 'Traspasos']] : []);
+  const tAct = S.movFiltroTipo === '_comp' || S.movFiltroTipo === '_ticket' ? 'Todos' : S.movFiltroTipo;
+  if (!tipos.some((t) => t[0] === tAct)) tipos.splice(4, 0, [tAct, { _ahorro: 'Apartado e invertido' }[tAct] || tipoTxt(tAct)]);
+  const soloT = !!S.movSoloTicket || S.movFiltroTipo === '_ticket', soloC = !!S.movSoloComp || S.movFiltroTipo === '_comp';
+  const sw = (on, a, t, d) => '<div class="filt-sw"><div><b>' + t + '</b><span>' + d + '</span></div><button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + t + '" ' + act(a) + '></button></div>';
+  const gasto = {}; movsEfectivos().filter(inPeriodo).forEach((m) => { if ((m.tipo === 'Gasto' || m.tipo === 'Factura') && m.categoria) gasto[m.categoria] = (gasto[m.categoria] || 0) + Math.abs(num(m.importe)); });
+  const cats = Object.keys(gasto).sort((a, b) => gasto[b] - gasto[a]);
+  if (S.movCat && !cats.some((c) => normName(c) === normName(S.movCat))) cats.unshift(S.movCat);
+  return '<div class="handle"></div><div class="filt-cab"><h2>Filtros</h2><button type="button" class="link" ' + act('movFiltrosQuitar') + '>Quitar todos</button></div>' +
+    '<div class="filt-tit">Qué movimientos</div><div class="chips">' + tipos.map(([t, l]) => '<button type="button" class="chip ' + (tAct === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="filt-tit">Solo los que…</div>' + sw(soloT, 'movSoloTicket', 'Tienen ticket', 'Con foto y artículos') +
+    (compartidosDisponible() || soloC ? sw(soloC, 'movSoloComp', 'Son compartidos', 'Vienen de Juntos') : '') +
+    (cats.length ? '<div class="filt-tit">Categoría</div><div class="chips">' + '<button type="button" class="chip ' + (!S.movCat ? 'active' : '') + '" ' + act('setMovCatFiltro', '') + '>Todas</button>' +
+      cats.map((c) => '<button type="button" class="chip ' + (normName(S.movCat) === normName(c) ? 'active' : '') + '" ' + act('setMovCatFiltro', c) + '><span class="dot" style="background:' + colorCat(c) + '"></span> ' + escapeHtml(c) + '</button>').join('') + '</div>' : '') +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>' + (n ? 'Ver ' + n + (n === 1 ? ' movimiento' : ' movimientos') : 'No hay movimientos con estos filtros') + '</button></div>';
+}
+/* ---- Calendario de tu mes: lo que gastaste cada día (más color, más gasto). Lo fijo no pinta el día: es un punto azul;
+   un cobro, un punto verde. Al tocar un día, sus movimientos salen debajo ---- */
+function movCalMovs(y, m) {
+  const k = y + '-' + pad2(m);
+  let movs = movsEfectivos().filter((x) => mesDe(x.fecha || '') === k);
+  if (movCuentaActiva()) movs = movs.filter((x) => x.comp ? compSaleDeCuenta(x.comp, S.movCuenta) : (tocaCuenta(x) && cuentaIdDe(x) === S.movCuenta));
+  return movs;
+}
+function renderMovCal() {
+  const p = movPerNorm(S.movPeriodo), [y, m] = p.slice(2).split('-').map(Number), r = rangoMes(y, m), hoy = todayISO();
+  const movs = movCalMovs(y, m), dia = {};
+  movs.forEach((x) => { const f = (x.fecha || '').slice(0, 10), o = dia[f] = dia[f] || { g: 0, fijo: false, ing: false, n: 0 }; o.n++;
+    if (x.tipo === 'Gasto') o.g += num(x.importe); else if (x.tipo === 'Factura') o.fijo = true; else if (x.tipo === 'Ingreso') o.ing = true; });
+  const max = Math.max(0, ...Object.values(dia).map((o) => o.g));
+  const lunes = addDaysISO(r.desde, -dowMon(parseISO(r.desde))), fin = addDaysISO(r.hasta, 6 - dowMon(parseISO(r.hasta)));
+  if (S.movCalDia && (S.movCalDia < r.desde || S.movCalDia > r.hasta)) S.movCalDia = '';
+  const sel = S.movCalDia || (hoy >= r.desde && hoy <= r.hasta ? hoy : '');
+  let celdas = '', sinGasto = 0, gastadoDia = 0, primerDia = '9999';
+  S.movimientos.forEach((x) => { if (x.fecha && x.fecha.slice(0, 10) < primerDia) primerDia = x.fecha.slice(0, 10); });
+  for (let f = lunes; f <= fin; f = addDaysISO(f, 1)) {
+    const d = parseISO(f), fuera = f < r.desde || f > r.hasta;
+    if (fuera) { celdas += '<span class="cal-d fuera"><span class="cal-n">' + d.getDate() + '</span></span>'; continue; }
+    const o = dia[f] || { g: 0 }, fut = f > hoy, g = Math.max(0, o.g);
+    if (!fut && g <= 0.004 && f >= primerDia) sinGasto++;
+    gastadoDia += g;
+    const nivel = g > 0.004 && max > 0 ? Math.min(4, 1 + Math.floor(g / max * 3.999)) : 0;
+    const etiqueta = d.getDate() === 1 || f === r.desde ? d.getDate() + ' ' + MESES_ABR[d.getMonth()].toLowerCase() : String(d.getDate());
+    celdas += '<button type="button" class="cal-d lv' + nivel + (fut ? ' fut' : '') + (f === hoy ? ' hoy' : '') + (f === sel ? ' sel' : '') + '" aria-label="' + escapeHtml(fmtDiaLista(f) + (g ? ': ' + money(g) : '')) + '" ' + act('movCalDia', f) + '>' +
+      '<span class="cal-n">' + etiqueta + '</span>' + (g > 0.004 ? '<span class="cal-v tnum">' + Math.round(g) + '</span>' : '') +
+      ((o.fijo || o.ing) ? '<span class="cal-pts">' + (o.fijo ? '<i class="pt-fijo"></i>' : '') + (o.ing ? '<i class="pt-ing"></i>' : '') + '</span>' : '') + '</button>';
+  }
+  let detalle = '';
+  if (sel) {
+    const delDia = movs.filter((x) => (x.fecha || '').slice(0, 10) === sel).sort(cmpMov), neto = delDia.reduce((a, x) => a + (esApartado(x.tipo) ? 0 : effect(x.importe, x.tipo)), 0);
+    detalle = '<div class="date-sep cal-sep"><span>' + fmtDiaLista(sel) + (delDia.length ? ' · ' + delDia.length + (delDia.length === 1 ? ' movimiento' : ' movimientos') : '') + '</span>' +
+      (delDia.length ? '<span class="tnum ' + (neto >= 0 ? 'pos' : 'neg') + '">' + (neto >= 0 ? '+' : '−') + fmtM(Math.abs(neto)) + ' ' + sym() + '</span>' : '') + '</div>' +
+      (delDia.length ? '<div class="list">' + delDia.map(renderMovRow).join('') + '</div>' : '<div class="cal-nada">' + (sel > hoy ? 'Este día aún no ha llegado.' : 'Sin movimientos este día.') + '</div>');
+  } else detalle = '<div class="cal-nada">Toca un día para ver sus movimientos.</div>';
+  return movCuentaFiltroHtml() +
+    '<div class="card cal-card"><div class="cal-sem">' + DIA_LETRA.map((l) => '<span>' + l + '</span>').join('') + '</div><div class="cal-grid">' + celdas + '</div>' +
+    '<div class="cal-pie"><span class="cal-ley">Menos <i class="lv1"></i><i class="lv2"></i><i class="lv3"></i><i class="lv4"></i> Más</span>' +
+    '<span class="cal-ley"><i class="pt-fijo"></i> fijo <i class="pt-ing"></i> cobro</span>' + (sinGasto ? '<span class="cal-premio">' + ic('check') + ' ' + sinGasto + (sinGasto === 1 ? ' día sin gastos' : ' días sin gastos') + '</span>' : '') + '</div></div>' +
+    '<div class="summary-line">Día a día este mes: <b class="tnum">' + money(gastadoDia) + '</b> · los fijos van aparte</div>' + detalle;
 }
 // Si miras solo un tipo (o una categoría), un botón para apuntar justo eso: es lo que se busca al tocar «Gastos» en Inicio
 function movAddCtxHtml() {
@@ -1136,7 +1311,7 @@ function flujosJuntosFilas(id) {
 }
 function movCuentaActiva() { return !!S.movCuenta && hayVariasCuentas() && !!cuentaPorId(S.movCuenta); }
 function traspasosFiltrados() {
-  if ((S.movFiltroTipo !== 'Todos' && S.movFiltroTipo !== '_tras') || S.movCat) return [];
+  if ((S.movFiltroTipo !== 'Todos' && S.movFiltroTipo !== '_tras') || S.movCat || S.movSoloTicket || S.movSoloComp) return [];
   const q = S.movQuery.trim().toLowerCase(), cu = movCuentaActiva() ? S.movCuenta : null;
   return (S.traspasos || []).filter(inPeriodo).filter((t) => !cu || t.cuentaId === cu || t.cuentaDestinoId === cu).filter((t) => !q || [t.descripcion, 'traspaso', nombreCuenta(t.cuentaId), nombreCuenta(t.cuentaDestinoId)].some((x) => (x || '').toLowerCase().includes(q)));
 }
@@ -1171,7 +1346,7 @@ function renderMovList() {
   const totDiaHtml = (f) => (!(f in totDia) && !(f in apDia) ? '' : f in totDia ? '<span class="tnum ' + (totDia[f] >= 0 ? 'pos' : 'neg') + '">' + (totDia[f] >= 0 ? '+' : '−') + fmtM(Math.abs(totDia[f])) + ' ' + sym() + '</span>'
     : '<span class="tnum sav">→ ' + fmtM(apDia[f] || 0) + ' ' + sym() + '</span>');
   shown.forEach((m) => {
-    if (m.fecha !== last) { if (last !== null) html += '</div>'; html += '<div class="date-sep"><span>' + fmtDateGroup(m.fecha) + '</span>' + totDiaHtml(m.fecha) + '</div><div class="list">'; last = m.fecha; }
+    if (m.fecha !== last) { if (last !== null) html += '</div>'; html += '<div class="date-sep"><span>' + fmtDiaLista(m.fecha) + '</span>' + totDiaHtml(m.fecha) + '</div><div class="list">'; last = m.fecha; }
     html += esTraspaso(m) ? renderTraspasoRow(m) : renderMovRow(m);
   });
   if (last !== null) html += '</div>';
@@ -1184,14 +1359,32 @@ function renderMovRow(m) {
   return '<div class="swipe"><div class="swipe-acc"><button class="sw-dup" ' + act('movDuplicar', m.id) + '>' + ic('copy') + '<span>Duplicar</span></button>' +
     '<button class="sw-del" ' + act('movBorrar', m.id) + '>' + ic('trash') + '<span>Borrar</span></button></div>' + fila + '</div>';
 }
+// Lo que distingue el movimiento arriba («Mercadona») y la categoría debajo. Sin texto: la categoría sola, en grande
+function filaTextos(m) {
+  const desc = String(m.descripcion || '').trim(), sub = String(m.subcategoria || '').trim(), cat = m.categoria || 'Sin categoría', c = m.comp;
+  const ttl = desc || sub || cat;
+  const meta = [desc ? cat + (sub ? ' · ' + sub : '') : sub ? cat : '', m.tipo === 'Factura' ? 'Fijo' : '', c ? compQuienTxt(c) : ''].filter(Boolean);
+  if (!desc && !sub && !c && m.tipo !== 'Gasto' && m.tipo !== 'Factura' && m.tipo !== 'Ingreso' && normName(cat) !== normName(tipoTxt(m.tipo))) meta.push(tipoTxt(m.tipo));
+  return { ttl, meta: meta.join(' · ') };
+}
+function fmtDiaLista(iso) {
+  const d = iso ? parseISO(iso) : null; if (!d) return 'Sin fecha';
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const diff = Math.round((hoy - d) / 86400000), dia = DIAS_LARGO[dowMon(d)];
+  const mes = d.getMonth() !== hoy.getMonth() || d.getFullYear() !== hoy.getFullYear() ? ' ' + MESES_ABR[d.getMonth()].toLowerCase() : '';
+  const anio = d.getFullYear() !== hoy.getFullYear() ? ' ' + d.getFullYear() : '';
+  if (diff === 0 || diff === 1) return (diff ? 'Ayer' : 'Hoy') + ' · ' + dia.slice(0, 3).toLowerCase() + ' ' + d.getDate();
+  return dia + ' ' + d.getDate() + mes + anio;
+}
 function renderMovRowBase(m) {
-  const eff = effect(m.importe, m.tipo), c = m.comp;
+  const eff = effect(m.importe, m.tipo), c = m.comp, tx = filaTextos(m);
   // un pago al saldar se ve en su grupo de Juntos (no es un gasto que se edite aquí)
   const abrir = c && c.tipo === 'Liquidación' && m.flujo ? act('grupoVer', c.grupoId) : act('openMovForm', m.id);
-  return '<div class="row' + (S._aterriza && S._aterriza === m.id ? ' aterriza' : '') + '" ' + abrir + '>' +
-    movIcHtml(m) +
-    '<div class="main"><div class="ttl">' + (!c && hayVariasCuentas() && tocaCuenta(m) && cuentaPorId(cuentaIdDe(m)) ? '<span class="dot cuenta-dot" title="' + escapeHtml(nombreCuenta(cuentaIdDe(m))) + '" style="background:' + colorCuenta(cuentaPorId(cuentaIdDe(m))) + '"></span>' : '') + escapeHtml(m.categoria || 'Sin categoría') + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
-    '<div class="meta">' + (c ? escapeHtml([m.subcategoria, m.descripcion].filter(Boolean).concat([compQuienTxt(c)]).join(' · ')) : escapeHtml([m.subcategoria, m.descripcion, m.tipo === 'Factura' ? 'Fijo' : m.tipo === 'Gasto' && (m.subcategoria || m.descripcion || m.metodoPago) ? '' : tipoTxt(m.tipo), m.metodoPago].filter(Boolean).join(' · '))) + '</div></div>' +
+  const cu = !c && hayVariasCuentas() && tocaCuenta(m) ? cuentaPorId(cuentaIdDe(m)) : null;
+  return '<div class="row' + (tx.meta ? '' : ' solo') + (S._aterriza && S._aterriza === m.id ? ' aterriza' : '') + '" ' + abrir + '>' +
+    movIcHtml(m, cu) +
+    '<div class="main"><div class="ttl">' + escapeHtml(tx.ttl) + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
+    (tx.meta ? '<div class="meta">' + escapeHtml(tx.meta) + '</div>' : '') + '</div>' +
     (c && c.tipo === 'Liquidación' && m.flujo
       ? (() => { const sale = c.pagadoPor === miUid(), v = sale ? num(c.importe) : num((c.reparto || {})[miUid()]);
         return '<div class="amt tnum ' + (sale ? 'neg' : 'pos') + '">' + (sale ? '−' : '+') + money(v) + '<div class="amt-sub">' + (sale ? 'pagaste al saldar' : 'te pagaron al saldar') + '</div></div></div>'; })()
@@ -1537,48 +1730,53 @@ function renderAnalisisMensual(enInicio) {
   const filas = cats.concat(extra);
   const totPres = cats.reduce((a, c) => a + num(c.presupuesto), 0);
   const totReal = Object.values(catMap).reduce((a, v) => a + v, 0);
-  const conPres = cats.filter((c) => num(c.presupuesto) > 0), gastoConPres = conPres.reduce((a, c) => a + num(catMap[c.nombre]), 0), fueraPres = totReal - gastoConPres;
-  const resumenPres = totPres ? 'En lo presupuestado llevas <b class="tnum">' + money(gastoConPres) + '</b> de ' + money(totPres) +
-    (gastoConPres > totPres ? ' · te has pasado ' + money(gastoConPres - totPres) : ' · quedan ' + money(totPres - gastoConPres)) +
-    (fueraPres > 0.005 ? '<br>Sin presupuesto: ' + money(fueraPres) + ' (total del mes ' + money(totReal) + ')' : '')
-    : 'Gastado ' + money(totReal) + ' · pon presupuestos en Tú → Categorías y presupuestos';
+  const conPres = cats.filter((c) => num(c.presupuesto) > 0), gastoConPres = conPres.reduce((a, c) => a + Math.max(0, num(catMap[c.nombre])), 0);
+  const pasado = gastoConPres > totPres;
+  const resumenPres = totPres ? '<div class="summary-line pres-sum">Llevas <b class="tnum">' + money(gastoConPres) + '</b> de ' + money(totPres) + ' presupuestados · ' +
+      (pasado ? '<span class="neg">te has pasado ' + money(gastoConPres - totPres) + '</span>' : 'quedan ' + money(totPres - gastoConPres)) + '</div>' +
+      '<div class="pbar pres-total' + (pasado ? ' over' : '') + '"><i class="pb-f" style="width:' + Math.min(100, gastoConPres / totPres * 100).toFixed(1) + '%"></i></div>'
+    : '<div class="summary-line pres-sum">Gastado ' + money(totReal) + ' · ponte presupuestos con «Editar»</div>';
   const hayGasto = Object.values(catMap).some((v) => v > 0);
-
   return (enInicio ? '' : '<div class="month-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('moveMes', -1) + '>' + ic('chevL') + '</button>' +
     '<div class="lbl">' + MESES[S.mesSel - 1] + ' ' + S.anioSel + '</div>' +
     '<button class="icon-btn" aria-label="Mes siguiente" ' + act('moveMes', 1) + '>' + ic('chevR') + '</button></div>' +
     kpiMesHtml(k, S.anioSel, S.mesSel)) +
-
-    '<div class="section-title"><span>En qué gastas <span class="hint">· incluidos los fijos</span></span></div><div class="card">' +
-    (hayGasto ? '<div class="chart-wrap" id="donutWrap"></div><div class="legend" id="donutLegend"></div>'
-      : '<div style="text-align:center;color:var(--text-faint);font-size:13.5px;">Sin gastos registrados en ' + MESES[S.mesSel - 1].toLowerCase() + '.</div>') + '</div>' +
-
-    '<div class="section-title"><span>Presupuesto por categoría' + badge('presup') + '</span></div><div class="card">' +
-    (filas.length ? '<div class="summary-line" style="margin-top:0;">' + resumenPres + '</div>' +
-      presupuestoFilasHtml(filas, catMap)
+    '<div class="section-title"><span>En qué gastas</span>' + (hayGasto ? '<span class="hint">toca un color</span>' : '') + '</div><div class="card dn-card">' +
+    (hayGasto ? '<div class="dn-graf" id="donutWrap"></div><div class="dn-ley" id="donutLegend"></div>'
+      : '<div class="dn-vacio">Sin gastos registrados en ' + MESES[S.mesSel - 1].toLowerCase() + '.</div>') + '</div>' +
+    '<div class="section-title"><span>Presupuestos</span><button class="link" ' + act('openListEditor', 'categoriasGasto') + '>Editar</button></div><div class="card pres-card">' +
+    (filas.length ? resumenPres + presupuestoFilasHtml(filas, catMap)
       : '<div style="color:var(--text-faint);font-size:13.5px;">Añade categorías en Tú → Categorías de gasto.</div>') + '</div>' +
-    articulosTopHtml(k.movs);
+    dondeMasHtml(k.movs) + articulosTopHtml(k.movs);
 }
-// Barras en la misma escala (la mayor cantidad llena la barra); el presupuesto es una marca sobre la barra.
-// Orden: de lo que más has gastado a lo que menos; lo que está a 0 se queda al final y más apagado.
+// «Dónde más gastas»: los sitios (la descripción) que más suman en el mes
+function dondeMasHtml(movs) {
+  const mapa = {};
+  movs.forEach((m) => { if ((m.tipo !== 'Gasto' && m.tipo !== 'Factura') || !String(m.descripcion || '').trim()) return; const k = normDesc(m.descripcion); if (!k) return;
+    (mapa[k] = mapa[k] || { d: String(m.descripcion).trim(), cat: m.categoria, v: 0, n: 0 }); mapa[k].v += num(m.importe); mapa[k].n++; });
+  const top = Object.values(mapa).filter((x) => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 3);
+  if (top.length < 2) return '';
+  return '<div class="section-title"><span>Dónde más gastas</span></div><div class="card donde">' + top.map((x, i) =>
+    '<button type="button" class="donde-fila tappable" ' + act('movDonde', x.d) + '><span class="donde-n">' + (i + 1) + '</span><span class="donde-t"><b>' + escapeHtml(x.d) + '</b><span>' + x.n + (x.n === 1 ? ' vez' : ' veces') + ' · ' + escapeHtml(x.cat || '') + '</span></span><b class="tnum">' + money(x.v) + '</b></button>').join('') + '</div>';
+}
+// Presupuestos en filas finas: icono del color de la categoría, lo gastado / el presupuesto y una barra con la marca.
+// Orden: de lo que más has gastado a lo que menos; lo que está a 0 se esconde tras un botón.
 function presupuestoFilasHtml(cats, catMap) {
   const filas = cats.map((c, i) => ({ c, i, real: Math.max(0, catMap[c.nombre] || 0), pres: num(c.presupuesto) }))
     .sort((a, b) => b.real - a.real || a.i - b.i);
   const escala = Math.max(1, ...filas.map((f) => Math.max(f.real, f.pres)));
   const pc = (v) => Math.max(0, Math.min(100, v / escala * 100)).toFixed(2);
-  // las que no tienen gasto ni presupuesto se esconden tras un botón (son muchas estándar)
   const vacias = filas.filter((f) => !f.real && !f.pres);
   const mostrar = S.presTodas ? filas : filas.filter((f) => f.real || f.pres);
   const pie = vacias.length ? '<button class="link pres-mas" ' + act('presTodas') + '>' + (S.presTodas ? 'Ocultar las que están a 0' : 'Ver ' + vacias.length + ' categorías sin gasto') + '</button>' : '';
   return mostrar.map(({ c, real, pres }) => {
     const over = pres > 0 && real > pres, dentro = pres > 0 ? Math.min(real, pres) : real;
-    const resto = '<span class="pb-pie">' + (pres > 0 ? (over ? '<span class="pb-resto neg">' + money(real - pres) + ' de más</span>' : '<span class="pb-resto">quedan ' + money(pres - real) + '</span>') : '') +
-      '<button type="button" class="link pb-edit' + (pres > 0 ? '' : ' sin') + '" aria-label="Cambiar el presupuesto de ' + escapeHtml(c.nombre) + '" ' + act('presEditar', c.nombre) + '>' + (pres > 0 ? 'Cambiar' : '+ Presupuesto') + '</button></span>';
-    return '<div class="budget-row tappable' + (over ? ' over' : '') + (real ? '' : ' cero') + '" ' + act('irMovs', '_gastos', mesClave(S.anioSel, S.mesSel), c.nombre) + '><div class="top"><span class="cat">' + escapeHtml(c.nombre) + '</span>' +
-      '<span class="nums"><b class="tnum">' + money(real) + '</b>' + (pres > 0 ? ' / ' + money(pres) : '') + '</span></div>' +
+    return '<div class="budget-row tappable' + (over ? ' over' : '') + (real ? '' : ' cero') + '" style="--cc:' + colorCat(c.nombre) + '" ' + act('irMovs', '_gastos', mesClave(S.anioSel, S.mesSel), c.nombre) + '>' +
+      '<span class="pb-ic" aria-hidden="true">' + ic(iconoCat('Gasto', c.nombre)) + '</span><div class="pb-main"><div class="top"><span class="cat">' + escapeHtml(c.nombre) + '</span>' +
+      '<span class="nums">' + (over ? '<span class="pb-resto neg">+' + money(real - pres) + ' de más</span>' : '<b class="tnum">' + money(real) + '</b>' + (pres > 0 ? ' / ' + money(pres) : '')) + '</span></div>' +
       '<div class="pbar" title="' + (pres > 0 ? 'Presupuesto: ' + money(pres) : 'Sin presupuesto') + '"><i class="pb-f" style="width:' + pc(dentro) + '%"></i>' +
       (over ? '<i class="pb-over" style="left:' + pc(pres) + '%;width:' + (pc(real) - pc(pres)).toFixed(2) + '%"></i>' : '') +
-      (pres > 0 ? '<span class="pb-tick" style="left:' + pc(pres) + '%"></span>' : '') + '</div>' + resto + '</div>';
+      (pres > 0 ? '<span class="pb-tick" style="left:' + pc(pres) + '%"></span>' : '') + '</div></div></div>';
   }).join('') + pie;
 }
 function renderAnalisisAnual(enInicio) {
@@ -2846,7 +3044,12 @@ function iconoCat(tipo, categoria, descripcion) {
   const m = CAT_ICONOS.find(([re]) => re.test(t));
   return m ? m[1] : TIPO_ICONO[tipo] || 'tag';
 }
-function movIcHtml(m) { return '<span class="mov-ic t-' + (TIPO_COLOR[m.tipo] || 'debt') + '" aria-hidden="true">' + ic(iconoCat(m.tipo, m.categoria, m.descripcion)) + '</span>'; }
+// Icono de la fila: en los gastos, del color de su categoría (el mismo que en el gráfico); la cuenta, un punto en la esquina
+function movIcHtml(m, cuenta) {
+  const g = m.tipo === 'Gasto' || m.tipo === 'Factura';
+  return '<span class="mov-ic t-' + (TIPO_COLOR[m.tipo] || 'debt') + (g && m.categoria ? ' t-cat' : '') + '"' + (g && m.categoria ? ' style="--cc:' + colorCat(m.categoria) + '"' : '') + ' aria-hidden="true">' + ic(iconoCat(m.tipo, m.categoria, m.descripcion)) +
+    (cuenta ? '<i class="dot cuenta-dot" title="' + escapeHtml(cuenta.nombre) + '" style="background:' + colorCuenta(cuenta) + '"></i>' : '') + '</span>';
+}
 // Anillo de progreso (metas)
 function anilloHtml(pct, color, tam) {
   const r = 26, c = 2 * Math.PI * r, v = Math.max(0, Math.min(100, pct || 0));
@@ -3068,21 +3271,12 @@ function estosDiasHtml() {
       (filas.length > CAP ? '<button type="button" class="dias-mas" ' + act('verPendiente') + '>' + (todas ? 'Ver menos' : 'Ver los ' + filas.length) + '</button>' : '') + '</div>'
       : '<div class="card dias-vacio">' + ic('checkCircle') + '<span>Nada pendiente para estos días.</span></div>');
 }
-/* ---- Movimientos: Lista | Resumen (lo que antes estaba abajo en Inicio) ---- */
-function movVistaSegHtml() {
-  const v = S.movVista === 'resumen' ? 'resumen' : 'lista';
-  return '<div class="segmented mov-vista">' + [['lista', 'Lista'], ['resumen', 'Resumen']].map(([id, l]) => '<button class="' + (v === id ? 'active' : '') + '" ' + act('setMovVista', id) + '>' + l + '</button>').join('') + '</div>';
-}
 function renderMovResumen() {
-  let p = movPerNorm(S.movPeriodo);
-  if (!/^[my]:/.test(p)) { p = mesHoyClave(); S.movPeriodo = p; }
-  const dir = S._movDir || 0; S._movDir = 0;
-  let body;
+  const p = movPerNorm(S.movPeriodo);
   if (/^m:/.test(p)) { const [y, m] = p.slice(2).split('-').map(Number); S.anioSel = y; S.mesSel = m; S.generalSub = 'mensual';
     const info = S._infoTeQueda ? '<div class="info-card"><span class="info-ic">' + ic('sparkle') + '</span><div><b>Así sale «Te queda este mes»</b>Lo que has ingresado menos lo que has gastado, apartado, invertido y pagado de deudas en tu mes (' + rangoTxt(y, m) + '). Toca cada cifra para ver sus movimientos.</div><button type="button" class="link" ' + act('infoTeQuedaCerrar') + '>Entendido</button></div>' : '';
-    body = info + kpiMesHtml(kpisMes(y, m), y, m) + renderAnalisisMensual(true); }
-  else { S.anioSel = Number(p.slice(2)); S.generalSub = 'anual'; body = renderAnalisisAnual('sinNav'); }
-  return movVistaSegHtml() + movNavHtml(dir, true) + body;
+    return info + kpiMesHtml(kpisMes(y, m), y, m, true) + renderAnalisisMensual(true); }
+  S.anioSel = Number(p.slice(2)); S.generalSub = 'anual'; return renderAnalisisAnual('sinNav');
 }
 /* ---- Dinero: el Patrimonio en una línea que se despliega ---- */
 function patrimonioMiniHtml() {
@@ -3705,14 +3899,28 @@ function metaInvSelectorHtml() {
     [['', 'General']].concat(ms.map((m) => [m.id, m.nombre])).map(([id, n]) => '<button type="button" class="chip ' + (sel === id ? 'active' : '') + '" ' + act('pickMetaInv', id) + '>' + escapeHtml(n) + '</button>').join('') + '</div></div>';
 }
 /* ---- tarjetas de ingresos / gastos / disponible de un mes (pinchables) ---- */
-function kpiMesHtml(k, y, m) {
-  const mk = mesClave(y, m);
+function kpiMesHtml(k, y, m, conComp) {
+  const mk = mesClave(y, m), comp = conComp ? compGastoChip(y, m) : '';
   return '<div class="kpi-row kpi-mes">' +
     '<div class="kpi income tappable" ' + act('irMovs', 'Ingreso', mk) + '><div class="v tnum">' + moneyShort(k.ingresos) + '</div><div class="l">Ingresos</div></div>' +
-    '<div class="kpi expense tappable" ' + act('irMovs', '_gastos', mk) + '><div class="v tnum">' + moneyShort(k.facturas + k.gastos) + '</div><div class="l">Gastos</div></div>' +
+    '<div class="kpi expense tappable" ' + act('irMovs', '_gastos', mk) + '><div class="v tnum">' + moneyShort(k.facturas + k.gastos) + '</div><div class="l">Gastos</div>' + comp + '</div>' +
     '<div class="kpi sav tappable" ' + act('irMovs', '_ahorro', mk) + '><div class="v tnum">' + moneyShort(k.ahorro + k.inversion) + '</div><div class="l">' + apInvTxt() + '</div></div>' +
     (k.deuda ? '<div class="kpi debt tappable" ' + act('irMovs', 'Deuda', mk) + '><div class="v tnum">' + moneyShort(k.deuda) + '</div><div class="l">Pagos de deudas</div></div>' : '') +
     '<div class="kpi avail tappable" ' + act('irMovs', 'Todos', mk) + '><div class="v tnum">' + moneyShort(k.disponible) + '</div><div class="l">Te queda</div></div></div>';
+}
+// Gasto frente al mes anterior. Si el mes va por la mitad, se compara con el anterior a estas mismas alturas (si no, siempre «bajaría»)
+function compGastoChip(y, m) {
+  let py = y, pm = m - 1; if (pm < 1) { pm = 12; py--; }
+  const r = rangoMes(y, m), rp = rangoMes(py, pm), hoy = todayISO();
+  const enCurso = hoy >= r.desde && hoy <= r.hasta;
+  const lim = enCurso ? addDaysISO(rp.desde, Math.round((parseISO(hoy) - parseISO(r.desde)) / 86400000)) : null;
+  const suma = (movs, hasta) => movs.filter((x) => (x.tipo === 'Gasto' || x.tipo === 'Factura') && (!hasta || (x.fecha || '') <= hasta)).reduce((a, x) => a + num(x.importe), 0);
+  const ahora = suma(kpisMes(y, m).movs, enCurso ? hoy : null), antes = suma(kpisMes(py, pm).movs, lim);
+  if (antes <= 0 || ahora <= 0) return '';
+  const pct = Math.round((ahora - antes) / antes * 100), mesTxt = MESES_ABR[pm - 1].toLowerCase();
+  const tit = 'Frente a ' + MESES[pm - 1].toLowerCase() + (enCurso ? ' a estas alturas' : '') + ': ' + money(antes);
+  if (Math.abs(pct) < 1) return '<span class="kpi-chip igual" title="' + tit + '">= ' + mesTxt + '</span>';
+  return '<span class="kpi-chip ' + (pct > 0 ? 'sube' : 'baja') + '" title="' + tit + '">' + (pct > 0 ? '↑ ' : '↓ ') + Math.min(999, Math.abs(pct)) + ' %</span>';
 }
 /* ---- cuentas y saldos (dinero en el banco, a mano hasta conectar el banco) ---- */
 // Varias cuentas (fase 1, ver docs/PLAN_CUENTAS.md): tipo, color, principal y si suma en «En tus cuentas».
@@ -4520,29 +4728,92 @@ async function doDeleteGolf() {
 
 /* ---- gráficos SVG propios ---- */
 const PALETTE_CLASICA = ['#B8752A', '#A8452F', '#2F6F52', '#7A5AA8', '#3D6BA5', '#C7823C', '#8C5A3C', '#5A8C6B', '#B0568C', '#5A7A8C', '#9C8C3C', '#7A3C5A'];
-const PALETTE_NUEVA = ['#6D5BF0', '#F29A2E', '#1FA67A', '#E5534B', '#2E9BD6', '#C25BD8', '#E6B422', '#E86A9A', '#4FB3A9', '#8A7BE8', '#F26B38', '#7C8794'];
+const PALETTE_NUEVA = ['#6D5BF0', '#F29A2E', '#1FA67A', '#E5534B', '#2E9BD6', '#C25BD8', '#E6B422', '#E86A9A', '#4FB3A9', '#8A7BE8', '#A3B84A', '#7C8794'];
 const colGraf = (i) => { const P = S.look === 'nuevo' ? PALETTE_NUEVA : PALETTE_CLASICA; return P[i % P.length]; };
+/* Cada categoría tiene siempre el mismo color (en el gráfico, en los presupuestos, en los iconos de la lista y en los filtros) */
+const COLOR_CAT_STD = {
+  Vivienda: '#7B6CF6', Supermercado: '#1FA67A', 'Restaurantes y bares': '#F29A2E', Suministros: '#E6B422', Transporte: '#2E9BD6', Ocio: '#E86A9A',
+  Deporte: '#4FB3A9', Compras: '#C25BD8', 'Salud y cuidado personal': '#E5534B', Regalos: '#D98C5F', Viajes: '#3FC1E0', Suscripciones: '#9C8CF0',
+  Seguros: '#5A7BD8', 'Educación': '#A3B84A', Mascotas: '#B57A4E', Otros: '#7C8794',
+};
+const COLOR_CAT_PROPIAS = ['#6D5BF0', '#F29A2E', '#1FA67A', '#E5534B', '#2E9BD6', '#C25BD8', '#E6B422', '#E86A9A', '#4FB3A9', '#A3B84A'];
+const COLOR_OTRAS = '#A3A7B3';
+function colorCat(nombre) {
+  const std = catStd(nombre); if (std) return COLOR_CAT_STD[std.n] || COLOR_OTRAS;
+  const k = normName(nombre); let h = 0; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+  return COLOR_CAT_PROPIAS[h % COLOR_CAT_PROPIAS.length];
+}
+/* ---- «En qué gastas»: anillo con la leyenda al lado. Como mucho 6 colores: las 5 mayores y «Otras».
+   Al tocar una categoría el centro la cuenta; si tiene subcategorías (Uñas, Pelo…), el anillo se divide en ellas.
+   En «Otras» se ven las categorías que agrupa. Un segundo toque abre sus movimientos. ---- */
+function donutDatos() {
+  const k = kpisMes(S.anioSel, S.mesSel), gastos = k.movs.filter((m) => m.tipo === 'Gasto' || m.tipo === 'Factura');
+  const ents = Object.entries(gastoPorCategoria(k.movs)).filter((e) => e[1] > 0.004).sort((a, b) => b[1] - a[1]);
+  const total = ents.reduce((a, e) => a + e[1], 0);
+  const trozo = ([n, v]) => ({ n, v, color: colorCat(n), l: n && n !== 'undefined' && n !== 'null' ? n : 'Sin categoría' });
+  const slices = ents.length <= 6 ? ents.map(trozo) : ents.slice(0, 5).map(trozo).concat([{ n: ents.slice(0, 5).some((e) => normName(e[0]) === 'otras') ? 'Otras categorías' : 'Otras', v: ents.slice(5).reduce((a, e) => a + e[1], 0), color: COLOR_OTRAS, otras: ents.slice(5).map(trozo) }]);
+  return { total, slices, gastos };
+}
+// Las partes de una categoría: sus subcategorías (en tonos de su color) o, en «Otras», las categorías que agrupa
+function donutPartes(sl, gastos) {
+  if (!sl) return null;
+  if (sl.otras) return sl.otras.map((x) => Object.assign({ cat: x.n }, x));
+  const mapa = {};
+  gastos.forEach((m) => { if (normName(m.categoria) !== normName(sl.n)) return; const sub = String(m.subcategoria || '').trim(), k = normName(sub);
+    (mapa[k] = mapa[k] || { sub, v: 0 }); mapa[k].v += num(m.importe); });
+  const subs = Object.values(mapa).filter((x) => x.v > 0.004).sort((a, b) => (b.sub ? 1 : 0) - (a.sub ? 1 : 0) || b.v - a.v);
+  if (!subs.some((x) => x.sub)) return null;
+  let i = 0;
+  return subs.map((x) => ({ n: x.sub || 'Sin detalle', v: x.v, sub: x.sub, cat: sl.n, color: sl.color, op: x.sub ? [1, 0.68, 0.46, 0.32, 0.24][Math.min(4, i++)] : 0.16 }));
+}
+let _donutAnim = '';
 function drawDonut() {
   const wrap = $('#donutWrap'); if (!wrap) return;
-  const k = kpisMes(S.anioSel, S.mesSel);
-  const entries = Object.entries(gastoPorCategoria(k.movs)).filter((e) => e[1] > 0).sort((a, b) => b[1] - a[1]);
-  const total = entries.reduce((a, e) => a + e[1], 0);
-  if (!total) return;
-  const cx = 100, cy = 95, r = 76;
-  let angle = -90, paths = '';
-  entries.forEach(([name, val], i) => {
-    const sweep = Math.min(359.99, val / total * 360);
-    const a1 = angle * Math.PI / 180, a2 = (angle + sweep) * Math.PI / 180;
-    const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1), x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
-    paths += '<path d="M' + cx + ',' + cy + ' L' + x1.toFixed(2) + ',' + y1.toFixed(2) + ' A' + r + ',' + r + ' 0 ' + (sweep > 180 ? 1 : 0) + ' 1 ' + x2.toFixed(2) + ',' + y2.toFixed(2) + ' Z" fill="' + colGraf(i) + '"><title>' + escapeHtml(name) + '</title></path>';
-    angle += sweep;
-  });
-  wrap.innerHTML = '<svg viewBox="0 0 200 190" width="100%" height="100%" role="img" aria-label="Reparto del gasto por categoría">' + paths +
-    '<circle cx="' + cx + '" cy="' + cy + '" r="44" style="fill:var(--paper-raised)"/>' +
-    '<text x="' + cx + '" y="' + (cy - 3) + '" text-anchor="middle" font-size="14" font-weight="700" style="fill:var(--text)" font-family="Work Sans, sans-serif">' + moneyShort(total) + '</text>' +
-    '<text x="' + cx + '" y="' + (cy + 13) + '" text-anchor="middle" font-size="9.5" style="fill:var(--text-faint)" font-family="Work Sans, sans-serif">gastado</text></svg>';
+  const d = donutDatos(); if (!d.total) return;
+  let sel = S._donutSel ? d.slices.find((x) => x.n === S._donutSel) : null;
+  if (!sel) S._donutSel = '';
+  const partes = donutPartes(sel, d.gastos), anillo = partes || d.slices, totAnillo = anillo.reduce((a, x) => a + x.v, 0);
+  const R = 62, C = 2 * Math.PI * R, SW = 15, HUECO = 3.2;
+  let ini = 0;
+  const arcos = anillo.map((x, i) => {
+    const len = x.v / totAnillo * C, redondo = len > SW + HUECO + 1;
+    const vis = anillo.length === 1 ? C : redondo ? len - HUECO - SW : Math.max(0.6, len - HUECO);
+    const off = anillo.length === 1 ? 0 : ini + (redondo ? (HUECO + SW) / 2 : HUECO / 2);
+    ini += len;
+    const elegido = !partes && sel && sel.n === x.n, apagado = !partes && sel && !elegido;
+    const clic = partes ? act('donutIr', x.cat, x.sub != null ? (x.sub || '-') : '') : act('donutSel', x.n);
+    return '<circle class="dn-s' + (elegido ? ' sel' : '') + (apagado ? ' off' : '') + '" cx="80" cy="80" r="' + R + '" fill="none" stroke="' + x.color + '"' + (x.op ? ' stroke-opacity="' + x.op + '"' : '') +
+      ' stroke-width="' + SW + '" stroke-linecap="' + (redondo && anillo.length > 1 ? 'round' : 'butt') + '" stroke-dasharray="' + vis.toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" data-vis="' + vis.toFixed(2) + '" data-i="' + i + '" ' + clic + '><title>' + escapeHtml(x.n) + '</title></circle>';
+  }).join('');
+  const centro = sel ? [sel.n.length > 16 ? sel.n.slice(0, 15) + '…' : sel.n, moneyShort(sel.v), Math.round(sel.v / d.total * 100) + ' % del gasto'] : ['', moneyShort(d.total), 'gastado'];
+  wrap.innerHTML = '<svg viewBox="0 0 160 160" width="100%" height="100%" role="img" aria-label="Reparto del gasto por categoría"><g transform="rotate(-90 80 80)"><g class="dn-giro">' + arcos + '</g></g>' +
+    (centro[0] ? '<text class="dn-c1" x="80" y="64" text-anchor="middle">' + escapeHtml(centro[0]) + '</text>' : '') +
+    '<text class="dn-c2" x="80" y="' + (centro[0] ? 85 : 80) + '" text-anchor="middle">' + escapeHtml(centro[1]) + '</text>' +
+    '<text class="dn-c3" x="80" y="' + (centro[0] ? 101 : 97) + '" text-anchor="middle">' + escapeHtml(centro[2]) + '</text></svg>';
   const leg = $('#donutLegend');
-  if (leg) leg.innerHTML = entries.slice(0, 9).map(([name, val], i) => '<span class="tappable" ' + act('irMovs', '_gastos', mesClave(S.anioSel, S.mesSel), name) + '><i style="background:' + colGraf(i) + '"></i>' + escapeHtml(name) + ' · ' + Math.round(val / total * 100) + '%</span>').join('');
+  if (leg) {
+    const pct = (v) => Math.round(v / d.total * 100) + ' %';
+    const fila = (x, a, cls, valor) => '<button type="button" class="dn-f' + (cls || '') + '" ' + a + '><i style="background:' + x.color + (x.op ? ';opacity:' + x.op : '') + '"></i><span class="dn-n">' + escapeHtml(x.l || x.n) + '</span><b class="tnum">' + valor + '</b></button>';
+    const per = mesClave(S.anioSel, S.mesSel);
+    if (partes) leg.innerHTML = '<button type="button" class="dn-volver" ' + act('donutSel', '') + '>' + ic('chevL') + ' Todas</button>' +
+      partes.slice(0, 7).map((x) => fila(x, act('donutIr', x.cat, x.sub != null ? (x.sub || '-') : ''), '', moneyShort(x.v))).join('') +
+      (sel.otras ? '' : '<button type="button" class="dn-ver" ' + act('irMovs', '_gastos', per, sel.n) + '>Ver sus movimientos ' + ic('chevR') + '</button>');
+    else leg.innerHTML = d.slices.map((x) => fila(x, act('donutSel', x.n), sel ? (sel.n === x.n ? ' sel' : ' off') : '', pct(x.v))).join('') +
+      (sel && !sel.otras ? '<button type="button" class="dn-ver" ' + act('irMovs', '_gastos', per, sel.n) + '>Ver sus movimientos ' + ic('chevR') + '</button>' : '');
+  }
+  // entra girando y los trozos se dibujan uno tras otro; si vienes deslizando, cuando termina el deslizamiento
+  const clave = S.movPeriodo + '|' + (partes ? S._donutSel : '');
+  if (clave === _donutAnim || reduceMotion()) return;
+  _donutAnim = clave;
+  const g = wrap.querySelector('.dn-giro'), ss = [...wrap.querySelectorAll('.dn-s')], espera = S._deslizando ? 300 : 0;
+  if (!g || typeof requestAnimationFrame === 'undefined') return;
+  ss.forEach((el) => { el.style.transition = 'none'; el.style.strokeDasharray = '0 ' + C.toFixed(2); });
+  g.style.transition = 'none'; g.style.transform = partes ? 'rotate(0deg)' : 'rotate(-70deg)'; g.style.transformOrigin = '80px 80px';
+  void wrap.offsetWidth;
+  setTimeout(() => requestAnimationFrame(() => {
+    g.style.transition = 'transform .9s cubic-bezier(.22,1,.36,1)'; g.style.transform = 'rotate(0deg)';
+    ss.forEach((el, i) => { el.style.transition = 'stroke-dasharray .55s cubic-bezier(.22,1,.36,1) ' + (i * 0.09).toFixed(2) + 's, stroke-width .3s ease, opacity .3s ease'; el.style.strokeDasharray = el.getAttribute('data-vis') + ' ' + C.toFixed(2); });
+  }), espera);
 }
 function mesesEmpezados(anio) { const { y, m } = mesActual(); return anio < y ? 12 : anio > y ? 0 : m; }
 function drawTrend() {
@@ -6030,7 +6301,7 @@ function confirmDelete(el, fn) {
 const H = {
   goTab: ([id]) => {
     S._infoTeQueda = false;
-    S.volverA = null; if (id === 'movimientos') { S.movCat = ''; S.movCuenta = ''; }
+    S.volverA = null; if (id === 'movimientos') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S.movVista = 'resumen'; S.movPeriodo = mesHoyClave(); S._donutSel = ''; _donutAnim = ''; }
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
     const nueva = TAB_ALIAS[id] || id; if (nueva !== S.tab) S._entrando = true;
     if (nueva === 'inicio') S.inicioVista = 'hoy';
@@ -6086,25 +6357,63 @@ const H = {
   heroResumen: () => { S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = mesHoyClave(); S._infoTeQueda = true; S._entrando = true; render(); window.scrollTo(0, 0); },
   infoTeQuedaCerrar: () => { S._infoTeQueda = false; render(); },
   setInicioVista: ([v]) => { S.inicioVista = ['tareas', 'calendario'].indexOf(v) >= 0 ? v : 'hoy'; S._entrando = true; render(); window.scrollTo(0, 0); },
-  setMovVista: ([v]) => { S.movVista = v === 'resumen' ? 'resumen' : 'lista'; if (S.movVista === 'resumen') { S.movCat = ''; S.movFiltroTipo = 'Todos'; S.movQuery = ''; } S._entrando = true; render(); },
+  setMovVista: ([v]) => {
+    const orden = MOV_VISTAS.map((x) => x[0]), nueva = orden.indexOf(v) >= 0 ? v : 'lista', antes = movVistaAct();
+    if (nueva === antes && S.movVista === nueva) return;
+    if (nueva === 'resumen') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S._donutSel = ''; }
+    if (nueva === 'calendario' && !/^m:/.test(movPerNorm(S.movPeriodo))) { const p = movPerNorm(S.movPeriodo), ya = mesActual().y; S.movPeriodo = /^y:/.test(p) && Number(p.slice(2)) !== ya ? mesClave(Number(p.slice(2)), 12) : mesHoyClave(); }
+    S._movBuscando = false; _donutAnim = '';
+    movDeslizar(() => { S.movVista = nueva; }, orden.indexOf(nueva) > orden.indexOf(antes) ? 1 : -1);
+  },
   irResumen: () => irResumen(),
   patToggle: () => { S.patAbierto = !S.patAbierto; render(); },
   juntosInvitar: () => { FORM = { kind: 'personaNueva' }; openSheet(personaNuevaHtml()); },
   // movimientos
-  setMovFiltro: ([t]) => { S.movFiltroTipo = t; S.movLimit = 120; render(); },
+  setMovFiltro: ([t]) => {
+    if (t === '_ticket') { S.movFiltroTipo = 'Todos'; S.movSoloTicket = true; } else if (t === '_comp') { S.movFiltroTipo = 'Todos'; S.movSoloComp = true; } else S.movFiltroTipo = t;
+    S.movVista = 'lista'; S.movLimit = 120; movRefrescar();
+  },
+  movSoloTicket: () => { if (S.movFiltroTipo === '_ticket') { S.movFiltroTipo = 'Todos'; S.movSoloTicket = true; } S.movSoloTicket = !S.movSoloTicket; S.movLimit = 120; movRefrescar(); },
+  movSoloComp: () => { if (S.movFiltroTipo === '_comp') { S.movFiltroTipo = 'Todos'; S.movSoloComp = true; } S.movSoloComp = !S.movSoloComp; S.movLimit = 120; movRefrescar(); },
+  setMovCatFiltro: ([c]) => { S.movCat = c || ''; S.movSub = ''; S.movLimit = 120; movRefrescar(); },
+  movFiltrosAbrir: () => { FORM = { kind: 'movFiltros' }; openSheet(movFiltrosHtml()); },
+  movFiltrosQuitar: () => { S.movFiltroTipo = 'Todos'; S.movSoloTicket = false; S.movSoloComp = false; S.movCat = ''; S.movSub = ''; movRefrescar(); },
+  movBuscarAbrir: () => { S._movBuscando = true; render(); setTimeout(() => { const el = $('#movSearch'); if (el) el.focus(); }, 30); },
+  movBuscarCerrar: () => { S._movBuscando = false; S.movQuery = ''; S.movLimit = 120; render(); },
+  movCuentaElegir: () => { FORM = { kind: 'movCuenta' }; openSheet(movCuentaElegirHtml()); },
+  movMesAbrir: () => { if (Date.now() - (S._swipeT || 0) < 450) return; const p = movPerNorm(S.movPeriodo); FORM = { kind: 'movMes', modo: /^m:/.test(p) ? 'mes' : /^y:/.test(p) ? 'anio' : 'todo', anio: /^[my]:/.test(p) ? Number(p.slice(2, 6)) : mesActual().y }; openSheet(movMesHtml()); },
+  movMesModo: ([k]) => { if (!FORM || FORM.kind !== 'movMes') return; FORM.modo = k; updateSheet(movMesHtml()); },
+  movMesAnio: ([d]) => { if (!FORM || FORM.kind !== 'movMes') return; FORM.anio += Number(d) || 0; updateSheet(movMesHtml()); },
+  movMesElegir: ([k]) => {
+    closeSheet(); const antes = movPerNorm(S.movPeriodo), nuevo = movPerNorm(k);
+    if (nuevo === antes) return;
+    if (nuevo === 'todo') S.movVista = 'lista';
+    if (/^y:/.test(nuevo) && movVistaAct() === 'calendario') S.movVista = 'resumen';
+    S.movLimit = 120; S.movCalDia = ''; _donutAnim = '';
+    movDeslizar(() => { S.movPeriodo = nuevo; S._movDir = nuevo > antes ? 1 : -1; }, nuevo > antes ? 1 : -1);
+  },
+  donutSel: ([n]) => {
+    if (n && n === S._donutSel) { const d = donutDatos(), sl = d.slices.find((x) => x.n === n); if (sl && !sl.otras && !donutPartes(sl, d.gastos)) return irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat: n }); }
+    S._donutSel = n || ''; sentir('tic'); drawDonut();
+  },
+  donutIr: ([cat, sub]) => { irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat, sub: sub === '-' ? SIN_DETALLE : sub }); },
+  movCalDia: ([f]) => { S.movCalDia = f; render(); },
+  movDonde: ([d]) => { irMovs({ tipo: '_gastos', periodo: S.movPeriodo }); S.movQuery = d; S._movBuscando = true; render(); },
   setMovPeriodo: ([p]) => { S.movPeriodo = movPerNorm(p); S.movLimit = 120; render(); },
   movPerMover: ([d]) => {
     const p = movPerNorm(S.movPeriodo); d = Number(d) || 0; if (!d) return;
     if (/^m:/.test(p)) { let [y, m] = p.slice(2).split('-').map(Number); m += d; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } S.movPeriodo = mesClave(y, m); }
     else if (/^y:/.test(p)) S.movPeriodo = 'y:' + (Number(p.slice(2)) + d);
     else return;
-    S._movDir = d; S.movLimit = 120; verBadge('mesames'); render();
+    const nuevo = S.movPeriodo; S.movPeriodo = p; S.movLimit = 120; S.movCalDia = '';
+    movDeslizar(() => { S.movPeriodo = nuevo; S._movDir = d; }, d);
   },
   setMovModo: ([k]) => {
     const p = movPerNorm(S.movPeriodo), ya = mesActual().y, y = /^[my]:/.test(p) ? Number(p.slice(2, 6)) : ya;
     if (k === 'mes') S.movPeriodo = /^m:/.test(p) ? p : y === ya ? mesHoyClave() : mesClave(y, 12);
     else if (k === 'anio') S.movPeriodo = 'y:' + y;
-    else S.movPeriodo = 'todo';
+    else { S.movPeriodo = 'todo'; S.movVista = 'lista'; }
+    if (k === 'anio' && movVistaAct() === 'calendario') S.movVista = 'resumen';
     S.movLimit = 120; render();
   },
   movPerHoy: () => {
@@ -6527,14 +6836,15 @@ const H = {
   irMovs: ([tipo, periodo, cat]) => irMovs({ tipo, periodo, cat }),
   irAnalisis: ([sub]) => { if (sub === 'general') return irResumen(); H.irDinero([sub]); },
   verMes: ([y, m]) => irResumen(mesClave(Number(y), Number(m))),
-  volver: () => { const v = S.volverA; S.volverA = null; if (!v) return; S.tab = v.tab; S.inicioSub = v.inicioSub; S.analisisSub = v.analisisSub; S.generalSub = v.generalSub; S.movCat = ''; S.movCuenta = ''; S.movPeriodo = mesHoyClave(); S.movFiltroTipo = 'Todos';
+  volver: () => { const v = S.volverA; S.volverA = null; if (!v) return; S.tab = v.tab; S.inicioSub = v.inicioSub; S.analisisSub = v.analisisSub; S.generalSub = v.generalSub; S.movCat = ''; S.movCuenta = ''; S.movPeriodo = mesHoyClave(); movLimpiarFiltros();
     if (v.movVista === 'resumen') { S.movVista = 'resumen'; S.movPeriodo = v.movPeriodo || S.movPeriodo; } // vuelves al Resumen donde estabas
     render(); window.scrollTo(0, 0); },
   movAddCtx: ([t, cat]) => openMovForm(null, Object.assign({ tipo: t }, cat ? { categoria: cat } : {})),
-  quitarMovCat: () => { S.movCat = ''; S.movSub = ''; render(); },
+  quitarMovCat: () => { S.movCat = ''; S.movSub = ''; movRefrescar(); },
   presEditar: ([n]) => {
     const c = catsGasto().find((x) => x.nombre === n) || { nombre: n, presupuesto: null };
-    const k = kpisMes(S.anioSel, S.mesSel), real = Math.max(0, gastoPorCategoria(k.movs)[n] || 0);
+    const pp = movPerNorm(S.movPeriodo), mm = S.tab === 'movimientos' && /^m:/.test(pp) ? pp.slice(2).split('-').map(Number) : [S.anioSel, S.mesSel];
+    const k = kpisMes(mm[0], mm[1]), real = Math.max(0, gastoPorCategoria(k.movs)[n] || 0);
     FORM = { kind: 'presEditar', cat: n };
     openSheet('<div class="handle"></div><h2>Presupuesto de ' + escapeHtml(n) + '</h2>' +
       '<div class="field"><label>Al mes (' + sym() + ')</label><input id="presIn" class="importe-grande" type="number" step="1" inputmode="decimal" placeholder="Sin presupuesto" value="' + (num(c.presupuesto) > 0 ? num(c.presupuesto) : '') + '"></div>' +
@@ -6616,7 +6926,7 @@ const H = {
   asigCuentaTodos: () => { if (!FORM || FORM.kind !== 'asigCuenta') return; const l = movsSinCuenta(); if (l.length && l.every((m) => FORM.sel.has(m.id))) FORM.sel.clear(); else l.forEach((m) => FORM.sel.add(m.id)); FORM.confirmar = false; updateSheet(asigCuentaHtml()); },
   asigCuentaMas: () => { if (!FORM || FORM.kind !== 'asigCuenta') return; FORM.limite += 100; updateSheet(asigCuentaHtml()); },
   asigCuentaOk: () => { if (!FORM || FORM.kind !== 'asigCuenta' || !FORM.sel.size || FORM.guardando) return; if (!FORM.confirmar) { FORM.confirmar = true; updateSheet(asigCuentaHtml()); return; } asigCuentaGuardar(); },
-  setMovCuenta: ([id]) => { S.movCuenta = id || ''; S.movLimit = 120; render(); },
+  setMovCuenta: ([id]) => { S.movCuenta = id || ''; S.movLimit = 120; if (FORM && FORM.kind === 'movCuenta') closeSheet(); movRefrescar(); },
   cuentasListo: () => { const cs = (cfg().cuentas || []).filter((c) => c && (c.nombre || c.saldo != null)).map((c) => Object.assign({}, c, c.nombre ? {} : { nombre: 'Cuenta' }, c.id ? {} : { id: nuevoIdMeta() })); saveConfig({ cuentas: cs }); closeSheet(); render(); },
   openGrupos: () => { verBadge('grupos'); FORM = { kind: 'grupos' }; if ($('#sheetBackdrop')) updateSheet(gruposListaHtml()); else openSheet(gruposListaHtml()); cargarGrupos().then(() => { if (FORM && FORM.kind === 'grupos') updateSheet(gruposListaHtml()); render(); }); },
   grupoNuevo: () => { FORM = { kind: 'grupoNuevo' }; updateSheet(grupoNuevoHtml()); setTimeout(() => { const el = $('#gNombre'); if (el) el.focus(); }, 60); },
@@ -7010,6 +7320,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual };
+window.__APP__ = { form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();

@@ -68,7 +68,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  // movimientos: Gastos incluye fijos; dentro de una categoría, chips de detalle
  H.goTab(['movimientos']);H.setMovVista(['lista']);await sleep(5);click(e,'setMovFiltro','_gastos');await sleep(5);
  ok(/4 movimientos/.test(doc.querySelector('#content').textContent),'«Gastos» incluye los fijos');
- click(e,'setMovFiltro','Factura');await sleep(5);ok(/1 movimiento\b/.test(doc.querySelector('#content').textContent),'«Fijos» solo los fijos');
+ click(e,'movFiltrosAbrir');await sleep(5);click(e,'setMovFiltro','Factura');await sleep(5);ok(/1 movimiento\b/.test(doc.querySelector('#content').textContent)&&/Ver 1 movimiento\b/.test(doc.querySelector('#sheetHost').textContent),'«Fijos» (en Filtros) solo los fijos, y el botón cuenta en vivo');H.closeSheet([]);await sleep(250);
  click(e,'setMovFiltro','Todos');H.irMovs(['_gastos',ym.replace(/^/,'m:'),'Salud y cuidado personal']);await sleep(5);
  ok(!!doc.querySelector('[data-click="setMovSub|U%C3%B1as"]'),'dentro de la categoría, chips de detalle');
  click(e,'setMovSub','Uñas');await sleep(5);ok(/1 movimiento\b/.test(doc.querySelector('#content').textContent),'filtrar por «Uñas»');

@@ -79,7 +79,7 @@ const LECTURA={ticket:{es_ticket:true,comercio:'Pizzería Luigi',fecha:'2026-10-
  A.H.openMovForm([]);await sleep(20);
  ok(/Leer un ticket con una foto/.test(sha())&&/NUEVO/.test(da.querySelector('.tk-btn').innerHTML),'el formulario nuevo ofrece leer un ticket (NUEVO)');
  A.H.closeSheet([]);await sleep(250);
- a.w.__APP__.H.goTab(['movimientos']);await sleep(20);
+ a.w.__APP__.H.goTab(['movimientos']);a.w.__APP__.H.setMovVista(['lista']);await sleep(20);
  ok(/Foto de ticket/.test(da.querySelector('#content').textContent),'acceso «Foto de ticket» en Movimientos');
  // --- 1. sin clave configurada
  respuesta={error:'sin_clave'};

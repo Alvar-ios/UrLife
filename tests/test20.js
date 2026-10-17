@@ -60,9 +60,9 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  click(e,'agendaDia',manana);await sleep(5);ok(/Renovar seguro/.test(doc.querySelector('#content .list').textContent),'al elegir el día se ven sus tareas');
  click(e,'agendaSemana','1');ok(/Nada para este día/.test(txt()),'semana siguiente');
  // 9B: Movimientos con iconos, totales por día y filtros rápidos
- H.goTab(['movimientos']);await sleep(10);
- ok(doc.querySelectorAll('#movList .mov-ic').length===2&&/−60,50/.test(doc.querySelector('.date-sep').textContent),'Movimientos: icono por categoría y total del día ('+doc.querySelector('.date-sep').textContent+')');
- ok(!!doc.querySelector('#movList .mov-ic.t-expense')&&/Con ticket/.test(txt()),'filtro rápido «Con ticket»');
- click(e,'setMovFiltro','_ticket');ok(/Sin movimientos aquí/.test(txt()),'sin tickets todavía');click(e,'setMovFiltro','Todos');
+ H.goTab(['movimientos']);H.setMovVista(['lista']);await sleep(10);
+ ok(doc.querySelectorAll('#movList .mov-ic').length===3&&/\+1\.939,50/.test(doc.querySelector('.date-sep').textContent),'Movimientos: icono por categoría y total del día ('+doc.querySelector('.date-sep').textContent+')');
+ click(e,'movFiltrosAbrir');await sleep(5);ok(!!doc.querySelector('#movList .mov-ic.t-expense')&&/Tienen ticket/.test(doc.querySelector('#sheetHost').textContent),'«Tienen ticket» en la hoja Filtros');
+ click(e,'movSoloTicket');await sleep(5);ok(/Sin movimientos/.test(txt())&&/No hay movimientos con estos filtros/.test(doc.querySelector('#sheetHost').textContent),'sin tickets todavía (y el botón lo dice)');click(e,'movFiltrosQuitar');await sleep(5);ok(/3 movimientos/.test(txt()),'«Quitar todos» deja la lista como al entrar');
  console.log(fails?'FAILED '+fails:'ALL PASS');process.exit(fails?1:0);
 })().catch(x=>{console.error(x);process.exit(1)});
