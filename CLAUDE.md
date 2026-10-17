@@ -62,6 +62,9 @@ npm test        # ejecuta todas; node run.js 31 ejecuta solo las que contienen �
 
 ## Trabajo en curso
 
-- Ahora: **varias cuentas, fase 1** → ver `docs/PLAN_CUENTAS.md` (decisiones ya tomadas).
-- Después: fase 4, pulir pantalla a pantalla.
-- Pendiente: invitados sin cuenta en grupos (bloqueado por Supabase), paso a APK.
+- Hecho: **varias cuentas, fase 1** y sus arreglos (17/10/2026) → ver `docs/PLAN_CUENTAS.md`. Incluye traspasos, «Convertir en traspaso», «Tu saldo» (banco + lo que dice Juntos) y la hoja de cada cuenta.
+- Siguiente: **invitados sin cuenta en los grupos** (antes de programar: propuesta de Producto y diseño y revisión de Datos y seguridad, porque toca Supabase). Hoy cada miembro de un grupo tiene que ser un usuario registrado (`grupo_miembros.user_id` apunta a `auth.users`).
+- Después: fase 4, pulir pantalla a pantalla (incluye dar estilo «Nuevo» a las piezas de cuentas). Fase 2 de cuentas (importar por cuenta, recurrentes por cuenta, saldar desde una cuenta) más adelante.
+- Más adelante: repensar «Te queda este mes» según el día en que llega la nómina; paso a APK.
+- Marketing: **en pausa** hasta que la app esté funcionando (ver `docs/marketing/PLAN.md`).
+- El repositorio se llama ahora `Alvar-ios/UrLife` (la dirección antigua redirige).

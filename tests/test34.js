@@ -63,8 +63,8 @@ const txt=e=>e.doc.querySelector('#content').textContent,sh=e=>e.doc.querySelect
  // 7. Cuadrar
  const e=await env(cuentas,movs.concat([t1])),B=e.w.__APP__;
  B.H.openCuentas([]);await sleep(5);
- ok([...e.doc.querySelectorAll('#sheetHost .cuenta-ed input.amt')].some((i)=>Number(i.value)===900)&&/Calculado desde el saldo del/.test(sh(e))&&!!e.doc.querySelector('[data-click="cuadrarAbrir|0"]'),'el editor enseña el saldo calculado (ahora en una casilla que se puede escribir) y «Cuadrar»');
- click(e,'cuadrarAbrir','0');await sleep(10);
+ click(e,'cuentaEditar','0');await sleep(5);ok([...e.doc.querySelectorAll('#sheetHost .cuenta-ed input.amt')].some((i)=>Number(i.value)===900)&&/Calculado desde el saldo del/.test(sh(e))&&!!e.doc.querySelector('[data-click^="cuadrarAbrir|0"]'),'el editor enseña el saldo calculado (ahora en una casilla que se puede escribir) y «Cuadrar»');
+ click(e,'cuadrarAbrir','0','','ed');await sleep(10);
  const inp=e.doc.querySelector('#fBanco');inp.value='950';inp.dispatchEvent(new e.w.Event('input',{bubbles:true}));await sleep(5);
  ok(/Diferencia: \+50,00/.test(sh(e)),'escribe lo que dice el banco y enseña la diferencia');
  inp.value='900';inp.dispatchEvent(new e.w.Event('input',{bubbles:true}));await sleep(5);ok(/Cuadra/.test(sh(e)),'si coincide, lo dice');

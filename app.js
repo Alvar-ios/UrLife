@@ -1036,7 +1036,8 @@ const mesClave = (y, m) => 'm:' + y + '-' + pad2(m);
 function movsFiltrados() {
   let movs = movsEfectivos().filter(inPeriodo);
   if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta)).concat(flujosJuntosFilas(S.movCuenta).filter(inPeriodo));
-  if (S.movFiltroTipo === '_comp') movs = movs.filter((m) => m.comp);
+  if (S.movFiltroTipo === '_tras') movs = [];
+  else if (S.movFiltroTipo === '_comp') movs = movs.filter((m) => m.comp);
   else if (S.movFiltroTipo === '_ticket') movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
   else if (GRUPOS_TIPO[S.movFiltroTipo]) movs = movs.filter((m) => GRUPOS_TIPO[S.movFiltroTipo].includes(m.tipo));
   else if (S.movFiltroTipo !== 'Todos') movs = movs.filter((m) => m.tipo === S.movFiltroTipo);
@@ -1067,7 +1068,7 @@ function renderMovimientos() {
     movAddCtxHtml() +
     subFiltroHtml() + movCuentaFiltroHtml() +
     '<div class="field" style="margin-bottom:10px;"><input type="search" id="movSearch" placeholder="Buscar en esta lista" value="' + escapeHtml(S.movQuery) + '" ' + onInput('onMovSearch') + '></div>' +
-    '<div class="pill-row">' + [['Todos', 'Todos'], ['Ingreso', 'Ingresos'], ['_gastos', 'Gastos'], ['Factura', 'Fijos'], ['Ahorro', 'Apartado'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="pill-row">' + [['Todos', 'Todos'], ['Ingreso', 'Ingresos'], ['_gastos', 'Gastos'], ['Factura', 'Fijos'], ['Ahorro', 'Apartado'], ['Inversión', 'Inversión'], ['Deuda', 'Deuda']].concat(compartidosDisponible() ? [['_comp', 'Compartidos']] : []).concat((S.traspasos || []).length ? [['_tras', 'Traspasos']] : []).concat([['_ticket', 'Con ticket']]).map(([t, l]) => '<button class="pill ' + (S.movFiltroTipo === t ? 'active' : '') + '" ' + act('setMovFiltro', t) + '>' + l + '</button>').join('') + '</div>' +
     '<div id="movList" class="' + (dir && !reduceMotion() ? (dir > 0 ? 'desde-der' : 'desde-izq') : '') + '">' + renderMovList() + '</div>';
 }
 function movCuentaFiltroHtml() {
@@ -1101,7 +1102,7 @@ function flujosJuntosFilas(id) {
 }
 function movCuentaActiva() { return !!S.movCuenta && hayVariasCuentas() && !!cuentaPorId(S.movCuenta); }
 function traspasosFiltrados() {
-  if (S.movFiltroTipo !== 'Todos' || S.movCat) return [];
+  if ((S.movFiltroTipo !== 'Todos' && S.movFiltroTipo !== '_tras') || S.movCat) return [];
   const q = S.movQuery.trim().toLowerCase(), cu = movCuentaActiva() ? S.movCuenta : null;
   return (S.traspasos || []).filter(inPeriodo).filter((t) => !cu || t.cuentaId === cu || t.cuentaDestinoId === cu).filter((t) => !q || [t.descripcion, 'traspaso', nombreCuenta(t.cuentaId), nombreCuenta(t.cuentaDestinoId)].some((x) => (x || '').toLowerCase().includes(q)));
 }
@@ -3590,7 +3591,7 @@ function cuadrarDifHtml(c, banco) {
     (c.id ? '<button type="button" class="link" ' + act('irMovsCuenta', c.id) + '>Buscar lo que falta en sus movimientos</button>' : '');
 }
 function cuadrarHtml(i) {
-  const c = (cfg().cuentas || [])[i] || {}, atras = FORM && FORM.volver ? act('cuentaVer', FORM.volver) : act('openCuentas');
+  const c = (cfg().cuentas || [])[i] || {}, atras = FORM && FORM.volver ? act('cuentaVer', FORM.volver) : FORM && FORM.volverEd ? act('cuentaEditar', i) : act('openCuentas');
   return '<div class="handle"></div><h2>Cuadrar ' + escapeHtml(c.nombre || 'cuenta') + '</h2>' +
     '<div class="field"><label>¿Cuánto dice el banco hoy?</label><input id="fBanco" class="importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" ' + onInput('cuadrarInput') + '></div>' +
     '<div id="cuadrarDif" class="cuadrar-dif">' + cuadrarDifHtml(c, NaN) + '</div>' +
@@ -3649,7 +3650,7 @@ function cuentaVerHtml(id) {
     '<div class="cuentas-total tnum">' + (v == null ? '—' : money(v)) + '</div>' +
     '<div class="rec-hint" style="margin:-4px 0 12px;">' + escapeHtml(tipoCuentaTxt(c)) + (v == null ? ' · aún no has puesto su saldo' : ' · ' + cuentaFechaTxt(c)) + '</div>' +
     (v != null && compartidosCuenta(c).n ? cuentaDosSaldosHtml(c, v) : '') +
-    '<div class="cuenta-acc">' + (v == null ? '<button class="btn accent block" ' + act('openCuentas') + '>Poner el saldo</button>' : '<button class="btn accent block" ' + act('cuadrarAbrir', i, id) + '>Cuadrar</button>') +
+    '<div class="cuenta-acc">' + (v == null ? '<button class="btn accent block" ' + act('cuentaEditar', i) + '>Poner el saldo</button>' : '<button class="btn accent block" ' + act('cuadrarAbrir', i, id) + '>Cuadrar</button>') +
     '<button class="btn ghost block" ' + act('irMovsCuenta', id) + '>Ver movimientos</button></div>' +
     (ult.length ? '<div class="section-title">Últimos movimientos</div><div class="list">' + ult.map((m) => esTraspaso(m) ? renderTraspasoRow(m, true) : renderMovRowBase(m)).join('') + '</div>' : '') +
     (sin && hayVariasCuentas() ? '<div class="card asignar-aviso"><b>' + sin + (sin === 1 ? ' movimiento sin cuenta' : ' movimientos sin cuenta') + '</b><div class="rec-hint">Ahora cuentan como de la principal. Puedes pasar a «' + escapeHtml(c.nombre) + '» los que sean suyos.</div>' +
@@ -3754,32 +3755,59 @@ async function saveTraspaso() {
     if (ok) { toast(FORM.convertir ? 'Convertido en traspaso' : FORM.id ? 'Traspaso actualizado' : 'Traspaso apuntado'); S._aterriza = movId || null; terminarForm(); }
   } finally { if (FORM) FORM.guardando = false; }
 }
-let principalPendiente = null; // cuenta que se va a hacer principal, pendiente de confirmar
+/* ---- ventana emergente pequeña (confirmaciones), encima de la hoja ---- */
+function abrirPopup(html) {
+  cerrarPopup();
+  const host = $('#sheetBackdrop') || document.body;
+  const d = document.createElement('div');
+  d.className = 'popup-backdrop'; d.id = 'popupBackdrop'; d.setAttribute('data-click', 'popupCerrar');
+  d.innerHTML = '<div class="popup" role="alertdialog" aria-modal="true" data-click="popupNada">' + html + '</div>';
+  host.appendChild(d);
+  requestAnimationFrame(() => d.classList.add('open'));
+}
+function cerrarPopup() { const d = $('#popupBackdrop'); if (d) d.remove(); }
 function confirmarPrincipalHtml(i) {
   const c = (cfg().cuentas || [])[i] || {}, n = movsSinCuenta().length;
-  return '<div class="card asignar-aviso"><b>¿Cambiar la cuenta principal a «' + escapeHtml(c.nombre || '') + '»?</b>' +
-    '<div class="rec-hint">' + (n ? (n === 1 ? 'Un movimiento sin cuenta pasará a esa cuenta' : n + ' movimientos sin cuenta pasarán a esa cuenta') + ', y los saldos de las cuentas cambiarán.' : 'Ningún movimiento cambia de cuenta, pero los saldos sí pueden cambiar.') + ' Para deshacerlo, vuelve a marcar la anterior.</div>' +
-    '<div class="actions" style="margin-top:8px;"><button class="btn ghost block" ' + act('cuentaPrincipalNo') + '>Cancelar</button><button class="btn accent block" ' + act('cuentaPrincipalSi', i) + '>Sí, cambiar</button></div></div>';
+  return '<h3>¿Hacer principal «' + escapeHtml(c.nombre || '') + '»?</h3>' +
+    '<p>' + (n ? (n === 1 ? 'Un movimiento sin cuenta pasará a esta cuenta' : n + ' movimientos sin cuenta pasarán a esta cuenta') + ', y los saldos cambiarán.' : 'Ningún movimiento cambia de cuenta, pero los saldos pueden cambiar.') + ' Para deshacerlo, vuelve a marcar la anterior.</p>' +
+    '<div class="popup-btns"><button class="btn ghost block" ' + act('cuentaPrincipalNo') + '>Cancelar</button><button class="btn accent block" ' + act('cuentaPrincipalSi', i) + '>Sí, cambiar</button></div>';
 }
+/* ---- Cuentas y saldos: lista limpia; cada cuenta se edita en su propia hoja ---- */
 function cuentasHtml() {
-  const cs = cfg().cuentas || [], varias = cs.filter((c) => c && c.nombre).length >= 2, pc = cuentaPrincipal();
+  const cs = cfg().cuentas || [];
   return '<div class="handle"></div><h2>Cuentas y saldos</h2>' +
-    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Pon cuánto tienes hoy en cada cuenta. Desde ahí la app suma y resta los movimientos de esa cuenta. De vez en cuando, toca «Cuadrar» y escribe lo que dice el banco.</div>' +
-    '<div class="card config-list">' + (cs.length ? cs.map((c, i) => '<div class="cuenta-ed"><div class="row2"><span class="dot" style="background:' + colorCuenta(c) + '"></span><input value="' + escapeHtml(c.nombre || '') + '" placeholder="Cuenta (p. ej. Santander)" ' + onChange('cuentaCampo', i, 'nombre') + '>' +
-      // el saldo se puede escribir siempre: es lo que tienes hoy y desde ahí la app sigue sumando y restando
-      '<input class="amt" type="number" step="0.01" inputmode="decimal" placeholder="Saldo" aria-label="Saldo de hoy" value="' + (saldoCuenta(c) == null ? '' : saldoCuenta(c)) + '" ' + onChange('cuentaCampo', i, 'saldo') + '>' +
-      '<button class="rm" aria-label="Quitar" ' + act('cuentaQuitar', i) + '>' + ic('close') + '</button></div>' +
-      (saldoCuenta(c) != null ? '<div class="cuenta-fecha">' + cuentaFechaTxt(c) + ' <button type="button" class="link" ' + act('cuadrarAbrir', i) + '>Cuadrar</button></div>' : '') +
-      '<div class="cuenta-ops"><select aria-label="Tipo de cuenta" ' + onChange('cuentaCampo', i, 'tipo') + '>' + TIPOS_CUENTA.map(([k, l]) => '<option value="' + k + '"' + (tipoCuenta(c) === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
-      '<span class="cuenta-colores">' + COLORES_CUENTA.map((col) => '<button type="button" class="cuenta-color' + (colorCuenta(c) === col ? ' on' : '') + '" style="background:' + col + '" aria-label="Color" ' + act('cuentaColor', i, col) + '></button>').join('') + '</span></div>' +
-      '<div class="cuenta-ops">' + (varias && c.nombre ? '<button type="button" class="chip' + (pc && pc.id === c.id ? ' active' : '') + '" ' + act('cuentaPrincipal', i) + '>' + (pc && pc.id === c.id ? 'Principal' : 'Hacer principal') + '</button>' : '') +
-      '<span class="cuenta-tengo">Sumar en «En tus cuentas»<button type="button" class="switch' + (cuentaEnTengo(c) ? ' on' : '') + '" role="switch" aria-checked="' + cuentaEnTengo(c) + '" aria-label="Sumar en En tus cuentas" ' + act('cuentaTengo', i) + '></button></span></div></div>').join('')
-      : '<div style="padding:16px;color:var(--text-faint);font-size:13.5px;">Aún no has añadido ninguna cuenta.</div>') + '</div>' +
-    (varias ? '<div class="rec-hint" style="margin-top:8px;">Los movimientos sin cuenta cuentan como de la principal.</div>' : '') +
-    (principalPendiente != null ? confirmarPrincipalHtml(principalPendiente) : '') +
+    '<div class="rec-hint" style="margin:-8px 0 12px;">Toca una cuenta para cambiar su saldo, su tipo o su color.</div>' +
+    (cs.length ? '<div class="card cuentas-lista">' + cs.map((c, i) => {
+      const v = saldoCuenta(c), pc = cuentaPrincipal();
+      return '<button class="row cuenta-fila tappable" ' + act('cuentaEditar', i) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' +
+        '<div class="main"><div class="ttl">' + escapeHtml(c.nombre || 'Cuenta sin nombre') + '</div><div class="meta">' + escapeHtml([tipoCuentaTxt(c), pc && pc.id === c.id && cuentasCfg().length >= 2 ? 'principal' : '', cuentaEnTengo(c) ? '' : 'no suma'].filter(Boolean).join(' · ')) + '</div></div>' +
+        '<div class="amt tnum">' + (v == null ? '<span style="color:var(--accent)">Pon el saldo</span>' : money(v)) + '</div><span class="chev-s">' + ic('chevR') + '</span></button>';
+    }).join('') + '</div>'
+      : '<div class="card" style="padding:16px;color:var(--text-faint);font-size:13.5px;">Aún no has añadido ninguna cuenta.</div>') +
+    (cuentasCfg().length >= 2 ? '<div class="rec-hint" style="margin-top:8px;">Los movimientos sin cuenta cuentan como de la principal.</div>' : '') +
     '<div style="margin-top:12px;"><button class="btn ghost block" ' + act('cuentaAnadir') + '>' + ic('plus') + ' Añadir cuenta</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('cuentasListo') + '>Listo</button></div>';
 }
+function cuentaEdHtml(i) {
+  const c = (cfg().cuentas || [])[i] || {}, v = saldoCuenta(c), pc = cuentaPrincipal(), varias = cuentasCfg().length >= 2, esP = !!pc && pc.id === c.id;
+  return '<div class="handle"></div><button class="link volver" ' + act('cuentasVolver') + '>' + ic('chevL') + ' Cuentas y saldos</button>' +
+    '<h2 style="display:flex;align-items:center;gap:8px;"><span class="dot" style="background:' + colorCuenta(c) + ';width:12px;height:12px;"></span>' + escapeHtml(c.nombre || 'Cuenta nueva') + '</h2>' +
+    '<div class="cuenta-ed">' +
+    '<div class="field"><label>Nombre</label><input id="fCuentaNombre" value="' + escapeHtml(c.nombre || '') + '" placeholder="p. ej. Santander" ' + onChange('cuentaCampo', i, 'nombre') + '></div>' +
+    '<div class="field"><label>Saldo de hoy</label><input class="amt importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Saldo de hoy" value="' + (v == null ? '' : v) + '" ' + onChange('cuentaCampo', i, 'saldo') + '>' +
+      '<div class="rec-hint" style="margin-top:6px;">' + (v == null ? 'Escribe lo que tienes hoy en esta cuenta. Desde ahí la app suma y resta sus movimientos.' : escapeHtml(cuentaFechaTxt(c)) + ' · <button type="button" class="link" ' + act('cuadrarAbrir', i, '', 'ed') + '>Cuadrar con el banco</button>') + '</div></div>' +
+    '<div class="field"><label>Tipo</label><select aria-label="Tipo de cuenta" ' + onChange('cuentaCampo', i, 'tipo') + '>' + TIPOS_CUENTA.map(([k, l]) => '<option value="' + k + '"' + (tipoCuenta(c) === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div>' +
+    '<div class="field"><label>Color</label><span class="cuenta-colores">' + COLORES_CUENTA.map((col) => '<button type="button" class="cuenta-color' + (colorCuenta(c) === col ? ' on' : '') + '" style="background:' + col + '" aria-label="Color" ' + act('cuentaColor', i, col) + '></button>').join('') + '</span></div>' +
+    '<div class="card cuenta-ajustes">' +
+      '<div class="cuenta-ajuste"><div><b>Sumar en «En tus cuentas»</b><div class="rec-hint" style="margin:2px 0 0;">Para las cuentas del día a día. El ahorro y el bróker, mejor fuera.</div></div><button type="button" class="switch' + (cuentaEnTengo(c) ? ' on' : '') + '" role="switch" aria-checked="' + cuentaEnTengo(c) + '" aria-label="Sumar en En tus cuentas" ' + act('cuentaTengo', i) + '></button></div>' +
+      (varias && c.nombre ? '<div class="cuenta-ajuste"><div><b>Cuenta principal</b><div class="rec-hint" style="margin:2px 0 0;">' + (esP ? 'Es tu cuenta principal: aquí van los movimientos sin cuenta y los compartidos.' : 'Aquí irían los movimientos sin cuenta y los compartidos.') + '</div></div>' +
+        (esP ? '<span class="chip active">Principal</span>' : '<button type="button" class="chip" ' + act('cuentaPrincipal', i) + '>Hacer principal</button>') + '</div>' : '') +
+    '</div></div>' +
+    '<button class="btn danger block" style="margin-top:14px;" aria-label="Quitar" ' + act('cuentaQuitar', i) + '>' + ic('trash') + ' Quitar esta cuenta</button>' +
+    '<div class="actions"><button class="btn accent block" ' + act('cuentasVolver') + '>Listo</button></div>';
+}
+// repinta la hoja que esté abierta: la lista o la cuenta que se está editando
+function cuentasRefrescar() { updateSheet(FORM && FORM.kind === 'cuentaEd' ? cuentaEdHtml(FORM.i) : cuentasHtml()); }
 /* ---- patrimonio (solo informativo) ---- */
 function cuentasCfg() { return (cfg().cuentas || []).filter((c) => c && c.nombre); }
 function patrimonio() {
@@ -6308,15 +6336,15 @@ const H = {
   empiezaOcultar: () => { saveConfig({ empiezaOculto: todayISO() }); render(); toast('Oculto. Lo tienes todo en Tú.'); },
   presTodas: () => { S.presTodas = !S.presTodas; render(); },
   setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = 120; render(); },
-  openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; principalPendiente = null; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
-  cuentaAnadir: () => { saveConfig({ cuentas: (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]) }); updateSheet(cuentasHtml()); const ins = $$('#sheetBackdrop .config-list .row2 input:first-child'); if (ins.length) ins[ins.length - 1].focus(); },
+  openCuentas: () => { verBadge('patrimonio'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
+  cuentaAnadir: () => { const cs = (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]); saveConfig({ cuentas: cs }); H.cuentaEditar([cs.length - 1]); setTimeout(() => { const el = $('#fCuentaNombre'); if (el) el.focus(); }, 60); },
   cuentaQuitar: ([i], el) => {
     const cs = (cfg().cuentas || []).slice(), c = cs[Number(i)] || {};
     const n = c.id ? S.movimientos.filter((m) => m.cuentaId === c.id).length + (S.traspasos || []).filter((t) => t.cuentaId === c.id || t.cuentaDestinoId === c.id).length : 0;
     // si tiene movimientos, pide un segundo toque: esos movimientos pasan a contar como de la principal
-    if (n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Tiene ' + n + (n === 1 ? ' movimiento' : ' movimientos') + '. Los movimientos pasarán a la cuenta principal y los traspasos dirán «Cuenta quitada». Toca ✕ otra vez para quitarla.'); }
+    if (n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Tiene ' + n + (n === 1 ? ' movimiento' : ' movimientos') + '. Los movimientos pasarán a la cuenta principal y los traspasos dirán «Cuenta quitada». Toca «Quitar» otra vez para quitarla.'); }
     const fijas = cs.map((x) => (x && x.id && !x.color ? Object.assign({}, x, { color: colorCuenta(x) }) : x)); // que las demás no cambien de color
-    fijas.splice(Number(i), 1); saveConfig({ cuentas: fijas }); updateSheet(cuentasHtml()); render();
+    fijas.splice(Number(i), 1); saveConfig({ cuentas: fijas }); FORM = { kind: 'cuentas' }; updateSheet(cuentasHtml()); render();
   },
   cuentaCampo: ([i, f], el) => {
     const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {});
@@ -6328,20 +6356,29 @@ const H = {
     }
     else if (f === 'tipo') c.tipo = el.value;
     else c.nombre = el.value.trim();
-    cs[Number(i)] = c; saveConfig({ cuentas: cs }); if (f !== 'saldo' && f !== 'nombre') updateSheet(cuentasHtml()); render();
+    cs[Number(i)] = c; saveConfig({ cuentas: cs }); if (f !== 'saldo') cuentasRefrescar(); render();
   },
-  cuentaColor: ([i, col]) => { const cs = (cfg().cuentas || []).slice(); cs[Number(i)] = Object.assign({}, cs[Number(i)] || {}, { color: col }); saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
-  cuentaPrincipal: ([i]) => { principalPendiente = Number(i); updateSheet(cuentasHtml()); },
+  cuentaColor: ([i, col]) => { const cs = (cfg().cuentas || []).slice(); cs[Number(i)] = Object.assign({}, cs[Number(i)] || {}, { color: col }); saveConfig({ cuentas: cs }); cuentasRefrescar(); render(); },
+  cuentaEditar: ([i]) => { FORM = { kind: 'cuentaEd', i: Number(i) }; updateSheet(cuentaEdHtml(Number(i))); },
+  cuentasVolver: () => {
+    // una cuenta nueva que se deja sin nombre ni saldo no se queda en la lista
+    const cs = cfg().cuentas || [], i = FORM && FORM.kind === 'cuentaEd' ? FORM.i : -1, c = cs[i];
+    if (c && !c.nombre && c.saldo == null) { const fijas = cs.slice(); fijas.splice(i, 1); saveConfig({ cuentas: fijas }); }
+    FORM = { kind: 'cuentas' }; updateSheet(cuentasHtml()); render();
+  },
+  popupCerrar: () => cerrarPopup(),
+  popupNada: () => {},
+  cuentaPrincipal: ([i]) => abrirPopup(confirmarPrincipalHtml(Number(i))),
   movAtraspaso: ([id]) => {
     const m = S.movimientos.find((x) => x.id === id); if (!convertibleATraspaso(m)) return;
     const suya = cuentaIdDe(m), otra = (cuentasCfg().find((c) => c.id !== suya) || {}).id;
     const ingreso = (m.tipo === 'Ingreso') !== (num(m.importe) < 0); // una devolución de un gasto es dinero que entra
     openTraspasoForm(null, { convertir: m.id, desde: ingreso ? otra : suya, a: ingreso ? suya : otra, importe: Math.abs(num(m.importe)), fecha: m.fecha, descripcion: m.descripcion || '' });
   },
-  cuentaPrincipalNo: () => { principalPendiente = null; updateSheet(cuentasHtml()); },
-  cuentaPrincipalSi: ([i]) => { const cs = (cfg().cuentas || []).map((c, j) => Object.assign({}, c, { principal: j === Number(i) })); principalPendiente = null; saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
-  cuentaTengo: ([i]) => { const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {}); c.enTengo = !cuentaEnTengo(c); cs[Number(i)] = c; saveConfig({ cuentas: cs }); updateSheet(cuentasHtml()); render(); },
-  cuadrarAbrir: ([i, volver]) => { FORM = { kind: 'cuadrar', i: Number(i), volver: volver || null }; updateSheet(cuadrarHtml(Number(i))); setTimeout(() => { const el = $('#fBanco'); if (el) el.focus(); }, 60); },
+  cuentaPrincipalNo: () => cerrarPopup(),
+  cuentaPrincipalSi: ([i]) => { const cs = (cfg().cuentas || []).map((c, j) => Object.assign({}, c, { principal: j === Number(i) })); cerrarPopup(); saveConfig({ cuentas: cs }); sentir('ok'); cuentasRefrescar(); render(); },
+  cuentaTengo: ([i]) => { const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {}); c.enTengo = !cuentaEnTengo(c); cs[Number(i)] = c; saveConfig({ cuentas: cs }); cuentasRefrescar(); render(); },
+  cuadrarAbrir: ([i, volver, ed]) => { FORM = { kind: 'cuadrar', i: Number(i), volver: volver || null, volverEd: ed === 'ed' }; updateSheet(cuadrarHtml(Number(i))); setTimeout(() => { const el = $('#fBanco'); if (el) el.focus(); }, 60); },
   cuadrarInput: (_a, el) => { const box = $('#cuadrarDif'); if (box && FORM) box.innerHTML = cuadrarDifHtml((cfg().cuentas || [])[FORM.i] || {}, el.value === '' ? NaN : parseFloat(el.value)); },
   cuadrarOk: () => {
     if (!FORM || FORM.kind !== 'cuadrar') return;
@@ -6352,7 +6389,7 @@ const H = {
     Object.assign(c, { saldo: banco, fecha: hoy, ts: Date.now(), cuadre: { fecha: hoy, dif } });
     cs[FORM.i] = c; saveConfig({ cuentas: cs }); sentir('ok');
     toast(dif ? 'Cuadrado. Ajuste de ' + (dif > 0 ? '+' : '−') + money(Math.abs(dif)) : 'Cuadrado: todo coincide');
-    if (FORM.volver) H.cuentaVer([FORM.volver]); else H.openCuentas([]); render();
+    if (FORM.volver) H.cuentaVer([FORM.volver]); else if (FORM.volverEd) H.cuentaEditar([FORM.i]); else H.openCuentas([]); render();
   },
   cuentasHoja: () => { FORM = { kind: 'cuentasHoja' }; if ($('#sheetBackdrop')) updateSheet(cuentasHojaHtml()); else openSheet(cuentasHojaHtml()); },
   cuentaVer: ([id]) => { if (!cuentaPorId(id)) return; FORM = { kind: 'cuentaVer', id }; if ($('#sheetBackdrop')) updateSheet(cuentaVerHtml(id)); else openSheet(cuentaVerHtml(id)); },
@@ -6657,7 +6694,7 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('input', (e) => dispatch('input', e));
 document.addEventListener('change', (e) => dispatch('change', e));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if ($('#popupBackdrop')) cerrarPopup(); else closeSheet(); } });
 
 /* ============================================================
    ARRANQUE

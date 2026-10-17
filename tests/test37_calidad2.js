@@ -63,11 +63,15 @@ const sinBanco = (p) => JSON.stringify({ inv: p.inv, ahorro: p.ahorro, deudas: p
   ok(!/Traspaso/.test(txt(e)) && !/500/.test(txt(e)), 'no aparece en el Resumen por categorías');
   H.setMovVista(['lista']); await sleep(10);
   H.setMovFiltro(['_gastos']); await sleep(10);
-  ok(!/Traspaso/.test(txt(e)) && !e.doc.querySelector('.row.traspaso'), 'no aparece con el filtro «Gastos»');
+  ok(!/Traspaso/.test(e.doc.querySelector('#movList').textContent) && !e.doc.querySelector('.row.traspaso'), 'no aparece con el filtro «Gastos»');
   H.setMovFiltro(['Ingreso']); await sleep(10);
   ok(!e.doc.querySelector('.row.traspaso'), 'ni con el filtro «Ingresos»');
   H.setMovFiltro(['Todos']); await sleep(10);
   ok(!!e.doc.querySelector('.row.traspaso'), 'sí se ve en «Todos»');
+  ok(!!e.doc.querySelector('[data-click="setMovFiltro|_tras"]'), 'hay un filtro «Traspasos»');
+  H.setMovFiltro(['_tras']); await sleep(10);
+  ok(e.doc.querySelectorAll('#movList .row.traspaso').length === 1 && e.doc.querySelectorAll('#movList .row:not(.traspaso)').length === 0, 'con el filtro «Traspasos» solo salen los traspasos');
+  H.setMovFiltro(['Todos']); await sleep(10);
   // calendario con los movimientos activados
   H.goTab(['calendario']); await sleep(10);
   A.S.calFiltros.movs = true; A.render(); await sleep(10);
@@ -107,7 +111,7 @@ const sinBanco = (p) => JSON.stringify({ inv: p.inv, ahorro: p.ahorro, deudas: p
   e = await env([{ id: 'c1', nombre: 'Banco', saldo: 1000, fecha: hace(20) }, { id: 'c2', nombre: 'Hucha', tipo: 'ahorro', saldo: 500, fecha: hace(20) }],
     [{ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 100, fecha: d2 }]); A = e.w.__APP__;
   const antes = [A.saldoCuenta(A.cfg().cuentas[0]), A.saldoCuenta(A.cfg().cuentas[1]), A.enTusCuentas()];
-  A.H.openCuentas([]); await sleep(10);
+  A.H.openCuentas([]); await sleep(10); click(e, 'cuentaEditar', '1'); await sleep(10);
   click(e, 'cuentaPrincipal', '1'); await sleep(20);
   ok(!A.cfg().cuentas[1].principal, 'al pulsar «Hacer principal» todavía no cambia nada');
   ok(/Sí, cambiar/.test(sh(e)) && /movimiento sin cuenta/.test(sh(e)), 'pide confirmación y dice cuántos movimientos se mueven');
@@ -115,9 +119,11 @@ const sinBanco = (p) => JSON.stringify({ inv: p.inv, ahorro: p.ahorro, deudas: p
   ok(!A.cfg().cuentas[1].principal, 'cancelar lo deja como estaba');
   click(e, 'cuentaPrincipal', '1'); await sleep(20);
   click(e, 'cuentaPrincipalSi', '1'); await sleep(20);
+  ok(!e.doc.querySelector('#popupBackdrop'), 'al confirmar se cierra la ventana');
   const despues = [A.saldoCuenta(A.cfg().cuentas[0]), A.saldoCuenta(A.cfg().cuentas[1]), A.enTusCuentas()];
   console.log('INFO tras confirmar: [Banco, Hucha, En tus cuentas] = ' + despues.join(', '));
   ok(JSON.stringify(e.store.movimientos.g1) === JSON.stringify({ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 100, fecha: d2 }), 'cambiar la principal no toca ningún movimiento guardado');
+  click(e, 'cuentasVolver'); await sleep(10); click(e, 'cuentaEditar', '0'); await sleep(10);
   click(e, 'cuentaPrincipal', '0'); await sleep(20); click(e, 'cuentaPrincipalSi', '0'); await sleep(20);
   ok(JSON.stringify([A.saldoCuenta(A.cfg().cuentas[0]), A.saldoCuenta(A.cfg().cuentas[1]), A.enTusCuentas()]) === JSON.stringify(antes), 'y se deshace volviendo a marcar la de antes');
 

@@ -89,7 +89,7 @@ const ts = (n) => new Date(Date.now() - n * 864e5).toISOString();
 
   /* 7. Borrar la casilla del saldo */
   e = await env(DOS, []); A = e.w.__APP__;
-  A.H.openCuentas([]); await sleep(10);
+  A.H.openCuentas([]); await sleep(10); click(e, 'cuentaEditar', '0'); await sleep(10);
   const inp = e.doc.querySelector('#sheetHost .cuenta-ed input.amt');
   inp.value = ''; inp.dispatchEvent(new e.w.Event('change', { bubbles: true })); await sleep(20);
   ok(A.cfg().cuentas[0].saldo === 1000 && Number(inp.value) === 1000, 'vaciar la casilla del saldo no lo borra (vuelve a enseñar el que había)');

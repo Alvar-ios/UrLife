@@ -21,7 +21,7 @@ const txt = (e) => e.doc.querySelector('#content').textContent.replace(/\s+/g, '
 (async () => {
   /* 1. El saldo se puede escribir a mano, también con una sola cuenta */
   let e = await env([DOS[0]], [{ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 100, fecha: d2 }]), A = e.w.__APP__;
-  A.H.openCuentas([]); await sleep(10);
+  A.H.openCuentas([]); await sleep(10); click(e, 'cuentaEditar', '0'); await sleep(10);
   let inp = e.doc.querySelector('#sheetHost .cuenta-ed input.amt');
   ok(!!inp && Number(inp.value) === 900, 'con una sola cuenta hay casilla de saldo y enseña el calculado (900 €)');
   inp.value = '875.5'; inp.dispatchEvent(new e.w.Event('change', { bubbles: true })); await sleep(20);

@@ -15,7 +15,7 @@ async function guardar(e,importe,cat){e.doc.querySelector('#fImporte').value=Str
  // 1. Una sola cuenta: todo igual que antes
  let e=await env(una),A=e.w.__APP__,H=A.H,doc=e.doc,sh=()=>doc.querySelector('#sheetHost').textContent;
  H.openCuentas([]);await sleep(5);
- ok(!/Principal/.test(sh())&&/Sumar en «En tus cuentas»/.test(sh())&&!!doc.querySelector('#sheetHost .cuenta-ops select'),'una cuenta: tipo e interruptor, sin «principal»');
+ click(e,'cuentaEditar','0');await sleep(5);ok(!/Principal/.test(sh())&&/Sumar en «En tus cuentas»/.test(sh())&&!!doc.querySelector('#sheetHost .cuenta-ed select'),'una cuenta: tipo e interruptor, sin «principal»');
  H.closeSheet([]);await sleep(260);
  H.openMovForm([]);await sleep(10);
  ok(!doc.querySelector('#cuentaChips')&&!/Desde la cuenta/.test(sh()),'una cuenta: el formulario no pregunta la cuenta');
@@ -25,14 +25,24 @@ async function guardar(e,importe,cat){e.doc.querySelector('#fImporte').value=Str
  // 2. Editor con varias cuentas
  e=await env(tres);A=e.w.__APP__;H=A.H;doc=e.doc;
  H.openCuentas([]);await sleep(5);
- const sw=[...doc.querySelectorAll('#sheetHost .cuenta-ed .switch')];
- ok(sw.length===3&&sw[0].classList.contains('on')&&sw[1].classList.contains('on')&&!sw[2].classList.contains('on'),'por defecto suman las corrientes y no la de ahorro');
- ok(/Principal/.test(sh())&&doc.querySelectorAll('#sheetHost [data-click^="cuentaPrincipal"]').length===3,'con varias cuentas se puede elegir la principal (por defecto, la primera)');
- click(e,'cuentaPrincipal','1');await sleep(5);click(e,'cuentaPrincipalSi','1');await sleep(5); // ahora pide confirmación
+ ok(doc.querySelectorAll('#sheetHost .cuentas-lista .cuenta-fila').length===3&&/no suma/.test(sh())&&!doc.querySelector('#sheetHost .switch'),'la lista de cuentas es limpia: una fila por cuenta (se editan por separado)');
+ const swDe=async(i)=>{click(e,'cuentaEditar',String(i));await sleep(5);const on=doc.querySelector('#sheetHost .cuenta-ed .switch').classList.contains('on');click(e,'cuentasVolver');await sleep(5);return on;};
+ const sw=[await swDe(0),await swDe(1),await swDe(2)];
+ ok(sw[0]&&sw[1]&&!sw[2],'por defecto suman las corrientes y no la de ahorro');
+ click(e,'cuentaEditar','0');await sleep(5);
+ ok(/Es tu cuenta principal/.test(sh()),'la primera es la principal por defecto');
+ click(e,'cuentasVolver');await sleep(5);click(e,'cuentaEditar','1');await sleep(5);
+ click(e,'cuentaPrincipal','1');await sleep(5);
+ ok(!!doc.querySelector('#popupBackdrop .popup')&&/Sí, cambiar/.test(doc.querySelector('#popupBackdrop').textContent),'«Hacer principal» pide confirmación en una ventana emergente');
+ click(e,'cuentaPrincipalSi','1');await sleep(5);
+ ok(!doc.querySelector('#popupBackdrop'),'al confirmar, la ventana se cierra');
  let cs=e.store.cfg.app.cuentas;ok(cs[1].principal===true&&cs[0].principal===false&&A.cfg().cuentas[1].principal,'«Hacer principal» marca solo esa');
+ click(e,'cuentasVolver');await sleep(5);click(e,'cuentaEditar','2');await sleep(5);
  click(e,'cuentaTengo','2');await sleep(5);cs=e.store.cfg.app.cuentas;ok(cs[2].enTengo===true,'el interruptor de la hucha la suma');
+ click(e,'cuentasVolver');await sleep(5);click(e,'cuentaEditar','0');await sleep(5);
  click(e,'cuentaColor','0','#A8452F');await sleep(5);cs=e.store.cfg.app.cuentas;ok(cs[0].color==='#A8452F'&&doc.querySelector('#sheetHost .cuenta-color.on[style*="#A8452F"]'),'se cambia el color de una cuenta');
- change(e,doc.querySelectorAll('#sheetHost .cuenta-ops select')[0],'efectivo');await sleep(5);cs=e.store.cfg.app.cuentas;ok(cs[0].tipo==='efectivo','se cambia el tipo');
+ change(e,doc.querySelector('#sheetHost .cuenta-ed select'),'efectivo');await sleep(5);cs=e.store.cfg.app.cuentas;ok(cs[0].tipo==='efectivo','se cambia el tipo');
+ click(e,'cuentasVolver');await sleep(5);
  ok(cs[0].saldo===1000&&cs[0].fecha===mk+'-01','cambiar tipo o color no toca el saldo ni su fecha');
  click(e,'cuentasListo');await sleep(260);
 
@@ -62,10 +72,10 @@ async function guardar(e,importe,cat){e.doc.querySelector('#fImporte').value=Str
 
  // 5. Quitar una cuenta con movimientos pide un segundo toque
  e=await env(tres,[Object.assign({},movs[0],{cuentaId:'c3'})]);A=e.w.__APP__;H=A.H;doc=e.doc;
- H.openCuentas([]);await sleep(5);
- const rm=()=>doc.querySelectorAll('#sheetHost .cuenta-ed .rm')[2];
+ H.openCuentas([]);await sleep(5);click(e,'cuentaEditar','2');await sleep(5);
+ const rm=()=>doc.querySelector('#sheetHost [data-click^="cuentaQuitar"]');
  rm().click();await sleep(5);
- ok(e.store.cfg.app.cuentas.length===3&&/Toca ✕ otra vez/.test(doc.body.textContent),'quitar una cuenta con movimientos avisa y pide otro toque');
+ ok(e.store.cfg.app.cuentas.length===3&&/Toca «Quitar» otra vez/.test(doc.body.textContent),'quitar una cuenta con movimientos avisa y pide otro toque');
  rm().click();await sleep(5);
  ok(e.store.cfg.app.cuentas.length===2&&e.store.movimientos.g1.cuentaId==='c3','al segundo toque se quita; el movimiento no se toca');
  console.log(fails?'FAILED '+fails:'ALL PASS');process.exit(fails?1:0);
