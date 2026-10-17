@@ -1,4 +1,5 @@
 -- Personas sin cuenta en los grupos, administradores y quién puede editar los gastos (17/10/2026).
+-- APLICADA el 17/10/2026 en 7 partes (personas_sin_cuenta_1_tablas … _7_regla_editar): la herramienta cancela las peticiones grandes.
 -- Lo nuevo es aditivo. Se REEMPLAZAN: validar_compartido, saldo_en_grupo, cerrar_grupo y la regla compartidos_editar
 -- (copia de lo anterior en copias/2026-10-17_antes_de_personas_sin_cuenta.sql).
 
@@ -241,15 +242,14 @@ begin
 end $function$;
 
 -- 4d. Editar o borrar un gasto del grupo: según el ajuste del grupo (por defecto, todos, como hasta ahora)
-drop policy if exists compartidos_editar on public.compartidos;
-create policy compartidos_editar on public.compartidos for update
+alter policy compartidos_editar on public.compartidos
   using (public.puede_editar_compartido(grupo_id, creado_por)) with check (public.es_miembro(grupo_id));
 
 -- 5. Permisos de las funciones -----------------------------------------------------------
 revoke execute on function public.es_participante(uuid, uuid, boolean), public.puede_editar_compartido(uuid, uuid),
   public.crear_sin_cuenta(uuid, text), public.renombrar_sin_cuenta(uuid, text), public.quitar_sin_cuenta(uuid),
   public.enlace_sin_cuenta(uuid), public.ver_enlace_sin_cuenta(text), public.reclamar_sin_cuenta(text, boolean),
-  public.cambiar_rol(uuid, uuid, boolean) from public, anon;
+  public.cambiar_rol(uuid, uuid, boolean) from public, anon, authenticated;
 grant execute on function public.puede_editar_compartido(uuid, uuid),
   public.crear_sin_cuenta(uuid, text), public.renombrar_sin_cuenta(uuid, text), public.quitar_sin_cuenta(uuid),
   public.enlace_sin_cuenta(uuid), public.ver_enlace_sin_cuenta(text), public.reclamar_sin_cuenta(text, boolean),

@@ -109,8 +109,9 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - Solo amplía la lista de tipos permitidos; no cambia ningún dato.
 - Probado con una inserción dentro de una transacción que se deshace: se acepta y no queda nada guardado.
 
-## Personas sin cuenta, administradores y quién edita (17/10): personas_sin_cuenta — PREPARADA, SIN APLICAR
+## Personas sin cuenta, administradores y quién edita (17/10): personas_sin_cuenta_1 … _7 — APLICADA
 - SQL completo en `2026-10-17_personas_sin_cuenta.sql`; copia de lo que reemplaza en `copias/2026-10-17_antes_de_personas_sin_cuenta.sql`.
 - Aditivo: tablas `grupo_invitados` (personas sin cuenta: solo nombre; `reclamado_por` cuando alguien ocupa su sitio; `historial` = si sus gastos de antes cuentan en los números personales de quien lo ocupa) e `invitado_enlaces` (enlace personal, un uso, 7 días); columna `grupos.edicion` ('todos' por defecto, o 'autor'); funciones `crear_sin_cuenta`, `renombrar_sin_cuenta`, `quitar_sin_cuenta`, `enlace_sin_cuenta`, `ver_enlace_sin_cuenta`, `reclamar_sin_cuenta`, `cambiar_rol`, `es_participante`, `puede_editar_compartido`.
 - Reemplaza (no aditivo): `validar_compartido` (acepta a las personas sin cuenta del grupo), `saldo_en_grupo` (suma lo de la persona cuyo sitio se ocupó), `cerrar_grupo` (no se cierra con deudas de alguien sin cuenta) y la regla `compartidos_editar` (según `grupos.edicion`).
 - No reescribe ningún gasto: el id de la persona sin cuenta queda como «alias» de quien ocupa su sitio.
+- Probada en la base de datos real con tres usuarios inventados dentro de una transacción que se deshace: 24 de 24 comprobaciones bien (crear, repartir, saldos, no quitar ni cerrar con deudas, ajenos sin acceso, enlace de un uso, ocupar el sitio, no reutilizar el id antiguo, edición «todos»/«autor», administradores y no quedarse sin ninguno). No quedó nada guardado.
