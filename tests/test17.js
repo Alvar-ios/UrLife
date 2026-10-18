@@ -179,7 +179,7 @@ const toastTxt=e=>(e.doc.querySelector('#toast')||{}).textContent||'';
  // --- 13. Dashboard
  A.H.closeSheet([]);await sleep(250);a.w.__APP__.H.goTab(['inicio']);await sleep(20);
  const cont=da.querySelector('#content').textContent;
- ok(/Te deben 14,00/.test(cont),'Inicio avisa de lo que te deben (Pendiente)');a.w.__APP__.H.goTab(['juntos']);await sleep(20);ok(/Te deben 14,00/.test(da.querySelector('#content').textContent),'pestaña Juntos con el total');
+ ok(/Te deben 14,00/.test(cont)||[...da.querySelectorAll('.ins-c')].some(b=>/te deben 14,00/i.test(b.getAttribute('aria-label')||'')),'Inicio avisa de lo que te deben (Pendiente)');a.w.__APP__.H.goTab(['juntos']);await sleep(20);ok(/Te deben 14,00/.test(da.querySelector('#content').textContent),'pestaña Juntos con el total');
  // --- 14. reparto exacto al céntimo
  const ms=[{uid:'a'},{uid:'b'},{uid:'c'}];
  const r1=A.calcReparto({modo:'igual',incl:{a:1,b:1,c:1}},10,ms).reparto;

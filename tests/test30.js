@@ -26,10 +26,10 @@ const tabs=e=>[...e.doc.querySelectorAll('.tabbar [data-tab]')].map(b=>b.getAttr
  cfg.app.facturas=[{nombre:'Alquiler',importe:500,diaDelMes:HOY.getDate()}];cfg.app.ingresos=['Nómina'];
  e=await env(cfg,m2,tareas);H=e.w.__APP__.H;A=e.w.__APP__;doc=e.doc;txt=()=>doc.querySelector('#content').textContent;
  const filas=()=>doc.querySelectorAll('.dias-lista .dia-fila').length;
- ok(filas()===3&&/Ver los \d+/.test(txt()),'Estos días: se ven 3 filas y «Ver los N» ('+filas()+')');
+ ok(filas()===2&&/Ver los \d+/.test(txt()),'Estos días: se ven 2 filas (Inicio sin scroll) y «Ver los N» ('+filas()+')');
  click(e,'verPendiente');await sleep(10);
- ok(filas()>3&&/Ver menos/.test(txt()),'al tocar «avisos más» se despliega todo');
- click(e,'verPendiente');await sleep(10);ok(filas()===3,'y se vuelve a plegar');
+ ok(filas()>2&&/Ver menos/.test(txt()),'al tocar «avisos más» se despliega todo');
+ click(e,'verPendiente');await sleep(10);ok(filas()===2,'y se vuelve a plegar');
  ok(!!doc.querySelector('[data-click^="recSi"]'),'el cobro/pago de hoy se confirma desde Inicio');
  // Agenda dentro de Inicio
  click(e,'setInicioVista','tareas');await sleep(10);

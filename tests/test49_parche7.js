@@ -7,7 +7,7 @@ const d = new Date(), Y = d.getFullYear(), M = d.getMonth() + 1, ym = Y + '-' + 
 const pm = M === 1 ? 12 : M - 1, py = M === 1 ? Y - 1 : Y, ymPrev = py + '-' + pad(pm);
 const html = (e) => e.doc.querySelector('#content').innerHTML;
 (async () => {
-  const e = makeEnv({
+  const e = makeEnv({ verAnteriorInicio: true,
     cfg: { app: { categoriasGasto: [{ nombre: 'Supermercado', presupuesto: 100 }, { nombre: 'Ocio' }], ingresos: ['Nómina'],
       // ya vio las etiquetas antiguas de Tú: así se ven las nuevas (como mucho salen 3 a la vez)
       badgesVistos: { grupos: '2026-10-13', categorias: '2026-10-13', cobros: '2026-10-13', metas: '2026-10-13', patrimonio: '2026-10-13' },

@@ -586,3 +586,41 @@ html[data-look="nuevo"] .dn-zona .dn-f.off { opacity: .5; }
 html[data-look="nuevo"] .dn-zona .dn-volver { grid-column: 1 / -1; justify-self: start; }
 html[data-look="nuevo"] .dn-zona .dn-ver { grid-column: 1 / -1; justify-self: center; margin-top: 2px; }
 html[data-look="nuevo"] .dn-vacio { text-align: center; color: var(--text-faint); font-size: 13.5px; }
+
+/* ---------- 18/10: botón para comparar con la versión anterior (solo en pruebas) ---------- */
+html[data-look="nuevo"] #compararHost:empty { display: none; }
+html[data-look="nuevo"] .comparar-fab { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 11px 0 9px; border-radius: var(--r-pill); border: 1.5px dashed var(--accent); background: transparent; color: var(--accent); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; animation: comparar-entra .4s var(--ease-spring); }
+html[data-look="nuevo"] .comparar-fab .i { width: 14px; height: 14px; }
+html[data-look="nuevo"] .comparar-fab.ant { background: var(--accent); color: var(--accent-ink); border-style: solid; }
+@keyframes comparar-entra { from { transform: scale(.85); opacity: 0; } }
+/* ---------- Inicio v2: compacto (sin scroll en un móvil normal) y «Así vas» en círculos ---------- */
+html[data-look="nuevo"] .hero2v2 { padding: 12px var(--sp-4) 12px; gap: 6px; }
+html[data-look="nuevo"] .hero2v2 .hero-main { margin-top: 0; }
+html[data-look="nuevo"] .hero2v2 .hero-v { font-size: 38px; }
+html[data-look="nuevo"] .hero2v2 .hero-barra { margin: 2px 0 0; gap: 6px; }
+html[data-look="nuevo"] .hero2v2 .hero-bar { height: 8px; }
+html[data-look="nuevo"] .h2-datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+html[data-look="nuevo"] .h2-dato { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 7px 11px; border: none; border-radius: 12px; background: var(--hero-tile); color: inherit; font: inherit; text-align: left; cursor: pointer; min-width: 0; }
+html[data-look="nuevo"] .h2-dato span { font-size: 11.5px; color: var(--hero-muted); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+html[data-look="nuevo"] .h2-dato b { font-family: var(--font-display); font-weight: var(--num-peso); font-size: 16px; }
+html[data-look="nuevo"] .h2-dato .prev-tag { font-style: normal; font-size: 9.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 1px 5px; border-radius: 5px; background: rgba(255,255,255,.18); color: #fff; }
+html[data-look="nuevo"] .ins-circ { display: flex; gap: 6px; justify-content: space-between; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px; scroll-padding-inline: 16px; scrollbar-width: none; }
+html[data-look="nuevo"] .ins-circ::-webkit-scrollbar { display: none; }
+html[data-look="nuevo"] .ins-c { --ic: var(--accent); flex: 0 0 auto; width: 66px; display: flex; flex-direction: column; align-items: center; gap: 1px; border: none; background: none; padding: 0; color: var(--text); font: inherit; cursor: pointer; transition: transform .2s var(--ease-spring); }
+html[data-look="nuevo"] .ins-c:active { transform: scale(.93); }
+html[data-look="nuevo"] .ins-c.malo { --ic: var(--expense); } html[data-look="nuevo"] .ins-c.bueno { --ic: var(--income); } html[data-look="nuevo"] .ins-c.aviso { --ic: var(--bill); }
+html[data-look="nuevo"] .ins-c[style*="--ic"] { --ic-forzado: 1; }
+html[data-look="nuevo"] .ins-aro { position: relative; width: 60px; height: 60px; display: grid; place-items: center; margin-bottom: 4px; border-radius: 50%; background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--ic) 22%, var(--paper-raised)), var(--paper-raised) 70%); box-shadow: var(--shadow); }
+html[data-look="nuevo"] .ins-aro svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+html[data-look="nuevo"] .ins-aro-f { fill: none; stroke: var(--paper-sunken); stroke-width: 4.5; }
+html[data-look="nuevo"] .ins-aro-v { fill: none; stroke: var(--ic); stroke-width: 4.5; stroke-linecap: round; animation: ins-aro 1s var(--ease-out) both; }
+@keyframes ins-aro { from { stroke-dasharray: 0 170; } }
+html[data-look="nuevo"] .ins-aro b { position: relative; font-family: var(--font-display); font-weight: var(--num-peso); font-size: 14px; color: var(--ic); letter-spacing: -.02em; white-space: nowrap; }
+html[data-look="nuevo"] .ins-aro b.largo { font-size: 11.5px; }
+html[data-look="nuevo"] .ins-l1 { font-size: 11.5px; font-weight: 600; max-width: 66px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; }
+html[data-look="nuevo"] .ins-l2 { font-size: 10.5px; color: var(--text-faint); max-width: 66px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+html[data-look="nuevo"] .ins-pop { --ic: var(--accent); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 4px 4px 2px; }
+html[data-look="nuevo"] .ins-pop.malo { --ic: var(--expense); } html[data-look="nuevo"] .ins-pop.bueno { --ic: var(--income); } html[data-look="nuevo"] .ins-pop.aviso { --ic: var(--bill); }
+html[data-look="nuevo"] .ins-pop-v { font-family: var(--font-display); font-weight: var(--num-peso); font-size: 34px; color: var(--ic); }
+html[data-look="nuevo"] .ins-pop-l { font-size: 12.5px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: .05em; }
+html[data-look="nuevo"] .ins-pop p { margin: 10px 0 2px; font-size: 15px; line-height: 1.45; color: var(--text); }

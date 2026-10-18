@@ -62,7 +62,7 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
   const ma = A.mesActual(), pv = A.previstoMes(ma.y, ma.m), mismoMes = hace(-1).slice(0, 7) === hace(0).slice(0, 7);
   if (mismoMes) {
     ok(pv && pv.total === -100 + 1800 - 55, 'previsto = te queda hoy + nómina − luz (' + (pv && pv.total) + ')');
-    ok(!!e.doc.querySelector('.hero-prev') && /Previsto/.test(e.doc.querySelector('.hero-prev').textContent), 'la línea «Previsto» sale aparte, no en la cifra grande');
+    ok(!!e.doc.querySelector('.hero-prev, .h2-dato.prev') && /Previsto/.test(e.doc.querySelector('.hero-prev, .h2-dato.prev').textContent), 'la línea «Previsto» sale aparte, no en la cifra grande');
     ok(/-100,00|−100,00/.test(e.doc.querySelector('.hero2 .hero-v').textContent), 'la cifra grande es la real (lo apuntado)');
     click(e, 'previstoAbrir'); await sleep(10);
     ok(/Te queda hoy/.test(sh(e)) && /\+ Nómina/.test(sh(e)) && /− Luz/.test(sh(e)) && /no un dato real/.test(sh(e)) && /puede variar/.test(sh(e)), 'al tocarla se ve el desglose y que es una previsión');
