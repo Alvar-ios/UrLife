@@ -18,7 +18,9 @@ const pm = M === 1 ? 12 : M - 1, py = M === 1 ? Y - 1 : Y, ymPrev = py + '-' + p
   ok(!!doc.querySelector('#popupBackdrop .ins-pop') && /Llevas .* gastados/.test(doc.querySelector('#popupBackdrop').textContent), 'al tocar un círculo, la frase entera y «Ver»');
   click(e, 'insVerIr', 'heroResumen'); await sleep(10);
   ok(S.tab === 'movimientos' && !doc.querySelector('#popupBackdrop'), '«Ver» lleva a su sitio y cierra');
-  ok(!doc.querySelector('#compararHost .comparar-fab'), 'en Movimientos (sin versión anterior guardada) no hay botón');
+  ok(/Barras 1\/3/.test(doc.querySelector('#compararHost').textContent), 'en el Resumen de Movimientos, el botón pasa por 3 versiones');
+  H.setMovVista(['lista']); await sleep(10);
+  ok(!doc.querySelector('#compararHost .comparar-fab'), 'en la Lista (sin versiones) no hay botón');
   H.goTab(['inicio']); await sleep(10);
   click(e, 'compararCambiar', 'inicio'); await sleep(10);
   ok(!!doc.querySelector('.ins-card') && !doc.querySelector('.hero2v2') && /Ver nueva/.test(doc.querySelector('#compararHost').textContent), '«Antes» enseña la versión anterior (tarjetas) y el botón dice «Ver nueva»');

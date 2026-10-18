@@ -41,7 +41,7 @@ const tabs=e=>[...e.doc.querySelectorAll('.tabbar [data-tab]')].map(b=>b.getAttr
  ok(/En qué gastas/.test(txt())&&doc.querySelectorAll('.mov-vista button').length===3,'Movimientos abre en el Resumen, con Resumen | Lista | Calendario');
  click(e,'setMovVista','lista');await sleep(15);ok(/Mercadona/.test(txt()),'Lista: los movimientos');
  click(e,'setMovVista','resumen');await sleep(15);ok(/En qué gastas/.test(txt()),'Movimientos → Resumen: en qué gastas y presupuestos');
- const bud=doc.querySelector('.budget-row.tappable');bud.click();await sleep(10);
+ doc.querySelector('.gc-fila .gc-cab').click();await sleep(10);doc.querySelector('.gc-fila.abierta .gc-ver').click();await sleep(10);
  ok(/Volver a Resumen/.test(txt()),'al entrar en una categoría, «Volver a Resumen»');
  click(e,'volver');await sleep(10);ok(A.S.movVista==='resumen'&&/En qué gastas/.test(txt()),'«Volver» te deja en el Resumen donde estabas');
  // Dinero y Juntos

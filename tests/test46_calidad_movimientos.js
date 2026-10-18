@@ -111,10 +111,9 @@ async function buscar(e, q) {
   await sleep(150); A = e.w.__APP__; H = A.H; S = A.S;
   S.traspasos = [{ id: 't1', fecha: hoy, importe: 25, cuentaId: 'c1', cuentaDestinoId: 'c2' }];
   H.goTab(['movimientos']); await sleep(10);
-  H.donutSel([LARGA]); await sleep(5);
-  ok(/Clases de cerám…/.test(e.doc.querySelector('#donutWrap .dn-c1').textContent) && e.doc.querySelector('#donutLegend').textContent.indexOf(LARGA) >= 0, 'nombre largo: el centro del anillo lo corta con «…» y la leyenda lo tiene entero');
-  H.donutSel(['']); await sleep(5);
-  ok(!/Compras/.test(e.doc.querySelector('#donutLegend').textContent) && e.doc.querySelectorAll('#donutWrap circle.dn-s').length === 6, 'una categoría con solo devoluciones no sale en el anillo y el resto sigue (6 trozos)');
+  const filasGc = [...e.doc.querySelectorAll('.gc-fila')].map((x) => x.getAttribute('data-gc'));
+  ok(filasGc.indexOf(LARGA) >= 0 && e.doc.querySelector('.gc-fila[data-gc="' + LARGA + '"] .cat').textContent === LARGA, 'nombre largo: su fila lo tiene entero (la pantalla lo recorta si no cabe)');
+  ok(filasGc.indexOf('Compras') < 0 && e.doc.querySelectorAll('.gc-tira i').length === 6, 'una categoría con solo devoluciones no sale en el anillo y el resto sigue (6 trozos)');
   H.setMovVista(['lista']); await sleep(10);
   for (const q of ['39', '39,6', '39.60', '39,60 €']) { const r = await buscar(e, q); ok(r.join() === 'Mercadona', 'buscar «' + q + '» encuentra solo el de 39,60 € (' + r.join() + ')'); }
   H.movBuscarCerrar([]); await sleep(5);
@@ -162,8 +161,8 @@ async function buscar(e, q) {
   H.closeSheet([]); await sleep(250);
   // B3. Dentro de «Otras», tocar una categoría no hace nada: el anillo vuelve al general sin elegirla
   H.goTab(['movimientos']); await sleep(5);
-  H.donutSel(['Otras']); await sleep(5);
-  const dentro = [...e.doc.querySelectorAll('#donutLegend .dn-f')].find((x) => /Seguros/.test(x.textContent));
+  H.gcAbrir(['__otras']); await sleep(5);
+  const dentro = [...e.doc.querySelectorAll('.gc-fila.abierta .gc-mini')].find((x) => /Seguros/.test(x.textContent));
   if (dentro) dentro.click(); await sleep(10);
   ok(S._donutSel === 'Seguros' || (S.movVista === 'lista' && S.movCat === 'Seguros'), 'Arreglado B3: tocar «Seguros» dentro de «Otras» debe elegirla o abrir su lista (ahora no hace nada)');
   // B4. Buscar con el punto de los miles («1.200») no encuentra el gasto de 1.200 €

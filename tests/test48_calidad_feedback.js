@@ -117,18 +117,16 @@ const igual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
   /* ===== 4. El anillo ===== */
   e = await env({ cuentas: [], movs: [{ id: 'a', tipo: 'Gasto', categoria: 'Super', importe: 50, fecha: '2026-10-05' }, { id: 'b', tipo: 'Gasto', categoria: 'Ocio', importe: 20, fecha: '2026-10-06' }] });
-  A = e.w.__APP__; A.H.goTab(['movimientos']); await sleep(10);
-  const selN = () => [...e.doc.querySelectorAll('#donutWrap .dn-s.sel')].map((x) => x.getAttribute('data-n'));
-  A.H.donutSel(['Super']); await sleep(5);
-  ok(igual(selN(), ['Super']) && e.doc.querySelectorAll('#donutWrap .dn-s.off').length === 1, 'elegir Super: sale hacia fuera y la otra se apaga');
-  A.H.donutSel(['Ocio']); await sleep(5);
-  const ocio = e.doc.querySelector('#donutWrap .dn-s[data-n="Ocio"]'), sup = e.doc.querySelector('#donutWrap .dn-s[data-n="Super"]');
-  ok(igual(selN(), ['Ocio']) && /translate/.test(ocio.style.transform) && !sup.style.transform, 'cambiar a Ocio: Ocio sale y Super vuelve a su sitio');
-  ok(/Ocio/.test(e.doc.querySelector('#donutWrap .dn-c1').textContent) && /29 % del gasto/.test(e.doc.querySelector('#donutWrap').textContent), 'el centro dice Ocio y su 29 %');
-  A.H.donutSel(['']); await sleep(5);
-  ok(!selN().length && !e.doc.querySelector('#donutWrap .dn-s.off') && /gastado/.test(e.doc.querySelector('#donutWrap').textContent), 'tocar el centro quita la selección y vuelve al total');
-  A.H.donutSel(['Ocio']); await sleep(5); A.H.donutSel(['Ocio']); await sleep(10);
-  ok(A.S.tab === 'movimientos' && A.S.movVista === 'lista' && A.S.movCat === 'Ocio', 'tocar dos veces una categoría sin subcategorías lleva a sus movimientos');
+  A = e.w.__APP__; A.H.goTab(['movimientos']); await sleep(10); A.S.verAnterior = { movResumen: 2 }; A.render(); await sleep(10); // versión «Anillo»
+  const selN = () => [...e.doc.querySelectorAll('#gcAnillo .dn-s.sel')].length, txtA = () => e.doc.querySelector('#gcAnillo').textContent;
+  A.H.gcAbrir(['Super']); await sleep(5);
+  ok(selN() === 1 && e.doc.querySelectorAll('#gcAnillo .dn-s.off').length === 1 && /Super/.test(txtA()), 'elegir Super: sale hacia fuera y la otra se apaga');
+  A.H.gcAbrir(['Ocio']); await sleep(5);
+  ok(selN() === 1 && /Ocio/.test(txtA()) && /29 % del gasto/.test(txtA()) && e.doc.querySelector('.gc-fila.abierta').getAttribute('data-gc') === 'Ocio', 'cambiar a Ocio: el centro dice Ocio y su 29 %, y se abre su fila');
+  A.H.gcAbrir(['']); await sleep(5);
+  ok(!selN() && !e.doc.querySelector('#gcAnillo .dn-s.off') && /toca un color/.test(txtA()), 'tocar el centro quita la selección y vuelve al total');
+  A.H.gcAbrir(['Ocio']); await sleep(5); A.H.gcAbrir(['Ocio']); await sleep(10);
+  ok(!selN() && !e.doc.querySelector('.gc-fila.abierta'), 'tocar dos veces una categoría la cierra (a sus movimientos se va con «Ver»)');
 
   /* ===== 5. Arreglado ===== */
   // 5a. A primeros de mes, si el mes anterior «a estas alturas» casi no tenía gasto, sale un porcentaje absurdo (+29900 %)
