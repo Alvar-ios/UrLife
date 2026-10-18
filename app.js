@@ -1778,10 +1778,13 @@ function gcSitios(movs) {
   return top.length ? { top, rN, rV } : null;
 }
 function gcEscala(d) { return Math.max(1, ...d.filas.concat(d.presCero).map((f) => Math.max(f.v, f.pres || 0))); }
+function gcSubHtml(f, d) {
+  const pct = d.total ? Math.round(f.v / d.total * 100) + ' %' : '', over = f.pres > 0 && f.v > f.pres;
+  return (pct ? pct + ' · ' : '') + (f.otras ? 'sin presup.' : f.pres > 0 ? (over ? '<span class="neg">+' + money(f.v - f.pres) + ' de más</span>' : 'de ' + money(f.pres)) : 'sin presup.');
+}
 function gcFilaHtml(f, esc, per, d) {
   const pc = (v) => Math.max(0, Math.min(100, v / esc * 100)).toFixed(2), over = f.pres > 0 && f.v > f.pres, dentro = f.pres > 0 ? Math.min(f.v, f.pres) : f.v;
-  const pct = d.total ? Math.round(f.v / d.total * 100) + ' %' : '';
-  const sub = (pct ? pct + ' · ' : '') + (f.otras ? 'sin presup.' : f.pres > 0 ? (over ? '<span class="neg">+' + money(f.v - f.pres) + ' de más</span>' : 'de ' + money(f.pres)) : 'sin presup.');
+  const sub = gcSubHtml(f, d);
   const abierta = S._gcAbierta === f.n;
   return '<div class="gc-fila budget-row' + (abierta ? ' abierta' : '') + (f.v ? '' : ' cero') + (over ? ' over' : '') + '" data-gc="' + escapeHtml(f.n) + '" style="--cc:' + f.color + '">' +
     '<button type="button" class="gc-cab tappable" aria-expanded="' + abierta + '" ' + act('gcAbrir', f.n) + '><span class="pb-ic" aria-hidden="true">' + (f.otras ? ic('more') : ic(iconoCat('Gasto', f.n))) + '</span>' +
@@ -1809,7 +1812,8 @@ function gcResumenHtml(variante) {
   const esc = gcEscala(d), pasado = d.gastoConPres > d.totPres;
   const resumen = d.totPres ? '<div class="summary-line pres-sum">Llevas <b class="tnum">' + money(d.gastoConPres) + '</b> de ' + money(d.totPres) + ' presupuestados · ' + (pasado ? '<span class="neg">te has pasado ' + money(d.gastoConPres - d.totPres) + '</span>' : 'quedan ' + money(d.totPres - d.gastoConPres)) + '</div>' : '';
   const cab = '<div class="gc-total"><b class="tnum">' + money(d.total) + '</b><span>gastado</span>' + compGastoChip(y, m).replace('kpi-chip', 'kpi-chip gc-chip') + '</div>' + resumen;
-  const filas = d.filas.concat(d.presCero).concat(S.presTodas ? d.vacias : []).map((f) => gcFilaHtml(f, esc, per, d)).join('');
+  const lista = d.filas.concat(d.presCero).concat(S.presTodas ? d.vacias : []), filas = lista.map((f) => gcFilaHtml(f, esc, per, d)).join('');
+  const subW = Math.max(0, ...lista.map((f) => gcSubHtml(f, d).replace(/<[^>]+>/g, '').length)); // todas las barras del mismo largo
   const pie = d.vacias.length ? '<button class="link pres-mas" ' + act('presTodas') + '>' + (S.presTodas ? 'Ocultar las que están a 0' : 'Ver ' + d.vacias.length + ' categorías sin gasto') + '</button>' : '';
   const tit = '<div class="section-title"><span>En qué gastas</span><button class="link" ' + act('openListEditor', 'categoriasGasto') + '>Editar presupuestos</button></div>';
   if (variante === 'mosaico') {
@@ -1818,7 +1822,7 @@ function gcResumenHtml(variante) {
       '<div class="section-title"><span>Presupuestos</span></div><div class="card pres-card">' + presupuestoFilasHtml(catsGasto().concat(Object.keys(gastoPorCategoria(kpisMes(y, m).movs)).filter((n) => !catsGasto().some((c) => c.nombre === n) && gastoPorCategoria(kpisMes(y, m).movs)[n] !== 0).map((n) => ({ nombre: n, presupuesto: null }))), gastoPorCategoria(kpisMes(y, m).movs)) + '</div>' + articulosTopHtml(d.gastos);
   }
   const arriba = variante === 'anillo' ? '<div class="gc-anillo" id="gcAnillo"></div>' : '<div class="gc-tira" aria-hidden="true">' + d.filas.map((f) => '<i style="flex:' + f.v.toFixed(2) + ' 1 0;background:' + f.color + '" data-gc="' + escapeHtml(f.n) + '"></i>').join('') + '</div>';
-  return tit + '<div class="card gc-card gc-v-' + variante + '">' + cab + arriba + '<div class="gc-lista">' + filas + '</div>' + pie + '</div>' + articulosTopHtml(d.gastos);
+  return tit + '<div class="card gc-card gc-v-' + variante + '" style="--gc-sw:' + subW + '">' + cab + arriba + '<div class="gc-lista">' + filas + '</div>' + pie + '</div>' + articulosTopHtml(d.gastos);
 }
 function gcDetHtml(f, per, d) {
   return '<div class="gc-det-in" style="--cc:' + f.color + '"><div class="gc-det-cab"><i></i><b>' + escapeHtml(f.l) + '</b><span class="tnum">' + money(f.v) + ' · ' + Math.round(f.v / d.total * 100) + ' %</span></div>' + gcCajonHtml(f, per) + '</div>';
@@ -1837,8 +1841,8 @@ function gcMosaicoHtml(d) {
   };
   parte(d.filas, 0, 0, W, H);
   return out.map((t, i) => { const grande = t.w >= 30 && t.h >= 26, media = t.w >= 22 && t.h >= 16;
-    return '<button type="button" class="gc-ficha' + (S._gcAbierta ? (S._gcAbierta === t.n ? ' sel' : ' off') : '') + (grande ? ' g' : media ? ' m' : ' p') + '" data-gc="' + escapeHtml(t.n) + '" style="left:' + t.x.toFixed(2) + '%;top:' + (t.y / H * 100).toFixed(2) + '%;width:' + t.w.toFixed(2) + '%;height:' + (t.h / H * 100).toFixed(2) + '%;--cc:' + t.color + ';animation-delay:' + (i * 0.05).toFixed(2) + 's" ' + act('gcAbrir', t.n) + '>' +
-      '<span class="gc-ficha-in">' + (media ? '<span class="gf-n">' + escapeHtml(t.otras ? 'Otras' : t.l) + '</span>' : '') + '<b class="tnum">' + agrupar(Math.round(t.v).toLocaleString('es-ES')) + ' ' + sym() + '</b>' + (grande ? '<span class="gf-p">' + Math.round(t.v / d.total * 100) + ' %</span>' : '') + '</span></button>'; }).join('');
+    return '<button type="button" class="gc-ficha' + (S._gcAbierta ? (S._gcAbierta === t.n ? ' sel' : ' off') : '') + (grande ? ' g' : media ? ' m' : ' p') + '" data-gc="' + escapeHtml(t.n) + '" style="left:' + t.x.toFixed(2) + '%;top:' + (t.y / H * 100).toFixed(2) + '%;width:' + t.w.toFixed(2) + '%;height:' + (t.h / H * 100).toFixed(2) + '%;--cc:' + t.color + ';animation-delay:' + (i * 0.05).toFixed(2) + 's" ' + act('gcAbrir', t.n) + ' aria-label="' + escapeHtml(t.otras ? 'Otras' : t.l) + ', ' + money(t.v) + '">' +
+      '<span class="gc-ficha-in">' + (!media ? '<span class="gf-ic" aria-hidden="true">' + (t.otras ? ic('more') : ic(iconoCat('Gasto', t.n))) + '</span>' : '') + (media ? '<span class="gf-n">' + escapeHtml(t.otras ? 'Otras' : t.l) + '</span>' : '') + '<b class="tnum">' + agrupar(Math.round(t.v).toLocaleString('es-ES')) + ' ' + sym() + '</b>' + (grande ? '<span class="gf-p">' + Math.round(t.v / d.total * 100) + ' %</span>' : '') + '</span></button>'; }).join('');
 }
 // Anillo (versión 3): el trozo elegido sale hacia fuera y, alrededor, un arco fino con sus subcategorías; la lista de abajo se abre en su fila
 function gcAnilloDraw(animar) {
@@ -1849,11 +1853,11 @@ function gcAnilloDraw(animar) {
   d.filas.forEach((f) => {
     const len = f.v / d.total * C, redondo = len > SW + HUECO + 1, unico = d.filas.length === 1;
     const vis = unico ? C : redondo ? len - HUECO - SW : Math.max(0.6, len - HUECO), off = unico ? 0 : ini + (redondo ? (HUECO + SW) / 2 : HUECO / 2);
-    const th = (ini + len / 2) / R, on = sel && sel.n === f.n, dx = on ? (Math.cos(th) * 6).toFixed(2) : 0, dy = on ? (Math.sin(th) * 6).toFixed(2) : 0;
+    const th = (ini + len / 2) / R, on = sel && sel.n === f.n, dx = on ? (Math.cos(th) * 4).toFixed(2) : 0, dy = on ? (Math.sin(th) * 4).toFixed(2) : 0;
     arcos += '<circle class="dn-s' + (sel ? (on ? ' sel' : ' off') : '') + '" data-vis="' + vis.toFixed(2) + '" cx="80" cy="80" r="' + R + '" fill="none" stroke="' + f.color + '" stroke-width="' + SW + '" stroke-linecap="' + (redondo && !unico ? 'round' : 'butt') + '" stroke-dasharray="' + vis.toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" style="transform:translate(' + dx + 'px,' + dy + 'px)" ' + act('gcAbrir', f.n) + '><title>' + escapeHtml(f.l) + '</title></circle>';
     if (on && (f.subs || f.hijos)) { // arco fino por fuera, repartido entre sus partes
-      const partes = f.subs || f.hijos, tot = partes.reduce((a, x) => a + x.v, 0), R2 = 75, C2 = 2 * Math.PI * R2; let a0 = ini / C * C2;
-      partes.forEach((p) => { const l2 = p.v / tot * (len / C * C2); fuera += '<circle class="gc-sub-arco" cx="80" cy="80" r="' + R2 + '" fill="none" stroke="' + (p.color || f.color) + '"' + (p.op ? ' stroke-opacity="' + p.op + '"' : '') + ' stroke-width="5" stroke-dasharray="' + Math.max(0.5, l2 - 1.6).toFixed(2) + ' ' + C2.toFixed(2) + '" stroke-dashoffset="' + (-(a0 + 0.8)).toFixed(2) + '"/>'; a0 += l2; });
+      const partes = f.subs || f.hijos, tot = partes.reduce((a, x) => a + x.v, 0), R2 = 79, C2 = 2 * Math.PI * R2, largo = Math.max(len / C, 0.22) * C2; let a0 = (ini + len / 2) / C * C2 - largo / 2;
+      partes.forEach((p) => { const l2 = p.v / tot * largo; fuera += '<circle class="gc-sub-arco" cx="80" cy="80" r="' + R2 + '" fill="none" stroke="' + (p.color || f.color) + '"' + (p.op ? ' stroke-opacity="' + p.op + '"' : '') + ' stroke-width="4.5" stroke-dasharray="' + Math.max(0.5, l2 - 2.4).toFixed(2) + ' ' + C2.toFixed(2) + '" stroke-dashoffset="' + (-(a0 + 1.2)).toFixed(2) + '"/>'; a0 += l2; });
     }
     ini += len;
   });
@@ -6724,6 +6728,7 @@ const H = {
     $$('.gc-ficha').forEach((el) => { const on = el.getAttribute('data-gc') === nuevo; el.classList.toggle('sel', on); el.classList.toggle('off', !!nuevo && !on); });
     const det = $('#gcDet'); if (det) { const d = gcDatos(S.anioSel, S.mesSel), f = d.filas.find((x) => x.n === nuevo); det.innerHTML = f ? gcDetHtml(f, mesClave(S.anioSel, S.mesSel), d) : '<div class="gc-det-vacio">Toca una ficha para ver en qué se va</div>'; det.classList.remove('entra'); void det.offsetWidth; det.classList.add('entra'); }
     if ($('#gcAnillo')) gcAnilloDraw('txt');
+    const filaAb = nuevo && ($('.gc-fila.abierta') || $('#gcDet')); if (filaAb && filaAb.scrollIntoView) setTimeout(() => filaAb.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' }), 380);
   },
   donutIr: ([cat, sub]) => { irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat, sub: sub === '-' ? SIN_DETALLE : sub }); },
   movCalDia: ([f]) => { S.movCalDia = f; render(); },
