@@ -3726,7 +3726,7 @@ function personaVerHtml(uid, pedir) {
   const msg = debo ? '' : pedirMsg(x);
   return '<div class="handle"></div><div class="jv-pcab">' + caraHtml(uid, x.nombre, 'grande') + '<div><h2>' + escapeHtml(x.nombre) + '</h2><span class="rec-hint" style="margin:0;">' + escapeHtml(dondeTxt(x.deudas)) + '</span></div></div>' +
     '<div class="jv-total ' + (debo ? 'de' : 'te') + '"><span>' + (debo ? 'Le debes' : 'Te debe') + '</span><b class="tnum">' + money(tot) + '</b></div>' +
-    (x.deudas.length > 1 ? '<div class="card jv-desg-card">' + desg + '</div><div class="rec-hint" style="margin:-4px 0 10px;">Toca un grupo para ver de dónde sale.</div>' : '<button type="button" class="link jv-origen" ' + act('origenVer', x.deudas[0].gid, uid) + '>' + ic('alert') + ' ¿De dónde sale?</button>') +
+    (x.deudas.length > 1 ? '<div class="card jv-desg-card">' + desg + '</div><div class="rec-hint" style="margin:-4px 0 10px;">Toca un grupo para ver de dónde sale.</div>' : '<button type="button" class="link jv-origen" ' + act('origenVer', x.deudas[0].gid, uid) + '>' + ic('list') + ' ¿De dónde sale?</button>') +
     (debo ? '<button class="btn accent block" ' + act('saldarTodo', uid) + '>Saldar ' + money(tot) + '</button>'
       : '<div class="jv-msg">' + escapeHtml(msg) + '</div><a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">' + ic('send') + ' Pedir por WhatsApp</a>' +
         '<button class="btn ghost block" style="margin-top:8px;" ' + act('saldarTodo', uid) + '>Ya me ha pagado</button>') +
@@ -3764,7 +3764,7 @@ function grupoHtmlV2(g) {
   else h += mias.map((d) => { const debo = esMio(g.id, d.de), otro = debo ? d.a : d.de;
     return '<div class="jv-tuyo ' + (debo ? 'de' : 'te') + '"><span>' + (debo ? 'Debes <b class="tnum">' + money(d.importe) + '</b> a ' + escapeHtml(nombreDe(g.id, otro)) : escapeHtml(nombreDe(g.id, otro)) + ' te debe <b class="tnum">' + money(d.importe) + '</b>') + '</span>' +
       (debo ? '<button type="button" class="jv-btn saldar" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Saldar</button>' : '<button type="button" class="jv-btn pedir" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Me ha pagado</button>') + '</div>'; }).join('');
-  if (cs.length) h += '<button type="button" class="link jv-origen" ' + act('origenVer', g.id) + '>' + ic('alert') + ' ¿De dónde sale?</button>';
+  if (cs.length) h += '<button type="button" class="link jv-origen" ' + act('origenVer', g.id) + '>' + ic('list') + ' ¿De dónde sale?</button>';
   h += '<div class="segmented jv-tabs">' + [['gastos', 'Gastos'], ['saldos', 'Saldos']].map(([k, l]) => '<button class="' + (tab === k ? 'active' : '') + '" ' + act('grupoTab', k) + '>' + l + '</button>').join('') + '</div>';
   if (tab === 'gastos') {
     const gastos = cs.filter((c) => c.tipo !== 'Liquidación'), tot = gastos.reduce((a, c) => a + num(c.importe), 0), mia = gastos.reduce((a, c) => a + miParte(c), 0);
