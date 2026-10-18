@@ -1296,7 +1296,7 @@ function movAddCtxHtml() {
   return '<button type="button" class="btn sm accent mov-add-ctx" ' + act('movAddCtx', t, cat) + '>' + ic('plus') + ' ' + escapeHtml(txt) + '</button>';
 }
 // Traspasos en la lista: solo en «Todos» (sin categoría), en gris y sin sumar al balance
-// un gasto compartido sale de una cuenta si lo pagaste tú (de momento, siempre desde la principal)
+// un gasto compartido sale de una cuenta si lo pagaste tú: la que elegiste o, si no, la principal
 function compSaleDeCuenta(c, id) { return !!c && c.pagadoPor === miUid() && !!SIGNO_CUENTA[c.tipo] && !!id && cuentaDeComp(c) === id; }
 // Lo que mueve dinero en la cuenta principal desde Juntos y no está en tus movimientos: lo que pagaste entero por otros
 // (tu parte es 0) y lo que pagas o recibes al saldar. Importe 0 en tus números: solo se enseña lo que salió o entró.
@@ -1649,7 +1649,7 @@ async function saveMov() {
     if (esG && !esCatGasto(categoria)) saveConfig({ categoriasGasto: (cfg().categoriasGasto || []).concat([{ nombre: categoria, presupuesto: null }]) });
     if (FORM.articulos) data.articulos = FORM.articulos;
     // cuenta: en uno nuevo, la elegida; al editar, solo si la cambias (los antiguos siguen «sin cuenta» = la principal)
-    const ponCuenta = hayVariasCuentas() && FORM.tipo !== 'Ahorro' && cuentaPorId(FORM.cuenta) && (!ex || FORM.cuentaTocada);
+    const ponCuenta = hayVariasCuentas() && FORM.tipo !== 'Ahorro' && cuentaPorId(FORM.cuenta) && (!ex || FORM.cuentaTocada || FORM.compQuitado);
     if (ponCuenta) data.cuentaId = FORM.cuenta;
     if (FORM.compQuitado && 'compartidoId' in data) data.compartidoId = null; // ya no está compartido: cuenta entero como tuyo
     if (FORM.tipo === 'Inversión') data.tipoActivo = tipoActivo; else if ('tipoActivo' in data) data.tipoActivo = null;
@@ -2448,6 +2448,7 @@ async function saveCompartido(d) {
       const data = Object.assign(mio ? stripId(mio) : { creadoEn: Date.now() }, { compartidoId: c.id });
       if (cp.pagador === yo || !mio) Object.assign(data, { tipo: FORM.tipo, importe: datos.importe, categoria: datos.categoria, fecha: d.fecha, descripcion: d.descripcion, metodoPago: d.metodoPago }, FORM.articulos ? { articulos: FORM.articulos } : {});
       ['tipoActivo', 'activoId', 'participaciones', 'metaId'].forEach((k) => { if (k in data) data[k] = null; });
+      if (cp.pagador === yo && hayVariasCuentas() && cuentaPorId(FORM.cuenta)) data.cuentaId = FORM.cuenta; // así, si un día deja de ser compartido, sigue en su cuenta
       ok = await write(() => S.db.collection('movimientos').doc(mio ? mio.id : undefined).set(data));
     }
     const reglaNueva = FORM.recordar ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
@@ -2461,14 +2462,14 @@ async function quitarCompartido() {
   if (!c) { FORM.compId = null; return true; }
   if (c.pagadoPor !== miUid()) { toast('Solo quien lo pagó puede dejar de compartirlo. Si no se hizo, elimínalo.'); return false; }
   try { await S.db.compartidos.borrar(c.id); } catch (e) { console.error(e); toast(errGrupo(e)); return false; }
-  compQuitarLocal(c.id); FORM.compId = null; FORM.compQuitado = true;
+  compQuitarLocal(c.id); olvidarCuentaComp(c.id); FORM.compId = null; FORM.compQuitado = true;
   return true;
 }
 async function doDeleteComp() {
   const id = FORM.compId, mio = FORM.id;
   if (!puedeEditarComp(compPorId(id))) return toast(AVISO_PERMISO);
   try { await S.db.compartidos.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
-  compQuitarLocal(id);
+  compQuitarLocal(id); olvidarCuentaComp(id);
   if (mio) await write(() => S.db.collection('movimientos').doc(mio).delete());
   toast('Gasto compartido eliminado'); render(); terminarForm();
 }
@@ -4078,10 +4079,11 @@ function cuentaPrincipal() { const cs = cuentasCfg(); return cs.find((c) => c.pr
 // Juntos (fase 2 de cuentas): de qué cuenta TUYA salió (o a cuál entró) un gasto compartido o un pago al saldar.
 // Se guarda en tu configuración (nadie más lo ve); si no lo elegiste, la principal.
 function cuentaDeComp(c) { const id = c ? (cfg().cuentaJuntos || {})[c.id] : null; if (id && cuentaPorId(id)) return id; const pc = cuentaPrincipal(); return pc ? pc.id : null; }
+function olvidarCuentaComp(id) { const m = cfg().cuentaJuntos || {}; if (id && m[id]) { const n = Object.assign({}, m); delete n[id]; saveConfig({ cuentaJuntos: n }); } }
 function guardarCuentaComp(compId, cuentaId, previoId) {
   if (!compId || !hayVariasCuentas()) return;
   const m = Object.assign({}, cfg().cuentaJuntos || {}); if (previoId && previoId !== compId) delete m[previoId];
-  const pc = cuentaPrincipal(); if (!cuentaId || (pc && pc.id === cuentaId)) delete m[compId]; else m[compId] = cuentaId;
+  if (!cuentaId || !cuentaPorId(cuentaId)) delete m[compId]; else m[compId] = cuentaId;
   saveConfig({ cuentaJuntos: m });
 }
 function hayVariasCuentas() { return cuentasCfg().length >= 2; }
@@ -4184,7 +4186,10 @@ function renderCuentasDinero() {
     '<div style="margin-top:12px;"><button class="btn ghost block" ' + act('crearIr', 'traspaso') + '>' + ic('swap') + ' Traspaso entre cuentas</button></div>';
 }
 function movsDeCuenta(id) {
-  return S.movimientos.filter((m) => tocaCuenta(m) && cuentaIdDe(m) === id).concat((S.traspasos || []).filter((t) => t.cuentaId === id || t.cuentaDestinoId === id)).sort(cmpMov);
+  const vivos = new Set((S.compartidos || []).map((x) => x.id));
+  const propios = S.movimientos.filter((m) => tocaCuenta(m) && cuentaIdDe(m) === id && !(m.compartidoId && vivos.has(m.compartidoId)));
+  const juntos = movsEfectivos().filter((m) => m.comp && compSaleDeCuenta(m.comp, id)).concat(flujosJuntosFilas(id));
+  return propios.concat(juntos).concat((S.traspasos || []).filter((t) => t.cuentaId === id || t.cuentaDestinoId === id)).sort(cmpMov);
 }
 // sin cuenta: los que todavía no tienen (o cuya cuenta ya no existe); apartar no cuenta, y lo compartido va aparte
 function movsSinCuenta() {
@@ -4355,7 +4360,7 @@ function cuentaEdHtml(i) {
     '<div class="field"><label>Color</label><span class="cuenta-colores">' + COLORES_CUENTA.map((col) => '<button type="button" class="cuenta-color' + (colorCuenta(c) === col ? ' on' : '') + '" style="background:' + col + '" aria-label="Color" ' + act('cuentaColor', i, col) + '></button>').join('') + '</span></div>' +
     '<div class="card cuenta-ajustes">' +
       '<div class="cuenta-ajuste"><div><b>Sumar en «En tus cuentas»</b><div class="rec-hint" style="margin:2px 0 0;">Para las cuentas del día a día. El ahorro y el bróker, mejor fuera.</div></div><button type="button" class="switch' + (cuentaEnTengo(c) ? ' on' : '') + '" role="switch" aria-checked="' + cuentaEnTengo(c) + '" aria-label="Sumar en En tus cuentas" ' + act('cuentaTengo', i) + '></button></div>' +
-      (varias && c.nombre ? '<div class="cuenta-ajuste"><div><b>Cuenta principal</b><div class="rec-hint" style="margin:2px 0 0;">' + (esP ? 'Es tu cuenta principal: aquí van los movimientos sin cuenta y los compartidos.' : 'Aquí irían los movimientos sin cuenta y los compartidos.') + '</div></div>' +
+      (varias && c.nombre ? '<div class="cuenta-ajuste"><div><b>Cuenta principal</b><div class="rec-hint" style="margin:2px 0 0;">' + (esP ? 'Es tu cuenta principal: aquí van los movimientos sin cuenta y los compartidos en los que no elegiste otra.' : 'Aquí irían los movimientos sin cuenta y los compartidos en los que no elijas otra.') + '</div></div>' +
         (esP ? '<span class="chip active">Principal</span>' : '<button type="button" class="chip" ' + act('cuentaPrincipal', i) + '>Hacer principal</button>') + '</div>' : '') +
     '</div></div>' +
     '<button class="btn danger block" style="margin-top:14px;" aria-label="Quitar" ' + act('cuentaQuitar', i) + '>' + ic('trash') + ' Quitar esta cuenta</button>' +
@@ -6814,7 +6819,7 @@ const H = {
     const c = compPorId(id);
     if (c && !puedeEditarComp(c)) return toast(AVISO_PERMISO);
     try { await S.db.compartidos.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
-    compQuitarLocal(id); toast('Pago eliminado'); render();
+    compQuitarLocal(id); olvidarCuentaComp(id); toast('Pago eliminado'); render();
     if (c && grupoDe(c.grupoId)) abrirGrupo(c.grupoId); else closeSheet();
   }),
   personaNueva: () => { FORM = { kind: 'personaNueva' }; updateSheet(personaNuevaHtml()); },
@@ -7073,7 +7078,8 @@ const H = {
   cuentaAnadir: () => { const cs = (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]); saveConfig({ cuentas: cs }); H.cuentaEditar([cs.length - 1]); setTimeout(() => { const el = $('#fCuentaNombre'); if (el) el.focus(); }, 60); },
   cuentaQuitar: ([i], el) => {
     const cs = (cfg().cuentas || []).slice(), c = cs[Number(i)] || {};
-    const n = c.id ? S.movimientos.filter((m) => m.cuentaId === c.id).length + (S.traspasos || []).filter((t) => t.cuentaId === c.id || t.cuentaDestinoId === c.id).length : 0;
+    const n = c.id ? S.movimientos.filter((m) => m.cuentaId === c.id).length + (S.traspasos || []).filter((t) => t.cuentaId === c.id || t.cuentaDestinoId === c.id).length +
+      Object.values(cfg().cuentaJuntos || {}).filter((x) => x === c.id).length + (cfg().cobros || []).concat(cfg().facturas || []).filter((x) => x && x.cuentaId === c.id).length : 0;
     // si tiene movimientos, pide un segundo toque: esos movimientos pasan a contar como de la principal
     if (n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Tiene ' + n + (n === 1 ? ' movimiento' : ' movimientos') + '. Los movimientos pasarán a la cuenta principal y los traspasos dirán «Cuenta quitada». Toca «Quitar» otra vez para quitarla.'); }
     const fijas = cs.map((x) => (x && x.id && !x.color ? Object.assign({}, x, { color: colorCuenta(x) }) : x)); // que las demás no cambien de color

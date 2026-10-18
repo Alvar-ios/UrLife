@@ -71,7 +71,7 @@ const DOS = () => [{ id: 'c1', nombre: 'Banco', saldo: 1000, fecha: hace(40), pr
   // la copia personal del gasto (tu cargo del banco)
   const copia = Object.values(DB.movs).find((m) => m.compartidoId === k1);
   ok(!!copia, 'se crea tu copia personal enlazada');
-  pend(copia && copia.cuentaId === 'c2', 'la copia personal debería llevar cuentaId de Efectivo (lleva ' + (copia && copia.cuentaId) + ')');
+  ok(copia && copia.cuentaId === 'c2', 'la copia personal debería llevar cuentaId de Efectivo (lleva ' + (copia && copia.cuentaId) + ')');
 
   /* 2. Filtro por cuenta en Movimientos y ficha de cada cuenta */
   H.irMovsCuenta(['c2']); await sleep(20);
@@ -80,9 +80,9 @@ const DOS = () => [{ id: 'c1', nombre: 'Banco', saldo: 1000, fecha: hace(40), pr
   H.irMovsCuenta(['c1']); await sleep(20);
   ok(!/pagaste tú/.test(listaTxt()), 'filtrado por Banco: no sale');
   H.cuentaVer(['c2']); await sleep(20);
-  pend(/Supermercado/.test(sh()), 'ficha de Efectivo: «Últimos movimientos» debería enseñar el compartido');
+  ok(/Supermercado/.test(sh()), 'ficha de Efectivo: «Últimos movimientos» debería enseñar el compartido');
   await cerrar(); H.cuentaVer(['c1']); await sleep(20);
-  pend(!/Supermercado/.test(sh()), 'ficha de Banco: no debería enseñar el compartido pagado en efectivo');
+  ok(!/Supermercado/.test(sh()), 'ficha de Banco: no debería enseñar el compartido pagado en efectivo');
   ok(!/Ojo: de momento/.test(sh()), 'ya no sale el aviso «Ojo: lo que pagas en Juntos cuenta siempre en tu principal»');
   await cerrar();
 
@@ -90,7 +90,7 @@ const DOS = () => [{ id: 'c1', nombre: 'Banco', saldo: 1000, fecha: hace(40), pr
   H.openMovForm(['c:' + k1]); await sleep(20);
   ok(/Efectivo/.test((doc.querySelector('#cuentaChips .chip.active') || {}).textContent || ''), 'al editar, sale marcado Efectivo');
   click(e, 'pickCuenta', 'c1'); await sleep(5); H.saveMov([]); await sleep(60);
-  ok(!(k1 in mapa()) && saldo('c1') === 970 && saldo('c2') === 100, 'cambiar a la principal: se quita de la lista y baja el Banco');
+  ok(mapa()[k1] === 'c1' && saldo('c1') === 970 && saldo('c2') === 100, 'cambiar a la principal: se guarda Banco y baja el Banco (así no se mueve si cambias de principal)');
   H.openMovForm(['c:' + k1]); await sleep(20); click(e, 'pickCuenta', 'c2'); await sleep(5); H.saveMov([]); await sleep(60);
   ok(mapa()[k1] === 'c2', 'y se puede volver a Efectivo');
 
@@ -164,7 +164,7 @@ const DOS = () => [{ id: 'c1', nombre: 'Banco', saldo: 1000, fecha: hace(40), pr
   H.openMovForm(['c:' + kt]); await sleep(20);
   H.deleteComp([], { getAttribute: () => '1' }); await sleep(60);
   ok(!DB.comp.some((c) => c.id === kt) && !Object.values(DB.movs).some((m) => m.compartidoId === kt), 'eliminar el ticket compartido borra el compartido y tu copia');
-  pend(!(kt in mapa()), 'al eliminarlo también debería borrarse su entrada en cuentaJuntos (se queda guardada sin uso)');
+  ok(!(kt in mapa()), 'al eliminarlo también debería borrarse su entrada en cuentaJuntos (se queda guardada sin uso)');
   ok(saldo('c2') === 60, 'quitado el ticket de prueba, Efectivo vuelve a 60');
 
   /* 9. «No compartir» un gasto que salió de Efectivo */
@@ -176,7 +176,7 @@ const DOS = () => [{ id: 'c1', nombre: 'Banco', saldo: 1000, fecha: hace(40), pr
   H.saveMov([]); await sleep(80);
   const suelto = Object.values(DB.movs).find((m) => m.compartidoId == null && m.categoria === 'Supermercado' && m.importe === 30);
   ok(!!suelto, 'queda como gasto tuyo de 30');
-  pend(suelto && suelto.cuentaId === 'c2' && saldo('c2') === antes, 'y debería seguir en Efectivo (va a ' + (suelto && suelto.cuentaId) + '; Efectivo ' + antes + ' → ' + saldo('c2') + ')');
+  ok(suelto && suelto.cuentaId === 'c2' && saldo('c2') === antes, 'y debería seguir en Efectivo (va a ' + (suelto && suelto.cuentaId) + '; Efectivo ' + antes + ' → ' + saldo('c2') + ')');
 
   /* 10. Borrar una cuenta que estaba elegida */
   H.saldarAbrir(['g1', YO, SC, '1']); await sleep(10); click(e, 'saldarCuenta', 'c2'); await H.saldarGuardar([]); await sleep(60); await cerrar();
@@ -187,7 +187,7 @@ const DOS = () => [{ id: 'c1', nombre: 'Banco', saldo: 1000, fecha: hace(40), pr
   H.cuentaQuitar([String(iEf)], { getAttribute: () => '0', setAttribute: () => {}, isConnected: true });
   await sleep(20);
   const quitada = !A.cfg().cuentas.some((c) => c.id === 'c2');
-  pend(!quitada, 'quitar Efectivo debería avisar antes (tiene pagos de Juntos), pero se quita al primer toque');
+  ok(!quitada, 'quitar Efectivo debería avisar antes (tiene pagos de Juntos), pero se quita al primer toque');
   if (!quitada) H.cuentaQuitar([String(iEf)]); await sleep(20);
   ok(!A.cfg().cuentas.some((c) => c.id === 'c2'), 'Efectivo quitada');
   // Banco: 1.000 + 15 que me pagaron − 10 y − 1 pagados al saldar − 30 del gasto que dejé de compartir
@@ -213,7 +213,7 @@ const DOS = () => [{ id: 'c1', nombre: 'Banco', saldo: 1000, fecha: hace(40), pr
     ok(s2('c1') === 960 && s2('c2') === 100, 'compartido de 40 pagado con Banco (principal): Banco 960');
     A2.H.cuentaPrincipalSi(['1']); await sleep(30);
     ok(A2.cfg().cuentas[1].principal === true, 'Efectivo pasa a ser la principal');
-    pend(s2('c1') === 960 && s2('c2') === 100, 'el compartido que elegiste pagar con Banco debería seguir en Banco (Banco ' + s2('c1') + ', Efectivo ' + s2('c2') + ')');
+    ok(s2('c1') === 960 && s2('c2') === 100, 'el compartido que elegiste pagar con Banco debería seguir en Banco (Banco ' + s2('c1') + ', Efectivo ' + s2('c2') + ')');
     A2.H.closeSheet([]); await sleep(260);
     A2.H.cuentaPrincipalSi(['0']); await sleep(30);
     ok(s2('c1') === 960, 'al volver a poner Banco como principal, todo vuelve a cuadrar');
