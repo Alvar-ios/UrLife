@@ -12,7 +12,7 @@ const hoy=new Date().toISOString().slice(0,10);
   if(b.accion==='historico'){ if(fallaHist) return {error:'x'}; const s={};b.ids.forEach(id=>s[id]=H[id]);return {desde:b.desde,series:s,limite:false,incompletos:[]}}
   return {error:'x'}};
  const pre=w=>{w.SUPABASE_CONFIG={url:'https://x.supabase.co',anonKey:'k'};w.fetch=async(url,o)=>{const b=JSON.parse(o.body);const j=await api(b);return {ok:true,status:200,json:async()=>j}};};
- const e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},movs,pre});
+ const e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},movs,pre});
  e.w.Auth.getSession=async()=>({access_token:'t'});
  await sleep(80);
  const doc=e.doc,S=e.w.__APP__.S;

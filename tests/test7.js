@@ -11,7 +11,7 @@ const hoy=new Date().toISOString().slice(0,10);
   if(b.accion==='valorar'){const v={};(b.ids||[]).forEach(id=>{v[id]=id==='A1'?{activo:{id},fecha_precio:hoy,cierre:130,moneda:'EUR',cierre_eur:130}:{activo:{id},fecha_precio:hoy,cierre:150,moneda:'USD',cierre_eur:120}});return {valores:v}}
   return {error:'x'}};
  const pre=w=>{w.SUPABASE_CONFIG={url:'https://x.supabase.co',anonKey:'k'};w.fetch=async(url,o)=>{const b=JSON.parse(o.body);const j=await api(b);return {ok:true,status:200,json:async()=>j}};};
- const e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},movs:[
+ const e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},movs:[
    {id:'old',tipo:'Inversión',categoria:'Legacy',tipoActivo:'ETF',importe:300,fecha:'2026-01-10'}],pre});
  e.w.Auth.getSession=async()=>({access_token:'t'});
  const orig=e.w.Data,listeners=[];let n=0;const notify=()=>listeners.forEach(f=>f());

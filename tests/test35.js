@@ -14,7 +14,7 @@ const movs=[
 ];
 const t1={id:'t1',tipo:'Traspaso',categoria:'Traspaso',importe:200,fecha:d3,cuentaId:'c1',cuentaDestinoId:'c2'};
 async function env(cs,m){
-  const e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'Supermercado',presupuesto:30},{nombre:'Ocio',presupuesto:10}],ahorro:[],cuentas:JSON.parse(JSON.stringify(cs))},meta:{onboarded:true}},movs:JSON.parse(JSON.stringify(m)),url:'https://x.test/',session:{user:{email:'t@t.com',id:'yo'}}});
+  const e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'Supermercado',presupuesto:30},{nombre:'Ocio',presupuesto:10}],ahorro:[],cuentas:JSON.parse(JSON.stringify(cs))},meta:{onboarded:true}},movs:JSON.parse(JSON.stringify(m)),url:'https://x.test/',session:{user:{email:'t@t.com',id:'yo'}}});
   await sleep(150);return e;
 }
 const txt=e=>e.doc.querySelector('#content').textContent,sh=e=>e.doc.querySelector('#sheetHost').textContent;

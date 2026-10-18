@@ -13,6 +13,7 @@ function makeEnv(seed){ // seed: {config:{app,meta}, movs:[]}
   const dom=new JSDOM('<div id="app"></div>',{runScripts:'outside-only',pretendToBeVisual:true});
   const w=dom.window;w.Auth=Auth;w.Data=Data;w.scrollTo=()=>{};
   w.eval(fs.readFileSync(require('path').join(__dirname,'..','app.js'),'utf8'));
+  if(seed.version)w.__APP__.S.verAnterior=Object.assign({},seed.version);
   return {w,store,doc:w.document};
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -29,7 +30,7 @@ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
   ahorro:[{nombre:'Viaje',objetivo:1000,fechaObjetivo:ym+'-20'}],deudas:[{nombre:'Coche',objetivo:3000,fechaObjetivo:ym+'-21'}]};
  const movs=[{id:'m1',tipo:'Factura',categoria:'alquiler ',importe:600,fecha:ym+'-05'},{id:'m2',tipo:'Gasto',categoria:'X',importe:12,fecha:ym+'-10'}];
  const tareas=[{id:'t1',nombre:'Llamar',estado:'Pendiente',fechaLimite:ym+'-12',prioridad:'Alta'},{id:'t2',nombre:'Hecha',estado:'Completado',fechaLimite:ym+'-12'}];
- const e=makeEnv({cfg:{app:cfgApp,meta:{onboarded:true}},movs});
+ const e=makeEnv({version:{dinero:3,inicio:1},cfg:{app:cfgApp,meta:{onboarded:true}},movs});
  e.store.tareas.t1=tareas[0];e.store.tareas.t2=tareas[1];
  await sleep(60);
  const S=e.w.__APP__.S;
@@ -83,7 +84,7 @@ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
  e.w.__APP__.H.goTab(['tareas']);e.w.__APP__.H.goTab(['mas']);e.w.__APP__.H.goTab(['movimientos']);e.w.__APP__.H.goTab(['inicio']);
  ok(true,'tabs switch without errors');
  // empty config
- const e2=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}}});await sleep(60);
+ const e2=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}}});await sleep(60);
  e2.w.__APP__.H.goTab(['calendario']);ok(/Sin eventos/.test(e2.doc.querySelector('#content').textContent),'empty calendar ok');
  console.log(fails?'FAILED '+fails:'ALL PASS');
 })().catch(x=>{console.error(x);process.exit(1)});

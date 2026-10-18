@@ -12,7 +12,7 @@ const movs=[
 (async()=>{
  const api=async b=>{ if(b.accion==='valorar'){const v={};b.ids.forEach(id=>v[id]={activo:{id},cierre_eur:P[id],cierre:P[id],moneda:'EUR',fecha_precio:'2026-10-09'});return {valores:v}} if(b.accion==='historico')return {series:{}};return {}};
  const pre=w=>{w.SUPABASE_CONFIG={url:'https://x.supabase.co',anonKey:'k'};w.fetch=async(u,o)=>{const j=await api(JSON.parse(o.body));return {ok:true,status:200,json:async()=>j}}};
- const e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}],ahorro:[{nombre:'Inversions',objetivo:60000,yaAhorrado:3000,fechaObjetivo:'2030-08-01'},{nombre:'Colchón',objetivo:1000}],deudas:[{nombre:'Coche',objetivo:1000}]},meta:{onboarded:true}},movs,pre});
+ const e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'X'}],ahorro:[{nombre:'Inversions',objetivo:60000,yaAhorrado:3000,fechaObjetivo:'2030-08-01'},{nombre:'Colchón',objetivo:1000}],deudas:[{nombre:'Coche',objetivo:1000}]},meta:{onboarded:true}},movs,pre});
  e.w.Auth.getSession=async()=>({access_token:'t'});
  const orig=e.w.Data,L=[];const notify=()=>L.forEach(f=>f());
  e.w.Data={doc:orig.doc,collection:n=>n!=='movimientos'?orig.collection(n):({onSnapshot:cb=>{const f=()=>cb({docs:Object.entries(e.store.movimientos).map(([id,v])=>({id,data:()=>v}))});L.push(f);setTimeout(f,0);return()=>{}},

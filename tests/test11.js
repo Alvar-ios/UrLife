@@ -2,7 +2,7 @@ const {makeEnv,sleep,click}=require('./harness.js');
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
 (async()=>{
  // alguien que ya vio el Parche 2: le sale el Parche 3
- let e=makeEnv({novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-09'},meta:{onboarded:true}}});
+ let e=makeEnv({version:{dinero:3},novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-09'},meta:{onboarded:true}}});
  e.w.SUPABASE_CONFIG={url:'https://x.supabase.co',anonKey:'k'};e.w.Auth.getSession=async()=>({access_token:'t'});
  await sleep(700);
  let sh=e.doc.querySelector('#sheetHost').textContent;
@@ -36,19 +36,19 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
  e.w.__APP__.H.setAnalisisSub(['inversiones']);await sleep(20);
  ok(!/badge-dot/.test(btn('Inversiones').innerHTML),'al entrar desaparece');
  // quien ya la vio no la vuelve a ver
- const e2=makeEnv({novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-17'},meta:{onboarded:true}}});
+ const e2=makeEnv({version:{dinero:3},novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-17'},meta:{onboarded:true}}});
  await sleep(700);
  ok(!e2.doc.querySelector('#sheetHost .nov-hero'),'si ya la viste, no sale otra vez');
 
  // la configuración llega antes que los movimientos (lo normal en el móvil): la ventana tiene que salir igual
- const e3=makeEnv({novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-09'},meta:{onboarded:true}}});
+ const e3=makeEnv({version:{dinero:3},novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-09'},meta:{onboarded:true}}});
  const o3=e3.w.Data;e3.w.Data=Object.assign({},o3,{collection:n=>n!=='movimientos'?o3.collection(n):({onSnapshot:cb=>{setTimeout(()=>cb({docs:[]}),900);return()=>{}}})});
  await sleep(500);
  ok(!e3.doc.querySelector('#sheetHost .nov-hero')&&e3.store.cfg.app.novedadesVistas==='2026-10-09','mientras cargan los movimientos aún no sale ni se marca como vista');
  await sleep(1100);
  ok(!!e3.doc.querySelector('#sheetHost .nov-hero')&&e3.store.cfg.app.novedadesVistas==='2026-10-17','cuando termina de cargar, sale y se marca como vista');
  // con otra ventana abierta espera a que se cierre
- const e4=makeEnv({novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-09'},meta:{onboarded:true}}});
+ const e4=makeEnv({version:{dinero:3},novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-09'},meta:{onboarded:true}}});
  await sleep(150);e4.w.__APP__.H.openMovForm([]);await sleep(700);
  ok(!e4.doc.querySelector('#sheetHost .nov-hero')&&e4.store.cfg.app.novedadesVistas==='2026-10-09','con un formulario abierto no la tapa ni la da por vista');
  e4.w.__APP__.H.closeSheet([]);await sleep(300);e4.w.__APP__.render();await sleep(600);

@@ -55,7 +55,7 @@ function server(uid){
       err('?'+fn)}};
 }
 function env(uid,email,url){
-  const e=makeEnv({url:url||'https://urlife-zeta.vercel.app/',cfg:{app:Object.assign({categoriasGasto:[{nombre:'Super'},{nombre:'Restaurantes'}],facturas:[{nombre:'Luz'}]},uid==='uA'?{ahorro:[{id:'mJ',nombre:'Viaje a Japón',objetivo:1000}],deudas:[{nombre:'Coche',objetivo:5000}]}:{}),meta:{onboarded:true}},session:{user:{email,id:uid}},pre:w=>{
+  const e=makeEnv({version:{dinero:3},url:url||'https://urlife-zeta.vercel.app/',cfg:{app:Object.assign({categoriasGasto:[{nombre:'Super'},{nombre:'Restaurantes'}],facturas:[{nombre:'Luz'}]},uid==='uA'?{ahorro:[{id:'mJ',nombre:'Viaje a Japón',objetivo:1000}],deudas:[{nombre:'Coche',objetivo:5000}]}:{}),meta:{onboarded:true}},session:{user:{email,id:uid}},pre:w=>{
     w.history.replaceState=()=>{};
     const ls={};Object.defineProperty(w,'localStorage',{value:{getItem:k=>ls[k]==null?null:ls[k],setItem:(k,v)=>{ls[k]=String(v)},removeItem:k=>{delete ls[k]}},configurable:true});
     Object.defineProperty(w.navigator,'clipboard',{value:{writeText:async t=>{w.__copiado=t}},configurable:true});

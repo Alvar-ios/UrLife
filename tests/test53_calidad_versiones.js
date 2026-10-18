@@ -57,7 +57,8 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     H.setInicioVista(['calendario']); await sleep(10);
     ok(boton(doc) === '', 'Agenda (Calendario): no sale');
     H.setInicioVista(['hoy']); await sleep(10);
-    for (const t of ['juntos', 'dinero', 'tu']) { H.goTab([t]); await sleep(10); ok(boton(doc) === '', 'pestaña ' + t + ': no sale'); }
+    for (const t of ['juntos', 'tu']) { H.goTab([t]); await sleep(10); ok(boton(doc) === '', 'pestaña ' + t + ': no sale'); }
+    H.goTab(['dinero']); await sleep(10); ok(/Camino/.test(boton(doc)), 'pestaña dinero: sale con «Camino» (las formas de ver las metas)');
     H.goTab(['movimientos']); await sleep(10);
     ok(/^Barras 1\/3$/.test(boton(doc)), 'Movimientos > Resumen del mes: «Barras 1/3» por defecto');
     H.setMovVista(['lista']); await sleep(10); ok(boton(doc) === '', 'Movimientos > Lista: no sale');

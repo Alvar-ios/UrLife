@@ -3,7 +3,7 @@ const {makeEnv,sleep,click}=require('./harness.js');
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
 const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'+pad(d.getMonth()+1);
 (async()=>{
- const e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'Supermercado',presupuesto:300},{nombre:'Ocio'}],ingresos:['Nómina'],ahorro:[{id:'m1',nombre:'Colchón',objetivo:1000}],metodosPago:['Tarjeta']},meta:{onboarded:true}},
+ const e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'Supermercado',presupuesto:300},{nombre:'Ocio'}],ingresos:['Nómina'],ahorro:[{id:'m1',nombre:'Colchón',objetivo:1000}],metodosPago:['Tarjeta']},meta:{onboarded:true}},
    movs:[{id:'a',tipo:'Ingreso',categoria:'Nómina',importe:2000,fecha:ym+'-01'},{id:'b',tipo:'Gasto',categoria:'Supermercado',descripcion:'Mercadona',importe:42.5,fecha:ym+'-01'},{id:'c',tipo:'Gasto',categoria:'Ocio',descripcion:'Cine',importe:18,fecha:ym+'-01'}]});
  e.store.tareas.t1={nombre:'Renovar seguro',estado:'Pendiente',fechaLimite:ym+'-'+pad(Math.min(28,d.getDate()+1)),prioridad:'Alta'};
  await sleep(80);
