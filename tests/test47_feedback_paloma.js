@@ -41,10 +41,10 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
   H.goTab(['inicio']); await sleep(10);
   ok(!!e.doc.querySelector('.hero-bar') && /Gastos/.test(e.doc.querySelector('.hero-ley').textContent) && /Te queda/.test(e.doc.querySelector('.hero-ley').textContent), 'Inicio: la barra con gastos y lo que queda, con su leyenda');
   ok(!!e.doc.querySelector('[data-click="inicioMes|-1"]') && e.doc.querySelector('.hero2 [aria-label="Mes siguiente"]').disabled, 'Inicio: flechas para cambiar de mes (no hacia el futuro)');
-  ok(/Así vas/.test(txt(e)) && e.doc.querySelectorAll('.ins-card').length >= 2, 'Inicio: «Así vas» con datos del mes (' + [...e.doc.querySelectorAll('.ins-card .ins-t')].map((x) => x.textContent).join(' | ') + ')');
-  ok(/Te deben 11,25 €/.test(txt(e)), '«Así vas» dice lo que te deben en Juntos');
+  ok(/Así vas/.test(txt(e)) && e.doc.querySelectorAll('.ins-c').length >= 2, 'Inicio: «Así vas» con datos del mes (' + [...e.doc.querySelectorAll('.ins-c')].map((x) => x.getAttribute('aria-label')).join(' | ') + ')');
+  ok([...e.doc.querySelectorAll('.ins-c')].some((b) => /te deben 11,25 €/.test(b.getAttribute('aria-label'))), '«Así vas» dice lo que te deben en Juntos');
   click(e, 'inicioMes', '-1'); await sleep(10);
-  ok(new RegExp(MESES[pm - 1]).test(e.doc.querySelector('.mes-pill').textContent) && /Te quedó en|gastaste más de lo que entró/.test(txt(e)) && !e.doc.querySelector('.hero-prev'), 'mes anterior: «Te quedó en …» y sin previsión');
+  ok(new RegExp(MESES[pm - 1]).test(e.doc.querySelector('.mes-pill').textContent) && /Te quedó en|gastaste más de lo que entró/.test(txt(e)) && !e.doc.querySelector('.hero-prev, .h2-dato.prev'), 'mes anterior: «Te quedó en …» y sin previsión');
   click(e, 'heroResumen'); await sleep(10);
   ok(S.tab === 'movimientos' && S.movPeriodo === 'm:' + ymPrev, 'tocar la cifra abre el Resumen de ese mes');
   H.goTab(['inicio']); await sleep(10);

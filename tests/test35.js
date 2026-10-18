@@ -35,8 +35,8 @@ const txt=e=>e.doc.querySelector('#content').textContent,sh=e=>e.doc.querySelect
  A.S.compartidos=[];A.S.movimientos=A.S.movimientos.filter(m=>m.id!=='p1');
 
  // 2. Inicio: línea «En tus cuentas»
- const linea=doc.querySelector('.hero-cuentas');
- ok(linea&&/En tus cuentas/.test(linea.textContent)&&/1\.280,00/.test(linea.textContent),'Inicio: «En tus cuentas: 1.280,00 €» debajo de la cifra grande');
+ const linea=doc.querySelector('.hero-cuentas, .h2-dato');
+ ok(linea&&/En tus cuentas/.test(linea.textContent)&&/1\.280/.test(linea.textContent),'Inicio: «En tus cuentas: 1.280 €» debajo de la cifra grande');
  click(e,'cuentasHoja');await sleep(10);
  ok(/Banco A/.test(sh(e))&&/Banco B/.test(sh(e))&&/Hucha/.test(sh(e))&&/no suma/.test(sh(e)),'al tocarla, una hoja con cada cuenta');
  H.closeSheet([]);await sleep(260);

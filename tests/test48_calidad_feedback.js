@@ -18,7 +18,7 @@ const pill = (e) => e.doc.querySelector('.mes-pill').textContent.replace(/\s+/g,
 const T0 = Date.parse('2026-10-10T09:00:00Z'); // hora a la que se puso el saldo
 const DOS = [{ id: 'c1', nombre: 'Banco', saldo: 1000, fecha: '2026-10-10', ts: T0, principal: true }, { id: 'c2', nombre: 'Efectivo', tipo: 'efectivo', saldo: 100, fecha: '2026-10-10', ts: T0 }];
 async function env(o) {
-  const e = makeEnv({ pre: fijaFecha(o.hoy || '2026-10-17'),
+  const e = makeEnv({ verAnteriorInicio: true, pre: fijaFecha(o.hoy || '2026-10-17'),
     cfg: { app: Object.assign({ categoriasGasto: [{ nombre: 'Super', presupuesto: 100 }, { nombre: 'Ocio' }], ingresos: ['Nómina'], cuentas: JSON.parse(JSON.stringify(o.cuentas || DOS)) }, o.app || {}), meta: { onboarded: true } },
     movs: JSON.parse(JSON.stringify(o.movs || [])), url: 'https://x.test/', session: { user: { email: 't@t.com', id: 'yo' } } });
   await sleep(120);

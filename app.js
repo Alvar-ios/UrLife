@@ -798,7 +798,7 @@ function renderShell() {
     '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
     '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('goTab', 'inicio') + '>' + ic('chevL') + '</button>' +
     '<div><h1 id="pageTitle"></h1><div class="sub">' + fmtDateLong(todayISO()) + '</div></div></div>' +
-    '<div class="tb-r"><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
+    '<div class="tb-r"><span id="compararHost"></span><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
     '<nav class="tabbar" aria-label="Secciones">' + tabBtn(tabsNav()[0]) + tabBtn(tabsNav()[1]) +
     '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabBtn(tabsNav()[2]) + tabBtn(tabsNav()[3]) + '</nav>' +
@@ -920,6 +920,7 @@ function render() {
   const _ent = S._entrando;
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
   if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
+  pintarComparar();
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse') || lsGet('soy')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
 }
@@ -3133,6 +3134,7 @@ function renderTu() {
     grupo('Compartir', [it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir paloma invitar whatsapp')]) +
     grupo('Tu dinero', [it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
       it('openRecurrentes', [], 'calendar', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas'),
+      it('compararToggle', [], 'swap', 'Comparar con la versión anterior', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'pruebas version anterior comparar nueva'),
       it('tuMesAbrir', [], 'calendar', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
       it('openMetas', [], 'flag', 'Metas', badge('metas') + '<span class="menu-extra">ahorro e inversión</span>', 'objetivos hucha'),
       lista('deudas', 'prestamo hipoteca'), lista('ingresos', 'nomina'), lista('metodosPago', 'tarjeta bizum efectivo'),
@@ -3179,7 +3181,8 @@ function renderInicioNuevo() {
       (vista === 'calendario' ? renderCalendario() : renderAgendaSemana());
   }
   // los primeros pasos solo para quien empieza: a quien ya usa la app no le quitan sitio en Inicio
-  return heroMesHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtml() + estosDiasHtml();
+  if (verAnterior('inicio')) return heroMesHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtml() + estosDiasHtml();
+  return heroMesHtmlV2() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtmlV2() + estosDiasHtml(true);
 }
 // la cifra grande, con los céntimos más pequeños
 function cifraHtml(v) { const t = money(v), i = t.lastIndexOf(','); return i < 0 ? escapeHtml(t) : escapeHtml(t.slice(0, i)) + '<small>' + escapeHtml(t.slice(i)) + '</small>'; }
@@ -3251,6 +3254,86 @@ function insightsHtml() {
   if (!cards.length) return '';
   return '<div class="section-title">Así vas' + badge('asivas') + '</div><div class="ins-scroll">' + cards.slice(0, 5).join('') + '</div>';
 }
+/* ---- Comparar con la versión anterior (fase de pruebas): en cada sección con un cambio grande reciente,
+   un botón flotante deja ver cómo era antes y volver. Se registra aquí; se quita de la lista cuando ya no haga falta. ---- */
+const VERSIONES = {
+  inicio: { txt: 'Inicio', desde: '2026-10-18' },
+};
+function seccionVersion() { return S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy' ? 'inicio' : ''; }
+function verAnterior(k) { return !!(S.verAnterior && S.verAnterior[k]); }
+function compararOn() { return cfg().compararVersiones !== false; }
+function compararBotonHtml() {
+  const k = seccionVersion(); if (!k || !VERSIONES[k] || !compararOn() || !allLoaded()) return '';
+  const ant = verAnterior(k);
+  return '<button type="button" class="comparar-fab' + (ant ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="' + (ant ? 'Ver la versión nueva' : 'Ver la versión anterior') + '">' + ic('swap') + '<span>' + (ant ? 'Ver nueva' : 'Antes') + '</span></button>';
+}
+function pintarComparar() {
+  let h = $('#compararHost'); if (!h) { h = document.createElement('div'); h.id = 'compararHost'; document.body.appendChild(h); }
+  h.innerHTML = compararBotonHtml();
+}
+/* ---- Inicio, versión 2 (18/10): tarjeta más compacta, «Así vas» en círculos y sin scroll en un móvil normal ---- */
+function heroMesHtmlV2() {
+  const { y, m, actual } = inicioYM(), k = kpisMes(y, m), disp = k.disponible, lim = movLimites();
+  const nuevo = !S.movimientos.length && !(S.compartidos || []).length;
+  const pv = nuevo || !actual ? null : previstoMes(y, m);
+  const ant = (y + '-' + pad2(m)) > lim.min, dir = S._inicioDir || 0; S._inicioDir = 0;
+  const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
+  const cu = !nuevo && actual && hayVariasCuentas() ? '<button type="button" class="h2-dato tappable" ' + act('cuentasHoja') + '><span>En tus cuentas</span><b class="tnum">' + moneyShort(enTusCuentas()) + '</b></button>' : '';
+  const pr = pv ? '<button type="button" class="h2-dato prev tappable" ' + act('previstoAbrir') + '><span><i class="prev-tag">Previsto</i> fin de mes</span><b class="tnum">' + moneyShort(pv.total) + '</b></button>' : '';
+  return '<section class="hero hero2 hero2v2" aria-label="Cómo vas este mes">' +
+    '<div class="hero2-top"><button type="button" class="mes-pill' + anim + '" ' + act('tuMesAbrir') + '><b>' + MESES[m - 1] + (y !== mesActual().y ? ' ' + y : '') + '</b><span>· ' + mesPillTxt(y, m) + '</span><span class="mes-pill-ic">' + ic('chevR') + '</span></button>' +
+    '<span class="hero2-flechas"><button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
+    '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
+    '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (disp < 0 ? ' neg' : '') + (nuevo ? ' vacio' : '') + '">' + cifraHtml(disp) + '</span></button>' +
+    (nuevo ? '<p class="hero-nuevo">Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.</p>' : heroBarraHtml(k)) +
+    (cu || pr ? '<div class="h2-datos">' + pr + cu + '</div>' : '') + '</section>';
+}
+// «Así vas» en círculos: una cifra corta dentro de un aro y dos palabras debajo; al tocar, la frase entera y «Ver»
+function insightsDatos() {
+  if (!S.movimientos.length) return [];
+  const { y, m, actual } = inicioYM(), mk = mesClave(y, m), g = gastoComparado(y, m), out = [], mesAnt = MESES[g.pm - 1].toLowerCase(), mesAb = MESES_ABR[g.pm - 1].toLowerCase();
+  const euros = (v) => (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString('es-ES')) + ' ' + sym();
+  const alturas = g.enCurso ? ' a estas alturas' : '';
+  if (g.antes.t > 0 && g.ahora.t > 0) {
+    const dif = g.ahora.t - g.antes.t, pct = Math.round(dif / g.antes.t * 100), raro = g.antes.t < 30 || Math.abs(pct) > 300;
+    out.push({ tono: dif > 0 && (raro || pct > 5) ? 'malo' : dif < 0 && (raro || pct < -5) ? 'bueno' : '', valor: raro ? (dif > 0 ? '+' : '') + euros(dif) : Math.abs(pct) < 1 ? '=' : (pct > 0 ? '+' : '−') + Math.abs(pct) + '%',
+      l1: 'Gasto', l2: 'vs ' + mesAb, aro: Math.min(1, g.ahora.t / Math.max(g.ahora.t, g.antes.t)),
+      frase: 'Llevas ' + money(g.ahora.t) + ' gastados: ' + (Math.abs(dif) < 0.5 ? 'lo mismo' : dif > 0 ? money(dif) + ' más' : money(-dif) + ' menos') + ' que en ' + mesAnt + alturas + '.', a: act('heroResumen') });
+  }
+  const subida = Object.keys(g.ahora.o).map((c) => ({ c, d: g.ahora.o[c] - (g.antes.o[c] || 0) })).filter((x) => x.d >= 10).sort((a, b) => b.d - a.d)[0];
+  if (subida && g.antes.t > 0) out.push({ tono: 'malo', color: colorCat(subida.c), valor: '+' + euros(subida.d), l1: subida.c, l2: 'sube más', aro: 1,
+    frase: subida.c + ' es lo que más sube: ' + money(subida.d) + ' más que en ' + mesAnt + alturas + '.', a: act('irMovs', '_gastos', mk, subida.c) });
+  const catMap = gastoPorCategoria(kpisMes(y, m).movs);
+  const pres = catsGasto().filter((c) => num(c.presupuesto) > 0).map((c) => ({ c: c.nombre, p: num(c.presupuesto), r: Math.max(0, catMap[c.nombre] || 0) }));
+  const pasada = pres.filter((x) => x.r > x.p).sort((a, b) => (b.r - b.p) - (a.r - a.p))[0];
+  const justa = pres.filter((x) => x.r <= x.p && x.r >= x.p * 0.8).sort((a, b) => b.r / b.p - a.r / a.p)[0];
+  if (pasada) out.push({ tono: 'malo', valor: '+' + euros(pasada.r - pasada.p), l1: pasada.c, l2: 'te pasas', aro: 1,
+    frase: 'En ' + pasada.c + ' llevas ' + money(pasada.r) + ' de ' + money(pasada.p) + ': te has pasado ' + money(pasada.r - pasada.p) + '.', a: act('irMovs', '_gastos', mk, pasada.c) });
+  else if (justa && actual) out.push({ tono: 'aviso', valor: Math.round(justa.r / justa.p * 100) + '%', l1: justa.c, l2: 'va justo', aro: justa.r / justa.p,
+    frase: 'En ' + justa.c + ' llevas ' + money(justa.r) + ' de ' + money(justa.p) + ': te quedan ' + money(justa.p - justa.r) + '.', a: act('irMovs', '_gastos', mk, justa.c) });
+  else if (pres.length && pres.some((x) => x.r > 0) && pres.every((x) => x.r <= x.p)) out.push({ tono: 'bueno', valor: '✓', l1: 'Presupuestos', l2: 'en orden', aro: 1,
+    frase: 'Vas dentro de todos tus presupuestos este mes.', a: act('heroResumen') });
+  if (actual && (S.compartidos || []).length) {
+    const pc = cuentaPrincipal(), neto = pc ? compartidosCuenta(pc).neto : [...new Set((S.compartidos || []).map((x) => x.grupoId).filter(Boolean))].reduce((a, gid) => a + miSaldo(gid), 0);
+    if (Math.abs(neto) >= 0.01) out.push({ tono: neto > 0 ? 'bueno' : 'aviso', valor: euros(Math.abs(neto)), l1: neto > 0 ? 'Te deben' : 'Debes', l2: 'en Juntos', aro: 1,
+      frase: (neto > 0 ? 'En Juntos te deben ' + money(neto) : 'En Juntos debes ' + money(-neto)) + ', sumando todos tus grupos.', a: act('goTab', 'juntos') });
+  }
+  const r = rangoMes(y, m), hoy = todayISO(), conGasto = new Set(kpisMes(y, m).movs.filter((x) => x.tipo === 'Gasto').map((x) => (x.fecha || '').slice(0, 10)));
+  let primero = '9999'; S.movimientos.forEach((x) => { if (x.fecha && x.fecha.slice(0, 10) < primero) primero = x.fecha.slice(0, 10); });
+  let sin = 0, dias = 0; for (let f = r.desde > primero ? r.desde : primero; f <= r.hasta && f < hoy; f = addDaysISO(f, 1)) { dias++; if (!conGasto.has(f)) sin++; }
+  if (sin >= 2 && conGasto.size) out.push({ tono: 'bueno', valor: String(sin), l1: sin === 1 ? 'día' : 'días', l2: 'sin gastos', aro: dias ? sin / dias : 1,
+    frase: (actual ? 'Este mes llevas ' : 'En ' + MESES[m - 1].toLowerCase() + ' tuviste ') + sin + ' días sin gastos del día a día (sin contar los fijos).', a: act('irMovsCal', mk) });
+  return out.slice(0, 5);
+}
+function insightsHtmlV2() {
+  const ds = insightsDatos(); S._ins = ds; if (!ds.length) return '';
+  const R = 27, C = 2 * Math.PI * R;
+  return '<div class="section-title">Así vas' + badge('asivas') + '</div><div class="ins-circ">' + ds.map((x, i) =>
+    '<button type="button" class="ins-c tappable ' + (x.tono || '') + '"' + (x.color ? ' style="--ic:' + x.color + '"' : '') + ' aria-label="' + escapeHtml(x.frase) + '" ' + act('insVer', i) + '>' +
+      '<span class="ins-aro"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + R + '" class="ins-aro-f"/><circle cx="32" cy="32" r="' + R + '" class="ins-aro-v" stroke-dasharray="' + (C * Math.max(0.04, Math.min(1, x.aro))).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 32 32)" style="animation-delay:' + (i * 0.08).toFixed(2) + 's"/></svg>' +
+      '<b class="tnum' + (x.valor.length > 5 ? ' largo' : '') + '">' + escapeHtml(x.valor) + '</b></span>' +
+      '<span class="ins-l1">' + escapeHtml(x.l1) + '</span><span class="ins-l2">' + escapeHtml(x.l2) + '</span></button>').join('') + '</div>';
+}
 /* Lo previsto a fin de mes: lo que te queda hoy + cobros fijos que faltan − pagos fijos que faltan.
    Es una previsión (la nómina puede variar): solo sale si todavía falta algún cobro en tu mes. */
 function previstoMes(y, m) {
@@ -3298,7 +3381,7 @@ function tuMesHtml() {
     '<div class="actions"><button class="btn accent block" ' + act('tuMesGuardar') + '>Listo</button></div>';
 }
 /* «Estos días»: lo que hay que hacer o mirar (como mucho 3 a la vista) */
-function estosDiasHtml() {
+function estosDiasHtml(v2) {
   const hoy = todayISO(), ma = mesActual(), filas = [], imp = (x) => (x.importe == null ? '' : ' · ' + money(x.importe));
   const ra = avisosRecurrentes();
   const btn = (k, x, l, cls) => '<button type="button" class="btn sm ' + cls + '" ' + act(k, x.rc.kind, x.rc.idx, x.iso) + '>' + l + '</button>';
@@ -3320,7 +3403,8 @@ function estosDiasHtml() {
   const filaHtml = (f) => '<div class="dia-fila' + (f.cls ? ' ' + f.cls : '') + '"><button type="button" class="dia-main" ' + (f.a || '') + '>' +
     (f.fecha ? fechaTile(f.fecha) : '<span class="dia-ic">' + ic(f.icono) + '</span>') + '<span class="dia-t"><b>' + f.t + '</b><span>' + f.d + '</span></span>' + (f.botones ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' +
     (f.botones ? '<span class="dia-btns">' + f.botones + '</span>' : '') + '</div>';
-  const CAP = 3, todas = !!S.pendTodos, ver = todas ? filas : filas.slice(0, CAP);
+  if (v2) for (let i = filas.length - 1; i >= 0; i--) if (filas[i].cls === 'juntos' || filas[i].cls === 'warn') filas.splice(i, 1); // ya salen en «Así vas»
+  const CAP = v2 ? 2 : 3, todas = !!S.pendTodos, ver = todas ? filas : filas.slice(0, CAP);
   return '<div class="section-title dias-tit">Estos días <button class="link" ' + act('setInicioVista', 'tareas') + '>Agenda ' + ic('chevR') + '</button></div>' +
     (filas.length ? '<div class="card dias-lista">' + ver.map(filaHtml).join('') +
       (filas.length > CAP ? '<button type="button" class="dias-mas" ' + act('verPendiente') + '>' + (todas ? 'Ver menos' : 'Ver los ' + filas.length) + '</button>' : '') + '</div>'
@@ -6455,6 +6539,10 @@ const H = {
   heroResumen: () => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = mesClave(im.y, im.m); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._donutSel = ''; S._infoTeQueda = im.actual; S._entrando = true; render(); window.scrollTo(0, 0); },
   inicioMes: ([d]) => { const im = inicioYM(); let y = im.y, m = im.m + (Number(d) || 0); if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } const a = mesActual(); S.inicioMes = y === a.y && m === a.m ? '' : mesClave(y, m); S._inicioDir = Number(d) || 0; sentir('tic'); render(); },
   // las tarjetas de «Así vas» llevan delante insIr: quitan su etiqueta y hacen lo de siempre
+  compararToggle: () => { const on = !compararOn(); saveConfig({ compararVersiones: on }); if (!on) S.verAnterior = {}; toast(on ? 'Verás un botón para comparar con la versión anterior' : 'Botón de comparar oculto'); render(); },
+  compararCambiar: ([k]) => { S.verAnterior = Object.assign({}, S.verAnterior, { [k]: !verAnterior(k) }); sentir('tic'); toast(verAnterior(k) ? 'Viendo la versión anterior de ' + VERSIONES[k].txt : 'Vuelves a la versión nueva'); render(); window.scrollTo(0, 0); },
+  insVer: ([i]) => { const x = (S._ins || [])[Number(i)]; if (!x) return; verBadge('asivas'); sentir('tic'); abrirPopup('<div class="ins-pop ' + (x.tono || '') + '"' + (x.color ? ' style="--ic:' + x.color + '"' : '') + '><b class="ins-pop-v tnum">' + escapeHtml(x.valor) + '</b><span class="ins-pop-l">' + escapeHtml(x.l1 + ' · ' + x.l2) + '</span><p>' + escapeHtml(x.frase) + '</p></div><div class="actions"><button class="btn ghost block" ' + act('popupCerrar') + '>Cerrar</button><button class="btn accent block" ' + x.a.replace('data-click="', 'data-click="insVerIr|') + '>Ver</button></div>'); },
+  insVerIr: ([accion, ...args], el, e) => { cerrarPopup(); if (H[accion]) H[accion](args, el, e); },
   insIr: ([accion, ...args], el, e) => { verBadge('asivas'); if (VIBRA.has(accion)) sentir('toque'); if (H[accion]) H[accion](args, el, e); },
   irMovsCal: ([p]) => { S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = p || mesHoyClave(); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S.movCalDia = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
   infoTeQuedaCerrar: () => { S._infoTeQueda = false; render(); },
