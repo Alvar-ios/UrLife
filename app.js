@@ -1297,15 +1297,15 @@ function movAddCtxHtml() {
 }
 // Traspasos en la lista: solo en «Todos» (sin categoría), en gris y sin sumar al balance
 // un gasto compartido sale de una cuenta si lo pagaste tú (de momento, siempre desde la principal)
-function compSaleDeCuenta(c, id) { const pc = cuentaPrincipal(); return !!c && c.pagadoPor === miUid() && !!SIGNO_CUENTA[c.tipo] && !!pc && pc.id === id; }
+function compSaleDeCuenta(c, id) { return !!c && c.pagadoPor === miUid() && !!SIGNO_CUENTA[c.tipo] && !!id && cuentaDeComp(c) === id; }
 // Lo que mueve dinero en la cuenta principal desde Juntos y no está en tus movimientos: lo que pagaste entero por otros
 // (tu parte es 0) y lo que pagas o recibes al saldar. Importe 0 en tus números: solo se enseña lo que salió o entró.
 function flujosJuntosFilas(id) {
-  const pc = cuentaPrincipal(), yo = miUid(); if (!pc || pc.id !== id) return [];
+  const yo = miUid(); if (!id) return [];
   const out = [];
   (S.compartidos || []).forEach((c) => {
     const liq = c.tipo === 'Liquidación';
-    if (liq ? !(c.pagadoPor === yo || (c.reparto && c.reparto[yo] != null)) : !(compSaleDeCuenta(c, id) && !(miParte(c) > 0))) return;
+    if (liq ? !((c.pagadoPor === yo || (c.reparto && c.reparto[yo] != null)) && cuentaDeComp(c) === id) : !(compSaleDeCuenta(c, id) && !(miParte(c) > 0))) return;
     out.push({ id: 'c:' + c.id, fecha: c.fecha, tipo: liq ? 'Liquidación' : c.tipo, categoria: liq ? 'Saldar deudas' : (c.categoria || 'Compartido'), descripcion: c.descripcion || '', importe: 0, comp: c, flujo: true });
   });
   return out;
@@ -1533,8 +1533,9 @@ function refrescarCatAviso() {
 function catLabel(tipo) { return tipo === 'Inversión' ? 'Activo <span class="hint">· ej. VWCE, S&amp;P 500 ETF</span>' : 'Categoría'; }
 // «Desde la cuenta» / «A la cuenta»: solo con 2 o más cuentas (los compartidos, más adelante)
 function cuentaFieldHtml() {
-  if (!FORM || !hayVariasCuentas() || (FORM.comp && FORM.comp.on) || FORM.tipo === 'Ahorro') return '';
-  return '<div class="field"><label id="cuentaLabel">' + (FORM.tipo === 'Ingreso' ? 'A la cuenta' : 'Desde la cuenta') + '</label><div class="chips" id="cuentaChips">' +
+  const comp = FORM && FORM.comp && FORM.comp.on;
+  if (!FORM || !hayVariasCuentas() || (comp && FORM.comp.pagador !== miUid()) || FORM.tipo === 'Ahorro') return '';
+  return '<div class="field"><label id="cuentaLabel">' + (comp ? 'Lo pagaste desde' : FORM.tipo === 'Ingreso' ? 'A la cuenta' : 'Desde la cuenta') + '</label><div class="chips" id="cuentaChips">' +
     cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === FORM.cuenta ? ' active' : '') + '" ' + act('pickCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>';
 }
 function refrescarCuentaField() { const f = $('#cuentaField'); if (f) f.innerHTML = cuentaFieldHtml(); }
@@ -1557,7 +1558,7 @@ function openMovForm(id, pre) {
   FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
   FORM.metaSel = ex ? metaDeMov(ex) : (pre.metaSel || '');
   FORM.metaSels = ex ? metasDeMov(ex.tipo === 'Inversión' ? ex : Object.assign({}, ex, { tipo: 'Inversión', metaIds: ex.metaId ? [ex.metaId] : [] })) : (pre.metaSel ? [pre.metaSel] : []);
-  FORM.cuenta = ex ? (cuentaPorId(ex.cuentaId) ? ex.cuentaId : cuentaRecordada('')) : (pre.cuentaId && cuentaPorId(pre.cuentaId) ? pre.cuentaId : cuentaRecordada(pre.categoria));
+  FORM.cuenta = comp ? cuentaDeComp(comp) : ex ? (cuentaPorId(ex.cuentaId) ? ex.cuentaId : cuentaRecordada('')) : (pre.cuentaId && cuentaPorId(pre.cuentaId) ? pre.cuentaId : cuentaRecordada(pre.categoria));
   if (ex && ex.activoId) { FORM.activo = { activo_id: ex.activoId, nombre: ex.categoria, tipo: ex.tipoActivo || '', simbolo: '', moneda: '' }; FORM.partOrig = ex.participaciones == null ? null : Number(ex.participaciones); }
   const metodos = cfg().metodosPago || [];
   openSheet(
@@ -2438,6 +2439,7 @@ async function saveCompartido(d) {
       }
     } catch (e) { console.error(e); return toast(errGrupo(e)); }
     compAplicarLocal(c, previo && previo.id !== c.id ? previo.id : null);
+    guardarCuentaComp(c.id, cp.pagador === yo ? FORM.cuenta : null, previo && previo.id);
     if (cfg().ultimoCompartir !== 'g:' + grupoId) saveConfig({ ultimoCompartir: 'g:' + grupoId });
     // Tu copia personal: si pagaste tú es el cargo de tu banco. Queda enlazada y no cuenta dos veces.
     const mio = FORM.id ? S.movimientos.find((m) => m.id === FORM.id) : null;
@@ -2509,6 +2511,7 @@ function saldarHtml(f) {
     '<div class="unirse-card"><div class="unirse-nombre">' + (f.de === yo ? 'Tú pagas a ' + n(f.a) : f.a === yo ? n(f.de) + ' te paga' : n(f.de) + ' paga a ' + n(f.a)) + '</div><div class="unirse-meta">Se debe ' + money(f.max) + '</div></div>' +
     '<div class="field"><label>Importe (' + sym() + ')</label><input id="sImporte" type="number" step="0.01" min="0" inputmode="decimal" value="' + f.max + '"><div class="rec-hint">Puedes poner menos si es un pago parcial.</div></div>' +
     '<div class="field"><label>Fecha</label><input id="sFecha" type="date" value="' + todayISO() + '"></div>' +
+    (hayVariasCuentas() && (f.de === yo || f.a === yo) ? '<div class="field"><label>' + (f.de === yo ? 'Desde la cuenta' : 'A la cuenta') + '</label><div class="chips" id="saldarCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (f.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('saldarCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
     '<div class="rec-hint" style="margin-bottom:6px;">Apúntalo cuando el dinero ya se haya enviado (Bizum, transferencia o en mano). No cuenta como gasto ni como ingreso: solo deja las cuentas a cero.</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('grupoVer', f.gid) + '>Volver</button><button class="btn accent block" ' + act('saldarGuardar') + '>Registrar pago</button></div>';
 }
@@ -4072,6 +4075,15 @@ function colorCuenta(c) { if (c.color) return c.color; const i = (cfg().cuentas 
 function cuentaPorId(id) { return id ? cuentasCfg().find((c) => c.id === id) || null : null; }
 // la marcada como principal o, si no hay ninguna, la primera
 function cuentaPrincipal() { const cs = cuentasCfg(); return cs.find((c) => c.principal) || cs[0] || null; }
+// Juntos (fase 2 de cuentas): de qué cuenta TUYA salió (o a cuál entró) un gasto compartido o un pago al saldar.
+// Se guarda en tu configuración (nadie más lo ve); si no lo elegiste, la principal.
+function cuentaDeComp(c) { const id = c ? (cfg().cuentaJuntos || {})[c.id] : null; if (id && cuentaPorId(id)) return id; const pc = cuentaPrincipal(); return pc ? pc.id : null; }
+function guardarCuentaComp(compId, cuentaId, previoId) {
+  if (!compId || !hayVariasCuentas()) return;
+  const m = Object.assign({}, cfg().cuentaJuntos || {}); if (previoId && previoId !== compId) delete m[previoId];
+  const pc = cuentaPrincipal(); if (!cuentaId || (pc && pc.id === cuentaId)) delete m[compId]; else m[compId] = cuentaId;
+  saveConfig({ cuentaJuntos: m });
+}
 function hayVariasCuentas() { return cuentasCfg().length >= 2; }
 // última cuenta usada con esa categoría (o la principal)
 function cuentaRecordada(cat) { const id = (cfg().cuentaPorCat || {})[normName(cat || '')]; if (cuentaPorId(id)) return id; const pc = cuentaPrincipal(); return pc ? pc.id : null; }
@@ -4090,9 +4102,9 @@ function flujosCompartidos() {
   (S.compartidos || []).forEach((c) => {
     const ts = c.createdAt ? Date.parse(c.createdAt) : 0;
     if (c.tipo === 'Liquidación') {
-      if (c.pagadoPor === yo) out.push({ fecha: c.fecha, creadoEn: ts, v: -num(c.importe) });
-      else if (c.reparto && c.reparto[yo] != null) out.push({ fecha: c.fecha, creadoEn: ts, v: num(c.reparto[yo]) });
-    } else if (c.pagadoPor === yo && SIGNO_CUENTA[c.tipo]) out.push({ fecha: c.fecha, creadoEn: ts, v: num(c.importe) * SIGNO_CUENTA[c.tipo] });
+      if (c.pagadoPor === yo) out.push({ fecha: c.fecha, creadoEn: ts, v: -num(c.importe), cuentaId: cuentaDeComp(c) });
+      else if (c.reparto && c.reparto[yo] != null) out.push({ fecha: c.fecha, creadoEn: ts, v: num(c.reparto[yo]), cuentaId: cuentaDeComp(c) });
+    } else if (c.pagadoPor === yo && SIGNO_CUENTA[c.tipo]) out.push({ fecha: c.fecha, creadoEn: ts, v: num(c.importe) * SIGNO_CUENTA[c.tipo], cuentaId: cuentaDeComp(c) });
   });
   return out;
 }
@@ -4105,7 +4117,7 @@ function saldoCuenta(c) {
     if (m.compartidoId && vivos.has(m.compartidoId)) return; // tu parte de un compartido: cuenta el compartido entero (abajo)
     if (cuentaIdDe(m) === c.id && posteriorA(m, c)) s += num(m.importe) * (SIGNO_CUENTA[m.tipo] || 0);
   });
-  if (esPrincipal) flujosCompartidos().forEach((f) => { if (posteriorA(f, c)) s += f.v; });
+  flujosCompartidos().forEach((f) => { if (f.cuentaId === c.id && posteriorA(f, c)) s += f.v; });
   (S.traspasos || []).forEach((t) => { if (!posteriorA(t, c)) return; if (t.cuentaId === c.id) s -= num(t.importe); if (t.cuentaDestinoId === c.id) s += num(t.importe); });
   return Math.round(s * 100) / 100;
 }
@@ -4193,7 +4205,6 @@ function cuentaVerHtml(id) {
     (v == null ? '' : '<div class="sv-real-l">Saldo real · lo que dice tu banco</div>') + '<div class="cuentas-total tnum">' + (v == null ? '—' : money(v)) + '</div>' +
     '<div class="rec-hint" style="margin:-4px 0 12px;">' + escapeHtml(tipoCuentaTxt(c)) + (v == null ? ' · aún no has puesto su saldo' : ' · ' + cuentaFechaTxt(c)) + '</div>' +
     (v != null && compartidosCuenta(c).n ? cuentaDosSaldosHtml(c, v) : '') +
-    ((S.compartidos || []).length && cuentaPrincipal() && cuentaPrincipal().id !== c.id ? '<div class="rec-hint" style="margin:0 2px 12px;">Ojo: de momento, lo que pagas en Juntos cuenta siempre en tu cuenta principal (' + escapeHtml(cuentaPrincipal().nombre) + '), aunque lo pagues con esta.</div>' : '') +
     '<div class="cuenta-acc">' + (v == null ? '<button class="btn accent block" ' + act('cuentaEditar', i) + '>Poner el saldo</button>' : '<button class="btn accent block" ' + act('cuadrarAbrir', i, id) + '>Cuadrar</button>') +
     '<button class="btn ghost block" ' + act('irMovsCuenta', id) + '>Ver movimientos</button></div>' +
     (ult.length ? '<div class="section-title">Últimos movimientos</div><div class="list">' + ult.map((m) => esTraspaso(m) ? renderTraspasoRow(m, true) : renderMovRowBase(m)).join('') + '</div>' : '') +
@@ -5855,11 +5866,11 @@ function reglaDe(it) {
 // Lista unificada: ingresos fijos (config.cobros) y facturas (config.facturas)
 // Un gasto fijo se reconoce por su recibo (detalle); el resto, por su categoría
 function nombreRec(m) { return m.tipo === 'Factura' ? (m.subcategoria || m.categoria) : m.categoria; }
-function preRec(rc, extra) { return Object.assign(rc.tipo === 'Factura' ? { tipo: rc.tipo, categoria: catDeRecibo(rc.nombre), subcategoria: rc.nombre } : { tipo: rc.tipo, categoria: rc.nombre }, extra); }
+function preRec(rc, extra) { return Object.assign(rc.tipo === 'Factura' ? { tipo: rc.tipo, categoria: catDeRecibo(rc.nombre), subcategoria: rc.nombre } : { tipo: rc.tipo, categoria: rc.nombre }, rc.cuentaId && cuentaPorId(rc.cuentaId) ? { cuentaId: rc.cuentaId } : {}, extra); }
 function recurrentes() {
   const c = cfg(), out = [];
-  (c.cobros || []).forEach((it, i) => { if (it && it.nombre) out.push({ kind: 'cobro', idx: i, tipo: 'Ingreso', nombre: it.nombre, importe: it.importe, regla: reglaDe(it), extras: it.extras || [], desde: it.desde || null, key: 'c:' + normName(it.nombre) }); });
-  (c.facturas || []).forEach((it, i) => { if (it && it.nombre) out.push({ kind: 'factura', idx: i, tipo: 'Factura', nombre: it.nombre, importe: it.importe, regla: reglaDe(it), extras: [], desde: it.desde || null, key: 'f:' + normName(it.nombre) }); });
+  (c.cobros || []).forEach((it, i) => { if (it && it.nombre) out.push({ kind: 'cobro', idx: i, tipo: 'Ingreso', nombre: it.nombre, importe: it.importe, regla: reglaDe(it), extras: it.extras || [], desde: it.desde || null, cuentaId: it.cuentaId || null, key: 'c:' + normName(it.nombre) }); });
+  (c.facturas || []).forEach((it, i) => { if (it && it.nombre) out.push({ kind: 'factura', idx: i, tipo: 'Factura', nombre: it.nombre, importe: it.importe, regla: reglaDe(it), extras: [], desde: it.desde || null, cuentaId: it.cuentaId || null, key: 'f:' + normName(it.nombre) }); });
   return out;
 }
 function recBuscar(kind, idx) { return recurrentes().find((r) => r.kind === kind && r.idx === Number(idx)) || null; }
@@ -6045,6 +6056,7 @@ function recEditorHtml() {
     '<div class="field"><label>Nombre</label>' + (nombres.length ? '<div class="chips">' + nombres.map((nm) => '<button type="button" class="chip ' + (normName(nm) === normName(F.nombre) ? 'active' : '') + '" ' + act('recPickNombre', nm) + '>' + escapeHtml(nm) + '</button>').join('') + '</div>' : '') +
     '<input id="recNombre" type="text" placeholder="' + (esCobro ? 'Nómina' : 'Alquiler') + '" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('recCampo', 'nombre') + '></div>' +
     (esCobro ? '' : '<div class="field"><label>Categoría</label><select id="recCat" ' + onChange('recCampo', 'categoria') + '>' + catsGasto().map((c) => '<option' + (normName(c.nombre) === normName(F.categoria || catDeRecibo(F.nombre || '')) ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>') +
+    (hayVariasCuentas() ? '<div class="field"><label>' + (esCobro ? 'Llega a la cuenta' : 'Sale de la cuenta') + '</label><div class="chips" id="recCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (F.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('recCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
     '<div class="field"><label>Importe previsto (' + sym() + ') <span class="hint">· opcional</span></label><input id="recImporte" type="number" step="0.01" inputmode="decimal" value="' + (F.importe == null ? '' : escapeHtml(F.importe)) + '" ' + onInput('recCampo', 'importe') + '></div>' +
     '<div class="field"><label>¿Cuándo ' + (esCobro ? 'te suele llegar' : 'se paga') + '?</label><select id="recTipo" ' + onChange('recTipo') + '><option value="">Elige una opción…</option>' +
     REGLA_OPC.map(([v, l]) => '<option value="' + v + '"' + (r && r.t === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
@@ -6061,7 +6073,7 @@ function recRefrescarPrev() { const el = $('#recPrev'); if (el) el.innerHTML = r
 function recAbrirEditor(kind, idx) {
   const it = idx != null ? ((cfg()[kind === 'cobro' ? 'cobros' : 'facturas'] || [])[Number(idx)] || null) : null;
   FORM = { kind: 'rec', recKind: kind, origKind: kind, idx: it ? Number(idx) : null, nombre: it ? it.nombre : '', importe: it && it.importe != null ? it.importe : null,
-    regla: it ? (reglaDe(it) ? Object.assign({}, reglaDe(it)) : null) : null, extras: it && it.extras ? it.extras.slice() : [], aprendido: null };
+    regla: it ? (reglaDe(it) ? Object.assign({}, reglaDe(it)) : null) : null, extras: it && it.extras ? it.extras.slice() : [], aprendido: null, cuenta: it && cuentaPorId(it.cuentaId) ? it.cuentaId : null };
   openSheet(recEditorHtml());
 }
 function recGuardar() {
@@ -6080,6 +6092,7 @@ function recGuardar() {
   let prev = null;
   if (F.idx != null) prev = arrDe(F.origKind)[F.idx] || null;
   const item = Object.assign({}, prev || {}, { nombre, importe, regla, desde: (prev && prev.desde) || (prev ? null : todayISO()) });
+  if (F.cuenta && cuentaPorId(F.cuenta)) item.cuentaId = F.cuenta; else delete item.cuentaId;
   item.diaDelMes = regla && regla.t === 'dia' ? regla.dia : null;
   if (F.recKind === 'cobro') { item.extras = (F.extras || []).map(Number).sort((a, b) => a - b); delete item.categoria; }
   else { delete item.extras; const rcat = ($('#recCat') || {}).value; item.categoria = rcat || catDeRecibo(nombre); }
@@ -6783,6 +6796,7 @@ const H = {
     else abrirGrupo(x.deudas.slice().sort((a, b) => b.importe - a.importe)[0].gid);
   },
   saldarAbrir: ([gid, de, a, imp]) => { FORM = { kind: 'saldar', gid, de, a, max: r2(Number(imp)) }; updateSheet(saldarHtml(FORM)); },
+  saldarCuenta: ([id]) => { if (!FORM || FORM.kind !== 'saldar') return; FORM.cuenta = id; $$('#saldarCuentas .chip').forEach((b) => b.classList.toggle('active', b.getAttribute('data-click') === 'saldarCuenta|' + encodeURIComponent(id))); sentir('tic'); },
   saldarGuardar: async () => {
     const f = FORM, imp = r2(numCampo(($('#sImporte') || {}).value)), fecha = ($('#sFecha') || {}).value || todayISO();
     if (!(imp > 0)) return toast('Pon un importe');
@@ -6790,7 +6804,7 @@ const H = {
     if (f.guardando) return; f.guardando = true;
     try {
       const c = await S.db.compartidos.crear({ grupoId: f.gid, fecha, tipo: 'Liquidación', categoria: 'Liquidación', descripcion: '', importe: imp, pagadoPor: f.de, reparto: { [f.a]: imp }, modo: 'importe' });
-      compAplicarLocal(c); render();
+      compAplicarLocal(c); if (f.cuenta) guardarCuentaComp(c.id, f.cuenta); render();
       const yo = miUid(), quedan = deudasDe(f.gid).some((d) => d.de === yo || d.a === yo);
       if (!quedan) { toast('Pago registrado: ¡cuentas a cero!', { sens: 'paz' }); confeti(26, null); } else toast('Pago registrado');
       if (f.rapido) closeSheet(); else abrirGrupo(f.gid);
@@ -6920,6 +6934,7 @@ const H = {
   reglaTexto: (_, el) => { FORM.reglaTexto = el.value; },
   openRecurrentes: () => { verBadge('cobros'); FORM = { kind: 'recLista' }; if ($('#sheetBackdrop')) updateSheet(recListaHtml()); else openSheet(recListaHtml()); },
   recNuevo: ([k]) => recAbrirEditor(k, null),
+  recCuenta: ([id]) => { if (!FORM || FORM.kind !== 'rec') return; FORM.cuenta = id; $$('#recCuentas .chip').forEach((b) => b.classList.toggle('active', b.getAttribute('data-click') === 'recCuenta|' + encodeURIComponent(id))); sentir('tic'); },
   recEditar: ([k, i]) => recAbrirEditor(k, i),
   recSetKind: ([k]) => { if (FORM.kind !== 'rec') return; FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; FORM.recKind = k; FORM.aprendido = null; updateSheet(recEditorHtml()); },
   recPickNombre: ([n]) => { FORM.nombre = n; const el = $('#recNombre'); if (el) el.value = n; $$('#sheetBackdrop .chips .chip').forEach((c) => { if (c.textContent && !/^[a-z]{3}$/.test(c.textContent)) c.classList.toggle('active', normName(c.textContent) === normName(n)); }); },
