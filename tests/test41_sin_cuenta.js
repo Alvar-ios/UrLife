@@ -54,7 +54,7 @@ function server(uid) {
   };
 }
 function env(uid, url) {
-  const e = makeEnv({ url: url || 'https://urlife-zeta.vercel.app/', cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }] }, meta: { onboarded: true } }, session: { user: { email: uid + '@ejemplo.com', id: uid } }, pre: (w) => {
+  const e = makeEnv({version:{juntos:1}, url: url || 'https://urlife-zeta.vercel.app/', cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }] }, meta: { onboarded: true } }, session: { user: { email: uid + '@ejemplo.com', id: uid } }, pre: (w) => {
     w.history.replaceState = () => {};
     const ls = {}; Object.defineProperty(w, 'localStorage', { value: { getItem: (k) => (ls[k] == null ? null : ls[k]), setItem: (k, v) => { ls[k] = String(v); }, removeItem: (k) => { delete ls[k]; } }, configurable: true });
     Object.defineProperty(w.navigator, 'clipboard', { value: { writeText: async (t) => { w.__copiado = t; } }, configurable: true });
