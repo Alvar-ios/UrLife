@@ -3824,7 +3824,7 @@ function abrirCompRapido(dest) {
    Lo que tienes, Cuentas, Metas (Camino | Tarros | Anillos), Inversiones y Deudas. «Ver todo» de inversiones es una
    pantalla dentro de Dinero. La pantalla anterior sigue en el botón «Antes» (VERSIONES.dinero).
    ============================================================ */
-const m0 = (n) => eur0(Math.round(num(n)));
+const m0 = (n) => eur0(Math.round(num(n))).replace(' €', '\u00a0€');
 function dineroV2() { return versionDe('dinero') !== 'antes'; }
 function metasVariante() { const v = versionDe('dinero'); return v === 'antes' ? 'camino' : v; }
 function mesLargo(iso) { const d = typeof iso === 'string' ? parseISO(iso) : iso; if (!d) return ''; const m = MESES[d.getMonth()].toLowerCase(); return d.getFullYear() === new Date().getFullYear() ? m : m + ' de ' + d.getFullYear(); }
@@ -3880,7 +3880,9 @@ function lqtHtml(p) {
     (p.nCuentas ? '<div class="pat-total dm-lqt-v tnum">' + money(p.total) + '</div>' : '<div class="dm-lqt-v sin">Pon el saldo de tu banco para verlo</div>') +
     '<div class="dm-fichas">' + ficha('c', 'En cuentas', p.nCuentas ? m0(p.banco) : 'Añadir', 'c', p.nCuentas ? act('dmIr', 'cuentas') : act('openCuentas')) +
     ficha('i', 'Invertido', m0(p.inv), 'i', act('dmIr', 'inversiones')) + ficha('d', 'Por pagar', p.deudas ? '−' + m0(p.deudas) : m0(0), 'd', act('dmIr', 'deudas')) + '</div>' +
-    (p.ahorroDentro && p.ahorro > 0.005 ? '<div class="dm-lqt-nota">De tus cuentas, <b class="tnum">' + money(p.ahorro) + '</b> están apartados para tus metas.</div>' : '') +
+    (p.ahorroDentro && p.ahorro > 0.005 ? (p.ahorro > p.banco + 0.005
+      ? '<div class="dm-lqt-nota">Tus metas suman <b class="tnum">' + m0(p.ahorro) + '</b>, más de lo que hay en tus cuentas. ¿Lo tienes en otra cuenta? <button type="button" class="link" ' + act('openCuentas') + '>Añádela</button></div>'
+      : '<div class="dm-lqt-nota">De tus cuentas, <b class="tnum">' + m0(p.ahorro) + '</b> están apartados para tus metas.</div>') : '') +
     '<button type="button" class="link dm-como" ' + act('dmComo') + '>¿Cómo se calcula?</button></div>';
 }
 function dmComoHtml() {
@@ -3916,14 +3918,14 @@ function dmMetasHtml(ms) {
 function dmAportarBtn(r) { return r.conseguida ? '' : '<button type="button" class="dm-aportar" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>'; }
 function dmPct(r) { return r.pct == null ? '' : '<span class="dm-pct tnum">' + Math.round(r.pct) + ' %</span>'; }
 function metaCaminoHtml(r) {
-  const e = metaEstado2(r), col = DM_ESTADO_COLOR[e.k], pct = Math.max(0, Math.min(100, r.pct || 0)), proy = metaProyeccion(r);
+  const e = metaEstado2(r), col = e.k === 'gris' ? 'var(--accent)' : DM_ESTADO_COLOR[e.k], pct = Math.max(0, Math.min(100, r.pct || 0)), proy = metaProyeccion(r);
   const pp = proy != null ? Math.min(100, proy / r.obj * 100) : null, emo = emojiMeta(r);
   const hitos = (r.hitos || []).filter((x) => r.obj > 0 && x.importe < r.obj).map((x) => '<i class="dm-hito' + (x.alcanzado ? ' ok' : '') + '" style="left:' + (x.importe / r.obj * 100).toFixed(1) + '%" title="' + escapeHtml(x.nombre) + '"></i>').join('');
   return '<div class="dm-meta dm-cam" data-meta="' + escapeHtml(r.key) + '" style="--c:' + col + '"><div class="dm-m-cab"><button type="button" class="dm-m-n tappable" ' + act('metaVer', r.key) + '><b>' + escapeHtml(r.nombre) + '</b>' + dmPct(r) + (r.compartida ? '<span class="dm-g">' + ic('users') + '</span>' : '') + '</button>' + dmAportarBtn(r) + '</div>' +
     '<button type="button" class="dm-pista" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento. ' + e.t) + '" ' + act('metaVer', r.key) + '><span class="dm-pista-t"><i class="dm-cam-f" style="width:' + pct.toFixed(1) + '%"></i>' +
     (pp != null && pp > pct + 1 ? '<i class="dm-cam-proy" style="left:' + pct.toFixed(1) + '%;width:' + (pp - pct).toFixed(1) + '%"></i><i class="dm-cam-fin" style="left:' + pp.toFixed(1) + '%"></i>' : '') + hitos +
     '<span class="dm-cam-emo" style="left:' + pct.toFixed(1) + '%">' + emo + '</span></span><span class="dm-meta-flag">🏁</span></button>' +
-    '<div class="dm-m-pie"><span class="tnum">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' de ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span></div></div>';
+    '<div class="dm-m-pie"><span class="tnum">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' de ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span></div></div>';
 }
 function anilloEmojiHtml(pct, color, emo, tam) {
   const r = 26, c = 2 * Math.PI * r, v = Math.max(0, Math.min(100, pct || 0));
@@ -3964,7 +3966,7 @@ function metaVerHtml(k) {
   return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + emojiMeta(r) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
     '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
     '<div class="dm-hring">' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132) +
-    '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span></div></div>' +
+    '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
     (consejo ? '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(consejo) + '</div>' : '') +
     (r.conseguida ? '' : '<button class="btn accent block" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>') +
     '<div class="dm-hbtns"><button class="btn ghost block" ' + act('usoAbrir', r.key) + '>He usado dinero</button><button class="btn ghost block" ' + act('metaMas') + '>' + (mas ? 'Menos' : 'Más') + '</button></div>' +
@@ -4048,8 +4050,8 @@ const signoN = (n) => (n >= 0 ? '+' : '−');
 function invIcono(t) { const k = normName(t || ''); return /cripto|bitcoin/.test(k) ? 'bolt' : /accion/.test(k) ? 'chart' : /fondo|etf|indice/.test(k) ? 'arrowUp' : 'piggy'; }
 function invFilaV2(g, vv, completo) {
   return '<button type="button" class="dm-inv-f tappable" ' + act('verActivo', g.nombre) + '><span class="dm-ic inv">' + ic(invIcono(g.tipoActivo)) + '</span>' +
-    '<span class="dm-emp-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + (completo && vv ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 4 }) + ' part. · aportaste ' + money(g.total) : 'Aportaste ' + money(g.total) + (vv ? '' : ' · sin precio todavía')) + '</span></span>' +
-    '<span class="dm-inv-v"><b class="tnum">' + money(vv ? vv.valor : g.total) + '</b>' + (vv ? '<span class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(vv.gan) + money(Math.abs(vv.gan)) + (completo && vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</span>' : '') + '</span></button>';
+    '<span class="dm-emp-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + (!vv ? 'Sin precio todavía' : completo ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 4 }) + ' part. · aportaste ' + m0(g.total) : 'Aportaste ' + m0(g.total)) + '</span></span>' +
+    '<span class="dm-inv-v"><b class="tnum">' + (vv ? money(vv.valor) : m0(g.total)) + '</b>' + (vv ? '<span class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(vv.gan) + money(Math.abs(vv.gan)) + (completo && vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</span>' : '') + '</span></button>';
 }
 function dmInversionesHtml() {
   const R = invResumen(), orden = R.grupos.map((g, i) => [g, R.vals[i]]).sort((a, b) => (b[1] ? b[1].valor : b[0].total) - (a[1] ? a[1].valor : a[0].total));
@@ -4161,7 +4163,7 @@ function deudaVerHtml(nombre) {
     '<div class="dm-deuda-bar grande"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
     '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(msg) + '</div>' + simula +
     '<button class="btn accent block" style="margin-top:14px;" ' + act('deudaPagar', d.nombre) + '>' + ic('plus') + ' Apuntar un pago</button>' +
-    '<div class="dm-hbtns"><button class="btn ghost block" ' + act('deudaCuadrar', d.nombre) + '>Cuadrar con el banco</button><button class="btn ghost block dm-masb" ' + act('deudaMasMenu') + '>' + ic('more') + ' Más</button></div>' +
+    '<div class="dm-hbtns"><button class="btn ghost block" ' + act('deudaCuadrar', d.nombre) + '>Cuadrar con el banco</button><button class="btn ghost dm-masb" aria-label="Más" ' + act('deudaMasMenu') + '>' + ic('more') + '</button></div>' +
     (F.menu ? '<div class="card dm-hmas"><button type="button" class="dm-hmas-b" ' + act('deudaEditar', d.nombre) + '>' + ic('edit') + '<span><b>Editar</b><span>Nombre, dibujo, total, ya pagado, al mes y fecha</span></span></button>' +
       '<button type="button" class="dm-hmas-b peligro" ' + act('deudaEliminar', d.nombre) + '>' + ic('trash') + '<span><b>Eliminar deuda</b><span>Sus pagos siguen en Movimientos</span></span></button></div>' : '') +
     (pagos.length ? '<div class="section-title">Últimos pagos<button class="link" ' + act('irMovsDeuda', d.nombre) + '>Ver todos</button></div><div class="card dm-ult">' + pagos.slice(0, 3).map((x) => '<div class="dm-ult-f"><span>' + fmtDateShort(x.fecha) + '</span><b class="tnum">' + money(x.importe) + '</b></div>').join('') + '</div>' : '') +
