@@ -5029,11 +5029,14 @@ const COLOR_CAT_STD = {
   Deporte: '#4FB3A9', Compras: '#C25BD8', 'Salud y cuidado personal': '#E5534B', Regalos: '#D98C5F', Viajes: '#3FC1E0', Suscripciones: '#9C8CF0',
   Seguros: '#5A7BD8', 'Educación': '#A3B84A', Mascotas: '#B57A4E', Otros: '#7C8794',
 };
-const COLOR_CAT_PROPIAS = ['#6D5BF0', '#F29A2E', '#1FA67A', '#E5534B', '#2E9BD6', '#C25BD8', '#E6B422', '#E86A9A', '#4FB3A9', '#A3B84A'];
+// las personalizadas: tonos distintos de los de las estándar, por orden en tu lista (así dos tuyas no se repiten hasta la 11.ª)
+const COLOR_CAT_PROPIAS = ['#FF8A65', '#5C6BC0', '#26A69A', '#D4E157', '#AB47BC', '#FFCA28', '#EC407A', '#29B6F6', '#A1887F', '#9CCC65'];
 const COLOR_OTRAS = '#A3A7B3';
 function colorCat(nombre) {
   const std = catStd(nombre); if (std) return COLOR_CAT_STD[std.n] || COLOR_OTRAS;
-  const k = normName(nombre); let h = 0; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0;
+  const k = normName(nombre), propias = catsGasto().filter((c) => !c.std), i = propias.findIndex((c) => normName(c.nombre) === k);
+  if (i >= 0) return COLOR_CAT_PROPIAS[i % COLOR_CAT_PROPIAS.length];
+  let h = 0; for (let j = 0; j < k.length; j++) h = (h * 31 + k.charCodeAt(j)) >>> 0; // una que ya no está en tu lista
   return COLOR_CAT_PROPIAS[h % COLOR_CAT_PROPIAS.length];
 }
 /* ---- «En qué gastas»: anillo con la leyenda al lado. Como mucho 6 colores: las 5 mayores y «Otras».
