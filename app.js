@@ -1760,15 +1760,16 @@ function gcDatos(y, m) {
   const ents = Object.entries(catMap).filter((e) => e[1] > 0.004).sort((a, b) => b[1] - a[1]), total = ents.reduce((a, e) => a + e[1], 0);
   const lbl = (n) => (n && n !== 'undefined' && n !== 'null' ? n : 'Sin categoría');
   const fila = ([n, v]) => {
-    const mios = gastos.filter((x) => normName(x.categoria) === normName(n));
-    return { n, l: lbl(n), v, color: colorCat(n), pres: presDe(n), nMov: mios.length, subs: donutPartes({ n, color: colorCat(n) }, gastos), sitios: gcSitios(mios) };
+    const mios = gastos.filter((x) => normName(x.categoria) === normName(n)), clave = n && n !== 'undefined' && n !== 'null' ? n : '__sincat';
+    return { n: clave, cat: clave === '__sincat' ? '' : n, l: lbl(n), v, color: colorCat(n), pres: presDe(n), nMov: mios.length, subs: donutPartes({ n, color: colorCat(n) }, gastos), sitios: gcSitios(mios) };
   };
   let filas = ents.length <= 6 ? ents.map(fila) : ents.slice(0, 5).map(fila);
   if (ents.length > 6) { const resto = ents.slice(5).map(fila); filas.push({ n: '__otras', l: 'Otras · ' + resto.length + ' categorías', v: resto.reduce((a, x) => a + x.v, 0), color: COLOR_OTRAS, pres: 0, hijos: resto, otras: true }); }
   const presCero = cats.filter((c) => num(c.presupuesto) > 0 && !(catMap[c.nombre] > 0.004)).map((c) => ({ n: c.nombre, l: c.nombre, v: 0, color: colorCat(c.nombre), pres: num(c.presupuesto), nMov: 0, subs: null, sitios: null }));
   const vacias = cats.filter((c) => !(num(c.presupuesto) > 0) && !(catMap[c.nombre] > 0.004)).map((c) => ({ n: c.nombre, l: c.nombre, v: 0, color: colorCat(c.nombre), pres: 0, nMov: 0, subs: null, sitios: null }));
   const conPres = cats.filter((c) => num(c.presupuesto) > 0), totPres = conPres.reduce((a, c) => a + num(c.presupuesto), 0), gastoConPres = conPres.reduce((a, c) => a + Math.max(0, num(catMap[c.nombre])), 0);
-  return { total, filas, presCero, vacias, totPres, gastoConPres, gastos, y, m };
+  const negs = Object.entries(catMap).filter((e) => e[1] < -0.004), devol = negs.reduce((a, e) => a + e[1], 0);
+  return { total, neto: total + devol, devol, devolCats: negs.map((e) => lbl(e[0])), filas, presCero, vacias, totPres, gastoConPres, gastos, y, m };
 }
 // los sitios (la descripción) donde más gastas dentro de una categoría
 function gcSitios(movs) {
@@ -1778,6 +1779,7 @@ function gcSitios(movs) {
   const rN = resto.reduce((a, x) => a + x.n, 0) + sinN, rV = resto.reduce((a, x) => a + x.v, 0) + sinV;
   return top.length ? { top, rN, rV } : null;
 }
+function gcCat(f) { return f.cat != null ? f.cat : f.n; }
 function gcEscala(d) { return Math.max(1, ...d.filas.concat(d.presCero).map((f) => Math.max(f.v, f.pres || 0))); }
 function gcSubHtml(f, d) {
   const pct = d.total ? Math.round(f.v / d.total * 100) + ' %' : '', over = f.pres > 0 && f.v > f.pres;
@@ -1796,14 +1798,14 @@ function gcFilaHtml(f, esc, per, d) {
 }
 function gcCajonHtml(f, per) {
   let h = '';
-  if (f.otras) h = f.hijos.map((x) => '<button type="button" class="gc-mini" ' + act('irMovs', '_gastos', per, x.n) + '><i style="background:' + x.color + '"></i><span>' + escapeHtml(x.l) + '</span><b class="tnum">' + money(x.v) + '</b></button>').join('');
+  if (f.otras) h = f.hijos.map((x) => '<button type="button" class="gc-mini" ' + act('irMovs', '_gastos', per, gcCat(x)) + '><i style="background:' + x.color + '"></i><span>' + escapeHtml(x.l) + '</span><b class="tnum">' + money(x.v) + '</b></button>').join('');
   else if (f.subs) { const mx = Math.max(...f.subs.map((x) => x.v));
-    h = f.subs.map((x) => '<button type="button" class="gc-mini" ' + act('donutIr', f.n, x.sub || '-') + '><i style="background:' + f.color + ';opacity:' + (x.op || 1) + '"></i><span>' + escapeHtml(x.n) + '</span><span class="gc-mbar"><i style="width:' + (x.v / mx * 100).toFixed(1) + '%;opacity:' + (x.op || 1) + '"></i></span><b class="tnum">' + money(x.v) + '</b></button>').join(''); }
+    h = f.subs.map((x) => '<button type="button" class="gc-mini" ' + act('donutIr', gcCat(f), x.sub || '-') + '><i style="background:' + f.color + ';opacity:' + (x.op || 1) + '"></i><span>' + escapeHtml(x.n) + '</span><span class="gc-mbar"><i style="width:' + (x.v / mx * 100).toFixed(1) + '%;opacity:' + (x.op || 1) + '"></i></span><b class="tnum">' + money(x.v) + '</b></button>').join(''); }
   else if (f.sitios) h = f.sitios.top.map((x) => '<button type="button" class="gc-mini sitio" ' + act('movDonde', x.d) + '><span>' + escapeHtml(x.d) + ' <em>· ' + x.n + (x.n === 1 ? ' vez' : ' veces') + '</em></span><b class="tnum">' + money(x.v) + '</b></button>').join('') +
     (f.sitios.rN ? '<div class="gc-mini resto"><span>Otros ' + f.sitios.rN + (f.sitios.rN === 1 ? ' movimiento' : ' movimientos') + '</span><b class="tnum">' + money(f.sitios.rV) + '</b></div>' : '');
   else if (!f.v) h = '<div class="gc-mini resto"><span>Aún no has gastado nada aquí este mes.</span></div>';
-  if (!f.otras) h += '<div class="gc-pie">' + (f.nMov ? '<button type="button" class="gc-ver" ' + act('irMovs', '_gastos', per, f.n) + '>Ver ' + (f.nMov === 1 ? 'el movimiento' : 'los ' + f.nMov + ' movimientos') + ic('chevR') + '</button>' : '') +
-    '<button type="button" class="link gc-pres" ' + act('presEditar', f.n) + '>' + (f.pres > 0 ? 'Presupuesto ' + money(f.pres) + ' · Cambiar' : 'Ponerle presupuesto') + '</button></div>';
+  if (!f.otras) h += '<div class="gc-pie">' + (f.nMov ? '<button type="button" class="gc-ver" ' + act('irMovs', '_gastos', per, gcCat(f)) + '>Ver ' + (f.nMov === 1 ? 'el movimiento' : 'los ' + f.nMov + ' movimientos') + ic('chevR') + '</button>' : '') +
+    '<button type="button" class="link gc-pres" ' + act('presEditar', gcCat(f)) + '>' + (f.pres > 0 ? 'Presupuesto ' + money(f.pres) + ' · Cambiar' : 'Ponerle presupuesto') + '</button></div>';
   return h;
 }
 function gcResumenHtml(variante) {
@@ -1812,7 +1814,7 @@ function gcResumenHtml(variante) {
   if (S._gcAbierta && !d.filas.concat(d.presCero).some((f) => f.n === S._gcAbierta)) S._gcAbierta = '';
   const esc = gcEscala(d), pasado = d.gastoConPres > d.totPres;
   const resumen = d.totPres ? '<div class="summary-line pres-sum">Llevas <b class="tnum">' + money(d.gastoConPres) + '</b> de ' + money(d.totPres) + ' presupuestados · ' + (pasado ? '<span class="neg">te has pasado ' + money(d.gastoConPres - d.totPres) + '</span>' : 'quedan ' + money(d.totPres - d.gastoConPres)) + '</div>' : '';
-  const cab = '<div class="gc-total"><b class="tnum">' + money(d.total) + '</b><span>gastado</span>' + compGastoChip(y, m).replace('kpi-chip', 'kpi-chip gc-chip') + '</div>' + resumen;
+  const cab = '<div class="gc-total"><b class="tnum">' + money(d.neto) + '</b><span>gastado</span>' + compGastoChip(y, m).replace('kpi-chip', 'kpi-chip gc-chip') + '</div>' + (d.devol < -0.004 ? '<div class="summary-line gc-devol">Ya resta ' + money(-d.devol) + ' de devoluciones (' + escapeHtml(d.devolCats.join(', ')) + ')</div>' : '') + resumen;
   const lista = d.filas.concat(d.presCero).concat(S.presTodas ? d.vacias : []), filas = lista.map((f) => gcFilaHtml(f, esc, per, d)).join('');
   const subW = Math.max(0, ...lista.map((f) => gcSubHtml(f, d).replace(/<[^>]+>/g, '').length)); // todas las barras del mismo largo
   const pie = d.vacias.length ? '<button class="link pres-mas" ' + act('presTodas') + '>' + (S.presTodas ? 'Ocultar las que están a 0' : 'Ver ' + d.vacias.length + ' categorías sin gasto') + '</button>' : '';
@@ -1841,8 +1843,9 @@ function gcMosaicoHtml(d) {
     else { parte(items.slice(0, i), x, y, w, h * fa); parte(items.slice(i), x, y + h * fa, w, h * (1 - fa)); }
   };
   parte(d.filas, 0, 0, W, H);
+  const abiertaEsFicha = out.some((t) => t.n === S._gcAbierta);
   return out.map((t, i) => { const grande = t.w >= 30 && t.h >= 26, media = t.w >= 22 && t.h >= 16;
-    return '<button type="button" class="gc-ficha' + (S._gcAbierta ? (S._gcAbierta === t.n ? ' sel' : ' off') : '') + (grande ? ' g' : media ? ' m' : ' p') + '" data-gc="' + escapeHtml(t.n) + '" style="left:' + t.x.toFixed(2) + '%;top:' + (t.y / H * 100).toFixed(2) + '%;width:' + t.w.toFixed(2) + '%;height:' + (t.h / H * 100).toFixed(2) + '%;--cc:' + t.color + ';animation-delay:' + (i * 0.05).toFixed(2) + 's" ' + act('gcAbrir', t.n) + ' aria-label="' + escapeHtml(t.otras ? 'Otras' : t.l) + ', ' + money(t.v) + '">' +
+    return '<button type="button" aria-pressed="' + (S._gcAbierta === t.n) + '" class="gc-ficha' + (abiertaEsFicha ? (S._gcAbierta === t.n ? ' sel' : ' off') : '') + (grande ? ' g' : media ? ' m' : ' p') + '" data-gc="' + escapeHtml(t.n) + '" style="left:' + t.x.toFixed(2) + '%;top:' + (t.y / H * 100).toFixed(2) + '%;width:' + t.w.toFixed(2) + '%;height:' + (t.h / H * 100).toFixed(2) + '%;--cc:' + t.color + ';animation-delay:' + (i * 0.05).toFixed(2) + 's" ' + act('gcAbrir', t.n) + ' aria-label="' + escapeHtml(t.otras ? 'Otras' : t.l) + ', ' + money(t.v) + '">' +
       '<span class="gc-ficha-in">' + (!media ? '<span class="gf-ic" aria-hidden="true">' + (t.otras ? ic('more') : ic(iconoCat('Gasto', t.n))) + '</span>' : '') + (media ? '<span class="gf-n">' + escapeHtml(t.otras ? 'Otras' : t.l) + '</span>' : '') + '<b class="tnum">' + agrupar(Math.round(t.v).toLocaleString('es-ES')) + ' ' + sym() + '</b>' + (grande ? '<span class="gf-p">' + Math.round(t.v / d.total * 100) + ' %</span>' : '') + '</span></button>'; }).join('');
 }
 // Anillo (versión 3): el trozo elegido sale hacia fuera y, alrededor, un arco fino con sus subcategorías; la lista de abajo se abre en su fila
@@ -3397,7 +3400,7 @@ function versionDe(k) { return VERSIONES[k].variantes[versionIdx(k)][0]; }
 function verAnterior(k) { return versionIdx(k) > 0; }
 function compararOn() { return cfg().compararVersiones !== false; }
 function compararBotonHtml() {
-  const k = seccionVersion(); if (!k || !VERSIONES[k] || !compararOn() || !allLoaded()) return '';
+  const k = seccionVersion(); if (!k || !VERSIONES[k] || !compararOn() || !allLoaded() || (!S.movimientos.length && !(S.compartidos || []).length)) return '';
   const vs = VERSIONES[k].variantes, i = versionIdx(k);
   if (vs.length === 2) return '<button type="button" class="comparar-fab' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="' + (i ? 'Ver la versión nueva' : 'Ver la versión anterior') + '">' + ic('swap') + '<span>' + (i ? 'Ver nueva' : 'Antes') + '</span></button>';
   return '<button type="button" class="comparar-fab multi' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="Cambiar de versión (' + vs[i][1] + ', ' + (i + 1) + ' de ' + vs.length + ')">' + ic('swap') + '<span>' + vs[i][1] + ' <i>' + (i + 1) + '/' + vs.length + '</i></span></button>';
@@ -3436,13 +3439,14 @@ function insightsDatos() {
       frase: 'Llevas ' + money(g.ahora.t) + ' gastados: ' + (Math.abs(dif) < 0.5 ? 'lo mismo' : dif > 0 ? money(dif) + ' más' : money(-dif) + ' menos') + ' que en ' + mesAnt + alturas + '.', a: act('heroResumen') });
   }
   const subida = Object.keys(g.ahora.o).map((c) => ({ c, d: g.ahora.o[c] - (g.antes.o[c] || 0) })).filter((x) => x.d >= 10).sort((a, b) => b.d - a.d)[0];
-  if (subida && g.antes.t > 0) out.push({ tono: 'malo', color: colorCat(subida.c), valor: '+' + euros(subida.d), l1: subida.c, l2: 'sube más', aro: 1,
-    frase: subida.c + ' es lo que más sube: ' + money(subida.d) + ' más que en ' + mesAnt + alturas + '.', a: act('irMovs', '_gastos', mk, subida.c) });
+  const subNom = subida ? (subida.c && subida.c !== 'undefined' && subida.c !== 'null' ? subida.c : 'Sin categoría') : '';
+  if (subida && g.antes.t > 0) out.push({ tono: 'malo', color: colorCat(subida.c), valor: '+' + euros(subida.d), l1: subNom, l2: 'sube más', aro: 1,
+    frase: subNom + ' es lo que más sube: ' + money(subida.d) + ' más que en ' + mesAnt + alturas + '.', a: act('irMovs', '_gastos', mk, subida.c) });
   const catMap = gastoPorCategoria(kpisMes(y, m).movs);
   const pres = catsGasto().filter((c) => num(c.presupuesto) > 0).map((c) => ({ c: c.nombre, p: num(c.presupuesto), r: Math.max(0, catMap[c.nombre] || 0) }));
   const pasada = pres.filter((x) => x.r > x.p).sort((a, b) => (b.r - b.p) - (a.r - a.p))[0];
   const justa = pres.filter((x) => x.r <= x.p && x.r >= x.p * 0.8).sort((a, b) => b.r / b.p - a.r / a.p)[0];
-  if (pasada) out.push({ tono: 'malo', valor: '+' + euros(pasada.r - pasada.p), l1: pasada.c, l2: 'te pasas', aro: 1,
+  if (pasada) out.push({ k: 'pasada', cat: pasada.c, tono: 'malo', valor: '+' + euros(pasada.r - pasada.p), l1: pasada.c, l2: 'te pasas', aro: 1,
     frase: 'En ' + pasada.c + ' llevas ' + money(pasada.r) + ' de ' + money(pasada.p) + ': te has pasado ' + money(pasada.r - pasada.p) + '.', a: act('irMovs', '_gastos', mk, pasada.c) });
   else if (justa && actual) out.push({ tono: 'aviso', valor: Math.round(justa.r / justa.p * 100) + '%', l1: justa.c, l2: 'va justo', aro: justa.r / justa.p,
     frase: 'En ' + justa.c + ' llevas ' + money(justa.r) + ' de ' + money(justa.p) + ': te quedan ' + money(justa.p - justa.r) + '.', a: act('irMovs', '_gastos', mk, justa.c) });
@@ -3450,7 +3454,7 @@ function insightsDatos() {
     frase: 'Vas dentro de todos tus presupuestos este mes.', a: act('heroResumen') });
   if (actual && (S.compartidos || []).length) {
     const pc = cuentaPrincipal(), neto = pc ? compartidosCuenta(pc).neto : [...new Set((S.compartidos || []).map((x) => x.grupoId).filter(Boolean))].reduce((a, gid) => a + miSaldo(gid), 0);
-    if (Math.abs(neto) >= 0.01) out.push({ tono: neto > 0 ? 'bueno' : 'aviso', valor: euros(Math.abs(neto)), l1: neto > 0 ? 'Te deben' : 'Debes', l2: 'en Juntos', aro: 1,
+    if (Math.abs(neto) >= 0.01) out.push({ k: 'juntos', tono: neto > 0 ? 'bueno' : 'aviso', valor: euros(Math.abs(neto)), l1: neto > 0 ? 'Te deben' : 'Debes', l2: 'en Juntos', aro: 1,
       frase: (neto > 0 ? 'En Juntos te deben ' + money(neto) : 'En Juntos debes ' + money(-neto)) + ', sumando todos tus grupos.', a: act('goTab', 'juntos') });
   }
   const r = rangoMes(y, m), hoy = todayISO(), conGasto = new Set(kpisMes(y, m).movs.filter((x) => x.tipo === 'Gasto').map((x) => (x.fecha || '').slice(0, 10)));
@@ -3523,7 +3527,7 @@ function estosDiasHtml(v2) {
   ra.pasados.forEach((x) => filas.push({ cls: 'rec', icono: 'calendar', t: escapeHtml(x.rc.nombre) + imp(x), d: (x.rc.kind === 'cobro' ? '¿Cobrado?' : '¿Pagado?') + ' · era el ' + fechaCortaU(x.iso), a: act('openRecurrentes'), botones: btn('recSi', x, 'Sí', 'accent') + btn('recNo', x, 'No', 'ghost') }));
   ra.hoy.filter((x) => x.estado !== 'ok').forEach((x) => filas.push({ cls: 'rec', fecha: x.iso, t: escapeHtml(x.rc.nombre) + imp(x), d: 'Hoy · ' + (x.rc.kind === 'cobro' ? 'cobro previsto' : 'pago previsto'), a: act('openRecurrentes'), botones: btn('recSi', x, 'Confirmar', 'accent') }));
   tareasVencidas().slice().sort(cmpTarea).forEach((t) => { const n = -daysUntil(t.fechaLimite); filas.push({ cls: 'mal', icono: 'alert', t: escapeHtml(t.nombre || 'Tarea'), d: 'Tarea · venció ' + (n === 1 ? 'ayer' : 'hace ' + n + ' días'), a: act('openTareaForm', t.id) }); });
-  presupuestoExcedido(ma.y, ma.m).forEach((c) => filas.push({ cls: 'warn', icono: 'alert', t: escapeHtml(c.categoria) + ': te has pasado', d: money(c.real) + ' de ' + money(c.presupuesto) + ' de presupuesto', a: act('irMovs', '_gastos', mesClave(ma.y, ma.m), c.categoria) }));
+  presupuestoExcedido(ma.y, ma.m).forEach((c) => filas.push({ cls: 'warn', cat: c.categoria, icono: 'alert', t: escapeHtml(c.categoria) + ': te has pasado', d: money(c.real) + ' de ' + money(c.presupuesto) + ' de presupuesto', a: act('irMovs', '_gastos', mesClave(ma.y, ma.m), c.categoria) }));
   if (compartidosDisponible()) {
     const ids = [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id)), tot = r2(ids.reduce((a, id) => a + miSaldo(id), 0));
     if (Math.abs(tot) >= 0.005) filas.push({ cls: 'juntos', icono: 'users', t: tot > 0 ? 'Te deben ' + money(tot) : 'Debes ' + money(-tot), d: 'En lo que compartes', a: act('goTab', 'juntos') });
@@ -3538,7 +3542,8 @@ function estosDiasHtml(v2) {
   const filaHtml = (f) => '<div class="dia-fila' + (f.cls ? ' ' + f.cls : '') + '"><button type="button" class="dia-main" ' + (f.a || '') + '>' +
     (f.fecha ? fechaTile(f.fecha) : '<span class="dia-ic">' + ic(f.icono) + '</span>') + '<span class="dia-t"><b>' + f.t + '</b><span>' + f.d + '</span></span>' + (f.botones ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' +
     (f.botones ? '<span class="dia-btns">' + f.botones + '</span>' : '') + '</div>';
-  if (v2) for (let i = filas.length - 1; i >= 0; i--) if (filas[i].cls === 'juntos' || filas[i].cls === 'warn') filas.splice(i, 1); // ya salen en «Así vas»
+  if (v2) { const ins = S._ins || [], conJuntos = ins.some((x) => x.k === 'juntos'), pasada = (ins.find((x) => x.k === 'pasada') || {}).cat; // lo que ya sale en «Así vas» no se repite
+    for (let i = filas.length - 1; i >= 0; i--) if ((filas[i].cls === 'juntos' && conJuntos) || (filas[i].cls === 'warn' && pasada != null && filas[i].cat === pasada)) filas.splice(i, 1); }
   const CAP = v2 ? 2 : 3, todas = !!S.pendTodos, ver = todas ? filas : filas.slice(0, CAP);
   return '<div class="section-title dias-tit">Estos días <button class="link" ' + act('setInicioVista', 'tareas') + '>Agenda ' + ic('chevR') + '</button></div>' +
     (filas.length ? '<div class="card dias-lista">' + ver.map(filaHtml).join('') +
@@ -6745,7 +6750,8 @@ const H = {
   gcAbrir: ([n]) => {
     const nuevo = n && S._gcAbierta !== n ? n : ''; S._gcAbierta = nuevo; sentir('tic');
     $$('.gc-fila').forEach((el) => { const on = el.getAttribute('data-gc') === nuevo; el.classList.toggle('abierta', on); const b = el.querySelector('.gc-cab'); if (b) b.setAttribute('aria-expanded', on); });
-    $$('.gc-ficha').forEach((el) => { const on = el.getAttribute('data-gc') === nuevo; el.classList.toggle('sel', on); el.classList.toggle('off', !!nuevo && !on); });
+    const esFicha = $$('.gc-ficha').some((el) => el.getAttribute('data-gc') === nuevo);
+    $$('.gc-ficha').forEach((el) => { const on = el.getAttribute('data-gc') === nuevo; el.classList.toggle('sel', on); el.classList.toggle('off', esFicha && !on); el.setAttribute('aria-pressed', on); });
     const det = $('#gcDet'); if (det) { const d = gcDatos(S.anioSel, S.mesSel), f = d.filas.find((x) => x.n === nuevo); det.innerHTML = f ? gcDetHtml(f, mesClave(S.anioSel, S.mesSel), d) : '<div class="gc-det-vacio">Toca una ficha para ver en qué se va</div>'; det.classList.remove('entra'); void det.offsetWidth; det.classList.add('entra'); }
     if ($('#gcAnillo')) gcAnilloDraw('txt');
     const filaAb = nuevo && ($('.gc-fila.abierta') || $('#gcDet')); if (filaAb && filaAb.scrollIntoView) setTimeout(() => filaAb.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' }), 380);

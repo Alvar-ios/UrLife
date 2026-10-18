@@ -88,10 +88,10 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     const e = entorno([{ nombre: 'Supermercado' }], []); await sleep(150);
     const H = e.w.__APP__.H, doc = e.doc;
     H.goTab(['inicio']); await sleep(10);
-    pend(boton(doc) === '', 'usuario nuevo (sin movimientos): no debería salir «Antes» en Inicio (sale: «' + boton(doc) + '»)');
+    ok(boton(doc) === '', 'usuario nuevo (sin movimientos): no debería salir «Antes» en Inicio (sale: «' + boton(doc) + '»)');
     H.goTab(['movimientos']); await sleep(10);
     ok(/Sin gastos registrados/.test(doc.querySelector('#content').textContent), 'usuario nuevo: «En qué gastas» dice que no hay gastos');
-    pend(boton(doc) === '', 'usuario nuevo: no debería salir «Barras 1/3» si no hay nada que comparar (sale: «' + boton(doc) + '»)');
+    ok(boton(doc) === '', 'usuario nuevo: no debería salir «Barras 1/3» si no hay nada que comparar (sale: «' + boton(doc) + '»)');
   }
 
   /* ===== 2. Inicio v2 ===== */
@@ -108,15 +108,15 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     const circ = [...doc.querySelectorAll('.ins-c')];
     ok(circ.length >= 2 && circ.length <= 5 && circ.every((c) => (c.getAttribute('aria-label') || '').length > 10), '«Así vas»: entre 2 y 5 círculos, cada uno con su frase para lectores de pantalla');
     const filasDias = doc.querySelectorAll('.dias-lista .dia-fila').length;
-    ok(filasDias === 2 && /Ver los 3/.test(doc.querySelector('.dias-lista').textContent), '«Estos días»: 2 filas a la vista y «Ver los 3» (hay ' + filasDias + ')');
+    ok(filasDias === 2 && /Ver los 4/.test(doc.querySelector('.dias-lista').textContent), '«Estos días»: 2 filas a la vista y «Ver los 4» (el segundo presupuesto pasado ya no se quita) (hay ' + filasDias + ')');
     click(e, 'verPendiente'); await sleep(10);
-    ok(doc.querySelectorAll('.dias-lista .dia-fila').length === 3 && /Ver menos/.test(doc.querySelector('.dias-lista').textContent), '«Ver los 3» enseña las 3 y «Ver menos»');
+    ok(doc.querySelectorAll('.dias-lista .dia-fila').length === 4 && /Ver menos/.test(doc.querySelector('.dias-lista').textContent), '«Ver los 4» enseña las 4 y «Ver menos»');
+    ok(/Ocio: te has pasado/.test(doc.querySelector('.dias-lista').textContent), 'el segundo presupuesto pasado (Ocio) sigue en «Estos días»');
     click(e, 'verPendiente'); await sleep(10);
     const txt = doc.querySelector('#content').textContent;
     ok(/Supermercado/.test(txt), 'Supermercado pasado de presupuesto sale en «Así vas»');
-    pend(/Ocio/.test(txt), 'con dos presupuestos pasados, el segundo (Ocio) no sale en ningún sitio de Inicio nuevo (en el anterior salía en «Estos días»)');
     const sube = circ.find((c) => /sube más/.test(c.textContent));
-    pend(!!sube && /Sin categoría/.test(sube.textContent + sube.getAttribute('aria-label')), 'si lo que más sube no tiene categoría, el círculo sale sin nombre («' + (sube ? sube.getAttribute('aria-label') : '-') + '»)');
+    ok(!!sube && /Sin categoría/.test(sube.textContent + sube.getAttribute('aria-label')), 'si lo que más sube no tiene categoría, el círculo sale sin nombre («' + (sube ? sube.getAttribute('aria-label') : '-') + '»)');
     // popup del círculo
     click(e, 'insVer', '0'); await sleep(10);
     ok(!!doc.querySelector('#popupBackdrop .ins-pop') && !!doc.querySelector('#popupBackdrop [data-click^="insVerIr|"]'), 'al tocar un círculo: frase entera y «Ver»');
@@ -138,7 +138,7 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     H.compararCambiar(['inicio']); await sleep(10);
     ok(/Debes 20,00/.test(doc.querySelector('#content').textContent), 'Inicio anterior: «Debes 20,00 €» en «Estos días»');
     H.compararCambiar(['inicio']); await sleep(10);
-    pend(/Debes|20,00 €.*Juntos|en Juntos/.test(doc.querySelector('#content').textContent), 'Inicio nuevo, quien solo usa Juntos: lo que debe no sale en ningún sitio (se quita de «Estos días» y «Así vas» no sale sin movimientos propios)');
+    ok(/Debes|20,00 €.*Juntos|en Juntos/.test(doc.querySelector('#content').textContent), 'Inicio nuevo, quien solo usa Juntos: lo que debe no sale en ningún sitio (se quita de «Estos días» y «Así vas» no sale sin movimientos propios)');
   }
   {
     // con movimientos y Juntos, mirando el mes anterior en Inicio
@@ -150,7 +150,7 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     H.goTab(['inicio']); await sleep(10);
     ok(/Debes 20,00|Debes/.test(doc.querySelector('.ins-circ') ? doc.querySelector('.ins-circ').textContent : ''), 'Inicio nuevo, mes actual: lo de Juntos sale en «Así vas»');
     H.inicioMes([-1]); await sleep(10);
-    pend(/Debes/.test(doc.querySelector('#content').textContent), 'Inicio nuevo mirando el mes anterior: lo que debes en Juntos desaparece (el anterior lo seguía enseñando en «Estos días»)');
+    ok(/Debes/.test(doc.querySelector('#content').textContent), 'Inicio nuevo mirando el mes anterior: lo que debes en Juntos desaparece (el anterior lo seguía enseñando en «Estos días»)');
   }
 
   /* ===== 3. «En qué gastas» v3 ===== */
@@ -191,7 +191,7 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     await irVersion(A, 'Mosaico');
     ok(/Ropa/.test(doc.querySelector('#gcDet').textContent) && !!doc.querySelector('.gc-ficha.sel'), 'Barras → Mosaico con Ropa abierta: sale su detalle y su ficha elegida');
     ok(!idsRepetidos(doc).length, 'Mosaico: sin ids repetidos');
-    pend(doc.querySelectorAll('.gc-ficha[aria-pressed]').length === doc.querySelectorAll('.gc-ficha').length, 'Mosaico: las fichas no dicen si están elegidas (falta aria-pressed para lectores de pantalla)');
+    ok(doc.querySelectorAll('.gc-ficha[aria-pressed]').length === doc.querySelectorAll('.gc-ficha').length, 'Mosaico: las fichas no dicen si están elegidas (falta aria-pressed para lectores de pantalla)');
     await irVersion(A, 'Anillo');
     ok(/Ropa/.test(doc.querySelector('#gcAnillo').textContent) && abiertas(doc).join() === 'Ropa', 'Mosaico → Anillo: Ropa sigue elegida en el anillo y abierta en la lista');
     ok(!idsRepetidos(doc).length, 'Anillo: sin ids repetidos');
@@ -203,7 +203,7 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     ok(abiertas(doc).join() === 'Viajes' && /Aún no has gastado nada/.test(filaDe(doc, 'Viajes').textContent), 'presupuesto sin gasto: se abre y lo dice');
     await irVersion(A, 'Mosaico');
     const off = doc.querySelectorAll('.gc-ficha.off').length, tot = doc.querySelectorAll('.gc-ficha').length;
-    pend(off === 0, 'Barras → Mosaico con un presupuesto sin gasto abierto: todas las fichas salen apagadas y ninguna elegida (' + off + ' de ' + tot + ')');
+    ok(off === 0, 'Barras → Mosaico con un presupuesto sin gasto abierto: todas las fichas salen apagadas y ninguna elegida (' + off + ' de ' + tot + ')');
     // cambiar de mes con una abierta
     await irVersion(A, 'Barras'); H.gcAbrir(['Ropa']); await sleep(10);
     H.movPerMover([-1]); await sleep(30);
@@ -219,17 +219,17 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     await sleep(150);
     const A = e.w.__APP__, H = A.H, doc = e.doc; A.doc = doc;
     H.goTab(['movimientos']); await sleep(10);
-    const sin = filaDe(doc, '');
+    const sin = filaDe(doc, '__sincat');
     ok(!!sin && /Sin categoría/.test(sin.textContent), 'la categoría vacía sale como «Sin categoría»');
-    pend(!abiertas(doc).length && !expandidas(doc).length, 'Barras: «Sin categoría» sale abierta (y aria-expanded="true") sin haberla tocado');
+    ok(!abiertas(doc).length && !expandidas(doc).length, 'Barras: «Sin categoría» sale abierta (y aria-expanded="true") sin haberla tocado');
     tocar(e, filaDe(doc, 'Supermercado').querySelector('.gc-cab')); await sleep(10);
     tocar(e, filaDe(doc, 'Supermercado').querySelector('.gc-cab')); await sleep(10);
-    pend(!abiertas(doc).length, 'Barras: al cerrar otra categoría, se abre sola «Sin categoría»');
+    ok(!abiertas(doc).length, 'Barras: al cerrar otra categoría, se abre sola «Sin categoría»');
     await irVersion(A, 'Anillo');
-    pend(/toca un color/.test(doc.querySelector('#gcAnillo').textContent), 'Anillo: sin elegir nada, el centro enseña «Sin categoría» en vez del total');
+    ok(/toca un color/.test(doc.querySelector('#gcAnillo').textContent), 'Anillo: sin elegir nada, el centro enseña «Sin categoría» en vez del total');
     await irVersion(A, 'Mosaico');
     H.gcAbrir(['Supermercado']); await sleep(10); H.gcAbrir(['Supermercado']); await sleep(10);
-    pend(/Toca una ficha/.test(doc.querySelector('#gcDet').textContent), 'Mosaico: al cerrar una ficha, el detalle enseña «Sin categoría» en vez de «Toca una ficha»');
+    ok(/Toca una ficha/.test(doc.querySelector('#gcDet').textContent), 'Mosaico: al cerrar una ficha, el detalle enseña «Sin categoría» en vez de «Toca una ficha»');
   }
   {
     // devoluciones: una categoría con más devuelto que gastado
@@ -240,7 +240,7 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     H.goTab(['movimientos']); await sleep(10);
     const k = A.kpisMes(Y, M), neto = k.gastos + k.facturas, gc = doc.querySelector('.gc-total').textContent;
     ok(neto === 20, '(preparación) gasto neto del mes: 50 − 30 = 20');
-    pend(gc.indexOf('20,00') >= 0, 'con una devolución, «En qué gastas» dice «' + gc.replace('gastado', ' gastado') + '» y la tarjeta de arriba dice Gastos 20,00 €: dos cifras distintas en la misma pantalla');
+    ok(gc.indexOf('20,00') >= 0, 'con una devolución, «En qué gastas» dice «' + gc.replace('gastado', ' gastado') + '» y la tarjeta de arriba dice Gastos 20,00 €: dos cifras distintas en la misma pantalla');
   }
   {
     // mes sin gastos y mes con solo devoluciones, en las tres versiones
