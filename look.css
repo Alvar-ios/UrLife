@@ -823,3 +823,10 @@ html[data-look="nuevo"] .cr-cara.fuera { opacity: .45; }
 html[data-look="nuevo"] .cr-res { margin: 12px 0 4px; padding: 10px 12px; border-radius: var(--r-m); background: var(--accent-soft); color: var(--accent); font-weight: 650; font-size: 14px; text-align: center; }
 html[data-look="nuevo"] .cr-res.error { background: color-mix(in srgb, var(--expense) 10%, var(--paper-sunken)); color: var(--expense); }
 html[data-look="nuevo"] .cr-pie { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 0; }
+
+/* Inversiones: al cambiar Valor | Rentabilidad la cifra entra suave y el «0 %» aparece sin salto */
+html[data-look="nuevo"] .tr-big.tr-cambia { animation: trCambia .55s var(--ease-out) both; }
+html[data-look="nuevo"] .tr-cero { animation: trFade .5s .25s var(--ease-out) both; }
+@keyframes trCambia { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes trFade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { html[data-look="nuevo"] .tr-big.tr-cambia, html[data-look="nuevo"] .tr-cero { animation: none; } }

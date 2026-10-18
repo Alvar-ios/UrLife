@@ -39,7 +39,7 @@ const movs=[{id:'i1',tipo:'Ingreso',categoria:'Nómina',importe:1500,fecha:hoy},
  const ins2=doc.querySelector('#sheetHost .cuenta-ed input.amt');ins2.value='2500';ins2.dispatchEvent(new e.w.Event('change',{bubbles:true}));await sleep(5);
  click(e,'cuentasVolver');await sleep(5);click(e,'cuentasListo');await sleep(260);
  const c=e.store.cfg.app.cuentas;ok(c.length===1&&c[0].nombre==='Santander'&&c[0].saldo===2500&&c[0].fecha===hoy,'cuenta guardada con fecha de actualización');
- const p=A.patrimonio();ok(p.banco===2500&&p.total===2500+100-500,'el patrimonio suma el banco: '+p.total);
+ const p=A.patrimonio();ok(p.banco===2500&&p.total===2500-500&&p.ahorro===100&&p.ahorroDentro,'lo que tienes = banco − deudas; lo apartado (100) ya está dentro del banco y no se suma dos veces: '+p.total);
  ok(/Dinero en el banco/.test(txt())&&/2\.500,00 €/.test(txt()),'fila del banco en la tarjeta');
  // Hojas: botón ✕ y arrastrar hacia abajo
  click(e,'openCuentas');await sleep(5);ok(!!doc.querySelector('#sheetHost .sheet-x'),'las hojas tienen botón ✕');

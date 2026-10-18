@@ -80,7 +80,7 @@ const movs=[
  ok(Math.abs(p.inv-invTot)<0.01&&p.ahorro===180&&p.deudas===800&&Math.abs(p.total-(invTot+180-800))<0.01,'patrimonio = inversiones + ahorro − deudas: '+p.total.toFixed(2));
  e.w.__APP__.H.goTab(['dinero']);await sleep(20);e.w.__APP__.H.patToggle([]);await sleep(10);
  const td=doc.querySelector('#content').textContent;
- ok(/Patrimonio/.test(td)&&/Dinero en el banco/.test(td)&&/Añadir saldo/.test(td),'tarjeta de patrimonio en Dinero');
+ ok(/Lo que tienes/.test(td)&&/Dinero en el banco/.test(td)&&/Añadir saldo/.test(td),'tarjeta de patrimonio en Dinero');
  // Ahorro chips: solo metas de ahorro
  e.w.__APP__.H.onFabAntiguo([]);click(e,'pickTipo','Ahorro');await sleep(5);
  ok(/Inversions/.test(doc.querySelector('#metaChips').textContent)&&/Fondo emergencia/.test(doc.querySelector('#metaChips').textContent),'en Apartar salen todas las metas (son híbridas)');

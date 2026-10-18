@@ -3577,7 +3577,7 @@ function patrimonioMiniHtml() {
   if (S.movimientos.some((x) => x.tipo === 'Inversión')) asegurarValoracion();
   const p = patrimonio();
   if (!p.inv && !p.ahorro && !p.deudas && !p.nCuentas) return '';
-  return '<button class="pat-mini tappable" ' + act('patToggle') + '><span class="l">Patrimonio' + badge('patrimonio') + '</span><b class="tnum">' + money(p.total) + '</b><span class="chev-s">' + ic('chevR') + '</span>' + patBarraHtml(p) + '</button>';
+  return '<button class="pat-mini tappable" ' + act('patToggle') + '><span class="l">Lo que tienes</span><b class="tnum">' + money(p.total) + '</b><span class="chev-s">' + ic('chevR') + '</span>' + patBarraHtml(p) + '</button>';
 }
 /* ---- Juntos: balance de «quién debe a quién», por persona y sumando todos tus grupos ---- */
 function juntosPersonas() {
@@ -3826,7 +3826,7 @@ const BUSCAR_ACCIONES = [
   ['Foto de ticket', 'camara recibo leer', 'ticketFoto', []], ['Nuevo gasto', 'apuntar añadir', 'crearIr', ['gasto']], ['Nueva tarea', 'apuntar', 'crearIr', ['tarea']],
   ['Grupos y personas', 'compartir paloma invitar saldar deudas', 'openGrupos', []], ['Metas', 'ahorro objetivos hucha', 'irDinero', ['metas']],
   ['Inversiones', 'bolsa etf cartera fondos', 'irDinero', ['inversiones']], ['Deudas', 'prestamo hipoteca coche', 'irDinero', ['deudas']],
-  ['Patrimonio', 'cuanto tengo total', 'irDinero', ['metas']], ['Cuentas y saldos', 'banco saldo', 'openCuentas', []],
+  ['Lo que tienes', 'patrimonio cuanto tengo total', 'irDinero', ['metas']], ['Cuentas y saldos', 'banco saldo', 'openCuentas', []],
   ['Categorías de gasto', 'presupuestos', 'openListEditor', ['categoriasGasto']], ['Cobros y pagos recurrentes', 'nomina alquiler facturas fijas', 'openRecurrentes', []],
   ['Importar extracto o Excel', 'banco csv', 'impAbrir', []], ['Reglas de categorías', 'automatico', 'openReglas', []],
   ['Calendario', 'agenda mes semana', 'irAgenda', ['calendario']], ['Tareas', 'pendientes', 'irAgenda', ['tareas']],
@@ -4721,10 +4721,11 @@ function patrimonio() {
   const deudaComp = objCompartidos('deuda').filter((r) => r.obj > 0).reduce((a, r) => a + r.falta * miProporcion(r.o), 0);
   deudas += deudaComp;
   const fechas = cuentasCfg().map((c) => c.fecha).filter(Boolean).sort();
-  return { banco, bancoFecha: fechas.length ? fechas[0] : null, nCuentas: cuentasCfg().length, inv, sinValor, ahorro, deudas, comp: !!(S.objetivos || []).length, total: banco + inv + ahorro - deudas };
+  return { banco, bancoFecha: fechas.length ? fechas[0] : null, nCuentas: cuentasCfg().length, inv, sinValor, ahorro, deudas, comp: !!(S.objetivos || []).length, total: banco + inv - deudas + (cuentasCfg().length ? 0 : ahorro), ahorroDentro: !!cuentasCfg().length };
+  // Lo apartado para metas NO saca dinero del banco (SIGNO_CUENTA lo deja en 0): ya está dentro de «banco». Solo se suma aparte si no hay cuentas.
 }
 function patBarraHtml(p) {
-  const partes = [[Math.max(0, p.banco), 'var(--bill)'], [Math.max(0, p.inv), 'var(--savings)'], [Math.max(0, p.ahorro), 'var(--accent)'], [Math.max(0, p.deudas), 'var(--expense)']];
+  const partes = [[Math.max(0, p.banco), 'var(--bill)'], [Math.max(0, p.inv), 'var(--savings)'], [p.ahorroDentro ? 0 : Math.max(0, p.ahorro), 'var(--accent)'], [Math.max(0, p.deudas), 'var(--expense)']];
   const tot = partes.reduce((a, x) => a + x[0], 0); if (!tot) return '';
   return '<div class="pat-barra" aria-hidden="true">' + partes.filter((x) => x[0] > 0).map(([v, c]) => '<i style="flex:' + (v / tot).toFixed(4) + ';background:' + c + '"></i>').join('') + '</div>';
 }
@@ -4735,14 +4736,14 @@ function patrimonioHtml() {
   const fila = (l, v, signo, color, accion) => '<div class="pat-row tappable" ' + accion + '><span>' + l + '</span><b class="tnum" style="color:' + color + '">' + signo + money(Math.abs(v)) + '</b><span class="chev-s">' + ic('chevR') + '</span></div>';
   const diasBanco = p.bancoFecha ? Math.round((uD(todayISO()) - uD(p.bancoFecha)) / 864e5) : null;
   const cargando = S._valCarga || S._valProg;
-  return '<div class="section-title">Patrimonio' + badge('patrimonio') + '</div><div class="card pat-card">' +
+  return '<div class="section-title">Lo que tienes</div><div class="card pat-card">' +
     '<div class="pat-total tnum">' + money(p.total) + '</div>' + patBarraHtml(p) +
     (p.nCuentas ? fila('Dinero en el banco' + (diasBanco != null && diasBanco > 30 ? ' · <span style="color:var(--accent)">actualízalo</span>' : ''), p.banco, p.banco >= 0 ? '+' : '−', 'var(--income)', act('openCuentas'))
       : '<div class="pat-row tappable" ' + act('openCuentas') + '><span>Dinero en el banco</span><b style="color:var(--accent)">Añadir saldo</b><span class="chev-s">' + ic('chevR') + '</span></div>') +
     (p.inv || S.movimientos.some((x) => x.tipo === 'Inversión') ? fila('Inversiones (valor de mercado)' + (cargando ? ' · actualizando…' : ''), p.inv, '+', 'var(--income)', act('irAnalisis', 'inversiones')) : '') +
-    (p.ahorro || metasCfg().some((m) => tipoMeta(m) === 'ahorro') ? fila('Ahorro apartado', p.ahorro, '+', 'var(--income)', act('goMetas')) : '') +
-    (p.deudas ? fila('Deudas pendientes', p.deudas, '−', 'var(--expense)', act('irAnalisis', 'deudas')) : '') +
-    '<div class="pat-note">Solo informativo. El dinero en el banco se calcula desde el saldo que pusiste en Tú → Cuentas y saldos' + (p.bancoFecha ? ' (el ' + fmtDateShort(p.bancoFecha) + ')' : '') + ', sumando y restando lo que apuntas.' + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo aportado.' : '') + (p.comp ? ' De lo compartido cuenta tu parte: lo que has aportado y, en las deudas, tu parte de lo pendiente según el reparto habitual.' : '') + '</div></div>';
+    (p.ahorro || metasCfg().some((m) => tipoMeta(m) === 'ahorro') ? (p.ahorroDentro ? fila('De ello, apartado para metas', p.ahorro, '', 'var(--text-muted)', act('goMetas')) : fila('Ahorro apartado', p.ahorro, '+', 'var(--income)', act('goMetas'))) : '') +
+    (p.deudas ? fila('Por pagar', p.deudas, '−', 'var(--expense)', act('irAnalisis', 'deudas')) : '') +
+    '<div class="pat-note">Solo informativo. El dinero en el banco se calcula desde el saldo que pusiste en Tú → Cuentas y saldos' + (p.bancoFecha ? ' (el ' + fmtDateShort(p.bancoFecha) + ')' : '') + ', sumando y restando lo que apuntas.' + (p.ahorroDentro ? ' Lo apartado para metas ya está dentro de tus cuentas, así que no se suma dos veces.' : '') + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo aportado.' : '') + (p.comp ? ' De lo compartido cuenta tu parte: lo que has aportado y, en las deudas, tu parte de lo pendiente según el reparto habitual.' : '') + '</div></div>';
 }
 
 /* ============================================================
@@ -5001,7 +5002,7 @@ function evolucionHtml(grupos, valorActual) {
     const prev = i0 > 0 ? serie[i0 - 1] : { d: desde, v: 0, inv: 0, I: 1 };
     const baseI = prev.I || 1;
     const modoR = S.invModo === 'rentab';
-    const pts = reducirPuntos(serie.slice(i0), per[0] === '1m' ? 40 : 72).map((p) => Object.assign({}, p, { r: ((p.I || 1) / baseI - 1) * 100 }));
+    const pts = reducirPuntos(serie.slice(i0), 48).map((p) => Object.assign({}, p, { r: ((p.I || 1) / baseI - 1) * 100 }));
     const fin = pts[pts.length - 1];
     const ch = cambioPeriodo(prev, fin);
     const label = per[0] === 'max' ? 'desde el inicio' : 'en ' + per[1].replace('M', ' mes' + (per[2] > 31 ? 'es' : '')).replace('1A', '1 año');
@@ -5013,21 +5014,24 @@ function evolucionHtml(grupos, valorActual) {
     let mn = Math.min(...vals), mx = Math.max(...vals); const pad = (mx - mn) * 0.1 || 1; mn -= pad; mx += pad;
     S._invChart.mn = mn; S._invChart.mx = mx;
     const X = (i) => (pts.length > 1 ? i / (pts.length - 1) * W : W / 2), Y = (v) => Hh - (v - mn) / (mx - mn) * Hh;
-    const curva = (fn) => curvaSuave(pts.map((p, i) => [X(i), Y(fn(p))]));
+    // la línea se dibuja algo suavizada (sin tocar el primer ni el último punto); las cifras siguen siendo las de verdad
+    const ys = suavizarSerie(pts.map(val)), ysInv = suavizarSerie(pts.map((p) => p.inv));
+    S._invChart.ys = ys;
+    const curvaV = (arr) => curvaSuave(arr.map((v, i) => [X(i), Y(v)]));
     const color = sube ? 'var(--income)' : 'var(--expense)';
-    const lineaV = curva(val), suelo = modoR ? Y(0) : Hh;
+    const lineaV = curvaV(ys), suelo = modoR ? Y(0) : Hh;
     const area = lineaV + ' L' + X(pts.length - 1).toFixed(1) + ' ' + suelo.toFixed(1) + ' L' + X(0).toFixed(1) + ' ' + suelo.toFixed(1) + ' Z';
     cabecera = modoR
-      ? '<div class="tr-big tnum" id="invBig" style="color:' + color + '">' + pct1(fin.r) + '</div>' +
+      ? '<div class="tr-big tnum' + (Date.now() < (S._trCambiaHasta || 0) ? ' tr-cambia' : '') + '" id="invBig" style="color:' + color + '">' + pct1(fin.r) + '</div>' +
         '<div class="tr-chg tnum" id="invChg">' + (ch.delta >= 0 ? 'Has ganado ' : 'Has perdido ') + fmt2(Math.abs(ch.delta)) + ' € <span class="tr-when">' + label + '</span></div>'
-      : '<div class="tr-big tnum" id="invBig">' + eur2(fin.v) + '</div>' +
+      : '<div class="tr-big tnum' + (Date.now() < (S._trCambiaHasta || 0) ? ' tr-cambia' : '') + '" id="invBig">' + eur2(fin.v) + '</div>' +
         '<div class="tr-chg tnum" id="invChg" style="color:' + color + '">' + (ch.delta >= 0 ? '▲ ' : '▼ ') + eurS(ch.delta) + (ch.pct == null ? '' : ' (' + pct1(ch.pct) + ')') + ' <span class="tr-when">' + label + '</span></div>';
     cuerpo = '<div class="tr-chart" id="invChart"><svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none"><defs>' + degradado('invGrad', color, 0.2) +
-      revelaSvg('invClip', W, Hh, S.invModo + '|' + per[0] + '|' + pts.length, '_invTraza') + '</defs>' +
-      (modoR ? '<line x1="0" x2="' + W + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="var(--text-faint)" stroke-width="1" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>'
-        : '<path d="' + curva((p) => p.inv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>') +
-      '<g clip-path="url(#invClip)"><path d="' + area + '" fill="url(#invGrad)" stroke="none"/>' +
-      '<path d="' + lineaV + '" fill="none" stroke="' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></g></svg>' +
+      revelaSvg('invClip', W, Hh, per[0] + '|' + pts.length, '_invTraza') + '</defs>' +
+      // la línea de referencia (lo metido, o el 0 %) es siempre una curva con los mismos puntos: así puede «moverse» al cambiar de vista
+      '<path id="invRef" d="' + curvaV(modoR ? pts.map(() => 0) : ysInv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>' +
+      '<g clip-path="url(#invClip)"><path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"/>' +
+      '<path id="invLineV" class="tr-linea" d="' + lineaV + '" fill="none" style="stroke:' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></g></svg>' +
       (modoR ? '<div class="tr-cero" style="top:' + (Y(0) / Hh * 100).toFixed(1) + '%">0 %</div>' : '') +
       '<div class="tr-cursor" id="invLine"></div><div class="tr-dot" id="invDot" style="background:' + color + '"></div></div>' +
       (modoR ? '<div class="tr-legend"><span><i style="background:' + color + '"></i>Tu rentabilidad</span><span>no cambia al meter o sacar dinero</span></div>'
@@ -5044,6 +5048,30 @@ function evolucionHtml(grupos, valorActual) {
   }
   const modos = S._invChart || (H && H.clave === clave && !H.error) ? '<div class="segmented tr-modo">' + [['valor', 'Valor'], ['rentab', 'Rentabilidad']].map((x) => '<button class="' + (S.invModo === x[0] ? 'active' : '') + '" ' + act('setInvModo', x[0]) + '>' + x[1] + (x[0] === 'rentab' ? badge('rentab') : '') + '</button>').join('') + '</div>' : '';
   return '<div class="card tr-card">' + modos + '<div class="tr-head">' + cabecera + '<div class="tr-fecha" id="invFecha"></div></div>' + cuerpo + chips + '</div>';
+}
+// suavizado ligero (1-2-1, dos pasadas) para que la línea no tenga picos de un día; el primer y el último punto no cambian
+function suavizarSerie(arr) {
+  let a = arr.slice(); if (a.length < 5) return a;
+  for (let r = 0; r < 2; r++) a = a.map((v, i) => (i === 0 || i === a.length - 1 ? v : (a[i - 1] + 2 * v + a[i + 1]) / 4));
+  return a;
+}
+// mueve una línea SVG de una forma a otra (mismos comandos, distintos números). Busca el elemento por id en cada paso:
+// si la pantalla se repinta a mitad (p. ej. al guardar la configuración), el movimiento sigue sobre el nuevo
+function morphPath(el, from, to, ms) {
+  const id = el.id; let cur = el;
+  const re = /-?\d+(?:\.\d+)?/g, a = (from.match(re) || []).map(Number), b = (to.match(re) || []).map(Number), tpl = to.split(re);
+  if (!a.length || a.length !== b.length || tpl.length !== b.length + 1) return;
+  const t0 = performance.now(), ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+  el.setAttribute('d', from);
+  const paso = (now) => {
+    const e = id ? document.getElementById(id) : cur; if (!e) return;
+    if (e !== cur) { if (e.getAttribute('d') !== to) return; cur = e; } // repintado con otros datos: se para
+    const k = ease(Math.min(1, (now - t0) / ms));
+    let d = tpl[0]; for (let j = 0; j < b.length; j++) d += (a[j] + (b[j] - a[j]) * k).toFixed(1) + tpl[j + 1];
+    cur.setAttribute('d', k >= 1 ? to : d);
+    if (k < 1) requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
 }
 function bindInvChart() {
   const el = document.getElementById('invChart'), C = S._invChart;
@@ -5064,7 +5092,7 @@ function bindInvChart() {
   let ultI = -1;
   const pintar = (i) => {
     const p = C.pts[i];
-    const x = C.pts.length > 1 ? i / (C.pts.length - 1) * 100 : 50, y = (1 - ((C.modoR ? p.r : p.v) - C.mn) / (C.mx - C.mn)) * 100;
+    const x = C.pts.length > 1 ? i / (C.pts.length - 1) * 100 : 50, y = (1 - ((C.ys ? C.ys[i] : C.modoR ? p.r : p.v) - C.mn) / (C.mx - C.mn)) * 100;
     cabecera(p, 'metido: ' + eur0(p.inv));
     if (fecha) fecha.textContent = fechaCorta(p.d);
     line.style.left = x + '%'; line.style.display = 'block';
@@ -7652,7 +7680,19 @@ const H = {
   unirseCerrar: ([grupoId]) => { lsSet('unirse', ''); S._uniendo = false; if (grupoId) { cargarGrupos().then(() => abrirGrupo(grupoId)); } else closeSheet(); },
   unirseOtraCuenta: async () => { closeSheet(); S._uniendo = false; await window.Auth.signOut(); toast('Inicia sesión con la otra cuenta y se completará la invitación'); },
   setInvPeriodo: ([k]) => { if (PERIODOS_INV.some((x) => x[0] === k)) { S.invPeriodo = k; render(); } },
-  setInvModo: ([k]) => { S.invModo = k === 'rentab' ? 'rentab' : 'valor'; lsSet('invModo', S.invModo); if (S.invModo === 'rentab') verBadge('rentab'); render(); },
+  setInvModo: ([k]) => {
+    const nuevo = k === 'rentab' ? 'rentab' : 'valor'; if (nuevo === S.invModo) return;
+    // al pasar de Valor a Rentabilidad (o al revés) la línea se mueve hasta su nueva forma, sin redibujarse desde cero
+    const ids = ['invLineV', 'invArea', 'invRef'], antes = {}; ids.forEach((id) => { const e = document.getElementById(id); if (e) antes[id] = e.getAttribute('d'); });
+    const lin = document.getElementById('invLineV'), colorAntes = lin ? lin.style.stroke : '';
+    S.invModo = nuevo; lsSet('invModo', S.invModo); if (S.invModo === 'rentab') verBadge('rentab'); render();
+    if (reduceMotion()) return;
+    ids.forEach((id) => { const e = document.getElementById(id); if (e && antes[id]) morphPath(e, antes[id], e.getAttribute('d'), 650); });
+    const l2 = document.getElementById('invLineV');
+    if (l2 && colorAntes && l2.style.stroke !== colorAntes) { const c = l2.style.stroke; l2.style.stroke = colorAntes; void l2.getBoundingClientRect(); l2.style.transition = 'stroke .65s ease'; l2.style.stroke = c; }
+    S._trCambiaHasta = Date.now() + 500;
+    const big = document.getElementById('invBig'); if (big) big.classList.add('tr-cambia');
+  },
   setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
   toggleTabAn: ([id]) => {
