@@ -101,9 +101,9 @@ const vivos = (f) => DB.comp.filter((c) => !c.borrado && f(c));
   ok(!RARO.test(sh(a)), 'sin textos raros (NaN, undefined…)');
   ok(/Te deben\s*1,66/.test(sh(a)) && /Para quedar en paz/.test(sh(a)), 'cabecera «Te deben 1,66 €» y la explicación de los grupos de 3 o más');
   const fGas = filas.find((f) => /Gasolina/.test(f.textContent));
-  pend(fGas && /tu parte 20,00/.test(fGas.textContent.replace(/\s+/g, ' ')), 'sitio de persona sin cuenta «solo en el grupo»: la línea dice «tu parte 0,00 €» pero resta 20 € (miParte no ve el alias; efectoMio sí)');
+  ok(fGas && /tu parte 20,00/.test(fGas.textContent.replace(/\s+/g, ' ')), 'sitio de persona sin cuenta «solo en el grupo»: la línea dice «tu parte 0,00 €» pero resta 20 € (miParte no ve el alias; efectoMio sí)');
   const fAh = filas.find((f) => /Fondo viaje/.test(f.textContent));
-  pend(fAh && /aportaste/.test(fAh.textContent), 'apartar para una meta compartida: la línea dice «pagaste» (en el resto de la app es «aportaste»)');
+  ok(fAh && /aportaste/.test(fAh.textContent), 'apartar para una meta compartida: la línea dice «pagaste» (en el resto de la app es «aportaste»)');
   A.H.closeSheet([]); await sleep(260);
 
   // desde la hoja de una persona: «Volver» vuelve a esa persona
@@ -125,16 +125,11 @@ const vivos = (f) => DB.comp.filter((c) => !c.borrado && f(c));
   const superDeBea = (X) => X.movsEfectivos().filter((m) => m.descripcion === 'Súper').reduce((s, m) => s + Number(m.importe), 0);
   ok(Math.abs(superDeBea(B0) - 30) < 0.001, 'antes: en los números de Bea el súper cuenta 30 € (su parte), no 60');
   ok(await borrarComp(a, 'cSuper', 'g1'), 'Ana puede borrar el súper (grupo «todos»)');
-  ok(/Deshacer/.test(toastTxt(a)), 'aviso con «Deshacer»');
-  const btn = a.doc.querySelector('#toast .toast-btn');
-  btn.click(); await sleep(150);
-  const reSuper = vivos((c) => c.descripcion === 'Súper');
-  ok(reSuper.length === 1, 'el súper vuelve una sola vez');
-  const rs = reSuper[0] || {};
-  ok(rs.articulos && rs.articulos.length === 2 && rs.articulos[1].nombre === 'Fruta' && rs.reparto && rs.reparto.uA === 30 && rs.pagadoPor === 'uB', 'vuelve con sus artículos del ticket, su reparto y quién pagó');
+  // (decisión de Desarrollo, 18/10/2026) «Deshacer» solo se ofrece con lo que pagaste y apuntaste tú: recuperar lo de otra persona
+  // le rompería su copia personal y su permiso. Aquí se avisa y no hay botón.
+  ok(!a.doc.querySelector('#toast .toast-btn') && /no se puede deshacer/.test(toastTxt(a)), 'borrar lo que pagó Bea: sin «Deshacer» y con un aviso claro');
   const b1 = env('uB'); await sleep(250); const B1 = b1.w.__APP__;
-  ok(Math.abs(superDeBea(B1) - 30) < 0.001, 'tras «Deshacer» de Ana, el súper sigue contando 30 € a Bea (hoy cuenta ' + superDeBea(B1) + ' €: su copia de 60 € se queda suelta y se suma a su parte)');
-  ok(DB.movs.uB.mB1 && (vivos((c) => c.id === DB.movs.uB.mB1.compartidoId).length === 1), 'la copia personal de Bea sigue enlazada al gasto recuperado');
+  ok(!vivos((c) => c.descripcion === 'Súper').length && Math.abs(superDeBea(B1) - 60) < 0.001, 'el súper deja de ser compartido; a Bea le queda su cargo del banco (60 €), como siempre que se borra un compartido que pagó');
 
   /* ---------- 3. Borrar algo que pagó Ana y «Deshacer»: su copia personal vuelve una vez y enlazada ---------- */
   A.S.config = Object.assign({}, A.cfg(), { cuentaJuntos: { cLuz: 'k9' } });
@@ -151,20 +146,10 @@ const vivos = (f) => DB.comp.filter((c) => !c.borrado && f(c));
 
   /* ---------- 4. «Solo quien lo apuntó»: si la administradora borra y deshace, Bea debe poder seguir cambiando su gasto ---------- */
   ok(await borrarComp(a, 'cCena', 'g3'), 'la administradora puede borrar la cena de Bea');
-  a.doc.querySelector('#toast .toast-btn').click(); await sleep(150);
-  const reCena = vivos((c) => c.descripcion === 'Cena')[0];
-  ok(!!reCena, 'la cena vuelve');
-  ok(reCena && reCena.creadoPor === 'uB', 'la cena recuperada sigue siendo de Bea (hoy queda como apuntada por Ana: Bea ya no puede cambiarla ni borrarla)');
-  const b2 = env('uB'); await sleep(250);
-  if (reCena) {
-    b2.w.__APP__.H.compAbrir([reCena.id, 'g3']); await sleep(30);
-    const bb = b2.doc.querySelector('[data-click^="deleteComp"]');
-    if (bb) { bb.click(); bb.click(); await sleep(80); }
-    ok(!!bb && !vivos((c) => c.id === reCena.id).length, 'Bea puede borrar su propia cena después del «Deshacer» de Ana');
-  }
+  ok(!a.doc.querySelector('#toast .toast-btn'), 'y no se ofrece «Deshacer» (así la cena nunca pasa a ser de Ana)');
 
   /* ---------- 5. «Deshacer» cuando ya no estás en el grupo ---------- */
-  DB.comp.push({ id: 'cAgua', grupoId: 'g1', fecha: HOY, tipo: 'Gasto', categoria: 'Restaurantes', descripcion: 'Agua', importe: 8, pagadoPor: 'uB', reparto: { uA: 4, uB: 4 }, modo: 'igual', creadoPor: 'uB', createdAt: '2026-10-17T13:00:00Z' });
+  DB.comp.push({ id: 'cAgua', grupoId: 'g1', fecha: HOY, tipo: 'Gasto', categoria: 'Restaurantes', descripcion: 'Agua', importe: 8, pagadoPor: 'uA', reparto: { uA: 4, uB: 4 }, modo: 'igual', creadoPor: 'uA', createdAt: '2026-10-17T13:00:00Z' });
   notifyComp(); await sleep(40);
   ok(await borrarComp(a, 'cAgua', 'g1'), 'Ana borra el agua');
   A.S.grupos = A.S.grupos.filter((g) => g.id !== 'g1'); // mientras, sale del grupo
@@ -173,11 +158,11 @@ const vivos = (f) => DB.comp.filter((c) => !c.borrado && f(c));
 
   /* ---------- 6. Doble toque en «Deshacer» ---------- */
   // En un móvil el botón deja de recibir toques al ocultarse el aviso (CSS), pero el código no se protege: dos llamadas = dos copias.
-  DB.comp.push({ id: 'cPan', grupoId: 'g4', fecha: HOY, tipo: 'Gasto', categoria: 'Restaurantes', descripcion: 'Pan', importe: 6, pagadoPor: 'uB', reparto: { uA: 3, uB: 3 }, modo: 'igual', creadoPor: 'uB', createdAt: '2026-10-17T14:00:00Z' });
+  DB.comp.push({ id: 'cPan', grupoId: 'g4', fecha: HOY, tipo: 'Gasto', categoria: 'Restaurantes', descripcion: 'Pan', importe: 6, pagadoPor: 'uA', reparto: { uA: 3, uB: 3 }, modo: 'igual', creadoPor: 'uA', createdAt: '2026-10-17T14:00:00Z' });
   notifyComp(); await sleep(40);
   ok(await borrarComp(a, 'cPan', 'g4'), 'Ana borra el pan');
   const bt2 = a.doc.querySelector('#toast .toast-btn'); bt2.click(); bt2.click(); await sleep(150);
-  pend(vivos((c) => c.descripcion === 'Pan').length === 1, 'dos toques seguidos en «Deshacer» (o Intro con el teclado) crean el gasto dos veces: rehacerComp no se protege');
+  ok(vivos((c) => c.descripcion === 'Pan').length === 1, 'dos toques seguidos en «Deshacer» (o Intro con el teclado) crean el gasto dos veces: rehacerComp no se protege');
 
   /* ---------- 7. Usuario nuevo, sin grupos ni datos ---------- */
   const n = env('uN'); await sleep(200); const N = n.w.__APP__;

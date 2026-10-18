@@ -2615,11 +2615,11 @@ async function doDeleteComp() {
   const id = FORM.compId, mio = FORM.id, c0 = compPorId(id);
   if (!puedeEditarComp(c0)) return toast(AVISO_PERMISO);
   // lo que hace falta para «Deshacer»: el gasto tal cual, la cuenta desde la que lo pagaste y tu copia personal
-  const copia = c0 ? copiaComp(c0) : null, cuenta = c0 ? (cfg().cuentaJuntos || {})[id] || null : null, m0 = mio ? S.movimientos.find((m) => m.id === mio) : null, miaCopia = m0 ? { id: mio, data: stripId(m0) } : null;
+  const copia = puedeDeshacerComp(c0) ? copiaComp(c0) : null, cuenta = c0 ? (cfg().cuentaJuntos || {})[id] || null : null, m0 = mio ? S.movimientos.find((m) => m.id === mio) : null, miaCopia = m0 ? { id: mio, data: stripId(m0) } : null;
   try { await S.db.compartidos.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
   compQuitarLocal(id); olvidarCuentaComp(id);
   if (mio) await write(() => S.db.collection('movimientos').doc(mio).delete());
-  toast('Gasto compartido eliminado', copia ? { deshacer: () => rehacerComp(copia, cuenta, miaCopia) } : {}); render(); terminarForm();
+  toast(copia ? 'Gasto compartido eliminado' : 'Gasto compartido eliminado. Como lo apuntó otra persona, no se puede deshacer.', copia ? { deshacer: () => rehacerComp(copia, cuenta, miaCopia) } : {}); render(); terminarForm();
 }
 /* ---- cuentas de un grupo o persona ---- */
 function deudaTxt(d, gid) {
@@ -4263,15 +4263,15 @@ function origenHtml(gid, volver) {
   const cs = (S.compartidos || []).filter((c) => c.grupoId === gid).sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
   const tot = miSaldo(gid), n = (u) => escapeHtml(nombreDe(gid, u)), mio = (u) => esMio(gid, u), sg = (v) => (v >= 0.005 ? '+' : v <= -0.005 ? '−' : '') + money(Math.abs(v));
   const filas = cs.map((c) => {
-    const ef = efectoMio(c), parte = miParte(c), liq = c.tipo === 'Liquidación', a = Object.keys(c.reparto || {})[0];
+    const ef = efectoMio(c), pago = esMio(gid, c.pagadoPor) ? num(c.importe) : 0, parte = r2(pago - ef), liq = c.tipo === 'Liquidación', a = Object.keys(c.reparto || {})[0], verbo = c.tipo === 'Ahorro' ? 'aport' : 'pag';
     if (Math.abs(ef) < 0.005 && !mio(c.pagadoPor) && !(parte > 0)) return '';
     const que = liq ? (mio(c.pagadoPor) ? 'Pagaste a ' + n(a) : mio(a) ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a))
       : escapeHtml(c.descripcion || c.categoria || 'Gasto');
-    const como = liq ? 'para saldar cuentas' : (mio(c.pagadoPor) ? 'pagaste ' + money(c.importe) : n(c.pagadoPor) + ' pagó ' + money(c.importe)) + ' · tu parte ' + money(parte);
+    const como = liq ? 'para saldar cuentas' : (mio(c.pagadoPor) ? verbo + 'aste ' + money(c.importe) : n(c.pagadoPor) + ' ' + verbo + 'ó ' + money(c.importe)) + ' · tu parte ' + money(parte);
     return '<div class="og-f"><span class="og-x"><b>' + que + '</b><span>' + fmtDateShort(c.fecha) + ' · ' + como + '</span></span><b class="tnum" style="color:' + saldoColor(ef) + '">' + sg(ef) + '</b></div>';
   }).filter(Boolean);
   return '<div class="handle"></div><h2>¿De dónde sale?</h2><div class="rec-hint" style="margin-top:-4px;">' + escapeHtml(nombreDestino(g)) + '</div>' +
-    '<div class="jv-total ' + (tot < -0.005 ? 'de' : 'te') + '"><span>' + (Math.abs(tot) < 0.005 ? 'Estás en paz' : tot > 0 ? 'Te deben' : 'Debes') + '</span><b class="tnum">' + money(Math.abs(tot)) + '</b></div>' +
+    '<div class="jv-total ' + (Math.abs(tot) < 0.005 ? 'paz' : tot < 0 ? 'de' : 'te') + '"><span>' + (Math.abs(tot) < 0.005 ? 'Estás en paz' : tot > 0 ? 'Te deben' : 'Debes') + '</span><b class="tnum">' + money(Math.abs(tot)) + '</b></div>' +
     '<div class="rec-hint">Sumamos lo que has pagado y restamos tu parte de cada gasto. Lo que queda es tu saldo.</div>' +
     (filas.length ? '<div class="card og-card">' + filas.join('') + '<div class="og-f tot"><span>Tu saldo</span><b class="tnum" style="color:' + saldoColor(tot) + '">' + sg(tot) + '</b></div></div>' : '<div class="card empty-mini">Aún no hay nada tuyo en este grupo.</div>') +
     (g.tipo === 'grupo' && g.miembros.length > 2 ? '<div class="rec-hint">Para quedar en paz, la app junta los saldos de todo el grupo y propone los menos pagos posibles. Por eso puede que pagues a alguien que no pagó justo tus gastos: al final, las cuentas cuadran igual.</div>' : '') +
@@ -4279,7 +4279,11 @@ function origenHtml(gid, volver) {
 }
 /* ---- «Deshacer» al borrar un gasto compartido o un pago: se vuelve a crear igual (y tu copia y su cuenta) ---- */
 function copiaComp(c) { const o = {}; ['grupoId', 'fecha', 'tipo', 'categoria', 'subcategoria', 'descripcion', 'importe', 'pagadoPor', 'reparto', 'modo', 'objetivoId', 'articulos'].forEach((k) => { if (c[k] != null) o[k] = JSON.parse(JSON.stringify(c[k])); }); return o; }
+// Solo se ofrece «Deshacer» con lo que pagaste y apuntaste tú: al recuperarlo se crea de nuevo, y así no se rompe la copia
+// personal ni el permiso de otra persona (el autor pasa a ser quien recupera).
+function puedeDeshacerComp(c) { const g = c && c.grupoId; return !!c && esMio(g, c.pagadoPor) && (!c.creadoPor || esMio(g, c.creadoPor)); }
 async function rehacerComp(copia, cuenta, mio) {
+  if (copia._hecho) return; copia._hecho = true; // un solo «Deshacer», aunque se toque dos veces
   if (!grupoDe(copia.grupoId)) return toast('Ya no estás en ese grupo: no se puede recuperar');
   let c;
   try { c = await S.db.compartidos.crear(copia); } catch (e) { console.error(e); return toast(errGrupo(e)); }
@@ -7786,7 +7790,7 @@ const H = {
   liqEliminar: ([id], el) => confirmDelete(el, async () => {
     const c = compPorId(id);
     if (c && !puedeEditarComp(c)) return toast(AVISO_PERMISO);
-    const copia = c ? copiaComp(c) : null, cuenta = c ? (cfg().cuentaJuntos || {})[id] || null : null;
+    const copia = puedeDeshacerComp(c) ? copiaComp(c) : null, cuenta = c ? (cfg().cuentaJuntos || {})[id] || null : null;
     try { await S.db.compartidos.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
     compQuitarLocal(id); olvidarCuentaComp(id); toast('Pago eliminado', copia ? { deshacer: () => rehacerComp(copia, cuenta, null) } : {}); render();
     if (c && grupoDe(c.grupoId)) abrirGrupo(c.grupoId); else closeSheet();
