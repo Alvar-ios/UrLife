@@ -5,7 +5,7 @@ const HOY=new Date(),p=n=>String(n).padStart(2,'0'),mk=HOY.getFullYear()+'-'+p(H
 const movs=[{id:'g1',tipo:'Gasto',categoria:'Supermercado',descripcion:'Mercadona',importe:50,fecha:mk+'-01'},{id:'n1',tipo:'Ingreso',categoria:'Nómina',importe:2000,fecha:mk+'-01'}];
 const mkcfg=(x)=>Object.assign({app:{categoriasGasto:[{nombre:'Supermercado',presupuesto:30}],ahorro:[],cuentas:[{id:'c1',nombre:'Banco',saldo:1000,fecha:mk+'-01'}]},meta:{onboarded:true}},x||{});
 async function env(c,m,t){
-  const e=makeEnv({cfg:JSON.parse(JSON.stringify(c||mkcfg())),movs:m||movs,url:'https://x.test/',session:{user:{email:'t@t.com',id:'otro'}}});
+  const e=makeEnv({version:{dinero:3},cfg:JSON.parse(JSON.stringify(c||mkcfg())),movs:m||movs,url:'https://x.test/',session:{user:{email:'t@t.com',id:'otro'}}});
   (t||[]).forEach(x=>{e.store.tareas[x.id]=x});
   await sleep(150);return e;
 }

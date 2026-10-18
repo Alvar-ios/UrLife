@@ -3,7 +3,7 @@ const {makeEnv,sleep,click}=require('./harness.js');
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
 const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'+pad(d.getMonth()+1);
 (async()=>{
- const v=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'Supermercado',presupuesto:300}]},meta:{onboarded:true}}});
+ const v=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'Supermercado',presupuesto:300}]},meta:{onboarded:true}}});
  await sleep(80);
  let A=v.w.__APP__,doc=v.doc,txt=()=>doc.querySelector('#content').textContent;
  ok(/Empieza aquí/.test(txt())&&doc.querySelectorAll('.empieza-paso').length===2,'usuario nuevo: «Empieza aquí» con sus dos primeros pasos');
@@ -17,7 +17,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  ok(!/1,00 €/.test(doc.querySelector('#trendWrap').textContent),'gráfico anual vacío: sin escala de 1,00 €');
  ok(doc.querySelector('.anio-fila .mes-l').textContent==='Enero'&&doc.querySelector('.anio-fila .mes-c').textContent.length<=4,'meses en largo y en corto (para pantallas pequeñas)');
 
- const e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'Supermercado'}],metodosPago:['Tarjeta']},meta:{onboarded:true}},
+ const e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'Supermercado'}],metodosPago:['Tarjeta']},meta:{onboarded:true}},
    movs:[{id:'a',tipo:'Gasto',categoria:'Supermercado',descripcion:'Mercadona',metodoPago:'Tarjeta',importe:40,fecha:ym+'-01'},
          {id:'b',tipo:'Gasto',categoria:'Supermercado',importe:10,fecha:ym+'-02'},
          {id:'c',tipo:'Factura',categoria:'Luz',descripcion:'Iberdrola',importe:60,fecha:ym+'-03'}]});

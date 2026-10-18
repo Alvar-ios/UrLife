@@ -9,7 +9,7 @@ const movs=[
 (async()=>{
  const P={EUNL:130,BTC:70000};
  const pre=w=>{w.SUPABASE_CONFIG={url:'https://x.supabase.co',anonKey:'k'};w.fetch=async(u,o)=>{const b=JSON.parse(o.body);let j={};if(b.accion==='valorar'){const v={};b.ids.forEach(id=>v[id]={activo:{id},cierre_eur:P[id],cierre:P[id],moneda:'EUR',fecha_precio:'2026-10-13'});j={valores:v}}else if(b.accion==='historico')j={series:{}};return {ok:true,status:200,json:async()=>j}}};
- const e=makeEnv({cfg:{app:{ahorro:[{id:'a',nombre:'Libertad',objetivo:60000,fechaObjetivo:'2035-01-01'},{id:'b',nombre:'Casa',objetivo:30000,fechaObjetivo:'2030-01-01'}]},meta:{onboarded:true}},movs,pre});
+ const e=makeEnv({version:{dinero:3},cfg:{app:{ahorro:[{id:'a',nombre:'Libertad',objetivo:60000,fechaObjetivo:'2035-01-01'},{id:'b',nombre:'Casa',objetivo:30000,fechaObjetivo:'2030-01-01'}]},meta:{onboarded:true}},movs,pre});
  e.w.Auth.getSession=async()=>({access_token:'t'});
  const orig=e.w.Data,L=[];const notify=()=>L.forEach(f=>f());
  e.w.Data={doc:orig.doc,collection:n=>n!=='movimientos'?orig.collection(n):({onSnapshot:cb=>{const f=()=>cb({docs:Object.entries(e.store.movimientos).map(([id,v])=>({id,data:()=>v}))});L.push(f);setTimeout(f,0);return()=>{}},

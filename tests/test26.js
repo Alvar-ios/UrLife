@@ -10,7 +10,7 @@ const movs=[
 (async()=>{
  const P={EUNL:130,BTC:70000};
  const pre=w=>{w.SUPABASE_CONFIG={url:'https://x.supabase.co',anonKey:'k'};w.fetch=async(u,o)=>{const b=JSON.parse(o.body);let j={};if(b.accion==='valorar'){const v={};b.ids.forEach(id=>v[id]={activo:{id},cierre_eur:P[id],cierre:P[id],moneda:'EUR',fecha_precio:HOY});j={valores:v}}else if(b.accion==='precio_en')j={cierre:70000,cierre_eur:70000,moneda:'EUR',fecha_precio:'2026-09-01'};else if(b.accion==='historico')j={series:{}};return {ok:true,status:200,json:async()=>j}}};
- const e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'Supermercado'}],ahorro:[{id:'casa',nombre:'Casa',objetivo:300000,yaAhorrado:50000,fechaObjetivo:'2031-06-01'}]},meta:{onboarded:true}},movs,pre});
+ const e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'Supermercado'}],ahorro:[{id:'casa',nombre:'Casa',objetivo:300000,yaAhorrado:50000,fechaObjetivo:'2031-06-01'}]},meta:{onboarded:true}},movs,pre});
  e.w.Auth.getSession=async()=>({access_token:'t'});
  const orig=e.w.Data,L=[];const notify=()=>L.forEach(f=>f());let seq=0;
  e.w.Data={doc:orig.doc,collection:n=>n!=='movimientos'?orig.collection(n):({onSnapshot:cb=>{const f=()=>cb({docs:Object.entries(e.store.movimientos).map(([id,v])=>({id,data:()=>v}))});L.push(f);setTimeout(f,0);return()=>{}},

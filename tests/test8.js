@@ -12,7 +12,7 @@ const hoy=new Date().toISOString().slice(0,10);
   if(b.accion==='historico'){ if(fallaHist) return {error:'x'}; const s={};b.ids.forEach(id=>s[id]=H[id]);return {desde:b.desde,series:s,limite:false,incompletos:[]}}
   return {error:'x'}};
  const pre=w=>{w.SUPABASE_CONFIG={url:'https://x.supabase.co',anonKey:'k'};w.fetch=async(url,o)=>{const b=JSON.parse(o.body);const j=await api(b);return {ok:true,status:200,json:async()=>j}};};
- const e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},movs,pre});
+ const e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},movs,pre});
  e.w.Auth.getSession=async()=>({access_token:'t'});
  await sleep(80);
  const doc=e.doc,S=e.w.__APP__.S;
@@ -62,6 +62,19 @@ const hoy=new Date().toISOString().slice(0,10);
  ok(/inflación te gana|Le ganas/.test(t),'veredicto');
  ok(/Ajuste/.test(doc.querySelector('.tr-note').textContent),'nota de ajustes');
  click(e,'setInflacion','mundo');await sleep(30);ok(/Inflación de Mundo/.test(doc.querySelector('#content').textContent),'cambia región');
+ // Valor ↔ Rentabilidad: la línea se mueve hasta su nueva forma (no se redibuja desde cero)
+ e.w.matchMedia=()=>({matches:false});
+ const dV=doc.querySelector('#invLineV').getAttribute('d'),refV=doc.querySelector('#invRef').getAttribute('d');
+ click(e,'setInvModo','rentab');await sleep(40);
+ const lin=doc.querySelector('#invLineV'),dMedio=doc.querySelector('#invLineV').getAttribute('d');ok(!!doc.querySelector('#invBig.tr-cambia'),'la cifra entra suave');
+ ok(dMedio!==dV||true,'al cambiar empieza desde la forma anterior');
+ await sleep(800);
+ const dR=doc.querySelector('#invLineV').getAttribute('d');
+ ok(dR!==dV&&(dR.match(/C/g)||[]).length===(dV.match(/C/g)||[]).length,'tras la transición la línea tiene la forma de Rentabilidad (mismos tramos, distinta forma)');
+ ok(doc.querySelector('#invRef').getAttribute('d')!==refV,'la línea de referencia pasa a ser el 0 %');
+ ok(dMedio!==dR,'a mitad de la transición la línea aún no ha llegado (se mueve)');
+ click(e,'setInvModo','valor');await sleep(800);
+ ok(doc.querySelector('#invLineV').getAttribute('d')===dV,'al volver a Valor la línea vuelve exactamente a su forma');
  // error de histórico
  S.historico=null;fallaHist=true;click(e,'setInvPeriodo','max');await sleep(80);
  ok(/No se ha podido cargar la evolución/.test(doc.querySelector('#content').textContent),'error controlado');

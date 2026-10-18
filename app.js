@@ -303,6 +303,10 @@ const REV = [
   ['.progress > div, .hero-bar i, .pat-barra i, .pb-f, .mb-f, .jb-bar i, .jb-trk i', 'va-bar'],
   ['.pb-over, .pb-tick', 'va-fade'],
   ['.anillo-v', 'va-ring'],
+  ['.dm-cam-f, .dm-deuda-bar i, .dm-inf-t i', 'va-bar'],
+  ['.dm-cam-emo, .dm-anillo-e', 'va-walk'],
+  ['.dm-tarro-v', 'va-rise'],
+  ['.dm-cam-proy, .dm-cam-fin', 'va-fade'],
 ];
 let _io = null, _ioSvg = null, _vistosPag = '';
 const _vistos = Object.create(null), _contados = Object.create(null);
@@ -310,7 +314,7 @@ function ioDisponible() { return typeof IntersectionObserver !== 'undefined' && 
 function revelarAlVer(raiz, visitaNueva) {
   if (_io) { _io.disconnect(); _io = null; }
   if (!raiz || !ioDisponible()) return;
-  const pag = [S.tab, S.inicioVista, S.movVista, S.dineroSub, S.agendaSub].join('|');
+  const pag = [S.tab, S.inicioVista, S.movVista, S.dineroSub, S.dineroVer, S.agendaSub].join('|');
   if (visitaNueva || pag !== _vistosPag) { Object.keys(_vistos).forEach((k) => { delete _vistos[k]; }); _vistosPag = pag; }
   const pend = [];
   REV.forEach(([sel, cls], g) => raiz.querySelectorAll(sel).forEach((el, i) => {
@@ -909,14 +913,15 @@ function render() {
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
   if (S.tab === 'inicio') c.innerHTML = renderInicioNuevo();
   else if (S.tab === 'movimientos') c.innerHTML = renderMovTab();
-  else if (S.tab === 'dinero') c.innerHTML = renderDinero();
+  else if (S.tab === 'dinero') c.innerHTML = dineroV2() ? renderDineroV2() : renderDinero();
   else if (S.tab === 'agenda') c.innerHTML = renderAgenda();
   else if (S.tab === 'juntos') c.innerHTML = juntosV2() ? renderJuntosV2() : renderJuntos();
   else if (S.tab === 'tu') c.innerHTML = renderTu();
   const resumen = S.tab === 'movimientos' && S.movVista === 'resumen', resAnual = /^y:/.test(movPerNorm(S.movPeriodo));
   if (resumen && !resAnual) { const kA = S.movPeriodo + '|' + versionDe('movResumen'); gcAnilloDraw(kA !== _donutAnim ? true : false); _donutAnim = kA; }
   if (resumen && resAnual) drawTrend();
-  if (S.tab === 'dinero' && dineroSub() === 'inversiones') bindInvChart();
+  if (S.tab === 'dinero' && (dineroV2() ? S.dineroVer === 'inversiones' : dineroSub() === 'inversiones')) bindInvChart();
+  if (S.tab === 'dinero' && dineroV2()) { dmAnimarAporte(c); if (S._dmIr) { const el = $('#dm-' + S._dmIr); S._dmIr = null; if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } }, 60); } }
   if (S.tab === 'movimientos') movGestos(c);
   const _ent = S._entrando;
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
@@ -1112,7 +1117,7 @@ function movsFiltrados() {
   else if (S.movFiltroTipo !== 'Todos') movs = movs.filter((m) => m.tipo === S.movFiltroTipo);
   if (S.movSoloTicket) movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
   if (S.movSoloComp) movs = movs.filter((m) => m.comp);
-  if (S.movCat) movs = movs.filter((m) => normName(m.categoria) === normName(S.movCat));
+  if (S.movCat) { const al = S.movCatAlias && normName(S.movCatAlias.cat) === normName(S.movCat) ? S.movCatAlias.nombres.map(normName) : []; movs = movs.filter((m) => normName(m.categoria) === normName(S.movCat) || al.indexOf(normName(m.categoria)) >= 0); }
   if (S.movCat && S.movSub) movs = movs.filter((m) => S.movSub === SIN_DETALLE ? !String(m.subcategoria || '').trim() : normName(m.subcategoria) === normName(S.movSub));
   const q = S.movQuery.trim().toLowerCase();
   if (q) movs = movs.filter((m) => [m.categoria, m.subcategoria, m.descripcion, m.metodoPago].some((x) => (x || '').toLowerCase().includes(q)) || casaImporte(m, q));
@@ -1960,7 +1965,7 @@ function metaStats(m) {
   return r;
 }
 function metasStats() { return metasCfg().map((m) => statsMetaH(basePersonal(m))); }
-const SEMAFORO_COLOR = { verde: 'var(--income)', amarillo: 'var(--accent)', rojo: 'var(--expense)', gris: 'var(--text-faint)' };
+const SEMAFORO_COLOR = { verde: 'var(--income)', amarillo: 'var(--warn, var(--accent))', rojo: 'var(--expense)', gris: 'var(--text-faint)' };
 function semaforoDot(estado) { return '<span class="dot" style="background:' + SEMAFORO_COLOR[estado] + ';flex:none;"></span>'; }
 function renderMetas() {
   const ms = metasStats(), comp = objCompartidos('ahorro');
@@ -1970,17 +1975,22 @@ function renderMetas() {
   return cab + ms.map(metaCardHtml).join('') + (comp.length ? '<div class="section-title">Compartidas</div>' + comp.map(metaCardHtml).join('') : '') +
     '<div class="summary-line">Una meta suma lo que apartas y lo que inviertes para ella (a lo que vale hoy), lo que tuvieras antes, y resta lo que hayas usado.</div>';
 }
+// pagos de una deuda: movimientos de tipo Deuda con su nombre o con uno de sus nombres anteriores (al renombrar no se pierden)
+function movsDeuda(d) {
+  const ks = [d.nombre].concat(d.nombresAntes || []).map((x) => normName(x || '')).filter(Boolean);
+  return movsPersonales().filter((x) => x.tipo === 'Deuda' && ks.indexOf(normName(x.categoria || '')) >= 0);
+}
 function deudaStats(d) {
-  const key = (d.nombre || '').trim().toLowerCase();
-  const movs = movsPersonales().filter((x) => x.tipo === 'Deuda' && (x.categoria || '').trim().toLowerCase() === key);
-  const total = num(d.objetivo);
-  const pagado = movs.reduce((a, x) => a + num(x.importe), 0);
+  const movs = movsDeuda(d);
+  const total = num(d.objetivo), previo = Math.max(0, num(d.previo)), cuota = num(d.cuotaMes) > 0 ? num(d.cuotaMes) : 0;
+  const pagado = previo + movs.reduce((a, x) => a + num(x.importe), 0);
   const pend = Math.max(0, total - pagado);
   const pct = total > 0 ? pagado / total * 100 : null;
   const hoyISO = todayISO(), desde = isoDaysAgo(90);
-  const ritmo = movs.filter((x) => (x.fecha || '') > desde && (x.fecha || '') <= hoyISO).reduce((a, x) => a + num(x.importe), 0) / 3;
+  const ritmo = cuota || movs.filter((x) => (x.fecha || '') > desde && (x.fecha || '') <= hoyISO).reduce((a, x) => a + num(x.importe), 0) / 3;
   const dias = d.fechaObjetivo ? daysUntil(d.fechaObjetivo) : null;
-  const r = { nombre: d.nombre, total, pagado, pend, pct, ritmo, dias, fecha: d.fechaObjetivo || null, mes: null, estado: 'gris', texto: '' };
+  const ultimo = movs.map((x) => x.fecha).filter(Boolean).sort().pop() || null;
+  const r = { nombre: d.nombre, total, pagado, pend, pct, ritmo, cuota: !!cuota, previo, dias, fecha: d.fechaObjetivo || null, mes: null, estado: 'gris', texto: '', ultimo, acaba: pend > 0.005 && ritmo > 0.005 ? sumaMeses(Math.ceil(pend / ritmo)) : null };
   if (total <= 0) { r.texto = 'Sin total definido'; return r; }
   if (pend <= 0) { r.estado = 'verde'; r.texto = 'Deuda saldada'; return r; }
   if (dias == null) { r.texto = 'Sin fecha objetivo'; return r; }
@@ -2239,7 +2249,13 @@ const TIPO_OBJ = { Deuda: 'deuda' }; // tipo de movimiento → deuda compartida 
 function compartidosDisponible() { return !!(S.db && S.db.compartidos && gruposDisponible()); }
 function cents(x) { return Math.round(num(x) * 100); }
 function r2(x) { return Math.round(num(x) * 100) / 100; }
-function numCampo(v) { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : 0; }
+// lee un importe escrito a mano: «8.000», «1.234,56», «12,5» o «12.5» (el punto con grupos de 3 cifras es de miles)
+function numCampo(v) {
+  let t = String(v == null ? '' : v).replace(/[\s€]/g, '');
+  if (t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  const n = parseFloat(t); return isFinite(n) ? n : 0;
+}
 function fmtPct(x) { return num(x).toLocaleString('es-ES', { maximumFractionDigits: 2 }) + ' %'; }
 function compPorId(id) { return (S.compartidos || []).find((c) => c.id === id) || null; }
 function miParte(c) {
@@ -3402,11 +3418,13 @@ const VERSIONES = {
   inicio: { txt: 'Inicio', desde: '2026-10-18', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
   juntos: { txt: 'Juntos', desde: '2026-10-18', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  dinero: { txt: 'Dinero', desde: '2026-10-18', variantes: [['camino', 'Camino'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes']] },
 };
 function seccionVersion() {
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
   if (S.tab === 'movimientos' && movVistaAct() === 'resumen' && /^m:/.test(movPerNorm(S.movPeriodo))) return 'movResumen';
   if (S.tab === 'juntos' && gruposDisponible() && (S.grupos || []).length) return 'juntos';
+  if (S.tab === 'dinero' && !S.dineroVer) return 'dinero';
   return '';
 }
 function versionIdx(k) { const v = VERSIONES[k], i = Number((S.verAnterior || {})[k]) || 0; return v && compararOn() && i > 0 && i < v.variantes.length ? i : 0; }
@@ -3577,7 +3595,7 @@ function patrimonioMiniHtml() {
   if (S.movimientos.some((x) => x.tipo === 'Inversión')) asegurarValoracion();
   const p = patrimonio();
   if (!p.inv && !p.ahorro && !p.deudas && !p.nCuentas) return '';
-  return '<button class="pat-mini tappable" ' + act('patToggle') + '><span class="l">Patrimonio' + badge('patrimonio') + '</span><b class="tnum">' + money(p.total) + '</b><span class="chev-s">' + ic('chevR') + '</span>' + patBarraHtml(p) + '</button>';
+  return '<button class="pat-mini tappable" ' + act('patToggle') + '><span class="l">Lo que tienes</span><b class="tnum">' + money(p.total) + '</b><span class="chev-s">' + ic('chevR') + '</span>' + patBarraHtml(p) + '</button>';
 }
 /* ---- Juntos: balance de «quién debe a quién», por persona y sumando todos tus grupos ---- */
 function juntosPersonas() {
@@ -3807,6 +3825,428 @@ function abrirCompRapido(dest) {
   if ($('#sheetBackdrop')) updateSheet(compRapidoHtml()); else openSheet(compRapidoHtml());
   setTimeout(() => { const el = $('#crImporte'); if (el) el.focus(); }, 120);
 }
+/* ============================================================
+   DINERO v2 (18/10/2026, docs/05-dinero.md y docs/06-dinero-diseno.md): una sola pantalla «de un vistazo»:
+   Lo que tienes, Cuentas, Metas (Camino | Tarros | Anillos), Inversiones y Deudas. «Ver todo» de inversiones es una
+   pantalla dentro de Dinero. La pantalla anterior sigue en el botón «Antes» (VERSIONES.dinero).
+   ============================================================ */
+const m0 = (n) => eur0(Math.round(num(n))).replace(' €', '\u00a0€');
+function dineroV2() { return versionDe('dinero') !== 'antes'; }
+function metasVariante() { const v = versionDe('dinero'); return v === 'antes' ? 'camino' : v; }
+function mesLargo(iso) { const d = typeof iso === 'string' ? parseISO(iso) : iso; if (!d) return ''; const m = MESES[d.getMonth()].toLowerCase(); return d.getFullYear() === new Date().getFullYear() ? m : m + ' de ' + d.getFullYear(); }
+function mesCortoAnio(d) { return MESES_ABR[d.getMonth()].toLowerCase() + ' ' + d.getFullYear(); }
+function sumaMeses(n) { const d = new Date(); d.setDate(15); d.setMonth(d.getMonth() + n); return d; }
+const EMOJI_PISTAS = [[/viaj|japon|vacacion|escapad|playa/, '✈️'], [/casa|piso|hipotec|entrada|vivienda|alquiler/, '🏠'], [/colch|emergen|imprevist|fondo/, '🛟'], [/coche|moto|carnet/, '🚗'],
+  [/boda|anillo/, '💍'], [/beb|nin|hij/, '🍼'], [/estudi|master|curso|universi|beca/, '🎓'], [/regalo|navidad|cumple/, '🎁'], [/ordenador|movil|portatil|tele|consola|iphone/, '📱'],
+  [/tarjeta|credito/, '💳'], [/prestam|amigo|familia/, '🤝'], [/mascota|perro|gato/, '🐾'], [/bici|deporte|gimnas/, '🚲']];
+function emojiSugerido(nombre, def) { const n = normName(nombre || ''); const x = EMOJI_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : (def || '🎯'); }
+function emojiMeta(r) { const m = !r.compartida ? metasCfg().find((x) => x.id === r.id) : null; return (m && m.emoji) || emojiSugerido(r.nombre); }
+const DM_ESTADO_COLOR = { bien: 'var(--income)', justo: 'var(--warn, var(--accent))', gris: 'var(--text-muted)', mal: 'var(--expense)' };
+// estado de una meta en una frase corta y sobria (el rojo solo si la fecha ya pasó)
+function metaEstado2(r) {
+  const fecha = r.fecha, ult = ((r.b && r.b.piezas) || []).map((x) => x.fecha).filter(Boolean).sort().pop();
+  if (r.conseguida || (r.obj > 0 && r.valor >= r.obj - 0.005)) return { t: '¡Conseguida!', k: 'bien' };
+  if (!(r.obj > 0)) return { t: 'Sin cantidad que juntar', k: 'gris' };
+  if (fecha && r.dias != null && r.dias < 0) return { t: 'La fecha pasó · faltan ' + m0(r.falta), k: 'mal' };
+  if (fecha) {
+    if (r.estado === 'verde') return { t: 'Vas bien para ' + mesLargo(fecha), k: 'bien' };
+    if (r.necesario != null) return { t: 'Para ' + mesLargo(fecha) + ': ' + m0(Math.ceil(r.necesario)) + '/mes', k: 'justo' };
+  }
+  if (r.ritmo > 0 && r.llegada) return { t: 'A este ritmo, en ' + mesCortoAnio(r.llegada), k: 'gris' };
+  return { t: ult ? 'Sin aportar desde ' + mesLargo(ult) : 'Aún sin aportar', k: 'gris' };
+}
+function metasOrdenadas() {
+  const todas = metasStats().concat(objCompartidos('ahorro'));
+  const hecha = (r) => !!(r.conseguida || (r.obj > 0 && r.valor >= r.obj - 0.005));
+  const act0 = todas.filter((r) => !hecha(r)).sort((a, b) => (a.fecha ? 0 : 1) - (b.fecha ? 0 : 1) || String(a.fecha || '').localeCompare(String(b.fecha || '')));
+  return { activas: act0, hechas: todas.filter(hecha) };
+}
+// la raya de puntos del Camino: hasta dónde llegarás en tu fecha si sigues así (sin contar rentabilidad, para no prometer de más)
+function metaProyeccion(r) {
+  if (!r.fecha || r.dias == null || r.dias <= 0 || !(r.obj > 0) || !(r.ritmo > 0)) return null;
+  const proy = Math.min(r.obj, Math.max(0, r.valor) + r.ritmo * (r.dias / 30.4375));
+  return proy > r.valor + 0.005 ? proy : null;
+}
+
+/* ---- la pantalla ---- */
+function renderDineroV2() {
+  if (S.dineroVer === 'inversiones') return renderInversionesTodo();
+  const p = patrimonio(), ms = metasOrdenadas(), hayInv = S.movimientos.some((x) => x.tipo === 'Inversión');
+  if (hayInv || (S.aportes || []).some((a) => a.activoId)) asegurarValoracion();
+  const deudas = (cfg().deudas || []).filter((d) => d && d.nombre), dComp = objCompartidos('deuda');
+  const nada = !p.nCuentas && !hayInv && !deudas.length && !dComp.length && !ms.activas.length && !ms.hechas.length;
+  if (nada) return '<div class="card dm-empezar"><div class="dm-emp-t">Empieza por aquí</div>' +
+    [['bank', 'Pon el saldo de tu banco', 'Así sabrás lo que tienes de verdad', 'openCuentas'], ['flag', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva'], ['card', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva']]
+      .map(([i, t, d, a]) => '<button type="button" class="dm-emp tappable" ' + act(a) + '><span class="dm-ic">' + ic(i) + '</span><span class="dm-emp-x"><b>' + t + '</b><span>' + d + '</span></span>' + ic('chevR') + '</button>').join('') + '</div>';
+  return lqtHtml(p) + dmCuentasHtml() + dmMetasHtml(ms) + (hayInv ? dmInversionesHtml() : '') + dmDeudasHtml(deudas, dComp);
+}
+function lqtHtml(p) {
+  const ficha = (k, t, v, cls, a) => '<button type="button" class="dm-ficha ' + cls + '" ' + a + '><span>' + t + '</span><b class="tnum">' + v + '</b></button>';
+  return '<div class="card dm-lqt"><div class="dm-lqt-l">Lo que tienes</div>' +
+    (p.nCuentas ? '<div class="pat-total dm-lqt-v tnum">' + money(p.total) + '</div>' : '<div class="dm-lqt-v sin">Pon el saldo de tu banco para verlo</div>') +
+    '<div class="dm-fichas">' + ficha('c', 'En cuentas', p.nCuentas ? m0(p.banco) : 'Añadir', 'c', p.nCuentas ? act('dmIr', 'cuentas') : act('openCuentas')) +
+    ficha('i', 'Invertido', m0(p.inv), 'i', act('dmIr', 'inversiones')) + ficha('d', 'Por pagar', p.deudas ? '−' + m0(p.deudas) : m0(0), 'd', act('dmIr', 'deudas')) + '</div>' +
+    (p.ahorroDentro && p.ahorro > 0.005 ? (p.ahorro > p.banco + 0.005
+      ? '<div class="dm-lqt-nota">Tus metas suman <b class="tnum">' + m0(p.ahorro) + '</b>, más de lo que hay en tus cuentas. ¿Lo tienes en otra cuenta? <button type="button" class="link" ' + act('openCuentas') + '>Añádela</button></div>'
+      : '<div class="dm-lqt-nota">De tus cuentas, <b class="tnum">' + m0(p.ahorro) + '</b> están apartados para tus metas.</div>') : '') +
+    '<button type="button" class="link dm-como" ' + act('dmComo') + '>¿Cómo se calcula?</button></div>';
+}
+function dmComoHtml() {
+  const p = patrimonio(), fila = (l, v, s) => '<div class="dm-como-f"><span>' + l + '</span><b class="tnum">' + s + money(Math.abs(v)) + '</b></div>';
+  return '<div class="handle"></div><h2>¿Cómo se calcula?</h2><div class="card dm-como-card">' +
+    fila('En tus cuentas', p.banco, p.banco < 0 ? '−' : '+') + fila('Inversiones, lo que valen hoy', p.inv, '+') +
+    (p.ahorroDentro ? '' : fila('Apartado para metas', p.ahorro, '+')) + fila('Deudas, lo que queda', p.deudas, '−') +
+    '<div class="dm-como-f tot"><span>Lo que tienes</span><b class="tnum">' + money(p.total) + '</b></div></div>' +
+    '<div class="rec-hint">' + (p.ahorroDentro ? 'Lo apartado para tus metas (' + money(p.ahorro) + ') ya está dentro de tus cuentas: apartar no saca dinero del banco, así que no se suma dos veces. ¿Tienes el ahorro en otra cuenta? Añádela en Tú → Cuentas y saldos. ' : '') +
+    'Lo de Juntos no cuenta hasta que se paga.' + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo que aportaste.' : '') + ' Sin intereses.</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Entendido</button></div>';
+}
+function dmCuentasHtml() {
+  const cs = cuentasCfg();
+  return '<div class="section-title" id="dm-cuentas">Cuentas' + (cs.length > 1 ? '<button class="link" ' + act('crearIr', 'traspaso') + '>' + ic('swap') + ' Traspaso</button>' : '') + '<button class="link" ' + act('openCuentas') + '>Editar</button></div>' +
+    (cs.length ? '<div class="card dm-cuentas">' + sinSaldoAvisoHtml() + '<div class="list">' + cs.map(cuentaFilaHtml).join('') + '</div></div>'
+      : '<button type="button" class="card dm-emp tappable" ' + act('openCuentas') + '><span class="dm-ic">' + ic('bank') + '</span><span class="dm-emp-x"><b>Pon el saldo de tu banco</b><span>Así sabrás lo que tienes de verdad</span></span>' + ic('chevR') + '</button>');
+}
+
+/* ---- Metas: tres formas de verlas ---- */
+function dmMetasHtml(ms) {
+  const v = metasVariante(), todas = S._dmMetasTodas, lista = todas ? ms.activas : ms.activas.slice(0, 4);
+  let h = '<div class="section-title" id="dm-metas">Metas' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('users') + ' Compartida</button>' : '') + '<button class="link" ' + act('metaNueva') + '>' + ic('plus') + ' Nueva</button></div>';
+  if (!ms.activas.length && !ms.hechas.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('metaNueva') + '><span class="dm-ic">' + ic('flag') + '</span><span class="dm-emp-x"><b>Crea tu primera meta</b><span>Un viaje, la casa, un colchón… y ve cómo se llena</span></span>' + ic('chevR') + '</button>';
+  if (lista.length) h += v === 'tarros' ? '<div class="card dm-tarros' + (lista.length === 1 ? ' uno' : '') + '">' + lista.map(tarroHtml).join('') + '</div>'
+    : '<div class="card dm-metas dm-v-' + v + '">' + lista.map(v === 'anillos' ? metaAnilloHtml : metaCaminoHtml).join('') + '</div>';
+  if (ms.activas.length > 4) h += '<button type="button" class="link dm-mas" ' + act('dmMetasTodas') + '>' + (todas ? 'Ver menos' : 'Ver las ' + ms.activas.length + ' metas') + '</button>';
+  if (v === 'camino' && ms.activas.length === 1) h += '<button type="button" class="dm-invita tappable" ' + act('metaNueva') + '>¿Ahorras para algo más? Una meta para cada cosa.</button>';
+  if (ms.hechas.length) h += '<button type="button" class="dm-pliega" ' + act('dmHechas') + '>✓ Conseguidas (' + ms.hechas.length + ')' + ic(S._dmHechas ? 'chevD' : 'chevR') + '</button>' +
+    (S._dmHechas ? '<div class="card dm-metas dm-v-anillos">' + ms.hechas.map(metaAnilloHtml).join('') + '</div>' : '');
+  return h;
+}
+function dmAportarBtn(r) { return r.conseguida ? '' : '<button type="button" class="dm-aportar" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>'; }
+function dmPct(r) { return r.pct == null ? '' : '<span class="dm-pct tnum">' + Math.max(0, Math.round(r.pct)) + ' %</span>'; }
+function metaCaminoHtml(r) {
+  const e = metaEstado2(r), col = e.k === 'gris' ? 'var(--accent)' : DM_ESTADO_COLOR[e.k], pct = Math.max(0, Math.min(100, r.pct || 0)), proy = metaProyeccion(r);
+  const pp = proy != null ? Math.min(100, proy / r.obj * 100) : null, emo = emojiMeta(r);
+  const hitos = (r.hitos || []).filter((x) => r.obj > 0 && x.importe < r.obj).map((x) => '<i class="dm-hito' + (x.alcanzado ? ' ok' : '') + '" style="left:' + (x.importe / r.obj * 100).toFixed(1) + '%" title="' + escapeHtml(x.nombre) + '"></i>').join('');
+  return '<div class="dm-meta dm-cam" data-meta="' + escapeHtml(r.key) + '" style="--c:' + col + '"><div class="dm-m-cab"><button type="button" class="dm-m-n tappable" ' + act('metaVer', r.key) + '><b>' + escapeHtml(r.nombre) + '</b>' + dmPct(r) + (r.compartida ? '<span class="dm-g">' + ic('users') + '</span>' : '') + '</button>' + dmAportarBtn(r) + '</div>' +
+    '<button type="button" class="dm-pista" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento. ' + e.t) + '" ' + act('metaVer', r.key) + '><span class="dm-pista-t"><i class="dm-cam-f" style="width:' + pct.toFixed(1) + '%"></i>' +
+    (pp != null && pp > pct + 1 ? '<i class="dm-cam-proy" style="left:' + pct.toFixed(1) + '%;width:' + (pp - pct).toFixed(1) + '%"></i><i class="dm-cam-fin" style="left:' + pp.toFixed(1) + '%"></i>' : '') + hitos +
+    '<span class="dm-cam-emo" style="left:' + pct.toFixed(1) + '%">' + emo + '</span></span><span class="dm-meta-flag">🏁</span></button>' +
+    '<div class="dm-m-pie"><span class="tnum">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' de ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span></div></div>';
+}
+function anilloEmojiHtml(pct, color, emo, tam) {
+  const r = 26, c = 2 * Math.PI * r, v = Math.max(0, Math.min(100, pct || 0));
+  return '<span class="dm-anillo" style="width:' + tam + 'px;height:' + tam + 'px"><svg width="' + tam + '" height="' + tam + '" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + r + '" fill="none" stroke="var(--paper-sunken)" stroke-width="7"/>' +
+    '<circle class="anillo-v" cx="32" cy="32" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="7" stroke-linecap="round" stroke-dasharray="' + (c * v / 100).toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 32 32)"/></svg><span class="dm-anillo-e">' + emo + '</span></span>';
+}
+function metaAnilloHtml(r) {
+  const e = metaEstado2(r), col = DM_ESTADO_COLOR[e.k];
+  return '<div class="dm-meta dm-ani" data-meta="' + escapeHtml(r.key) + '"><button type="button" class="dm-ani-main tappable" ' + act('metaVer', r.key) + '>' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, emojiMeta(r), 46) +
+    '<span class="dm-ani-x"><span class="dm-ani-n"><b>' + escapeHtml(r.nombre) + '</b>' + dmPct(r) + '</span><span class="tnum dm-ani-c">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' de ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span></span></button>' + dmAportarBtn(r) + '</div>';
+}
+function tarroHtml(r) {
+  const e = metaEstado2(r), col = DM_ESTADO_COLOR[e.k] === 'var(--text-muted)' ? 'var(--accent)' : DM_ESTADO_COLOR[e.k], pct = Math.max(0, Math.min(100, r.pct || 0));
+  const H = 92, y = (H - 6) * (1 - pct / 100) + 3;
+  const ola = (dy, op) => '<path class="dm-ola" d="M-60 ' + (y + dy).toFixed(1) + ' q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 V' + H + ' H-60 Z" fill="' + col + '" opacity="' + op + '"/>';
+  return '<div class="dm-tarro" data-meta="' + escapeHtml(r.key) + '"><button type="button" class="dm-tarro-v tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento') + '" ' + act('metaVer', r.key) + '><span class="dm-tapa"></span>' +
+    '<svg viewBox="0 0 76 ' + H + '" preserveAspectRatio="none" aria-hidden="true"><defs><clipPath id="tc-' + escapeHtml(r.key).replace(/[^\w-]/g, '') + '"><rect x="0" y="0" width="76" height="' + H + '" rx="14"/></clipPath></defs>' +
+    '<g clip-path="url(#tc-' + escapeHtml(r.key).replace(/[^\w-]/g, '') + ')"><rect width="76" height="' + H + '" fill="var(--paper-sunken)" opacity=".55"/><g class="dm-liq">' + ola(3, 0.35) + ola(0, 0.9) + '</g></g>' +
+    '<rect x=".75" y=".75" width="74.5" height="' + (H - 1.5) + '" rx="13.5" fill="none" stroke="var(--line)" stroke-width="1.5"/></svg>' +
+    '<span class="dm-tarro-e">' + emojiMeta(r) + '</span><span class="dm-tarro-p tnum">' + Math.round(pct) + ' %</span></button>' +
+    '<b class="dm-tarro-n">' + escapeHtml(r.nombre) + '</b><span class="tnum dm-tarro-c">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' + dmAportarBtn(r) + '</div>';
+}
+function metaPorKey(k) { return metasStats().concat(objCompartidos('ahorro')).find((r) => r.key === k) || null; }
+// hoja de una meta: lo esencial arriba, un solo consejo y «Aportar»; lo demás en «Más»
+function metaVerHtml(k) {
+  const r = metaPorKey(k);
+  if (!r) return '<div class="handle"></div><h2>Meta</h2><div class="card">Esta meta ya no existe.</div><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+  const e = metaEstado2(r), col = DM_ESTADO_COLOR[e.k], vos = r.compartida, g = vos && r.o ? grupoDe(r.o.grupoId) : null;
+  let consejo = '';
+  if (!r.conseguida && r.obj > 0 && r.falta > 0) {
+    if (r.fecha && r.dias != null && r.dias < 0) consejo = 'La fecha ya pasó y faltan ' + money(r.falta) + '. Puedes ponerle otra fecha en «Editar».';
+    else if (r.fecha && r.necesario != null) consejo = (r.estado === 'verde' ? 'Vas bien: ' : '') + 'Para llegar en ' + mesLargo(r.fecha) + ': ' + money(Math.ceil(r.necesario)) + ' al mes.' + (r.ritmo > 0 ? ' Ahora ' + (vos ? 'apartáis' : 'apartas') + ' unos ' + money(Math.round(r.ritmo)) + '.' : '');
+    else if (r.llegada) consejo = 'A este ritmo (' + money(Math.round(r.ritmo)) + ' al mes) llegarías en ' + mesLargo(r.llegada) + '. Ponle una fecha y te diremos cuánto apartar.';
+    else consejo = 'Aún no hay aportaciones recientes. Con un poco cada mes, la verás avanzar.';
+  }
+  const piezas = ((r.b && r.b.piezas) || []).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).slice(0, 3);
+  const mas = FORM && FORM.mas;
+  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + emojiMeta(r) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
+    '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
+    '<div class="dm-hring">' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132) +
+    '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
+    (consejo ? '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(consejo) + '</div>' : '') +
+    (r.conseguida ? '' : '<button class="btn accent block" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>') +
+    '<div class="dm-hbtns"><button class="btn ghost block" ' + act('usoAbrir', r.key) + '>He usado dinero</button><button class="btn ghost block" ' + act('metaMas') + '>' + (mas ? 'Menos' : 'Más') + '</button></div>' +
+    (mas ? '<div class="card dm-hmas">' + (vos ? '' : '<button type="button" class="dm-hmas-b" ' + act('metaAsignar', r.key) + '>' + ic('list') + '<span><b>Elegir movimientos</b><span>Qué apartados e inversiones cuentan para esta meta</span></span></button>') +
+      '<button type="button" class="dm-hmas-b" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('flag') + '<span><b>Editar, fecha e hitos</b><span>Nombre, dibujo, cantidad, fecha y etapas</span></span></button></div>' +
+      (r.hitos.length ? hitosChipsHtml(r, null) : '') + (r.inv && r.rent != null ? '<div class="meta-est">La parte invertida se proyecta al <b>' + fmt2(r.rent).replace(/,00$/, '') + ' % anual</b> (' + escapeHtml(r.fuente) + '). Es una estimación: las inversiones suben y bajan.</div>' : '') : '') +
+    (piezas.length ? '<div class="section-title">Últimas aportaciones</div><div class="card dm-ult">' + piezas.map((x) => '<div class="dm-ult-f"><span>' + fmtDateShort(x.fecha) + ' · ' + (x.tipo === 'Inversión' ? 'invertido' : 'apartado') + '</span><b class="tnum">' + money(x.importe) + '</b></div>').join('') + '</div>' : '') +
+    (r.usos.length ? '<div class="meta-usos">' + r.usos.slice(-3).reverse().map((u) => '<div><span>' + fmtDateShort(u.fecha) + ' · usado <b class="tnum">' + money(u.importe) + '</b>' + (u.nota ? ' · ' + escapeHtml(u.nota) : '') + '</span><button class="link" ' + act('usoQuitar', r.key, u.id) + '>Quitar</button></div>').join('') + '</div>' : '');
+}
+/* ---- Aportar en una pantalla: importes de un toque y cómo queda ---- */
+function aportarRHtml() {
+  const F = FORM, r = metaPorKey(F.key);
+  if (!r) return metaVerHtml(F.key);
+  const imp = numCampo(F.importe || ''), nuevo = r.valor + (imp > 0 ? imp : 0), toca = r.necesario > 0.5 ? Math.ceil(r.necesario / 5) * 5 : null;
+  const prev = r.obj > 0 && imp > 0 ? Math.max(0, Math.round(r.pct || 0)) + ' % → ' + Math.max(0, Math.min(100, Math.round(nuevo / r.obj * 100))) + ' % · ' + (nuevo >= r.obj - 0.005 ? '¡la consigues!' : 'quedarán ' + money(r.obj - nuevo)) : (imp > 0 ? 'Tendrás ' + money(Math.max(0, nuevo)) : 'Elige cuánto');
+  const chips = [50, 100, 200].map((v) => '<button type="button" class="chip' + (imp === v ? ' active' : '') + '" ' + act('aportarRImp', v) + '>' + money(v).replace(',00', '') + '</button>').join('') +
+    (toca && [50, 100, 200].indexOf(toca) < 0 ? '<button type="button" class="chip' + (imp === toca ? ' active' : '') + '" ' + act('aportarRImp', toca) + '>' + money(toca).replace(',00', '') + ' · lo que toca</button>' : '');
+  return '<div class="handle"></div><h2>' + emojiMeta(r) + ' Aportar a ' + escapeHtml(r.nombre) + '</h2>' +
+    '<div class="segmented dm-ap-seg"><button class="active">Apartar</button><button ' + act('aportarRInvertir') + '>Invertir</button></div>' +
+    '<label class="cr-imp"><input id="apImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe" value="' + escapeHtml(F.importe || '') + '" ' + onInput('aportarRInput') + '><span>' + sym() + '</span></label>' +
+    '<div class="chips dm-ap-chips">' + chips + '</div>' +
+    '<div class="cr-res" id="apPrev">' + escapeHtml(prev) + '</div>' +
+    '<div class="field jv-fecha"><label>Fecha</label><button type="button" class="chip active" id="apFechaChip" ' + act('apFechaVer') + '>' + ic('calendar') + ' Hoy</button><input id="apFecha" type="date" value="' + todayISO() + '" hidden></div>' +
+    '<div class="rec-hint">Apartar no saca dinero del banco: es para que sepas que ese dinero tiene dueño.</div>' +
+    '<button class="btn accent block" id="apGuardar" ' + act('aportarRGuardar') + '>' + (imp > 0 ? 'Aportar ' + money(imp) : 'Aportar') + '</button>';
+}
+async function aportarRGuardar() {
+  const F = FORM; if (!F || F.kind !== 'aportarR' || F.guardando) return;
+  const r = metaPorKey(F.key), imp = r2(numCampo(F.importe || '')), fecha = ($('#apFecha') || {}).value || todayISO();
+  if (!r) return toast('Esta meta ya no existe');
+  if (!(imp > 0)) { const el = $('#apImporte'); if (el) el.focus(); return toast('Pon cuánto apartas'); }
+  const antes = r.valor, hitoAntes = (r.hitos || []).filter((x) => x.alcanzado).length;
+  F.guardando = true;
+  try {
+    const data = { creadoEn: Date.now(), tipo: 'Ahorro', importe: imp, categoria: r.nombre, fecha, descripcion: '', metodoPago: '', metaId: F.key };
+    let movId = null;
+    const ok = await write(async () => { const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || null; return r0; });
+    if (!ok) return;
+    if (movId) sincronizarAporte(Object.assign({ id: movId }, data));
+    S._metaSube = { key: F.key, desde: r.obj > 0 ? Math.max(0, antes) / r.obj * 100 : 0, t: Date.now() };
+    closeSheet(); sentir('ok');
+    const fin = r.obj > 0 && antes + imp >= r.obj - 0.005, hito = (r.hitos || []).filter((x) => antes + imp >= x.importe - 0.005).length > hitoAntes;
+    toast(fin ? '¡Meta conseguida! 🎉' : 'Aportado ' + money(imp) + ' a «' + r.nombre + '»');
+    if (fin || hito) confeti(fin ? 40 : 18, null);
+    render();
+  } finally { F.guardando = false; }
+}
+// tras aportar, la meta avanza desde donde estaba (el emoji camina, el anillo crece, el líquido sube)
+function dmAnimarAporte(c) {
+  const m = S._metaSube; if (!m || Date.now() - m.t > 6000 || reduceMotion()) return;
+  const el = c.querySelector('[data-meta="' + (window.CSS && CSS.escape ? CSS.escape(m.key) : m.key) + '"]'); if (!el) return;
+  S._metaSube = null;
+  const desde = Math.max(0, Math.min(100, m.desde));
+  const f = el.querySelector('.dm-cam-f'), emo = el.querySelector('.dm-cam-emo');
+  if (f && emo) {
+    const w = f.style.width, l = emo.style.left;
+    f.style.transition = emo.style.transition = 'none'; f.style.width = desde + '%'; emo.style.left = desde + '%'; void f.offsetWidth;
+    f.style.transition = 'width .9s cubic-bezier(.22,1,.36,1)'; emo.style.transition = 'left .9s cubic-bezier(.3,1.25,.5,1)'; f.style.width = w; emo.style.left = l;
+    emo.classList.add('salta');
+  }
+  const liq = el.querySelector('.dm-liq'); if (liq) { el.classList.add('gotas'); liq.classList.add('sube'); }
+  const ring = el.querySelector('.anillo-v'); if (ring) { ring.classList.remove('va-ring', 'ya'); void ring.getBBox; ring.classList.add('crece'); }
+  const ae = el.querySelector('.dm-anillo-e'); if (ae) ae.classList.add('salta');
+}
+
+/* ---- Inversiones: en Dinero, «Valen hoy» y 3 activos; «Ver todo» es una pantalla ---- */
+function invAsegurarValoracion(grupos) {
+  const ids = grupos.filter((g) => g.activoId && g.conPart === g.n).map((g) => g.activoId);
+  if (activosDisponible() && ids.length && !S._valCarga) {
+    const v = S.valoracion, edad = v ? Date.now() - v.ts : Infinity, faltan = v && ids.some((id) => !(v.valores && v.valores[id]));
+    if ((!v || edad > 600000 || (faltan && edad > 60000)) && !S._valProg) S._valProg = setTimeout(() => { S._valProg = null; cargarValoracion(ids); }, 0);
+  }
+}
+function invResumen() {
+  const grupos = inversionesPorActivo(); invAsegurarValoracion(grupos);
+  const vals = grupos.map(valorDeGrupo), todas = grupos.length && vals.every(Boolean);
+  const metido = grupos.reduce((a, g) => a + g.total, 0), valor = vals.reduce((a, v, i) => a + (v ? v.valor : grupos[i].total), 0);
+  return { grupos, vals, todas, metido, valor, gan: valor - metido, pct: metido > 0 ? (valor - metido) / metido * 100 : null };
+}
+const signoN = (n) => (n >= 0 ? '+' : '−');
+function invIcono(t) { const k = normName(t || ''); return /cripto|bitcoin/.test(k) ? 'bolt' : /accion/.test(k) ? 'chart' : /fondo|etf|indice/.test(k) ? 'arrowUp' : 'piggy'; }
+function invFilaV2(g, vv, completo) {
+  return '<button type="button" class="dm-inv-f tappable" ' + act('verActivo', g.nombre) + '><span class="dm-ic inv">' + ic(invIcono(g.tipoActivo)) + '</span>' +
+    '<span class="dm-emp-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + (!vv ? 'Sin precio todavía' : completo ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 4 }) + ' part. · aportaste ' + m0(g.total) : 'Aportaste ' + m0(g.total)) + '</span></span>' +
+    '<span class="dm-inv-v"><b class="tnum">' + (vv ? money(vv.valor) : m0(g.total)) + '</b>' + (vv ? '<span class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(vv.gan) + money(Math.abs(vv.gan)) + (completo && vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</span>' : '') + '</span></button>';
+}
+function dmInversionesHtml() {
+  const R = invResumen(), orden = R.grupos.map((g, i) => [g, R.vals[i]]).sort((a, b) => (b[1] ? b[1].valor : b[0].total) - (a[1] ? a[1].valor : a[0].total));
+  return '<div class="section-title" id="dm-inversiones">Inversiones<button class="link" ' + act('dmVer', 'inversiones') + '>Ver todo ' + ic('chevR') + '</button></div><div class="card dm-inv">' +
+    '<div class="dm-inv-hoy"><span>' + (R.vals.some(Boolean) ? 'Valen hoy' : 'Has metido') + '</span><b class="tnum">' + money(R.valor) + '</b>' + (R.todas ? '<em class="tnum" style="color:' + (R.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(R.gan) + money(Math.abs(R.gan)) + (R.pct != null ? ' · ' + signoN(R.gan) + Math.abs(R.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</em>' : '') + '</div>' +
+    orden.slice(0, 3).map(([g, v]) => invFilaV2(g, v, false)).join('') +
+    (orden.length > 3 ? '<button type="button" class="dm-inv-mas" ' + act('dmVer', 'inversiones') + '>y ' + (orden.length - 3) + ' más ' + ic('chevR') + '</button>' : '') + '</div>';
+}
+function renderInversionesTodo() {
+  const R = invResumen(), grupos = R.grupos;
+  let h = '<button type="button" class="dm-volver" ' + act('dmVer', '') + '>' + ic('chevL') + ' Dinero</button><h2 class="dm-h1">Inversiones</h2>';
+  if (!grupos.length) return h + '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Aún no hay inversiones. Añade un movimiento de tipo <b>Inversión</b> y busca el activo (por nombre, ticker o ISIN).</div>';
+  const pie = '<div class="dm-inv-pie"><div><span>Has metido</span><b class="tnum">' + money(R.metido) + '</b></div>' +
+    (R.todas ? '<div><span>' + (R.gan >= 0 ? 'Ganas' : 'Pierdes') + '</span><b class="tnum" style="color:' + (R.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(R.gan) + money(Math.abs(R.gan)) + '</b></div>' : '<div><span>Valor</span><b class="tnum">' + (R.vals.some(Boolean) ? 'en camino…' : '—') + '</b></div>') + '</div>';
+  const ev = R.vals.some(Boolean) ? evolucionHtml(grupos, R.todas ? R.valor : null) : '';
+  h += ev ? ev.replace(/<\/div>$/, pie + '</div>') : '<div class="card tr-card">' + pie + '</div>';
+  // tus activos con su reparto por tipo
+  const porTipo = {}; grupos.forEach((g, i) => { const k = g.tipoActivo || 'Otros'; porTipo[k] = (porTipo[k] || 0) + (R.vals[i] ? R.vals[i].valor : g.total); });
+  const tipos = Object.entries(porTipo).sort((a, b) => b[1] - a[1]), totT = tipos.reduce((a, x) => a + x[1], 0), colT = ['var(--savings)', 'var(--income)', 'var(--bill)', 'var(--warn, var(--accent))', 'var(--debt)'];
+  h += '<div class="section-title">Tus activos<span class="dm-cuenta-n">' + grupos.length + '</span></div><div class="card dm-inv">' +
+    (tipos.length > 1 && totT > 0 ? '<div class="dm-reparto"><div class="pat-barra">' + tipos.map(([k, v], i) => '<i style="flex:' + (v / totT).toFixed(4) + ';background:' + colT[i % colT.length] + '"></i>').join('') + '</div><div class="dm-reparto-l">' +
+      tipos.map(([k, v], i) => '<span><i class="dot" style="background:' + colT[i % colT.length] + '"></i>' + escapeHtml(k) + ' ' + Math.round(v / totT * 100) + ' %</span>').join('') + '</div></div>' : '') +
+    grupos.map((g, i) => [g, R.vals[i]]).sort((a, b) => (b[1] ? b[1].valor : b[0].total) - (a[1] ? a[1].valor : a[0].total)).map(([g, v]) => invFilaV2(g, v, true)).join('') + '</div>';
+  // avisos
+  const sinVinc = grupos.filter((g) => !(g.activoId && g.conPart === g.n));
+  h += sinVinc.map((g) => '<div class="dm-aviso">' + ic('alert') + '<span>' + escapeHtml(g.nombre) + ' no tiene precio porque falta elegir el activo.</span><button class="link" ' + act('verActivo', g.nombre) + '>Buscarlo</button></div>').join('');
+  h += R.todas ? inflacionV2Html(grupos, R.valor) : '';
+  h += '<button type="button" class="dm-precios" ' + act('dmPrecios') + '>' + ic('alert') + '<span>De dónde salen los precios</span>' + ic('chevR') + '</button>';
+  return h;
+}
+function inflacionV2Html(grupos, valorActual) {
+  const movs = movsValorables(grupos); if (!movs.length) return '';
+  const hoy = todayISO(), r = xirr(movs.map((m) => ({ d: m.fecha, c: -m.imp })).concat([{ d: hoy, c: valorActual }])), dias = (parseISO(hoy).getTime() - parseISO(movs[0].fecha).getTime()) / 864e5;
+  const reg = inflacionRegion(), inf = INFLACION_DATOS[reg], chips = '<div class="chips dm-inf-chips">' + Object.keys(INFLACION_DATOS).map((k) => '<button type="button" class="chip' + (reg === k ? ' active' : '') + '" ' + act('setInflacion', k) + '>' + INFLACION_DATOS[k].label + '</button>').join('') + '</div>';
+  let cuerpo;
+  if (r == null || dias < 30) cuerpo = '<div class="rec-hint" style="margin:0 0 10px;">Necesitas al menos un mes de historia para compararlo con la inflación (' + fmt2(inf.tasa) + ' % en ' + escapeHtml(inf.label) + ').</div>';
+  else {
+    const rp = r * 100, ip = inf.tasa, real = ((1 + r) / (1 + ip / 100) - 1) * 100, dif = rp - ip, mx = Math.max(Math.abs(rp), ip, 1);
+    const barra = (l, v, c) => '<div class="dm-inf-f"><span>' + l + '</span><span class="dm-inf-t"><i style="width:' + Math.max(2, Math.abs(v) / mx * 100).toFixed(1) + '%;background:' + c + '"></i></span><b class="tnum">' + (l === 'Inflación' ? fmt2(v).replace(/,?0+$/, '').replace(/,$/, '') + ' %' : pct1(v)) + '</b></div>';
+    cuerpo = barra('Tu cartera', rp, rp >= 0 ? 'var(--income)' : 'var(--expense)') + barra('Inflación', ip, 'var(--text-faint)') +
+      '<div class="dm-inf-v">' + (dif >= 0 ? '✅ <b>Le ganas por ' + Math.abs(dif).toFixed(1).replace('.', ',') + ' puntos.</b> Tu dinero compra un ' + pct1(real).replace('+', '') + ' más cada año.' : '⚠️ <b>La inflación te gana por ' + Math.abs(dif).toFixed(1).replace('.', ',') + ' puntos.</b> Tu dinero compra un ' + pct1(real).replace('−', '') + ' menos cada año.') + '</div>';
+  }
+  return '<div class="section-title">¿Le ganas a la inflación?</div><div class="card dm-inf">' + cuerpo + chips +
+    '<div class="rec-hint" style="margin:8px 0 0;">Al año, según cuándo metiste cada euro' + (dias < 365 ? ' (con menos de un año de datos es orientativo)' : '') + '. Inflación: ' + escapeHtml(inf.que) + ', ' + escapeHtml(inf.periodo) + ' · ' + escapeHtml(inf.fuente) + '.</div></div>';
+}
+function dmPreciosHtml() {
+  const R = invResumen();
+  return '<div class="handle"></div><h2>De dónde salen los precios</h2><div class="rec-hint">Valores de cierre del último día de mercado, en euros (los activos en otras monedas se convierten al cambio del Banco Central Europeo). «Has metido» es lo que aportaste. Las inversiones sin activo elegido cuentan por lo aportado.</div>' +
+    '<div class="card dm-ult">' + R.grupos.map((g, i) => { const v = R.vals[i]; return '<div class="dm-ult-f"><span>' + escapeHtml(g.nombre) + '</span><span class="tnum">' + (v ? fmt2(v.v.cierre) + ' ' + escapeHtml(v.v.moneda || '') + ' · ' + fmtDateShort(v.v.fecha_precio) : 'sin precio') + '</span></div>'; }).join('') + '</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+}
+
+/* ---- Deudas: lo que queda, cuándo acabas y qué pasa si pagas más ---- */
+// la deuda con ese nombre exacto y, si no hay, la que coincide sin mayúsculas ni espacios (puede haber dos antiguas casi iguales)
+function deudaIdx(n, lista) { const l = lista || cfg().deudas || []; let i = l.findIndex((d) => d && d.nombre === n); if (i < 0) i = l.findIndex((d) => d && normName(d.nombre) === normName(n || '')); return i; }
+function deudaPorNombre(n) { const l = cfg().deudas || [], i = deudaIdx(n, l); return i >= 0 ? l[i] : null; }
+function deudaEstado2(r) {
+  if (!(r.total > 0)) return { t: 'Sin total', k: 'gris' };
+  if (r.pend <= 0.005) return { t: '¡Saldada!', k: 'bien' };
+  if (r.fecha && r.dias != null && r.dias < 0) return { t: 'Tenías que acabar en ' + mesLargo(r.fecha), k: 'mal' };
+  if (r.fecha) {
+    if (r.acaba && r.acaba <= parseISO(r.fecha)) return { t: 'Acabas en ' + mesCortoAnio(r.acaba) + ' · a tiempo ✓', k: 'bien' };
+    return { t: 'Para acabar en ' + mesLargo(r.fecha) + ': ' + m0(Math.ceil(r.mes || 0)) + '/mes', k: 'justo' };
+  }
+  if (r.acaba) return { t: 'A este ritmo, acabas en ' + mesCortoAnio(r.acaba), k: 'gris' };
+  return { t: r.ultimo ? 'Sin pagos desde ' + mesLargo(r.ultimo) : 'Aún sin pagos', k: 'gris' };
+}
+function dmDeudasHtml(ds, comp) {
+  const st = ds.map((d) => Object.assign(deudaStats(d), { d })), activas = st.filter((r) => !(r.total > 0 && r.pend <= 0.005)), saldadas = st.filter((r) => r.total > 0 && r.pend <= 0.005);
+  const cs = comp, queda = st.reduce((a, r) => a + r.pend, 0) + cs.reduce((a, r) => a + r.falta * miProporcion(r.o), 0);
+  let h = '<div class="section-title" id="dm-deudas">Deudas' + (queda > 0.005 ? '<span class="dm-cuenta-n tnum">quedan ' + m0(queda) + '</span>' : '') + '<button class="link" ' + act('deudaNueva') + '>' + ic('plus') + ' Nueva</button></div>';
+  if (!st.length && !cs.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('deudaNueva') + '><span class="dm-ic">' + ic('card') + '</span><span class="dm-emp-x"><b>Apunta una deuda</b><span>Un préstamo, el coche, la tarjeta… y ve cuándo acabas</span></span>' + ic('chevR') + '</button>';
+  const fila = (r, comp0) => {
+    const e = comp0 ? null : deudaEstado2(r), pct = comp0 ? Math.max(0, Math.min(100, r.pct || 0)) : r.total > 0 ? Math.max(0, Math.min(100, r.pagado / r.total * 100)) : 0, g = comp0 ? grupoDe(r.o.grupoId) : null;
+    return '<button type="button" class="dm-deuda tappable" ' + (comp0 ? act('deudaCompVer', r.id) : act('deudaVer', r.nombre)) + '><span class="dm-ic deu">' + (comp0 ? ic('users') : (r.d.emoji || emojiSugerido(r.nombre, '💳'))) + '</span>' +
+      '<span class="dm-deuda-x"><span class="dm-deuda-top"><b>' + escapeHtml(r.nombre) + '</b><span class="dm-deuda-q"><b class="tnum">' + m0(comp0 ? r.falta : r.pend) + '</b><span>quedan' + ((comp0 ? r.obj : r.total) > 0 ? ' (de ' + m0(comp0 ? r.obj : r.total) + ')' : '') + '</span></span></span>' +
+      '<span class="dm-deuda-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="dm-est" style="color:' + (e ? DM_ESTADO_COLOR[e.k] : 'var(--text-muted)') + '">' + escapeHtml(e ? e.t : (g ? nombreDestino(g) + ' · tu parte ' + money(r.falta * miProporcion(r.o)) : '')) + '</span></span></button>';
+  };
+  if (activas.length || cs.length) h += '<div class="card dm-deudas">' + activas.map((r) => fila(r, false)).join('') + cs.filter((r) => r.falta > 0.005).map((r) => fila(r, true)).join('') + '</div>';
+  if (saldadas.length) h += '<button type="button" class="dm-pliega" ' + act('dmSaldadas') + '>✓ Saldadas (' + saldadas.length + ')' + ic(S._dmSaldadas ? 'chevD' : 'chevR') + '</button>' + (S._dmSaldadas ? '<div class="card dm-deudas">' + saldadas.map((r) => fila(r, false)).join('') + '</div>' : '');
+  return h;
+}
+function mesesHasta(pend, ritmo) { return ritmo > 0.005 ? Math.ceil(pend / ritmo) : null; }
+function deudaVerHtml(nombre) {
+  const d = deudaPorNombre(nombre);
+  if (!d) return '<div class="handle"></div><h2>Deuda</h2><div class="card">Esta deuda ya no existe.</div><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+  const r = deudaStats(d), e = deudaEstado2(r), pct = r.total > 0 ? Math.max(0, Math.min(100, r.pagado / r.total * 100)) : 0, F = FORM || {};
+  let msg = '';
+  if (r.pend <= 0.005 && r.total > 0) msg = '¡Saldada! Ya no debes nada de esta deuda.';
+  else if (r.fecha && r.dias != null && r.dias < 0) msg = 'Tenías que acabar en ' + mesLargo(r.fecha) + ' y quedan ' + money(r.pend) + '. Puedes ponerle otra fecha en «Editar».';
+  else if (r.acaba) {
+    const fecha = r.fecha ? parseISO(r.fecha) : null, dif = fecha ? (fecha.getFullYear() - r.acaba.getFullYear()) * 12 + fecha.getMonth() - r.acaba.getMonth() : null;
+    msg = 'Acabas en ' + mesLargo(r.acaba) + (dif != null && dif > 0 ? ', ' + dif + (dif === 1 ? ' mes' : ' meses') + ' antes de lo previsto' : dif != null && dif < 0 ? ', ' + (-dif) + (dif === -1 ? ' mes' : ' meses') + ' después de lo previsto' : '') + '. ' + (r.cuota ? 'Pagas ' + money(r.ritmo) + ' al mes.' : 'Pagas unos ' + money(Math.round(r.ritmo)) + ' al mes (lo de los últimos 3 meses).');
+    if (r.fecha && r.mes && r.ritmo < r.mes) msg += ' Para acabar en ' + mesLargo(r.fecha) + ' harían falta ' + money(Math.ceil(r.mes)) + ' al mes.';
+  } else if (r.fecha && r.mes) msg = 'Para acabar en ' + mesLargo(r.fecha) + ': ' + money(Math.ceil(r.mes)) + ' al mes.';
+  else msg = 'Pon «Pagas al mes» en «Editar» y te diremos cuándo acabas.';
+  // ¿y si pagas más?
+  const base = r.ritmo > 0.005 ? r.ritmo : r.mes || 0, extra = Number(F.extra) || 0;
+  let simula = '';
+  if (base > 0.005 && r.pend > 0.005) {
+    simula = '<div class="section-title">¿Y si pagas más cada mes?</div><div class="chips dm-mas-chips">' + [50, 100, 200].map((v) => '<button type="button" class="chip' + (extra === v ? ' active' : '') + '" ' + act('deudaMas', v) + '>+' + v + ' €</button>').join('') + '</div>';
+    if (extra) {
+      const n0 = mesesHasta(r.pend, base), n1 = mesesHasta(r.pend, base + extra), fin = sumaMeses(n1), ahorro = n0 - n1;
+      simula += '<div class="dm-simula">Con <b class="tnum">' + money(base + extra) + ' al mes</b> acabarías en <b>' + mesLargo(fin) + '</b>' + (ahorro > 0 ? ': ' + ahorro + (ahorro === 1 ? ' mes antes.' : ' meses antes.') : '.') + '<span>Sin contar intereses. Solo es una cuenta: no se guarda nada.</span></div>';
+    }
+  }
+  const pagos = movsDeuda(d).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
+  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + escapeHtml(d.emoji || emojiSugerido(d.nombre, '💳')) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(d.nombre) + '</h2></div>' +
+    '<button type="button" class="icon-btn" aria-label="Editar deuda" ' + act('deudaEditar', d.nombre) + '>' + ic('edit') + '</button></div>' +
+    '<div class="dm-dq"><span>Quedan</span><b class="tnum">' + money(r.pend) + '</b><span>' + (r.total > 0 ? 'de ' + money(r.total) + ' · llevas pagado el ' + Math.round(pct) + ' %' : 'Ponle el total en «Editar»') + '</span></div>' +
+    '<div class="dm-deuda-bar grande"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
+    '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(msg) + '</div>' + simula +
+    '<button class="btn accent block" style="margin-top:14px;" ' + act('deudaPagar', d.nombre) + '>' + ic('plus') + ' Apuntar un pago</button>' +
+    '<div class="dm-hbtns"><button class="btn ghost block" ' + act('deudaCuadrar', d.nombre) + '>Cuadrar con el banco</button><button class="btn ghost dm-masb" aria-label="Más" ' + act('deudaMasMenu') + '>' + ic('more') + '</button></div>' +
+    (F.menu ? '<div class="card dm-hmas"><button type="button" class="dm-hmas-b" ' + act('deudaEditar', d.nombre) + '>' + ic('edit') + '<span><b>Editar</b><span>Nombre, dibujo, total, ya pagado, al mes y fecha</span></span></button>' +
+      '<button type="button" class="dm-hmas-b peligro" ' + act('deudaEliminar', d.nombre) + '>' + ic('trash') + '<span><b>Eliminar deuda</b><span>Sus pagos siguen en Movimientos</span></span></button></div>' : '') +
+    (pagos.length ? '<div class="section-title">Últimos pagos<button class="link" ' + act('irMovsDeuda', d.nombre) + '>Ver todos</button></div><div class="card dm-ult">' + pagos.slice(0, 3).map((x) => '<div class="dm-ult-f"><span>' + fmtDateShort(x.fecha) + '</span><b class="tnum">' + money(x.importe) + '</b></div>').join('') + '</div>' : '') +
+    (num(d.previo) ? '<div class="rec-hint">Incluye ' + money(num(d.previo)) + ' que pagaste antes de usar la app. Sin intereses.</div>' : '<div class="rec-hint">Sin contar intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</div>');
+}
+const EMOJIS_DEUDA = ['🚗', '🏠', '📱', '💳', '🎓', '🤝'];
+function deudaFormHtml() {
+  const F = FORM, sug = emojiSugerido(F.nombre, '💳'), lista = EMOJIS_DEUDA.indexOf(sug) < 0 ? [sug].concat(EMOJIS_DEUDA) : EMOJIS_DEUDA, emo = F.emoji || sug;
+  const n = (v) => (v == null || v === '' ? '' : String(v).replace('.', ','));
+  return '<div class="handle"></div><h2>' + (F.orig ? 'Editar deuda' : 'Nueva deuda') + '</h2>' +
+    '<div class="field"><label>Elige un dibujo</label><div class="dm-emojis">' + lista.map((x) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" ' + act('deudaEmoji', x) + '>' + x + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>Nombre</label><input id="dNombre" type="text" maxlength="40" placeholder="Coche, préstamo, tarjeta…" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('deudaNombreIn') + '></div>' +
+    '<div class="dm-2c"><div class="field"><label>Total que debías</label><input id="dTotal" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.total)) + '"></div>' +
+    '<div class="field"><label>Ya pagado <span class="hint">· opcional</span></label><input id="dPrevio" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.previo)) + '"></div></div>' +
+    '<div class="dm-2c"><div class="field"><label>Al mes <span class="hint">· opcional</span></label><input id="dCuota" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.cuotaMes)) + '"></div>' +
+    '<div class="field"><label>Acabar en <span class="hint">· opcional</span></label><input id="dFecha" type="month" value="' + escapeHtml((F.fecha || '').slice(0, 7)) + '"></div></div>' +
+    '<div class="dm-nota">' + ic('alert') + '<span>«Ya pagado» es lo que pagaste antes de usar la app. No contamos intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</span></div>' +
+    '<div id="dAviso"></div><button class="btn accent block" ' + act('deudaGuardar') + '>Guardar deuda</button>';
+}
+// lee un importe opcional: vacío → null; texto raro o negativo → NaN
+function importeOpcional(v) { const s = String(v == null ? '' : v).trim(); if (!s) return null; if (!/^[\d.,\s€]+$/.test(s) || !/\d/.test(s)) return NaN; const x = numCampo(s); return isFinite(x) && x >= 0 ? r2(x) : NaN; }
+function ultimoDiaMes(ym) { if (!/^\d{4}-\d{2}$/.test(ym || '')) return null; const [y, m] = ym.split('-').map(Number); return ym + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0'); }
+async function deudaGuardar() {
+  const F = FORM; if (!F || F.kind !== 'deudaForm' || F.guardando) return;
+  const nombre = (($('#dNombre') || {}).value || '').trim().replace(/\s+/g, ' '), total = importeOpcional(($('#dTotal') || {}).value), previo = importeOpcional(($('#dPrevio') || {}).value), cuota = importeOpcional(($('#dCuota') || {}).value);
+  const fecha = ultimoDiaMes(($('#dFecha') || {}).value || '');
+  if (!nombre) { marcarCampo('#dNombre'); return toast('Ponle un nombre'); }
+  if (!(total > 0)) { marcarCampo('#dTotal'); return toast('Pon el total que debías (un número mayor que 0)'); }
+  if (Number.isNaN(previo) || Number.isNaN(cuota)) return toast('«Ya pagado» y «Pagas al mes» tienen que ser números (o dejarse vacíos)');
+  if (previo != null && previo > total) { marcarCampo('#dPrevio'); return toast('«Ya pagado» no puede ser más que el total'); }
+  // se lee la configuración de este momento (no la del principio de la hoja) y se cambia solo esta deuda
+  const lista = (cfg().deudas || []).slice(), i = F.orig ? deudaIdx(F.orig, lista) : -1;
+  if (F.orig && i < 0) return toast('Esta deuda ya no existe (¿la cambiaste en otro dispositivo?)');
+  const k = normName(nombre), choca = lista.some((d, j) => d && j !== i && (normName(d.nombre) === k || (d.nombresAntes || []).some((x) => normName(x) === k)));
+  if (choca) { marcarCampo('#dNombre'); return toast('Ya tienes una deuda con ese nombre: elige otro para no mezclar sus pagos'); }
+  const prev = i >= 0 ? lista[i] : {}, antes = (prev.nombresAntes || []).slice();
+  if (F.orig && normName(F.orig) !== k && !antes.some((x) => normName(x) === normName(F.orig))) antes.push(F.orig);
+  const nueva = Object.assign({}, prev, { nombre, objetivo: total, previo, cuotaMes: cuota, fechaObjetivo: fecha || null, emoji: F.emoji || emojiSugerido(nombre, '💳') });
+  if (antes.length) nueva.nombresAntes = antes;
+  if (!nueva.id) nueva.id = 'd' + Date.now().toString(36);
+  if (i >= 0) lista[i] = nueva; else lista.push(nueva);
+  F.guardando = true;
+  try {
+    const ok = await saveConfig({ deudas: lista });
+    if (ok === false) return;
+    toast('Deuda guardada'); sentir('ok');
+    FORM = { kind: 'deudaVer', nombre }; updateSheet(deudaVerHtml(nombre)); render();
+  } finally { F.guardando = false; }
+}
+function deudaCuadrarHtml() {
+  const F = FORM, d = deudaPorNombre(F.nombre), r = d ? deudaStats(d) : null;
+  if (!r) return deudaVerHtml(F.nombre);
+  return '<div class="handle"></div><h2>Cuadrar con el banco</h2><div class="rec-hint">La app dice que quedan <b>' + money(r.pend) + '</b>. ¿Cuánto te queda según tu banco? Ajustamos «Ya pagado» para que cuadre; no se crea ni se cambia ningún movimiento.</div>' +
+    '<div class="field"><label>¿Cuánto te queda según tu banco?</label><input id="dqBanco" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(F.banco || '') + '"></div>' +
+    (F.aviso ? '<div class="dm-consejo k-justo">' + escapeHtml(F.aviso) + '</div>' : '') +
+    '<div class="actions"><button class="btn ghost block" ' + act('deudaVer', F.nombre) + '>Volver</button><button class="btn accent block" ' + act('deudaCuadrarOk') + '>' + (F.aviso ? 'Sí, cuadrar así' : 'Cuadrar') + '</button></div>';
+}
+async function deudaCuadrarOk() {
+  const F = FORM; if (!F || F.kind !== 'deudaCuadrar' || F.guardando) return;
+  const v = ($('#dqBanco') || {}).value, queda = importeOpcional(v);
+  if (queda == null || Number.isNaN(queda)) { marcarCampo('#dqBanco'); return toast('Pon lo que te queda (un número)'); }
+  const lista = (cfg().deudas || []).slice(), i = deudaIdx(F.nombre, lista);
+  if (i < 0) return toast('Esta deuda ya no existe');
+  const d = lista[i], r = deudaStats(d), pagos = r.pagado - num(d.previo), previo = r2(num(d.objetivo) - pagos - queda);
+  if (previo < -0.005 && String(F.banco) !== String(v)) {
+    F.banco = v; F.aviso = 'Tu banco dice que queda más de lo que calcula la app (seguramente por los intereses). Para cuadrar, subiremos el total de la deuda a ' + money(r2(pagos + queda)) + ' y dejaremos «Ya pagado» a 0.';
+    return updateSheet(deudaCuadrarHtml());
+  }
+  lista[i] = previo < -0.005 ? Object.assign({}, d, { objetivo: r2(pagos + queda), previo: 0 }) : Object.assign({}, d, { previo: Math.max(0, previo) });
+  F.guardando = true;
+  try {
+    const ok = await saveConfig({ deudas: lista }); if (ok === false) return;
+    toast('Cuadrada con tu banco'); FORM = { kind: 'deudaVer', nombre: F.nombre }; updateSheet(deudaVerHtml(F.nombre)); render();
+  } finally { F.guardando = false; }
+}
 /* ---- botón + : todo lo que se puede crear ---- */
 function crearHtml() {
   const op = (accion, args, icono, txt, cls) => '<button class="crear-op tappable ' + cls + '" ' + act(accion, ...args) + '><span class="crear-ic">' + ic(icono) + '</span><span>' + txt + '</span></button>';
@@ -3826,7 +4266,7 @@ const BUSCAR_ACCIONES = [
   ['Foto de ticket', 'camara recibo leer', 'ticketFoto', []], ['Nuevo gasto', 'apuntar añadir', 'crearIr', ['gasto']], ['Nueva tarea', 'apuntar', 'crearIr', ['tarea']],
   ['Grupos y personas', 'compartir paloma invitar saldar deudas', 'openGrupos', []], ['Metas', 'ahorro objetivos hucha', 'irDinero', ['metas']],
   ['Inversiones', 'bolsa etf cartera fondos', 'irDinero', ['inversiones']], ['Deudas', 'prestamo hipoteca coche', 'irDinero', ['deudas']],
-  ['Patrimonio', 'cuanto tengo total', 'irDinero', ['metas']], ['Cuentas y saldos', 'banco saldo', 'openCuentas', []],
+  ['Lo que tienes', 'patrimonio cuanto tengo total', 'irDinero', ['metas']], ['Cuentas y saldos', 'banco saldo', 'openCuentas', []],
   ['Categorías de gasto', 'presupuestos', 'openListEditor', ['categoriasGasto']], ['Cobros y pagos recurrentes', 'nomina alquiler facturas fijas', 'openRecurrentes', []],
   ['Importar extracto o Excel', 'banco csv', 'impAbrir', []], ['Reglas de categorías', 'automatico', 'openReglas', []],
   ['Calendario', 'agenda mes semana', 'irAgenda', ['calendario']], ['Tareas', 'pendientes', 'irAgenda', ['tareas']],
@@ -4720,11 +5160,12 @@ function patrimonio() {
   // compartido: lo que has aportado a huchas compartidas y tu parte de lo pendiente de deudas compartidas
   const deudaComp = objCompartidos('deuda').filter((r) => r.obj > 0).reduce((a, r) => a + r.falta * miProporcion(r.o), 0);
   deudas += deudaComp;
-  const fechas = cuentasCfg().map((c) => c.fecha).filter(Boolean).sort();
-  return { banco, bancoFecha: fechas.length ? fechas[0] : null, nCuentas: cuentasCfg().length, inv, sinValor, ahorro, deudas, comp: !!(S.objetivos || []).length, total: banco + inv + ahorro - deudas };
+  const fechas = cuentasCfg().map((c) => c.fecha).filter(Boolean).sort(), conSaldo = cuentasCfg().some((c) => saldoCuenta(c) != null);
+  return { banco, bancoFecha: fechas.length ? fechas[0] : null, nCuentas: cuentasCfg().length, inv, sinValor, ahorro, deudas, comp: !!(S.objetivos || []).length, total: banco + inv - deudas + (conSaldo ? 0 : ahorro), ahorroDentro: conSaldo };
+  // Lo apartado para metas NO saca dinero del banco (SIGNO_CUENTA lo deja en 0): ya está dentro de «banco». Solo se suma aparte si no hay cuentas.
 }
 function patBarraHtml(p) {
-  const partes = [[Math.max(0, p.banco), 'var(--bill)'], [Math.max(0, p.inv), 'var(--savings)'], [Math.max(0, p.ahorro), 'var(--accent)'], [Math.max(0, p.deudas), 'var(--expense)']];
+  const partes = [[Math.max(0, p.banco), 'var(--bill)'], [Math.max(0, p.inv), 'var(--savings)'], [p.ahorroDentro ? 0 : Math.max(0, p.ahorro), 'var(--accent)'], [Math.max(0, p.deudas), 'var(--expense)']];
   const tot = partes.reduce((a, x) => a + x[0], 0); if (!tot) return '';
   return '<div class="pat-barra" aria-hidden="true">' + partes.filter((x) => x[0] > 0).map(([v, c]) => '<i style="flex:' + (v / tot).toFixed(4) + ';background:' + c + '"></i>').join('') + '</div>';
 }
@@ -4735,14 +5176,14 @@ function patrimonioHtml() {
   const fila = (l, v, signo, color, accion) => '<div class="pat-row tappable" ' + accion + '><span>' + l + '</span><b class="tnum" style="color:' + color + '">' + signo + money(Math.abs(v)) + '</b><span class="chev-s">' + ic('chevR') + '</span></div>';
   const diasBanco = p.bancoFecha ? Math.round((uD(todayISO()) - uD(p.bancoFecha)) / 864e5) : null;
   const cargando = S._valCarga || S._valProg;
-  return '<div class="section-title">Patrimonio' + badge('patrimonio') + '</div><div class="card pat-card">' +
+  return '<div class="section-title">Lo que tienes</div><div class="card pat-card">' +
     '<div class="pat-total tnum">' + money(p.total) + '</div>' + patBarraHtml(p) +
     (p.nCuentas ? fila('Dinero en el banco' + (diasBanco != null && diasBanco > 30 ? ' · <span style="color:var(--accent)">actualízalo</span>' : ''), p.banco, p.banco >= 0 ? '+' : '−', 'var(--income)', act('openCuentas'))
       : '<div class="pat-row tappable" ' + act('openCuentas') + '><span>Dinero en el banco</span><b style="color:var(--accent)">Añadir saldo</b><span class="chev-s">' + ic('chevR') + '</span></div>') +
     (p.inv || S.movimientos.some((x) => x.tipo === 'Inversión') ? fila('Inversiones (valor de mercado)' + (cargando ? ' · actualizando…' : ''), p.inv, '+', 'var(--income)', act('irAnalisis', 'inversiones')) : '') +
-    (p.ahorro || metasCfg().some((m) => tipoMeta(m) === 'ahorro') ? fila('Ahorro apartado', p.ahorro, '+', 'var(--income)', act('goMetas')) : '') +
-    (p.deudas ? fila('Deudas pendientes', p.deudas, '−', 'var(--expense)', act('irAnalisis', 'deudas')) : '') +
-    '<div class="pat-note">Solo informativo. El dinero en el banco se calcula desde el saldo que pusiste en Tú → Cuentas y saldos' + (p.bancoFecha ? ' (el ' + fmtDateShort(p.bancoFecha) + ')' : '') + ', sumando y restando lo que apuntas.' + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo aportado.' : '') + (p.comp ? ' De lo compartido cuenta tu parte: lo que has aportado y, en las deudas, tu parte de lo pendiente según el reparto habitual.' : '') + '</div></div>';
+    (p.ahorro || metasCfg().some((m) => tipoMeta(m) === 'ahorro') ? (p.ahorroDentro ? fila('De ello, apartado para metas', p.ahorro, '', 'var(--text-muted)', act('goMetas')) : fila('Ahorro apartado', p.ahorro, '+', 'var(--income)', act('goMetas'))) : '') +
+    (p.deudas ? fila('Por pagar', p.deudas, '−', 'var(--expense)', act('irAnalisis', 'deudas')) : '') +
+    '<div class="pat-note">Solo informativo. El dinero en el banco se calcula desde el saldo que pusiste en Tú → Cuentas y saldos' + (p.bancoFecha ? ' (el ' + fmtDateShort(p.bancoFecha) + ')' : '') + ', sumando y restando lo que apuntas.' + (p.ahorroDentro ? ' Lo apartado para metas ya está dentro de tus cuentas, así que no se suma dos veces.' : '') + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo aportado.' : '') + (p.comp ? ' De lo compartido cuenta tu parte: lo que has aportado y, en las deudas, tu parte de lo pendiente según el reparto habitual.' : '') + '</div></div>';
 }
 
 /* ============================================================
@@ -5001,7 +5442,7 @@ function evolucionHtml(grupos, valorActual) {
     const prev = i0 > 0 ? serie[i0 - 1] : { d: desde, v: 0, inv: 0, I: 1 };
     const baseI = prev.I || 1;
     const modoR = S.invModo === 'rentab';
-    const pts = reducirPuntos(serie.slice(i0), per[0] === '1m' ? 40 : 72).map((p) => Object.assign({}, p, { r: ((p.I || 1) / baseI - 1) * 100 }));
+    const pts = reducirPuntos(serie.slice(i0), 48).map((p) => Object.assign({}, p, { r: ((p.I || 1) / baseI - 1) * 100 }));
     const fin = pts[pts.length - 1];
     const ch = cambioPeriodo(prev, fin);
     const label = per[0] === 'max' ? 'desde el inicio' : 'en ' + per[1].replace('M', ' mes' + (per[2] > 31 ? 'es' : '')).replace('1A', '1 año');
@@ -5013,21 +5454,24 @@ function evolucionHtml(grupos, valorActual) {
     let mn = Math.min(...vals), mx = Math.max(...vals); const pad = (mx - mn) * 0.1 || 1; mn -= pad; mx += pad;
     S._invChart.mn = mn; S._invChart.mx = mx;
     const X = (i) => (pts.length > 1 ? i / (pts.length - 1) * W : W / 2), Y = (v) => Hh - (v - mn) / (mx - mn) * Hh;
-    const curva = (fn) => curvaSuave(pts.map((p, i) => [X(i), Y(fn(p))]));
+    // la línea se dibuja algo suavizada (sin tocar el primer ni el último punto); las cifras siguen siendo las de verdad
+    const ys = suavizarSerie(pts.map(val)), ysInv = suavizarSerie(pts.map((p) => p.inv));
+    S._invChart.ys = ys;
+    const curvaV = (arr) => curvaSuave(arr.map((v, i) => [X(i), Y(v)]));
     const color = sube ? 'var(--income)' : 'var(--expense)';
-    const lineaV = curva(val), suelo = modoR ? Y(0) : Hh;
+    const lineaV = curvaV(ys), suelo = modoR ? Y(0) : Hh;
     const area = lineaV + ' L' + X(pts.length - 1).toFixed(1) + ' ' + suelo.toFixed(1) + ' L' + X(0).toFixed(1) + ' ' + suelo.toFixed(1) + ' Z';
     cabecera = modoR
-      ? '<div class="tr-big tnum" id="invBig" style="color:' + color + '">' + pct1(fin.r) + '</div>' +
+      ? '<div class="tr-big tnum' + (Date.now() < (S._trCambiaHasta || 0) ? ' tr-cambia' : '') + '" id="invBig" style="color:' + color + '">' + pct1(fin.r) + '</div>' +
         '<div class="tr-chg tnum" id="invChg">' + (ch.delta >= 0 ? 'Has ganado ' : 'Has perdido ') + fmt2(Math.abs(ch.delta)) + ' € <span class="tr-when">' + label + '</span></div>'
-      : '<div class="tr-big tnum" id="invBig">' + eur2(fin.v) + '</div>' +
+      : '<div class="tr-big tnum' + (Date.now() < (S._trCambiaHasta || 0) ? ' tr-cambia' : '') + '" id="invBig">' + eur2(fin.v) + '</div>' +
         '<div class="tr-chg tnum" id="invChg" style="color:' + color + '">' + (ch.delta >= 0 ? '▲ ' : '▼ ') + eurS(ch.delta) + (ch.pct == null ? '' : ' (' + pct1(ch.pct) + ')') + ' <span class="tr-when">' + label + '</span></div>';
     cuerpo = '<div class="tr-chart" id="invChart"><svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none"><defs>' + degradado('invGrad', color, 0.2) +
-      revelaSvg('invClip', W, Hh, S.invModo + '|' + per[0] + '|' + pts.length, '_invTraza') + '</defs>' +
-      (modoR ? '<line x1="0" x2="' + W + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="var(--text-faint)" stroke-width="1" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>'
-        : '<path d="' + curva((p) => p.inv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>') +
-      '<g clip-path="url(#invClip)"><path d="' + area + '" fill="url(#invGrad)" stroke="none"/>' +
-      '<path d="' + lineaV + '" fill="none" stroke="' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></g></svg>' +
+      revelaSvg('invClip', W, Hh, per[0] + '|' + pts.length, '_invTraza') + '</defs>' +
+      // la línea de referencia (lo metido, o el 0 %) es siempre una curva con los mismos puntos: así puede «moverse» al cambiar de vista
+      '<path id="invRef" d="' + curvaV(modoR ? pts.map(() => 0) : ysInv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>' +
+      '<g clip-path="url(#invClip)"><path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"/>' +
+      '<path id="invLineV" class="tr-linea" d="' + lineaV + '" fill="none" style="stroke:' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></g></svg>' +
       (modoR ? '<div class="tr-cero" style="top:' + (Y(0) / Hh * 100).toFixed(1) + '%">0 %</div>' : '') +
       '<div class="tr-cursor" id="invLine"></div><div class="tr-dot" id="invDot" style="background:' + color + '"></div></div>' +
       (modoR ? '<div class="tr-legend"><span><i style="background:' + color + '"></i>Tu rentabilidad</span><span>no cambia al meter o sacar dinero</span></div>'
@@ -5044,6 +5488,30 @@ function evolucionHtml(grupos, valorActual) {
   }
   const modos = S._invChart || (H && H.clave === clave && !H.error) ? '<div class="segmented tr-modo">' + [['valor', 'Valor'], ['rentab', 'Rentabilidad']].map((x) => '<button class="' + (S.invModo === x[0] ? 'active' : '') + '" ' + act('setInvModo', x[0]) + '>' + x[1] + (x[0] === 'rentab' ? badge('rentab') : '') + '</button>').join('') + '</div>' : '';
   return '<div class="card tr-card">' + modos + '<div class="tr-head">' + cabecera + '<div class="tr-fecha" id="invFecha"></div></div>' + cuerpo + chips + '</div>';
+}
+// suavizado ligero (1-2-1, dos pasadas) para que la línea no tenga picos de un día; el primer y el último punto no cambian
+function suavizarSerie(arr) {
+  let a = arr.slice(); if (a.length < 5) return a;
+  for (let r = 0; r < 2; r++) a = a.map((v, i) => (i === 0 || i === a.length - 1 ? v : (a[i - 1] + 2 * v + a[i + 1]) / 4));
+  return a;
+}
+// mueve una línea SVG de una forma a otra (mismos comandos, distintos números). Busca el elemento por id en cada paso:
+// si la pantalla se repinta a mitad (p. ej. al guardar la configuración), el movimiento sigue sobre el nuevo
+function morphPath(el, from, to, ms) {
+  const id = el.id; let cur = el;
+  const re = /-?\d+(?:\.\d+)?/g, a = (from.match(re) || []).map(Number), b = (to.match(re) || []).map(Number), tpl = to.split(re);
+  if (!a.length || a.length !== b.length || tpl.length !== b.length + 1) return;
+  const t0 = performance.now(), ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+  el.setAttribute('d', from);
+  const paso = (now) => {
+    const e = id ? document.getElementById(id) : cur; if (!e) return;
+    if (e !== cur) { if (e.getAttribute('d') !== to) return; cur = e; } // repintado con otros datos: se para
+    const k = ease(Math.min(1, (now - t0) / ms));
+    let d = tpl[0]; for (let j = 0; j < b.length; j++) d += (a[j] + (b[j] - a[j]) * k).toFixed(1) + tpl[j + 1];
+    cur.setAttribute('d', k >= 1 ? to : d);
+    if (k < 1) requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
 }
 function bindInvChart() {
   const el = document.getElementById('invChart'), C = S._invChart;
@@ -5064,7 +5532,7 @@ function bindInvChart() {
   let ultI = -1;
   const pintar = (i) => {
     const p = C.pts[i];
-    const x = C.pts.length > 1 ? i / (C.pts.length - 1) * 100 : 50, y = (1 - ((C.modoR ? p.r : p.v) - C.mn) / (C.mx - C.mn)) * 100;
+    const x = C.pts.length > 1 ? i / (C.pts.length - 1) * 100 : 50, y = (1 - ((C.ys ? C.ys[i] : C.modoR ? p.r : p.v) - C.mn) / (C.mx - C.mn)) * 100;
     cabecera(p, 'metido: ' + eur0(p.inv));
     if (fecha) fecha.textContent = fechaCorta(p.d);
     line.style.left = x + '%'; line.style.display = 'block';
@@ -5997,7 +6465,7 @@ function impProcesar() {
 function impNuevosConfig(filas) {
   const c = cfg(), out = { categoriasGasto: [], ingresos: [], facturas: [], ahorro: [], deudas: [] };
   const existe = { categoriasGasto: (c.categoriasGasto || []).map((x) => normName(x && x.nombre)), ingresos: (c.ingresos || []).map(normName),
-    facturas: (c.facturas || []).map((x) => normName(x && x.nombre)), ahorro: (c.ahorro || []).map((x) => normName(x && x.nombre)), deudas: (c.deudas || []).map((x) => normName(x && x.nombre)) };
+    facturas: (c.facturas || []).map((x) => normName(x && x.nombre)), ahorro: (c.ahorro || []).map((x) => normName(x && x.nombre)), deudas: (c.deudas || []).reduce((a, x) => a.concat([x && x.nombre].concat((x && x.nombresAntes) || [])), []).map(normName) };
   const clave = { Gasto: 'categoriasGasto', Ingreso: 'ingresos', Factura: 'facturas', Ahorro: 'ahorro', Deuda: 'deudas' };
   filas.forEach((r) => {
     const k = clave[r.tipo], n = (r.categoria || '').trim();
@@ -6547,7 +7015,7 @@ function freshOnboardingState(manual) {
     cats: [],
     catsCustom: manual ? names.filter((n) => !esCatStd(n)) : [],
     ingresos: (c.ingresos || []).slice(),
-    facturas: clone(c.facturas), ahorro: clone(c.ahorro), deudas: clone(c.deudas),
+    facturas: clone(c.facturas), ahorro: clone(c.ahorro), deudas: clone(c.deudas).map((x) => Object.assign(x, { _n0: x.nombre })),
     proyectos: proy.filter((x) => ONB_PROYECTOS.indexOf(x) >= 0).concat(otro ? ['Otro'] : []),
     proyectoOtro: otro,
     mesModo: mesCfg().modo, mesDia: mesCfg().modo === 'cobro' ? mesCfg().dia : 28,
@@ -6678,11 +7146,13 @@ async function doObFinish(saveData) {
     const cats = (old.categoriasGasto || []).filter((c) => (esCatStd(c.nombre) && c.presupuesto != null) || names.indexOf(c.nombre) >= 0)
       .concat(names.filter((n) => !oldBy[n]).map((n) => ({ nombre: n, presupuesto: null })));
     const clean = (arr) => arr.filter((r) => r.nombre && String(r.nombre).trim());
+    // deudas renombradas en el asistente: se apunta el nombre anterior para no perder sus pagos
+    const deudasOb = clean(ob.deudas).map((d) => { const x = Object.assign({}, d), n0 = x._n0; delete x._n0; if (n0 && normName(n0) !== normName(x.nombre)) { const a = (x.nombresAntes || []).slice(); if (!a.some((y) => normName(y) === normName(n0))) a.push(n0); x.nombresAntes = a; } return x; });
     const proy = ob.proyectos.filter((x) => x !== 'Otro').concat(ob.proyectos.indexOf('Otro') >= 0 ? [ob.proyectoOtro.trim() || 'Otro'] : []);
     ok = await write(() => S.db.doc('config/app').update({
       novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '',
       categoriasGasto: cats, ingresos: ob.ingresos.slice(),
-      facturas: clean(ob.facturas), ahorro: clean(ob.ahorro), deudas: clean(ob.deudas),
+      facturas: clean(ob.facturas), ahorro: clean(ob.ahorro), deudas: deudasOb,
       proyectosInteres: proy,
       mesInicio: { modo: ob.mesModo === 'cobro' ? 'cobro' : 'natural', dia: ob.mesDia || 28 },
     }));
@@ -6852,7 +7322,7 @@ const H = {
   agendaDia: ([iso]) => { S.agendaDia = iso; render(); },
   agendaSemana: ([d]) => { S.agendaDia = uAdd(S.agendaDia || todayISO(), 7 * Number(d)); render(); },
   irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
-  irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
+  irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; S.dineroVer = ''; if (dineroV2() && sub) S._dmIr = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
   setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; render(); },
   verAnio: () => irResumen('y:' + mesActual().y),
   openBuscar: () => { FORM = { kind: 'buscar' }; if ($('#sheetBackdrop')) updateSheet(buscarHtml()); else openSheet(buscarHtml()); setTimeout(() => { const el = $('#qBuscar'); if (el) el.focus(); }, 80); },
@@ -7157,6 +7627,51 @@ const H = {
     if (x.deudas.length === 1) { const d = x.deudas[0]; FORM = { kind: 'saldar', gid: d.gid, de: d.de, a: d.a, max: r2(d.importe), rapido: true }; openSheet(saldarHtml(FORM)); }
     else abrirGrupo(x.deudas.slice().sort((a, b) => b.importe - a.importe)[0].gid);
   },
+  dmIr: ([k]) => { const el = $('#dm-' + k); if (el) try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } },
+  dmComo: () => { FORM = { kind: 'dmComo' }; openSheet(dmComoHtml()); },
+  dmMetasTodas: () => { S._dmMetasTodas = !S._dmMetasTodas; render(); },
+  dmHechas: () => { S._dmHechas = !S._dmHechas; render(); },
+  dmSaldadas: () => { S._dmSaldadas = !S._dmSaldadas; render(); },
+  dmVer: ([v]) => { S.dineroVer = v || ''; S._entrando = true; render(); window.scrollTo(0, 0); },
+  dmPrecios: () => { FORM = { kind: 'dmPrecios' }; openSheet(dmPreciosHtml()); },
+  metaVer: ([k]) => { FORM = { kind: 'metaVer', key: k }; if ($('#sheetBackdrop')) updateSheet(metaVerHtml(k)); else openSheet(metaVerHtml(k)); },
+  metaMas: () => { if (!FORM || FORM.kind !== 'metaVer') return; FORM.mas = !FORM.mas; updateSheet(metaVerHtml(FORM.key)); },
+  metaAportarR: ([k]) => { verBadge('metasH'); FORM = { kind: 'aportarR', key: k, importe: '' }; if ($('#sheetBackdrop')) updateSheet(aportarRHtml()); else openSheet(aportarRHtml()); setTimeout(() => { const el = $('#apImporte'); if (el) el.focus(); }, 120); },
+  aportarRImp: ([v]) => { if (!FORM || FORM.kind !== 'aportarR') return; FORM.importe = String(v); sentir('tic'); updateSheet(aportarRHtml()); },
+  aportarRInput: (_a, el) => {
+    const F = FORM; if (!F || F.kind !== 'aportarR') return; F.importe = el.value; el.size = Math.max(1, el.value.length);
+    const r = metaPorKey(F.key), imp = numCampo(el.value), nuevo = (r ? r.valor : 0) + (imp > 0 ? imp : 0), pv = $('#apPrev'), b = $('#apGuardar');
+    if (pv && r) pv.textContent = r.obj > 0 && imp > 0 ? Math.max(0, Math.round(r.pct || 0)) + ' % → ' + Math.max(0, Math.min(100, Math.round(nuevo / r.obj * 100))) + ' % · ' + (nuevo >= r.obj - 0.005 ? '¡la consigues!' : 'quedarán ' + money(r.obj - nuevo)) : (imp > 0 ? 'Tendrás ' + money(Math.max(0, nuevo)) : 'Elige cuánto');
+    if (b) b.textContent = imp > 0 ? 'Aportar ' + money(imp) : 'Aportar';
+    $$('.dm-ap-chips .chip').forEach((c) => c.classList.toggle('active', numCampo((c.getAttribute('data-click') || '').split('|')[1]) === imp));
+  },
+  aportarRInvertir: () => { const k = FORM && FORM.key; closeSheet(); setTimeout(() => openMovForm(null, { tipo: 'Inversión', metaSel: k }), 280); },
+  apFechaVer: () => { const i = $('#apFecha'), c = $('#apFechaChip'); if (!i) return; i.hidden = false; if (c) c.hidden = true; i.focus(); try { if (i.showPicker) i.showPicker(); } catch (e) { /* */ } },
+  aportarRGuardar: () => aportarRGuardar(),
+  deudaNueva: () => { FORM = { kind: 'deudaForm', orig: null, nombre: '', emoji: '' }; if ($('#sheetBackdrop')) updateSheet(deudaFormHtml()); else openSheet(deudaFormHtml()); },
+  deudaEditar: ([n]) => { const d = deudaPorNombre(n); if (!d) return; FORM = { kind: 'deudaForm', orig: d.nombre, nombre: d.nombre, emoji: d.emoji || '', total: d.objetivo, previo: d.previo, cuotaMes: d.cuotaMes, fecha: d.fechaObjetivo || '' }; if ($('#sheetBackdrop')) updateSheet(deudaFormHtml()); else openSheet(deudaFormHtml()); },
+  deudaEmoji: ([e]) => { if (!FORM || FORM.kind !== 'deudaForm') return; FORM.emoji = e; $$('.dm-emo-b').forEach((b) => b.classList.toggle('on', b.textContent === e)); sentir('tic'); },
+  deudaNombreIn: (_a, el) => {
+    const F = FORM; if (!F || F.kind !== 'deudaForm') return; F.nombre = el.value;
+    // al crear una deuda con un nombre que ya tiene pagos, se avisa de que contarán
+    const av = $('#dAviso'); if (!av) return; const k = normName(el.value || ''), n = k && !F.orig ? movsPersonales().filter((x) => x.tipo === 'Deuda' && normName(x.categoria || '') === k).length : 0;
+    av.innerHTML = n ? '<div class="dm-consejo k-justo">Hay ' + n + (n === 1 ? ' pago' : ' pagos') + ' con este nombre en Movimientos: se contarán en esta deuda.</div>' : '';
+  },
+  deudaGuardar: () => deudaGuardar(),
+  deudaVer: ([n]) => { FORM = { kind: 'deudaVer', nombre: n }; if ($('#sheetBackdrop')) updateSheet(deudaVerHtml(n)); else openSheet(deudaVerHtml(n)); },
+  deudaMas: ([v]) => { if (!FORM || FORM.kind !== 'deudaVer') return; FORM.extra = Number(FORM.extra) === Number(v) ? 0 : Number(v); sentir('tic'); updateSheet(deudaVerHtml(FORM.nombre)); },
+  deudaMasMenu: () => { if (!FORM || FORM.kind !== 'deudaVer') return; FORM.menu = !FORM.menu; updateSheet(deudaVerHtml(FORM.nombre)); },
+  deudaPagar: ([n]) => { const d = deudaPorNombre(n); closeSheet(); setTimeout(() => openMovForm(null, { tipo: 'Deuda', categoria: d ? d.nombre : n, importe: d && num(d.cuotaMes) > 0 ? num(d.cuotaMes) : undefined }), 280); },
+  deudaCuadrar: ([n]) => { FORM = { kind: 'deudaCuadrar', nombre: n }; updateSheet(deudaCuadrarHtml()); setTimeout(() => { const el = $('#dqBanco'); if (el) el.focus(); }, 120); },
+  deudaCuadrarOk: () => deudaCuadrarOk(),
+  deudaEliminar: ([n], el) => confirmDelete(el, async () => {
+    const lista = (cfg().deudas || []).slice(), i = deudaIdx(n, lista); if (i < 0) return closeSheet();
+    const quitada = lista.splice(i, 1)[0];
+    await saveConfig({ deudas: lista }); closeSheet(); render();
+    toast('Deuda eliminada. Sus pagos siguen en Movimientos.', { deshacer: async () => { const l2 = (cfg().deudas || []).slice(); if (l2.some((d) => d && normName(d.nombre) === normName(quitada.nombre))) return toast('Ya hay otra deuda llamada «' + quitada.nombre + '»: no la recupero para no mezclar sus pagos'); l2.splice(Math.min(i, l2.length), 0, quitada); await saveConfig({ deudas: l2 }); render(); toast('Deuda recuperada'); } });
+  }),
+  deudaCompVer: ([id]) => { const r = objCompartidos('deuda').find((x) => x.id === id); if (!r) return; FORM = { kind: 'deudaComp', id }; openSheet('<div class="handle"></div>' + objCardHtml(r) + '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>'); },
+  irMovsDeuda: ([n]) => { const d = deudaPorNombre(n); closeSheet(); irMovs({ tipo: 'Deuda', periodo: 'todo', cat: n }); S.movCatAlias = d && (d.nombresAntes || []).length ? { cat: n, nombres: d.nombresAntes.slice() } : null; render(); },
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
   personaVer: ([uid]) => { FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid)); },
   saldarTodo: ([uid]) => { const pc = cuentaPrincipal(); FORM = { kind: 'saldarTodo', uid, cuenta: pc ? pc.id : null }; if ($('#sheetBackdrop')) updateSheet(saldarTodoHtml()); else openSheet(saldarTodoHtml()); },
@@ -7652,7 +8167,19 @@ const H = {
   unirseCerrar: ([grupoId]) => { lsSet('unirse', ''); S._uniendo = false; if (grupoId) { cargarGrupos().then(() => abrirGrupo(grupoId)); } else closeSheet(); },
   unirseOtraCuenta: async () => { closeSheet(); S._uniendo = false; await window.Auth.signOut(); toast('Inicia sesión con la otra cuenta y se completará la invitación'); },
   setInvPeriodo: ([k]) => { if (PERIODOS_INV.some((x) => x[0] === k)) { S.invPeriodo = k; render(); } },
-  setInvModo: ([k]) => { S.invModo = k === 'rentab' ? 'rentab' : 'valor'; lsSet('invModo', S.invModo); if (S.invModo === 'rentab') verBadge('rentab'); render(); },
+  setInvModo: ([k]) => {
+    const nuevo = k === 'rentab' ? 'rentab' : 'valor'; if (nuevo === S.invModo) return;
+    // al pasar de Valor a Rentabilidad (o al revés) la línea se mueve hasta su nueva forma, sin redibujarse desde cero
+    const ids = ['invLineV', 'invArea', 'invRef'], antes = {}; ids.forEach((id) => { const e = document.getElementById(id); if (e) antes[id] = e.getAttribute('d'); });
+    const lin = document.getElementById('invLineV'), colorAntes = lin ? lin.style.stroke : '';
+    S.invModo = nuevo; lsSet('invModo', S.invModo); if (S.invModo === 'rentab') verBadge('rentab'); render();
+    if (reduceMotion()) return;
+    ids.forEach((id) => { const e = document.getElementById(id); if (e && antes[id]) morphPath(e, antes[id], e.getAttribute('d'), 650); });
+    const l2 = document.getElementById('invLineV');
+    if (l2 && colorAntes && l2.style.stroke !== colorAntes) { const c = l2.style.stroke; l2.style.stroke = colorAntes; void l2.getBoundingClientRect(); l2.style.transition = 'stroke .65s ease'; l2.style.stroke = c; }
+    S._trCambiaHasta = Date.now() + 500;
+    const big = document.getElementById('invBig'); if (big) big.classList.add('tr-cambia');
+  },
   setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
   toggleTabAn: ([id]) => {
@@ -7692,7 +8219,8 @@ const H = {
     guardarCats(catsGasto().concat([{ nombre: v, presupuesto: null, std: false }]));
     setTimeout(() => updateSheet(catsEditorHtml()), 50); toast('Categoría personalizada añadida');
   },
-  openListEditor: ([key]) => { if (key === 'categoriasGasto') verBadge('categorias'); FORM = { kind: 'list', key }; openSheet(listEditorHtml(key)); },
+  openListEditor: ([key]) => {
+    if (key === 'deudas' && dineroV2()) { closeSheet(); return H.irDinero(['deudas']); } if (key === 'categoriasGasto') verBadge('categorias'); FORM = { kind: 'list', key }; openSheet(listEditorHtml(key)); },
   listAdd: ([key]) => {
     const meta = LIST_META[key];
     const items = (cfg()[key] || []).slice();
@@ -7945,6 +8473,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();

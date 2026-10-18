@@ -4,7 +4,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),Y=d.getFullYear(),M=d.
 const movs=[{id:'i1',tipo:'Ingreso',categoria:'Nómina',importe:1500,fecha:hoy},{id:'g1',tipo:'Gasto',categoria:'Ocio',importe:40,fecha:hoy},{id:'f1',tipo:'Factura',categoria:'Luz',importe:60,fecha:hoy},
  {id:'g2',tipo:'Gasto',categoria:'Ocio',importe:25,fecha:'2026-06-10'},{id:'i2',tipo:'Ingreso',categoria:'Nómina',importe:1400,fecha:'2026-06-01'},{id:'a1',tipo:'Ahorro',categoria:'Casa',importe:100,fecha:'2026-06-02'}];
 (async()=>{
- const e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'Ocio',presupuesto:30}],ahorro:[{nombre:'Casa',objetivo:1000}],deudas:[{nombre:'Coche',objetivo:500}]},meta:{onboarded:true}},movs});
+ const e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'Ocio',presupuesto:30}],ahorro:[{nombre:'Casa',objetivo:1000}],deudas:[{nombre:'Coche',objetivo:500}]},meta:{onboarded:true}},movs});
  await sleep(100);const A=e.w.__APP__,S=A.S,H=A.H,doc=e.doc;const list=()=>doc.querySelector('#movList').textContent,txt=()=>doc.querySelector('#content').textContent;
  // Dashboard: Ingresos del mes
  e.w.__APP__.H.goTab(['inicio']);await sleep(10);
@@ -39,7 +39,7 @@ const movs=[{id:'i1',tipo:'Ingreso',categoria:'Nómina',importe:1500,fecha:hoy},
  const ins2=doc.querySelector('#sheetHost .cuenta-ed input.amt');ins2.value='2500';ins2.dispatchEvent(new e.w.Event('change',{bubbles:true}));await sleep(5);
  click(e,'cuentasVolver');await sleep(5);click(e,'cuentasListo');await sleep(260);
  const c=e.store.cfg.app.cuentas;ok(c.length===1&&c[0].nombre==='Santander'&&c[0].saldo===2500&&c[0].fecha===hoy,'cuenta guardada con fecha de actualización');
- const p=A.patrimonio();ok(p.banco===2500&&p.total===2500+100-500,'el patrimonio suma el banco: '+p.total);
+ const p=A.patrimonio();ok(p.banco===2500&&p.total===2500-500&&p.ahorro===100&&p.ahorroDentro,'lo que tienes = banco − deudas; lo apartado (100) ya está dentro del banco y no se suma dos veces: '+p.total);
  ok(/Dinero en el banco/.test(txt())&&/2\.500,00 €/.test(txt()),'fila del banco en la tarjeta');
  // Hojas: botón ✕ y arrastrar hacia abajo
  click(e,'openCuentas');await sleep(5);ok(!!doc.querySelector('#sheetHost .sheet-x'),'las hojas tienen botón ✕');

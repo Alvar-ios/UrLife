@@ -13,6 +13,7 @@ function makeEnv(seed){ // seed: {config:{app,meta}, movs:[]}
   const dom=new JSDOM('<div id="app"></div>',{runScripts:'outside-only',pretendToBeVisual:true});
   const w=dom.window;w.Auth=Auth;w.Data=Data;w.scrollTo=()=>{};
   w.eval(fs.readFileSync(require('path').join(__dirname,'..','app.js'),'utf8'));
+  if(seed.version)w.__APP__.S.verAnterior=Object.assign({},seed.version);
   return {w,store,doc:w.document};
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -21,7 +22,7 @@ const click=(e,name,...a)=>{const sel='[data-click^="'+name+'"]';const el=[...e.
 const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubbles:true}))};
 (async()=>{
  // 1 existing user
- let e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'Comida',presupuesto:100}],ingresos:['Nómina']}}});
+ let e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'Comida',presupuesto:100}],ingresos:['Nómina']}}});
  await sleep(60);
  ok(!e.w.__APP__.S.onboarding,'existing user: no wizard');
  ok(e.store.cfg.meta&&e.store.cfg.meta.onboarded&&e.store.cfg.meta.auto,'existing user: grandfathered meta');
@@ -57,7 +58,7 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  ok(a.ingresos[0]==='Nómina','ingresos preserved');
  ok(e.doc.querySelector('.tabbar'),'app shell restored');
  // 2 new user
- e=makeEnv({cfg:{}});await sleep(60);
+ e=makeEnv({version:{dinero:3},cfg:{}});await sleep(60);
  ok(e.w.__APP__.S.onboarding&&e.w.__APP__.S.onboarding.step===0,'new user: wizard auto-shows');
  click(e,'obNext');
  ok(/iguales para todos/.test(e.doc.querySelector('#app').textContent)&&/no podrás compartir/.test(e.doc.querySelector('#app').textContent),'categorías estándar de serie y aviso de personalizadas');
@@ -71,10 +72,10 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  ok(c.length===1&&c[0]==='Golf','new: solo se guarda la personalizada (las estándar las tiene todo el mundo) '+c.join());
  ok(e.store.cfg.meta.onboarded,'new: meta onboarded');
  // 3 skip at welcome
- e=makeEnv({cfg:{}});await sleep(60);click(e,'obFinish','none');await sleep(30);
+ e=makeEnv({version:{dinero:3},cfg:{}});await sleep(60);click(e,'obFinish','none');await sleep(30);
  ok(!e.store.cfg.app&&e.store.cfg.meta.onboarded&&!e.w.__APP__.S.onboarding,'skip at welcome: marks done, no data written');
  // 4 settings editor extras
- e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}],facturas:[{nombre:'Luz',importe:50}]},meta:{onboarded:true}}});await sleep(60);
+ e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'X'}],facturas:[{nombre:'Luz',importe:50}]},meta:{onboarded:true}}});await sleep(60);
  ok(!e.w.__APP__.S.onboarding,'onboarded user: no wizard');
  e.w.__APP__.H.goTab(['mas']);click(e,'openRecurrentes');click(e,'recEditar','factura','0');await sleep(10);
  const sel=e.doc.querySelector('#recTipo');sel.value='dia';sel.dispatchEvent(new e.w.Event('change',{bubbles:true}));
