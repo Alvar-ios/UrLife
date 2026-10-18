@@ -1117,7 +1117,7 @@ function movsFiltrados() {
   else if (S.movFiltroTipo !== 'Todos') movs = movs.filter((m) => m.tipo === S.movFiltroTipo);
   if (S.movSoloTicket) movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
   if (S.movSoloComp) movs = movs.filter((m) => m.comp);
-  if (S.movCat) movs = movs.filter((m) => normName(m.categoria) === normName(S.movCat));
+  if (S.movCat) { const al = S.movCatAlias && normName(S.movCatAlias.cat) === normName(S.movCat) ? S.movCatAlias.nombres.map(normName) : []; movs = movs.filter((m) => normName(m.categoria) === normName(S.movCat) || al.indexOf(normName(m.categoria)) >= 0); }
   if (S.movCat && S.movSub) movs = movs.filter((m) => S.movSub === SIN_DETALLE ? !String(m.subcategoria || '').trim() : normName(m.subcategoria) === normName(S.movSub));
   const q = S.movQuery.trim().toLowerCase();
   if (q) movs = movs.filter((m) => [m.categoria, m.subcategoria, m.descripcion, m.metodoPago].some((x) => (x || '').toLowerCase().includes(q)) || casaImporte(m, q));
@@ -2249,7 +2249,13 @@ const TIPO_OBJ = { Deuda: 'deuda' }; // tipo de movimiento → deuda compartida 
 function compartidosDisponible() { return !!(S.db && S.db.compartidos && gruposDisponible()); }
 function cents(x) { return Math.round(num(x) * 100); }
 function r2(x) { return Math.round(num(x) * 100) / 100; }
-function numCampo(v) { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) ? n : 0; }
+// lee un importe escrito a mano: «8.000», «1.234,56», «12,5» o «12.5» (el punto con grupos de 3 cifras es de miles)
+function numCampo(v) {
+  let t = String(v == null ? '' : v).replace(/[\s€]/g, '');
+  if (t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  const n = parseFloat(t); return isFinite(n) ? n : 0;
+}
 function fmtPct(x) { return num(x).toLocaleString('es-ES', { maximumFractionDigits: 2 }) + ' %'; }
 function compPorId(id) { return (S.compartidos || []).find((c) => c.id === id) || null; }
 function miParte(c) {
@@ -3916,7 +3922,7 @@ function dmMetasHtml(ms) {
   return h;
 }
 function dmAportarBtn(r) { return r.conseguida ? '' : '<button type="button" class="dm-aportar" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>'; }
-function dmPct(r) { return r.pct == null ? '' : '<span class="dm-pct tnum">' + Math.round(r.pct) + ' %</span>'; }
+function dmPct(r) { return r.pct == null ? '' : '<span class="dm-pct tnum">' + Math.max(0, Math.round(r.pct)) + ' %</span>'; }
 function metaCaminoHtml(r) {
   const e = metaEstado2(r), col = e.k === 'gris' ? 'var(--accent)' : DM_ESTADO_COLOR[e.k], pct = Math.max(0, Math.min(100, r.pct || 0)), proy = metaProyeccion(r);
   const pp = proy != null ? Math.min(100, proy / r.obj * 100) : null, emo = emojiMeta(r);
@@ -3980,8 +3986,8 @@ function metaVerHtml(k) {
 function aportarRHtml() {
   const F = FORM, r = metaPorKey(F.key);
   if (!r) return metaVerHtml(F.key);
-  const imp = numCampo(F.importe || ''), nuevo = Math.max(0, r.valor) + (imp > 0 ? imp : 0), toca = r.necesario > 0.5 ? Math.ceil(r.necesario / 5) * 5 : null;
-  const prev = r.obj > 0 && imp > 0 ? Math.round(r.pct || 0) + ' % → ' + Math.min(100, Math.round(nuevo / r.obj * 100)) + ' % · ' + (nuevo >= r.obj ? '¡la consigues!' : 'quedarán ' + money(r.obj - nuevo)) : (imp > 0 ? 'Tendrás ' + money(nuevo) : 'Elige cuánto');
+  const imp = numCampo(F.importe || ''), nuevo = r.valor + (imp > 0 ? imp : 0), toca = r.necesario > 0.5 ? Math.ceil(r.necesario / 5) * 5 : null;
+  const prev = r.obj > 0 && imp > 0 ? Math.max(0, Math.round(r.pct || 0)) + ' % → ' + Math.max(0, Math.min(100, Math.round(nuevo / r.obj * 100))) + ' % · ' + (nuevo >= r.obj - 0.005 ? '¡la consigues!' : 'quedarán ' + money(r.obj - nuevo)) : (imp > 0 ? 'Tendrás ' + money(Math.max(0, nuevo)) : 'Elige cuánto');
   const chips = [50, 100, 200].map((v) => '<button type="button" class="chip' + (imp === v ? ' active' : '') + '" ' + act('aportarRImp', v) + '>' + money(v).replace(',00', '') + '</button>').join('') +
     (toca && [50, 100, 200].indexOf(toca) < 0 ? '<button type="button" class="chip' + (imp === toca ? ' active' : '') + '" ' + act('aportarRImp', toca) + '>' + money(toca).replace(',00', '') + ' · lo que toca</button>' : '');
   return '<div class="handle"></div><h2>' + emojiMeta(r) + ' Aportar a ' + escapeHtml(r.nombre) + '</h2>' +
@@ -3998,7 +4004,7 @@ async function aportarRGuardar() {
   const r = metaPorKey(F.key), imp = r2(numCampo(F.importe || '')), fecha = ($('#apFecha') || {}).value || todayISO();
   if (!r) return toast('Esta meta ya no existe');
   if (!(imp > 0)) { const el = $('#apImporte'); if (el) el.focus(); return toast('Pon cuánto apartas'); }
-  const antes = Math.max(0, r.valor), hitoAntes = (r.hitos || []).filter((x) => x.alcanzado).length;
+  const antes = r.valor, hitoAntes = (r.hitos || []).filter((x) => x.alcanzado).length;
   F.guardando = true;
   try {
     const data = { creadoEn: Date.now(), tipo: 'Ahorro', importe: imp, categoria: r.nombre, fecha, descripcion: '', metodoPago: '', metaId: F.key };
@@ -4006,7 +4012,7 @@ async function aportarRGuardar() {
     const ok = await write(async () => { const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || null; return r0; });
     if (!ok) return;
     if (movId) sincronizarAporte(Object.assign({ id: movId }, data));
-    S._metaSube = { key: F.key, desde: r.obj > 0 ? antes / r.obj * 100 : 0, t: Date.now() };
+    S._metaSube = { key: F.key, desde: r.obj > 0 ? Math.max(0, antes) / r.obj * 100 : 0, t: Date.now() };
     closeSheet(); sentir('ok');
     const fin = r.obj > 0 && antes + imp >= r.obj - 0.005, hito = (r.hitos || []).filter((x) => antes + imp >= x.importe - 0.005).length > hitoAntes;
     toast(fin ? '¡Meta conseguida! 🎉' : 'Aportado ' + money(imp) + ' a «' + r.nombre + '»');
@@ -4056,7 +4062,7 @@ function invFilaV2(g, vv, completo) {
 function dmInversionesHtml() {
   const R = invResumen(), orden = R.grupos.map((g, i) => [g, R.vals[i]]).sort((a, b) => (b[1] ? b[1].valor : b[0].total) - (a[1] ? a[1].valor : a[0].total));
   return '<div class="section-title" id="dm-inversiones">Inversiones<button class="link" ' + act('dmVer', 'inversiones') + '>Ver todo ' + ic('chevR') + '</button></div><div class="card dm-inv">' +
-    '<div class="dm-inv-hoy"><span>' + (R.todas ? 'Valen hoy' : 'Has metido') + '</span><b class="tnum">' + money(R.todas ? R.valor : R.metido) + '</b>' + (R.todas ? '<em class="tnum" style="color:' + (R.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(R.gan) + money(Math.abs(R.gan)) + (R.pct != null ? ' · ' + signoN(R.gan) + Math.abs(R.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</em>' : '') + '</div>' +
+    '<div class="dm-inv-hoy"><span>' + (R.vals.some(Boolean) ? 'Valen hoy' : 'Has metido') + '</span><b class="tnum">' + money(R.valor) + '</b>' + (R.todas ? '<em class="tnum" style="color:' + (R.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(R.gan) + money(Math.abs(R.gan)) + (R.pct != null ? ' · ' + signoN(R.gan) + Math.abs(R.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</em>' : '') + '</div>' +
     orden.slice(0, 3).map(([g, v]) => invFilaV2(g, v, false)).join('') +
     (orden.length > 3 ? '<button type="button" class="dm-inv-mas" ' + act('dmVer', 'inversiones') + '>y ' + (orden.length - 3) + ' más ' + ic('chevR') + '</button>' : '') + '</div>';
 }
@@ -4105,7 +4111,9 @@ function dmPreciosHtml() {
 }
 
 /* ---- Deudas: lo que queda, cuándo acabas y qué pasa si pagas más ---- */
-function deudaPorNombre(n) { const k = normName(n || ''); return (cfg().deudas || []).find((d) => d && normName(d.nombre) === k) || null; }
+// la deuda con ese nombre exacto y, si no hay, la que coincide sin mayúsculas ni espacios (puede haber dos antiguas casi iguales)
+function deudaIdx(n, lista) { const l = lista || cfg().deudas || []; let i = l.findIndex((d) => d && d.nombre === n); if (i < 0) i = l.findIndex((d) => d && normName(d.nombre) === normName(n || '')); return i; }
+function deudaPorNombre(n) { const l = cfg().deudas || [], i = deudaIdx(n, l); return i >= 0 ? l[i] : null; }
 function deudaEstado2(r) {
   if (!(r.total > 0)) return { t: 'Sin total', k: 'gris' };
   if (r.pend <= 0.005) return { t: '¡Saldada!', k: 'bien' };
@@ -4184,7 +4192,7 @@ function deudaFormHtml() {
     '<div id="dAviso"></div><button class="btn accent block" ' + act('deudaGuardar') + '>Guardar deuda</button>';
 }
 // lee un importe opcional: vacío → null; texto raro o negativo → NaN
-function importeOpcional(v) { const s = String(v == null ? '' : v).trim(); if (!s) return null; const x = numCampo(s); return isFinite(x) && x >= 0 && /\d/.test(s) ? r2(x) : NaN; }
+function importeOpcional(v) { const s = String(v == null ? '' : v).trim(); if (!s) return null; if (!/^[\d.,\s€]+$/.test(s) || !/\d/.test(s)) return NaN; const x = numCampo(s); return isFinite(x) && x >= 0 ? r2(x) : NaN; }
 function ultimoDiaMes(ym) { if (!/^\d{4}-\d{2}$/.test(ym || '')) return null; const [y, m] = ym.split('-').map(Number); return ym + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0'); }
 async function deudaGuardar() {
   const F = FORM; if (!F || F.kind !== 'deudaForm' || F.guardando) return;
@@ -4195,7 +4203,7 @@ async function deudaGuardar() {
   if (Number.isNaN(previo) || Number.isNaN(cuota)) return toast('«Ya pagado» y «Pagas al mes» tienen que ser números (o dejarse vacíos)');
   if (previo != null && previo > total) { marcarCampo('#dPrevio'); return toast('«Ya pagado» no puede ser más que el total'); }
   // se lee la configuración de este momento (no la del principio de la hoja) y se cambia solo esta deuda
-  const lista = (cfg().deudas || []).slice(), i = F.orig ? lista.findIndex((d) => d && normName(d.nombre) === normName(F.orig)) : -1;
+  const lista = (cfg().deudas || []).slice(), i = F.orig ? deudaIdx(F.orig, lista) : -1;
   if (F.orig && i < 0) return toast('Esta deuda ya no existe (¿la cambiaste en otro dispositivo?)');
   const k = normName(nombre), choca = lista.some((d, j) => d && j !== i && (normName(d.nombre) === k || (d.nombresAntes || []).some((x) => normName(x) === k)));
   if (choca) { marcarCampo('#dNombre'); return toast('Ya tienes una deuda con ese nombre: elige otro para no mezclar sus pagos'); }
@@ -4225,7 +4233,7 @@ async function deudaCuadrarOk() {
   const F = FORM; if (!F || F.kind !== 'deudaCuadrar' || F.guardando) return;
   const v = ($('#dqBanco') || {}).value, queda = importeOpcional(v);
   if (queda == null || Number.isNaN(queda)) { marcarCampo('#dqBanco'); return toast('Pon lo que te queda (un número)'); }
-  const lista = (cfg().deudas || []).slice(), i = lista.findIndex((d) => d && normName(d.nombre) === normName(F.nombre));
+  const lista = (cfg().deudas || []).slice(), i = deudaIdx(F.nombre, lista);
   if (i < 0) return toast('Esta deuda ya no existe');
   const d = lista[i], r = deudaStats(d), pagos = r.pagado - num(d.previo), previo = r2(num(d.objetivo) - pagos - queda);
   if (previo < -0.005 && String(F.banco) !== String(v)) {
@@ -5152,8 +5160,8 @@ function patrimonio() {
   // compartido: lo que has aportado a huchas compartidas y tu parte de lo pendiente de deudas compartidas
   const deudaComp = objCompartidos('deuda').filter((r) => r.obj > 0).reduce((a, r) => a + r.falta * miProporcion(r.o), 0);
   deudas += deudaComp;
-  const fechas = cuentasCfg().map((c) => c.fecha).filter(Boolean).sort();
-  return { banco, bancoFecha: fechas.length ? fechas[0] : null, nCuentas: cuentasCfg().length, inv, sinValor, ahorro, deudas, comp: !!(S.objetivos || []).length, total: banco + inv - deudas + (cuentasCfg().length ? 0 : ahorro), ahorroDentro: !!cuentasCfg().length };
+  const fechas = cuentasCfg().map((c) => c.fecha).filter(Boolean).sort(), conSaldo = cuentasCfg().some((c) => saldoCuenta(c) != null);
+  return { banco, bancoFecha: fechas.length ? fechas[0] : null, nCuentas: cuentasCfg().length, inv, sinValor, ahorro, deudas, comp: !!(S.objetivos || []).length, total: banco + inv - deudas + (conSaldo ? 0 : ahorro), ahorroDentro: conSaldo };
   // Lo apartado para metas NO saca dinero del banco (SIGNO_CUENTA lo deja en 0): ya está dentro de «banco». Solo se suma aparte si no hay cuentas.
 }
 function patBarraHtml(p) {
@@ -7632,8 +7640,8 @@ const H = {
   aportarRImp: ([v]) => { if (!FORM || FORM.kind !== 'aportarR') return; FORM.importe = String(v); sentir('tic'); updateSheet(aportarRHtml()); },
   aportarRInput: (_a, el) => {
     const F = FORM; if (!F || F.kind !== 'aportarR') return; F.importe = el.value; el.size = Math.max(1, el.value.length);
-    const r = metaPorKey(F.key), imp = numCampo(el.value), nuevo = Math.max(0, r ? r.valor : 0) + (imp > 0 ? imp : 0), pv = $('#apPrev'), b = $('#apGuardar');
-    if (pv && r) pv.textContent = r.obj > 0 && imp > 0 ? Math.round(r.pct || 0) + ' % → ' + Math.min(100, Math.round(nuevo / r.obj * 100)) + ' % · ' + (nuevo >= r.obj ? '¡la consigues!' : 'quedarán ' + money(r.obj - nuevo)) : (imp > 0 ? 'Tendrás ' + money(nuevo) : 'Elige cuánto');
+    const r = metaPorKey(F.key), imp = numCampo(el.value), nuevo = (r ? r.valor : 0) + (imp > 0 ? imp : 0), pv = $('#apPrev'), b = $('#apGuardar');
+    if (pv && r) pv.textContent = r.obj > 0 && imp > 0 ? Math.max(0, Math.round(r.pct || 0)) + ' % → ' + Math.max(0, Math.min(100, Math.round(nuevo / r.obj * 100))) + ' % · ' + (nuevo >= r.obj - 0.005 ? '¡la consigues!' : 'quedarán ' + money(r.obj - nuevo)) : (imp > 0 ? 'Tendrás ' + money(Math.max(0, nuevo)) : 'Elige cuánto');
     if (b) b.textContent = imp > 0 ? 'Aportar ' + money(imp) : 'Aportar';
     $$('.dm-ap-chips .chip').forEach((c) => c.classList.toggle('active', numCampo((c.getAttribute('data-click') || '').split('|')[1]) === imp));
   },
@@ -7657,13 +7665,13 @@ const H = {
   deudaCuadrar: ([n]) => { FORM = { kind: 'deudaCuadrar', nombre: n }; updateSheet(deudaCuadrarHtml()); setTimeout(() => { const el = $('#dqBanco'); if (el) el.focus(); }, 120); },
   deudaCuadrarOk: () => deudaCuadrarOk(),
   deudaEliminar: ([n], el) => confirmDelete(el, async () => {
-    const lista = (cfg().deudas || []).slice(), i = lista.findIndex((d) => d && normName(d.nombre) === normName(n)); if (i < 0) return closeSheet();
+    const lista = (cfg().deudas || []).slice(), i = deudaIdx(n, lista); if (i < 0) return closeSheet();
     const quitada = lista.splice(i, 1)[0];
     await saveConfig({ deudas: lista }); closeSheet(); render();
-    toast('Deuda eliminada. Sus pagos siguen en Movimientos.', { deshacer: async () => { const l2 = (cfg().deudas || []).slice(); if (!l2.some((d) => d && normName(d.nombre) === normName(quitada.nombre))) { l2.splice(Math.min(i, l2.length), 0, quitada); await saveConfig({ deudas: l2 }); render(); toast('Deuda recuperada'); } } });
+    toast('Deuda eliminada. Sus pagos siguen en Movimientos.', { deshacer: async () => { const l2 = (cfg().deudas || []).slice(); if (l2.some((d) => d && normName(d.nombre) === normName(quitada.nombre))) return toast('Ya hay otra deuda llamada «' + quitada.nombre + '»: no la recupero para no mezclar sus pagos'); l2.splice(Math.min(i, l2.length), 0, quitada); await saveConfig({ deudas: l2 }); render(); toast('Deuda recuperada'); } });
   }),
   deudaCompVer: ([id]) => { const r = objCompartidos('deuda').find((x) => x.id === id); if (!r) return; FORM = { kind: 'deudaComp', id }; openSheet('<div class="handle"></div>' + objCardHtml(r) + '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>'); },
-  irMovsDeuda: ([n]) => { closeSheet(); irMovs({ tipo: 'Deuda', periodo: 'todo', cat: n }); },
+  irMovsDeuda: ([n]) => { const d = deudaPorNombre(n); closeSheet(); irMovs({ tipo: 'Deuda', periodo: 'todo', cat: n }); S.movCatAlias = d && (d.nombresAntes || []).length ? { cat: n, nombres: d.nombresAntes.slice() } : null; render(); },
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
   personaVer: ([uid]) => { FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid)); },
   saldarTodo: ([uid]) => { const pc = cuentaPrincipal(); FORM = { kind: 'saldarTodo', uid, cuenta: pc ? pc.id : null }; if ($('#sheetBackdrop')) updateSheet(saldarTodoHtml()); else openSheet(saldarTodoHtml()); },
