@@ -20,6 +20,9 @@ const ayer = (() => { const x = new Date(Date.now() - 864e5 * 40); return x.getF
   ok(saldo('c1') === 977.5 && saldo('c2') === 100, 'sin elegir, el compartido que pagas sale de la principal');
   S.config.cuentaJuntos = { k1: 'c2' }; A.render(); await sleep(5);
   ok(saldo('c1') === 1000 && saldo('c2') === 77.5, 'si dices que lo pagaste en efectivo, baja el efectivo y no el banco');
+  H.cuentaVer(['c2']); await sleep(10);
+  ok(/22,50/.test(doc.querySelector('#sheetHost .list').textContent) && /pagaste tú/.test(doc.querySelector('#sheetHost .list').textContent), 'en la ficha de Efectivo, la cena sale con lo que salió de verdad (22,50)');
+  H.closeSheet([]); await sleep(260);
   // al editarlo, «Lo pagaste desde» con Efectivo marcado
   H.openMovForm(['c:k1']); await sleep(20);
   ok(/Lo pagaste desde/.test(sh()) && /Efectivo/.test(doc.querySelector('#cuentaChips .chip.active').textContent), 'el formulario del compartido enseña de qué cuenta salió');

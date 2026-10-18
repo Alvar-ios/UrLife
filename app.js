@@ -4334,6 +4334,8 @@ function cuentaDosSaldosHtml(c, real) {
   return '<div class="saldo-virtual"><div><span class="sv-l">Saldo virtual</span><span class="sv-d">contando Juntos: ' + (k.neto ? (k.neto > 0 ? 'te deben ' + money(k.neto) : 'debes ' + money(-k.neto)) : 'estáis en paz') + '</span></div><b class="tnum">' + money(k.v) + '</b></div>' +
     '<div class="rec-hint" style="margin:6px 2px 12px;">El saldo real es lo que pone tu app del banco: un gasto compartido que pagas tú baja entero, y sube cuando te lo devuelven al saldar (Bizum). El virtual es lo que tendrías si saldarais ahora.</div>';
 }
+// en la ficha de una cuenta, los compartidos enseñan lo que salió de ella (no solo tu parte)
+function filasDeCuentaHtml(lista, id) { const prev = S.movCuenta; S.movCuenta = id; try { return lista.map((m) => esTraspaso(m) ? renderTraspasoRow(m, true) : renderMovRowBase(m)).join(''); } finally { S.movCuenta = prev; } }
 function cuentaVerHtml(id) {
   const c = cuentaPorId(id); if (!c) return '';
   const i = (cfg().cuentas || []).findIndex((x) => x && x.id === id), v = saldoCuenta(c), ult = movsDeCuenta(id).slice(0, 5), sin = movsSinCuenta().length;
@@ -4343,7 +4345,7 @@ function cuentaVerHtml(id) {
     (v != null && compartidosCuenta(c).n ? cuentaDosSaldosHtml(c, v) : '') +
     '<div class="cuenta-acc">' + (v == null ? '<button class="btn accent block" ' + act('cuentaEditar', i) + '>Poner el saldo</button>' : '<button class="btn accent block" ' + act('cuadrarAbrir', i, id) + '>Cuadrar</button>') +
     '<button class="btn ghost block" ' + act('irMovsCuenta', id) + '>Ver movimientos</button></div>' +
-    (ult.length ? '<div class="section-title">Últimos movimientos</div><div class="list">' + ult.map((m) => esTraspaso(m) ? renderTraspasoRow(m, true) : renderMovRowBase(m)).join('') + '</div>' : '') +
+    (ult.length ? '<div class="section-title">Últimos movimientos</div><div class="list">' + filasDeCuentaHtml(ult, id) + '</div>' : '') +
     (sin && hayVariasCuentas() ? '<div class="card asignar-aviso"><b>' + sin + (sin === 1 ? ' movimiento sin cuenta' : ' movimientos sin cuenta') + '</b><div class="rec-hint">Ahora cuentan como de la principal. Puedes pasar a «' + escapeHtml(c.nombre) + '» los que sean suyos.</div>' +
       '<button class="btn ghost block" style="margin-top:8px;" ' + act('asigCuentaAbrir', id) + '>Asignar movimientos</button></div>' : '');
 }
