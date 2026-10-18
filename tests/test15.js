@@ -19,8 +19,8 @@ const movs=[{id:'i1',tipo:'Ingreso',categoria:'Nómina',importe:1500,fecha:hoy},
  click(e,'setMovFiltro','Todos');await sleep(5);ok(/3 movimientos/.test(list()),'quitar el filtro de grupo');
  // Análisis mensual de junio
  e.w.__APP__.H.verMes(['2026','6']);await sleep(10);
- const bud=doc.querySelector('.budget-row.tappable');ok(!!bud,'presupuesto por categoría pinchable');
- bud.click();await sleep(10);
+ const bud=doc.querySelector('.gc-fila .gc-cab');ok(!!bud,'cada categoría se puede abrir');
+ bud.click();await sleep(10);doc.querySelector('.gc-fila.abierta .gc-ver').click();await sleep(10);
  ok(S.movCat==='Ocio'&&S.movPeriodo==='m:2026-06'&&/1 movimiento/.test(list())&&/Junio.*2026/.test(txt()),'categoría Ocio en junio');
  click(e,'quitarMovCat');await sleep(5);ok(!S.movCat,'quitar la categoría');
  click(e,'volver');await sleep(10);ok(S.tab==='movimientos'&&S.movVista==='resumen'&&S.generalSub==='mensual','Volver regresa al Resumen');

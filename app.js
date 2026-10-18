@@ -913,7 +913,7 @@ function render() {
   else if (S.tab === 'juntos') c.innerHTML = renderJuntos();
   else if (S.tab === 'tu') c.innerHTML = renderTu();
   const resumen = S.tab === 'movimientos' && S.movVista === 'resumen', resAnual = /^y:/.test(movPerNorm(S.movPeriodo));
-  if (resumen && !resAnual) drawDonut();
+  if (resumen && !resAnual) { const kA = S.movPeriodo + '|' + versionDe('movResumen'); gcAnilloDraw(kA !== _donutAnim ? true : false); _donutAnim = kA; }
   if (resumen && resAnual) drawTrend();
   if (S.tab === 'dinero' && dineroSub() === 'inversiones') bindInvChart();
   if (S.tab === 'movimientos') movGestos(c);
@@ -1749,6 +1749,125 @@ function renderAnalisisMensual(enInicio) {
     (filas.length ? resumenPres + presupuestoFilasHtml(filas, catMap)
       : '<div style="color:var(--text-faint);font-size:13.5px;">Añade categorías en Tú → Categorías de gasto.</div>') + '</div>' +
     dondeMasHtml(k.movs) + articulosTopHtml(k.movs);
+}
+/* ---- «En qué gastas» v3 (18/10): una sola lista de categorías con su gasto, su parte del total y su presupuesto en la misma fila.
+   Arriba, según la versión que se pruebe: una tira de colores (Barras), el anillo (Anillo) o fichas (Mosaico).
+   Al tocar una categoría se abre ahí mismo: sus subcategorías o, si no tiene, los sitios donde más gastas. ---- */
+function gcDatos(y, m) {
+  const k = kpisMes(y, m), gastos = k.movs.filter((x) => x.tipo === 'Gasto' || x.tipo === 'Factura'), catMap = gastoPorCategoria(k.movs);
+  const cats = catsGasto(), presDe = (n) => { const c = cats.find((x) => normName(x.nombre) === normName(n)); return c ? num(c.presupuesto) : 0; };
+  const ents = Object.entries(catMap).filter((e) => e[1] > 0.004).sort((a, b) => b[1] - a[1]), total = ents.reduce((a, e) => a + e[1], 0);
+  const lbl = (n) => (n && n !== 'undefined' && n !== 'null' ? n : 'Sin categoría');
+  const fila = ([n, v]) => {
+    const mios = gastos.filter((x) => normName(x.categoria) === normName(n));
+    return { n, l: lbl(n), v, color: colorCat(n), pres: presDe(n), nMov: mios.length, subs: donutPartes({ n, color: colorCat(n) }, gastos), sitios: gcSitios(mios) };
+  };
+  let filas = ents.length <= 6 ? ents.map(fila) : ents.slice(0, 5).map(fila);
+  if (ents.length > 6) { const resto = ents.slice(5).map(fila); filas.push({ n: '__otras', l: 'Otras · ' + resto.length + ' categorías', v: resto.reduce((a, x) => a + x.v, 0), color: COLOR_OTRAS, pres: 0, hijos: resto, otras: true }); }
+  const presCero = cats.filter((c) => num(c.presupuesto) > 0 && !(catMap[c.nombre] > 0.004)).map((c) => ({ n: c.nombre, l: c.nombre, v: 0, color: colorCat(c.nombre), pres: num(c.presupuesto), nMov: 0, subs: null, sitios: null }));
+  const vacias = cats.filter((c) => !(num(c.presupuesto) > 0) && !(catMap[c.nombre] > 0.004)).map((c) => ({ n: c.nombre, l: c.nombre, v: 0, color: colorCat(c.nombre), pres: 0, nMov: 0, subs: null, sitios: null }));
+  const conPres = cats.filter((c) => num(c.presupuesto) > 0), totPres = conPres.reduce((a, c) => a + num(c.presupuesto), 0), gastoConPres = conPres.reduce((a, c) => a + Math.max(0, num(catMap[c.nombre])), 0);
+  return { total, filas, presCero, vacias, totPres, gastoConPres, gastos, y, m };
+}
+// los sitios (la descripción) donde más gastas dentro de una categoría
+function gcSitios(movs) {
+  const mapa = {}; let sinN = 0, sinV = 0;
+  movs.forEach((x) => { const d = String(x.descripcion || '').trim(), k = normDesc(d); if (!k) { sinN++; sinV += num(x.importe); return; } (mapa[k] = mapa[k] || { d, n: 0, v: 0 }); mapa[k].n++; mapa[k].v += num(x.importe); });
+  const todos = Object.values(mapa).sort((a, b) => b.v - a.v), top = todos.slice(0, 3), resto = todos.slice(3);
+  const rN = resto.reduce((a, x) => a + x.n, 0) + sinN, rV = resto.reduce((a, x) => a + x.v, 0) + sinV;
+  return top.length ? { top, rN, rV } : null;
+}
+function gcEscala(d) { return Math.max(1, ...d.filas.concat(d.presCero).map((f) => Math.max(f.v, f.pres || 0))); }
+function gcFilaHtml(f, esc, per, d) {
+  const pc = (v) => Math.max(0, Math.min(100, v / esc * 100)).toFixed(2), over = f.pres > 0 && f.v > f.pres, dentro = f.pres > 0 ? Math.min(f.v, f.pres) : f.v;
+  const pct = d.total ? Math.round(f.v / d.total * 100) + ' %' : '';
+  const sub = (pct ? pct + ' · ' : '') + (f.otras ? 'sin presup.' : f.pres > 0 ? (over ? '<span class="neg">+' + money(f.v - f.pres) + ' de más</span>' : 'de ' + money(f.pres)) : 'sin presup.');
+  const abierta = S._gcAbierta === f.n;
+  return '<div class="gc-fila budget-row' + (abierta ? ' abierta' : '') + (f.v ? '' : ' cero') + (over ? ' over' : '') + '" data-gc="' + escapeHtml(f.n) + '" style="--cc:' + f.color + '">' +
+    '<button type="button" class="gc-cab tappable" aria-expanded="' + abierta + '" ' + act('gcAbrir', f.n) + '><span class="pb-ic" aria-hidden="true">' + (f.otras ? ic('more') : ic(iconoCat('Gasto', f.n))) + '</span>' +
+    '<span class="gc-main"><span class="gc-top"><span class="cat">' + escapeHtml(f.l) + '</span><b class="tnum">' + money(f.v) + '</b></span>' +
+    '<span class="gc-linea"><span class="pbar gc-bar"><i class="pb-f" style="width:' + pc(dentro) + '%"></i>' + (over ? '<i class="pb-over" style="left:' + pc(f.pres) + '%;width:' + (pc(f.v) - pc(f.pres)).toFixed(2) + '%"></i>' : '') + (f.pres > 0 ? '<span class="pb-tick" style="left:' + pc(f.pres) + '%"></span>' : '') + '</span>' +
+    '<span class="gc-sub tnum">' + sub + '</span></span></span><span class="gc-chev" aria-hidden="true">' + ic('chevD') + '</span></button>' +
+    '<div class="gc-cajon"><div class="gc-cajon-in">' + gcCajonHtml(f, per) + '</div></div></div>';
+}
+function gcCajonHtml(f, per) {
+  let h = '';
+  if (f.otras) h = f.hijos.map((x) => '<button type="button" class="gc-mini" ' + act('irMovs', '_gastos', per, x.n) + '><i style="background:' + x.color + '"></i><span>' + escapeHtml(x.l) + '</span><b class="tnum">' + money(x.v) + '</b></button>').join('');
+  else if (f.subs) { const mx = Math.max(...f.subs.map((x) => x.v));
+    h = f.subs.map((x) => '<button type="button" class="gc-mini" ' + act('donutIr', f.n, x.sub || '-') + '><i style="background:' + f.color + ';opacity:' + (x.op || 1) + '"></i><span>' + escapeHtml(x.n) + '</span><span class="gc-mbar"><i style="width:' + (x.v / mx * 100).toFixed(1) + '%;opacity:' + (x.op || 1) + '"></i></span><b class="tnum">' + money(x.v) + '</b></button>').join(''); }
+  else if (f.sitios) h = f.sitios.top.map((x) => '<button type="button" class="gc-mini sitio" ' + act('movDonde', x.d) + '><span>' + escapeHtml(x.d) + ' <em>· ' + x.n + (x.n === 1 ? ' vez' : ' veces') + '</em></span><b class="tnum">' + money(x.v) + '</b></button>').join('') +
+    (f.sitios.rN ? '<div class="gc-mini resto"><span>Otros ' + f.sitios.rN + (f.sitios.rN === 1 ? ' movimiento' : ' movimientos') + '</span><b class="tnum">' + money(f.sitios.rV) + '</b></div>' : '');
+  else if (!f.v) h = '<div class="gc-mini resto"><span>Aún no has gastado nada aquí este mes.</span></div>';
+  if (!f.otras) h += '<div class="gc-pie">' + (f.nMov ? '<button type="button" class="gc-ver" ' + act('irMovs', '_gastos', per, f.n) + '>Ver ' + (f.nMov === 1 ? 'el movimiento' : 'los ' + f.nMov + ' movimientos') + ic('chevR') + '</button>' : '') +
+    '<button type="button" class="link gc-pres" ' + act('presEditar', f.n) + '>' + (f.pres > 0 ? 'Presupuesto ' + money(f.pres) + ' · Cambiar' : 'Ponerle presupuesto') + '</button></div>';
+  return h;
+}
+function gcResumenHtml(variante) {
+  const y = S.anioSel, m = S.mesSel, d = gcDatos(y, m), per = mesClave(y, m);
+  if (!d.total && !d.presCero.length) return '<div class="section-title"><span>En qué gastas</span></div><div class="card dn-vacio">Sin gastos registrados en ' + MESES[m - 1].toLowerCase() + '.</div>' + articulosTopHtml(d.gastos);
+  if (S._gcAbierta && !d.filas.concat(d.presCero).some((f) => f.n === S._gcAbierta)) S._gcAbierta = '';
+  const esc = gcEscala(d), pasado = d.gastoConPres > d.totPres;
+  const resumen = d.totPres ? '<div class="summary-line pres-sum">Llevas <b class="tnum">' + money(d.gastoConPres) + '</b> de ' + money(d.totPres) + ' presupuestados · ' + (pasado ? '<span class="neg">te has pasado ' + money(d.gastoConPres - d.totPres) + '</span>' : 'quedan ' + money(d.totPres - d.gastoConPres)) + '</div>' : '';
+  const cab = '<div class="gc-total"><b class="tnum">' + money(d.total) + '</b><span>gastado</span>' + compGastoChip(y, m).replace('kpi-chip', 'kpi-chip gc-chip') + '</div>' + resumen;
+  const filas = d.filas.concat(d.presCero).concat(S.presTodas ? d.vacias : []).map((f) => gcFilaHtml(f, esc, per, d)).join('');
+  const pie = d.vacias.length ? '<button class="link pres-mas" ' + act('presTodas') + '>' + (S.presTodas ? 'Ocultar las que están a 0' : 'Ver ' + d.vacias.length + ' categorías sin gasto') + '</button>' : '';
+  const tit = '<div class="section-title"><span>En qué gastas</span><button class="link" ' + act('openListEditor', 'categoriasGasto') + '>Editar presupuestos</button></div>';
+  if (variante === 'mosaico') {
+    const sel = d.filas.find((f) => f.n === S._gcAbierta);
+    return tit + '<div class="card gc-card">' + cab + '<div class="gc-mosaico">' + gcMosaicoHtml(d) + '</div><div class="gc-det" id="gcDet">' + (sel ? gcDetHtml(sel, per, d) : '<div class="gc-det-vacio">Toca una ficha para ver en qué se va</div>') + '</div></div>' +
+      '<div class="section-title"><span>Presupuestos</span></div><div class="card pres-card">' + presupuestoFilasHtml(catsGasto().concat(Object.keys(gastoPorCategoria(kpisMes(y, m).movs)).filter((n) => !catsGasto().some((c) => c.nombre === n) && gastoPorCategoria(kpisMes(y, m).movs)[n] !== 0).map((n) => ({ nombre: n, presupuesto: null }))), gastoPorCategoria(kpisMes(y, m).movs)) + '</div>' + articulosTopHtml(d.gastos);
+  }
+  const arriba = variante === 'anillo' ? '<div class="gc-anillo" id="gcAnillo"></div>' : '<div class="gc-tira" aria-hidden="true">' + d.filas.map((f) => '<i style="flex:' + f.v.toFixed(2) + ' 1 0;background:' + f.color + '" data-gc="' + escapeHtml(f.n) + '"></i>').join('') + '</div>';
+  return tit + '<div class="card gc-card gc-v-' + variante + '">' + cab + arriba + '<div class="gc-lista">' + filas + '</div>' + pie + '</div>' + articulosTopHtml(d.gastos);
+}
+function gcDetHtml(f, per, d) {
+  return '<div class="gc-det-in" style="--cc:' + f.color + '"><div class="gc-det-cab"><i></i><b>' + escapeHtml(f.l) + '</b><span class="tnum">' + money(f.v) + ' · ' + Math.round(f.v / d.total * 100) + ' %</span></div>' + gcCajonHtml(f, per) + '</div>';
+}
+// Mosaico: fichas con el tamaño de lo que gastas (reparto en dos mitades, alternando el corte)
+function gcMosaicoHtml(d) {
+  const out = [], W = 100, H = 62;
+  const parte = (items, x, y, w, h) => {
+    if (!items.length) return; if (items.length === 1) { out.push(Object.assign({ x, y, w, h }, items[0])); return; }
+    const tot = items.reduce((a, f) => a + f.v, 0); let acc = 0, i = 0;
+    while (i < items.length - 1 && acc + items[i].v <= tot / 2) { acc += items[i].v; i++; }
+    if (i === 0) { acc = items[0].v; i = 1; }
+    const fa = acc / tot;
+    if (w >= h * 1.1) { parte(items.slice(0, i), x, y, w * fa, h); parte(items.slice(i), x + w * fa, y, w * (1 - fa), h); }
+    else { parte(items.slice(0, i), x, y, w, h * fa); parte(items.slice(i), x, y + h * fa, w, h * (1 - fa)); }
+  };
+  parte(d.filas, 0, 0, W, H);
+  return out.map((t, i) => { const grande = t.w >= 30 && t.h >= 26, media = t.w >= 22 && t.h >= 16;
+    return '<button type="button" class="gc-ficha' + (S._gcAbierta ? (S._gcAbierta === t.n ? ' sel' : ' off') : '') + (grande ? ' g' : media ? ' m' : ' p') + '" data-gc="' + escapeHtml(t.n) + '" style="left:' + t.x.toFixed(2) + '%;top:' + (t.y / H * 100).toFixed(2) + '%;width:' + t.w.toFixed(2) + '%;height:' + (t.h / H * 100).toFixed(2) + '%;--cc:' + t.color + ';animation-delay:' + (i * 0.05).toFixed(2) + 's" ' + act('gcAbrir', t.n) + '>' +
+      '<span class="gc-ficha-in">' + (media ? '<span class="gf-n">' + escapeHtml(t.otras ? 'Otras' : t.l) + '</span>' : '') + '<b class="tnum">' + agrupar(Math.round(t.v).toLocaleString('es-ES')) + ' ' + sym() + '</b>' + (grande ? '<span class="gf-p">' + Math.round(t.v / d.total * 100) + ' %</span>' : '') + '</span></button>'; }).join('');
+}
+// Anillo (versión 3): el trozo elegido sale hacia fuera y, alrededor, un arco fino con sus subcategorías; la lista de abajo se abre en su fila
+function gcAnilloDraw(animar) {
+  const wrap = $('#gcAnillo'); if (!wrap) return;
+  const d = gcDatos(S.anioSel, S.mesSel); if (!d.total) { wrap.innerHTML = ''; return; }
+  const R = 60, C = 2 * Math.PI * R, SW = 14, HUECO = 3.2, sel = d.filas.find((f) => f.n === S._gcAbierta);
+  let ini = 0, arcos = '', fuera = '';
+  d.filas.forEach((f) => {
+    const len = f.v / d.total * C, redondo = len > SW + HUECO + 1, unico = d.filas.length === 1;
+    const vis = unico ? C : redondo ? len - HUECO - SW : Math.max(0.6, len - HUECO), off = unico ? 0 : ini + (redondo ? (HUECO + SW) / 2 : HUECO / 2);
+    const th = (ini + len / 2) / R, on = sel && sel.n === f.n, dx = on ? (Math.cos(th) * 6).toFixed(2) : 0, dy = on ? (Math.sin(th) * 6).toFixed(2) : 0;
+    arcos += '<circle class="dn-s' + (sel ? (on ? ' sel' : ' off') : '') + '" data-vis="' + vis.toFixed(2) + '" cx="80" cy="80" r="' + R + '" fill="none" stroke="' + f.color + '" stroke-width="' + SW + '" stroke-linecap="' + (redondo && !unico ? 'round' : 'butt') + '" stroke-dasharray="' + vis.toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '" style="transform:translate(' + dx + 'px,' + dy + 'px)" ' + act('gcAbrir', f.n) + '><title>' + escapeHtml(f.l) + '</title></circle>';
+    if (on && (f.subs || f.hijos)) { // arco fino por fuera, repartido entre sus partes
+      const partes = f.subs || f.hijos, tot = partes.reduce((a, x) => a + x.v, 0), R2 = 75, C2 = 2 * Math.PI * R2; let a0 = ini / C * C2;
+      partes.forEach((p) => { const l2 = p.v / tot * (len / C * C2); fuera += '<circle class="gc-sub-arco" cx="80" cy="80" r="' + R2 + '" fill="none" stroke="' + (p.color || f.color) + '"' + (p.op ? ' stroke-opacity="' + p.op + '"' : '') + ' stroke-width="5" stroke-dasharray="' + Math.max(0.5, l2 - 1.6).toFixed(2) + ' ' + C2.toFixed(2) + '" stroke-dashoffset="' + (-(a0 + 0.8)).toFixed(2) + '"/>'; a0 += l2; });
+    }
+    ini += len;
+  });
+  const centro = sel ? [sel.l.length > 16 ? sel.l.slice(0, 15) + '…' : sel.l, moneyShort(sel.v), Math.round(sel.v / d.total * 100) + ' % del gasto'] : ['', moneyShort(d.total), 'toca un color'];
+  wrap.innerHTML = '<svg viewBox="-4 -4 168 168" width="100%" height="100%" role="img" aria-label="Reparto del gasto por categoría"><circle class="dn-fondo" cx="80" cy="80" r="' + R + '" fill="none" stroke-width="' + SW + '"/>' +
+    '<g transform="rotate(-90 80 80)"><g class="dn-giro">' + arcos + '</g><g class="gc-fuera">' + fuera + '</g></g><circle class="dn-centro" cx="80" cy="80" r="44" ' + act('gcAbrir', S._gcAbierta || '') + '/>' +
+    '<g class="dn-txt' + (animar === 'txt' ? ' entra' : '') + '">' + (centro[0] ? '<text class="dn-c1" x="80" y="65" text-anchor="middle">' + escapeHtml(centro[0]) + '</text>' : '') + '<text class="dn-c2" x="80" y="' + (centro[0] ? 85 : 82) + '" text-anchor="middle">' + escapeHtml(centro[1]) + '</text><text class="dn-c3" x="80" y="' + (centro[0] ? 100 : 98) + '" text-anchor="middle">' + escapeHtml(centro[2]) + '</text></g></svg>';
+  if (animar === true && !reduceMotion() && typeof requestAnimationFrame !== 'undefined') {
+    const ss = [...wrap.querySelectorAll('.dn-s')], g = wrap.querySelector('.dn-giro'), C2 = C.toFixed(2), espera = S._deslizando ? 300 : 0;
+    ss.forEach((el) => { el.style.transition = 'none'; el.style.strokeDasharray = '0 ' + C2; }); g.style.transformOrigin = '80px 80px'; g.style.transition = 'none'; g.style.transform = 'rotate(-80deg) scale(.88)'; void wrap.offsetWidth;
+    setTimeout(() => requestAnimationFrame(() => { g.style.transition = 'transform 1s cubic-bezier(.22,1,.36,1)'; g.style.transform = 'rotate(0deg) scale(1)';
+      ss.forEach((el, i) => { el.style.transition = 'stroke-dasharray .6s cubic-bezier(.22,1,.36,1) ' + (i * 0.08).toFixed(2) + 's'; el.style.strokeDasharray = el.getAttribute('data-vis') + ' ' + C2; });
+      setTimeout(() => ss.forEach((el) => { el.style.transition = ''; }), 700 + ss.length * 80); }), espera);
+  }
 }
 // «Dónde más gastas»: los sitios (la descripción) que más suman en el mes
 function dondeMasHtml(movs) {
@@ -3257,15 +3376,23 @@ function insightsHtml() {
 /* ---- Comparar con la versión anterior (fase de pruebas): en cada sección con un cambio grande reciente,
    un botón flotante deja ver cómo era antes y volver. Se registra aquí; se quita de la lista cuando ya no haga falta. ---- */
 const VERSIONES = {
-  inicio: { txt: 'Inicio', desde: '2026-10-18' },
+  inicio: { txt: 'Inicio', desde: '2026-10-18', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  movResumen: { txt: 'En qué gastas', desde: '2026-10-18', variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
 };
-function seccionVersion() { return S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy' ? 'inicio' : ''; }
-function verAnterior(k) { return !!(S.verAnterior && S.verAnterior[k]); }
+function seccionVersion() {
+  if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
+  if (S.tab === 'movimientos' && movVistaAct() === 'resumen' && /^m:/.test(movPerNorm(S.movPeriodo))) return 'movResumen';
+  return '';
+}
+function versionIdx(k) { const v = VERSIONES[k], i = Number((S.verAnterior || {})[k]) || 0; return v && compararOn() && i > 0 && i < v.variantes.length ? i : 0; }
+function versionDe(k) { return VERSIONES[k].variantes[versionIdx(k)][0]; }
+function verAnterior(k) { return versionIdx(k) > 0; }
 function compararOn() { return cfg().compararVersiones !== false; }
 function compararBotonHtml() {
   const k = seccionVersion(); if (!k || !VERSIONES[k] || !compararOn() || !allLoaded()) return '';
-  const ant = verAnterior(k);
-  return '<button type="button" class="comparar-fab' + (ant ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="' + (ant ? 'Ver la versión nueva' : 'Ver la versión anterior') + '">' + ic('swap') + '<span>' + (ant ? 'Ver nueva' : 'Antes') + '</span></button>';
+  const vs = VERSIONES[k].variantes, i = versionIdx(k);
+  if (vs.length === 2) return '<button type="button" class="comparar-fab' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="' + (i ? 'Ver la versión nueva' : 'Ver la versión anterior') + '">' + ic('swap') + '<span>' + (i ? 'Ver nueva' : 'Antes') + '</span></button>';
+  return '<button type="button" class="comparar-fab multi' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="Cambiar de versión (' + vs[i][1] + ', ' + (i + 1) + ' de ' + vs.length + ')">' + ic('swap') + '<span>' + vs[i][1] + ' <i>' + (i + 1) + '/' + vs.length + '</i></span></button>';
 }
 function pintarComparar() {
   let h = $('#compararHost'); if (!h) { h = document.createElement('div'); h.id = 'compararHost'; document.body.appendChild(h); }
@@ -3414,7 +3541,7 @@ function renderMovResumen() {
   const p = movPerNorm(S.movPeriodo);
   if (/^m:/.test(p)) { const [y, m] = p.slice(2).split('-').map(Number); S.anioSel = y; S.mesSel = m; S.generalSub = 'mensual';
     const info = S._infoTeQueda ? '<div class="info-card"><span class="info-ic">' + ic('sparkle') + '</span><div><b>Así sale «Te queda este mes»</b>Lo que has ingresado menos lo que has gastado, apartado, invertido y pagado de deudas en tu mes (' + rangoTxt(y, m) + '). Toca cada cifra para ver sus movimientos.</div><button type="button" class="link" ' + act('infoTeQuedaCerrar') + '>Entendido</button></div>' : '';
-    return info + kpiMesHtml(kpisMes(y, m), y, m, true) + renderAnalisisMensual(true); }
+    return info + kpiMesHtml(kpisMes(y, m), y, m, true) + gcResumenHtml(versionDe('movResumen')); }
   S.anioSel = Number(p.slice(2)); S.generalSub = 'anual'; return renderAnalisisAnual('sinNav');
 }
 /* ---- Dinero: el Patrimonio en una línea que se despliega ---- */
@@ -6483,7 +6610,7 @@ function confirmDelete(el, fn) {
 const H = {
   goTab: ([id]) => {
     S._infoTeQueda = false;
-    S.volverA = null; if (id === 'movimientos') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S.movVista = 'resumen'; S.movPeriodo = mesHoyClave(); S._donutSel = ''; _donutAnim = ''; }
+    S.volverA = null; if (id === 'movimientos') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S.movVista = 'resumen'; S.movPeriodo = mesHoyClave(); S._donutSel = ''; S._gcAbierta = ''; _donutAnim = ''; }
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
     const nueva = TAB_ALIAS[id] || id; if (nueva !== S.tab) S._entrando = true;
     if (nueva === 'inicio') { S.inicioVista = 'hoy'; S.inicioMes = ''; }
@@ -6536,11 +6663,16 @@ const H = {
     closeSheet(); render();
   },
   previstoAbrir: () => { FORM = { kind: 'previsto' }; openSheet(previstoHtml()); },
-  heroResumen: () => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = mesClave(im.y, im.m); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._donutSel = ''; S._infoTeQueda = im.actual; S._entrando = true; render(); window.scrollTo(0, 0); },
+  heroResumen: () => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = mesClave(im.y, im.m); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._donutSel = ''; S._gcAbierta = ''; S._infoTeQueda = im.actual; S._entrando = true; render(); window.scrollTo(0, 0); },
   inicioMes: ([d]) => { const im = inicioYM(); let y = im.y, m = im.m + (Number(d) || 0); if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } const a = mesActual(); S.inicioMes = y === a.y && m === a.m ? '' : mesClave(y, m); S._inicioDir = Number(d) || 0; sentir('tic'); render(); },
   // las tarjetas de «Así vas» llevan delante insIr: quitan su etiqueta y hacen lo de siempre
   compararToggle: () => { const on = !compararOn(); saveConfig({ compararVersiones: on }); if (!on) S.verAnterior = {}; toast(on ? 'Verás un botón para comparar con la versión anterior' : 'Botón de comparar oculto'); render(); },
-  compararCambiar: ([k]) => { S.verAnterior = Object.assign({}, S.verAnterior, { [k]: !verAnterior(k) }); sentir('tic'); toast(verAnterior(k) ? 'Viendo la versión anterior de ' + VERSIONES[k].txt : 'Vuelves a la versión nueva'); render(); window.scrollTo(0, 0); },
+  compararCambiar: ([k]) => {
+    const v = VERSIONES[k]; if (!v) return; const n = (versionIdx(k) + 1) % v.variantes.length;
+    S.verAnterior = Object.assign({}, S.verAnterior, { [k]: n }); sentir('tic'); _donutAnim = '';
+    toast(v.variantes.length === 2 ? (n ? 'Viendo la versión anterior de ' + v.txt : 'Vuelves a la versión nueva') : v.txt + ': versión «' + v.variantes[n][1] + '» (' + (n + 1) + ' de ' + v.variantes.length + ')');
+    render(); if (k === 'inicio') window.scrollTo(0, 0);
+  },
   insVer: ([i]) => { const x = (S._ins || [])[Number(i)]; if (!x) return; verBadge('asivas'); sentir('tic'); abrirPopup('<div class="ins-pop ' + (x.tono || '') + '"' + (x.color ? ' style="--ic:' + x.color + '"' : '') + '><b class="ins-pop-v tnum">' + escapeHtml(x.valor) + '</b><span class="ins-pop-l">' + escapeHtml(x.l1 + ' · ' + x.l2) + '</span><p>' + escapeHtml(x.frase) + '</p></div><div class="actions"><button class="btn ghost block" ' + act('popupCerrar') + '>Cerrar</button><button class="btn accent block" ' + x.a.replace('data-click="', 'data-click="insVerIr|') + '>Ver</button></div>'); },
   insVerIr: ([accion, ...args], el, e) => { cerrarPopup(); if (H[accion]) H[accion](args, el, e); },
   insIr: ([accion, ...args], el, e) => { verBadge('asivas'); if (VIBRA.has(accion)) sentir('toque'); if (H[accion]) H[accion](args, el, e); },
@@ -6550,7 +6682,7 @@ const H = {
   setMovVista: ([v]) => {
     const orden = MOV_VISTAS.map((x) => x[0]), nueva = orden.indexOf(v) >= 0 ? v : 'lista', antes = movVistaAct();
     if (nueva === antes && S.movVista === nueva) return;
-    if (nueva === 'resumen') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S._donutSel = ''; }
+    if (nueva === 'resumen') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S._donutSel = ''; S._gcAbierta = ''; }
     if (nueva === 'calendario' && !/^m:/.test(movPerNorm(S.movPeriodo))) { const p = movPerNorm(S.movPeriodo), ya = mesActual().y; S.movPeriodo = /^y:/.test(p) && Number(p.slice(2)) !== ya ? mesClave(Number(p.slice(2)), 12) : mesHoyClave(); }
     S._movBuscando = false; _donutAnim = '';
     movDeslizar(() => { S.movVista = nueva; }, orden.indexOf(nueva) > orden.indexOf(antes) ? 1 : -1);
@@ -6579,12 +6711,19 @@ const H = {
     if (nuevo === antes) return;
     if (nuevo === 'todo') S.movVista = 'lista';
     if (/^y:/.test(nuevo) && movVistaAct() === 'calendario') S.movVista = 'resumen';
-    S.movLimit = 120; S.movCalDia = ''; _donutAnim = '';
+    S.movLimit = 120; S.movCalDia = ''; S._gcAbierta = ''; _donutAnim = '';
     movDeslizar(() => { S.movPeriodo = nuevo; S._movDir = nuevo > antes ? 1 : -1; }, nuevo > antes ? 1 : -1);
   },
   donutSel: ([n]) => {
     if (n && n === S._donutSel) { const d = donutDatos(), sl = d.slices.find((x) => x.n === n); if (sl && !sl.otras && !donutPartes(sl, d.gastos)) return irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat: n }); }
     S._donutSel = n || ''; S._donutTxtAnim = true; sentir('tic'); drawDonut();
+  },
+  gcAbrir: ([n]) => {
+    const nuevo = n && S._gcAbierta !== n ? n : ''; S._gcAbierta = nuevo; sentir('tic');
+    $$('.gc-fila').forEach((el) => { const on = el.getAttribute('data-gc') === nuevo; el.classList.toggle('abierta', on); const b = el.querySelector('.gc-cab'); if (b) b.setAttribute('aria-expanded', on); });
+    $$('.gc-ficha').forEach((el) => { const on = el.getAttribute('data-gc') === nuevo; el.classList.toggle('sel', on); el.classList.toggle('off', !!nuevo && !on); });
+    const det = $('#gcDet'); if (det) { const d = gcDatos(S.anioSel, S.mesSel), f = d.filas.find((x) => x.n === nuevo); det.innerHTML = f ? gcDetHtml(f, mesClave(S.anioSel, S.mesSel), d) : '<div class="gc-det-vacio">Toca una ficha para ver en qué se va</div>'; det.classList.remove('entra'); void det.offsetWidth; det.classList.add('entra'); }
+    if ($('#gcAnillo')) gcAnilloDraw('txt');
   },
   donutIr: ([cat, sub]) => { irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat, sub: sub === '-' ? SIN_DETALLE : sub }); },
   movCalDia: ([f]) => { S.movCalDia = f; render(); },
@@ -6595,7 +6734,7 @@ const H = {
     if (/^m:/.test(p)) { let [y, m] = p.slice(2).split('-').map(Number); m += d; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } S.movPeriodo = mesClave(y, m); }
     else if (/^y:/.test(p)) S.movPeriodo = 'y:' + (Number(p.slice(2)) + d);
     else return;
-    const nuevo = S.movPeriodo; S.movPeriodo = p; S.movLimit = 120; S.movCalDia = '';
+    const nuevo = S.movPeriodo; S.movPeriodo = p; S.movLimit = 120; S.movCalDia = ''; S._gcAbierta = '';
     movDeslizar(() => { S.movPeriodo = nuevo; S._movDir = d; }, d);
   },
   setMovModo: ([k]) => {
