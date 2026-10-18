@@ -85,6 +85,7 @@ const clicks = (e, pre) => [...e.doc.querySelectorAll('[data-click^="' + pre + '
   ok(clicks(a, 'saldarTodo').includes('saldarTodo|uB'), 'al lado de Bea hay un botón «Saldar»');
   ok(/Compartir un gasto/.test(app()) && /Grupos/.test(app()) && /Actividad/.test(app()), 'se ven «Compartir un gasto», «Grupos» y «Actividad»');
   ok(/Bea apuntó «Café»/.test(app()), 'Actividad: «Bea apuntó «Café»»');
+  ok(!clicks(a, 'grupoVer').includes('grupoVer|g2'), 'Bea (a solas, con deuda) no sale repetida en «Grupos»');
   A.H.juntosFiltro(['te']); await sleep(20);
   ok(!/le debes/.test(app()) && /Nadie en este filtro/.test(app()), 'tocar «Te deben» filtra (Bea desaparece)');
   A.H.juntosFiltro(['']); await sleep(20);
@@ -113,8 +114,10 @@ const clicks = (e, pre) => [...e.doc.querySelectorAll('[data-click^="' + pre + '
   ok(/Debes 30,00 € a Bea|Debes 30,00\s*€?\s*a Bea/.test(sh(a)) && /Gastos/.test(sh(a)) && /Saldos/.test(sh(a)), 'grupo: «Debes 30 € a Bea» y las pestañas Gastos | Saldos');
   ok(!/Miembros \(/.test(sh(a)) && !/Invitar a gente nueva/.test(sh(a)), 'la administración no está en la pantalla principal del grupo');
   ok(/Entre todos\s*60,00/.test(sh(a)) && /tu parte\s*30,00/.test(sh(a)), 'Gastos: «Entre todos 60 € · tu parte 30 €»');
+  ok([...a.doc.querySelectorAll('#sheetHost .row .ttl')].map((x) => x.textContent)[0] === 'Súper', 'las filas de gasto llevan primero lo que fue («Súper»), no la categoría');
   A.H.grupoTab(['saldos']); await sleep(20);
   ok(/Para quedar en paz · 1 pago/.test(sh(a)) && /\+30,00/.test(sh(a)), 'Saldos: barras con +30 de Bea y «Para quedar en paz · 1 pago»');
+  ok(/−30,00/.test(sh(a)) && !/-30,00/.test(sh(a)), 'Saldos: el negativo lleva el signo menos (−30,00 €)');
   A.H.grupoAjustes(['g1']); await sleep(20);
   ok(/Ajustes · Piso/.test(sh(a)) && /Miembros \(2\)/.test(sh(a)) && /Invitar a gente nueva/.test(sh(a)) && !/Para quedar en paz/.test(sh(a)), '«Ajustes del grupo» tiene miembros e invitaciones, sin el dinero');
   A.H.grupoAjustesSalir(['g1']); await sleep(20);
