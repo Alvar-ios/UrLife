@@ -52,10 +52,11 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
 
   /* 3. El anillo: fuera de la tarjeta, la leyenda en fichas y el elegido sale hacia fuera */
   H.goTab(['movimientos']); await sleep(10);
-  ok(!!e.doc.querySelector('.dn-zona #donutWrap') && !e.doc.querySelector('.dn-card'), 'el anillo ya no va dentro de una tarjeta');
-  H.donutSel(['Supermercado']); await sleep(10);
-  const elegido = e.doc.querySelector('#donutWrap .dn-s.sel');
-  ok(!!elegido && /translate/.test(elegido.style.transform || ''), 'el trozo elegido sale hacia fuera');
-  ok(!!e.doc.querySelector('#donutLegend .dn-f.sel'), 'y su ficha de la leyenda se marca');
+  S.verAnterior = { movResumen: 2 }; A.render(); await sleep(10); // versión «Anillo»
+  ok(!!e.doc.querySelector('#gcAnillo svg'), 'versión Anillo: el anillo encima de la lista');
+  H.gcAbrir(['Supermercado']); await sleep(10);
+  const elegido = e.doc.querySelector('#gcAnillo .dn-s.sel');
+  ok(!!elegido && /translate\((?!0px,0px)/.test(elegido.getAttribute('style') || ''), 'el trozo elegido sale hacia fuera');
+  ok(!!e.doc.querySelector('.gc-fila.abierta[data-gc="Supermercado"]'), 'y su fila de la lista se abre');
   console.log(fails ? 'FAILED ' + fails : 'ALL PASS'); process.exit(fails ? 1 : 0);
 })().catch((x) => { console.log('CRASH', x); process.exit(1); });

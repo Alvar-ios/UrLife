@@ -34,40 +34,50 @@ const MOVS = [
   ok(!!doc.querySelector('.mov-cab .mov-per-lbl') && !doc.querySelector('.mov-modo') && !doc.querySelector('.mov-nav'), 'cabecera limpia: el nombre del mes (sin tarjeta ni «Mes / Año»)');
   ok(doc.querySelectorAll('.kpi-mes .kpi').length === 4, 'las 4 cifras siguen');
 
-  /* 2. El anillo: como mucho 6 colores, «Otras» agrupa lo pequeño, colores fijos */
-  const ley = () => [...doc.querySelectorAll('#donutLegend .dn-f .dn-n')].map((x) => x.textContent);
-  ok(ley().length === 6 && ley()[5] === 'Otras' && ley()[0] === 'Vivienda', 'leyenda: las 5 mayores y «Otras» (' + ley().join(', ') + ')');
-  ok(doc.querySelectorAll('#donutWrap circle.dn-s').length === 6, 'el anillo tiene 6 trozos');
-  ok(/1\.\d{3},\d{2} €|9\d\d,\d{2} €|\d+ €/.test(doc.querySelector('#donutWrap .dn-c2').textContent) && /gastado/.test(doc.querySelector('#donutWrap').textContent), 'en el centro, lo gastado');
+  /* 2. «En qué gastas» (18/10): una lista con gasto, % y presupuesto; arriba la tira de colores (versión Barras) */
+  const filasGc = () => [...doc.querySelectorAll('.gc-fila')].map((x) => x.getAttribute('data-gc'));
+  ok(filasGc().slice(0, 6).join('|') === 'Vivienda|Supermercado|Salud y cuidado personal|Restaurantes y bares|Transporte|__otras', 'las 5 mayores y «Otras» (' + filasGc().join(', ') + ')');
+  ok(doc.querySelectorAll('.gc-tira i').length === 6 && /925,00 €/.test(doc.querySelector('.gc-total').textContent), 'arriba la tira de 6 colores y lo gastado');
   const colSuper = A.colorCat('Supermercado');
-  ok(colSuper === A.colorCat('supermercado') && doc.querySelector('#donutWrap circle[stroke="' + colSuper + '"]') && /--cc:\s*#1FA67A/i.test([...doc.querySelectorAll('.budget-row')].find((r) => /Supermercado/.test(r.textContent)).getAttribute('style')), 'cada categoría tiene siempre su color (anillo y presupuestos)');
-
-  /* 3. Tocar una categoría con subcategorías la divide; tocar una subcategoría abre sus movimientos */
-  H.donutSel(['Salud y cuidado personal']); await sleep(5);
-  ok(/Uñas/.test(doc.querySelector('#donutLegend').textContent) && /Pelo/.test(doc.querySelector('#donutLegend').textContent) && /Sin detalle/.test(doc.querySelector('#donutLegend').textContent) && /Todas/.test(doc.querySelector('#donutLegend').textContent), 'Salud se divide en sus subcategorías (Uñas, Pelo, Sin detalle)');
-  ok(doc.querySelectorAll('#donutWrap circle.dn-s').length === 3 && /Salud y cuidad/.test(doc.querySelector('#donutWrap').textContent), 'el anillo pasa a ser el de Salud y el centro lo dice');
+  ok(colSuper === A.colorCat('supermercado') && /--cc:\s*#1FA67A/i.test(doc.querySelector('.gc-fila[data-gc="Supermercado"]').getAttribute('style')), 'cada categoría tiene siempre su color');
+  /* 3. Abrir una categoría: se abre en su fila y el resto sigue a la vista */
+  H.gcAbrir(['Salud y cuidado personal']); await sleep(5);
+  let ab = doc.querySelector('.gc-fila.abierta');
+  ok(ab && ab.getAttribute('data-gc') === 'Salud y cuidado personal' && /Uñas/.test(ab.textContent) && /Pelo/.test(ab.textContent) && /Sin detalle/.test(ab.textContent) && filasGc().length >= 6, 'Salud se abre en su fila con Uñas, Pelo y Sin detalle; las demás siguen');
   H.donutIr(['Salud y cuidado personal', 'Uñas']); await sleep(10);
   ok(S.movVista === 'lista' && S.movCat === 'Salud y cuidado personal' && S.movSub === 'Uñas' && /1 movimiento\b/.test(txt(e)), 'tocar «Uñas» abre la lista de esa subcategoría');
   click(e, 'volver'); await sleep(10);
   ok(S.movVista === 'resumen', '«Volver» deja otra vez en el Resumen');
   H.donutIr(['Salud y cuidado personal', '-']); await sleep(10);
-  ok(/1 movimiento\b/.test(txt(e)) && !!doc.querySelector('.sub-row .pill.active') && /Sin detalle/.test(doc.querySelector('.sub-row .pill.active').textContent), '«Sin detalle» abre solo los gastos sin subcategoría');
+  ok(/1 movimiento\b/.test(txt(e)) && /Sin detalle/.test(doc.querySelector('.sub-row .pill.active').textContent), '«Sin detalle» abre solo los gastos sin subcategoría');
   click(e, 'volver'); await sleep(10);
-  H.donutSel(['Otras']); await sleep(5);
-  ok(/Ocio/.test(doc.querySelector('#donutLegend').textContent) && /Mascotas/.test(doc.querySelector('#donutLegend').textContent), '«Otras» enseña las categorías que agrupa');
-  H.donutSel(['']); await sleep(5);
-  H.donutSel(['Transporte']); await sleep(5);
-  ok(doc.querySelectorAll('#donutWrap circle.dn-s.off').length === 5 && !!doc.querySelector('#donutWrap circle.dn-s.sel') && /Ver sus movimientos/.test(doc.querySelector('#donutLegend').textContent), 'sin subcategorías: se resalta y los demás se apagan');
-  H.donutSel(['Transporte']); await sleep(10);
-  ok(S.movVista === 'lista' && S.movCat === 'Transporte', 'segundo toque: abre sus movimientos');
+  H.gcAbrir(['__otras']); await sleep(5);
+  ab = doc.querySelector('.gc-fila.abierta');
+  ok(ab && /Ocio/.test(ab.textContent) && /Mascotas/.test(ab.textContent), '«Otras» enseña las categorías que agrupa');
+  H.gcAbrir(['Supermercado']); await sleep(5);
+  ab = doc.querySelector('.gc-fila.abierta');
+  ok(doc.querySelectorAll('.gc-fila.abierta').length === 1 && /Mercadona · 2 veces/.test(ab.textContent) && /Ver los 2 movimientos/.test(ab.textContent), 'sin subcategorías: los sitios donde más gastas (Mercadona, 2 veces); solo una abierta a la vez');
+  click(e, 'irMovs', '_gastos', S.movPeriodo, 'Supermercado'); await sleep(10);
+  ok(S.movVista === 'lista' && S.movCat === 'Supermercado', '«Ver los movimientos» lleva a la lista');
   click(e, 'volver'); await sleep(10);
-
-  /* 4. Frente al mes anterior y «Dónde más gastas» */
+  H.gcAbrir(['Transporte']); await sleep(5); H.gcAbrir(['Transporte']); await sleep(5);
+  ok(!doc.querySelector('.gc-fila.abierta'), 'tocar otra vez la cierra');
+  /* 4. Frente al mes anterior; presupuesto en la misma lista */
   const chip = doc.querySelector('.kpi.expense .kpi-chip');
-  ok(!!chip && /[↑↓=]/.test(chip.textContent), 'Gastos lleva un chip frente al mes anterior (' + (chip ? chip.textContent : '—') + ')');
-  ok(/Dónde más gastas/.test(txt(e)) && /Mercadona.*2 veces/.test(doc.querySelector('.donde').textContent), '«Dónde más gastas»: Mercadona, 2 veces');
-  ok(/Llevas .* presupuestados/.test(doc.querySelector('.pres-card').textContent) && !doc.querySelector('.pres-card .pb-edit'), 'presupuestos en filas finas, sin «Cambiar» en cada una');
-
+  ok(!!chip && /[↑↓=]/.test(chip.textContent) && !!doc.querySelector('.gc-total .gc-chip'), 'Gastos lleva un chip frente al mes anterior (' + (chip ? chip.textContent : '—') + ')');
+  ok(/Llevas .* presupuestados/.test(doc.querySelector('.gc-card').textContent) && /de 300,00 €/.test(doc.querySelector('.gc-fila[data-gc="Supermercado"]').textContent) && !doc.querySelector('.donde'), 'el presupuesto va en la fila; «Dónde más gastas» va dentro de cada categoría');
+  /* 4b. Las tres versiones para probar (botón de arriba) */
+  ok(/Barras 1\/3/.test(doc.querySelector('#compararHost').textContent), 'arriba, el botón de versiones: «Barras 1/3»');
+  click(e, 'compararCambiar', 'movResumen'); await sleep(10);
+  ok(doc.querySelectorAll('.gc-mosaico .gc-ficha').length === 6 && !!doc.querySelector('.pres-card .budget-row'), 'Mosaico: 6 fichas y los presupuestos debajo');
+  H.gcAbrir(['Supermercado']); await sleep(5);
+  ok(/Mercadona/.test(doc.querySelector('#gcDet').textContent) && !!doc.querySelector('.gc-ficha.sel'), 'Mosaico: al tocar una ficha, su detalle debajo');
+  click(e, 'compararCambiar', 'movResumen'); await sleep(10);
+  ok(doc.querySelectorAll('#gcAnillo .dn-s').length === 6 && !!doc.querySelector('.gc-lista'), 'Anillo: el anillo y la lista debajo');
+  H.gcAbrir(['Salud y cuidado personal']); await sleep(5);
+  ok(doc.querySelectorAll('#gcAnillo .dn-s.sel').length === 1 && doc.querySelectorAll('#gcAnillo .gc-sub-arco').length === 3 && doc.querySelector('.gc-fila.abierta'), 'Anillo: el trozo elegido sale, alrededor sus subcategorías y la fila se abre (el anillo no se cierra)');
+  click(e, 'compararCambiar', 'movResumen'); await sleep(10);
+  ok(!!doc.querySelector('.gc-tira'), 'y vuelve a Barras');
   /* 5. Lista: filas, lupa (también por importe) y hoja «Filtros» */
   H.setMovVista(['lista']); await sleep(10);
   ok(!doc.querySelector('#content .entra') && !doc.querySelector('#content.entra'), 'cambiar de vista no hace el fundido a negro (sin «entra»)');

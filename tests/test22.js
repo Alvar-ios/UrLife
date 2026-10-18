@@ -52,7 +52,7 @@ const hoy=new Date().toISOString().slice(0,10);
  ok(Math.abs(w(filas[0],'.pb-f')-250/300*100)<0.1&&Math.abs(l(filas[0],'.pb-tick')-100)<0.1,'Súper: 250 de 300 → barra 83% y marca al final');
  ok(Math.abs(w(filas[1],'.pb-f')-50)<0.1&&!filas[1].querySelector('.pb-tick'),'Ocio sin presupuesto: 150 → 50% de la escala, sin marca');
  ok(Math.abs(w(filas[2],'.pb-f')-50/300*100)<0.1&&Math.abs(l(filas[2],'.pb-tick')-50/300*100)<0.1&&Math.abs(w(filas[2],'.pb-over')-30/300*100)<0.1&&/30,00 € de más/.test(filas[2].textContent),'Ropa 80 de 50: barra hasta la marca + 30 € en rojo');
- ok(w(filas[3],'.pb-f')===0&&Math.abs(l(filas[3],'.pb-tick')-100/300*100)<0.1&&/0,00 € \/ 100,00 €/.test(filas[3].textContent),'Casa 0 de 100: solo la marca, «0 / 100 €»');
+ ok(w(filas[3],'.pb-f')===0&&Math.abs(l(filas[3],'.pb-tick')-100/300*100)<0.1&&/0,00 €/.test(filas[3].textContent)&&/de 100,00 €/.test(filas[3].textContent),'Casa 0 de 100: solo la marca, «0,00 € · de 100 €»');
  // ---------- anual
  H.verAnio([]);await sleep(10);
  const svg=doc.querySelector('#trendWrap svg');
