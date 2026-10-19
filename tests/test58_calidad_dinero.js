@@ -145,15 +145,13 @@ async function abrir(cfgApp, movs, extra) {
     ok(Object.keys(e.store.movimientos).length === 1, 'ninguna acción de deudas crea, cambia ni borra movimientos');
   }
 
-  /* ---------- 5. Asistente: renombrar una deuda ---------- */
+  /* ---------- 5. Bienvenida (desde el 19/10/2026 ya no edita deudas): repetirla no las toca ---------- */
   {
     const e = await abrir({ deudas: [{ id: 'd1', nombre: 'Coche', objetivo: 5000, previo: 1000, cuotaMes: 150 }] }, [{ id: 'p1', tipo: 'Deuda', categoria: 'Coche', importe: 200, fecha: ym + '-01' }]);
+    const antes = JSON.stringify(e.store.cfg.app.deudas);
     e.A.H.startOnboardingManually([]); await sleep(10);
-    e.S.onboarding.deudas[0].nombre = 'Coche familiar';
-    await e.A.H.obFinish(['save']); await sleep(40);
-    const d = (e.store.cfg.app.deudas || [])[0] || {};
-    ok(d.nombre === 'Coche familiar' && (d.nombresAntes || []).includes('Coche') && d.previo === 1000 && d.cuotaMes === 150 && !('_n0' in d), 'asistente: renombrar guarda el nombre antiguo, conserva «Ya pagado» y «Al mes» y no deja campos internos');
-    ok(e.A.deudaStats(d).pagado === 1200, 'asistente: tras renombrar, el pago sigue contando');
+    await e.A.H.obFinish(['']); await sleep(40);
+    ok(JSON.stringify(e.store.cfg.app.deudas) === antes && e.A.deudaStats(e.store.cfg.app.deudas[0]).pagado === 1200, 'repetir la bienvenida no cambia las deudas ni sus pagos');
   }
 
   /* ---------- 6. Inversiones sin precio / sin activo ---------- */
