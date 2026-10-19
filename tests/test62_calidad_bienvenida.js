@@ -177,9 +177,9 @@ const pasoDe = (e) => { const b = e.doc.querySelector('.ob2-body'); return b ? (
   /* ---------- 6. Invitación: sin red, «Ahora no», aviso en Inicio ---------- */
   {
     const { e } = env('u14', { url: 'https://urlife-zeta.vercel.app/?unirse=' + TOKEN, sinRed: true }); await sleep(150); const A = e.w.__APP__;
-    ok(pasoDe(e) === 'invite' && /No hemos podido abrir esta invitación/.test(txt(e)), 'sin red: lo dice y deja seguir');
+    ok(pasoDe(e) === 'invite' && /No hemos podido abrir la invitación/.test(txt(e)) && /Seguir sin unirme/.test(txt(e)), 'sin red: lo dice y deja seguir');
     pend(/conexi|red|internet/i.test(txt(e)), 'leve: sin red el texto no sugiere revisar la conexión (dice lo mismo que un enlace roto)');
-    click(e, 'obInvAplazar', 'mal'); await sleep(10);
+    click(e, 'obInvAplazar'); await sleep(10);
     pend(!!e.w.localStorage.getItem('unirse'), 'medio: sin red, «Seguir sin unirme» borra el enlace de la invitación: luego no sale el aviso en Inicio y hay que volver a abrir el enlace de WhatsApp');
   }
   {

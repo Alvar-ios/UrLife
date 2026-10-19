@@ -2188,7 +2188,7 @@ async function maybeUnirse() {
   const soy = lsGet('soy');
   if (soy && !lsGet('unirse')) return maybeReclamar(soy);
   const t = lsGet('unirse');
-  if (!t || S._uniendo || S._invAplazada || S.onboarding || !allLoaded() || !gruposDisponible()) return;
+  if (!t || S._uniendo || S._invAplazada || lsGet('invAplazada') === t || S.onboarding || !allLoaded() || !gruposDisponible()) return;
   S._uniendo = true;
   let info = null;
   try { info = await S.db.rpc('ver_invitacion', { p_token: t }); } catch (e) { console.error(e); S._uniendo = false; return; }
@@ -2254,7 +2254,8 @@ function r2(x) { return Math.round(num(x) * 100) / 100; }
 // lee un importe escrito a mano: «8.000», «1.234,56», «12,5» o «12.5» (el punto con grupos de 3 cifras es de miles)
 function numCampo(v) {
   let t = String(v == null ? '' : v).replace(/[\s€]/g, '');
-  if (t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');
+  if (t.indexOf(',') >= 0 && t.indexOf('.') >= 0 && t.lastIndexOf('.') > t.lastIndexOf(',')) t = t.replace(/,/g, ''); // «1,240.50» (formato inglés)
+  else if (t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');
   else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
   const n = parseFloat(t); return isFinite(n) ? n : 0;
 }
@@ -7092,14 +7093,25 @@ async function obCargarInvitacion(ob) {
   if (!t || !gruposDisponible()) return;
   ob.invite = { token: t, cargando: true, info: null };
   let info = null;
-  try { info = await S.db.rpc('ver_invitacion', { p_token: t }); } catch (e) { console.error(e); }
+  try { info = await S.db.rpc('ver_invitacion', { p_token: t }); } catch (e) { console.error(e); info = { valida: false, motivo: 'red' }; }
   if (S.onboarding !== ob) return;
   ob.invite.cargando = false; ob.invite.info = info || { valida: false };
   if (!ob.nombre) ob.nombre = nombreSugerido();
   render();
 }
 function obNum(v) { const s = String(v == null ? '' : v).trim(); if (!s || !/\d/.test(s)) return null; const n = numCampo(s); return isFinite(n) ? r2(n) : null; }
-function obDia(v) { const d = parseInt(v, 10); return d >= 1 && d <= 31 ? d : null; }
+function obDia(v) { const s = String(v == null ? '' : v).trim(); if (!/^\d{1,2}$/.test(s)) return null; const d = Number(s); return d >= 1 && d <= 31 ? d : null; }
+// antes de pasar de paso: lo escrito tiene que entenderse (si no, se avisa en vez de ignorarlo)
+function obValidar(ob) {
+  const p = obPasos(ob)[ob.step], malNum = (v) => String(v || '').trim() && obNum(v) == null, malDia = (v) => String(v || '').trim() && obDia(v) == null;
+  if (p === 'banco') { if (malNum(ob.saldo) || ob.extra.some((x) => malNum(x.saldo))) return { m: 'Pon el saldo con números, por ejemplo 1.240,50', sel: '#obSaldo' }; }
+  if (p === 'mes') {
+    if (ob.nomina.on && malNum(ob.nomina.importe)) return { m: 'Pon el importe de la nómina con números', sel: '#obNomImp' };
+    if (ob.nomina.on && malDia(ob.nomina.dia)) return { m: 'El día de cobro tiene que ser un número del 1 al 31', sel: '#obNomDia' };
+    const f = ob.fijos.find((x) => malNum(x.importe) || malDia(x.dia)); if (f) return { m: 'Revisa «' + f.nombre + '»: el importe con números y el día del 1 al 31' };
+  }
+  return null;
+}
 
 /* ---- lo que se guarda al pasar de paso (solo añade) ---- */
 function obGuardarHola(ob) { const n = String(ob.nombre || '').trim().slice(0, 40); if (n && n !== cfg().nombre) saveConfig({ nombre: n }); }
@@ -7110,7 +7122,7 @@ function obGuardarBanco(ob) {
   nuevas.forEach((n, i) => {
     if (n.saldo == null) return;
     if (cs.some((c) => c && normName(c.nombre) === normName(n.nombre))) return; // ya existe: no se toca (para eso está «Cuadrar»)
-    cs.push({ id: nuevoIdMeta(), nombre: n.nombre, tipo: n.tipo, saldo: n.saldo, fecha: hoy, principal: !hayPrincipal && i === 0 && !cs.some((c) => c && c.principal) });
+    cs.push({ id: nuevoIdMeta(), nombre: n.nombre, tipo: n.tipo, saldo: n.saldo, fecha: hoy, ts: Date.now(), principal: !hayPrincipal && i === 0 && !cs.some((c) => c && c.principal) });
     añadidas++;
   });
   if (añadidas) saveConfig({ cuentas: cs });
@@ -7120,8 +7132,8 @@ function obGuardarMes(ob) {
   const c = cfg(), cobros = (c.cobros || []).slice(), facturas = (c.facturas || []).slice(), pc = cuentaPrincipal(), hoy = todayISO(), patch = {};
   const existe = (arr, n) => arr.some((x) => x && normName(x.nombre) === normName(n));
   const item = (nombre, imp, dia) => { const d = obDia(dia), o = { nombre, importe: obNum(imp), regla: d ? { t: 'dia', dia: d } : null, diaDelMes: d, desde: hoy }; if (pc) o.cuentaId = pc.id; return o; };
-  if (ob.nomina.on && !existe(cobros, 'Nómina')) { cobros.push(Object.assign(item('Nómina', ob.nomina.importe, ob.nomina.dia), { extras: [] })); patch.cobros = cobros; }
-  ob.fijos.forEach((f) => { const n = (f.nombre || '').trim(); if (!n || existe(facturas, n)) return; facturas.push(Object.assign(item(n, f.importe, f.dia), { categoria: catDeRecibo(n) })); patch.facturas = facturas; });
+  if (ob.nomina.on && !cobros.some((x) => x && x.nombre)) { cobros.push(Object.assign(item('Nómina', ob.nomina.importe, ob.nomina.dia), { extras: [] })); patch.cobros = cobros; }
+  ob.fijos.forEach((f) => { const n = (f.nombre || '').trim(); if (!n || existe(facturas, n) || facturas.some((x) => x && normName(x.nombre).indexOf(normName(n)) >= 0)) return; facturas.push(Object.assign(item(n, f.importe, f.dia), { categoria: catDeRecibo(n) })); patch.facturas = facturas; });
   const ing = c.ingresos || [];
   if (!ing.length) patch.ingresos = OB_INGRESOS_SERIE.slice();
   else if (ob.nomina.on && !ing.some((x) => normName(x) === normName('Nómina'))) patch.ingresos = ing.concat(['Nómina']);
@@ -7140,24 +7152,25 @@ async function doObFinish(despues) {
   if (!ob.manual) {
     // a un usuario nuevo no se le enseñan novedades ni etiquetas de cosas que no ha vivido, ni el botón de pruebas «Antes»
     const vistos = Object.assign({}, cfg().badgesVistos || {}); Object.keys(BADGES).forEach((k) => { if (!vistos[k]) vistos[k] = todayISO(); });
-    ok = await write(() => S.db.doc('config/app').update({ novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '', badgesVistos: vistos, compararVersiones: false, altaApp: todayISO() }));
-    if (ok) S.config = Object.assign({}, cfg(), { novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '', badgesVistos: vistos, compararVersiones: false, altaApp: todayISO() });
-    if (ok) ok = await write(() => S.db.doc('config/meta').update({ onboarded: true, onboardedAt: new Date().toISOString() }));
+    // por la misma cola que el resto de guardados: así no se pisan (en el servidor, guardar es leer y luego escribir)
+    await saveConfig({ novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '', badgesVistos: vistos, compararVersiones: false, altaApp: todayISO() });
+    ok = await write(() => S.db.doc('config/meta').update({ onboarded: true, onboardedAt: new Date().toISOString() }));
   }
   if (!ok) { ob.saving = false; return; }
-  if (ob.invite && ob.invite.aplazada) S._invAplazada = true; // la invitación queda en Inicio, sin saltar sola
+  await _cfgChain; // espera a que se guarde lo de los pasos
+  if (ob.invite && ob.invite.aplazada && lsGet('unirse')) lsSet('invAplazada', lsGet('unirse')); // la invitación queda en Inicio, sin saltar sola
   const gid = ob.grupoId;
   S.onboarding = null; S._novRevisado = true; S.tab = 'inicio'; S._entrando = true;
   renderShell(); render(); window.scrollTo(0, 0);
   if (despues === 'grupo' && gid) { S._introJuntos = cfg().introJuntosVisto ? null : gid; S.tab = 'juntos'; render(); cargarGrupos().then(() => abrirGrupo(gid)); }
-  else if (despues === 'gasto') setTimeout(() => H.crearIr(['gasto']), 250);
+  else if (despues === 'gasto' && !lsGet('soy')) setTimeout(() => H.crearIr(['gasto']), 250); // con un sitio guardado, primero sale eso
   else if (!ob.manual) sentir('ok');
 }
 
 /* ---- pantallas ---- */
 function obBarra(ob) {
   const ps = obPasos(ob), i = ob.step;
-  return '<div class="ob2-top">' + (i > 0 ? '<button type="button" class="ob2-ic" aria-label="Atrás" ' + act('obBack') + '>' + ic('chevL') + '</button>' : '<span class="ob2-ic"></span>') +
+  return '<div class="ob2-top">' + (i > 0 && !(ps[i - 1] === 'invite' && ob.grupoId) ? '<button type="button" class="ob2-ic" aria-label="Atrás" ' + act('obBack') + '>' + ic('chevL') + '</button>' : '<span class="ob2-ic"></span>') +
     '<div class="ob2-prog" aria-label="Paso ' + (i + 1) + ' de ' + ps.length + '">' + ps.map((_, k) => '<i class="' + (k <= i ? 'on' : '') + '"></i>').join('') + '</div>' +
     (ps[i] !== 'listo' ? '<button type="button" class="ob2-saltar" ' + act(ps[i] === 'invite' ? 'obInvAplazar' : 'obFinish', '') + '>' + (ps[i] === 'invite' ? 'Ahora no' : 'Saltar') + '</button>' : '<span class="ob2-ic"></span>') + '</div>' +
     '<div class="ob2-paso">Paso ' + (i + 1) + ' de ' + ps.length + '</div>';
@@ -7168,7 +7181,7 @@ function obHolaHtml(ob) {
     '<div class="ob2-filas">' + obFila('plus', 'a', 'Apunta un gasto en dos toques', ticketsDisponible() ? 'o hazle una foto al ticket' : 'o trae el extracto de tu banco') +
     obFila('chart', 'v', 'Mira cuánto te queda este mes', 'y en qué se te va el dinero') + obFila('users', 'b', 'Comparte gastos en Juntos', 'quién debe a quién, y saldar con un toque') +
     obFila('wallet', 'r', 'Tus cuentas, metas y deudas', 'todo en Dinero, de un vistazo') + '</div>' +
-    '<div class="field"><label>¿Cómo te llamas?</label><input id="obNombre" type="text" maxlength="40" autocomplete="given-name" placeholder="' + escapeHtml(nombreSugerido()) + '" value="' + escapeHtml(ob.nombre || '') + '" ' + onInput('obSet', 'nombre') + '>' +
+    '<div class="field"><label for="obNombre">¿Cómo te llamas?</label><input id="obNombre" type="text" maxlength="40" autocomplete="given-name" placeholder="' + escapeHtml(nombreSugerido()) + '" value="' + escapeHtml(ob.nombre || '') + '" ' + onInput('obSet', 'nombre') + '>' +
     '<div class="ob2-ayuda">Así te verán las personas con las que compartas gastos.</div></div>';
 }
 function obBancoHtml(ob) {
@@ -7177,27 +7190,28 @@ function obBancoHtml(ob) {
     (ya.length ? '<p class="ob2-p">Ya tienes estas. Aquí no se borra nada: solo puedes añadir.</p><div class="ob2-cuentas">' + ya.map((c) => { const v = saldoCuenta(c); return '<div class="ob2-cta"><span class="dot" style="background:' + colorCuenta(c) + '"></span><span>' + escapeHtml(c.nombre) + '</span><b class="tnum">' + (v == null ? '—' : money(v)) + '</b></div>'; }).join('') + '</div>' +
       '<div class="ob2-ayuda" style="margin-bottom:12px;">¿No coincide con tu banco? Usa «Cuadrar» en la cuenta (en Dinero): ajusta el saldo y no toca tus movimientos.</div>'
       : '<p class="ob2-p">Mira la app de tu banco y copia el saldo de tu cuenta principal. Desde aquí, PalomApp suma y resta lo que apuntes.</p>' +
-        '<div class="field"><label>Nombre de la cuenta</label><input id="obCuenta" type="text" maxlength="30" value="' + escapeHtml(ob.cuentaNombre) + '" ' + onInput('obSet', 'cuentaNombre') + '></div>' +
-        '<div class="field"><label>Saldo de hoy</label><label class="cr-imp ob2-saldo"><input id="obSaldo" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(ob.saldo || '').length) + '" value="' + escapeHtml(ob.saldo || '') + '" ' + onInput('obSet', 'saldo') + '><span>' + sym() + '</span></label></div>') +
+        '<div class="field"><label for="obCuenta">Nombre de la cuenta</label><input id="obCuenta" type="text" maxlength="30" value="' + escapeHtml(ob.cuentaNombre) + '" ' + onInput('obSet', 'cuentaNombre') + '></div>' +
+        '<div class="field"><label for="obSaldo">Saldo de hoy</label><label class="cr-imp ob2-saldo"><input id="obSaldo" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(ob.saldo || '').length) + '" value="' + escapeHtml(ob.saldo || '') + '" ' + onInput('obSet', 'saldo') + '><span>' + sym() + '</span></label></div>') +
     ob.extra.map((x, i) => '<div class="ob2-extra"><input type="text" maxlength="30" aria-label="Nombre de la otra cuenta" value="' + escapeHtml(x.nombre) + '" ' + onInput('obSet', 'extra.' + i + '.nombre') + '><input type="text" inputmode="decimal" class="tnum" aria-label="Saldo" placeholder="0 ' + sym() + '" value="' + escapeHtml(x.saldo) + '" ' + onInput('obSet', 'extra.' + i + '.saldo') + '><button type="button" class="ob2-ic" aria-label="Quitar" ' + act('obExtraQuitar', i) + '>' + ic('close') + '</button></div>').join('') +
     '<button type="button" class="link ob2-mas" ' + act('obExtra') + '>' + ic('plus') + (ya.length ? ' Añadir otra cuenta' : ' Añadir efectivo u otra cuenta') + '</button>' +
     '<div class="ob2-nota">' + ic('shield') + '<span>No nos conectamos a tu banco. Solo tú ves tus cifras.</span></div>';
 }
 function obMesHtml(ob) {
   const c = cfg(), ya = (c.cobros || []).concat(c.facturas || []).filter((x) => x && x.nombre), tiene = (n) => ya.some((x) => normName(x.nombre) === normName(n));
-  const d = obDia(ob.nomina.dia), nominaYa = tiene('Nómina');
+  const d = obDia(ob.nomina.dia), cobrosYa = (c.cobros || []).filter((x) => x && x.nombre), nominaYa = cobrosYa.length > 0, factYa = (c.facturas || []).filter((x) => x && x.nombre).map((x) => x.nombre);
   const chip = (n, on, a, dis) => '<button type="button" class="chip' + (on ? ' active' : '') + '"' + (dis ? ' disabled' : '') + ' ' + (dis ? '' : a) + '>' + (on ? ic('check') + ' ' : '') + escapeHtml(n) + '</button>';
   const fila = (f, i) => '<div class="ob2-fijo"><span>' + escapeHtml(f.nombre) + '</span><input type="text" inputmode="decimal" class="tnum" aria-label="Importe de ' + escapeHtml(f.nombre) + '" placeholder="aprox. €" value="' + escapeHtml(f.importe) + '" ' + onInput('obSet', 'fijos.' + i + '.importe') + '><input type="text" inputmode="numeric" class="tnum" aria-label="Día" placeholder="día" value="' + escapeHtml(f.dia) + '" ' + onInput('obSet', 'fijos.' + i + '.dia') + '></div>';
   const elegidos = ob.fijos.map((f) => f.nombre);
   return '<h1 class="ob2-h">¿Qué se repite cada mes?</h1><p class="ob2-p">Así te avisamos de lo que toca y verás cómo acabarás el mes.</p>' +
     '<div class="ob2-sec">Lo que cobras</div>' +
-    (nominaYa ? '<div class="ob2-ayuda">' + ic('checkCircle') + ' La nómina ya está apuntada. Para cambiarla: Tú → Cobros y pagos recurrentes.</div>'
+    (nominaYa ? '<div class="ob2-ayuda">' + ic('checkCircle') + ' Ya tienes apuntado: ' + escapeHtml(cobrosYa.map((x) => x.nombre).join(', ')) + '. Para cambiarlo: Tú → Cobros y pagos recurrentes.</div>'
       : '<div class="ob2-nom">' + chip('Nómina', ob.nomina.on, act('obNomina')) +
         (ob.nomina.on ? '<input id="obNomImp" type="text" inputmode="decimal" class="tnum" aria-label="Importe de la nómina" placeholder="importe" value="' + escapeHtml(ob.nomina.importe) + '" ' + onInput('obSet', 'nomina.importe') + '><input id="obNomDia" type="text" inputmode="numeric" class="tnum" aria-label="Día de cobro" placeholder="día" value="' + escapeHtml(ob.nomina.dia) + '" ' + onChange('obNomDia') + '>' : '') + '</div>' +
         (ob.nomina.on && d && d >= 20 ? '<div class="ob2-mes"><div><b>Cobras el ' + d + '.</b> ¿Quieres que tu mes vaya de nómina a nómina?</div><div class="chips">' +
           chip('Del 1 al 31', ob.mesModo !== 'cobro', act('obMesModo', 'natural')) + chip('Del ' + d + ' al ' + (d - 1), ob.mesModo === 'cobro', act('obMesModo', 'cobro')) + '</div></div>' : '')) +
     '<div class="ob2-sec">Lo que pagas fijo</div><div class="chips">' +
-    OB_FIJOS.concat(ob.otrosAbiertos ? OB_FIJOS_MAS : []).concat(elegidos.filter((n) => OB_FIJOS.concat(OB_FIJOS_MAS).indexOf(n) < 0)).map((n) => chip(n, tiene(n) || elegidos.indexOf(n) >= 0, act('obFijo', n), tiene(n))).join('') +
+    factYa.map((n) => chip(n, true, '', true)).join('') +
+    OB_FIJOS.concat(ob.otrosAbiertos ? OB_FIJOS_MAS : []).concat(elegidos.filter((n) => OB_FIJOS.concat(OB_FIJOS_MAS).indexOf(n) < 0)).filter((n) => !tiene(n) && !factYa.some((y) => normName(y).indexOf(normName(n)) >= 0)).map((n) => chip(n, elegidos.indexOf(n) >= 0, act('obFijo', n), false)).join('') +
     (ob.otrosAbiertos ? '' : '<button type="button" class="chip" ' + act('obOtros') + '>' + ic('plus') + ' Otro</button>') + '</div>' +
     (ob.otrosAbiertos ? '<div class="ob2-otro"><input id="obOtroNombre" type="text" maxlength="30" placeholder="Otro (p. ej. Comunidad)"><button type="button" class="btn sm ghost" ' + act('obOtroAnadir') + '>Añadir</button></div>' : '') +
     (ob.fijos.length ? '<div class="ob2-fijos">' + ob.fijos.map(fila).join('') + '</div><div class="ob2-ayuda">El importe y el día son opcionales: puedes ponerlos después.</div>' : '') +
@@ -7220,7 +7234,7 @@ function obInviteHtml(ob) {
   const I = ob.invite, i = I.info || {};
   if (I.cargando) return '<h1 class="ob2-h">Abriendo tu invitación…</h1><p class="ob2-p">Un momento.</p>';
   if (!i.valida) {
-    const txt = i.motivo === 'ya_miembro' ? 'Ya eres miembro de «' + escapeHtml(i.nombre || '') + '».' : i.motivo === 'caducada' ? 'Esta invitación ha caducado. Pide un enlace nuevo a quien te invitó.' : i.motivo === 'usada' ? 'Este enlace ya se ha usado. Cada enlace vale para una persona: pide uno nuevo.' : 'No hemos podido abrir esta invitación.';
+    const txt = i.motivo === 'ya_miembro' ? 'Ya eres miembro de «' + escapeHtml(i.nombre || '') + '».' : i.motivo === 'caducada' ? 'Esta invitación ha caducado. Pide un enlace nuevo a quien te invitó.' : i.motivo === 'usada' ? 'Este enlace ya se ha usado. Cada enlace vale para una persona: pide uno nuevo.' : i.motivo === 'red' ? 'No hemos podido abrir la invitación: parece que no hay conexión. Sigue con la bienvenida y la tendrás esperando en Inicio.' : 'No hemos podido abrir esta invitación.';
     return '<span class="ob2-big-ic">' + ic('users') + '</span><h1 class="ob2-h">Invitación</h1><p class="ob2-p">' + txt + '</p>';
   }
   const dir = i.tipo === 'directo', quien = escapeHtml(i.invita || (dir ? i.nombre : '') || 'Alguien');
@@ -7232,7 +7246,7 @@ function obInviteHtml(ob) {
 }
 function obBoton(ob) {
   const p = obPasos(ob)[ob.step];
-  if (p === 'invite') { const I = ob.invite; if (I.cargando) return ''; return I.info && I.info.valida ? '<button class="btn accent block" ' + act('obUnirse') + '>' + (I.info.tipo === 'directo' ? 'Aceptar' : 'Unirme al grupo') + '</button>' : '<button class="btn accent block" ' + act('obInvAplazar', 'mal') + '>Seguir sin unirme</button>'; }
+  if (p === 'invite') { const I = ob.invite; if (I.cargando) return ''; return I.info && I.info.valida ? '<button class="btn accent block" ' + act('obUnirse') + '>' + (I.info.tipo === 'directo' ? 'Aceptar' : 'Unirme al grupo') + '</button>' : '<button class="btn accent block" ' + act('obInvAplazar', I.info && I.info.motivo === 'red' ? '' : 'mal') + '>Seguir sin unirme</button>'; }
   if (p === 'hola') return '<button class="btn accent block" ' + act('obNext') + '>' + (ob.manual ? 'Siguiente' : 'Empezar') + '</button>';
   if (p === 'listo') return ob.grupoId ? '<button class="btn accent block" ' + act('obFinish', 'grupo') + '>Ver ' + escapeHtml(ob.grupoNombre || 'el grupo') + '</button><button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>'
     : (ob.manual ? '<button class="btn accent block" ' + act('obFinish', '') + '>Volver a la app</button>' : '<button class="btn accent block" ' + act('obFinish', 'gasto') + '>' + ic('plus') + ' Apuntar mi primer gasto</button><button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>');
@@ -8379,13 +8393,15 @@ const H = {
     o[ks[ks.length - 1]] = el.value;
     if (path === 'saldo') el.size = Math.max(1, el.value.length);
   },
-  obNext: ([no]) => {
+  obNext: ([no], el) => {
     const ob = S.onboarding; if (!ob) return; const p = obPasos(ob)[ob.step];
+    if (el) { if (Date.now() - (ob._t || 0) < 450) return; ob._t = Date.now(); } // un doble toque no se salta un paso
+    if (no !== 'no') { const v = obValidar(ob); if (v) { if (v.sel) marcarCampo(v.sel); return toast(v.m); } }
     if (no === 'no') { if (p === 'banco') { ob.saldo = ''; ob.extra = []; } if (p === 'mes') { ob.nomina = { on: false, importe: '', dia: '' }; ob.fijos = []; } }
     else obGuardarPaso(ob);
     if (ob.step < obPasos(ob).length - 1) ob.step++; render();
   },
-  obBack: () => { const ob = S.onboarding; if (ob && ob.step > 0) { ob.step--; render(); } },
+  obBack: () => { const ob = S.onboarding; if (!ob || ob.step <= 0) return; if (ob.grupoId && obPasos(ob)[ob.step - 1] === 'invite') return; ob.step--; render(); }, // la invitación ya aceptada no se repite
   obExtra: () => { const ob = S.onboarding; if (!ob) return; ob.extra.push({ nombre: ob.extra.length || cuentasCfg().length ? 'Otra cuenta' : 'Efectivo', tipo: ob.extra.length || cuentasCfg().length ? 'otra' : 'efectivo', saldo: '' }); render(); },
   obExtraQuitar: ([i]) => { const ob = S.onboarding; if (!ob) return; ob.extra.splice(Number(i), 1); render(); },
   obNomina: () => { const ob = S.onboarding; if (!ob) return; ob.nomina.on = !ob.nomina.on; sentir('tic'); render(); if (ob.nomina.on) setTimeout(() => { const el = $('#obNomImp'); if (el) el.focus(); }, 60); },
@@ -8407,8 +8423,8 @@ const H = {
   },
   obInvAplazar: ([mal]) => { const ob = S.onboarding; if (!ob || !ob.invite) return; ob.invite.aplazada = true; if (mal === 'mal') lsSet('unirse', ''); ob.step = 0; render(); },
   obFinish: ([despues]) => doObFinish(despues || ''),
-  invVer: () => { S._invAplazada = false; S._uniendo = false; maybeUnirse(); },
-  invDescartar: () => { lsSet('unirse', ''); S._invInfo = null; render(); toast('Invitación descartada. Si cambias de idea, vuelve a abrir el enlace.'); },
+  invVer: () => { if (S._uniendo) return; lsSet('invAplazada', ''); S._invAplazada = false; maybeUnirse(); },
+  invDescartar: () => { lsSet('unirse', ''); lsSet('invAplazada', ''); S._invInfo = null; render(); toast('Invitación descartada. Si cambias de idea, vuelve a abrir el enlace.'); },
   invUnidoVisto: () => { saveConfig({ unidoA: Object.assign({}, cfg().unidoA || {}, { visto: true }) }); render(); },
   introJuntosOk: () => { S._introJuntos = null; saveConfig({ introJuntosVisto: true }); if (FORM && FORM.kind === 'grupo') updateSheet(grupoHtml(FORM.id)); },
   // moneda

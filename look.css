@@ -1080,7 +1080,7 @@ html[data-look="nuevo"] .ob2-cta { display: flex; align-items: center; gap: 10px
 html[data-look="nuevo"] .ob2-cta span:nth-child(2) { flex: 1; }
 html[data-look="nuevo"] .ob2-sec { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin: 18px 0 8px; }
 html[data-look="nuevo"] .ob2-nom { display: grid; grid-template-columns: auto 1fr 74px; gap: 8px; align-items: center; }
-html[data-look="nuevo"] .ob2-nom .chip, html[data-look="nuevo"] .ob2-body .chips .chip { min-height: 40px; }
+html[data-look="nuevo"] .ob2-nom .chip, html[data-look="nuevo"] .ob2-body .chips .chip { min-height: 44px; }
 html[data-look="nuevo"] .chip .i { width: 14px; height: 14px; vertical-align: -2px; }
 html[data-look="nuevo"] .chip[disabled] { opacity: .65; }
 html[data-look="nuevo"] .ob2-mes { margin-top: 10px; padding: 12px 14px; border-radius: var(--r-m); background: var(--accent-soft); font-size: 14px; }
@@ -1115,6 +1115,6 @@ html[data-look="nuevo"] .inv-ini-x { flex: 1; min-width: 0; display: flex; flex-
 html[data-look="nuevo"] .inv-ini-x b { font-size: 15px; }
 html[data-look="nuevo"] .inv-ini-x > span { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
 html[data-look="nuevo"] .inv-ini-b { display: flex; gap: 8px; margin-top: 8px; }
-html[data-look="nuevo"] .inv-ini-b .btn { min-height: 38px; }
+html[data-look="nuevo"] .inv-ini-b .btn { min-height: 44px; }
 html[data-look="nuevo"] .jv-intro { padding: 14px 16px; margin-bottom: 12px; background: var(--bill-soft); }
 html[data-look="nuevo"] .jv-intro ol { margin: 6px 0 10px; padding-left: 20px; font-size: 14px; line-height: 1.7; }
