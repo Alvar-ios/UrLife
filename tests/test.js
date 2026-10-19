@@ -53,7 +53,7 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  A().H.startOnboardingManually([]);A().H.obNext([]);
  ok(/Tus cuentas/.test(txt())&&/solo puedes añadir/.test(txt()),'al repetir: «Tus cuentas», solo añadir');
  click(e,'obExtra');ob().extra[0].saldo='50';A().H.obNext([]);await sleep(10);
- ok(/La nómina ya está apuntada/.test(txt())&&!e.doc.querySelector('[data-click^="obNomina"]'),'al repetir: la nómina ya apuntada no se vuelve a pedir');A().H.obFijo(['Alquiler']);A().H.obNext([]);click(e,'obFinish','');await sleep(30);a=e.store.cfg.app;
+ ok(/Ya tienes apuntado: Nómina/.test(txt())&&!e.doc.querySelector('[data-click^="obNomina"]'),'al repetir: la nómina ya apuntada no se vuelve a pedir');A().H.obFijo(['Alquiler']);A().H.obNext([]);click(e,'obFinish','');await sleep(30);a=e.store.cfg.app;
  ok(a.cuentas.length===2&&a.cuentas[0].saldo===1240.5&&a.cuentas[1].saldo===50&&!a.cuentas[1].principal,'añade el efectivo sin tocar el banco');
  ok(a.facturas.filter(f=>f.nombre==='Alquiler').length===1&&a.cobros.filter(f=>f.nombre==='Nómina').length===1,'sin duplicar Alquiler ni Nómina');
  // 2 new user
