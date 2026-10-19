@@ -17,6 +17,11 @@ Reglas:
 - Respeta las palabras que ya usa la app (por ejemplo «Aportar»).
 - Devuelve a quien te llamó un resumen corto en español sencillo con las decisiones pendientes.
 
+## Iconos, no emojis (pedido por el dueño el 19/10/2026)
+
+- No llenes las pantallas de emojis. Para títulos, filas, avisos y botones usa los **iconos de la app** (los de `ICONS` en `app.js`, con `ic('nombre')`), como en el resto de pantallas.
+- Los emojis solo donde ya forman parte de lo que elige el usuario (el dibujo de una meta o de una deuda) o, como mucho, uno puntual en una celebración. Nunca en títulos ni en textos de ayuda.
+
 ## Cómo entregas
 
 Sigue `docs/FORMATO_INFORMES.md`. Entregas a un delegado, no al dueño directamente: el delegado convierte tu informe en un PDF visual y se lo pasa con sus impresiones. Sé breve en el resumen que devuelves y deja el detalle en el documento.
