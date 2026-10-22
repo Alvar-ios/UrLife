@@ -1431,3 +1431,5 @@ html[data-look="nuevo"] .dia-fila.juntos-nov .dia-t b::before { content: ''; dis
 html[data-look="nuevo"] .asivas-cambiar, html[data-look="nuevo"] .ins-cambiar, html[data-look="nuevo"] .av-volver { min-height: 44px; display: inline-flex; align-items: center; gap: 5px; }
 html[data-look="nuevo"] .hk-cel b.largo { font-size: 12px; }
 html[data-look="nuevo"] .hk-cels.cinco .hk-cel b.largo { font-size: 11px; }
+html[data-look="nuevo"] .section-title .asivas-cambiar { min-height: 44px; }
+html[data-look="nuevo"] .ins-aro-v.nada { display: none; }
