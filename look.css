@@ -1462,3 +1462,7 @@ html[data-look="nuevo"] .hk-cels.cinco .hk-cel b.largo { font-size: 11px; }
 html[data-look="nuevo"] .crear-op small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.2; font-weight: 500; color: var(--text-muted); }
 html[data-look="nuevo"] .section-title .asivas-cambiar { min-height: 44px; }
 html[data-look="nuevo"] .ins-aro-v.nada { display: none; }
+/* Calidad Juntos v3: «Invitar» de 44 px y que asome el 5.º círculo a 360 px */
+html[data-look="nuevo"] .jv3-seg .link { min-height: 44px; }
+html[data-look="nuevo"] .jv3-cifras .te i { margin-right: 4px; }
+@media (max-width: 370px) { html[data-look="nuevo"] .jv3-circ.muchos { gap: 6px; } html[data-look="nuevo"] .jv3-circ.muchos .jv-c { width: 62px; } html[data-look="nuevo"] .jv3-circ.muchos .jv-c .ins-l1 { max-width: 62px; } }
