@@ -1371,3 +1371,5 @@ html[data-look="nuevo"] :is(.dm-hemo, .dm-tarro-e, .dm-anillo-e, .dm-cam-emo) { 
 html[data-look="nuevo"] .dm-ic.deu, html[data-look="nuevo"] .dm-hemo.deu { color: var(--debt); }
 html[data-look="nuevo"] .dm-emo-b { color: var(--text-muted); display: grid; place-items: center; }
 html[data-look="nuevo"] .dm-emo-b.on { color: var(--accent); }
+/* «Pago fijo» con su línea pequeña en el botón + (23/10) */
+html[data-look="nuevo"] .crear-op small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.2; font-weight: 500; color: var(--text-muted); }

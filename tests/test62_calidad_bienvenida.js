@@ -11,7 +11,7 @@ const { makeEnv, sleep, click } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const pend = (c, m) => console.log((c ? 'ARREGLADO (cambiar por ok) ' : 'PEND ') + m);
 const TOKEN = 'INVITA1234567890abcdef', SOY = 'SOYSOY1234567890abcdef';
-const HOY = new Date().toISOString().slice(0, 10);
+const HOY = ((d)=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))(new Date()); // fecha local, como la app
 
 // opts: cfg (config de partida), url, lento (config/app como en data-layer.js: lee, espera, escribe), sinRed (ver_invitacion falla)
 function env(uid, opts) {
