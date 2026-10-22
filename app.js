@@ -8797,7 +8797,7 @@ const H = {
     updateSheet(tabsAnSheetHtml()); render();
   },
   setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; S.tab = 'inicio'; render(); },
-  verActivo: ([nombre]) => { S.movQuery = nombre; S.movFiltroTipo = 'Inversión'; S.movPeriodo = 'todo'; S.movLimit = 120; S.tab = 'movimientos'; render(); window.scrollTo(0, 0); },
+  verActivo: ([nombre]) => { closeSheet(); irMovs({ tipo: 'Inversión', periodo: 'todo', cat: nombre }); }, // la lista de tus compras de ese activo (antes caía en el Resumen)
   // calendario
   setCalVista: ([v]) => { S.calVista = v; render(); },
   calHoy: () => { S.calFecha = todayISO(); render(); },
