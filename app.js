@@ -1561,7 +1561,7 @@ function proponerCuenta(cat) { if (!FORM || FORM.id || FORM.cuentaTocada) return
    ============================================================ */
 function tecladoOn() { return !verAnterior('importe'); }
 function tecNum(v) { if (v == null || v === '') return 0; const n = typeof v === 'string' ? numCampo(v) : Number(v); return isFinite(n) ? n : 0; }
-function tecTxtDe(v) { const n = tecNum(v); return n ? String(Math.round(Math.abs(n) * 100) / 100).replace('.', ',') : ''; }
+function tecTxtDe(v) { const n = tecNum(v); return n ? String(Math.abs(n)).replace('.', ',') : ''; } // tal cual: el límite de 2 decimales es solo al teclear
 function tecMiles(txt) { const p = String(txt).split(','), e = (p[0] || '0').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); return p.length > 1 ? e + ',' + p[1] : e; }
 function tecTxtLeido(T) { return !T.txt ? 'Sin importe' : (T.neg ? 'menos ' : '') + T.txt + ' euros' + (T.neg && FORM && FORM.tipo !== 'Ingreso' ? ', devolución' : ''); }
 function tecCifraHtml(T) {
@@ -1569,13 +1569,14 @@ function tecCifraHtml(T) {
   return '<span class="tec-num tnum' + (T.neg && !vacio ? ' neg' : '') + (vacio ? ' vacio' : '') + (T.reemplazar && !vacio ? ' sel' : '') + (largo >= 10 ? ' xl' : largo >= 7 ? ' l' : '') + '">' + (T.neg && !vacio ? '−' : '') + (vacio ? '0' : tecMiles(T.txt)) + '</span>' +
     (T.on ? '<span class="tec-cur" aria-hidden="true"></span>' : '') + '<span class="tec-eur">' + escapeHtml(sym()) + '</span>';
 }
-function tecPieTxt(T) { return !T.txt ? (T.on ? 'Escribe cuánto ha sido' : 'Toca para escribir el importe') : T.neg ? (FORM.tipo === 'Ingreso' ? 'En negativo' : 'Devolución · te devuelven este dinero') : (T.on ? '' : 'Toca la cifra para cambiarla'); }
+function tecNegLbl(t) { return t === 'Ingreso' ? 'En negativo' : t === 'Inversión' ? 'Venta' : t === 'Ahorro' ? 'Sacar dinero' : 'Devolución'; }
+function tecPieTxt(T) { return !T.txt ? (T.on ? 'Escribe cuánto ha sido' : 'Toca para escribir el importe') : T.neg ? (FORM.tipo === 'Gasto' || FORM.tipo === 'Factura' ? 'Devolución · te devuelven este dinero' : tecNegLbl(FORM.tipo)) : (T.on ? '' : 'Toca la cifra para cambiarla'); }
 function tecCampoHtml(T) {
   return '<div class="field tec-campo"><input type="hidden" id="fImporte" value="' + escapeHtml(T.txt ? (T.neg ? '-' : '') + T.txt : '') + '">' +
     '<button type="button" class="tec-cifra" id="tecCifra" aria-label="Importe: ' + escapeHtml(tecTxtLeido(T)) + '. Toca para escribirlo" ' + act('tecAbrir') + '>' + tecCifraHtml(T) + '</button>' +
     '<div class="tec-pie' + (T.neg ? ' neg' : '') + '" id="tecPie">' + escapeHtml(tecPieTxt(T)) + '</div><span class="sr-only" id="tecVoz" role="status" aria-live="polite"></span></div>';
 }
-function tecCatsLista(tipo, cat) { const l = (tipo === 'Ingreso' ? categoriasPorTipo('Ingreso') : catsPorUso()).slice(0, 7); if (cat && l.indexOf(cat) < 0) { l.unshift(cat); l.length = Math.min(l.length, 7); } return l; } // la que ya viene elegida (ticket, Repetir) siempre a la vista
+function tecCatsLista(tipo, cat) { const ci = tipo === 'Ingreso' ? categoriasPorTipo('Ingreso') : null, l = (tipo === 'Ingreso' ? (ci.length ? ci : OB_INGRESOS_SERIE) : catsPorUso()).slice(0, 7); if (cat && l.indexOf(cat) < 0) { l.unshift(cat); l.length = Math.min(l.length, 7); } return l; } // la que ya viene elegida (ticket, Repetir) siempre a la vista
 function tecFechaTxt(iso) { const h = todayISO(); return iso === h ? 'Hoy' : iso === uAdd(h, -1) ? 'Ayer' : fmtDateShort(iso); }
 function tecRapidoHtml(tipo, cat, fecha) {
   const cu = hayVariasCuentas() ? cuentaPorId(FORM.cuenta) || cuentasCfg()[0] : null;
@@ -1593,7 +1594,7 @@ function tecladoHtml(T) {
     k('4', '4') + k('5', '5') + k('6', '6') +
     '<button type="button" class="tec-k tec-ok" ' + act('tecK', 'ok') + '>' + ic('check') + '<span id="tecOkTxt">' + (T.tecla === 'guardar' ? 'Guardar' : 'Hecho') + '</span></button>' +
     k('7', '7') + k('8', '8') + k('9', '9') +
-    '<button type="button" class="tec-k tec-neg' + (T.neg ? ' on' : '') + '" aria-pressed="' + !!T.neg + '" aria-label="' + (FORM.tipo === 'Ingreso' ? 'En negativo' : 'Devolución: cambiar a negativo') + '" ' + act('tecK', 'neg') + '><b>−</b><small>' + (FORM.tipo === 'Ingreso' ? 'En negativo' : 'Devolución') + '</small></button>' +
+    '<button type="button" class="tec-k tec-neg' + (T.neg ? ' on' : '') + '" aria-pressed="' + !!T.neg + '" aria-label="' + tecNegLbl(FORM.tipo) + ': cambiar a negativo" ' + act('tecK', 'neg') + '><b>−</b><small>' + tecNegLbl(FORM.tipo) + '</small></button>' +
     k('0', '0') + k(',', ',', 'tec-coma', 'Coma decimal') + '</div>';
 }
 function tecSync(anunciar) {
@@ -1601,7 +1602,8 @@ function tecSync(anunciar) {
   const el = $('#fImporte'); if (el) el.value = T.txt ? (T.neg ? '-' : '') + T.txt : '';
   const c = $('#tecCifra'); if (c) { c.innerHTML = tecCifraHtml(T); c.setAttribute('aria-label', 'Importe: ' + tecTxtLeido(T) + '. Toca para escribirlo'); }
   const p = $('#tecPie'); if (p) { p.textContent = tecPieTxt(T); p.classList.toggle('neg', !!T.neg); }
-  const n = $('#tec .tec-neg'); if (n) { n.classList.toggle('on', !!T.neg); n.setAttribute('aria-pressed', String(!!T.neg)); }
+  const n = $('#tec .tec-neg'); if (n) { n.classList.toggle('on', !!T.neg); n.setAttribute('aria-pressed', String(!!T.neg)); n.setAttribute('aria-label', tecNegLbl(F.tipo) + ': cambiar a negativo'); const sm = n.querySelector('small'); if (sm) sm.textContent = tecNegLbl(F.tipo); }
+  const an = $('#sheetHost .tec-antes'); if (an) an.hidden = !!(F.articulos || (F.comp && F.comp.on));
   const ok = $('#tec .tec-ok'); if (ok) { const falta = !T.txt || !tecNum(T.txt) || (T.corta && !(($('#fCategoria') || {}).value || '').trim()); ok.classList.toggle('apagada', T.tecla === 'guardar' && falta); ok.setAttribute('aria-disabled', String(T.tecla === 'guardar' && falta)); }
   const t = $('#tecOkTxt'); if (t) t.textContent = T.tecla === 'guardar' ? 'Guardar' : 'Hecho';
   const sh = $('#sheetHost .sheet'); if (sh) sh.classList.toggle('tec-abierto', !!T.on);
@@ -1627,7 +1629,7 @@ function tecPulsar(k) {
   sentir('tic'); tecSync(true);
 }
 function tecOk() {
-  const T = FORM.tec;
+  const T = FORM.tec; if (!tecHojaAbierta() || FORM.guardando) return;
   if (T.tecla !== 'guardar') { tecCerrar(); return; }
   if (!T.txt || !tecNum(T.txt)) { tecNo(); return toast('Pon un importe'); }
   if (T.corta && !(($('#fCategoria') || {}).value || '').trim()) { sentir('aviso'); tecTiembla('#tecCats'); return toast('Elige una categoría'); }
@@ -1646,13 +1648,22 @@ function tecMasDetalles() {
 function tecCuentaPintar() { const b = $('#tecCuenta'), cu = cuentaPorId(FORM && FORM.cuenta); if (b && cu) { b.innerHTML = '<span class="dot" style="background:' + colorCuenta(cu) + '"></span>' + escapeHtml(cu.nombre); b.setAttribute('aria-label', 'Cuenta: ' + cu.nombre + '. Toca para cambiarla'); } }
 function tecVolverAVersion(n) {
   const F = FORM; if (!F || F.kind !== 'mov') return;
-  const id = F.id, imp = ($('#fImporte') || {}).value, cat = ($('#fCategoria') || {}).value, tipo = F.tipo, fecha = ($('#fFecha') || {}).value;
+  if (F.articulos || (F.comp && F.comp.on)) return toast('Con artículos o un reparto no se puede cambiar de versión aquí');
+  const v = (s) => (($(s) || {}).value || ''), id = F.id, imp = v('#fImporte'), tipo = F.tipo;
+  const pre = { tipo, importe: imp, categoria: v('#fCategoria'), subcategoria: v('#fSub'), fecha: v('#fFecha'), descripcion: v('#fDesc'), cuentaId: F.cuenta, metaSel: F.metaSel };
   S.verAnterior = Object.assign({}, S.verAnterior, { importe: Number(n) || 0 }); sentir('tic');
-  if (id) openMovForm(id); else openMovForm(null, { tipo, importe: imp, categoria: cat, fecha });
+  if (!id) return openMovForm(null, pre);
+  openMovForm(id);
+  // al editar: lo que habías cambiado se mantiene
+  if (FORM.tec) { FORM.tec.txt = tecTxtDe(imp); FORM.tec.neg = tecNum(imp) < 0; FORM.tec.reemplazar = false; tecSync(); } else { const el = $('#fImporte'); if (el) el.value = imp; }
+  ['#fCategoria', '#fSub', '#fFecha', '#fDesc'].forEach((s) => { const el = $(s); if (el && pre[{ '#fCategoria': 'categoria', '#fSub': 'subcategoria', '#fFecha': 'fecha', '#fDesc': 'descripcion' }[s]] != null) el.value = pre[{ '#fCategoria': 'categoria', '#fSub': 'subcategoria', '#fFecha': 'fecha', '#fDesc': 'descripcion' }[s]]; });
+  if (pre.cuentaId) FORM.cuenta = pre.cuentaId; if (pre.metaSel) FORM.metaSel = pre.metaSel;
 }
 // teclado físico (ordenador) y pegar, solo con el teclado de la app abierto y sin un campo de texto con el foco
+function tecHojaAbierta() { const bd = $('#sheetBackdrop'); return !!(bd && !bd.dataset.cerrando && FORM && FORM.kind === 'mov' && $('#tec')); }
 function tecTeclaFisica(e) {
-  const T = FORM && FORM.kind === 'mov' && FORM.tec; if (!T || !T.on) return false;
+  const T = FORM && FORM.kind === 'mov' && FORM.tec; if (!T || !T.on || !tecHojaAbierta()) return false;
+  if (e.key === 'Enter' && e.repeat) { e.preventDefault(); return true; }
   const t = e.target; if (t && t.closest && t.closest('input:not([type=hidden]), textarea, select, [contenteditable="true"]')) return false;
   if (e.ctrlKey || e.metaKey || e.altKey) return false;
   const m = /^\d$/.test(e.key) ? e.key : (e.key === ',' || e.key === '.' || e.key === 'Decimal') ? ',' : (e.key === '-' || e.key === '−' || e.key === 'Subtract') ? 'neg' : e.key === 'Backspace' ? 'del' : e.key === 'Enter' ? 'ok' : null;
@@ -1660,14 +1671,14 @@ function tecTeclaFisica(e) {
   e.preventDefault(); tecPulsar(m); return true;
 }
 function tecPegar(e) {
-  const T = FORM && FORM.kind === 'mov' && FORM.tec; if (!T || !T.on) return;
+  const T = FORM && FORM.kind === 'mov' && FORM.tec; if (!T || !T.on || !tecHojaAbierta()) return;
   const t = e.target; if (t && t.closest && t.closest('input:not([type=hidden]), textarea, select, [contenteditable="true"]')) return;
   const s = ((e.clipboardData && e.clipboardData.getData('text')) || '').trim(); if (!s) return;
   e.preventDefault();
   if (!/^[\s€$£−\-+]*[\d.,\s]+[\s€$£]*$/.test(s)) return toast('Eso no parece un importe');
   const n = numCampo(s.replace('−', '-'));
   if (!n || Math.abs(n) >= 1e7) return toast('Eso no parece un importe');
-  T.txt = tecTxtDe(n); T.neg = n < 0; T.reemplazar = false; sentir('tic'); tecSync(true);
+  T.txt = tecTxtDe(Math.round(n * 100) / 100); T.neg = n < 0; T.reemplazar = false; sentir('tic'); tecSync(true);
 }
 const TIT_NUEVO = { Gasto: 'Nuevo gasto', Ingreso: 'Nuevo ingreso', Factura: 'Nuevo gasto fijo', Ahorro: 'Apartar dinero', 'Inversión': 'Nueva inversión', Deuda: 'Pago de deuda' };
 function tituloNuevoMov(t) { return TIT_NUEVO[t] || 'Nuevo movimiento'; }
@@ -3272,6 +3283,8 @@ function tkContinuar() {
   if (comp) FORM.comp = comp;
   const af = $('#artField'); if (af) af.innerHTML = artFieldHtml();
   refrescarComp();
+  if (FORM.tec && FORM.tec.corta) tecMasDetalles(); // con un ticket se ven sus artículos y el reparto
+  tecSync();
 }
 // En el formulario: los artículos del ticket (solo lectura)
 function artFieldHtml(ex) {
@@ -7809,6 +7822,7 @@ function openSheet(html) {
 function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; limitarBadges(s); fijarAcciones(s); vincularEtiquetas(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
 function closeSheet() {
   document.body.classList.remove('crear-abierto');
+  if (FORM && FORM.tec) FORM.tec.on = false; // el teclado de la app deja de escuchar
   const b = $('#sheetBackdrop'); if (!b) return;
   b.dataset.cerrando = '1';
   b.classList.remove('open');
@@ -8020,6 +8034,7 @@ const H = {
   pickTipo: ([t], el) => {
     if (t === 'Gasto' && FORM.tipo === 'Factura') return; // ya es un gasto (fijo)
     FORM.tipo = t;
+    if (FORM.tec) setTimeout(() => tecSync(), 0);
     const tit = $('#movFormTit'); if (tit && !FORM.id && !FORM.compId && /^Nuev|^Apartar|^Pago de deuda/.test(tit.textContent)) tit.textContent = tituloNuevoMov(t);
     $$('#tipoToggle button').forEach((b) => b.classList.toggle('active', b.getAttribute('data-t') === t));
     const fb = $('#fijoBox'); if (fb) { fb.innerHTML = fijoHtml(); animarSegmentados(fb); }
@@ -8066,7 +8081,7 @@ const H = {
   tecAbrir: () => { if (!FORM || !FORM.tec) return; if (!FORM.tec.on) { tecAbrirTeclado(); sentir('tic'); } },
   tecMas: () => tecMasDetalles(),
   tecVersion: ([n]) => tecVolverAVersion(n),
-  tecCat: ([c]) => { H.pickCat([c]); tecCuentaPintar(); $$('#tecCats .tec-cat').forEach((b) => { const on = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); tecSync(); },
+  tecCat: ([c]) => { const ant = ($('#fCategoria') || {}).value; if (ant !== c) { const sb = $('#fSub'); if (sb) sb.value = ''; } H.pickCat([c]); tecCuentaPintar(); $$('#tecCats .tec-cat').forEach((b) => { const on = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); tecSync(); },
   tecFecha: (_a, el) => { const v = el.value || todayISO(), f = $('#fFecha'); if (f) { f.value = v; if (H.onFechaChange) H.onFechaChange([], f); } const t = $('#tecFechaTxt'); if (t) t.textContent = tecFechaTxt(v); },
   tecCuenta: () => {
     const cs = cuentasCfg(); if (cs.length < 2) return;
@@ -8978,7 +8993,7 @@ document.addEventListener('paste', (e) => tecPegar(e));
 document.addEventListener('focusin', (e) => { const T = FORM && FORM.kind === 'mov' && FORM.tec; if (T && T.on && e.target && e.target.matches && e.target.matches('#sheetHost input:not([type=hidden]):not([type=date]), #sheetHost textarea, #sheetHost select')) tecCerrar(); });
 // mantener pulsado «Borrar» medio segundo borra todo
 (function () { let t = null; const fin = () => { clearTimeout(t); t = null; };
-  document.addEventListener('pointerdown', (e) => { const b = e.target.closest && e.target.closest('#tec .tec-del'); if (!b) return; fin(); t = setTimeout(() => { H.tecK._largo = true; tecPulsar('clear'); }, 500); });
+  document.addEventListener('pointerdown', (e) => { H.tecK._largo = false; const b = e.target.closest && e.target.closest('#tec .tec-del'); if (!b) return; fin(); t = setTimeout(() => { H.tecK._largo = true; tecPulsar('clear'); }, 500); });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => document.addEventListener(ev, fin)); })();
 document.addEventListener('change', (e) => dispatch('change', e));
 document.addEventListener('keydown', (e) => { if (tecTeclaFisica(e)) return; if (e.key === 'Enter' && e.target && e.target.id === 'agRapida') { e.preventDefault(); agRapidaCrear(); return; } if (e.key === 'Escape') { if ($('#popupBackdrop')) cerrarPopup(); else closeSheet(); } });

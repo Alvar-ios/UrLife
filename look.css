@@ -1357,7 +1357,7 @@ html[data-look="nuevo"] .tec-ok:active { background: var(--accent); }
 /* con el teclado abierto, los botones de abajo de siempre no hacen falta */
 html[data-look="nuevo"] .sheet.tec-abierto .actions.fija { display: none; }
 @media (prefers-reduced-motion: reduce) { html[data-look="nuevo"] .tec-k, html[data-look="nuevo"] .tec-cur { animation: none; transition: none; } }
-@media (max-height: 600px) { html[data-look="nuevo"] .tec-cats .tec-cat:nth-child(n+4):not(.mas) { display: none; } }
+@media (max-height: 600px) { html[data-look="nuevo"] .tec-cats .tec-cat:nth-child(n+4):not(.mas):not(.on) { display: none; } }
 html[data-look="nuevo"] .tec-cab { flex-wrap: wrap; row-gap: 6px; }
 html[data-look="nuevo"] .tec-cab h2 { flex: 0 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html[data-look="nuevo"] .tec-antes { margin-left: auto; }
