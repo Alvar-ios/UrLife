@@ -1458,3 +1458,5 @@ html[data-look="nuevo"] .jv-punto { display: inline-block; width: 7px; height: 7
 html[data-look="nuevo"] .asivas-cambiar, html[data-look="nuevo"] .ins-cambiar, html[data-look="nuevo"] .av-volver { min-height: 44px; display: inline-flex; align-items: center; gap: 5px; }
 html[data-look="nuevo"] .hk-cel b.largo { font-size: 12px; }
 html[data-look="nuevo"] .hk-cels.cinco .hk-cel b.largo { font-size: 11px; }
+/* «Pago fijo» con su línea pequeña en el botón + (23/10) */
+html[data-look="nuevo"] .crear-op small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.2; font-weight: 500; color: var(--text-muted); }
