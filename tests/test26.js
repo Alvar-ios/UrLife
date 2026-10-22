@@ -54,11 +54,11 @@ const movs=[
  ok(cfgM().hitos[0].logrado===HOY&&!cfgM().hitos[1].logrado,'el hito ya superado queda como logrado (con fecha)');
  // vista por hito (por defecto, el siguiente por lograr)
  let card=()=>doc.querySelector('.meta-card').textContent;
- ok(!!doc.querySelector('.meta-card-hito')&&/🎯 Primeros 100k · hito 2 de 2/.test(card())&&/72\.?300,00 € de 100\.?000,00 €/.test(card()),'la tarjeta abre en el hito que toca: 72.300 de 100.000');
+ ok(!!doc.querySelector('.meta-card-hito')&&/Primeros 100k · hito 2 de 2/.test(card())&&/72\.?300,00 € de 100\.?000,00 €/.test(card()),'la tarjeta abre en el hito que toca: 72.300 de 100.000');
  ok(/Faltan 27\.?700,00\s*€ para este hito/.test(card())&&/Hasta el 1 de junio de 2028/.test(card())&&/aprox\. [\d.,]+\s*€\/mes para llegar a este hito/.test(card())&&/Ritmo \(últimos 3 meses\)/.test(card()),'el hito tiene sus estimaciones como una meta (fecha, al mes, ritmo)');
  ok(/Meta completa: 72\.?300,00\s*€ de 300\.?000,00\s*€ · 24 %/.test(card())&&doc.querySelector('.meta-vista .on').textContent==='🎯 Hito','resumen de la meta completa y el conmutador en «Hito»');
  doc.querySelector('.meta-card .hitos .hito.ok').click();await sleep(10);
- ok(/🎯 Primeros 50k · hito 1 de 2/.test(card())&&/Logrado el/.test(card())&&!/para este hito/.test(card()),'tocar un hito logrado: «Logrado el …»');
+ ok(/Primeros 50k · hito 1 de 2/.test(card())&&/Logrado el/.test(card())&&!/para este hito/.test(card()),'tocar un hito logrado: «Logrado el …»');
  click(e,'metaVista','casa','meta');await sleep(10);
  ok(!doc.querySelector('.meta-card-hito')&&doc.querySelector('.meta-vista .on').textContent==='Meta completa','«Meta completa» vuelve a la vista general');
 

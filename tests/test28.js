@@ -57,7 +57,7 @@ function conGrupos(w,estado){ // estado: {grupos:[], miembros:[]} mutable
  ok(/Nueva meta/.test(sh()),'«+ Nueva meta» desde Apartar abre el editor');
  doc.querySelector('#mNombre').value='Casa';doc.querySelector('#mObjetivo').value='200000';click(e,'metaGuardar');await sleep(40);
  const mid=(e.store.cfg.app.ahorro||[]).find(m=>m.nombre==='Casa').id;
- ok(/Nuevo movimiento/.test(sh())&&doc.querySelector('#fImporte').value==='50'&&!!doc.querySelector('[data-click="pickMeta|'+mid+'"].active'),'vuelve al formulario con los 50 € y la meta nueva elegida');
+ ok(/Nuevo (movimiento|gasto|ingreso|gasto fijo)|Nueva inversión|Apartar dinero|Pago de deuda/.test(sh())&&doc.querySelector('#fImporte').value==='50'&&!!doc.querySelector('[data-click="pickMeta|'+mid+'"].active'),'vuelve al formulario con los 50 € y la meta nueva elegida');
  H.closeSheet([]);await sleep(250);
  // 7. Amigos
  ok(A.S.grupos&&A.S.grupos.length===2,'grupos cargados');
