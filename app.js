@@ -3818,7 +3818,7 @@ const VERSIONES = {
   inicio: { txt: 'Inicio', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
   juntos: { txt: 'Juntos', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: la lista de personas de antes de los círculos
-  dinero: { txt: 'Dinero', desde: '2026-10-18', variantes: [['camino', 'Camino'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes']] },
+  dinero: { txt: 'Dinero', desde: '2026-10-23', variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes']] }, // «Formas» sustituye a «Camino» (23/10)
   tu: { txt: 'Tú', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   agenda: { txt: 'Agenda', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
@@ -4570,12 +4570,13 @@ function dmMetasHtml(ms) {
   const v = metasVariante(), todas = S._dmMetasTodas, lista = todas ? ms.activas : ms.activas.slice(0, 4);
   let h = '<div class="section-title" id="dm-metas">Metas' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('users') + ' Compartida</button>' : '') + '<button class="link" ' + act('metaNueva') + '>' + ic('plus') + ' Nueva</button></div>';
   if (!ms.activas.length && !ms.hechas.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('metaNueva') + '><span class="dm-ic">' + ic('flag') + '</span><span class="dm-emp-x"><b>Crea tu primera meta</b><span>Un viaje, la casa, un colchón… y ve cómo se llena</span></span>' + ic('chevR') + '</button>';
-  if (lista.length) h += v === 'tarros' ? '<div class="card dm-tarros' + (lista.length === 1 ? ' uno' : '') + '">' + lista.map(tarroHtml).join('') + '</div>'
+  if (lista.length && v === 'formas') h += '<div class="dm-formas">' + lista.map(metaFormaHtml).join('') + '</div>';
+  else if (lista.length) h += v === 'tarros' ? '<div class="card dm-tarros' + (lista.length === 1 ? ' uno' : '') + '">' + lista.map(tarroHtml).join('') + '</div>'
     : '<div class="card dm-metas dm-v-' + v + '">' + lista.map(v === 'anillos' ? metaAnilloHtml : metaCaminoHtml).join('') + '</div>';
   if (ms.activas.length > 4) h += '<button type="button" class="link dm-mas" ' + act('dmMetasTodas') + '>' + (todas ? 'Ver menos' : 'Ver las ' + ms.activas.length + ' metas') + '</button>';
   if (v === 'camino' && ms.activas.length === 1) h += '<button type="button" class="dm-invita tappable" ' + act('metaNueva') + '>¿Ahorras para algo más? Una meta para cada cosa.</button>';
   if (ms.hechas.length) h += '<button type="button" class="dm-pliega" ' + act('dmHechas') + '>✓ Conseguidas (' + ms.hechas.length + ')' + ic(S._dmHechas ? 'chevD' : 'chevR') + '</button>' +
-    (S._dmHechas ? '<div class="card dm-metas dm-v-anillos">' + ms.hechas.map(metaAnilloHtml).join('') + '</div>' : '');
+    (S._dmHechas ? (v === 'formas' ? '<div class="dm-formas">' + ms.hechas.map(metaFormaHtml).join('') + '</div>' : '<div class="card dm-metas dm-v-anillos">' + ms.hechas.map(metaAnilloHtml).join('') + '</div>') : '');
   return h;
 }
 function dmAportarBtn(r) { return r.conseguida ? '' : '<button type="button" class="dm-aportar" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>'; }
@@ -4611,6 +4612,71 @@ function tarroHtml(r) {
     '<span class="dm-tarro-e">' + metaIcono(r) + '</span><span class="dm-tarro-p tnum">' + Math.round(pct) + ' %</span></button>' +
     '<b class="dm-tarro-n">' + escapeHtml(r.nombre) + '</b><span class="tnum dm-tarro-c">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' + dmAportarBtn(r) + '</div>';
 }
+
+/* ---- Formas de las metas (23/10/2026, docs/15 2.3, v2): trazo fino como los iconos, relleno suave del color de la app y el nombre escrito dentro ---- */
+const FORMAS = {
+  tarro: { n: 'Tarro', fill: 'M26 28H74Q84 28 84 38V84Q84 94 74 94H26Q16 94 16 84V38Q16 28 26 28Z', top: 28, bot: 94, ly: 58,
+    c: '<rect x="22" y="12" width="56" height="12" rx="4"/><path d="M26 28H74Q84 28 84 38V84Q84 94 74 94H26Q16 94 16 84V38Q16 28 26 28Z"/>', d: '<path d="M24 40v18"/>' },
+  hucha: { n: 'Hucha', fill: 'M14 60a36 28 0 1 0 72 0a36 28 0 1 0 -72 0Z', top: 32, bot: 88, ly: 64,
+    c: '<ellipse cx="50" cy="60" rx="36" ry="28"/><path d="M84 52h6q3 0 3 3v8q0 3-3 3h-6"/><path d="M34 37l6-14 10 11"/><path d="M30 86v8h8v-6M62 88v6h8v-8"/><path d="M14 58q-8-1-7-9"/><circle cx="72" cy="52" r="1.6" fill="currentColor"/>', d: '<path d="M42 38h16"/>' },
+  casa: { n: 'Casa', fill: 'M50 10L90 44V92H10V44Z', top: 10, bot: 92, ly: 54, c: '<path d="M50 10L90 44V92H10V44Z"/><path d="M70 27V14h10v22"/>', d: '<path d="M42 92V74q0-4 4-4h8q4 0 4 4v18"/>' },
+  maleta: { n: 'Maleta', fill: 'M20 30H80Q90 30 90 40V82Q90 92 80 92H20Q10 92 10 82V40Q10 30 20 30Z', top: 30, bot: 92, ly: 61,
+    c: '<path d="M20 30H80Q90 30 90 40V82Q90 92 80 92H20Q10 92 10 82V40Q10 30 20 30Z"/><path d="M37 30V20q0-6 6-6h14q6 0 6 6v10"/>', d: '<path d="M27 30v62M73 30v62"/>' },
+  avion: { n: 'Avión', fill: 'M50 6Q80 6 80 34V66Q80 94 50 94Q20 94 20 66V34Q20 6 50 6Z', top: 6, bot: 94, ly: 54,
+    c: '<path d="M50 6Q80 6 80 34V66Q80 94 50 94Q20 94 20 66V34Q20 6 50 6Z"/>', d: '<path d="M50 14Q72 14 72 36V64Q72 86 50 86Q28 86 28 64V36Q28 14 50 14Z"/>' },
+  coche: { n: 'Coche', fill: 'M6 74V58Q6 51 13 50L26 47L36 30Q38 27 43 27H64Q69 27 71 31L80 47L88 49Q94 51 94 58V74Z', top: 27, bot: 74, ly: 60,
+    c: '<path d="M6 74V58Q6 51 13 50L26 47L36 30Q38 27 43 27H64Q69 27 71 31L80 47L88 49Q94 51 94 58V74H6Z"/><circle cx="28" cy="76" r="9" fill="var(--paper-raised)"/><circle cx="72" cy="76" r="9" fill="var(--paper-raised)"/>', d: '<path d="M30 47h47"/>' },
+  anillo: { n: 'Anillo', fill: 'M28 16H72L92 40L50 92L8 40Z', top: 16, bot: 92, ly: 54, c: '<path d="M28 16H72L92 40L50 92L8 40Z"/>', d: '<path d="M8 40H92M28 16L38 40L50 16L62 40L72 16M38 40L50 92L62 40"/>' },
+  regalo: { n: 'Regalo', fill: 'M8 32H92V46H86V90H14V46H8Z', top: 32, bot: 90, ly: 66,
+    c: '<rect x="8" y="32" width="84" height="14" rx="3"/><rect x="14" y="46" width="72" height="44" rx="3"/><path d="M50 32C42 16 26 16 30 26 32 31 42 32 50 32ZM50 32C58 16 74 16 70 26 68 31 58 32 50 32Z"/>', d: '<path d="M50 32v58"/>' },
+  estudios: { n: 'Libro', fill: 'M22 8H80Q86 8 86 14V86Q86 92 80 92H22Q14 92 14 84V16Q14 8 22 8Z', top: 8, bot: 92, ly: 54,
+    c: '<path d="M22 8H80Q86 8 86 14V86Q86 92 80 92H22Q14 92 14 84V16Q14 8 22 8Z"/>', d: '<path d="M26 8v84"/>' },
+  mascota: { n: 'Huella', fill: 'M24 70a26 22 0 1 0 52 0a26 22 0 1 0 -52 0ZM10 40a9 11 0 1 0 18 0a9 11 0 1 0 -18 0ZM29 20a9 11 0 1 0 18 0a9 11 0 1 0 -18 0ZM53 20a9 11 0 1 0 18 0a9 11 0 1 0 -18 0ZM72 40a9 11 0 1 0 18 0a9 11 0 1 0 -18 0Z', top: 9, bot: 92, ly: 71,
+    c: '<ellipse cx="50" cy="70" rx="26" ry="22"/><ellipse cx="19" cy="40" rx="9" ry="11"/><ellipse cx="38" cy="20" rx="9" ry="11"/><ellipse cx="62" cy="20" rx="9" ry="11"/><ellipse cx="81" cy="40" rx="9" ry="11"/>', d: '' },
+  colchon: { n: 'Escudo', fill: 'M50 7L88 21V47C88 71 72 87 50 94C28 87 12 71 12 47V21Z', top: 7, bot: 94, ly: 50, c: '<path d="M50 7L88 21V47C88 71 72 87 50 94C28 87 12 71 12 47V21Z"/>', d: '<path d="M50 16v70"/>' },
+  tecno: { n: 'Portátil', fill: 'M16 14H84Q90 14 90 20V66H10V20Q10 14 16 14Z', top: 14, bot: 66, ly: 40, c: '<path d="M16 14H84Q90 14 90 20V66H10V20Q10 14 16 14Z"/><path d="M3 76H97L91 86H9Z"/>', d: '' },
+};
+const FORMAS_ORDEN = ['tarro', 'maleta', 'avion', 'casa', 'coche', 'anillo', 'regalo', 'estudios', 'mascota', 'colchon', 'tecno', 'hucha'];
+const FORMA_PISTAS = [[/vuelo|avion/, 'avion'], [/viaj|vacacion|escapad|playa|japon|interrail/, 'maleta'], [/casa|piso|hipotec|entrada|vivienda|alquiler|reforma/, 'casa'],
+  [/coche|moto|carnet/, 'coche'], [/boda|anillo|pedida/, 'anillo'], [/regalo|navidad|cumple|reyes/, 'regalo'], [/estudi|master|curso|universi|beca|oposicion/, 'estudios'],
+  [/mascota|perro|gato|veterinari/, 'mascota'], [/colch|emergen|imprevist|fondo de/, 'colchon'], [/ordenador|movil|portatil|tele|consola|iphone|tablet/, 'tecno'], [/hucha|ahorro/, 'hucha']];
+function formaSugerida(nombre) { const n = normName(nombre || ''); const x = FORMA_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : 'tarro'; }
+// la forma de una meta: la elegida (personal en la config; compartida en la columna «forma» cuando exista) o la que sale del nombre
+function metaForma(r) {
+  let k = null;
+  if (r && r.compartida) k = r.o && r.o.forma; else { const m = r && metasCfg().find((x) => x.id === r.id); k = m && m.forma; }
+  return FORMAS[k] ? k : formaSugerida(r && r.nombre);
+}
+let _formaN = 0;
+// Dibuja la forma llena hasta pct. texto: nombre (o %) dentro; tam en px. o: { grande, check, sinOla }
+function formaHtml(k, pct, texto, tam, o) {
+  o = o || {}; const F = FORMAS[k] || FORMAS.tarro, id = 'fm' + (_formaN++), p = Math.max(0, Math.min(100, Number(pct) || 0));
+  const y = F.bot - (F.bot - F.top) * p / 100, hecha = p >= 100, ns = 'vector-effect="non-scaling-stroke"';
+  const ola = 'M-40 ' + y.toFixed(1) + ' q12.5 -3 25 0 t25 0 t25 0 t25 0 t25 0 t25 0';
+  const svg = '<svg class="fm-svg" width="' + tam + '" height="' + tam + '" viewBox="-2 -2 104 104" aria-hidden="true"><defs><clipPath id="' + id + '"><path d="' + F.fill + '"/></clipPath></defs>' +
+    '<g clip-path="url(#' + id + ')">' + (p > 0 ? '<g class="fm-liq"><path class="fm-agua" d="' + ola + ' V104 H-40 Z"/>' + (!hecha ? '<path class="fm-sup" d="' + ola + '" ' + ns + '/>' : '') + '</g>' : '') + '</g>' +
+    (F.d ? '<g class="fm-det" ' + ns + '>' + F.d.replace(/<path /g, '<path ' + ns + ' ') + '</g>' : '') +
+    '<g class="fm-con' + (hecha ? ' hecha' : '') + '">' + F.c.replace(/<(path|rect|ellipse|circle) /g, '<$1 ' + ns + ' ') + '</g></svg>';
+  let ly = F.ly; if (p > 0 && p < 100 && Math.abs(y - ly) < 11) ly = y > ly ? Math.max(F.top + 9, y - 13) : Math.min(F.bot - 9, y + 13);
+  const txt = texto ? '<span class="fm-t' + (o.grande ? ' g' : '') + '" style="top:' + ((ly + 2) / 104 * tam).toFixed(0) + 'px">' + texto + '</span>' : '';
+  return '<span class="fm" style="width:' + tam + 'px;height:' + tam + 'px">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
+}
+// «Su forma»: las 12 en pequeño; la sugerida por el nombre lleva una marca. Elegida = null → la del nombre
+function formaElegirHtml(elegida, nombre) {
+  const sug = formaSugerida(nombre), act0 = elegida || sug;
+  return '<div class="field"><label>Su forma</label><div class="fm-grid" role="radiogroup" aria-label="Su forma">' + FORMAS_ORDEN.map((k) =>
+    '<button type="button" role="radio" aria-checked="' + (k === act0) + '" aria-label="' + FORMAS[k].n + (k === sug ? ' (sugerida)' : '') + '" data-k="' + k + '" class="fm-op' + (k === act0 ? ' on' : '') + (k === sug ? ' sug' : '') + '" ' + act('metaFormaElegir', k) + '>' +
+    formaHtml(k, k === act0 ? 55 : 0, '', 38, { check: false }) + '<i>' + FORMAS[k].n + '</i></button>').join('') + '</div>' +
+    '<div class="rec-hint fm-hint">' + (elegida ? 'Elegida a mano. <button type="button" class="link" ' + act('metaFormaElegir', '') + '>Que la elija el nombre</button>' : 'Elegida por el nombre: ' + FORMAS[sug].n + '. Toca otra si quieres.') + '</div></div>';
+}
+function metaFormaHtml(r) {
+  const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
+  return '<div class="dm-fm" data-meta="' + escapeHtml(r.key) + '"><button type="button" class="dm-fm-main tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento. ' + e.t) + '" ' + act('metaVer', r.key) + '>' +
+    formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 104, { users: r.compartida }) +
+    '<span class="dm-fm-p tnum">' + (r.pct == null ? '—' : Math.round(pct) + ' %') + '</span><span class="dm-fm-c tnum">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span>' +
+    '<span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span></button>' +
+    (r.conseguida ? '' : '<button type="button" class="dm-fm-mas" aria-label="Aportar a ' + escapeHtml(r.nombre) + '" ' + act('metaAportarR', r.key) + '>' + ic('plus') + '</button>') + '</div>';
+}
 function metaPorKey(k) { return metasStats().concat(objCompartidos('ahorro')).find((r) => r.key === k) || null; }
 // hoja de una meta: lo esencial arriba, un solo consejo y «Aportar»; lo demás en «Más»
 function metaVerHtml(k) {
@@ -4628,7 +4694,7 @@ function metaVerHtml(k) {
   const mas = FORM && FORM.mas;
   return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + metaIcono(r) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
     '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
-    '<div class="dm-hring">' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132) +
+    '<div class="dm-hring">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132, { grande: true }) : anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132)) +
     '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
     (consejo ? '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(consejo) + '</div>' : '') +
     (r.conseguida ? '' : '<button class="btn accent block" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>') +
@@ -5420,7 +5486,7 @@ function metaEditorHtml() {
   const F = FORM, v = (x) => (x == null ? '' : escapeHtml(x));
   return '<div class="handle"></div><h2>' + (F.id ? 'Editar meta' : 'Nueva meta') + '</h2>' +
     '<div class="rec-hint" style="margin:-8px 0 12px;">Una meta junta lo que apartas y lo que inviertes para ella. Al apuntar un movimiento eliges «¿Para qué meta?».</div>' +
-    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '"></div>' +
+    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '" ' + onInput('metaNombreIn') + '></div>' + (metasVariante() === 'formas' ? formaElegirHtml(F.forma, F.nombre) : '') +
     '<div class="field"><label>Objetivo (' + sym() + ')</label><input id="mObjetivo" type="number" step="0.01" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="mFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
     '<div class="field"><label>Lo que ya tenías antes (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"></div>' +
@@ -5431,7 +5497,7 @@ function metaEditorHtml() {
 }
 function metaAbrirEditor(id) {
   const m = id ? metasCfg().find((x) => x.id === id) : null;
-  FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null };
+  FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null, forma: m && FORMAS[m.forma] ? m.forma : null };
   if ($('#sheetBackdrop')) updateSheet(metaEditorHtml()); else openSheet(metaEditorHtml());
 }
 function metaLeerForm() {
@@ -5447,8 +5513,9 @@ async function metaGuardar() {
   const numOrNull = (x) => { const n = parseFloat(x); return x === '' || x == null || !isFinite(n) ? null : n; };
   const idx = F.id ? arr.findIndex((m) => m && m.id === F.id) : -1;
   const prev = idx >= 0 ? arr[idx] : {};
-  const item = Object.assign({}, prev, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
+  const item = Object.assign({}, prev, F.forma ? { forma: F.forma } : {}, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
   delete item.tipo; // todas las metas son híbridas
+  if (!F.forma) delete item.forma; // sin elegir: la que sale del nombre
   // renombrar: los movimientos de Ahorro que se enlazaban por el nombre antiguo pasan a enlazarse por el identificador
   if (F.id && F.nombreOrig && normName(F.nombreOrig) !== normName(F.nombre)) {
     const ligados = S.movimientos.filter((x) => x.tipo === 'Ahorro' && !x.metaId && normName(x.categoria) === normName(F.nombreOrig));
@@ -8801,6 +8868,8 @@ const H = {
   usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   metaGuardar: () => metaGuardar(),
+  metaFormaElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.forma = FORMAS[k] ? k : null; sentir('tic'); updateSheet(metaEditorHtml()); },
+  metaNombreIn: () => { if (!FORM || FORM.kind !== 'meta' || FORM.forma) return; const el = $('#mNombre'), sug = formaSugerida(el ? el.value : ''); const g = $('.fm-grid'); if (!g || ((g.querySelector('.fm-op.sug') || {}).dataset || {}).k === sug) return; metaLeerForm(); updateSheet(metaEditorHtml()); const n = $('#mNombre'); if (n) { n.focus(); try { n.setSelectionRange(n.value.length, n.value.length); } catch (e) { /* */ } } },
   metaEliminar: (_, el) => confirmDelete(el, metaEliminar),
   metaAsignar: ([k]) => { FORM = { kind: 'asignar', metaKey: k, sel: new Set(movsPersonales().filter((x) => (x.tipo === 'Inversión' || x.tipo === 'Ahorro') && metasDeMov(x).indexOf(k) >= 0).map((x) => x.id)) }; openSheet(asignarHtml()); },
   asigMov: ([id], el) => { if (el.checked) FORM.sel.add(id); else FORM.sel.delete(id); updateSheet(asignarHtml()); },

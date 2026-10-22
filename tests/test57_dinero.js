@@ -23,7 +23,7 @@ const movs = [{ id: 'a1', tipo: 'Ahorro', categoria: 'Viaje a Japón', metaId: '
   ok(/apartados para tus metas/.test(txt()), 'se dice cuánto de tus cuentas está apartado para metas');
   ok(['Cuentas', 'Metas', 'Inversiones', 'Deudas'].every((t) => !!doc.querySelector('#dm-' + t.toLowerCase())), 'bloques Cuentas, Metas, Inversiones y Deudas');
   // metas: Camino por defecto, con emoji y raya de puntos
-  ok(doc.querySelectorAll('.dm-cam').length === 2 && doc.querySelectorAll('.dm-cam-emo svg.i').length === 2 && !/🛟|✈️/.test(txt()), 'metas en Camino por defecto, con su dibujo (iconos de la app, no emojis)');
+  ok(doc.querySelectorAll('.dm-fm .fm svg').length === 2 && !/🛟|✈️/.test(txt()), 'metas con forma por defecto (desde el 23/10; antes «Camino»), sin emojis');
   ok(/Para abril de \d{4}: \d+ €\/mes|Para abril: \d+ €\/mes|Vas bien para abril/.test(txt()), 'Viaje con fecha: «Para abril…: X €/mes» (sin jerga)');
   ok(!/Cuota necesaria|Ritmo \(últimos/.test(txt()), 'fuera «Cuota necesaria» y «Ritmo (últimos 3 meses)»');
   S.verAnterior = { dinero: 1 }; A.render(); await sleep(10); ok(doc.querySelectorAll('.dm-tarro').length === 2, '«Tarros»: un tarro por meta');
