@@ -53,11 +53,11 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     ok(!idsRepetidos(doc).length && !!doc.querySelector('.ins-card, .hero:not(.hero2v2)'), 'Inicio anterior: sin ids repetidos');
     H.compararCambiar(['inicio']); await sleep(10);
     H.setInicioVista(['tareas']); await sleep(10);
-    ok(boton(doc) === '', 'Agenda (Semana y tareas): no sale');
+    ok(boton(doc) !== '', 'Agenda (Semana y tareas): sale (desde el 22/10 tiene versión anterior)');
     H.setInicioVista(['calendario']); await sleep(10);
-    ok(boton(doc) === '', 'Agenda (Calendario): no sale');
+    ok(boton(doc) !== '', 'Agenda (Calendario): sale (desde el 22/10 tiene versión anterior)');
     H.setInicioVista(['hoy']); await sleep(10);
-    for (const t of ['juntos', 'tu']) { H.goTab([t]); await sleep(10); ok(boton(doc) === '', 'pestaña ' + t + ': no sale'); }
+    H.goTab(['juntos']); await sleep(10); ok(boton(doc) === '', 'pestaña juntos: no sale'); H.goTab(['tu']); await sleep(10); ok(boton(doc) !== '', 'pestaña tu: sale (desde el 22/10 tiene versión anterior)');
     H.goTab(['dinero']); await sleep(10); ok(/Camino/.test(boton(doc)), 'pestaña dinero: sale con «Camino» (las formas de ver las metas)');
     H.goTab(['movimientos']); await sleep(10);
     ok(/^Barras 1\/3$/.test(boton(doc)), 'Movimientos > Resumen del mes: «Barras 1/3» por defecto');

@@ -141,7 +141,7 @@ const LECTURA={ticket:{es_ticket:true,comercio:'Pizzería Luigi',fecha:'2026-10-
  // --- 7. límite
  A.H.closeSheet([]);await sleep(250);
  respuesta={error:'limite',usados:60,limite:60};await A.leerTicket({});await sleep(20);
- ok(/todas las lecturas de tickets de este mes/.test(sha()),'límite mensual alcanzado: lo explica');
+ ok(/lecturas de este mes. Vuelven el 1 de/.test(sha()),'límite mensual alcanzado: lo explica');
  // --- 8. reparto con descuento repartido y céntimos
  const F={rep:{dest:'g:g1'},t:{articulos:[{importe:10,quien:null},{importe:-1,quien:null},{importe:0.01,quien:['uA']}]}};
  const r=A.tkReparto(F);ok(r.uA+r.uP===901&&r.uA===451&&r.uP===450,'reparto al céntimo con descuento (9,01 € → 4,51 + 4,50)');
