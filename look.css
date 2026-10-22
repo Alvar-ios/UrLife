@@ -1538,3 +1538,7 @@ html[data-look="nuevo"] .dm3-cta.nueva::before { display: none; }
 html[data-look="nuevo"] .dm3-cta.nueva .i { width: 18px; height: 18px; }
 html[data-look="nuevo"] .dm3-acc { display: flex; gap: 8px; margin-top: 12px; }
 html[data-look="nuevo"] .dm3-acc .btn { min-height: 44px; }
+/* Calidad Juntos v3: «Invitar» de 44 px y que asome el 5.º círculo a 360 px */
+html[data-look="nuevo"] .jv3-seg .link { min-height: 44px; }
+html[data-look="nuevo"] .jv3-cifras .te i { margin-right: 4px; }
+@media (max-width: 370px) { html[data-look="nuevo"] .jv3-circ.muchos { gap: 6px; } html[data-look="nuevo"] .jv3-circ.muchos .jv-c { width: 62px; } html[data-look="nuevo"] .jv3-circ.muchos .jv-c .ins-l1 { max-width: 62px; } }
