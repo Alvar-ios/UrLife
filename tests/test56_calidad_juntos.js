@@ -192,7 +192,7 @@ const gasto = (id, gid, imp, pag, rep, desc, por) => ({ id, grupoId: gid, fecha:
   DB = nuevoDB();
   const z = env('uZ'); await sleep(250); const Z = z.w.__APP__;
   Z.S.tab = 'juntos'; Z.render(); await sleep(20);
-  ok(/Aún no compartes con nadie/.test(appTxt(z)) && /Compartir un gasto/.test(appTxt(z)), 'usuario nuevo: «Aún no compartes con nadie» y botón para compartir');
+  ok(/Comparte gastos con quien quieras/.test(appTxt(z)) && /Compartir un gasto/.test(appTxt(z)) && /Crear un grupo/.test(appTxt(z)), 'usuario nuevo: una tarjeta «Comparte gastos con quien quieras» con «Compartir un gasto» y «Crear un grupo»');
   ok(!/NaN|undefined/.test(appTxt(z)), 'usuario nuevo: sin «NaN» ni «undefined»');
   Z.H.compRapido(['']); await sleep(20);
   ok(/Invita/.test(sh(z)) && !/undefined/.test(sh(z)), 'usuario nuevo: «Compartir un gasto» le invita a invitar');
