@@ -1605,7 +1605,7 @@ function tecSync(anunciar) {
   const p = $('#tecPie'); if (p) { p.textContent = tecPieTxt(T); p.classList.toggle('neg', !!T.neg); }
   const n = $('#tec .tec-neg'); if (n) { n.classList.toggle('on', !!T.neg); n.setAttribute('aria-pressed', String(!!T.neg)); n.setAttribute('aria-label', tecNegLbl(F.tipo) + ': cambiar a negativo'); const sm = n.querySelector('small'); if (sm) sm.textContent = tecNegLbl(F.tipo); }
   const an = $('#sheetHost .tec-antes'); if (an) an.hidden = !!(F.articulos || (F.comp && F.comp.on));
-  const ok = $('#tec .tec-ok'); if (ok) { const falta = !T.txt || !tecNum(T.txt) || (T.corta && !(($('#fCategoria') || {}).value || '').trim()); ok.classList.toggle('apagada', T.tecla === 'guardar' && falta); ok.setAttribute('aria-disabled', String(T.tecla === 'guardar' && falta)); }
+  const ok = $('#tec .tec-ok'); if (ok) { const falta = !T.txt || !tecNum(T.txt) || !!(T.corta && !(($('#fCategoria') || {}).value || '').trim()); ok.classList.toggle('apagada', T.tecla === 'guardar' && falta); ok.setAttribute('aria-disabled', String(T.tecla === 'guardar' && falta)); }
   const t = $('#tecOkTxt'); if (t) t.textContent = tecOkLbl(T);
   const sh = $('#sheetHost .sheet'); if (sh) sh.classList.toggle('tec-abierto', !!T.on);
   if (anunciar) { const v = $('#tecVoz'); if (v) v.textContent = tecTxtLeido(T); }
@@ -4605,7 +4605,7 @@ function deudaVerHtml(nombre) {
     }
   }
   const pagos = movsDeuda(d).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
-  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + deudaIcono(d) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(d.nombre) + '</h2></div>' +
+  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo deu">' + deudaIcono(d) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(d.nombre) + '</h2></div>' +
     '<button type="button" class="icon-btn" aria-label="Editar deuda" ' + act('deudaEditar', d.nombre) + '>' + ic('edit') + '</button></div>' +
     '<div class="dm-dq"><span>Quedan</span><b class="tnum">' + money(r.pend) + '</b><span>' + (r.total > 0 ? 'de ' + money(r.total) + ' · llevas pagado el ' + Math.round(pct) + ' %' : 'Ponle el total en «Editar»') + '</span></div>' +
     '<div class="dm-deuda-bar grande"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
