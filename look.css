@@ -1302,3 +1302,62 @@ html[data-look="nuevo"] .section-title > .link + .link { margin-left: 10px; }
 /* fichas a cero, en gris */
 html[data-look="nuevo"] .dm-ficha.cero b { color: var(--text-faint); }
 html[data-look="nuevo"] .kpi-mes .kpi.avail:nth-child(odd):last-child { grid-column: 1 / -1; } /* «Te queda» solo en su fila: ancho completo, sin hueco al lado */
+
+/* ===== Teclado propio para el importe (22/10, docs/12-teclado-importe.md) ===== */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+html[data-look="nuevo"] .tec-cab { display: flex; align-items: center; gap: 10px; padding-right: 48px; }
+html[data-look="nuevo"] .tec-cab h2 { flex: 1; min-width: 0; margin-bottom: 0; }
+html[data-look="nuevo"] .tec-antes { flex: none; display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1.5px dashed var(--line); background: none; color: var(--text-faint); font: inherit; font-size: 12.5px; cursor: pointer; }
+html[data-look="nuevo"] .tec-antes .i { width: 14px; height: 14px; }
+html[data-look="nuevo"] .tec-campo { text-align: center; margin: 4px 0 6px; }
+html[data-look="nuevo"] .tec-cifra { display: inline-flex; align-items: baseline; justify-content: center; gap: 4px; max-width: 100%; min-height: 72px; padding: 4px 12px; border: 0; background: none; color: var(--text); font: inherit; cursor: pointer; border-radius: 16px; touch-action: manipulation; }
+html[data-look="nuevo"] .tec-num { font-family: var(--font-display); font-weight: var(--num-peso, 700); font-size: 52px; line-height: 1.1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; border-radius: 10px; padding: 0 4px; transition: background-color .2s ease; }
+html[data-look="nuevo"] .tec-num.l { font-size: 44px; }
+html[data-look="nuevo"] .tec-num.xl { font-size: 36px; }
+html[data-look="nuevo"] .tec-num.vacio { color: var(--text-faint); }
+html[data-look="nuevo"] .tec-num.neg { color: var(--income); }
+html[data-look="nuevo"] .tec-num.sel { background: var(--accent-soft); }
+html[data-look="nuevo"] .tec-cur { align-self: center; width: 2px; height: 40px; background: var(--accent); border-radius: 1px; animation: tec-parpadeo 1s steps(2, start) infinite; }
+@keyframes tec-parpadeo { to { visibility: hidden; } }
+html[data-look="nuevo"] .tec-eur { font-size: 26px; font-weight: 600; color: var(--text-faint); }
+html[data-look="nuevo"] .tec-pie { min-height: 18px; font-size: 13px; color: var(--text-faint); margin-top: -2px; }
+html[data-look="nuevo"] .tec-pie.neg { color: var(--income); font-weight: 600; }
+html[data-look="nuevo"] .tec-campo.falta .tec-num, html[data-look="nuevo"] .tiembla { animation: tec-tiembla .4s ease; }
+@keyframes tec-tiembla { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+html[data-look="nuevo"] .tec-cats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 6px 0 10px; }
+html[data-look="nuevo"] .tec-cat { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 58px; padding: 6px 4px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--paper-raised); color: var(--text); font: inherit; cursor: pointer; touch-action: manipulation; }
+html[data-look="nuevo"] .tec-cat .chip-cat-ic { margin: 0; width: 26px; height: 26px; }
+html[data-look="nuevo"] .tec-cat.mas .chip-cat-ic { background: var(--paper-sunken); color: var(--text-muted); }
+html[data-look="nuevo"] .tec-cat-n { font-size: 11.5px; line-height: 1.2; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .tec-cat.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+html[data-look="nuevo"] .tec-linea { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+html[data-look="nuevo"] .tec-linea .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; }
+html[data-look="nuevo"] .tec-linea .chip .i { width: 15px; height: 15px; }
+html[data-look="nuevo"] .tec-fecha { position: relative; overflow: hidden; }
+html[data-look="nuevo"] .tec-fecha input[type=date] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+html[data-look="nuevo"] .tec-masdet { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 36px; }
+html[data-look="nuevo"] .tec-masdet .i { width: 16px; height: 16px; }
+/* el teclado: pegado abajo de la hoja, de borde a borde */
+html[data-look="nuevo"] .tec { position: sticky; bottom: calc(-1 * (var(--sp-6) + env(safe-area-inset-bottom, 0px))); z-index: 4; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.1fr); gap: 7px; margin: 8px calc(-1 * var(--sp-5)) calc(-1 * (var(--sp-6) + env(safe-area-inset-bottom, 0px))); padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--paper-sunken); border-radius: 20px 20px 0 0; }
+html[data-look="nuevo"] .tec[hidden] { display: none; }
+html[data-look="nuevo"] .tec-k { min-height: 52px; border-radius: 12px; border: 0; background: var(--paper-raised); color: var(--text); font: inherit; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; transition: transform .12s ease, background-color .12s ease; }
+@media (min-height: 720px) { html[data-look="nuevo"] .tec-k { min-height: 56px; } }
+html[data-look="nuevo"] .tec-k:active { transform: scale(.93); background: var(--accent-soft); }
+html[data-look="nuevo"] .tec-k small { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+html[data-look="nuevo"] .tec-del, html[data-look="nuevo"] .tec-neg { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); }
+html[data-look="nuevo"] .tec-del .i { width: 24px; height: 24px; }
+html[data-look="nuevo"] .tec-neg b { font-size: 24px; line-height: 1; }
+html[data-look="nuevo"] .tec-neg.on { background: var(--income-soft); box-shadow: inset 0 0 0 1.5px var(--income); color: var(--income); }
+html[data-look="nuevo"] .tec-neg.on small { color: var(--income); }
+html[data-look="nuevo"] .tec-coma { font-size: 30px; }
+html[data-look="nuevo"] .tec-ok { grid-column: 4; grid-row: 2 / span 3; background: var(--accent); color: var(--accent-ink, #fff); font-size: 17px; gap: 6px; }
+html[data-look="nuevo"] .tec-ok .i { width: 28px; height: 28px; }
+html[data-look="nuevo"] .tec-ok.apagada { opacity: .45; }
+html[data-look="nuevo"] .tec-ok:active { background: var(--accent); }
+/* con el teclado abierto, los botones de abajo de siempre no hacen falta */
+html[data-look="nuevo"] .sheet.tec-abierto .actions.fija { display: none; }
+@media (prefers-reduced-motion: reduce) { html[data-look="nuevo"] .tec-k, html[data-look="nuevo"] .tec-cur { animation: none; transition: none; } }
+@media (max-height: 600px) { html[data-look="nuevo"] .tec-cats .tec-cat:nth-child(n+4):not(.mas):not(.on) { display: none; } }
+html[data-look="nuevo"] .tec-cab { flex-wrap: wrap; row-gap: 6px; }
+html[data-look="nuevo"] .tec-cab h2 { flex: 0 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-look="nuevo"] .tec-antes { margin-left: auto; }
