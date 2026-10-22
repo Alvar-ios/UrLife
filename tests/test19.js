@@ -114,7 +114,7 @@ const LECTURA={ticket:{es_ticket:true,comercio:'Pizzería Luigi',fecha:'2026-10-
  // Yo: burrata 8 + queso 5.5 + jamón 12.5 = 26 ; Paloma: coca 2.5 + burrata 8 + queso 5.5 = 16 → total 42? (41.5: queso 11/2=5.5)
  ok(/Yo26,00/.test(res.replace(/\s/g,''))&&/Paloma16,00/.test(res.replace(/\s/g,'')),'cada uno paga lo suyo y lo común a medias ('+res.replace(/\s+/g,' ')+')');
  click(a,'tkContinuar');await sleep(20);
- ok(/Nuevo movimiento/.test(sha())&&da.querySelector('#fImporte').value==='42'&&da.querySelector('#fCategoria').value==='Restaurantes'&&da.querySelector('#fDesc').value==='Pizzería Luigi'&&da.querySelector('#fFecha').value==='2026-10-09','pasa al formulario con importe, categoría, comercio y fecha');
+ ok(/Nuevo (movimiento|gasto|ingreso|gasto fijo)|Nueva inversión|Apartar dinero|Pago de deuda/.test(sha())&&da.querySelector('#fImporte').value==='42'&&da.querySelector('#fCategoria').value==='Restaurantes'&&da.querySelector('#fDesc').value==='Pizzería Luigi'&&da.querySelector('#fFecha').value==='2026-10-09','pasa al formulario con importe, categoría, comercio y fecha');
  ok(/4 artículos del ticket/.test(sha())&&/Tu parte: 26,00/.test(sha())&&/te deben 16,00/.test(sha()),'el formulario muestra los artículos y el reparto (tu parte 26, te deben 16)');
  click(a,'saveMov');await sleep(60);
  const c=DB.comp[DB.comp.length-1];

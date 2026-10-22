@@ -138,7 +138,7 @@ const futuro=(m)=>{const d=new Date();d.setMonth(d.getMonth()+m);return d.toISOS
  // --- 7. cambiar de tipo en el formulario
  A.H.openMovForm([]);await sleep(20);click(a,'compOn');await sleep(5);
  click(a,'pickTipo','Ahorro');await sleep(5);
- ok(!da.querySelector('.comp-toggle')&&!da.querySelector('.comp-box')&&/👥 Viaje a Japón/.test(da.querySelector('#metaChips').textContent),'al pasar a Apartar no hay reparto, y la meta compartida se elige en «¿Para qué meta?»');
+ ok(!da.querySelector('.comp-toggle')&&!da.querySelector('.comp-box')&&/Viaje a Japón/.test(da.querySelector('#metaChips').textContent)&&!!da.querySelector('#metaChips svg.i'),'al pasar a Apartar no hay reparto, y la meta compartida se elige en «¿Para qué meta?»');
  click(a,'pickTipo','Gasto');await sleep(5);click(a,'pickFijo','1');await sleep(5);
  ok(!da.querySelector('[data-click^="compObjetivo"]')&&A.S&&true,'al volver a Gasto fijo desaparece la meta');
  click(a,'pickTipo','Inversión');await sleep(5);
@@ -194,7 +194,7 @@ const futuro=(m)=>{const d=new Date();d.setMonth(d.getMonth()+m);return d.toISOS
  click(a,'compOn');await sleep(5);click(a,'objNueva','deuda');await sleep(10);
  da.querySelector('#oNombre').value='Préstamo';da.querySelector('#oObjetivo').value='6000';click(a,'objGuardar');await sleep(40);
  const o3=DB.objs.find(x=>x.nombre==='Préstamo');
- ok(o3&&/Nuevo movimiento/.test(sha())&&da.querySelector('#fImporte').value==='99'&&da.querySelector('#fDesc').value==='cuota octubre'&&da.querySelector('[data-click="compObjetivo|'+o3.id+'"].active'),'tras crear la deuda vuelve al formulario con lo escrito y la deuda elegida');
+ ok(o3&&/Nuevo (movimiento|gasto|ingreso|gasto fijo)|Nueva inversión|Apartar dinero|Pago de deuda/.test(sha())&&da.querySelector('#fImporte').value==='99'&&da.querySelector('#fDesc').value==='cuota octubre'&&da.querySelector('[data-click="compObjetivo|'+o3.id+'"].active'),'tras crear la deuda vuelve al formulario con lo escrito y la deuda elegida');
  click(a,'saveMov');await sleep(60);
  ok(DB.comp[DB.comp.length-1].objetivoId===o3.id&&DB.comp[DB.comp.length-1].importe===99,'y el pago se guarda en esa deuda');
  // --- 15. (revisión) «Aportar» desde Análisis no te devuelve a un grupo antiguo

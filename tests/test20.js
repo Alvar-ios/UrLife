@@ -16,7 +16,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  click(e,'onFab');await sleep(10);
  ok(/¿Qué quieres apuntar\?/.test(sh())&&doc.querySelectorAll('#sheetHost .crear-op').length>=8,'el + abre «¿Qué quieres apuntar?» con todas las opciones (incluye Invertir, Gasto fijo y Pago de deuda)');
  click(e,'crearIr','ingreso');await sleep(20);
- ok(/Nuevo movimiento/.test(sh())&&doc.querySelector('#tipoToggle .active').textContent==='Ingreso','Ingreso abre el formulario ya en Ingreso');
+ ok(/Nuevo (movimiento|gasto|ingreso|gasto fijo)|Nueva inversión|Apartar dinero|Pago de deuda/.test(sh())&&doc.querySelector('#tipoToggle .active').textContent==='Ingreso','Ingreso abre el formulario ya en Ingreso');
  H.closeSheet([]);await sleep(250);
  click(e,'onFab');await sleep(5);click(e,'crearIr','tarea');await sleep(20);
  ok(/Nueva tarea/.test(sh()),'Tarea abre el formulario de tarea');

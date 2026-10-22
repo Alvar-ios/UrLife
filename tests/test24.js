@@ -7,7 +7,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  await sleep(80);
  let A=v.w.__APP__,doc=v.doc,txt=()=>doc.querySelector('#content').textContent;
  ok(/Empieza aquí/.test(txt())&&doc.querySelectorAll('.empieza-paso').length===2,'usuario nuevo: «Empieza aquí» con sus dos primeros pasos');
- click(v,'crearIr','gasto');await sleep(20);ok(/Nuevo movimiento/.test(doc.querySelector('#sheetHost').textContent),'«Apunta tu primer gasto» abre el formulario');
+ click(v,'crearIr','gasto');await sleep(20);ok(/Nuevo (movimiento|gasto|ingreso|gasto fijo)|Nueva inversión|Apartar dinero|Pago de deuda/.test(doc.querySelector('#sheetHost').textContent),'«Apunta tu primer gasto» abre el formulario');
  A.H.closeSheet([]);await sleep(250);
  A.H.goTab(['movimientos']);A.H.setMovVista(['lista']);await sleep(10);
  ok(!/Ver todo el historial/.test(txt())&&/Apunta el primero/.test(txt()),'Movimientos vacío: sin «Ver todo el historial» y con pista');

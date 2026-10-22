@@ -29,7 +29,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  ok(/Recuperado/.test(t.textContent),'aviso «Recuperado»');
  // duplicar abre formulario, no guarda solo
  click(e,'movDuplicar','b');await sleep(30);
- ok(/Nuevo movimiento/.test(doc.querySelector('#sheetHost').textContent)&&Object.keys(e.store.movimientos).length===2,'Duplicar abre el formulario relleno y no guarda nada hasta que pulses Guardar');
+ ok(/Nuevo (movimiento|gasto|ingreso|gasto fijo)|Nueva inversión|Apartar dinero|Pago de deuda/.test(doc.querySelector('#sheetHost').textContent)&&Object.keys(e.store.movimientos).length===2,'Duplicar abre el formulario relleno y no guarda nada hasta que pulses Guardar');
  ok(doc.querySelector('#fImporte')&&/42[.,]5/.test(doc.querySelector('#fImporte').value),'el formulario trae el importe ('+(doc.querySelector('#fImporte')||{}).value+')');
  H.closeSheet([]);await sleep(250);
  // indicador deslizante del segmentado
