@@ -16,8 +16,8 @@ html[data-look="nuevo"] {
 
   --paper: #F5F5F2; --paper-raised: #FFFFFF; --paper-sunken: #EDEDE8; --line: #E8E7E1; --ink: #14162B;
   --text: var(--ink); --text-muted: #4A4E66; --text-faint: #666A80;
-  --income: #17784F; --expense: #C8382F; --bill: #2B64C7; --savings: #7C4DD0; --debt: #7A6A55;
-  --warn: #9A6100; --warn-soft: rgba(154,97,0,.10); --income-soft: rgba(23,120,79,.10); --expense-soft: rgba(200,56,47,.10); --savings-soft: rgba(124,77,208,.11); --bill-soft: rgba(43,100,199,.11);
+  --income: #17784F; --expense: #B3312A; --bill: #2B64C7; --savings: #7C4DD0; --debt: #6E5F4B;
+  --warn: #8A5700; --warn-soft: rgba(154,97,0,.10); --income-soft: rgba(23,120,79,.10); --expense-soft: rgba(200,56,47,.10); --savings-soft: rgba(124,77,208,.11); --bill-soft: rgba(43,100,199,.11);
   --on-solid: #FFFFFF; --toast-bg: #14162B;
   --accent: var(--pl); --accent-ink: #FFFFFF; --accent-soft: var(--pl-soft);
   --hero-1: var(--h1l); --hero-2: var(--h2l); --hero-bg: var(--h1l); --hero-tile: rgba(255,255,255,.13); --hero-muted: rgba(255,255,255,.80);
@@ -54,10 +54,10 @@ html[data-look="nuevo"][data-theme="dark"] {
 
 /* Paletas (la clara y la oscura de cada una: contraste de texto sobre papel ≥ 4,5) */
 html[data-look="nuevo"], html[data-look="nuevo"][data-paleta="violeta"] { --pl: #6D3FE0; --pd: #A98BFF; --pl-soft: rgba(109,63,224,.10); --pd-soft: rgba(169,139,255,.17); --pl-glow: rgba(109,63,224,.55); --pd-glow: rgba(169,139,255,.45); --h1l: #24165F; --h2l: #4B26B8; --h1d: #1A1140; --h2d: #3B2194; }
-html[data-look="nuevo"][data-paleta="cobalto"] { --pl: #1F63E0; --pd: #6FA2FF; --pl-soft: rgba(31,99,224,.10); --pd-soft: rgba(111,162,255,.17); --pl-glow: rgba(31,99,224,.55); --pd-glow: rgba(111,162,255,.45); --h1l: #0E2455; --h2l: #1851BE; --h1d: #0B1A42; --h2d: #153F96; }
-html[data-look="nuevo"][data-paleta="turquesa"] { --pl: #07797C; --pd: #34D1C8; --pl-soft: rgba(7,121,124,.10); --pd-soft: rgba(52,209,200,.15); --pl-glow: rgba(7,121,124,.55); --pd-glow: rgba(52,209,200,.40); --h1l: #052E33; --h2l: #07666A; --h1d: #04262A; --h2d: #075559; }
-html[data-look="nuevo"][data-paleta="frambuesa"] { --pl: #CC2065; --pd: #FF6B9F; --pl-soft: rgba(204,32,101,.10); --pd-soft: rgba(255,107,159,.17); --pl-glow: rgba(204,32,101,.50); --pd-glow: rgba(255,107,159,.45); --h1l: #430B27; --h2l: #A8184F; --h1d: #330820; --h2d: #861340; }
-html[data-look="nuevo"][data-paleta="esmeralda"] { --pl: #0A7A42; --pd: #3EE08C; --pl-soft: rgba(10,122,66,.10); --pd-soft: rgba(62,224,140,.15); --pl-glow: rgba(10,122,66,.50); --pd-glow: rgba(62,224,140,.38); --h1l: #06301C; --h2l: #0A6A3A; --h1d: #05261A; --h2d: #0A5632; }
+html[data-look="nuevo"][data-paleta="cobalto"] { --pl: #1B57C7; --pd: #6FA2FF; --pl-soft: rgba(31,99,224,.10); --pd-soft: rgba(111,162,255,.17); --pl-glow: rgba(31,99,224,.55); --pd-glow: rgba(111,162,255,.45); --h1l: #0E2455; --h2l: #1851BE; --h1d: #0B1A42; --h2d: #153F96; }
+html[data-look="nuevo"][data-paleta="turquesa"] { --pl: #066A6D; --pd: #34D1C8; --pl-soft: rgba(7,121,124,.10); --pd-soft: rgba(52,209,200,.15); --pl-glow: rgba(7,121,124,.55); --pd-glow: rgba(52,209,200,.40); --h1l: #052E33; --h2l: #07666A; --h1d: #04262A; --h2d: #075559; }
+html[data-look="nuevo"][data-paleta="frambuesa"] { --pl: #B51B59; --pd: #FF6B9F; --pl-soft: rgba(204,32,101,.10); --pd-soft: rgba(255,107,159,.17); --pl-glow: rgba(204,32,101,.50); --pd-glow: rgba(255,107,159,.45); --h1l: #430B27; --h2l: #A8184F; --h1d: #330820; --h2d: #861340; }
+html[data-look="nuevo"][data-paleta="esmeralda"] { --pl: #086B39; --pd: #3EE08C; --pl-soft: rgba(10,122,66,.10); --pd-soft: rgba(62,224,140,.15); --pl-glow: rgba(10,122,66,.50); --pd-glow: rgba(62,224,140,.38); --h1l: #06301C; --h2l: #0A6A3A; --h1d: #05261A; --h2d: #0A5632; }
 
 /* Cifras y titulares: tipografía elegible */
 html[data-look="nuevo"] { --font-display: 'Bricolage Grotesque', 'Fraunces', Georgia, serif; --num-peso: 650; }
@@ -1234,3 +1234,15 @@ html[data-look="nuevo"] body.en-tu2 .menu-item .badge-new { font-size: 0; width:
 html[data-look="nuevo"] .dm-meta-flag .i { width: 1em; height: 1em; }
 html[data-look="nuevo"] .ob2-top > span.ob2-ic:first-child:empty { display: none; }
 html[data-look="nuevo"] .row .meta:empty { display: none; }
+
+/* ===== Contraste y zonas táctiles (22/10, docs/salud/2026-10-22-interfaz.md) ===== */
+html[data-look="nuevo"] .ins-aro b { color: color-mix(in srgb, var(--ic) 42%, var(--ink)); }
+@media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .ins-aro b { color: color-mix(in srgb, var(--ic) 60%, var(--ink)); } html[data-look="nuevo"]:not([data-theme="light"]) .cal-d.lv3 { background: color-mix(in srgb, var(--accent) 45%, var(--paper-sunken)); } }
+html[data-look="nuevo"][data-theme="dark"] .ins-aro b { color: color-mix(in srgb, var(--ic) 60%, var(--ink)); }
+html[data-look="nuevo"][data-theme="dark"] .cal-d.lv3 { background: color-mix(in srgb, var(--accent) 45%, var(--paper-sunken)); }
+html[data-look="nuevo"] .dm-ficha b { text-overflow: clip; font-size: clamp(12px, 3.8vw, 14px); }
+html[data-look="nuevo"] .dm-m-n { min-height: 44px; align-items: center; }
+html[data-look="nuevo"] .comparar-fab.multi span i { opacity: 1; }
+@media (max-width: 340px) { html[data-look="nuevo"] .comparar-fab.multi span i { display: none; } html[data-look="nuevo"] .topbar h1 { min-width: 0; overflow-wrap: anywhere; } }
+html[data-look="nuevo"] :is(button.link, .hero-arrow) { position: relative; }
+html[data-look="nuevo"] :is(button.link, .hero-arrow)::after { content: ''; position: absolute; inset: -8px -4px; }

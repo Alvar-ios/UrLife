@@ -2077,7 +2077,7 @@ async function cargarGrupos() {
   } catch (e) { console.error(e); S.grupos = S.grupos || []; }
 }
 function iniciales(n) { return String(n || '?').trim().split(/\s+/).map((x) => x.charAt(0)).join('').slice(0, 2).toUpperCase(); }
-const COLORES_PERSONA = ['#B8752A', '#2F6F52', '#7A5AA8', '#A8452F', '#3B6EA8', '#8A6D1F'], COLORES_PERSONA_NUEVO = ['#6D5BF0', '#1FA67A', '#E86A9A', '#F29A2E', '#2E9BD6', '#C25BD8'];
+const COLORES_PERSONA = ['#B8752A', '#2F6F52', '#7A5AA8', '#A8452F', '#3B6EA8', '#8A6D1F'], COLORES_PERSONA_NUEVO = ['#6D5BF0', '#13795A', '#B83F6E', '#A35A0C', '#1D6A9E', '#9A3BB0']; // 22/10: más oscuros para que la inicial en blanco se lea (contraste ≥ 5)
 function avatarHtml(m, i) { const CP = S.look === 'nuevo' ? COLORES_PERSONA_NUEVO : COLORES_PERSONA; return '<span class="avatar" style="background:' + CP[i % CP.length] + '" title="' + escapeHtml(m.nombre) + '">' + escapeHtml(iniciales(m.nombre)) + '</span>'; }
 function gruposListaHtml() {
   const gs = (S.grupos || []).filter((g) => g.tipo === 'grupo');
@@ -3059,14 +3059,13 @@ function tkCuadreHtml(F) {
     '<div class="tk-acciones">' + (F.foto && F.modelo === 'rapido' ? '<button type="button" class="btn sm accent" ' + act('tkPreciso') + '>Leer con más precisión</button>' : '') +
     '<button type="button" class="btn sm ghost" ' + act('tkTotalSuma') + '>Usar la suma como total</button></div>';
 }
-function colorPersona(i) { const CP = S.look === 'nuevo' ? COLORES_PERSONA_NUEVO : COLORES_PERSONA; return CP[i % CP.length]; }
 function tkResumenHtml(F) {
   if (!F.rep || !F.rep.on || !F.rep.dest) return '';
   const tot = tkReparto(F), ms = miembrosDeDestino(F.rep.dest), yo = miUid();
-  return '<div class="comp-lbl">A cada uno le toca</div>' + ms.map((m, i) => '<div class="comp-row"><i class="dot" style="background:' + colorPersona(i) + '"></i><span class="n">' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</span><b class="tnum">' + money((tot[m.uid] || 0) / 100) + '</b></div>').join('');
+  return '<div class="comp-lbl">A cada uno le toca</div>' + ms.map((m, i) => '<div class="comp-row"><i class="dot" style="background:' + colorPersona(m.uid) + '"></i><span class="n">' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</span><b class="tnum">' + money((tot[m.uid] || 0) / 100) + '</b></div>').join('');
 }
 // Barra del reparto: un tramo de color por persona que se redimensiona en vivo al marcar quién toma cada artículo
-function tkBarraSegmentos(F) { const tot = tkReparto(F), ms = miembrosDeDestino(F.rep.dest); return ms.map((m, i) => '<i style="flex-grow:' + ((tot[m.uid] || 0) / 100).toFixed(2) + ';background:' + colorPersona(i) + '"></i>').join(''); }
+function tkBarraSegmentos(F) { const tot = tkReparto(F), ms = miembrosDeDestino(F.rep.dest); return ms.map((m, i) => '<i style="flex-grow:' + ((tot[m.uid] || 0) / 100).toFixed(2) + ';background:' + colorPersona(m.uid) + '"></i>').join(''); }
 function tkBarraHtml(F) {
   if (!F.rep || !F.rep.on || !F.rep.dest) return '';
   return '<div class="rep-barra" id="tkBarra" aria-hidden="true" data-ids="' + escapeHtml(miembrosDeDestino(F.rep.dest).map((m) => m.uid).join(',')) + '">' + tkBarraSegmentos(F) + '</div>';
@@ -7660,16 +7659,22 @@ function activarArrastreSheet(sheet) {
 }
 // Solo la última fila de botones se queda pegada abajo (las intermedias van con su contenido)
 function fijarAcciones(sh) { if (!sh) return; const a = sh.querySelectorAll('.actions'); if (a.length) a[a.length - 1].classList.add('fija'); }
+// Une cada etiqueta de un campo con su campo (lectores de pantalla; tocar la etiqueta enfoca el campo)
+function vincularEtiquetas(raiz) {
+  if (!raiz) return;
+  raiz.querySelectorAll('.field > label:not([for])').forEach((l) => { const c = l.parentNode.querySelector('input:not([type=hidden]), select, textarea'); if (c && c.id) l.htmlFor = c.id; });
+}
 function openSheet(html) {
   const host = $('#sheetHost'); if (!host) return;
   _sheetGen++;
   host.innerHTML = '<div class="sheet-backdrop" id="sheetBackdrop" role="dialog" aria-modal="true"><div class="sheet">' + SHEET_X() + html + '</div></div>';
   activarArrastreSheet(host.querySelector('.sheet'));
   limitarBadges(host.querySelector('.sheet')); fijarAcciones(host.querySelector('.sheet')); ajustarAlTeclado();
+  vincularEtiquetas(host.querySelector('.sheet')); setTimeout(() => vincularEtiquetas(host.querySelector('.sheet')), 0);
   requestAnimationFrame(() => { const b = $('#sheetBackdrop'); if (b && !b.dataset.cerrando) b.classList.add('open'); animarSegmentados($('#sheetHost')); });
   document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear'));
 }
-function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; limitarBadges(s); fijarAcciones(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
+function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; limitarBadges(s); fijarAcciones(s); vincularEtiquetas(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
 function closeSheet() {
   document.body.classList.remove('crear-abierto');
   const b = $('#sheetBackdrop'); if (!b) return;
