@@ -12,7 +12,7 @@ const pm = M === 1 ? 12 : M - 1, py = M === 1 ? Y - 1 : Y, ymPrev = py + '-' + p
   await sleep(150);
   const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc;
   H.goTab(['inicio']); await sleep(10);
-  ok(!!doc.querySelector('#compararHost .comparar-fab') && /Antes/.test(doc.querySelector('#compararHost').textContent), 'en Inicio sale el botón «Antes» arriba');
+  ok(!!doc.querySelector('#compararHost .comparar-fab') && /Nueva 1\/3/.test(doc.querySelector('#compararHost').textContent), 'en Inicio sale el botón de versiones arriba (Nueva 1/3; desde el 23/10 también «22 oct» y «Primera»)');
   ok(!!doc.querySelector('.hero2v2') && doc.querySelectorAll('.ins-c').length >= 2 && !doc.querySelector('.ins-card'), 'Inicio nuevo: «Así vas» en círculos');
   click(e, 'insVer', '0'); await sleep(10);
   ok(!!doc.querySelector('#popupBackdrop .ins-pop') && /Llevas .* gastados/.test(doc.querySelector('#popupBackdrop').textContent), 'al tocar un círculo, la frase entera y «Ver»');
@@ -23,7 +23,9 @@ const pm = M === 1 ? 12 : M - 1, py = M === 1 ? Y - 1 : Y, ymPrev = py + '-' + p
   ok(!doc.querySelector('#compararHost .comparar-fab'), 'en la Lista (sin versiones) no hay botón');
   H.goTab(['inicio']); await sleep(10);
   click(e, 'compararCambiar', 'inicio'); await sleep(10);
-  ok(!!doc.querySelector('.ins-card') && !doc.querySelector('.hero2v2') && /Ver nueva/.test(doc.querySelector('#compararHost').textContent), '«Antes» enseña la versión anterior (tarjetas) y el botón dice «Ver nueva»');
+  ok(!!doc.querySelector('.hero2v2') && !doc.querySelector('.hk-cels') && /22 oct 2\/3/.test(doc.querySelector('#compararHost').textContent), '«22 oct» enseña Inicio antes de la v3');
+  click(e, 'compararCambiar', 'inicio'); await sleep(10);
+  ok(!!doc.querySelector('.ins-card') && !doc.querySelector('.hero2v2') && /Primera 3\/3/.test(doc.querySelector('#compararHost').textContent), '«Primera» enseña la primera versión (tarjetas)');
   click(e, 'compararCambiar', 'inicio'); await sleep(10);
   ok(!!doc.querySelector('.hero2v2'), 'y vuelve a la nueva');
   H.compararToggle([]); await sleep(10);

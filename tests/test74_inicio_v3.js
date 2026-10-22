@@ -53,6 +53,11 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   A.S.compartidos.push({ id: 'c2', grupoId: 'g1', descripcion: 'Taxi', importe: 10, pagadoPor: 'uA', reparto: { uA: 5, uB: 5 }, creadoPor: 'uA', createdAt: '2099-02-01T10:00:00.000Z', fecha: d(0) });
   H.goTab(['inicio']); await sleep(20);
   ok(!doc.querySelector('.juntos-nov'), 'lo que apuntas tú no sale como novedad');
+  // la versión del 22/10 sigue en «Antes» para comparar
+  A.S.verAnterior = Object.assign(A.S.verAnterior || {}, { inicio: 1 }); H.goTab(['inicio']); await sleep(20);
+  ok(!doc.querySelector('.hk-cels') && !doc.querySelector('.ins-cic') && !doc.querySelector('.juntos-nov'), '«22 oct» enseña Inicio como estaba (sin importes, iconos ni avisos nuevos)');
+  A.S.verAnterior.inicio = 0; H.goTab(['inicio']); await sleep(20);
+  ok(doc.querySelector('.hk-cels'), 'y «Nueva» vuelve a la v3');
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.error(err); process.exit(1); });
 function FORM_v(A) { return (A.form() || {}).v || []; }

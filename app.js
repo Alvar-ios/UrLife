@@ -3739,8 +3739,8 @@ function renderInicioNuevo() {
       (vista === 'calendario' ? (agendaV2() ? renderCalendarioV2() : renderCalendario()) : (agendaV2() ? renderAgendaSemanaV2() : renderAgendaSemana()));
   }
   // los primeros pasos solo para quien empieza: a quien ya usa la app no le quitan sitio en Inicio
-  if (verAnterior('inicio')) return heroMesHtml() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtml() + estosDiasHtml();
-  return heroMesHtmlV2() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtmlV3() + estosDiasHtml(true);
+  if (versionDe('inicio') === 'antes') return heroMesHtml() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtml() + estosDiasHtml();
+  return heroMesHtmlV2() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + (inicioV3() ? insightsHtmlV3() : insightsHtmlV2()) + estosDiasHtml(true);
 }
 // la cifra grande, con los céntimos más pequeños
 function cifraHtml(v) { const t = money(v), i = t.lastIndexOf(','); return i < 0 ? escapeHtml(t) : escapeHtml(t.slice(0, i)) + '<small>' + escapeHtml(t.slice(i)) + '</small>'; }
@@ -3815,7 +3815,7 @@ function insightsHtml() {
 /* ---- Comparar con la versión anterior (fase de pruebas): en cada sección con un cambio grande reciente,
    un botón flotante deja ver cómo era antes y volver. Se registra aquí; se quita de la lista cuando ya no haga falta. ---- */
 const VERSIONES = {
-  inicio: { txt: 'Inicio', desde: '2026-10-18', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  inicio: { txt: 'Inicio', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
   juntos: { txt: 'Juntos', desde: '2026-10-18', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   dinero: { txt: 'Dinero', desde: '2026-10-18', variantes: [['camino', 'Camino'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes']] },
@@ -3870,11 +3870,12 @@ function heroMesHtmlV2() {
     '<span class="hero2-flechas"><button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
     '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
     '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (banco ? 'En tu banco hoy' : actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (!banco && disp < 0 ? ' neg' : '') + (nuevo && !banco ? ' vacio' : '') + '">' + cifraHtml(banco ? enTusCuentas() : disp) + '</span></button>' +
-    (nuevo ? '<p class="hero-nuevo">' + (banco ? 'Apunta lo que gastas y aquí verás cuánto te queda este mes.' : 'Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.') + '</p>' : heroCifrasHtml(k, y, m)) +
+    (nuevo ? '<p class="hero-nuevo">' + (banco ? 'Apunta lo que gastas y aquí verás cuánto te queda este mes.' : 'Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.') + '</p>' : (inicioV3() ? heroCifrasHtml(k, y, m) : heroBarraHtml(k))) +
     (cu || pr ? '<div class="h2-datos">' + pr + cu + '</div>' : '') + '</section>';
 }
 /* ===== INICIO v3 (22/10, docs/14-inicio-juntos.md): cifras del mes, «Así vas» con iconos y a tu gusto, avisos ===== */
 // A1 · la barra y debajo los importes del mes; cada casilla abre sus movimientos
+function inicioV3() { return versionDe('inicio') === 'nueva'; }
 function heroCifrasHtml(k, y, m) {
   const gas = k.facturas + k.gastos, aho = k.ahorro, inv = k.inversion, deu = k.deuda, ing = k.ingresos, mk = mesClave(y, m);
   const base = Math.max(ing, gas + aho + inv + deu), queda = Math.max(0, ing - gas - aho - inv - deu);
@@ -4149,7 +4150,7 @@ function estosDiasHtml(v2) {
   Object.keys(mapa).sort().forEach((iso) => mapa[iso].forEach((ev) => { if (ev.pagada) return; const n = daysUntil(iso);
     filas.push({ fecha: iso, t: escapeHtml(ev.titulo), d: (n === 1 ? 'Mañana' : DIAS_LARGO[dowMon(parseISO(iso))]) + ' · ' + escapeHtml(String(ev.detalle || '').replace(/ · (Pendiente|Sin registrar)$/, '')), a: ev.click || act('setInicioVista', 'tareas') }); }));
   const fechaTile = (iso) => { const d = parseISO(iso); return '<span class="dia-fecha"><i>' + MESES_ABR[d.getMonth()].toUpperCase() + '</i><b>' + d.getDate() + '</b></span>'; };
-  if (v2) { try { filas.unshift(...avisosInicioFilas()); } catch (e) { console.error(e); } }
+  if (v2 && inicioV3()) { try { filas.unshift(...avisosInicioFilas()); } catch (e) { console.error(e); } }
   const filaHtml = (f) => '<div class="dia-fila' + (f.cls ? ' ' + f.cls : '') + '"><button type="button" class="dia-main" ' + (f.a || '') + '>' +
     (f.caras ? '<span class="dia-ic caras">' + f.caras + '</span>' : f.fecha ? fechaTile(f.fecha) : '<span class="dia-ic">' + ic(f.icono) + '</span>') + '<span class="dia-t"><b>' + f.t + '</b><span>' + f.d + '</span></span>' + (f.botones ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' +
     (f.botones ? '<span class="dia-btns">' + f.botones + '</span>' : '') + '</div>';

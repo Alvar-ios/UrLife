@@ -31,7 +31,7 @@ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
   ahorro:[{nombre:'Viaje',objetivo:1000,fechaObjetivo:ym+'-20'}],deudas:[{nombre:'Coche',objetivo:3000,fechaObjetivo:ym+'-21'}]};
  const movs=[{id:'m1',tipo:'Factura',categoria:'alquiler ',importe:600,fecha:ym+'-05'},{id:'m2',tipo:'Gasto',categoria:'X',importe:12,fecha:ym+'-10'}];
  const tareas=[{id:'t1',nombre:'Llamar',estado:'Pendiente',fechaLimite:ym+'-12',prioridad:'Alta'},{id:'t2',nombre:'Hecha',estado:'Completado',fechaLimite:ym+'-12'}];
- const e=makeEnv({version:{dinero:3,inicio:1},cfg:{app:cfgApp,meta:{onboarded:true}},movs});
+ const e=makeEnv({version:{dinero:3,inicio:2},cfg:{app:cfgApp,meta:{onboarded:true}},movs});
  e.store.tareas.t1=tareas[0];e.store.tareas.t2=tareas[1];
  await sleep(60);
  const S=e.w.__APP__.S;
