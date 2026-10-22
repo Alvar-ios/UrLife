@@ -1363,3 +1363,6 @@ html[data-look="nuevo"] .tec-cab h2 { flex: 0 1 auto; white-space: nowrap; overf
 html[data-look="nuevo"] .tec-antes { margin-left: auto; }
 html[data-look="nuevo"] .tec-vacia { background: transparent; box-shadow: none; pointer-events: none; }
 html[data-look="nuevo"] .sheet.tec-abierto #apGuardar { display: none; }
+/* pop-ups: los dos botones uno al lado del otro, con aire (antes se apilaban pegados y parecían montados) */
+html[data-look="nuevo"] .popup .actions { display: flex; flex-direction: row; gap: 10px; margin-top: 16px; position: static; }
+html[data-look="nuevo"] .popup .actions .btn { flex: 1; margin: 0; }
