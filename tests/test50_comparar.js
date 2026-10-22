@@ -6,7 +6,7 @@ const pad = (n) => String(n).padStart(2, '0');
 const d = new Date(), Y = d.getFullYear(), M = d.getMonth() + 1, ym = Y + '-' + pad(M);
 const pm = M === 1 ? 12 : M - 1, py = M === 1 ? Y - 1 : Y, ymPrev = py + '-' + pad(pm);
 (async () => {
-  const e = makeEnv({ cfg: { app: { categoriasGasto: [{ nombre: 'Supermercado', presupuesto: 100 }], ingresos: ['Nómina'] }, meta: { onboarded: true } },
+  const e = makeEnv({ abrirVersiones: true,  cfg: { app: { categoriasGasto: [{ nombre: 'Supermercado', presupuesto: 100 }], ingresos: ['Nómina'] }, meta: { onboarded: true } },
     movs: [{ id: 'n1', tipo: 'Ingreso', categoria: 'Nómina', importe: 2000, fecha: ym + '-01' }, { id: 's1', tipo: 'Gasto', categoria: 'Supermercado', importe: 95, fecha: ym + '-01' },
       { id: 'p1', tipo: 'Gasto', categoria: 'Supermercado', importe: 40, fecha: ymPrev + '-01' }] });
   await sleep(150);

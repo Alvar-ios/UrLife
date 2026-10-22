@@ -23,7 +23,7 @@ const MOVS = [
   { id: 'p1', tipo: 'Gasto', categoria: 'Supermercado', descripcion: 'Mercadona', importe: 50, fecha: ymPrev + '-01' },
 ];
 (async () => {
-  const e = makeEnv({ cfg: { app: { categoriasGasto: [{ nombre: 'Supermercado', presupuesto: 300 }], ingresos: ['Nómina'] }, meta: { onboarded: true } }, movs: MOVS });
+  const e = makeEnv({ abrirVersiones: true, cfg: { app: { categoriasGasto: [{ nombre: 'Supermercado', presupuesto: 300 }], ingresos: ['Nómina'] }, meta: { onboarded: true } }, movs: MOVS });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc;
 

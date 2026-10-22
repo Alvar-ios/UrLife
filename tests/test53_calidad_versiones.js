@@ -12,7 +12,7 @@ const pm = M === 1 ? 12 : M - 1, py = M === 1 ? Y - 1 : Y, ymP = py + '-' + pad(
 const YO = 'uA', ELLA = 'uP';
 
 function entorno(cats, movs, extra, mas) {
-  return makeEnv(Object.assign({ cfg: { app: Object.assign({ categoriasGasto: cats, ingresos: ['Nómina'] }, extra || {}), meta: { onboarded: true } }, movs }, mas || {}));
+  return makeEnv(Object.assign({ abrirVersiones: true, cfg: { app: Object.assign({ categoriasGasto: cats, ingresos: ['Nómina'] }, extra || {}), meta: { onboarded: true } }, movs }, mas || {}));
 }
 // Juntos simulado (solo lectura): un grupo «Casa» con otra persona
 function conJuntos(w, DB) {
@@ -81,7 +81,7 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
   }
   {
     // primeros pasos (onboarding): no sale
-    const e = makeEnv({ cfg: {}, movs: [] }); await sleep(150);
+    const e = makeEnv({ abrirVersiones: true,  cfg: {}, movs: [] }); await sleep(150);
     ok(!!e.w.__APP__.S.onboarding && boton(e.doc) === '', 'durante los primeros pasos no sale el botón');
   }
   {
