@@ -1287,3 +1287,18 @@ html[data-look="nuevo"] .chip.chip-ic { display: inline-flex; align-items: cente
 html[data-look="nuevo"] .chip.chip-ic .i { width: 15px; height: 15px; color: var(--accent); }
 html[data-look="nuevo"] .cal-n { font-size: 12px; font-weight: 500; }
 html[data-look="nuevo"] body.en-movlista .topbar .tb-btn[aria-label="Buscar"] { display: none; }
+
+/* ===== Tarjetas bien dimensionadas (22/10, revisión de maquetación) ===== */
+/* las listas de ajustes: el relleno lo pone cada fila, no la tarjeta (antes sumaban ~30 px arriba y abajo) */
+html[data-look="nuevo"] .card.menu { padding: 2px 16px; }
+/* grupos sin título seguidos (Escríbenos, Más ajustes, lo desplegado): separados */
+html[data-look="nuevo"] .tu-grupo:not(:has(> .section-title)) { margin-top: 12px; }
+html[data-look="nuevo"] .tu-grupo.tu-mas { margin-top: 8px; }
+html[data-look="nuevo"] .tu-mas-btn .card.menu { background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
+/* títulos de sección con varios enlaces: todos juntos a la derecha */
+html[data-look="nuevo"] .section-title { justify-content: flex-start; gap: 8px; }
+html[data-look="nuevo"] .section-title > .link:first-of-type { margin-left: auto; }
+html[data-look="nuevo"] .section-title > .link + .link { margin-left: 10px; }
+/* fichas a cero, en gris */
+html[data-look="nuevo"] .dm-ficha.cero b { color: var(--text-faint); }
+html[data-look="nuevo"] .kpi-mes .kpi.avail:nth-child(odd):last-child { grid-column: 1 / -1; } /* «Te queda» solo en su fila: ancho completo, sin hueco al lado */

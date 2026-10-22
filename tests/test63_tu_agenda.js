@@ -27,7 +27,14 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   ok(/Tu dinero/.test(t) && /Traer y guardar/.test(t) && /La app/.test(t) && /Tu cuenta/.test(t), 'Tú: los 4 grupos nuevos');
   ok(!/Comparar con la versión anterior/.test(t) && e.doc.querySelector('.tu-mas').style.display === 'none', 'Tú: lo poco usado va plegado en «Más ajustes»');
   ok(!e.doc.querySelector('[data-click^="openMetas"]'), 'Tú: Metas ya no está (vive en Dinero)');
-  ok(!/Escríbenos/.test(t), 'Tú: sin contacto configurado, «Escríbenos» no sale');
+  ok(/Escríbenos/.test(t), 'Tú: «Escríbenos» sale (hay correo de contacto)');
+  H.escrAbrir([]); await sleep(10);
+  ok(/Enviar por correo/.test(sh(e)) && !/Enviar por WhatsApp/.test(sh(e)), 'Escríbenos: solo correo (sin WhatsApp)');
+  let abierto = ''; try { Object.defineProperty(e.w, 'location', { value: { set href(v) { abierto = v; }, get href() { return ''; } }, configurable: true }); } catch (err) { /* jsdom */ }
+  shDoc(e, '#escrTxt').value = 'Me encanta'; H.escrTipo(['gusta']); await sleep(5); shDoc(e, '#escrTxt') && (shDoc(e, '#escrTxt').value = 'Me encanta');
+  const m = A.escrMensaje('gusta', 'Me encanta');
+  ok(m.asunto === 'PalomApp · Me gusta' && /Me encanta/.test(m.cuerpo) && !/@/.test(m.cuerpo), 'Escríbenos: asunto y mensaje sin datos personales');
+  H.closeSheet([]); await sleep(300);
   ok(e.doc.querySelector('.comparar-fab'), 'Tú: sale el botón «Antes»');
   // buscador encuentra lo plegado
   const bus = e.doc.querySelector('#tuBuscar'); bus.value = 'moneda'; H.tuFiltrar([], bus);
