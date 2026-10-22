@@ -43,7 +43,7 @@ function server(uid){
       err('?'+fn)}};
 }
 function env(uid,email,url){
-  const e=makeEnv({version:{juntos:1},url:url||'https://urlife-zeta.vercel.app/',cfg:{app:{categoriasGasto:[{nombre:'Super'},{nombre:'Restaurantes'}],facturas:[{nombre:'Luz'}]},meta:{onboarded:true}},session:{user:{email,id:uid}},pre:w=>{
+  const e=makeEnv({version:{juntos:2},url:url||'https://urlife-zeta.vercel.app/',cfg:{app:{categoriasGasto:[{nombre:'Super'},{nombre:'Restaurantes'}],facturas:[{nombre:'Luz'}]},meta:{onboarded:true}},session:{user:{email,id:uid}},pre:w=>{
     w.history.replaceState=()=>{};
     const ls={};Object.defineProperty(w,'localStorage',{value:{getItem:k=>ls[k]==null?null:ls[k],setItem:(k,v)=>{ls[k]=String(v)},removeItem:k=>{delete ls[k]}},configurable:true});
     Object.defineProperty(w.navigator,'clipboard',{value:{writeText:async t=>{w.__copiado=t}},configurable:true});
