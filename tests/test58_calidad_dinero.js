@@ -41,8 +41,8 @@ async function abrir(cfgApp, movs, extra) {
     const t = e.txt();
     ok(!RARO.test(t), 'metas sin objetivo, con fecha pasada o sin id: sin NaN/undefined en pantalla');
     ok(/Sin cantidad que juntar/.test(t) && /La fecha pasó · faltan 500 €/.test(t), 'textos: «Sin cantidad que juntar» y «La fecha pasó · faltan 500 €»');
-    for (const v of [1, 2]) { e.S.verAnterior = { dinero: v }; e.A.render(); await sleep(10); ok(!RARO.test(e.txt()), 'variante ' + ['', 'Tarros', 'Anillos'][v] + ' sin cifras raras'); }
-    e.S.verAnterior = {}; e.A.render(); await sleep(10);
+    for (const v of [1, 2]) { e.S.verAnterior = { dinero: v, importe: 1 }; e.A.render(); await sleep(10); ok(!RARO.test(e.txt()), 'variante ' + ['', 'Tarros', 'Anillos'][v] + ' sin cifras raras'); }
+    e.S.verAnterior = { importe: 1 }; e.A.render(); await sleep(10);
     ok(!/-\d+ %/.test(e.txt()), '[leve] meta con más usado que aportado: no debería verse un porcentaje negativo («-50 %»)');
     e.A.H.metaAportarR(['m1']); await sleep(20); e.A.H.aportarRImp(['100']); await sleep(10);
     ok(!/la consigues/.test(e.sh()), '[medio] meta en −50 €: aportar 100 € de 100 € no debería decir «¡la consigues!» (quedaría en 50 €). Dice: ' + (e.sh().match(/[-\d]+ % → [^F]*/) || [''])[0]);
@@ -176,7 +176,7 @@ async function abrir(cfgApp, movs, extra) {
   /* ---------- 7. «Antes» y usuario nuevo ---------- */
   {
     const e = await abrir({ deudas: [{ nombre: 'Coche', objetivo: 8000 }], ahorro: [{ id: 'm1', nombre: 'Colchón', objetivo: 3000 }] });
-    e.S.verAnterior = { dinero: 3 }; e.A.render(); await sleep(10);
+    e.S.verAnterior = { dinero: 3, importe: 1 }; e.A.render(); await sleep(10);
     ok(!!e.doc.querySelector('.chips-nav') && /Gestionar metas/.test(e.txt()), '«Antes»: la pantalla de siempre, con pestañas');
     e.A.H.openListEditor(['deudas']); await sleep(20);
     ok(/Deudas/.test(e.sh()) && e.S.tab === 'dinero', '«Antes»: Tú → Deudas sigue abriendo la lista de siempre');
