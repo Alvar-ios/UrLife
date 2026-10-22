@@ -2260,7 +2260,7 @@ function cents(x) { return Math.round(num(x) * 100); }
 function r2(x) { return Math.round(num(x) * 100) / 100; }
 // lee un importe escrito a mano: «8.000», «1.234,56», «12,5» o «12.5» (el punto con grupos de 3 cifras es de miles)
 // Importe para un campo de texto, con coma decimal («7,08»): en España «7.08» se lee como setecientos ocho
-function importeCampo(v) { if (v == null || v === '') return ''; const n = Number(v); return isFinite(n) ? String(n).replace('.', ',') : escapeHtml(String(v)); }
+function importeCampo(v) { if (v == null || v === '') return ''; if (typeof v === 'string') return escapeHtml(v); /* un borrador ya viene escrito («1.500»): tal cual */ const n = Number(v); return isFinite(n) ? String(n).replace('.', ',') : escapeHtml(String(v)); }
 function numCampo(v) {
   let t = String(v == null ? '' : v).replace(/[\s€]/g, '');
   if (t.indexOf(',') >= 0 && t.indexOf('.') >= 0 && t.lastIndexOf('.') > t.lastIndexOf(',')) t = t.replace(/,/g, ''); // «1,240.50» (formato inglés)
@@ -5163,7 +5163,7 @@ function compGastoChip(y, m) {
 /* ---- cuentas y saldos (dinero en el banco, a mano hasta conectar el banco) ---- */
 // Varias cuentas (fase 1, ver docs/PLAN_CUENTAS.md): tipo, color, principal y si suma en «En tus cuentas».
 const TIPOS_CUENTA = [['corriente', 'Corriente'], ['ahorro', 'Ahorro'], ['efectivo', 'Efectivo'], ['broker', 'Bróker'], ['otra', 'Otra']];
-const COLORES_CUENTA = ['#475569', '#0F8A87', '#B83FB8', '#C2416C', '#5B5BD6', '#8A8F98']; // 22/10: sin el azul de fijos, el verde de ingresos ni el color de deudas
+const COLORES_CUENTA = ['#64748B', '#0F8A87', '#B83FB8', '#C2416C', '#5B5BD6', '#0891B2']; // 22/10: sin el azul de fijos, el verde de ingresos ni el color de deudas
 function tipoCuenta(c) { return c && TIPOS_CUENTA.some((t) => t[0] === c.tipo) ? c.tipo : 'corriente'; }
 // por defecto suman las corrientes y el efectivo; cada cuenta tiene su interruptor
 function cuentaEnTengo(c) { return c.enTengo != null ? !!c.enTengo : ['corriente', 'efectivo'].indexOf(tipoCuenta(c)) >= 0; }
@@ -6017,7 +6017,7 @@ const COLOR_CAT_STD = {
   Seguros: '#5A7BD8', 'Educación': '#A3B84A', Mascotas: '#F59E0B', Otros: '#7C8794',
 };
 // las personalizadas: tonos distintos de los de las estándar, por orden en tu lista (así dos tuyas no se repiten hasta la 11.ª)
-const COLOR_CAT_PROPIAS = ['#FB8C00', '#5C6BC0', '#26A69A', '#7CB342', '#AB47BC', '#FFA000', '#EC407A', '#29B6F6', '#F4511E', '#9CCC65']; // 22/10: sin marrones ni terracotas; naranjas limpios
+const COLOR_CAT_PROPIAS = ['#D81B60', '#3949AB', '#00897B', '#558B2F', '#8E24AA', '#00838F']; // 22/10: sin marrones ni terracotas y distintos de los de las estándar
 const COLOR_OTRAS = '#A3A7B3';
 function colorCat(nombre) {
   const std = catStd(nombre); if (std) return COLOR_CAT_STD[std.n] || COLOR_OTRAS;
