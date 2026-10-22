@@ -3602,7 +3602,7 @@ function renderTuAntes() {
    lecturas de tickets que quedan, «Escríbenos» y cerrar sesión con confirmación
    ============================================================ */
 // Contacto para «Escríbenos». Lo que se ponga aquí es PÚBLICO (repositorio y web). Vacío = la fila no sale.
-const CONTACTO = { whatsapp: '', correo: '' };
+const CONTACTO = { whatsapp: '', correo: 'cortex.studio.mkt@gmail.com' }; // público a propósito (lo eligió el dueño el 22/10)
 function contactoHay() { return !!(CONTACTO.whatsapp || CONTACTO.correo); }
 /* Lecturas de tickets: la app recuerda lo último que dijo la función (mes natural UTC, como cuenta el servidor) */
 function mesUTC() { return new Date().toISOString().slice(0, 7); }
