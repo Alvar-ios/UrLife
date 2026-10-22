@@ -3987,7 +3987,7 @@ function insightsHtmlV3() {
   const R = 27, C = 2 * Math.PI * R;
   return '<div class="section-title">Así vas' + badge('asivas') + '<button type="button" class="link asivas-cambiar" ' + act('asiVasAbrir', -1) + '>' + ic('sliders') + ' Cambiar</button></div><div class="ins-circ">' + ds.map((x, i) =>
     '<button type="button" class="ins-c tappable ' + (x.tono || '') + (x.vacio ? ' vacio' : '') + '"' + (x.color ? ' style="--ic:' + x.color + '"' : '') + ' aria-label="' + escapeHtml(x.l1 + ' ' + x.l2 + ': ' + x.frase) + '" ' + act('insVer', i) + '>' +
-      '<span class="ins-aro"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + R + '" class="ins-aro-f"/><circle cx="32" cy="32" r="' + R + '" class="ins-aro-v" stroke-dasharray="' + (x.vacio ? 0 : C * Math.max(0.04, Math.min(1, x.aro || 0))).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 32 32)" style="animation-delay:' + (i * 0.08).toFixed(2) + 's"/></svg>' +
+      '<span class="ins-aro"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + R + '" class="ins-aro-f"/><circle cx="32" cy="32" r="' + R + '" class="ins-aro-v' + (x.vacio ? ' nada' : '') + '" stroke-dasharray="' + (x.vacio ? 0 : C * Math.max(0.04, Math.min(1, x.aro || 0))).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 32 32)" style="animation-delay:' + (i * 0.08).toFixed(2) + 's"/></svg>' +
       '<span class="ins-cic" aria-hidden="true">' + ic(x.ic || 'sparkle') + '</span><b class="tnum' + (x.valor.length > 5 ? ' largo' : '') + '">' + escapeHtml(x.valor) + '</b></span>' +
       '<span class="ins-l1">' + escapeHtml(x.l1) + '</span><span class="ins-l2">' + escapeHtml(x.l2) + '</span></button>').join('') + '</div>';
 }
@@ -4022,7 +4022,7 @@ function avisosInicioFilas() {
   const filas = [], nov = juntosNovedades();
   if (nov.length) {
     const c = nov[0], quien = nombreEnGrupo(c.grupoId, c.creadoPor), liq = c.tipo === 'Liquidación', rec = Object.keys(c.reparto || {})[0];
-    const que = liq ? nombreEnGrupo(c.grupoId, c.pagadoPor) + (esMio(c.grupoId, rec) ? ' te pagó ' + money(c.importe) : ' pagó a ' + nombreEnGrupo(c.grupoId, rec)) : quien + ' apuntó «' + (c.descripcion || c.categoria || 'un gasto') + '»', parteTxt = liq || miParte(c) < 0.005 ? '' : ' · tu parte ' + money(miParte(c));
+    const que = liq ? (esMio(c.grupoId, c.pagadoPor) ? 'Pagaste ' + money(c.importe) + ' a ' + nombreEnGrupo(c.grupoId, rec) : nombreEnGrupo(c.grupoId, c.pagadoPor) + (esMio(c.grupoId, rec) ? ' te pagó ' + money(c.importe) : ' pagó a ' + nombreEnGrupo(c.grupoId, rec))) : quien + ' apuntó «' + (c.descripcion || c.categoria || 'un gasto') + '»', parteTxt = liq || miParte(c) < 0.005 ? '' : ' · tu parte ' + money(miParte(c));
     filas.push({ cls: 'juntos-nov', caras: [...new Set(nov.map((x) => x.creadoPor))].slice(0, 2).map((u, i) => caraHtml(u, nombreEnGrupo(nov.find((x) => x.creadoPor === u).grupoId, u), i ? 'mini b' : 'mini')).join(''),
       t: escapeHtml(nov.length === 1 ? que : nov.length + ' novedades en Juntos'), d: escapeHtml(nov.length === 1 ? nombreDestino(grupoDe(c.grupoId)) + parteTxt : que + ' y ' + (nov.length - 1) + ' más'), a: act('goTab', 'juntos') });
   }
