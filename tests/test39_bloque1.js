@@ -4,7 +4,7 @@ console.error = () => {};
 const { makeEnv, sleep, click } = require('./harness.js');
 const { TextDecoder } = require('util');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
-const hace = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10), hoy = hace(0), d2 = hace(2);
+const hace = (n) => ((d)=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'))(new Date(Date.now() - n * 864e5)), /* fecha local, como la app */ hoy = hace(0), d2 = hace(2);
 const HOY = new Date(), Y = HOY.getFullYear(), M = HOY.getMonth() + 1;
 const ab = (b) => b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
 const file = (name, buf) => ({ name, size: buf.byteLength, arrayBuffer: async () => buf });

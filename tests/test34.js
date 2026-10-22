@@ -1,7 +1,7 @@
 // Varias cuentas, fase 1 · entrega 2: traspasos, saldo calculado y «Cuadrar»
 const {makeEnv,sleep,click}=require('./harness.js');
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
-const iso=d=>d.toISOString().slice(0,10),hace=n=>iso(new Date(Date.now()-n*864e5)),hoy=iso(new Date());
+const iso=(d)=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'),/* fecha local, como la app (entre las 0 y las 2 h la UTC es la de ayer) */hace=n=>iso(new Date(Date.now()-n*864e5)),hoy=iso(new Date());
 const d5=hace(5),d3=hace(3);
 const cuentas=[{id:'c1',nombre:'Banco A',saldo:1000,fecha:'2020-01-01'},{id:'c2',nombre:'Banco B',saldo:300,fecha:'2020-01-01'}];
 const movs=[

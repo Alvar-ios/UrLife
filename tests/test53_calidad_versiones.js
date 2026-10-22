@@ -46,10 +46,10 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     await sleep(150);
     const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc; A.doc = doc; void S;
     H.goTab(['inicio']); await sleep(10);
-    ok(boton(doc) === 'Antes', 'Inicio: sale «Antes»');
-    ok(/versión anterior/.test(doc.querySelector('#compararHost .comparar-fab').getAttribute('aria-label') || ''), 'el botón se explica para lectores de pantalla');
+    ok(/Nueva/.test(boton(doc)), 'Inicio: sale el botón de versiones');
+    ok(/versión/.test(doc.querySelector('#compararHost .comparar-fab').getAttribute('aria-label') || ''), 'el botón se explica para lectores de pantalla');
     ok(!idsRepetidos(doc).length, 'Inicio nuevo: sin ids repetidos (' + idsRepetidos(doc).join(',') + ')');
-    H.compararCambiar(['inicio']); await sleep(10);
+    H.compararCambiar(['inicio']); await sleep(10); H.compararCambiar(['inicio']); await sleep(10);
     ok(!idsRepetidos(doc).length && !!doc.querySelector('.ins-card, .hero:not(.hero2v2)'), 'Inicio anterior: sin ids repetidos');
     H.compararCambiar(['inicio']); await sleep(10);
     H.setInicioVista(['tareas']); await sleep(10);
@@ -69,7 +69,7 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     H.setMovModo(['mes']); await sleep(10);
     ok(/Barras/.test(boton(doc)), 'al volver al mes, vuelve a salir');
     // ocultarlo en Tú: todo vuelve a la versión por defecto
-    await irVersion(A, 'Anillo'); H.goTab(['inicio']); await sleep(10); H.compararCambiar(['inicio']); await sleep(10);
+    await irVersion(A, 'Anillo'); H.goTab(['inicio']); await sleep(10); H.compararCambiar(['inicio']); await sleep(10); H.compararCambiar(['inicio']); await sleep(10);
     ok(!!doc.querySelector('.ins-card') || !doc.querySelector('.hero2v2'), '(preparación) Inicio en la versión anterior');
     H.goTab(['tu']); await sleep(10); H.compararToggle([]); await sleep(10);
     H.goTab(['inicio']); await sleep(10);
@@ -136,7 +136,7 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     const A = e.w.__APP__, H = A.H, doc = e.doc;
     H.goTab(['inicio']); await sleep(10);
     ok(Math.abs(A.miSaldo('g1') + 20) < 0.01, '(preparación) en Juntos debe 20 €');
-    H.compararCambiar(['inicio']); await sleep(10);
+    H.compararCambiar(['inicio']); await sleep(10); H.compararCambiar(['inicio']); await sleep(10);
     ok(/Debes 20,00/.test(doc.querySelector('#content').textContent), 'Inicio anterior: «Debes 20,00 €» en «Estos días»');
     H.compararCambiar(['inicio']); await sleep(10);
     ok(/Debes|20,00 €.*Juntos|en Juntos/.test(doc.querySelector('#content').textContent), 'Inicio nuevo, quien solo usa Juntos: lo que debe no sale en ningún sitio (se quita de «Estos días» y «Así vas» no sale sin movimientos propios)');

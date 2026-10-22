@@ -19,7 +19,7 @@ const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) =
     await sleep(120);
     const A = e.w.__APP__, H = A.H, doc = e.doc, fab = () => doc.querySelector('.comparar-fab'), t = comparar ? ' (con «Comparar» activado)' : ' (con «Comparar» apagado)';
     real(A); await sleep(10);
-    ok(!fab(), 'Inicio: sin botón «Antes»' + t);
+    ok(comparar ? !!fab() : !fab(), 'Inicio: botón de versiones solo con «Comparar» activado (reabierto el 23/10 con la v3)' + t);
     H.goTab(['movimientos']); await sleep(20);
     ok(!fab() && !!doc.querySelector('#gcAnillo'), 'En qué gastas: siempre «Anillo» y sin botón' + t);
     H.goTab(['juntos']); await sleep(20); ok(!fab(), 'Juntos: sin botón «Antes»' + t);
