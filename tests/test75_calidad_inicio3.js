@@ -80,7 +80,7 @@ const gastoComp = (id, por, creado, extra) => Object.assign({ id, grupoId: 'g1',
     ok(circ.slice(0, 4).every((x) => x.v === '—' && x.vacio && x.l2 === 'sin datos'), 'los que no tienen datos (o la meta borrada) salen con «—» y «sin datos»');
     const malos = circ.filter((x) => /^(Lo|Al|Una|Días)$/.test(x.l1)).map((x) => x.l1);
     ok(!malos.length, 'el nombre de un círculo sin datos se entiende (no «Lo», «Al» o «Una» sueltos): ' + circ.map((x) => x.l1 + ' ' + x.l2).join(' | '));
-    pend(circ[4].vacio || circ[4].v === '—', 'leve: una categoría borrada sigue saliendo como «0 € · Borrada» (mejor «—» o automático): ' + circ[4].v + ' ' + circ[4].l1);
+    ok(circ[4].vacio || circ[4].v === '—', 'una categoría borrada sale como «—» (antes «0 € · Borrada») (mejor «—» o automático): ' + circ[4].v + ' ' + circ[4].l1);
     H.insVer([3]); await sleep(10);
     const pop = doc.querySelector('#popupBackdrop'); ok(pop && /Aún no hay datos/.test(pop.textContent) && pop.querySelector('.ins-cambiar'), 'pop-up del círculo vacío: «Aún no hay datos» y «Cambiar este círculo»');
     pop.querySelectorAll('.actions .btn')[1].click(); await sleep(10);
@@ -195,7 +195,7 @@ const gastoComp = (id, por, creado, extra) => Object.assign({ id, grupoId: 'g1',
     const tabs = [...doc.querySelectorAll('#sheetHost .av-hueco')];
     ok(tabs.filter((x) => x.getAttribute('aria-selected') === 'true').length === 1, 'hoja: un solo círculo marcado como elegido (aria-selected)');
     const opOn = doc.querySelector('#sheetHost .av-op.on');
-    pend(opOn && (opOn.getAttribute('aria-pressed') === 'true' || opOn.getAttribute('aria-checked') === 'true'), 'leve: la opción elegida de la lista no lo dice al lector de pantalla (falta aria-pressed o aria-checked)');
+    ok(opOn && (opOn.getAttribute('aria-pressed') === 'true' || opOn.getAttribute('aria-checked') === 'true'), 'leve: la opción elegida de la lista no lo dice al lector de pantalla (falta aria-pressed o aria-checked)');
   }
 
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);

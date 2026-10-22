@@ -1427,3 +1427,7 @@ html[data-look="nuevo"] .dia-ic.caras .avatar { position: absolute; width: 26px;
 html[data-look="nuevo"] .dia-ic.caras .avatar:first-child { top: 2px; left: 2px; }
 html[data-look="nuevo"] .dia-ic.caras .avatar.b { bottom: 2px; right: 2px; }
 html[data-look="nuevo"] .dia-fila.juntos-nov .dia-t b::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin: 0 6px 1px 0; vertical-align: middle; }
+/* Calidad Inicio v3: toques de 44 px y cifras de 5 dígitos */
+html[data-look="nuevo"] .asivas-cambiar, html[data-look="nuevo"] .ins-cambiar, html[data-look="nuevo"] .av-volver { min-height: 44px; display: inline-flex; align-items: center; gap: 5px; }
+html[data-look="nuevo"] .hk-cel b.largo { font-size: 12px; }
+html[data-look="nuevo"] .hk-cels.cinco .hk-cel b.largo { font-size: 11px; }
