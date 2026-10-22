@@ -4160,7 +4160,7 @@ function lqtHtml(p) {
   return '<div class="card dm-lqt"><div class="dm-lqt-l">Lo que tienes</div>' +
     (p.nCuentas ? '<div class="pat-total dm-lqt-v tnum">' + money(p.total) + '</div>' : '<div class="dm-lqt-v sin">Pon el saldo de tu banco para verlo</div>') +
     '<div class="dm-fichas">' + ficha('c', 'En cuentas', p.nCuentas ? m0(p.banco) : 'Añadir', 'c', p.nCuentas ? act('dmIr', 'cuentas') : act('openCuentas')) +
-    ficha('i', 'Invertido', m0(p.inv), 'i', act('dmIr', 'inversiones')) + ficha('d', 'Por pagar', p.deudas ? '−' + m0(p.deudas) : m0(0), 'd', act('dmIr', 'deudas')) + '</div>' +
+    ficha('i', 'Invertido', m0(p.inv), p.inv > 0.005 ? 'i' : 'i cero', act('dmIr', 'inversiones')) + ficha('d', 'Por pagar', p.deudas ? '−' + m0(p.deudas) : m0(0), p.deudas ? 'd' : 'd cero', act('dmIr', 'deudas')) + '</div>' +
     (p.ahorroDentro && p.ahorro > 0.005 ? (p.ahorro > p.banco + 0.005
       ? '<div class="dm-lqt-nota">Tus metas suman <b class="tnum">' + m0(p.ahorro) + '</b>, más de lo que hay en tus cuentas. ¿Lo tienes en otra cuenta? <button type="button" class="link" ' + act('openCuentas') + '>Añádela</button></div>'
       : '<div class="dm-lqt-nota">De tus cuentas, <b class="tnum">' + m0(p.ahorro) + '</b> están apartados para tus metas.</div>') : '') +
@@ -4403,7 +4403,7 @@ function deudaEstado2(r) {
 function dmDeudasHtml(ds, comp) {
   const st = ds.map((d) => Object.assign(deudaStats(d), { d })), activas = st.filter((r) => !(r.total > 0 && r.pend <= 0.005)), saldadas = st.filter((r) => r.total > 0 && r.pend <= 0.005);
   const cs = comp, queda = st.reduce((a, r) => a + r.pend, 0) + cs.reduce((a, r) => a + r.falta * miProporcion(r.o), 0);
-  let h = '<div class="section-title" id="dm-deudas">Deudas' + (queda > 0.005 ? '<span class="dm-cuenta-n tnum">quedan ' + m0(queda) + '</span>' : '') + '<button class="link" ' + act('deudaNueva') + '>' + ic('plus') + ' Nueva</button></div>';
+  let h = '<div class="section-title" id="dm-deudas">Deudas' + (queda > 0.005 && st.length + cs.length > 1 ? '<span class="dm-cuenta-n tnum">quedan ' + m0(queda) + '</span>' : '') + '<button class="link" ' + act('deudaNueva') + '>' + ic('plus') + ' Nueva</button></div>';
   if (!st.length && !cs.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('deudaNueva') + '><span class="dm-ic">' + ic('card') + '</span><span class="dm-emp-x"><b>Apunta una deuda</b><span>Un préstamo, el coche, la tarjeta… y ve cuándo acabas</span></span>' + ic('chevR') + '</button>';
   const fila = (r, comp0) => {
     const e = comp0 ? null : deudaEstado2(r), pct = comp0 ? Math.max(0, Math.min(100, r.pct || 0)) : r.total > 0 ? Math.max(0, Math.min(100, r.pagado / r.total * 100)) : 0, g = comp0 ? grupoDe(r.o.grupoId) : null;
