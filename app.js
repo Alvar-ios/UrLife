@@ -10,6 +10,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------------- Iconos (SVG inline, trazo simple) ---------------- */
 const ICONS = {
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.4"/></svg>',
   borrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7 6-7Z"/><path d="m12 9.5 5 5M17 9.5l-5 5"/></svg>',
   salir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h10M17 8l4 4-4 4"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>',
@@ -1167,8 +1168,8 @@ function movDeslizar(cambio, dir) {
   S._deslizando = html != null && !reduceMotion();
   try { render(); if (S._deslizando) deslizarCuerpo(html, dir); } finally { S._deslizando = false; }
 }
-function deslizarCuerpo(html, dir) {
-  const nuevo = $('#movCuerpo'); if (!nuevo || typeof nuevo.animate !== 'function') return;
+function deslizarCuerpo(html, dir, id) {
+  const nuevo = $('#' + (id || 'movCuerpo')); if (!nuevo || typeof nuevo.animate !== 'function') return;
   const marco = nuevo.parentNode, fantasma = document.createElement('div');
   fantasma.className = 'mov-fantasma'; fantasma.setAttribute('aria-hidden', 'true'); fantasma.innerHTML = html;
   fantasma.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
@@ -3818,7 +3819,7 @@ const VERSIONES = {
   inicio: { txt: 'Inicio', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
   juntos: { txt: 'Juntos', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: la lista de personas de antes de los círculos
-  dinero: { txt: 'Dinero', desde: '2026-10-23', variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes']] }, // «Formas» sustituye a «Camino» (23/10)
+  dinero: { txt: 'Dinero', desde: '2026-10-23', variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
   tu: { txt: 'Tú', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   agenda: { txt: 'Agenda', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
@@ -4483,7 +4484,7 @@ function abrirCompRapido(dest) {
    ============================================================ */
 const m0 = (n) => eur0(Math.round(num(n))).replace(' €', '\u00a0€');
 function dineroV2() { return versionDe('dinero') !== 'antes'; }
-function metasVariante() { const v = versionDe('dinero'); return v === 'antes' ? 'camino' : v; }
+function metasVariante() { const v = versionDe('dinero'); return v === 'antes' ? 'camino' : v; } // «camino» = la de antes del 23/10
 function mesLargo(iso) { const d = typeof iso === 'string' ? parseISO(iso) : iso; if (!d) return ''; const m = MESES[d.getMonth()].toLowerCase(); return d.getFullYear() === new Date().getFullYear() ? m : m + ' de ' + d.getFullYear(); }
 function mesCortoAnio(d) { return MESES_ABR[d.getMonth()].toLowerCase() + ' ' + d.getFullYear(); }
 function sumaMeses(n) { const d = new Date(); d.setDate(15); d.setMonth(d.getMonth() + n); return d; }
@@ -4535,7 +4536,45 @@ function renderDineroV2() {
   if (nada) return '<div class="card dm-empezar"><div class="dm-emp-t">Empieza por aquí</div>' +
     [['bank', 'Pon el saldo de tu banco', 'Así sabrás lo que tienes de verdad', 'openCuentas'], ['flag', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva'], ['card', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva']]
       .map(([i, t, d, a]) => '<button type="button" class="dm-emp tappable" ' + act(a) + '><span class="dm-ic">' + ic(i) + '</span><span class="dm-emp-x"><b>' + t + '</b><span>' + d + '</span></span>' + ic('chevR') + '</button>').join('') + '</div>';
+  if (dineroV3()) return dinero3Html(p, ms, hayInv, deudas, dComp);
   return lqtHtml(p) + dmCuentasHtml() + dmMetasHtml(ms) + (hayInv ? dmInversionesHtml() : '') + dmDeudasHtml(deudas, dComp);
+}
+/* ---- Dinero v3 (23/10/2026, docs/15 2.1 y 2.2): «Lo que tienes» en una fila, 4 fichas que hacen de pestañas y cuentas en mosaico ---- */
+function dineroV3() { return versionDe('dinero') === 'formas'; }
+const DM3_TABS = ['cuentas', 'metas', 'inversiones', 'deudas'];
+function dm3Tab() { return DM3_TABS.indexOf(S.dm3Tab) >= 0 ? S.dm3Tab : 'cuentas'; }
+function dinero3Html(p, ms, hayInv, deudas, dComp) {
+  const t = dm3Tab(), nMetas = ms.activas.length + ms.hechas.length, nDeu = deudas.length + dComp.length;
+  const lqt = '<div class="card dm3-lqt"><div class="dm3-lqt-l"><span>Lo que tienes</span><button type="button" class="dm3-info" aria-label="¿Cómo se calcula?" ' + act('dmComo') + '>' + ic('info') + '</button></div>' +
+    (p.nCuentas ? '<b class="dm3-lqt-v tnum">' + money(p.total) + '</b>' : '<button type="button" class="link dm3-lqt-sin" ' + act('openCuentas') + '>Pon el saldo de tu banco</button>') +
+    '<span class="dm3-lqt-f">cuentas + invertido − lo que debes</span></div>';
+  const ficha = (k, icono, nom, val, cls) => '<button type="button" role="tab" aria-selected="' + (t === k) + '" class="dm3-tab' + (t === k ? ' on' : '') + (cls ? ' ' + cls : '') + '" ' + act('dm3Tab', k) + '>' + ic(icono) + '<span>' + nom + '</span><b class="tnum">' + val + '</b></button>';
+  const tabs = '<div class="dm3-tabs" role="tablist" aria-label="Tu dinero">' +
+    ficha('cuentas', 'bank', 'Cuentas', p.nCuentas ? m0(p.banco) : 'Añadir', p.nCuentas ? '' : 'vacia') +
+    ficha('metas', 'flag', 'Metas', nMetas ? (nMetas === 1 ? '1 meta' : nMetas + ' metas') : 'Añadir', nMetas ? '' : 'vacia') +
+    ficha('inversiones', 'chart', 'Inversiones', hayInv ? m0(p.inv) : 'Añadir', hayInv ? 'inv' : 'vacia') +
+    ficha('deudas', 'card', 'Deudas', nDeu ? (p.deudas ? '−' + m0(p.deudas) : m0(0)) : 'Añadir', nDeu ? 'deu' : 'vacia') + '</div>';
+  let cuerpo;
+  if (t === 'cuentas') cuerpo = dm3CuentasHtml(p);
+  else if (t === 'metas') cuerpo = dmMetasHtml(ms);
+  else if (t === 'inversiones') cuerpo = hayInv ? dmInversionesHtml() : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('chart') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
+  else cuerpo = dmDeudasHtml(deudas, dComp);
+  return lqt + tabs + '<div class="dm3-marco"><div id="dmCuerpo" class="dm3-cuerpo">' + cuerpo + '</div></div>';
+}
+const ICONO_CUENTA = { corriente: 'bank', ahorro: 'piggy', efectivo: 'wallet', broker: 'chart', otra: 'wallet' };
+function dm3CuentasHtml(p) {
+  const cs = cuentasCfg(), pc = cuentaPrincipal();
+  if (!cs.length) return '<button type="button" class="card dm-emp tappable" ' + act('openCuentas') + '><span class="dm-ic">' + ic('bank') + '</span><span class="dm-emp-x"><b>Pon el saldo de tu banco</b><span>Así sabrás lo que tienes de verdad</span></span>' + ic('chevR') + '</button>';
+  const conSaldo = cs.filter((c) => cuentaEnTengo(c) && num(saldoCuenta(c)) > 0), tot = conSaldo.reduce((a, c) => a + num(saldoCuenta(c)), 0);
+  const barra = tot > 0 && conSaldo.length > 1 ? '<div class="dm3-reparto" aria-hidden="true">' + conSaldo.map((c) => '<i style="width:' + (num(saldoCuenta(c)) / tot * 100).toFixed(1) + '%;background:' + colorCuenta(c) + '"></i>').join('') + '</div>' +
+    '<div class="dm3-rep-ley">' + conSaldo.map((c) => '<span><i style="background:' + colorCuenta(c) + '"></i>' + escapeHtml(c.nombre) + ' ' + Math.round(num(saldoCuenta(c)) / tot * 100) + ' %</span>').join('') + '</div>' : '';
+  const tile = (c) => { const v = saldoCuenta(c), ap = pc && pc.id === c.id && p.ahorroDentro && p.ahorro > 0.005 && p.ahorro <= p.banco + 0.005 ? m0(p.ahorro) + ' apartados' : '';
+    const linea = v == null ? '<span class="pon">Pon el saldo</span>' : !cuentaEnTengo(c) ? 'no suma' : ap || (tipoCuentaTxt(c) + (pc && pc.id === c.id ? ' · principal' : ''));
+    return '<button type="button" class="dm3-cta tappable" style="--cc:' + colorCuenta(c) + '" ' + act('cuentaVer', c.id) + '><span class="dm3-cta-ic">' + ic(ICONO_CUENTA[tipoCuenta(c)] || 'wallet') + '</span>' +
+      '<span class="dm3-cta-n">' + escapeHtml(c.nombre) + '</span><b class="tnum">' + (v == null ? '—' : money(v)) + '</b><span class="dm3-cta-l">' + linea + '</span></button>'; };
+  return '<div class="card dm3-cuentas">' + barra + '<div class="dm3-mosaico">' + cs.map(tile).join('') +
+    '<button type="button" class="dm3-cta nueva tappable" ' + act('openCuentas') + '>' + ic('plus') + '<span>Añadir cuenta</span></button></div>' + sinSaldoAvisoHtml() + (p.ahorroDentro && p.ahorro > p.banco + 0.005 ? '<div class="dm-lqt-nota">Tus metas suman <b class="tnum">' + m0(p.ahorro) + '</b>, más de lo que hay en tus cuentas. ¿Lo tienes en otra cuenta? <button type="button" class="link" ' + act('openCuentas') + '>Añádela</button></div>' : '') +
+    '<div class="dm3-acc">' + (cs.length > 1 ? '<button class="btn ghost block" ' + act('crearIr', 'traspaso') + '>' + ic('swap') + ' Traspaso</button>' : '') + '<button class="btn ghost block" ' + act('openCuentas') + '>' + ic('edit') + ' Editar</button></div></div>';
 }
 function lqtHtml(p) {
   const ficha = (k, t, v, cls, a) => '<button type="button" class="dm-ficha ' + cls + '" ' + a + '><span>' + t + '</span><b class="tnum">' + v + '</b></button>';
@@ -6140,7 +6179,7 @@ async function cargarHistorico(ids, desde, clave) {
     S.historico = r && r.series ? { ts: Date.now(), clave, series: r.series, limite: !!r.limite } : { ts: Date.now(), clave, series: {}, error: true };
   } catch (e) { S.historico = { ts: Date.now(), clave, series: {}, error: true }; }
   S._histCarga = false;
-  if ((S.tab === 'dinero' && dineroSub() === 'inversiones') || S.tab === 'inicio') render();
+  if ((S.tab === 'dinero' && (dineroSub() === 'inversiones' || (dineroV2() && dineroV3()))) || S.tab === 'inicio') render();
 }
 // Un punto por día desde la primera aportación: participaciones acumuladas × último cierre conocido (en €).
 function serieCartera(movs, series) {
@@ -8537,7 +8576,8 @@ const H = {
     if (x.deudas.length === 1) { const d = x.deudas[0]; FORM = { kind: 'saldar', gid: d.gid, de: d.de, a: d.a, max: r2(d.importe), rapido: true }; openSheet(saldarHtml(FORM)); }
     else abrirGrupo(x.deudas.slice().sort((a, b) => b.importe - a.importe)[0].gid);
   },
-  dmIr: ([k]) => { const el = $('#dm-' + k); if (el) try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } },
+  dm3Tab: ([k]) => { const a = DM3_TABS.indexOf(dm3Tab()), b = DM3_TABS.indexOf(k); if (b < 0 || a === b) return; sentir('tic'); const viejo = $('#dmCuerpo'), html = viejo ? viejo.innerHTML : null; S.dm3Tab = k; S._deslizando = html != null && !reduceMotion(); try { render(); if (S._deslizando) deslizarCuerpo(html, b > a ? 1 : -1, 'dmCuerpo'); } finally { S._deslizando = false; } },
+  dmIr: ([k]) => { if (dineroV3() && DM3_TABS.indexOf(k) >= 0) { S.dm3Tab = k; if (S.tab !== 'dinero') return H.goTab(['dinero']); return render(); } const el = $('#dm-' + k); if (el) try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } },
   dmComo: () => { FORM = { kind: 'dmComo' }; openSheet(dmComoHtml()); },
   dmMetasTodas: () => { S._dmMetasTodas = !S._dmMetasTodas; render(); },
   dmHechas: () => { S._dmHechas = !S._dmHechas; render(); },

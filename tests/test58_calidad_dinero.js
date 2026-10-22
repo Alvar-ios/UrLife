@@ -42,7 +42,7 @@ async function abrir(cfgApp, movs, extra) {
     ok(!RARO.test(t), 'metas sin objetivo, con fecha pasada o sin id: sin NaN/undefined en pantalla');
     ok(/Sin cantidad que juntar/.test(t) && /La fecha pasó · faltan 500 €/.test(t), 'textos: «Sin cantidad que juntar» y «La fecha pasó · faltan 500 €»');
     for (const v of [1, 2]) { e.S.verAnterior = { dinero: v, importe: 1 }; e.A.render(); await sleep(10); ok(!RARO.test(e.txt()), 'variante ' + ['', 'Tarros', 'Anillos'][v] + ' sin cifras raras'); }
-    e.S.verAnterior = { importe: 1 }; e.A.render(); await sleep(10);
+    e.S.verAnterior = { importe: 1, dinero: 4 }; e.A.render(); await sleep(10);
     ok(!/-\d+ %/.test(e.txt()), '[leve] meta con más usado que aportado: no debería verse un porcentaje negativo («-50 %»)');
     e.A.H.metaAportarR(['m1']); await sleep(20); e.A.H.aportarRImp(['100']); await sleep(10);
     ok(!/la consigues/.test(e.sh()), '[medio] meta en −50 €: aportar 100 € de 100 € no debería decir «¡la consigues!» (quedaría en 50 €). Dice: ' + (e.sh().match(/[-\d]+ % → [^F]*/) || [''])[0]);

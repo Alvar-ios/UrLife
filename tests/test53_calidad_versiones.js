@@ -58,7 +58,7 @@ const irVersion = async (A, nombre) => { for (let i = 0; i < 3 && !new RegExp(no
     ok(boton(doc) !== '', 'Agenda (Calendario): sale (desde el 22/10 tiene versión anterior)');
     H.setInicioVista(['hoy']); await sleep(10);
     H.goTab(['juntos']); await sleep(10); ok(boton(doc) === '', 'pestaña juntos: no sale'); H.goTab(['tu']); await sleep(10); ok(boton(doc) !== '', 'pestaña tu: sale (desde el 22/10 tiene versión anterior)');
-    H.goTab(['dinero']); await sleep(10); ok(/Formas/.test(boton(doc)), 'pestaña dinero: sale con «Formas» (las maneras de ver las metas; desde el 23/10 sustituye a «Camino»)');
+    S.verAnterior = Object.assign(S.verAnterior || {}, { dinero: 0 }); H.goTab(['dinero']); await sleep(10); ok(/Formas/.test(boton(doc)), 'pestaña dinero: sale con «Formas» (las maneras de ver las metas; desde el 23/10 sustituye a «Camino»)');
     H.goTab(['movimientos']); await sleep(10);
     ok(/^Barras 1\/3$/.test(boton(doc)), 'Movimientos > Resumen del mes: «Barras 1/3» por defecto');
     H.setMovVista(['lista']); await sleep(10); ok(boton(doc) === '', 'Movimientos > Lista: no sale');

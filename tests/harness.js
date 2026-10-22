@@ -15,7 +15,7 @@ function makeEnv(seed){ // seed: {config:{app,meta}, movs:[]}
   const w=dom.window;w.Auth=Auth;w.Data=Data;w.scrollTo=()=>{};
   if(seed.pre)seed.pre(w);
   w.eval(fs.readFileSync(require('path').join(__dirname,'..','app.js'),'utf8'));
-  w.__APP__.S.verAnterior=Object.assign({tu:1,agenda:1,crear:1,importe:1,movResumen:0},w.__APP__.S.verAnterior||{}); // 22/10: las pruebas antiguas miran Tú, Agenda y + de antes (las nuevas pasan version:{tu:0,…})
+  w.__APP__.S.verAnterior=Object.assign({tu:1,agenda:1,crear:1,importe:1,movResumen:0,dinero:4},w.__APP__.S.verAnterior||{}); // 22/10: las pruebas antiguas miran Tú, Agenda y + de antes (las nuevas pasan version:{tu:0,…})
   if(seed.abrirVersiones)Object.values(w.__APP__.VERSIONES).forEach(v=>{delete v.cerrada;}); // pruebas del propio botón «Antes»
   if(seed.version)w.__APP__.S.verAnterior=Object.assign(w.__APP__.S.verAnterior||{},seed.version); // p. ej. {movResumen:2}
   if(seed.verAnteriorInicio)w.__APP__.S.verAnterior=Object.assign(w.__APP__.S.verAnterior,{inicio:2}); // pruebas de la versión anterior de Inicio (botón «Antes»)

@@ -1,11 +1,12 @@
 // Formas de las metas (23/10/2026, docs/15 2.3 v2): forma por el nombre, elegir a mano, el nombre dentro y la hoja con el %. Datos inventados.
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+let S_;
 (async () => {
-  const e = makeEnv({ cfg: { app: { categoriasGasto: [{ nombre: 'Casa' }], ahorro: [{ id: 'h1', nombre: 'Viaje a Japón', objetivo: 1000, yaAhorrado: 400 }, { id: 'h2', nombre: 'Colchón', objetivo: 2000, yaAhorrado: 2000 }, { id: 'h3', nombre: 'Cosas', objetivo: 500, yaAhorrado: 100, forma: 'regalo', emoji: '🎁' }] }, meta: { onboarded: true } } });
+  const e = makeEnv({ version: { dinero: 0 }, cfg: { app: { cuentas: [{ id: 'c1', nombre: 'Banco', saldo: 1500, ts: 1 }, { id: 'c2', nombre: 'Otro banco', saldo: 500, ts: 1 }], categoriasGasto: [{ nombre: 'Casa' }], ahorro: [{ id: 'h1', nombre: 'Viaje a Japón', objetivo: 1000, yaAhorrado: 400 }, { id: 'h2', nombre: 'Colchón', objetivo: 2000, yaAhorrado: 2000 }, { id: 'h3', nombre: 'Cosas', objetivo: 500, yaAhorrado: 100, forma: 'regalo', emoji: '🎁' }] }, meta: { onboarded: true } } });
   await sleep(80);
   const A = e.w.__APP__, H = A.H, doc = e.doc, cfg = () => e.store.cfg.app, sh = () => doc.querySelector('#sheetHost');
-  H.goTab(['dinero']); await sleep(30);
+  H.goTab(['dinero']); await sleep(30); H.dm3Tab(['metas']); await sleep(20);
   const cards = [...doc.querySelectorAll('.dm-formas .dm-fm')];
   ok(cards.length === 2, 'dos metas activas en el mosaico (la conseguida va plegada)');
   ok(cards[0] && /Viaje a Japón/.test(cards[0].querySelector('.fm-t').textContent) && /40 %/.test(cards[0].textContent), 'el nombre va escrito dentro de la forma y debajo el %');
@@ -32,5 +33,17 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   H.metaNueva([]); await sleep(20);
   const inp = sh().querySelector('#mNombre'); inp.value = 'Perro'; inp.dispatchEvent(new e.w.Event('input', { bubbles: true })); await sleep(20);
   ok(on().k === 'mascota', 'al escribir «Perro», la sugerida pasa a ser la huella');
+  // Dinero con pestañas (docs/15 2.1 y 2.2)
+  H.closeSheet([]); await sleep(300);
+  H.dm3Tab(['cuentas']); await sleep(20);
+  const tabs = [...doc.querySelectorAll('.dm3-tab')];
+  ok(tabs.length === 4 && tabs[0].classList.contains('on') && tabs[0].getAttribute('aria-selected') === 'true', '4 fichas que hacen de pestañas; Cuentas elegida');
+  ok(/Lo que tienes/.test(doc.querySelector('.dm3-lqt').textContent) && doc.querySelector('.dm3-info[aria-label]'), '«Lo que tienes» en una fila, con «¿Cómo se calcula?»');
+  ok(doc.querySelectorAll('.dm3-cta:not(.nueva)').length === 2 && doc.querySelector('.dm3-cta.nueva') && doc.querySelector('.dm3-reparto'), 'cuentas en mosaico, «Añadir cuenta» y la barra de reparto');
+  ok(!doc.querySelector('.dm-formas'), 'en Cuentas no salen las metas');
+  H.dmIr(['deudas']); await sleep(20);
+  ok(doc.querySelectorAll('.dm3-tab')[3].classList.contains('on'), 'los atajos (dmIr) cambian de pestaña');
+  S_ = A.S; S_.verAnterior = Object.assign(S_.verAnterior || {}, { dinero: 4 }); A.render(); await sleep(20);
+  ok(!doc.querySelector('.dm3-tabs') && doc.querySelector('.dm-cam'), '«22 oct»: Dinero en una pantalla y metas en Camino, como estaba');
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.error(err); process.exit(1); });
