@@ -932,7 +932,7 @@ function render() {
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
   if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
   if (_agEl || S._agFoco) { S._agFoco = false; const nv = $('#agRapida'); if (nv) { if (_agV) nv.value = _agV; try { nv.focus(); } catch (e) { /* noop */ } } }
-  if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') setTimeout(marcarJuntosVisto, 0); else if (!cfg().vistoJuntos) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
+  if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') setTimeout(marcarJuntosVisto, 0); else if (!cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
   pintarComparar();
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse') || lsGet('soy')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
@@ -3881,7 +3881,7 @@ function heroCifrasHtml(k, y, m) {
   const base = Math.max(ing, gas + aho + inv + deu), queda = Math.max(0, ing - gas - aho - inv - deu);
   const trozos = [['g', gas], ['a', aho], ['v', inv], ['d', deu], ['q', queda]].filter((t) => t[1] > 0.004);
   const barra = base > 0 ? '<div class="hero-bar" aria-hidden="true">' + trozos.map(([c, v]) => '<i class="' + c + '" style="width:' + Math.max(0, v / base * 100).toFixed(1) + '%"></i>').join('') + '</div>' : '';
-  const cel = (c, l, v, tipo) => '<button type="button" class="hk-cel tappable" ' + act('irMovs', tipo, mk) + ' aria-label="' + l + ': ' + escapeHtml(money(v)) + '"><span>' + (c ? '<i class="' + c + '"></i>' : '') + l + '</span><b class="tnum' + (c ? '' : ' ing') + '">' + escapeHtml(Math.abs(v) < 0.005 ? '0 ' + sym() : moneyShort(v)) + '</b></button>';
+  const cel = (c, l, v, tipo) => '<button type="button" class="hk-cel tappable" ' + act('irMovs', tipo, mk) + ' aria-label="' + l + ': ' + escapeHtml(money(v)) + '"><span>' + (c ? '<i class="' + c + '"></i>' : '') + l + '</span><b class="tnum' + (c ? '' : ' ing') + (Math.abs(v) >= 9999.5 ? ' largo' : '') + '">' + escapeHtml(Math.abs(v) < 0.005 ? '0 ' + sym() : moneyShort(v)) + '</b></button>';
   return '<div class="hero-barra">' + barra + '<div class="hk-cels' + (deu > 0.004 ? ' cinco' : '') + '">' + cel('', 'Ingresos', ing, 'Ingreso') + cel('g', 'Gastos', gas, '_gastos') + cel('a', 'Apartado', aho, 'Ahorro') + cel('v', 'Invertido', inv, 'Inversión') +
     (deu > 0.004 ? cel('d', 'Deudas', deu, 'Deuda') : '') + '</div></div>';
 }
@@ -3890,6 +3890,7 @@ const ASIVAS_TIPOS = [['auto', 'Automático', 'sparkle', 'Cambia solo según tu 
   ['sube', 'Lo que más sube', 'tag', 'La categoría que más crece'], ['presu', 'Presupuestos', 'checkCircle', 'Si vas dentro de tus presupuestos'], ['dia', 'Al día', 'wallet', 'Lo que puedes gastar cada día que queda'],
   ['sinGastos', 'Días sin gastos', 'calendar', 'Los días que no has gastado nada'], ['juntos', 'Juntos', 'users', 'Lo que debes o te deben'], ['ahorro', 'Lo que apartas', 'piggy', 'Qué parte de lo que entra apartas'],
   ['inv', 'Inversiones', 'chart', 'Cómo se han movido esta semana'], ['cat', 'Una categoría', 'tag', 'Lo que llevas en la que elijas'], ['meta', 'Una meta', 'flag', 'Cómo va la meta que elijas']];
+const ASIVAS_CORTO = { gastoMes: 'Gasto', sube: 'Lo que sube', presu: 'Presupuestos', dia: 'Al día', sinGastos: 'Sin gastos', juntos: 'Juntos', ahorro: 'Apartas', inv: 'Inversiones', cat: 'Categoría', meta: 'Meta' };
 function asiVasCfg() { const v = cfg().asiVas; return Array.isArray(v) && v.length === 5 ? v.map((x) => String(x || 'auto')) : ['auto', 'auto', 'auto', 'auto', 'auto']; }
 function invCambioSemana() {
   if (!S.movimientos.some((x) => x.tipo === 'Inversión')) return null;
@@ -3955,6 +3956,7 @@ function asiVasFijo(key, y, m, cat) {
   const mk = mesClave(y, m), k = kpisMes(y, m);
   if (key.indexOf('cat:') === 0) {
     const c = key.slice(4), v = Math.max(0, gastoPorCategoria(k.movs)[c] || 0), cg = catsGasto().find((x) => x.nombre === c), p = cg ? num(cg.presupuesto) : 0;
+    if (!cg && !v) return null; // categoría borrada: «—»
     return { ic: iconoCat('Gasto', c, ''), color: colorCat(c), tono: p && v > p ? 'malo' : '', valor: agrupar(Math.round(v).toLocaleString('es-ES')) + ' ' + sym(), l1: c, l2: p ? 'de ' + moneyShort(p) : 'llevas', aro: p ? Math.min(1, v / p) : 1,
       frase: 'En ' + c + ' llevas ' + money(v) + (p ? ' de ' + money(p) + ' de presupuesto' : '') + ' este mes.', a: act('irMovs', '_gastos', mk, c) };
   }
@@ -3976,16 +3978,16 @@ function insightsDatosV3() {
   const out = elegidos.map((key, i) => {
     if (key === 'auto') { const x = libres.shift(); return x ? Object.assign({ k: x, hueco: i }, cat[x]) : null; }
     const d = asiVasFijo(key, y, m, cat), t = ASIVAS_TIPOS.find((z) => z[0] === key.split(':')[0]) || [];
-    return d ? Object.assign({ k: key, hueco: i, fijo: true }, d) : { k: key, hueco: i, fijo: true, vacio: true, ic: t[2] || 'sparkle', tono: '', valor: '—', l1: (t[1] || 'Círculo').split(' ')[0], l2: 'sin datos', aro: 0, frase: 'Aún no hay datos para esto este mes.', a: act('asiVasAbrir', i) };
+    return d ? Object.assign({ k: key, hueco: i, fijo: true }, d) : { k: key, hueco: i, fijo: true, vacio: true, ic: t[2] || 'sparkle', tono: '', valor: '—', l1: ASIVAS_CORTO[key.split(':')[0]] || 'Círculo', l2: 'sin datos', aro: 0, frase: 'Aún no hay datos para esto este mes.', a: act('asiVasAbrir', i) };
   }).filter(Boolean);
   return out;
 }
 function insightsHtmlV3() {
   const ds = insightsDatosV3(); S._ins = ds; if (!ds.length) return '';
   const R = 27, C = 2 * Math.PI * R;
-  return '<div class="section-title">Así vas' + badge('asivas') + '<button type="button" class="link" ' + act('asiVasAbrir', -1) + '>' + ic('sliders') + ' Cambiar</button></div><div class="ins-circ">' + ds.map((x, i) =>
+  return '<div class="section-title">Así vas' + badge('asivas') + '<button type="button" class="link asivas-cambiar" ' + act('asiVasAbrir', -1) + '>' + ic('sliders') + ' Cambiar</button></div><div class="ins-circ">' + ds.map((x, i) =>
     '<button type="button" class="ins-c tappable ' + (x.tono || '') + (x.vacio ? ' vacio' : '') + '"' + (x.color ? ' style="--ic:' + x.color + '"' : '') + ' aria-label="' + escapeHtml(x.l1 + ' ' + x.l2 + ': ' + x.frase) + '" ' + act('insVer', i) + '>' +
-      '<span class="ins-aro"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + R + '" class="ins-aro-f"/><circle cx="32" cy="32" r="' + R + '" class="ins-aro-v" stroke-dasharray="' + (C * Math.max(0.04, Math.min(1, x.aro || 0))).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 32 32)" style="animation-delay:' + (i * 0.08).toFixed(2) + 's"/></svg>' +
+      '<span class="ins-aro"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + R + '" class="ins-aro-f"/><circle cx="32" cy="32" r="' + R + '" class="ins-aro-v" stroke-dasharray="' + (x.vacio ? 0 : C * Math.max(0.04, Math.min(1, x.aro || 0))).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 32 32)" style="animation-delay:' + (i * 0.08).toFixed(2) + 's"/></svg>' +
       '<span class="ins-cic" aria-hidden="true">' + ic(x.ic || 'sparkle') + '</span><b class="tnum' + (x.valor.length > 5 ? ' largo' : '') + '">' + escapeHtml(x.valor) + '</b></span>' +
       '<span class="ins-l1">' + escapeHtml(x.l1) + '</span><span class="ins-l2">' + escapeHtml(x.l2) + '</span></button>').join('') + '</div>';
 }
@@ -3996,13 +3998,13 @@ function asiVasHtml() {
   const icono = (key) => (ASIVAS_TIPOS.find((t) => t[0] === key.split(':')[0]) || [])[2] || 'sparkle';
   const huecos = '<div class="av-huecos" role="tablist" aria-label="Círculos">' + v.map((key, i) => '<button type="button" role="tab" aria-selected="' + (i === sel) + '" class="av-hueco' + (i === sel ? ' on' : '') + (key === 'auto' ? ' auto' : '') + '" ' + act('asiVasHueco', i) + '><span class="av-hueco-ic">' + ic(icono(key)) + '</span><span class="av-hueco-n">' + escapeHtml(((n) => n.length > 10 && n.indexOf(' ') < 0 ? n.slice(0, 8) + '…' : n)(nombre(key))) + '</span></button>').join('') + '</div>';
   let lista;
-  if (F.sub === 'cat') lista = '<button type="button" class="link av-volver" ' + act('asiVasSub', '') + '>' + ic('chevL') + ' Volver</button>' + catsGasto().map((c) => c.nombre).map((c) => '<button type="button" class="av-op' + (v[sel] === 'cat:' + c ? ' on' : '') + '" ' + act('asiVasElegir', 'cat:' + c) + '><span class="av-op-ic" style="--cc:' + colorCat(c) + '">' + ic(iconoCat('Gasto', c, '')) + '</span><span class="av-op-t"><b>' + escapeHtml(c) + '</b></span><span class="av-radio"></span></button>').join('');
+  if (F.sub === 'cat') lista = '<button type="button" class="link av-volver" ' + act('asiVasSub', '') + '>' + ic('chevL') + ' Volver</button>' + catsGasto().map((c) => c.nombre).map((c) => '<button type="button" class="av-op' + (v[sel] === 'cat:' + c ? ' on' : '') + '" role="radio" aria-checked="' + (v[sel] === 'cat:' + c) + '" ' + act('asiVasElegir', 'cat:' + c) + '><span class="av-op-ic" style="--cc:' + colorCat(c) + '">' + ic(iconoCat('Gasto', c, '')) + '</span><span class="av-op-t"><b>' + escapeHtml(c) + '</b></span><span class="av-radio"></span></button>').join('');
   else if (F.sub === 'meta') { let ms = []; try { ms = metasStats ? (metasCfg() || []).map((x) => metaPorKey(x.id)).filter(Boolean) : []; } catch (e) { ms = []; }
-    lista = '<button type="button" class="link av-volver" ' + act('asiVasSub', '') + '>' + ic('chevL') + ' Volver</button>' + (ms.length ? ms.map((r) => '<button type="button" class="av-op' + (v[sel] === 'meta:' + r.key ? ' on' : '') + '" ' + act('asiVasElegir', 'meta:' + r.key) + '><span class="av-op-ic">' + ic('flag') + '</span><span class="av-op-t"><b>' + escapeHtml(r.nombre) + '</b><span>' + (r.pct == null ? '' : Math.round(r.pct) + ' %') + '</span></span><span class="av-radio"></span></button>').join('') : '<div class="card empty-mini">Aún no tienes metas.</div>'); }
+    lista = '<button type="button" class="link av-volver" ' + act('asiVasSub', '') + '>' + ic('chevL') + ' Volver</button>' + (ms.length ? ms.map((r) => '<button type="button" class="av-op' + (v[sel] === 'meta:' + r.key ? ' on' : '') + '" role="radio" aria-checked="' + (v[sel] === 'meta:' + r.key) + '" ' + act('asiVasElegir', 'meta:' + r.key) + '><span class="av-op-ic">' + ic('flag') + '</span><span class="av-op-t"><b>' + escapeHtml(r.nombre) + '</b><span>' + (r.pct == null ? '' : Math.round(r.pct) + ' %') + '</span></span><span class="av-radio"></span></button>').join('') : '<div class="card empty-mini">Aún no tienes metas.</div>'); }
   else lista = ASIVAS_TIPOS.map(([key, t, icono2, d]) => {
     const otro = key !== 'auto' && key !== 'cat' && key !== 'meta' ? v.findIndex((x, i) => i !== sel && x === key) : -1, sub = key === 'cat' || key === 'meta';
     const on = sub ? v[sel].indexOf(key + ':') === 0 : v[sel] === key, ej = cat[key] ? cat[key].valor + ' · ' + cat[key].l1 + ' ' + cat[key].l2 : d;
-    return '<button type="button" class="av-op' + (on ? ' on' : '') + (otro >= 0 ? ' usado' : '') + '" ' + (sub ? act('asiVasSub', key) : act('asiVasElegir', key)) + '><span class="av-op-ic">' + ic(icono2) + '</span><span class="av-op-t"><b>' + escapeHtml(t) + '</b><span>' + escapeHtml(otro >= 0 ? 'Ya está en el círculo ' + (otro + 1) : key === 'auto' ? d : ej) + '</span></span>' + (sub ? '<span class="chev">' + ic('chevR') + '</span>' : '<span class="av-radio"></span>') + '</button>';
+    return '<button type="button" class="av-op' + (on ? ' on' : '') + (otro >= 0 ? ' usado' : '') + '"' + (sub ? '' : ' role="radio" aria-checked="' + on + '"') + ' ' + (sub ? act('asiVasSub', key) : act('asiVasElegir', key)) + '><span class="av-op-ic">' + ic(icono2) + '</span><span class="av-op-t"><b>' + escapeHtml(t) + '</b><span>' + escapeHtml(otro >= 0 ? 'Ya está en el círculo ' + (otro + 1) : key === 'auto' ? d : ej) + '</span></span>' + (sub ? '<span class="chev">' + ic('chevR') + '</span>' : '<span class="av-radio"></span>') + '</button>';
   }).join('');
   return '<div class="handle"></div><h2>Tu «Así vas»</h2><p class="rec-hint">Elige qué enseña cada círculo. Los «Auto» cambian solos según tu mes.</p>' + huecos +
     '<div class="section-title">Círculo ' + (sel + 1) + '</div><div class="card menu av-lista">' + lista + '</div>' +
@@ -4019,9 +4021,10 @@ function nombreEnGrupo(gid, uid) { const g = grupoDe(gid), mm = g && g.miembros.
 function avisosInicioFilas() {
   const filas = [], nov = juntosNovedades();
   if (nov.length) {
-    const c = nov[0], quien = nombreEnGrupo(c.grupoId, c.creadoPor), que = quien + ' apuntó «' + (c.descripcion || c.categoria || 'un gasto') + '»';
+    const c = nov[0], quien = nombreEnGrupo(c.grupoId, c.creadoPor), liq = c.tipo === 'Liquidación', rec = Object.keys(c.reparto || {})[0];
+    const que = liq ? nombreEnGrupo(c.grupoId, c.pagadoPor) + (esMio(c.grupoId, rec) ? ' te pagó ' + money(c.importe) : ' pagó a ' + nombreEnGrupo(c.grupoId, rec)) : quien + ' apuntó «' + (c.descripcion || c.categoria || 'un gasto') + '»', parteTxt = liq || miParte(c) < 0.005 ? '' : ' · tu parte ' + money(miParte(c));
     filas.push({ cls: 'juntos-nov', caras: [...new Set(nov.map((x) => x.creadoPor))].slice(0, 2).map((u, i) => caraHtml(u, nombreEnGrupo(nov.find((x) => x.creadoPor === u).grupoId, u), i ? 'mini b' : 'mini')).join(''),
-      t: escapeHtml(nov.length === 1 ? que : nov.length + ' novedades en Juntos'), d: escapeHtml(nov.length === 1 ? nombreDestino(grupoDe(c.grupoId)) + ' · tu parte ' + money(miParte(c)) : que + ' y ' + (nov.length - 1) + ' más'), a: act('goTab', 'juntos') });
+      t: escapeHtml(nov.length === 1 ? que : nov.length + ' novedades en Juntos'), d: escapeHtml(nov.length === 1 ? nombreDestino(grupoDe(c.grupoId)) + parteTxt : que + ' y ' + (nov.length - 1) + ' más'), a: act('goTab', 'juntos') });
   }
   const iv = invCambioSemana(), semana = isoSemana(todayISO());
   if (iv && Math.abs(iv.pct) >= 3 && Math.abs(iv.dif) >= 50 && cfg().invAvisoVisto !== semana)
