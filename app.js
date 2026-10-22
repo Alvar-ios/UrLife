@@ -8077,7 +8077,7 @@ const H = {
   pickTrasCuenta: ([campo, id]) => { if (!FORM || FORM.kind !== 'traspaso') return; FORM[campo] = id; $$('#tras-' + campo + ' .chip').forEach((b) => b.classList.toggle('active', b.getAttribute('data-click') === 'pickTrasCuenta|' + campo + '|' + encodeURIComponent(id))); },
   saveTraspaso: () => saveTraspaso(),
   deleteTraspaso: (_a, el) => confirmDelete(el, async () => { const id = FORM.id; closeSheet(); await borrarMovConDeshacer(id); }),
-  tecK: ([k]) => { if (H.tecK._largo) { H.tecK._largo = false; return; } tecPulsar(k); },
+  tecK: ([k]) => { const largo = H.tecK._largo; H.tecK._largo = false; if (largo && k === 'del') return; tecPulsar(k); }, // tras mantener «Borrar», su propio toque no cuenta
   tecAbrir: () => { if (!FORM || !FORM.tec) return; if (!FORM.tec.on) { tecAbrirTeclado(); sentir('tic'); } },
   tecMas: () => tecMasDetalles(),
   tecVersion: ([n]) => tecVolverAVersion(n),
@@ -8992,7 +8992,7 @@ document.addEventListener('paste', (e) => tecPegar(e));
 // al escribir en un campo de texto se cierra el teclado de la app (nunca dos teclados a la vez)
 document.addEventListener('focusin', (e) => { const T = FORM && FORM.kind === 'mov' && FORM.tec; if (T && T.on && e.target && e.target.matches && e.target.matches('#sheetHost input:not([type=hidden]):not([type=date]), #sheetHost textarea, #sheetHost select')) tecCerrar(); });
 // mantener pulsado «Borrar» medio segundo borra todo
-(function () { let t = null; const fin = () => { clearTimeout(t); t = null; };
+(function () { let t = null; const fin = () => { clearTimeout(t); t = null; if (H.tecK._largo) setTimeout(() => { H.tecK._largo = false; }, 350); };
   document.addEventListener('pointerdown', (e) => { H.tecK._largo = false; const b = e.target.closest && e.target.closest('#tec .tec-del'); if (!b) return; fin(); t = setTimeout(() => { H.tecK._largo = true; tecPulsar('clear'); }, 500); });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => document.addEventListener(ev, fin)); })();
 document.addEventListener('change', (e) => dispatch('change', e));
