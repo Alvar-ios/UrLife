@@ -1,5 +1,7 @@
 # Dinero y Ajustes: propuesta de Producto y diseño (22/10/2026)
 
+> **Actualizado el 22/10 por la noche** con lo que decidió el dueño: Dinero con pestañas y metas con forma, **aprobados**. Formas rehechas con el estilo de la app (2.3, `dinero3-formas-v2.png` y `dinero3-meta-v2.png`). La forma de una meta compartida será la misma para todo el grupo (columna nueva, la hace Datos). Festivos por comunidad y fiestas locales (3.3). «Pago fijo» como nombre (3.4).
+
 Responde a los puntos 6 (Dinero) y 7 (Ajustes) de `13-feedback-22-10.md`. Sigue a `05-dinero.md` y `06-dinero-diseno.md`.
 
 Imágenes en `docs/img/`, móvil de 375 × 667 px y datos inventados. Las de «hoy» son capturas reales de la app. Las de «propuesta» son una **maqueta aparte (PRUEBA)**, no la app.
@@ -8,8 +10,9 @@ Imágenes en `docs/img/`, móvil de 375 × 667 px y datos inventados. Las de «h
 |---|---|
 | `dinero3-antes.png` | Dinero hoy (2,5 pantallas de scroll), el «Antes» con pestañas y el fallo al tocar un activo |
 | `dinero3-pestanas.png` | **Recomendado:** Dinero con 4 fichas que hacen de pestañas: Cuentas, Metas y Deudas (y Metas en claro) |
-| `dinero3-formas.png` | Las 12 formas de meta, en oscuro y en claro |
-| `dinero3-meta.png` | La hoja de una meta con su forma y toda la información, y «Nueva meta» |
+| `dinero3-formas-v2.png` | **Vigente:** las 12 formas con trazo fino y el nombre escrito dentro, y la pestaña Metas (oscuro y claro) |
+| `dinero3-meta-v2.png` | **Vigente:** la hoja de una meta y «Nueva meta» con las formas nuevas |
+| `dinero3-formas.png`, `dinero3-meta.png` | Primera versión (trazo grueso, rellenos de colores y etiqueta encima). **Descartada** por el dueño: «muy grotescas» |
 | `dinero3-inversiones.png` | Inversiones con la semana y líneas a elegir, la hoja de un activo y «Rentabilidad al año e inflación» |
 | `dinero3-deudas.png` | Deudas con iconos y «Nueva deuda» |
 | `ajustes-antes.png` | Cinco hojas de ajustes de hoy con lo que no encaja |
@@ -20,10 +23,10 @@ Imágenes en `docs/img/`, móvil de 375 × 667 px y datos inventados. Las de «h
 ## 1. Conclusión
 
 1. **Dinero vuelve a las pestañas, pero sin perder el resumen.** Las 4 cifras de arriba (Cuentas, Metas, Inversiones, Deudas) son a la vez el resumen y las pestañas. Con 2 cuentas, 4 metas o 2 deudas, cada pestaña cabe en una pantalla. Hoy, la pantalla única mide 1.684 px (2,5 pantallas).
-2. **Las metas pasan a ser una forma que se llena** (casa, maleta, coche, tarro…) con el nombre dentro. La forma se elige sola por el nombre y se puede cambiar. Sustituye al emoji y a las variantes Camino y Anillos. La hoja de cada meta enseña la forma y todo lo demás sin «Más».
+2. **Las metas pasan a ser una forma que se llena** (casa, maleta, coche, tarro…), dibujada con el mismo trazo fino que los iconos, con relleno suave del color de la app y el nombre escrito dentro. La forma se elige sola por el nombre y se puede cambiar. Sustituye al emoji y a las variantes Camino y Anillos. La hoja de cada meta enseña la forma y todo lo demás sin «Más».
 3. **Inversiones: semana, varias líneas y un arreglo.** Se añade «1S» y se pueden ver a la vez «Total» y cada activo, cada uno de su color. Tocar un activo abre su hoja. El fallo de hoy es una línea de código (punto 3.4). La rentabilidad anual y la inflación pasan a una fila que abre su hoja.
-4. **Ajustes: un perfil, un fondo a elegir y un selector propio para los recurrentes.** Hay 4 reglas nuevas, entre ellas «el penúltimo día hábil» y «cada X días». Hemos encontrado **26 iconos usados para cosas distintas** (y uno que falta): proponemos 24 iconos nuevos con el mismo trazo.
-5. **Nada de esto necesita cambios en Supabase.** Solo haría falta si el dueño quiere que la forma de una meta compartida o tu dibujo de perfil los vean también los demás (preguntas 2 y 4).
+4. **Ajustes: un perfil, un fondo a elegir y un selector propio para los recurrentes.** Hay 4 reglas nuevas, entre ellas «el penúltimo día hábil» y «cada X días». Los días hábiles podrán saltarse los festivos de tu comunidad y tus 2 fiestas locales, con una tabla del BOE dentro de la app. Lo que hoy es «Gasto fijo» pasa a llamarse «Pago fijo». Hemos encontrado **26 iconos usados para cosas distintas** (y uno que falta): proponemos 24 iconos nuevos con el mismo trazo.
+5. **Supabase solo cambia en una cosa:** la columna opcional `forma` en `objetivos_compartidos`, para que todo el grupo vea la misma forma (la hace Datos). Los festivos van en una tabla fija dentro de la app, sin servidor.
 
 ## 2. Dinero
 
@@ -49,9 +52,21 @@ Imágenes en `docs/img/`, móvil de 375 × 667 px y datos inventados. Las de «h
 - Al tocar una cuenta se abre `cuentaVerHtml`, que ya existe.
 - Con una sola cuenta: una tarjeta y «Añadir cuenta». La pestaña Cuentas sale siempre (hoy desaparece si solo hay una).
 
-### 2.3 Metas con forma que se llena (`dinero3-formas.png`, `dinero3-meta.png`)
+### 2.3 Metas con forma que se llena (`dinero3-formas-v2.png`, `dinero3-meta-v2.png`)
 
-**Las 12 formas** son SVG propios: viewBox de 100, trazo de 3,2 y `--text-faint`, como un icono grande. Cada forma tiene la zona que se llena (`clipPath`) y el sitio del nombre.
+**Estilo (v2, tras el «no muy grotescas» del dueño):**
+
+| Pieza | Cómo |
+|---|---|
+| Contorno | 1,8 px reales, como `ICONS`: `stroke-width="1.8"` con `vector-effect="non-scaling-stroke"` (el grosor no crece con el tamaño), extremos redondos, color `--text-muted`. Cuando la meta está conseguida, el contorno pasa a `--accent` |
+| Detalles | Las correas de la maleta, la puerta de la casa o las caras del diamante, a 1,2 px, en `--text-faint` y al 55 % |
+| Relleno | **Siempre del color de la app** (`--accent` de la paleta elegida), suave: al 24 % en oscuro y al 16 % en claro. Encima, la línea de la superficie con una ola suave, a 1,8 px y en `--accent`. Nada de naranja, verde ni rojo en el relleno: el estado («Para junio: 227 €/mes», en `--warn`) va solo en el texto de debajo |
+| Conseguida | Llena, con el contorno en `--accent` y un círculo de 22 px con `ic('check')` en la esquina. Nada de verde |
+| Nombre | **Escrito dentro**, sin etiqueta: Inter 650 a 11,5 px (en px reales, no en unidades del dibujo), `--ink`, centrado, 2 líneas como máximo, con un halo muy suave de `--paper-raised` (`text-shadow`) para que se lea encima de la ola. Si la superficie del líquido cae a menos de 11 unidades del sitio del nombre, el nombre se aparta 13 unidades hacia arriba o hacia abajo, para que la ola nunca lo tache |
+| En la hoja | El nombre va en el título y dentro de la forma va el % (22 px, `Inter Display` 750) |
+| En «Su forma» | Las 12 formas a 38 px con el mismo trazo; solo la elegida va rellena |
+
+Cada forma es un SVG propio con un viewBox de 100, la zona que se llena (`clipPath`), el contorno, los detalles y el sitio del nombre. Están en la maqueta: `rig/d15/formas.js` (zonas) y `formas2.js` (estilo v2).
 
 | Clave | Forma | Se elige sola si el nombre tiene… |
 |---|---|---|
@@ -71,8 +86,8 @@ Imágenes en `docs/img/`, móvil de 375 × 667 px y datos inventados. Las de «h
 Las pistas se buscan en este orden con `normName`, como `EMOJI_PISTAS`. La función nueva sería `formaSugerida(nombre)`.
 
 **En la pestaña Metas:** mosaico de 2 columnas, cada meta en una tarjeta de unos 165 × 175 px.
-- **La forma**, de 104 px, lleva el líquido hasta el %. Usa los colores de estado de hoy (`DM_ESTADO_COLOR`): `--accent`, `--warn` si vas justo, `--income` si la has conseguido y `--expense` solo si la fecha ya pasó.
-- **El nombre va dentro**, en una etiqueta translúcida (`--paper-raised` al 86 %, 2 líneas como máximo) para que se lea encima del líquido.
+- **La forma**, de 104 px, lleva el relleno hasta el % con el estilo de arriba. El color del estado (`DM_ESTADO_COLOR`) se usa solo en la frase de debajo.
+- **El nombre va escrito dentro** de la forma.
 - **Debajo de la forma:** «45 %» (16 px) y «1.350 / 3.000 €». Después, el estado en una línea (`metaEstado2`, igual que hoy).
 - **«Aportar»** es un botón redondo «+» de 34 px en la esquina, con una zona táctil de 44 px.
 - **Al tocar la tarjeta** se abre la hoja de la meta.
@@ -88,7 +103,7 @@ Las pistas se buscan en este orden con `normName`, como `EMOJI_PISTAS`. La funci
 | Forma de 132 px con el % dentro | A la derecha: «Vas bien» / «Vas justo» / «Sin fecha» / «La fecha pasó» / «¡Conseguida!» (color del estado), «1.350 €» (26 px), «de 3.000 € · hasta junio de 2027» |
 | 4 cifras (2 × 2) | «Te falta 1.650 €» · «Quedan 8 meses» (sin fecha: «A este ritmo · jun 2027») · «Apartas al mes · unos 150 €» (sin ritmo: «—») · «Para llegar a tiempo · 227 €/mes» (sin fecha: «Ponle fecha») |
 | Consejo (uno solo) | «Si sigues así llegas en septiembre de 2027, 3 meses tarde. Con 77 € más al mes llegas en junio.» Si vas bien: «Si sigues así llegas en abril, 2 meses antes.» |
-| Hitos | La pista con rombos y su nombre debajo («Vuelos · 1.000 €»), verdes si ya los pasaste |
+| Hitos | La pista con rombos y su nombre debajo («Vuelos · 1.000 €»), en `--accent` si ya los pasaste |
 | Botones | «+ Aportar» (grande) · «He usado dinero» · «Movimientos» (lo que hoy es «Elegir movimientos») |
 | Al final | «Últimas aportaciones» (3) con «Ver las N», lo usado y, si hay parte invertida, la línea de rentabilidad de hoy |
 
@@ -103,7 +118,7 @@ En «Aportar a…» y en los avisos, el emoji del título se cambia por la forma
 
 **Dónde se guarda:**
 - **Metas personales:** en `cfg().ahorro[i].forma` (la clave). Sin `forma`, se usa `formaSugerida(nombre)`, así que al renombrar cambia sola si nunca la elegiste. El `emoji` antiguo se queda guardado, pero deja de verse.
-- **Metas compartidas:** `objetivos_compartidos` **no tiene dónde guardarla sin una columna nueva**. Esconderla dentro de `hitos` (jsonb) sería una trampa que otra versión de la app enseñaría como un hito. Propuesta: guardarla **en privado** en `cfg().formaComp[idMeta]`, como `cuentaJuntos`. Por defecto todos ven la misma, porque sale del nombre. Si alguien la cambia, solo la ve él. Si se quiere compartida, haría falta la columna opcional `forma text` (pasa por Datos y seguridad).
+- **Metas compartidas (decidido):** la misma forma para todo el grupo, en una **columna nueva y opcional `forma text`** de `objetivos_compartidos`. La hace Datos y seguridad. Vacía significa «la que sale del nombre», así que las metas que ya existen no cambian. Quien pueda editar la meta puede cambiar la forma, y `data-layer.js` no tiene que traducir nada, porque el nombre es igual en los dos lados. Hasta que exista la columna, la app no debe mandar el campo, porque si no, guardar falla (`CLAUDE.md`).
 
 ### 2.4 Inversiones (`dinero3-inversiones.png`)
 
@@ -183,7 +198,7 @@ Hoy hay 52 iconos en `ICONS`, 16 en `CATS_STD` y 11 pistas en `CAT_ICONOS`, y va
 | `flag` | Metas, «Volver a ver la bienvenida», hitos, prioridad de tarea | Metas → `target`. Bienvenida → `replay`. `flag` se queda para hitos y prioridad |
 | `sparkle` | Qué hay de nuevo, «Una idea», días sin gastos, previsión, «Aprender de mi historial» | Novedades → `megafono`. Idea → `bulb`. Días sin gastos → `estrella`. `sparkle` = «lo hace la app sola» |
 | `tag` | Categorías, Reglas, «Otros», la categoría que más sube | Reglas → `autoTag` |
-| `calendar` | Agenda, Tu mes, Gasto fijo, fechas | Tu mes → `calRango`. Gasto fijo → `repeat`, como los recurrentes |
+| `calendar` | Agenda, Tu mes, Gasto fijo, fechas | Tu mes → `calRango`. Pago fijo → `repeat`, como los recurrentes |
 | `download` | Importar y Copia de seguridad | Importar → `fileIn`. Copia → `archive` |
 | `list` | Movimientos, Importaciones, «¿De dónde sale?» | Importaciones → `history`. «¿De dónde sale?» y «¿Cómo se calcula?» → `info` |
 | `chart` | Invertir, Acciones y **Moneda** | Moneda → `moneda`. Invertir → `trendUp`. Acciones → `velas` |
@@ -215,7 +230,21 @@ Hoy hay 52 iconos en `ICONS`, 16 en `CATS_STD` y 11 pistas en `CAT_ICONOS`, y va
 
 `aprenderRegla` prueba también `habilFin` 2 y 3, `habil` 2 y 3 y `nesimo -2`. `mismaRegla` compara también `dias`.
 
-**Festivos:** hoy «día hábil» no los cuenta. Se podría añadir una opción «Contar festivos nacionales» con los 9 fijos de España más el Viernes Santo calculado; los autonómicos y locales, no (pregunta 5).
+**Festivos (opción, por comunidad y con tus fiestas locales).** Hoy «día hábil» solo se salta los sábados y domingos.
+
+| Pieza | Propuesta |
+|---|---|
+| De dónde salen | Del **BOE**: cada octubre, la Dirección General de Trabajo publica las fiestas del año siguiente, las nacionales y las de cada comunidad, en una sola tabla anexa. La de 2027 salió en el BOE el 13/10/2026 (resolución del 8/10/2026). La de 2026 salió en octubre de 2025 |
+| Cómo se guardan | Una **tabla fija dentro de `app.js`**, sin servidor ni servicio de pago: `FESTIVOS = { 2026: { ES: ['01-01', …], MD: ['05-02', …], CT: [...], … }, 2027: {...} }`. Son 17 comunidades más Ceuta y Melilla: unas 250 fechas y unos 3 KB. Desarrollo la copia del BOE y la revisa con un segundo calendario |
+| Nacionales de 2027 | 1 ene, 6 ene, 26 mar (Viernes Santo), 1 may, 12 oct, 1 nov, 6 dic, 8 dic y 25 dic. Cambian cada año (en 2027 el 15 de agosto cae en domingo y no aparece), así que **no se calculan con una regla**: se copian del BOE |
+| Fiestas locales | Cada municipio tiene 2. Las publica cada comunidad en su boletín y son miles, así que no caben en la app. **Las pone el usuario:** «Fiestas de tu pueblo · opcional», 2 fechas con el selector de días. En enero, «Estos días» recuerda: «Pon las fiestas locales de 2027» |
+| Elegir la localidad | Una fila nueva, «Festivos», en la hoja de Cobros y pagos recurrentes (y desde Tú → «Tu mes»). Abre «¿Dónde trabajas?»: una lista de tarjetas con círculo con las 19 comunidades y una búsqueda arriba; luego, las 2 fiestas locales. Se dice «trabajas» porque los bancos y las nóminas siguen el calendario del sitio de trabajo |
+| Encendido | Con un interruptor: «Saltar festivos en los días hábiles», **apagado** al principio. Al encenderlo, sale «Así cambian tus fechas» con la próxima fecha de cada recurrente antes y después |
+| Dónde se guarda | `cfg().festivos = { on: true, zona: 'MD', locales: { 2027: ['2027-05-15', '2027-09-08'] } }`, privado y sin migración |
+| Qué cambia en el cálculo | `esFinde(d)` pasa a `noHabil(d)` = fin de semana o festivo (nacional, de tu comunidad o local), dentro de `fechasMesRegla` y `ajustarFinde`. «Si cae en fin de semana» pasa a decir «Si cae en fin de semana o festivo» |
+| Años sin tabla | Si la app aún no tiene un año (por ejemplo, 2028), ese año solo salta los fines de semana. En la hoja aparece: «Aún no tenemos los festivos de 2028». Desarrollo añade el año cada octubre, cuando sale el BOE |
+
+Alternativa descartada: pedir los festivos a un servicio gratuito como Nager.Date (`date.nager.at`). No pide clave, pero según un catálogo de APIs no deja que una web lo llame directamente (CORS). Además añade una dependencia externa y no hemos confirmado que tenga los festivos por comunidad. Como mucho, puede servir para comprobar la tabla.
 
 **El selector, con el formato de la app:**
 - **El campo** deja de ser un desplegable y pasa a ser un botón de 64 px: `ic('repeat')` en un cuadrado `--accent-soft`, la regla en negrita, «Próximos: jue 29 oct · jue 26 nov · mié 30 dic» y `chevR`.
@@ -240,8 +269,8 @@ Hoy hay 52 iconos en `ICONS`, 16 en `CATS_STD` y 11 pistas en `CAT_ICONOS`, y va
 | Cuentas y saldos | Un punto de color en vez de icono | Icono por tipo de cuenta con su color, como el mosaico de Dinero |
 | Categorías y presupuestos | Todos los iconos del mismo tono rojizo, no del color de su categoría como en Movimientos; presupuesto sin coma | `--cc: colorCat(nombre)`; `importeCampo` |
 | Reglas de categorías | «Tipo» y «Categoría» son desplegables del sistema; «Añadir» está abajo, junto a «Listo», lejos del formulario; mismo icono que Categorías | Chips de tipo y chips de categoría con icono (los del formulario de gasto); «Añadir regla» justo debajo; icono `autoTag` |
-| Recurrentes (lista) | Puntos en vez de iconos; «Último día hábil del mes · pró…» se corta; «Factura o pago» ocupa dos líneas | Icono (`arrowUp` para ingresos, el de su categoría para pagos); la regla en una línea y «Próximo: vie 30 oct» en otra; botones «Ingreso fijo» y «Gasto fijo» |
-| Recurrentes (editar) | Título «Editar»; el chip «Nómina» repite el campo; importe sin coma; «Categoría» y «¿Cuándo…?» son desplegables; dice «Factura o pago», pero el botón + dice «Gasto fijo» | Título = nombre; chips solo si hay más de una fuente; `importeCampo`; chips de categoría; selector 3.3; «Gasto fijo» en todas partes (pregunta 6) |
+| Recurrentes (lista) | Puntos en vez de iconos; «Último día hábil del mes · pró…» se corta; «Factura o pago» ocupa dos líneas | Icono (`arrowUp` para ingresos, el de su categoría para pagos); la regla en una línea y «Próximo: vie 30 oct» en otra; botones «Ingreso fijo» y «Pago fijo» |
+| Recurrentes (editar) | Título «Editar»; el chip «Nómina» repite el campo; importe sin coma; «Categoría» y «¿Cuándo…?» son desplegables; dice «Factura o pago», pero el botón + dice «Gasto fijo» | Título = nombre; chips solo si hay más de una fuente; `importeCampo`; chips de categoría; selector 3.3; «Pago fijo» en todas partes (ver abajo) |
 | Tu mes | Bien (es el modelo). Solo «Cobro el día» es un desplegable | Rejilla de días del selector |
 | Importar | Bien; icono `download` repetido | `fileIn` |
 | Papelera | Vacía, es una tarjeta de texto sin icono | Estado vacío de la app: `trash` en un círculo suave y «Está vacía» |
@@ -253,16 +282,35 @@ Hoy hay 52 iconos en `ICONS`, 16 en `CATS_STD` y 11 pistas en `CAT_ICONOS`, y va
 | Tu nombre | Solo el nombre | «Tu perfil» (3.1) |
 | Nueva meta, Nueva deuda | Campos del sistema, «Objetivo», emojis, «--------- ----» | 2.3 y 2.5 |
 
+**Nombre para lo que hoy es «Gasto fijo» / «Factura o pago»: «Pago fijo».**
+
+| Opción | A favor | En contra |
+|---|---|---|
+| **«Pago fijo» (recomendado)** | Vale para recibos, facturas y suscripciones; hace pareja con «Ingreso fijo»; es corto y cabe en el botón + y en una ficha | Ninguno importante |
+| «Gasto fijo» (hoy, en el botón +) | Ya se usa | Suena a una categoría de gasto y choca con «Gasto» a secas en el mismo menú |
+| «Factura o pago» (hoy, en Ajustes) | — | Largo (ocupa dos líneas) y deja fuera las suscripciones |
+| «Recibo» | Muy de banco español | Una suscripción pagada con tarjeta no es un recibo |
+| «Suscripción» | — | El alquiler o la luz no lo son |
+| «Cargo fijo» | — | Jerga de banco |
+
+Dónde cambia (son solo textos; el dato sigue siendo `tipo: 'Factura'`, sin migración):
+- `tipoTxt` → «Pago fijo», y `TIT_NUEVO` → «Nuevo pago fijo».
+- El botón + → «Pago fijo», con la línea pequeña «recibos, facturas y suscripciones».
+- En la hoja de recurrentes, «Facturas y pagos» → «Pagos fijos», y el selector del editor → «Ingreso fijo | Pago fijo».
+- En las pruebas, hay que cambiar 10 archivos que buscan estos textos: `test9`, `test18`, `test19`, `test20`, `test21`, `test24`, `test25`, `test28`, `test30` y `test63_tu_agenda`.
+- Las novedades antiguas no se tocan.
+
 ## 4. Tandas de trabajo
 
 | Tanda | Qué | Esfuerzo | «Antes» | Pruebas que cambian |
 |---|---|---|---|---|
 | 0 | Arreglo de `verActivo` (una línea) | Muy bajo | No | Añadir una prueba |
 | 1 | Dinero con fichas-pestañas, mosaico de cuentas, deudas con iconos | Medio | Sí (las pestañas antiguas) | `test57_dinero`, `test58_calidad_dinero`, `test69_calidad_tarjetas` y las que fijan `version:{dinero:3}` |
-| 2 | Formas de meta, hoja de la meta, «Nueva meta» | Medio-alto | Dentro de la tanda 1 | `test57`, `test58` y las de metas (`test15`, `test18`, `test26`) |
+| 2 | Formas de meta (estilo v2), hoja de la meta, «Nueva meta». La forma de las compartidas, cuando Datos haya creado la columna `forma` | Medio-alto | Dentro de la tanda 1 | `test57`, `test58` y las de metas (`test15`, `test18`, `test26`) |
 | 3 | Inversiones: 1S, líneas a elegir, hoja del activo, hoja de rentabilidad | Medio | No | Las de inversiones (`test29`, `test30`, `test35` y otras que buscan «Inversión») |
 | 4 | 24 iconos nuevos y cambios de uso | Bajo | No | Las que buscan un icono por nombre, si hay |
-| 5 | Reglas nuevas, selector y su uso en Tu mes | Medio | No | `test.js`, `test9.js` (reglas), `test43_tu_mes`, `test44_calidad_tu_mes` |
+| 5 | Reglas nuevas, selector y su uso en Tu mes; festivos (tabla 2026–2027, comunidad y locales) | Medio | No | `test.js`, `test9.js` (reglas), `test43_tu_mes`, `test44_calidad_tu_mes` y una prueba nueva de festivos |
+| 5b | «Pago fijo» en todos los textos | Bajo | No | Los 10 archivos de 3.4 |
 | 6 | Tu perfil y Fondo | Bajo | No | `test63_tu_agenda` (tuNombre) |
 | 7 | Arreglos de la tabla 3.4 | Bajo | No | Las que miran esos textos |
 
@@ -273,7 +321,8 @@ Orden recomendado: 0 → 1 → 2 → 4 → 3 → 5 → 6 → 7. La tanda 0 se pu
 - **Fichas que son pestañas:** dan el orden que gustaba del «Antes» y dejan a la vista las 4 cifras que da la pantalla de un vistazo. Las dos cosas que pidió el dueño.
 - **El tarro como forma por defecto:** es el que gustó y vale para cualquier meta.
 - **El selector de «¿Cuándo?» en un solo componente:** sirve para cuatro sitios y quita los desplegables del sistema de una vez.
-- **Forma y perfil guardados en privado:** se pueden publicar sin tocar Supabase. Si gustan, se comparten después.
+- **Perfil guardado en privado:** se puede publicar sin tocar Supabase. La forma de las compartidas sí necesita la columna de Datos.
+- **Festivos en una tabla fija:** sin red, sin coste y sin sorpresas. El precio es acordarse de añadir un año cada octubre.
 
 ## 6. Riesgos
 
@@ -286,15 +335,18 @@ Orden recomendado: 0 → 1 → 2 → 4 → 3 → 5 → 6 → 7. La tanda 0 se pu
 - **Reglas nuevas y versiones antiguas guardadas en caché:** una app sin actualizar no entiende `habilFin`, `diasMes` ni `dias`. Ese recurrente saldría «Sin fecha» hasta que se actualice. No se pierde nada.
 - **«Negro puro»:** hay que revisar el contraste de tarjetas y bordes.
 - **Cambiar iconos conocidos** despista unos días. Contarlo en las novedades.
+- **Festivos:** un error al copiar la tabla movería fechas de cobro previstas. Por eso se revisa con un segundo calendario, la opción viene apagada y al encenderla se ven los cambios. Si alguien se olvida de añadir el año siguiente, solo se saltan los fines de semana y se avisa.
+- **Forma compartida:** si la app manda `forma` antes de que exista la columna, guardar la meta falla. Hay que publicar primero la columna (Datos) y después la app.
 
 ## 7. Preguntas para el dueño
 
-1. **(Bloquea la tanda 1)** ¿Dinero con las 4 fichas que hacen de pestañas, quitando la pantalla de un vistazo y las variantes Camino y Anillos? **Recomendado: sí.** «Antes» serían las pestañas antiguas.
-2. **(Bloquea la tanda 2)** ¿Metas con forma que se llena (12 formas, tarro por defecto) en vez de emoji? Y en las compartidas, ¿forma guardada solo para ti, sin tocar Supabase? **Recomendado: sí y sí.** La columna compartida, más adelante si hace falta.
+Ya decidido el 22/10: Dinero con pestañas (sí); metas con forma (sí, con el estilo v2); la forma de las compartidas, igual para todo el grupo (columna nueva); festivos por localidad como opción; un nombre mejor que «Gasto fijo».
+
+1. ¿Te convencen las formas v2 (`dinero3-formas-v2.png`)? **Bloquea la tanda 2.**
+2. ¿«Pago fijo» como nombre? **Recomendado: sí.**
 3. ¿Inversiones abre en la semana (1S) o en el mes? **Recomendado:** recordar la última elegida; la primera vez, 1S.
 4. ¿El dibujo y el color del perfil solo los ves tú, o los ven también tus grupos (necesita una columna, pasa por Datos y seguridad)? **Recomendado: solo tú, de momento.** Foto: no.
-5. ¿Añadimos «Contar festivos nacionales» al día hábil? **Recomendado: sí, como opción apagada.** Encendida por defecto cambiaría las fechas de quien ya tiene recurrentes.
-6. ¿Llamamos «Gasto fijo» en todas partes a lo que en Ajustes se llama «Factura o pago»? **Recomendado: sí**, es lo que ya dice el botón +.
+5. Festivos: ¿comunidad elegida a mano más 2 fiestas locales que pone el usuario, con la opción apagada al principio? **Recomendado: sí.** Encendida por defecto cambiaría las fechas de quien ya tiene recurrentes.
 
 ## 8. Lo que no hemos podido averiguar o confirmar
 
@@ -304,6 +356,8 @@ Orden recomendado: 0 → 1 → 2 → 4 → 3 → 5 → 6 → 7. La tanda 0 se pu
 - **El modo claro solo está en las maquetas de Metas, Formas y Aspecto.** Las demás, en oscuro.
 - **No sabemos cuántas metas, deudas, activos o recurrentes tienen los usuarios** (no miramos sus datos), ni cuántos eligieron un emoji a mano en sus deudas.
 - **No hemos revisado** la hoja «Verificación en dos pasos» (no sale en las pruebas) ni la de Grupos con datos.
+- **No hemos copiado aún la tabla de festivos por comunidad** de 2026 y 2027. Solo hemos confirmado las nacionales de 2027 y la fecha del BOE, a través de un despacho de abogados (Garrigues). Desarrollo debe copiarla del BOE original.
+- **No hemos confirmado** si Nager.Date tiene los festivos por comunidad ni si deja llamarlo desde la web: el dato de CORS viene de un catálogo de APIs, no de su documentación.
 - **Las alturas de la maqueta están medidas en la maqueta, no en la app:** tarjeta de meta unos 175 px, pestaña Inversiones 1,1 pantallas.
 
 ## 9. Fuentes
@@ -317,6 +371,8 @@ Orden recomendado: 0 → 1 → 2 → 4 → 3 → 5 → 6 → 7. La tanda 0 se pu
   - Tú y aspecto: `renderTuV2`, `tuNombreHtml`, `aspectoHtml`, `PALETAS`, `applyLook`, `COLORES_PERSONA_NUEVO`.
   - Iconos y versiones: `ICONS`, `CATS_STD`, `CAT_ICONOS`, `TIPO_ICONO`, `LIST_META`, `invIcono`, `VERSIONES`, y el código de `verActivo` (línea 8770) e `irMovs`.
 - **`supabase/migrations/README.md`:** columnas de `objetivos_compartidos` (`hitos`, `usos`, `conseguida`).
+- **Festivos:** [Garrigues, «Publicado en el BOE el calendario laboral de España para 2027»](https://www.garrigues.com/es_ES/noticia/publicado-boe-calendario-laboral-espana-2027), consultado el 22/10/2026. Es un despacho de abogados; no tiene interés propio en esto.
+- **Nager.Date:** [ficha en public-api.org](https://public-api.org/es/api/156/nager-date), consultada el 22/10/2026. Es un catálogo de terceros, no la documentación oficial.
 - **Capturas y medidas propias** con datos inventados, 22/10/2026. Las maquetas y los scripts están en el espacio de trabajo temporal (`rig/d15`), no en el repositorio.
 
-Para el PDF: en la primera página, `dinero3-antes.png` (la columna larga de hoy) al lado de `dinero3-pestanas.png`, con la pregunta 1 debajo. En la segunda, `dinero3-formas.png` y `dinero3-meta.png` juntas, con la pregunta 2.
+Para el PDF: en la primera página, `dinero3-antes.png` (la columna larga de hoy) al lado de `dinero3-pestanas.png`, con la pregunta 1 debajo. En la segunda, `dinero3-formas-v2.png` y `dinero3-meta-v2.png` juntas, con la pregunta 1. Las formas v1 no van en el PDF.

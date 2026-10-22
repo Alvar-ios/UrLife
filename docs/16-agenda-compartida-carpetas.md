@@ -1,22 +1,26 @@
-# Agenda compartida («Planes») y carpetas en los grupos: propuesta de Producto y diseño (22/10/2026)
+# Agenda compartida («Planes») y temas en los grupos: propuesta de Producto y diseño (22/10/2026, v2)
 
-*Encargo: `docs/13-feedback-22-10.md`, puntos 2 y 3. Una propuesta recomendada por tema, lista para programar cuando el dueño decida. Necesita cambios en Supabase (solo aditivos): **antes de programar, pasa por Datos y seguridad** (apartado 4).*
+*Encargo: `docs/13-feedback-22-10.md`, puntos 2 y 3. Necesita cambios en Supabase (solo aditivos): **antes de programar, pasa por Datos y seguridad** (apartado 4).*
+
+**Decidido por el dueño (22/10/2026):** «Planes» sí; carpetas de un solo nivel sí; se hacen las dos cosas, **primero las carpetas**. Pide además: que sea muy intuitivo y ordenado; que al compartir un gasto, **justo al elegir el grupo**, salga la opción de meterlo en una carpeta (y crear una nueva ahí mismo); otro nombre en vez de «carpeta»; y un resumen sencillo (lo gastado y quién pagó qué). Esta v2 lo recoge: en pantalla, las carpetas pasan a llamarse **«temas»** (pendiente de su visto bueno, apartado 3.1).
 
 Imágenes en `docs/img/` (bocetos dibujados aparte, 375 × 667 px, datos inventados; **no son la app**):
 
 | Archivo | Qué enseña |
 |---|---|
 | `agenda-boceto-planes.png` | Tu Agenda con lo compartido, la hoja «Nuevo plan» y el grupo con «Gastos \| Saldos \| Planes» (oscuro) |
-| `juntos-boceto-carpetas.png` | El grupo con una carpeta elegida, «Nueva carpeta» y «Compartir un gasto» con la carpeta (oscuro) |
-| `agenda-carpetas-claro.png` | Tres de las pantallas en modo claro |
+| `juntos-boceto-carpetas-v2.png` | **La buena para los temas:** compartir un gasto (eliges el grupo → justo debajo, sus temas), «+ Nuevo» sin salir del gasto, «Por temas» dentro del grupo y el resumen de un tema (oscuro) |
+| `juntos-boceto-carpetas-v2-claro.png` | El formulario y el resumen de un tema en modo claro |
+| `agenda-carpetas-claro.png` | Planes en modo claro (la tercera pantalla es la carpeta de la v1) |
+| `juntos-boceto-carpetas.png` | v1, sustituida por la v2 (se guarda para comparar) |
 
 ## 1. Conclusión
 
-1. **Nombre: «Planes».** Un plan es algo que va a pasar («Cena de cumple de Ana», «Vuelo a Roma»). La Agenda pasa a tener **tareas y planes**, y los dos se pueden hacer **«Solo yo»** o compartir con un grupo de Juntos o con una persona. Dentro del grupo, una tercera pestaña: **«Gastos | Saldos | Planes»**.
-2. **Una tarea compartida dice quién se encarga** («se encarga Bea» o «quien pueda») y, al hacerla, **«Hecha por Dani»**. Cualquiera del grupo la puede marcar como hecha. Editar y borrar siguen la misma regla que los gastos del grupo.
-3. **Los avisos son dentro de la app.** Hoy PalomApp no puede mandar notificaciones al móvil (no tiene la pieza que lo permite). «Avisarme» sube el plan arriba en «Estos días» de Inicio, y lo que añaden otros sale como «Dani ha añadido…». Como avisador de verdad, cada plan trae **«Añadir a mi calendario»** (el del móvil). Las notificaciones llegarán con la APK.
-4. **Carpetas de un solo nivel, cada una con su icono** (un avión para los viajes, un carrito para la compra…). Una fila de carpetas encima de los gastos del grupo: al tocar una, ves su total, tu parte, en qué se fue y quién puso cuánto. **Las deudas siguen siendo del grupo entero**: no hay «saldar una carpeta».
-5. **Datos:** dos tablas nuevas (`agenda` y `grupo_carpetas`) y una columna nueva y vacía (`compartidos.carpeta_id`). No se toca `tareas` ni ningún dato existente. **Recomendamos hacer primero las carpetas** (más pequeñas, solo tocan Juntos) y después los Planes.
+1. **Nombre: «Planes».** Un plan es algo que va a pasar («Cena de cumple de Ana», «Vuelo a Roma»). La Agenda pasa a tener **tareas y planes**, y los dos se pueden hacer **«Solo yo»** o compartir con un grupo de Juntos o con una persona. Dentro del grupo, una tercera pestaña: **«Gastos | Saldos | Planes»**. Una tarea compartida dice **quién se encarga** («se encarga Bea» o «quien pueda») y, al hacerla, **«Hecha por Dani»**.
+2. **Los avisos son dentro de la app.** Hoy PalomApp no puede mandar notificaciones al móvil (no tiene la pieza que lo permite). «Avisarme» sube el plan arriba en «Estos días» de Inicio, y lo que añaden otros sale como «Dani ha añadido…». Como avisador de verdad, cada plan trae **«Añadir a mi calendario»** (el del móvil). Las notificaciones llegarán con la APK.
+3. **«Temas» en vez de «carpetas»** («el tema del viaje», «el tema de la casa»: así se habla). Un solo nivel y cada uno con su icono. **Al compartir un gasto, en cuanto tocas el grupo, justo debajo salen sus temas**, ya elegido el que encaja por fecha, y «+ Nuevo» lo crea ahí mismo sin salir del gasto.
+4. **Resumen de un tema, en dos cifras y una lista:** «Gastado entre los dos» y «Tu parte», y debajo «Quién pagó qué» (una barra por persona) y «En qué se fue». Quién debe a quién sigue en «Saldos», con todo el grupo junto: un tema no lleva sus propias deudas.
+5. **Datos:** dos tablas nuevas (`agenda` y `grupo_carpetas`) y una columna nueva y vacía (`compartidos.carpeta_id`). No se toca `tareas` ni ningún dato existente. Los nombres de dentro de la base de datos no se ven en pantalla. **Orden: primero los temas** (solo tocan Juntos), después los Planes.
 
 ## 2. Agenda compartida: «Planes»
 
@@ -92,48 +96,79 @@ Si en «Con» se elige un grupo para una **tarea**, aparece «¿Quién se encarg
 - `calEventos` y `eventosAgenda` suman los planes (`k: 'plan'`) y las tareas compartidas (`k: 'tareaC'`); cada cosa una sola vez, como hoy. El buscador de la lupa también los encuentra.
 - «Añadir a mi calendario»: generar en el móvil un archivo `.ics` con el plan y descargarlo. No se manda nada a ningún servidor.
 - «Abrir en Mapas»: enlace de búsqueda de Google Maps con el texto de «¿Dónde?».
-- Iconos nuevos en `ICONS`: `bell`, `clock`, `pin` (y `folder` para las carpetas). Sin emojis.
+- Iconos nuevos en `ICONS`: `bell`, `clock`, `pin`. Sin emojis.
 - `Estos días`: orden propuesto: cobros/pagos pasados, tareas vencidas, **planes con aviso**, lo de hoy, **novedades**, presupuestos, Juntos, lo de los próximos 7 días. Sigue mostrando 2 filas y «Ver los N». La fila de novedades puede servir mañana también para los gastos de Juntos (punto 4 del feedback).
 - Pruebas: las de Juntos que buscan la pestaña «Gastos | Saldos» y las del texto «Quién puede cambiar los gastos» habrá que actualizarlas.
 
-## 3. Carpetas en los grupos
+## 3. Temas en los grupos (antes «carpetas»)
 
-### 3.1 Cómo funcionan
+### 3.1 El nombre
 
-| Pregunta | Propuesta |
+| Nombre | Cómo se lee en la app | A favor | En contra | Veredicto |
+|---|---|---|---|---|
+| **Temas** | «¿De qué tema?» · «+ Nuevo tema» · «Por temas» | Es como se habla («el tema del viaje», «el tema de la casa»). Vale igual para un viaje, la compra o la casa. No choca con nada de la app | Algo genérico: el icono de cada tema lo compensa | **Recomendado** |
+| Cajones | «¿En qué cajón?» · «+ Nuevo cajón» | El más visual y juguetón: ordenar los gastos en cajones | Menos serio; «cajón desastre» | Segunda opción |
+| Ocasiones | «¿Para qué ocasión?» · «+ Nueva ocasión» | Muy claro para viajes, cenas y regalos | «Compra» o «Casa» no son ocasiones | Tercera opción |
+| Apartados | — | — | Choca con «Apartar», que en la app es guardar dinero | Descartado |
+| Viajes y planes | — | — | Choca con «Planes» de la Agenda y deja fuera la compra | Descartado |
+| Etiquetas · Sobres · Huchas · Bolsillos | — | — | «Etiquetas» suena técnico y se confunde con las categorías; los otros suenan a dinero guardado, como las metas | Descartados |
+
+En la base de datos la tabla se sigue llamando `grupo_carpetas`: ese nombre no lo ve nadie y así Datos no tiene que esperar a esta decisión.
+
+### 3.2 Reglas para que sea intuitivo y ordenado
+
+1. **El tema se elige siempre en el mismo sitio:** justo debajo del grupo, en el recuadro «¿De qué tema?».
+2. **Siempre es opcional:** «Ninguno» es una opción más; nada obliga a usar temas.
+3. **Viene elegido solo cuando es obvio:** el tema que estás mirando; si no, el que cubre la fecha del gasto; si no, el último que usaste en ese grupo en las últimas 12 horas (la tercera compra seguida en el súper); si no, «Ninguno». La línea de debajo dice por qué («Elegido por la fecha: Roma es del 19 al 25 oct.»).
+4. **Un solo nivel y una sola fila:** los temas abiertos en una fila de chips que se desliza; si hay más de 5, el último chip es «Ver todos».
+5. **Mismo icono y color en todas partes** (el formulario, la fila del grupo, «Por temas» y la línea de cada gasto).
+6. **Nunca se pierde un gasto:** borrar un tema deja sus gastos en «Sin tema», con «Deshacer».
+
+### 3.3 Al compartir un gasto (bocetos 1 y 2 de `juntos-boceto-carpetas-v2.png`)
+
+| Paso | Qué ves (texto exacto) |
 |---|---|
-| ¿Uno o dos niveles? | **Uno.** Cada carpeta tiene un icono; el icono hace de «tipo» (todas las de avión son viajes). Nada de carpetas dentro de carpetas |
-| ¿Dónde se ven? | En el grupo, pestaña «Gastos»: fila de chips «Todo · `plane` Roma 2026 · `cart` Compra · `home` Casa · `plus`». Primero la que cubre hoy por fechas, luego las últimas usadas. Las cerradas, al final en un chip «Cerradas · 2» |
-| ¿Cómo se crean? | Con el chip `plus` o desde «Compartir un gasto» («+ Nueva» en la fila de carpetas). Hoja «Nueva carpeta» (boceto 2): ideas, nombre, icono, fechas opcionales. Puede crearlas cualquiera del grupo |
-| Ideas que se ofrecen | `plane` «Viaje a…» · `cart` «Compra» · `home` «Casa» · `fork` «Cenas y planes» · `gift` «Regalos». Al tocar una, rellena nombre e icono |
-| Iconos que se pueden elegir | `plane`, `cart`, `home`, `fork`, `gift`, `car`, `ball`, `film`, `heart`, `tag` (ya existen en la app) |
-| Fechas (opcional) | «Del 19 al 25 oct». Al apuntar un gasto de esos días, la carpeta viene elegida. Si ya hay gastos de esas fechas: casilla marcada «Meter los 3 gastos de esos días» (con sus nombres debajo) |
-| Poner un gasto en una carpeta al crearlo | En «Compartir un gasto», fila «Carpeta» (solo si el grupo tiene carpetas abiertas): «Ninguna · Roma 2026 · Compra…». Viene elegida la que estás mirando, si no, la que cubre esa fecha («· por la fecha»), si no, «Ninguna» |
-| Después | Al editar el gasto, la misma fila. Y en la carpeta, `more` → «Añadir gastos ya apuntados»: lista con casillas de los gastos sin carpeta de los últimos 90 días |
-| ¿Qué entra? | Gastos y gastos fijos compartidos. Los pagos entre vosotros, las aportaciones a metas y los pagos de deudas, no |
-| Cerrar | `more` → «Cerrar carpeta»: sale de la fila y de las opciones, pero se puede abrir desde «Cerradas» |
-| Borrar | `more` → «Borrar carpeta»: sus gastos quedan sin carpeta (no se borra ningún gasto). «Carpeta borrada · Deshacer» |
-| En «Todo» | Cada gasto con carpeta lo dice al final de su línea: «pagó Marta · tu parte 9,00 € · Roma 2026» |
-| Fuera del grupo | Nada cambia en la pestaña Juntos ni en Movimientos (fase 2: filtrar tus movimientos por carpeta) |
+| 1 · «Con» | Los chips de siempre: grupos y personas |
+| 2 · Tocas un grupo | Justo debajo se despliega (deslizando, 200 ms) un recuadro con el fondo de acento suave: «¿De qué tema? · opcional» y chips «Ninguno · `plane` Roma 2026 · `cart` Compra · `plus` Nuevo». Si el grupo aún no tiene temas: «Ninguno · `plus` Nuevo tema» y la línea «Para separar un viaje, la compra o la casa.» Con una persona a solas, igual |
+| 3 · Elegido solo | Debajo de los chips, en pequeño: «Elegido por la fecha: Roma es del 19 al 25 oct.» Si cambias la fecha y el tema lo puso la app, se recalcula; si lo elegiste tú, se respeta |
+| 4 · «+ Nuevo» | Dentro del mismo recuadro, sin abrir otra hoja: campo «Nombre (Roma 2026, Compra…)», fila de 6 iconos, chip `calendar` «Fechas · opcional» y botón «Crear «Navidad»». Al crear: queda elegido, vibra suave (`sentir('ok')`) y lo ya escrito (importe, qué fue) sigue ahí |
+| 5 · El resto | Como hoy: importe, qué fue, pagó, para quién, «Guardar» |
+| Al cambiar de grupo | El tema vuelve a «Ninguno» (los temas son de cada grupo) |
 
-### 3.2 El resumen de una carpeta (boceto 1)
+Después: al editar un gasto compartido sale el mismo recuadro. Y dentro de un tema, `more` → «Añadir gastos ya apuntados»: lista con casillas de los gastos del grupo sin tema de los últimos 90 días.
+
+### 3.4 Dentro del grupo (bocetos 3 y 4)
+
+| Sitio | Qué sale (texto exacto) |
+|---|---|
+| Pestaña «Gastos», arriba | Fila de chips «Todo · `plane` Roma 2026 · `cart` Compra · `gift` Navidad · `plus`». Solo sale si el grupo tiene algún tema; si no, un chip discreto «`plus` Tema» junto a «Entre todos…» |
+| Con «Todo» elegido | Tarjeta **«Por temas»**: una fila por tema (icono, nombre, «19–25 oct · 9 gastos», lo gastado y `chevR`) y al final «Sin tema». Como mucho 4 filas y «Ver todos (6)». Debajo, la lista de gastos de siempre; cada gasto con tema lo dice al final: «pagaste tú · tu parte 42,00 € · Roma 2026» |
+| Al tocar un tema | Su resumen (tabla siguiente) en la misma hoja, con `chevL` para volver |
+| Hoja «Nuevo tema» (desde el chip `plus`) | La de `juntos-boceto-carpetas.png` (v1, boceto 2) con «tema» en vez de «carpeta»: ideas `plane` «Viaje a…» · `cart` «Compra» · `home` «Casa» · `fork` «Cenas y salidas» · `gift` «Regalos»; nombre; icono; fechas; y, si ya hay gastos en esas fechas, la casilla marcada «Meter los 3 gastos de esos días» |
+| `more` de un tema | «Cambiar nombre, icono o fechas» · «Añadir gastos ya apuntados» · «Cerrar tema» (sale de la fila; se ve en «Cerrados · 2») · `trash` «Borrar tema» |
+
+**El resumen de un tema:**
 
 | Bloque | Texto exacto |
 |---|---|
-| Cabecera | Icono, «Roma 2026», «19–25 oct · 9 gastos» y `more` |
-| Total | «1.240,00 €» grande y a la derecha «tu parte **620,00 €**» |
-| En qué | Barra partida por categorías con sus colores fijos (`colorCat`), como mucho 4 y «Otros», con su leyenda («Viajes 540 · Restaurantes 410…») |
-| Quién puso cuánto | Una línea por persona: «Tú · pagaste **780,00 €** — te tocan **620,00 €**», «Lucía · pagó **460,00 €** — le tocan **620,00 €**» |
-| Aviso | «Lo que os debéis se salda con el grupo entero.» |
-| Debajo | Los gastos de la carpeta por días; el botón de abajo dice «`plus` Añadir gasto a Roma 2026» |
+| Cabecera | `chevL`, icono, «Roma 2026», «Casa · 19–25 oct · 9 gastos», `more` |
+| Dos cifras | «Gastado entre los dos» (o «entre todos» si sois más) **1.240,00 €** y «Tu parte» **620,00 €** |
+| Quién pagó qué | Una barra por persona con lo que puso: «Tú · 780,00 €», «Lucía · 460,00 €» (cada barra, su trozo del total; color de cada persona, `colorPersona`) |
+| En qué se fue | Barra partida por categorías (`colorCat`), como mucho 4 y «Otros», con su leyenda |
+| Línea final | «Quién debe a quién se ve en **Saldos**, con todo el grupo junto.» («Saldos» es un enlace a esa pestaña) |
+| Debajo | Los gastos del tema por días; botón «`plus` Añadir gasto a Roma 2026» |
 
-**Recomendamos solo totales, no saldo por carpeta.** Los pagos entre vosotros se hacen al grupo, no a una carpeta; un «Lucía te debe 160 € en Roma» no cuadraría con lo que dice «Saldos» y rompería la confianza que hemos ganado con «¿De dónde sale?». «Pagó / le tocan» da la misma información sin prometer una deuda.
+**Dicho fácil (sustituye a «solo totales»):** un tema sirve para ver **cuánto se ha gastado y quién lo ha pagado**. Las deudas no se separan por temas: si Lucía te debe dinero, te lo debe del grupo entero, y eso está en «Saldos». Así nunca hay dos cifras distintas de lo que se debe. Por eso quitamos de la v1 el «te tocan / le tocan», que se confundía con una deuda.
 
-### 3.3 Para Desarrollo
+**Qué entra en un tema:** gastos y gastos fijos compartidos. Los pagos entre vosotros, las aportaciones a metas y los pagos de deudas, no. Fuera del grupo (pestaña Juntos, Movimientos) no cambia nada en esta fase.
 
-- `Data.carpetas` con `tablaCompartida('grupo_carpetas', …)`; en `compartidos` se añade `carpetaId` a la lista de campos y a `deFila`. Una versión antigua de la app que edite un gasto no borra su carpeta (solo envía los campos que conoce).
-- Cambiar la carpeta de uno o varios gastos va por una función (`poner_carpeta`), para que lo pueda hacer cualquiera del grupo aunque el grupo tenga «Solo quien lo apuntó» (ver 4.2).
-- Totales con los mismos cálculos de hoy (`miParte`, reparto), solo filtrando por carpeta.
+### 3.5 Para Desarrollo
+
+- `Data.carpetas` con `tablaCompartida('grupo_carpetas', …)`; en `compartidos` se añade `carpetaId` a la lista de campos y a `deFila`. Una versión antigua de la app que edite un gasto no borra su tema (solo envía los campos que conoce).
+- En `compRapidoHtml`, el recuadro va justo después de `.cr-con` y solo si hay `cp.dest`. «+ Nuevo» guarda primero el tema (`Data.carpetas.crear`) y luego lo deja elegido en `FORM`; si falla, aviso y el gasto sigue sin tema.
+- Cambiar el tema de uno o varios gastos ya guardados va por una función (`poner_carpeta`), para que lo pueda hacer cualquiera del grupo aunque el grupo tenga «Solo quien lo apuntó» (ver 4.2).
+- Cifras con los cálculos de hoy (`miParte`, reparto, `pagadoPor`), solo filtrando por tema.
+- Icono nuevo en `ICONS`: no hace falta para los temas (se usan los de las categorías).
 
 ## 4. Modelo de datos propuesto (para Datos y seguridad)
 
@@ -183,7 +218,7 @@ create index agenda_mias on public.agenda (creado_por) where grupo_id is null an
 
 Lo personal de cada uno («Avisarme», «Ocultar», lo visto) va en su configuración (`config`), no en esta tabla.
 
-### 4.2 Carpetas: tabla `grupo_carpetas` y columna `compartidos.carpeta_id`
+### 4.2 Temas (por dentro, «carpetas»): tabla `grupo_carpetas` y columna `compartidos.carpeta_id`
 
 ```sql
 create table public.grupo_carpetas (
@@ -207,11 +242,11 @@ alter table public.compartidos add column carpeta_id uuid references public.grup
 
 | Regla | Propuesta |
 |---|---|
-| Ver carpetas | `es_miembro(grupo_id)` (quien salió del grupo sigue viendo sus gastos antiguos; la carpeta le saldrá como «Sin carpeta», no hace falta más) |
-| Crear | `es_miembro(grupo_id)` y grupo no cerrado. Como mucho 30 carpetas sin borrar por grupo |
+| Ver temas | `es_miembro(grupo_id)` (quien salió del grupo sigue viendo sus gastos antiguos; el tema le saldrá como «Sin tema», no hace falta más) |
+| Crear | `es_miembro(grupo_id)` y grupo no cerrado. Como mucho 30 temas sin borrar por grupo |
 | Cambiar, cerrar, borrar | `puede_editar_compartido(grupo_id, creado_por)` (la misma regla que los gastos) |
-| Disparador nuevo y aparte `validar_carpeta_compartido` (antes de crear o cambiar `carpeta_id` en `compartidos`) | La carpeta tiene que ser del mismo grupo, no estar borrada, ni cerrada si se acaba de poner; solo en tipo `Gasto` o `Factura`. **No se reemplaza `validar_compartido`** |
-| Función `poner_carpeta(p_ids uuid[], p_carpeta uuid)` | Cualquier miembro cambia **solo** la carpeta de gastos de su grupo (hasta 200 de una vez; `p_carpeta` vacío = quitarla). No toca importes ni repartos |
+| Disparador nuevo y aparte `validar_carpeta_compartido` (antes de crear o cambiar `carpeta_id` en `compartidos`) | El tema tiene que ser del mismo grupo, no estar borrado, ni cerrado si se acaba de poner; solo en tipo `Gasto` o `Factura`. **No se reemplaza `validar_compartido`** |
+| Función `poner_carpeta(p_ids uuid[], p_carpeta uuid)` | Cualquier miembro cambia **solo** el tema de gastos de su grupo (hasta 200 de una vez; `p_carpeta` vacío = quitarla). No toca importes ni repartos |
 
 ## 5. Alternativas descartadas
 
@@ -221,9 +256,10 @@ alter table public.compartidos add column carpeta_id uuid references public.grup
 | Guardar los planes compartidos en la configuración de cada uno | Los demás no los verían |
 | Notificaciones al móvil ya | Necesitan una pieza nueva en la web y un servidor que las envíe; en iPhone, además, solo si la app está instalada en la pantalla de inicio. Mejor con la APK |
 | «¿Vas?» (apuntarse a un plan) | Útil en grupos grandes, pero es otra tabla. Fase 2; mientras, «Ocultar de mi agenda» |
-| Carpetas dentro de carpetas («Viajes» → «Roma 2026») | Más toques para llegar y más sitios donde se pierde un gasto. El icono hace de «Viajes» |
-| Carpetas como texto en cada gasto y lista dentro de `grupos` | Cambiar el nombre obligaría a reescribir gastos; si dos personas crean carpetas a la vez, una pisa a la otra |
-| Saldo y «Saldar» por carpeta | No cuadraría con los saldos del grupo (los pagos son del grupo). Para eso ya existe crear un grupo por viaje |
+| Temas dentro de temas («Viajes» → «Roma 2026») | Más toques para llegar y más sitios donde se pierde un gasto. El icono hace de «Viajes» |
+| Temas como texto en cada gasto y lista dentro de `grupos` | Cambiar el nombre obligaría a reescribir gastos; si dos personas crean temas a la vez, una pisa a la otra |
+| Deudas y «Saldar» por tema | No cuadraría con «Saldos» (los pagos son del grupo entero). Si alguien quiere cerrar cuentas de un viaje aparte, puede crear un grupo para ese viaje |
+| «Te tocan / le tocan» en el resumen (v1) | Se confundía con una deuda. Ahora: lo gastado, tu parte y quién pagó qué |
 
 ## 6. Riesgos
 
@@ -232,32 +268,35 @@ alter table public.compartidos add column carpeta_id uuid references public.grup
 - **Horas sin zona horaria:** un plan a las 21:30 se lee igual en Roma que en Madrid. Para la gente que la usa hoy, vale; con viajes al extranjero puede confundir.
 - **Grupos grandes llenan tu Agenda** de planes ajenos: por eso «Ocultar de mi agenda» y que las tareas encargadas a otros no salgan en la tuya.
 - **Ruido en Inicio:** una sola fila de novedades, nunca una por cosa.
-- **Carpeta «Compra» frente a la categoría «Supermercado»:** pueden parecer lo mismo. Las ideas empiezan por «Viaje a…», que es donde una carpeta aporta más.
-- **Totales de una carpeta frente a saldos:** alguien puede pensar que «pagó / le tocan» es lo que se debe; el aviso «Lo que os debéis se salda con el grupo entero» va siempre.
+- **Tema «Compra» frente a la categoría «Supermercado»:** pueden parecer lo mismo. Las ideas empiezan por «Viaje a…», que es donde un tema aporta más.
+- **«Quién pagó qué» frente a lo que se debe:** alguien puede leer «Tú 780 €» como «me deben 780 €». Por eso la línea final lleva siempre a «Saldos».
+- **El recuadro de temas alarga el formulario** unos 90 px (más con «+ Nuevo» abierto). Con 375 × 667 el botón «Guardar» sigue fijo abajo; hay que comprobar que el importe no quede tapado por el teclado.
+- **Elegir el tema «solo» puede equivocarse** (un gasto de casa durante el viaje). Por eso siempre dice por qué lo ha elegido y se cambia de un toque.
 - **Pestaña nueva en el grupo:** las pruebas de Juntos que comprueban «Gastos | Saldos» y el texto «Quién puede cambiar los gastos» se tendrán que actualizar.
 - **Si la tabla no está en la publicación de cambios en directo,** los demás no verán un plan nuevo hasta recargar.
 
 ## 7. Preguntas para el dueño
 
-1. **(Bloquea los Planes)** ¿Te gusta el nombre **«Planes»** («Gastos | Saldos | Planes» en el grupo y «Tarea | Plan» al crear)? Recomendado: sí.
-2. ¿Los planes de un grupo salen en la Agenda de todos sus miembros, con «Ocultar de mi agenda» para quien no vaya? Recomendado: sí; el «¿Vas?» más adelante.
-3. **(Bloquea las carpetas)** ¿Carpetas de un solo nivel con icono (el avión agrupa los viajes), sin carpetas dentro de carpetas, y solo con totales (sin saldo por carpeta)? Recomendado: sí.
-4. ¿Qué va antes? Recomendado: **primero carpetas** (una tabla y una columna, solo toca Juntos) y **después Planes** (más grande, toca Agenda, Inicio y Juntos).
+1. ¿Los planes de un grupo salen en la Agenda de todos sus miembros, con «Ocultar de mi agenda» para quien no vaya? Recomendado: sí; el «¿Vas?» más adelante.
+2. **(Bloquea los textos de los temas, no el trabajo de Datos)** ¿Cómo las llamamos: **«Temas»** (recomendado), «Cajones» u «Ocasiones»?
+3. ¿Te vale el resumen de un tema así: «Gastado entre los dos», «Tu parte», «Quién pagó qué» y «En qué se fue», con las deudas siempre en «Saldos»? Recomendado: sí.
+
+Ya decidido (22/10/2026): «Planes» sí; un solo nivel sí; primero los temas y después los Planes.
 
 ## 8. Lo que no hemos podido averiguar o confirmar
 
 - Nada probado en la app ni en un móvil real: los bocetos se dibujaron aparte (Chromium, 375 × 667) con datos inventados y fuentes que pueden no ser las de la app.
 - No hemos comprobado que un iPhone abra bien un `.ics` descargado desde la web (en Safari suele ofrecer «Añadir al calendario»; con la web instalada en la pantalla de inicio, no lo sabemos).
 - En el repositorio no están todas las reglas actuales de `compartidos` (solo la de editar) ni la definición de `es_miembro`: Datos debe comprobarlas antes de copiar el patrón.
-- No sabemos cuántos grupos, gastos compartidos ni tareas tiene cada usuario (no miramos datos reales), así que los límites (30 carpetas, 200 gastos por cambio, 90 días) son estimaciones.
-- No hemos estudiado cómo resuelven Tricount o Splitwise las carpetas ni los calendarios compartidos en esta propuesta.
-- El esfuerzo es una estimación de Producto: carpetas, medio; Planes, alto.
+- No sabemos cuántos grupos, gastos compartidos ni tareas tiene cada usuario (no miramos datos reales), así que los límites (30 temas, 200 gastos por cambio, 90 días, 12 horas) son estimaciones.
+- No hemos estudiado cómo resuelven Tricount o Splitwise los temas ni los calendarios compartidos en esta propuesta.
+- El esfuerzo es una estimación de Producto: temas, medio; Planes, alto.
 
 ## 9. Fuentes
 
 - `docs/13-feedback-22-10.md` (puntos 2 y 3), `docs/04-juntos.md`, `docs/10-agenda-mas.md`, `CLAUDE.md`. Consultados el 22/10/2026.
 - `app.js`: `renderAgendaSemanaV2`, `renderCalendarioV2`, `openTareaFormV2`, `agRapidaCrear`, `eventosAgenda`, `calEventos`, `evColor`, `estosDiasHtml`, `renderJuntosV2`, `grupoHtmlV2`, `compRapidoHtml`, `CATS_STD`, `ICONS`. Consultado el 22/10/2026.
 - `data-layer.js` (`tablaCompartida`, `compartidos`, `objetivos`) y `supabase/migrations/README.md` y `2026-10-17_personas_sin_cuenta.sql` (`es_participante`, `puede_editar_compartido`, `grupos.edicion`). Consultados el 22/10/2026.
-- Bocetos propios (`docs/img/agenda-boceto-planes.png`, `juntos-boceto-carpetas.png`, `agenda-carpetas-claro.png`), 22/10/2026.
+- Bocetos propios (`docs/img/agenda-boceto-planes.png`, `juntos-boceto-carpetas.png`, `juntos-boceto-carpetas-v2.png`, `juntos-boceto-carpetas-v2-claro.png`, `agenda-carpetas-claro.png`), 22/10/2026.
 
-Para el PDF: en la primera página, el boceto `agenda-boceto-planes.png` (los tres móviles) con la palabra «Planes» grande; en la segunda, `juntos-boceto-carpetas.png` marcando la fila de carpetas y la frase «Lo que os debéis se salda con el grupo entero». El SQL, en una página aparte para Datos.
+Para el PDF: en la primera página, el boceto `agenda-boceto-planes.png` (los tres móviles) con la palabra «Planes» grande; en la segunda, `juntos-boceto-carpetas-v2.png` con los números 1-2-3 (eliges el grupo → sus temas → «+ Nuevo») y una tabla pequeña con los 3 nombres. El SQL, en una página aparte para Datos.
