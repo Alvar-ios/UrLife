@@ -4268,9 +4268,22 @@ function juntosV3Html(ps, gs, frase, debes, teDeben, hayComp) {
   let h = '<div class="card jv-cab jv3-cab"><div class="jv-frase">' + frase + '</div>' + cifras + seg + fila +
     '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
   h += juntosActividadHtml();
-  const objs = objCompartidos('ahorro').concat(objCompartidos('deuda'));
-  if (objs.length) h += '<div class="section-title">Metas y deudas juntos</div>' + objs.map(objCardHtml).join('');
+  h += juntosObjHtml();
   return h;
+}
+/* B2 · metas y deudas juntos, visuales: una fila que se desliza; la meta con su forma, la deuda con su icono; «Faltan X» */
+function juntosObjHtml() {
+  const ms = objCompartidos('ahorro'), ds = objCompartidos('deuda');
+  if (!ms.length && !ds.length) return '';
+  const meta = (r) => { const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
+    return '<button type="button" class="jv-obj tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' + formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 96) +
+      '<span class="jv-obj-p tnum">' + Math.round(pct) + ' %</span><b class="tnum">' + (r.falta > 0 ? 'Faltan ' + m0(r.falta) : '¡Conseguida!') + '</b><span class="jv-obj-e" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span></button>'; };
+  const deuda = (r) => { const pct = Math.max(0, Math.min(100, r.pct || 0)), g = grupoDe(r.o.grupoId);
+    return '<button type="button" class="jv-obj deu tappable" aria-label="' + escapeHtml(r.nombre + ': quedan ' + money(r.falta)) + '" ' + act('deudaCompVer', r.id) + '><span class="jv-obj-ic">' + icDeEmoji(r.o.emoji || emojiSugerido(r.nombre, '💳'), 'card') + '</span>' +
+      '<span class="jv-obj-n">' + escapeHtml(r.nombre) + '</span><span class="jv-obj-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="jv-obj-p tnum">' + Math.round(pct) + ' % pagado</span><b class="tnum">' + (r.falta > 0 ? 'Quedan ' + m0(r.falta) : 'Saldada') + '</b>' +
+      '<span class="jv-obj-e">' + escapeHtml(g ? nombreDestino(g) : '') + '</span></button>'; };
+  return '<div class="section-title">Metas y deudas juntos' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('plus') + ' Nueva</button>' : '') + '</div>' +
+    '<div class="jv-objs">' + ms.map(meta).join('') + ds.map(deuda).join('') + '</div>';
 }
 function juntosActividadHtml() {
   // lo nuevo es lo de otros después de tu visita anterior (aunque al entrar ya se marque como visto)
