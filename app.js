@@ -906,7 +906,7 @@ function render() {
   if (!TITULOS[S.tab]) S.tab = 'inicio';
   estrAjustarTab();
   $$('[data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === S.tab));
-  const nuevoTu = ['grupos', 'patrimonio', 'cuentas', 'tumes', 'metas', 'importar', 'reglas', 'cobros'].some(badgeActivo);
+  const nuevoTu = ['grupos', 'patrimonio', 'cuentas', 'tumes', 'importar', 'reglas', 'cobros'].concat(verAnterior('tu') ? ['metas'] : []).some(badgeActivo); // en Tú nuevo, Metas vive en Dinero
   $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
   const av = $('#tbAvatar'); if (av) { av.textContent = inicialUsuario(); const v2 = !verAnterior('tu'); av.style.background = v2 ? colorPersona(miUid()) : ''; av.style.color = v2 ? '#fff' : ''; }
   document.body.classList.toggle('en-tu', S.tab === 'tu');
@@ -3298,11 +3298,11 @@ function renderAgendaSemanaV2() {
   const proxH = prox.length ? '<div class="section-title">Próximos 7 días</div><div class="list">' + (abierto === 'prox' ? prox : prox.slice(0, 5)).join('') + '</div>' + (prox.length > 5 && abierto !== 'prox' ? agVerMas('prox', prox.length, 'Ver todo') : '') : '';
   const sinF = pend.filter((t) => !t.fechaLimite).sort(cmpTarea);
   const sinFH = sinF.length ? '<div class="section-title">Sin fecha · ' + sinF.length + '</div><div class="list">' + sinF.map(renderTareaRow).join('') + '</div>' : '';
-  const tope = uAdd(sel, 7), adelante = pend.filter((t) => t.fechaLimite && t.fechaLimite > tope).sort(cmpTarea);
+  const tope = uAdd(sel, 7), adelante = pend.filter((t) => t.fechaLimite && t.fechaLimite >= hoy && t.fechaLimite !== sel && (t.fechaLimite > tope || t.fechaLimite < sel)).sort(cmpTarea); // cada tarea sale una sola vez
   const hechas = S.tareas.filter((t) => t.estado === 'Completado').sort((x, y) => (y.fechaFin || '').localeCompare(x.fechaFin || '')).slice(0, 20);
   const pleg = (clave, txt, arr) => arr.length ? '<button type="button" class="ag-pleg" aria-expanded="' + (abierto === clave) + '" ' + act('agendaMas', clave) + '><span>' + txt + ' · ' + arr.length + '</span>' + ic(abierto === clave ? 'chevD' : 'chevR') + '</button>' +
     (abierto === clave ? '<div class="list">' + arr.map(renderTareaRow).join('') + '</div>' : '') : '';
-  const plegH = (adelante.length || hechas.length) ? '<div class="ag-plegs">' + pleg('adelante', 'Más adelante', adelante) + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
+  const plegH = (adelante.length || hechas.length) ? '<div class="ag-plegs">' + pleg('adelante', sel > hoy ? 'Otros días' : 'Más adelante', adelante) + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
   return cab + tira + rapida + vencH + diaH + proxH + sinFH + plegH;
 }
 // Calendario v2: solo el mes; la leyenda de colores de abajo es el filtro
@@ -3488,7 +3488,8 @@ function ticketsPocos() { const t = ticketsUso(); return t.quedan != null && t.q
 function guardarTicketsUso(r) {
   const mes = mesUTC(), u = cfg().ticketsUso;
   if (r && r.usados != null) return saveConfig({ ticketsUso: { mes, usados: num(r.usados), limite: num(r.limite) || 60 } });
-  if (r && r.error === 'ia_error' && u && u.mes === mes) return saveConfig({ ticketsUso: Object.assign({}, u, { usados: num(u.usados) + 1 }) });
+  if (r && ['ia_error', 'clave_mala', 'sin_saldo'].indexOf(r.error) >= 0 && u && u.mes === mes) // el servidor ya contó esa lectura
+    return saveConfig({ ticketsUso: Object.assign({}, u, { usados: num(u.usados) + 1 }) });
 }
 function ticketsFilaExtra() {
   const t = ticketsUso();
@@ -3543,7 +3544,7 @@ function ticketsInfoHtml() {
   const t = ticketsUso(), pct = t.quedan == null ? 0 : Math.round(t.usados / t.limite * 100);
   return '<div class="handle"></div><h2>Fotos de tickets</h2>' +
     '<p class="rec-hint">Haz una foto a un ticket y la app lee los artículos y el total por ti. La foto no se guarda en ningún sitio.</p>' +
-    '<div class="card tk-uso-card">' + (t.quedan == null ? '<b>' + t.limite + ' lecturas al mes</b><div class="rec-hint">Este mes aún no has leído ninguno desde este dispositivo o tu cuenta.</div>'
+    '<div class="card tk-uso-card">' + (t.quedan == null ? '<b>' + t.limite + ' lecturas al mes</b><div class="rec-hint">Sabrás cuántas te quedan después de leer el primero.</div>'
       : '<b class="tnum">' + (t.quedan === 0 ? 'No te quedan lecturas' : 'Te quedan ' + t.quedan + ' de ' + t.limite) + '</b><div class="tk-barra' + (t.quedan === 0 ? ' agotado' : t.quedan <= 10 ? ' pocos' : '') + '"><i style="width:' + pct + '%"></i></div>' +
         '<div class="rec-hint">Vuelven el ' + ticketsVuelven() + '.</div>') + '</div>' +
     '<div class="actions">' + (t.quedan === 0 ? '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button>' : '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('crearIr', 'ticket') + '>' + ic('camera') + ' Leer un ticket</button>') + '</div>';
@@ -8604,7 +8605,7 @@ const H = {
   calToggle: ([k]) => { S.calFiltros[k] = !S.calFiltros[k]; render(); },
   calMove: ([dir]) => {
     const n = Number(dir), cur = calAnchor();
-    if (S.calVista === 'semana') { S.calFecha = addDaysISO(cur, 7 * n); }
+    if (S.calVista === 'semana' && !agendaV2()) { S.calFecha = addDaysISO(cur, 7 * n); }
     else {
       const d = parseISO(cur), t = new Date(d.getFullYear(), d.getMonth() + n, 1), hoy = new Date();
       S.calFecha = (t.getFullYear() === hoy.getFullYear() && t.getMonth() === hoy.getMonth()) ? todayISO() : dateISO(t);

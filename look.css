@@ -1212,3 +1212,6 @@ html[data-look="nuevo"] .crear-ticket.agotado { background: var(--paper-sunken);
 html[data-look="nuevo"] .crear-antes { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 14px; min-height: 40px; border: 1.5px dashed var(--line); border-radius: 12px; background: none; color: var(--text-faint); font: inherit; font-size: 13px; cursor: pointer; }
 html[data-look="nuevo"] .crear-antes .i { width: 15px; height: 15px; }
 html[data-look="nuevo"] .tk-pocos { color: var(--warn); font-weight: 600; }
+html[data-look="nuevo"] .ag-tira .dia.sel { background: var(--accent); border-color: var(--accent); color: var(--accent-ink, #fff); }
+html[data-look="nuevo"] .ag-tira .dia.sel .l, html[data-look="nuevo"] .ag-tira .dia.sel b { color: inherit; }
+html[data-look="nuevo"] .ag-tira .dia.sel i.con { background: currentColor; }
