@@ -1575,11 +1575,11 @@ function tecCampoHtml(T) {
     '<button type="button" class="tec-cifra" id="tecCifra" aria-label="Importe: ' + escapeHtml(tecTxtLeido(T)) + '. Toca para escribirlo" ' + act('tecAbrir') + '>' + tecCifraHtml(T) + '</button>' +
     '<div class="tec-pie' + (T.neg ? ' neg' : '') + '" id="tecPie">' + escapeHtml(tecPieTxt(T)) + '</div><span class="sr-only" id="tecVoz" role="status" aria-live="polite"></span></div>';
 }
-function tecCatsLista(tipo) { return (tipo === 'Ingreso' ? categoriasPorTipo('Ingreso') : catsPorUso()).slice(0, 7); }
+function tecCatsLista(tipo, cat) { const l = (tipo === 'Ingreso' ? categoriasPorTipo('Ingreso') : catsPorUso()).slice(0, 7); if (cat && l.indexOf(cat) < 0) { l.unshift(cat); l.length = Math.min(l.length, 7); } return l; } // la que ya viene elegida (ticket, Repetir) siempre a la vista
 function tecFechaTxt(iso) { const h = todayISO(); return iso === h ? 'Hoy' : iso === uAdd(h, -1) ? 'Ayer' : fmtDateShort(iso); }
 function tecRapidoHtml(tipo, cat, fecha) {
   const cu = hayVariasCuentas() ? cuentaPorId(FORM.cuenta) || cuentasCfg()[0] : null;
-  return '<div id="tecRapido"><div class="tec-cats" id="tecCats" role="group" aria-label="Categoría">' + tecCatsLista(tipo).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" ' + act('tecCat', c) + '>' +
+  return '<div id="tecRapido"><div class="tec-cats" id="tecCats" role="group" aria-label="Categoría">' + tecCatsLista(tipo, cat).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" ' + act('tecCat', c) + '>' +
       (tipo === 'Ingreso' ? '' : '<span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span>') + '<span class="tec-cat-n">' + escapeHtml(c) + '</span></button>').join('') +
       '<button type="button" class="tec-cat mas" ' + act('tecMas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span><span class="tec-cat-n">Más</span></button></div>' +
     '<div class="tec-linea"><label class="chip tec-fecha">' + ic('calendar') + '<span id="tecFechaTxt">' + escapeHtml(tecFechaTxt(fecha)) + '</span><input type="date" id="tecFecha" aria-label="Fecha" value="' + escapeHtml(fecha) + '" ' + onChange('tecFecha') + '></label>' +
