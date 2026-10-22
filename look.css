@@ -902,13 +902,13 @@ html[data-look="nuevo"] .dm-ani-n b { font-size: 14.5px; font-weight: 700; }
 html[data-look="nuevo"] .dm-ani-c { font-size: 12.5px; color: var(--text-muted); }
 html[data-look="nuevo"] .dm-ani-x .dm-est { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html[data-look="nuevo"] .dm-anillo { position: relative; flex: none; display: inline-grid; place-items: center; }
-html[data-look="nuevo"] .dm-anillo svg { position: absolute; inset: 0; }
+html[data-look="nuevo"] .dm-anillo > svg { position: absolute; inset: 0; }
 html[data-look="nuevo"] .dm-anillo-e { position: relative; font-size: 18px; line-height: 1; }
 /* metas: Tarros */
 html[data-look="nuevo"] .dm-tarros { display: flex; gap: 10px; padding: 14px 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
 html[data-look="nuevo"] .dm-tarro { flex: 0 0 calc((100% - 20px) / 3); scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 92px; }
 html[data-look="nuevo"] .dm-tarro-v { position: relative; width: 76px; height: 104px; padding: 12px 0 0; background: none; border: 0; cursor: pointer; }
-html[data-look="nuevo"] .dm-tarro-v svg { width: 76px; height: 92px; display: block; }
+html[data-look="nuevo"] .dm-tarro-v > svg { width: 76px; height: 92px; display: block; }
 html[data-look="nuevo"] .dm-tapa { position: absolute; top: 2px; left: 18px; right: 18px; height: 9px; border-radius: 4px; background: var(--paper-sunken); border: 1px solid var(--line); }
 html[data-look="nuevo"] .dm-tarro-e { position: absolute; top: 34px; left: 50%; width: 26px; height: 26px; margin-left: -13px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; background: var(--paper-raised); }
 html[data-look="nuevo"] .dm-tarro-p { position: absolute; bottom: 8px; left: 0; right: 0; font-size: 12px; font-weight: 800; color: var(--text); text-shadow: 0 1px 2px var(--paper-raised); }
@@ -1361,3 +1361,13 @@ html[data-look="nuevo"] .sheet.tec-abierto .actions.fija { display: none; }
 html[data-look="nuevo"] .tec-cab { flex-wrap: wrap; row-gap: 6px; }
 html[data-look="nuevo"] .tec-cab h2 { flex: 0 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html[data-look="nuevo"] .tec-antes { margin-left: auto; }
+html[data-look="nuevo"] .tec-vacia { background: transparent; box-shadow: none; pointer-events: none; }
+html[data-look="nuevo"] .sheet.tec-abierto #apGuardar { display: none; }
+/* pop-ups: los dos botones uno al lado del otro, con aire (antes se apilaban pegados y parecían montados) */
+html[data-look="nuevo"] .popup .actions { display: flex; flex-direction: row; gap: 10px; margin-top: 16px; position: static; }
+html[data-look="nuevo"] .popup .actions .btn { flex: 1; margin: 0; }
+/* metas y deudas: iconos de la app en vez de emojis */
+html[data-look="nuevo"] :is(.dm-hemo, .dm-tarro-e, .dm-anillo-e, .dm-cam-emo) { color: var(--accent); }
+html[data-look="nuevo"] .dm-ic.deu, html[data-look="nuevo"] .dm-hemo.deu { color: var(--debt); }
+html[data-look="nuevo"] .dm-emo-b { color: var(--text-muted); display: grid; place-items: center; }
+html[data-look="nuevo"] .dm-emo-b.on { color: var(--accent); }

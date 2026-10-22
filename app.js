@@ -1570,9 +1570,9 @@ function tecCifraHtml(T) {
     (T.on ? '<span class="tec-cur" aria-hidden="true"></span>' : '') + '<span class="tec-eur">' + escapeHtml(sym()) + '</span>';
 }
 function tecNegLbl(t) { return t === 'Ingreso' ? 'En negativo' : t === 'Inversión' ? 'Venta' : t === 'Ahorro' ? 'Sacar dinero' : 'Devolución'; }
-function tecPieTxt(T) { return !T.txt ? (T.on ? 'Escribe cuánto ha sido' : 'Toca para escribir el importe') : T.neg ? (FORM.tipo === 'Gasto' || FORM.tipo === 'Factura' ? 'Devolución · te devuelven este dinero' : tecNegLbl(FORM.tipo)) : (T.on ? '' : 'Toca la cifra para cambiarla'); }
+function tecPieTxt(T) { return !T.txt ? (T.on ? (T.pie || 'Escribe cuánto ha sido') : 'Toca para escribir el importe') : T.neg ? (FORM.tipo === 'Gasto' || FORM.tipo === 'Factura' ? 'Devolución · te devuelven este dinero' : tecNegLbl(FORM.tipo)) : (T.on ? '' : 'Toca la cifra para cambiarla'); }
 function tecCampoHtml(T) {
-  return '<div class="field tec-campo"><input type="hidden" id="fImporte" value="' + escapeHtml(T.txt ? (T.neg ? '-' : '') + T.txt : '') + '">' +
+  return '<div class="field tec-campo"><input type="hidden" id="' + (T.campo || 'fImporte') + '" value="' + escapeHtml(T.txt ? (T.neg ? '-' : '') + T.txt : '') + '">' +
     '<button type="button" class="tec-cifra" id="tecCifra" aria-label="Importe: ' + escapeHtml(tecTxtLeido(T)) + '. Toca para escribirlo" ' + act('tecAbrir') + '>' + tecCifraHtml(T) + '</button>' +
     '<div class="tec-pie' + (T.neg ? ' neg' : '') + '" id="tecPie">' + escapeHtml(tecPieTxt(T)) + '</div><span class="sr-only" id="tecVoz" role="status" aria-live="polite"></span></div>';
 }
@@ -1587,35 +1587,37 @@ function tecRapidoHtml(tipo, cat, fecha) {
       (cu ? '<button type="button" class="chip tec-cuenta" id="tecCuenta" aria-label="Cuenta: ' + escapeHtml(cu.nombre) + '. Toca para cambiarla" ' + act('tecCuenta') + '><span class="dot" style="background:' + colorCuenta(cu) + '"></span>' + escapeHtml(cu.nombre) + '</button>' : '') +
       '<button type="button" class="link tec-masdet" ' + act('tecMas') + '>Más detalles ' + ic('chevD') + '</button></div></div>';
 }
+function tecOkLbl(T) { return T.tecla === 'guardar' ? (T.etiqueta || 'Guardar') : 'Hecho'; }
 function tecladoHtml(T) {
   const k = (v, l, cls, aria) => '<button type="button" class="tec-k' + (cls ? ' ' + cls : '') + '" ' + act('tecK', v) + (aria ? ' aria-label="' + aria + '"' : '') + '>' + l + '</button>';
   return '<div class="tec" id="tec" role="group" aria-label="Teclado de importe"' + (T.on ? '' : ' hidden') + '>' +
     k('1', '1') + k('2', '2') + k('3', '3') + k('del', ic('borrar') + '<small>Borrar</small>', 'tec-del', 'Borrar, mantén pulsado para borrar todo') +
     k('4', '4') + k('5', '5') + k('6', '6') +
-    '<button type="button" class="tec-k tec-ok" ' + act('tecK', 'ok') + '>' + ic('check') + '<span id="tecOkTxt">' + (T.tecla === 'guardar' ? 'Guardar' : 'Hecho') + '</span></button>' +
+    '<button type="button" class="tec-k tec-ok" ' + act('tecK', 'ok') + '>' + ic('check') + '<span id="tecOkTxt">' + tecOkLbl(T) + '</span></button>' +
     k('7', '7') + k('8', '8') + k('9', '9') +
-    '<button type="button" class="tec-k tec-neg' + (T.neg ? ' on' : '') + '" aria-pressed="' + !!T.neg + '" aria-label="' + tecNegLbl(FORM.tipo) + ': cambiar a negativo" ' + act('tecK', 'neg') + '><b>−</b><small>' + tecNegLbl(FORM.tipo) + '</small></button>' +
+    (T.sinNeg ? '<span class="tec-k tec-vacia" aria-hidden="true"></span>' : '<button type="button" class="tec-k tec-neg' + (T.neg ? ' on' : '') + '" aria-pressed="' + !!T.neg + '" aria-label="' + tecNegLbl(FORM.tipo) + ': cambiar a negativo" ' + act('tecK', 'neg') + '><b>−</b><small>' + tecNegLbl(FORM.tipo) + '</small></button>') +
     k('0', '0') + k(',', ',', 'tec-coma', 'Coma decimal') + '</div>';
 }
 function tecSync(anunciar) {
   const F = FORM, T = F && F.tec; if (!T) return;
-  const el = $('#fImporte'); if (el) el.value = T.txt ? (T.neg ? '-' : '') + T.txt : '';
+  const el = $('#' + (T.campo || 'fImporte')); if (el) el.value = T.txt ? (T.neg ? '-' : '') + T.txt : '';
   const c = $('#tecCifra'); if (c) { c.innerHTML = tecCifraHtml(T); c.setAttribute('aria-label', 'Importe: ' + tecTxtLeido(T) + '. Toca para escribirlo'); }
   const p = $('#tecPie'); if (p) { p.textContent = tecPieTxt(T); p.classList.toggle('neg', !!T.neg); }
   const n = $('#tec .tec-neg'); if (n) { n.classList.toggle('on', !!T.neg); n.setAttribute('aria-pressed', String(!!T.neg)); n.setAttribute('aria-label', tecNegLbl(F.tipo) + ': cambiar a negativo'); const sm = n.querySelector('small'); if (sm) sm.textContent = tecNegLbl(F.tipo); }
   const an = $('#sheetHost .tec-antes'); if (an) an.hidden = !!(F.articulos || (F.comp && F.comp.on));
-  const ok = $('#tec .tec-ok'); if (ok) { const falta = !T.txt || !tecNum(T.txt) || (T.corta && !(($('#fCategoria') || {}).value || '').trim()); ok.classList.toggle('apagada', T.tecla === 'guardar' && falta); ok.setAttribute('aria-disabled', String(T.tecla === 'guardar' && falta)); }
-  const t = $('#tecOkTxt'); if (t) t.textContent = T.tecla === 'guardar' ? 'Guardar' : 'Hecho';
+  const ok = $('#tec .tec-ok'); if (ok) { const falta = !T.txt || !tecNum(T.txt) || !!(T.corta && !(($('#fCategoria') || {}).value || '').trim()); ok.classList.toggle('apagada', T.tecla === 'guardar' && falta); ok.setAttribute('aria-disabled', String(T.tecla === 'guardar' && falta)); }
+  const t = $('#tecOkTxt'); if (t) t.textContent = tecOkLbl(T);
   const sh = $('#sheetHost .sheet'); if (sh) sh.classList.toggle('tec-abierto', !!T.on);
   if (anunciar) { const v = $('#tecVoz'); if (v) v.textContent = tecTxtLeido(T); }
-  if (H.onImporteInput) { try { H.onImporteInput([]); } catch (e) { /* sin vista previa */ } }
+  if (T.alCambiar) { try { T.alCambiar(T); } catch (e) { console.error(e); } }
+  else if (F.kind === 'mov' && H.onImporteInput) { try { H.onImporteInput([]); } catch (e) { /* sin vista previa */ } }
 }
 function tecTiembla(sel) { const el = $(sel); if (!el) return; el.classList.remove('tiembla'); void el.offsetWidth; el.classList.add('tiembla'); setTimeout(() => el.classList.remove('tiembla'), 500); }
 function tecNo() { sentir('aviso'); tecTiembla('#tecCifra'); }
 function tecPulsar(k) {
   const F = FORM, T = F && F.tec; if (!T) return;
   if (k === 'ok') return tecOk();
-  if (k === 'neg') T.neg = !T.neg;
+  if (k === 'neg') { if (T.sinNeg) return; T.neg = !T.neg; }
   else if (k === 'clear') { if (!T.txt) return; T.txt = ''; T.reemplazar = false; sentir('borrar'); tecSync(true); return; }
   else if (k === 'del') { if (!T.txt) return; T.txt = T.reemplazar ? '' : T.txt.slice(0, -1); T.reemplazar = false; }
   else if (k === ',') { if (T.reemplazar) { T.txt = ''; T.reemplazar = false; } if (T.txt.indexOf(',') >= 0) return tecNo(); T.txt = (T.txt || '0') + ','; }
@@ -1633,7 +1635,7 @@ function tecOk() {
   if (T.tecla !== 'guardar') { tecCerrar(); return; }
   if (!T.txt || !tecNum(T.txt)) { tecNo(); return toast('Pon un importe'); }
   if (T.corta && !(($('#fCategoria') || {}).value || '').trim()) { sentir('aviso'); tecTiembla('#tecCats'); return toast('Elige una categoría'); }
-  return saveMov();
+  return T.alGuardar ? T.alGuardar() : saveMov();
 }
 function tecAbrirTeclado() { const T = FORM && FORM.tec; if (!T) return; T.on = true; const t = $('#tec'); if (t) t.hidden = false; tecSync(); }
 function tecCerrar() { const T = FORM && FORM.tec; if (!T) return; T.on = false; T.reemplazar = false; const t = $('#tec'); if (t) t.hidden = true; tecSync(); }
@@ -1660,9 +1662,9 @@ function tecVolverAVersion(n) {
   if (pre.cuentaId) FORM.cuenta = pre.cuentaId; if (pre.metaSel) FORM.metaSel = pre.metaSel;
 }
 // teclado físico (ordenador) y pegar, solo con el teclado de la app abierto y sin un campo de texto con el foco
-function tecHojaAbierta() { const bd = $('#sheetBackdrop'); return !!(bd && !bd.dataset.cerrando && FORM && FORM.kind === 'mov' && $('#tec')); }
+function tecHojaAbierta() { const bd = $('#sheetBackdrop'); return !!(bd && !bd.dataset.cerrando && FORM && FORM.tec && $('#tec')); }
 function tecTeclaFisica(e) {
-  const T = FORM && FORM.kind === 'mov' && FORM.tec; if (!T || !T.on || !tecHojaAbierta()) return false;
+  const T = FORM && FORM.tec; if (!T || !T.on || !tecHojaAbierta()) return false;
   if (e.key === 'Enter' && e.repeat) { e.preventDefault(); return true; }
   const t = e.target; if (t && t.closest && t.closest('input:not([type=hidden]), textarea, select, [contenteditable="true"]')) return false;
   if (e.ctrlKey || e.metaKey || e.altKey) return false;
@@ -1671,7 +1673,7 @@ function tecTeclaFisica(e) {
   e.preventDefault(); tecPulsar(m); return true;
 }
 function tecPegar(e) {
-  const T = FORM && FORM.kind === 'mov' && FORM.tec; if (!T || !T.on || !tecHojaAbierta()) return;
+  const T = FORM && FORM.tec; if (!T || !T.on || !tecHojaAbierta()) return;
   const t = e.target; if (t && t.closest && t.closest('input:not([type=hidden]), textarea, select, [contenteditable="true"]')) return;
   const s = ((e.clipboardData && e.clipboardData.getData('text')) || '').trim(); if (!s) return;
   e.preventDefault();
@@ -3543,7 +3545,7 @@ function crearHtmlV2() {
     (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
     '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Gasto fijo', 'k-factura') +
       op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') + '</div>' +
-    (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('swap') + ' Ver la versión anterior</button>' : '');
+    (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('swap') + ' Ver la versión anterior</button>' : '');
 }
 /* ============================================================
    DINERO (patrimonio, metas, inversiones, deudas y compartido) · AGENDA · TÚ  (Bloque 9)
@@ -3812,13 +3814,13 @@ function insightsHtml() {
 /* ---- Comparar con la versión anterior (fase de pruebas): en cada sección con un cambio grande reciente,
    un botón flotante deja ver cómo era antes y volver. Se registra aquí; se quita de la lista cuando ya no haga falta. ---- */
 const VERSIONES = {
-  inicio: { txt: 'Inicio', desde: '2026-10-18', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
-  movResumen: { txt: 'En qué gastas', desde: '2026-10-18', variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
-  juntos: { txt: 'Juntos', desde: '2026-10-18', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  inicio: { txt: 'Inicio', desde: '2026-10-18', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
+  juntos: { txt: 'Juntos', desde: '2026-10-18', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   dinero: { txt: 'Dinero', desde: '2026-10-18', variantes: [['camino', 'Camino'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes']] },
-  tu: { txt: 'Tú', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  tu: { txt: 'Tú', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   agenda: { txt: 'Agenda', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
-  crear: { txt: 'Botón +', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   importe: { txt: 'Apuntar importe', desde: '2026-10-22', variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
 };
 function seccionVersion() {
@@ -3830,12 +3832,19 @@ function seccionVersion() {
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) return 'agenda';
   return '';
 }
-function versionIdx(k) { const v = VERSIONES[k], i = Number((S.verAnterior || {})[k]) || 0; return v && compararOn() && i > 0 && i < v.variantes.length ? i : 0; }
+/* Una sección «cerrada» (el dueño ya eligió) usa siempre su variante ganadora (def) y ya no enseña el botón «Antes».
+   Las variantes viejas se quedan en el código solo para las pruebas antiguas, que las fijan con S.verAnterior. */
+function versionIdx(k) {
+  const v = VERSIONES[k]; if (!v) return 0;
+  const sv = (S.verAnterior || {})[k], i = Number(sv) || 0;
+  if (v.cerrada) return sv != null && i >= 0 && i < v.variantes.length ? i : (v.def || 0);
+  return compararOn() && i > 0 && i < v.variantes.length ? i : 0;
+}
 function versionDe(k) { return VERSIONES[k].variantes[versionIdx(k)][0]; }
 function verAnterior(k) { return versionIdx(k) > 0; }
 function compararOn() { return cfg().compararVersiones !== false; }
 function compararBotonHtml() {
-  const k = seccionVersion(); if (!k || !VERSIONES[k] || !compararOn() || !allLoaded() || (!S.movimientos.length && !(S.compartidos || []).length)) return '';
+  const k = seccionVersion(); if (!k || !VERSIONES[k] || VERSIONES[k].cerrada || !compararOn() || !allLoaded() || (!S.movimientos.length && !(S.compartidos || []).length)) return '';
   const vs = VERSIONES[k].variantes, i = versionIdx(k);
   if (vs.length === 2) return '<button type="button" class="comparar-fab' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="' + (i ? 'Ver la versión nueva' : 'Ver la versión anterior') + '">' + ic('swap') + '<span>' + (i ? 'Ver nueva' : 'Antes') + '</span></button>';
   return '<button type="button" class="comparar-fab multi' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="Cambiar de versión (' + vs[i][1] + ', ' + (i + 1) + ' de ' + vs.length + ')">' + ic('swap') + '<span>' + vs[i][1] + ' <i>' + (i + 1) + '/' + vs.length + '</i></span></button>';
@@ -4252,6 +4261,12 @@ const EMOJI_PISTAS = [[/viaj|japon|vacacion|escapad|playa/, '✈️'], [/casa|pi
   [/boda|anillo/, '💍'], [/beb|nin|hij/, '🍼'], [/estudi|master|curso|universi|beca/, '🎓'], [/regalo|navidad|cumple/, '🎁'], [/ordenador|movil|portatil|tele|consola|iphone/, '📱'],
   [/tarjeta|credito/, '💳'], [/prestam|amigo|familia/, '🤝'], [/mascota|perro|gato/, '🐾'], [/bici|deporte|gimnas/, '🚲']];
 function emojiSugerido(nombre, def) { const n = normName(nombre || ''); const x = EMOJI_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : (def || '🎯'); }
+// Los emojis se siguen guardando (no se tocan los datos), pero en pantalla se dibuja un icono de la app (22/10)
+const EMOJI_IC = { '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'car', '💍': 'heart', '🍼': 'heart', '🎓': 'book', '🎁': 'gift', '📱': 'bolt', '💳': 'card', '🤝': 'users', '🐾': 'paw', '🚲': 'car', '🎯': 'flag' };
+const EMOJI_NOMBRE = { '✈️': 'Viaje', '🏠': 'Casa', '🛟': 'Colchón', '🚗': 'Coche', '💍': 'Boda', '🍼': 'Bebé', '🎓': 'Estudios', '🎁': 'Regalo', '📱': 'Aparatos', '💳': 'Tarjeta', '🤝': 'Préstamo', '🐾': 'Mascota', '🚲': 'Deporte', '🎯': 'Meta' };
+function icDeEmoji(e, def) { return ic(EMOJI_IC[e] || def || 'flag'); }
+function metaIcono(r) { return icDeEmoji(emojiMeta(r), 'flag'); }
+function deudaIcono(d) { return icDeEmoji(d.emoji || emojiSugerido(d.nombre, '💳'), 'card'); }
 function emojiMeta(r) { const m = !r.compartida ? metasCfg().find((x) => x.id === r.id) : null; return (m && m.emoji) || emojiSugerido(r.nombre); }
 const DM_ESTADO_COLOR = { bien: 'var(--income)', justo: 'var(--warn, var(--accent))', gris: 'var(--text-muted)', mal: 'var(--expense)' };
 // estado de una meta en una frase corta y sobria (el rojo solo si la fecha ya pasó)
@@ -4337,7 +4352,7 @@ function dmAportarBtn(r) { return r.conseguida ? '' : '<button type="button" cla
 function dmPct(r) { return r.pct == null ? '' : '<span class="dm-pct tnum">' + Math.max(0, Math.round(r.pct)) + ' %</span>'; }
 function metaCaminoHtml(r) {
   const e = metaEstado2(r), col = e.k === 'gris' ? 'var(--accent)' : DM_ESTADO_COLOR[e.k], pct = Math.max(0, Math.min(100, r.pct || 0)), proy = metaProyeccion(r);
-  const pp = proy != null ? Math.min(100, proy / r.obj * 100) : null, emo = emojiMeta(r);
+  const pp = proy != null ? Math.min(100, proy / r.obj * 100) : null, emo = metaIcono(r);
   const hitos = (r.hitos || []).filter((x) => r.obj > 0 && x.importe < r.obj).map((x) => '<i class="dm-hito' + (x.alcanzado ? ' ok' : '') + '" style="left:' + (x.importe / r.obj * 100).toFixed(1) + '%" title="' + escapeHtml(x.nombre) + '"></i>').join('');
   return '<div class="dm-meta dm-cam" data-meta="' + escapeHtml(r.key) + '" style="--c:' + col + '"><div class="dm-m-cab"><button type="button" class="dm-m-n tappable" ' + act('metaVer', r.key) + '><b>' + escapeHtml(r.nombre) + '</b>' + dmPct(r) + (r.compartida ? '<span class="dm-g">' + ic('users') + '</span>' : '') + '</button>' + dmAportarBtn(r) + '</div>' +
     '<button type="button" class="dm-pista" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento. ' + e.t) + '" ' + act('metaVer', r.key) + '><span class="dm-pista-t"><i class="dm-cam-f" style="width:' + pct.toFixed(1) + '%"></i>' +
@@ -4352,7 +4367,7 @@ function anilloEmojiHtml(pct, color, emo, tam) {
 }
 function metaAnilloHtml(r) {
   const e = metaEstado2(r), col = DM_ESTADO_COLOR[e.k];
-  return '<div class="dm-meta dm-ani" data-meta="' + escapeHtml(r.key) + '"><button type="button" class="dm-ani-main tappable" ' + act('metaVer', r.key) + '>' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, emojiMeta(r), 46) +
+  return '<div class="dm-meta dm-ani" data-meta="' + escapeHtml(r.key) + '"><button type="button" class="dm-ani-main tappable" ' + act('metaVer', r.key) + '>' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, metaIcono(r), 46) +
     '<span class="dm-ani-x"><span class="dm-ani-n"><b>' + escapeHtml(r.nombre) + '</b>' + dmPct(r) + '</span><span class="tnum dm-ani-c">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' de ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span></span></button>' + dmAportarBtn(r) + '</div>';
 }
 function tarroHtml(r) {
@@ -4363,7 +4378,7 @@ function tarroHtml(r) {
     '<svg viewBox="0 0 76 ' + H + '" preserveAspectRatio="none" aria-hidden="true"><defs><clipPath id="tc-' + escapeHtml(r.key).replace(/[^\w-]/g, '') + '"><rect x="0" y="0" width="76" height="' + H + '" rx="14"/></clipPath></defs>' +
     '<g clip-path="url(#tc-' + escapeHtml(r.key).replace(/[^\w-]/g, '') + ')"><rect width="76" height="' + H + '" fill="var(--paper-sunken)" opacity=".55"/><g class="dm-liq">' + ola(3, 0.35) + ola(0, 0.9) + '</g></g>' +
     '<rect x=".75" y=".75" width="74.5" height="' + (H - 1.5) + '" rx="13.5" fill="none" stroke="var(--line)" stroke-width="1.5"/></svg>' +
-    '<span class="dm-tarro-e">' + emojiMeta(r) + '</span><span class="dm-tarro-p tnum">' + Math.round(pct) + ' %</span></button>' +
+    '<span class="dm-tarro-e">' + metaIcono(r) + '</span><span class="dm-tarro-p tnum">' + Math.round(pct) + ' %</span></button>' +
     '<b class="dm-tarro-n">' + escapeHtml(r.nombre) + '</b><span class="tnum dm-tarro-c">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' + dmAportarBtn(r) + '</div>';
 }
 function metaPorKey(k) { return metasStats().concat(objCompartidos('ahorro')).find((r) => r.key === k) || null; }
@@ -4381,7 +4396,7 @@ function metaVerHtml(k) {
   }
   const piezas = ((r.b && r.b.piezas) || []).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).slice(0, 3);
   const mas = FORM && FORM.mas;
-  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + emojiMeta(r) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
+  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + metaIcono(r) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
     '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
     '<div class="dm-hring">' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132) +
     '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
@@ -4402,14 +4417,27 @@ function aportarRHtml() {
   const prev = r.obj > 0 && imp > 0 ? Math.max(0, Math.round(r.pct || 0)) + ' % → ' + Math.max(0, Math.min(100, Math.round(nuevo / r.obj * 100))) + ' % · ' + (nuevo >= r.obj - 0.005 ? '¡la consigues!' : 'quedarán ' + money(r.obj - nuevo)) : (imp > 0 ? 'Tendrás ' + money(Math.max(0, nuevo)) : 'Elige cuánto');
   const chips = [50, 100, 200].map((v) => '<button type="button" class="chip' + (imp === v ? ' active' : '') + '" ' + act('aportarRImp', v) + '>' + money(v).replace(',00', '') + '</button>').join('') +
     (toca && [50, 100, 200].indexOf(toca) < 0 ? '<button type="button" class="chip' + (imp === toca ? ' active' : '') + '" ' + act('aportarRImp', toca) + '>' + money(toca).replace(',00', '') + ' · lo que toca</button>' : '');
-  return '<div class="handle"></div><h2>' + emojiMeta(r) + ' Aportar a ' + escapeHtml(r.nombre) + '</h2>' +
+  const tec = tecladoOn();
+  if (tec && !F.tec) F.tec = { on: true, txt: tecTxtDe(F.importe), neg: false, sinNeg: true, reemplazar: false, tecla: 'guardar', etiqueta: 'Aportar', pie: 'Escribe cuánto apartas',
+    alCambiar: (T) => { F.importe = T.txt; aportarRRefrescar(); }, alGuardar: () => aportarRGuardar() };
+  return '<div class="handle"></div><h2>Aportar a ' + escapeHtml(r.nombre) + '</h2>' +
     '<div class="segmented dm-ap-seg"><button class="active">Apartar</button><button ' + act('aportarRInvertir') + '>Invertir</button></div>' +
-    '<label class="cr-imp"><input id="apImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe" value="' + escapeHtml(F.importe || '') + '" ' + onInput('aportarRInput') + '><span>' + sym() + '</span></label>' +
+    (tec ? tecCampoHtml(Object.assign(F.tec, { campo: 'apImporte' }))
+      : '<label class="cr-imp"><input id="apImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe" value="' + escapeHtml(F.importe || '') + '" ' + onInput('aportarRInput') + '><span>' + sym() + '</span></label>') +
     '<div class="chips dm-ap-chips">' + chips + '</div>' +
     '<div class="cr-res" id="apPrev">' + escapeHtml(prev) + '</div>' +
     '<div class="field jv-fecha"><label>Fecha</label><button type="button" class="chip active" id="apFechaChip" ' + act('apFechaVer') + '>' + ic('calendar') + ' Hoy</button><input id="apFecha" type="date" value="' + todayISO() + '" hidden></div>' +
     '<div class="rec-hint">Apartar no saca dinero del banco: es para que sepas que ese dinero tiene dueño.</div>' +
-    '<button class="btn accent block" id="apGuardar" ' + act('aportarRGuardar') + '>' + (imp > 0 ? 'Aportar ' + money(imp) : 'Aportar') + '</button>';
+    '<button class="btn accent block" id="apGuardar" ' + act('aportarRGuardar') + '>' + (imp > 0 ? 'Aportar ' + money(imp) : 'Aportar') + '</button>' +
+    (tec ? tecladoHtml(F.tec) : '');
+}
+// con el teclado de la app: al escribir solo cambian la previsión, las fichas y el botón (sin repintar la hoja)
+function aportarRRefrescar() {
+  const F = FORM; if (!F || F.kind !== 'aportarR') return;
+  const imp = numCampo(F.importe || ''), h = document.createElement('div'); h.innerHTML = aportarRHtml();
+  const p = $('#apPrev'), np = h.querySelector('#apPrev'); if (p && np) p.textContent = np.textContent;
+  const c = $('#sheetHost .dm-ap-chips'), nc = h.querySelector('.dm-ap-chips'); if (c && nc) c.innerHTML = nc.innerHTML;
+  const g = $('#apGuardar'); if (g) g.textContent = imp > 0 ? 'Aportar ' + money(imp) : 'Aportar';
 }
 async function aportarRGuardar() {
   const F = FORM; if (!F || F.kind !== 'aportarR' || F.guardando) return;
@@ -4544,7 +4572,7 @@ function dmDeudasHtml(ds, comp) {
   if (!st.length && !cs.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('deudaNueva') + '><span class="dm-ic">' + ic('card') + '</span><span class="dm-emp-x"><b>Apunta una deuda</b><span>Un préstamo, el coche, la tarjeta… y ve cuándo acabas</span></span>' + ic('chevR') + '</button>';
   const fila = (r, comp0) => {
     const e = comp0 ? null : deudaEstado2(r), pct = comp0 ? Math.max(0, Math.min(100, r.pct || 0)) : r.total > 0 ? Math.max(0, Math.min(100, r.pagado / r.total * 100)) : 0, g = comp0 ? grupoDe(r.o.grupoId) : null;
-    return '<button type="button" class="dm-deuda tappable" ' + (comp0 ? act('deudaCompVer', r.id) : act('deudaVer', r.nombre)) + '><span class="dm-ic deu">' + (comp0 ? ic('users') : (r.d.emoji || emojiSugerido(r.nombre, '💳'))) + '</span>' +
+    return '<button type="button" class="dm-deuda tappable" ' + (comp0 ? act('deudaCompVer', r.id) : act('deudaVer', r.nombre)) + '><span class="dm-ic deu">' + (comp0 ? ic('users') : deudaIcono(r.d)) + '</span>' +
       '<span class="dm-deuda-x"><span class="dm-deuda-top"><b>' + escapeHtml(r.nombre) + '</b><span class="dm-deuda-q"><b class="tnum">' + m0(comp0 ? r.falta : r.pend) + '</b><span>quedan' + ((comp0 ? r.obj : r.total) > 0 ? ' (de ' + m0(comp0 ? r.obj : r.total) + ')' : '') + '</span></span></span>' +
       '<span class="dm-deuda-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="dm-est" style="color:' + (e ? DM_ESTADO_COLOR[e.k] : 'var(--text-muted)') + '">' + escapeHtml(e ? e.t : (g ? nombreDestino(g) + ' · tu parte ' + money(r.falta * miProporcion(r.o)) : '')) + '</span></span></button>';
   };
@@ -4577,7 +4605,7 @@ function deudaVerHtml(nombre) {
     }
   }
   const pagos = movsDeuda(d).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
-  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + escapeHtml(d.emoji || emojiSugerido(d.nombre, '💳')) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(d.nombre) + '</h2></div>' +
+  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo deu">' + deudaIcono(d) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(d.nombre) + '</h2></div>' +
     '<button type="button" class="icon-btn" aria-label="Editar deuda" ' + act('deudaEditar', d.nombre) + '>' + ic('edit') + '</button></div>' +
     '<div class="dm-dq"><span>Quedan</span><b class="tnum">' + money(r.pend) + '</b><span>' + (r.total > 0 ? 'de ' + money(r.total) + ' · llevas pagado el ' + Math.round(pct) + ' %' : 'Ponle el total en «Editar»') + '</span></div>' +
     '<div class="dm-deuda-bar grande"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
@@ -4594,7 +4622,7 @@ function deudaFormHtml() {
   const F = FORM, sug = emojiSugerido(F.nombre, '💳'), lista = EMOJIS_DEUDA.indexOf(sug) < 0 ? [sug].concat(EMOJIS_DEUDA) : EMOJIS_DEUDA, emo = F.emoji || sug;
   const n = (v) => (v == null || v === '' ? '' : String(v).replace('.', ','));
   return '<div class="handle"></div><h2>' + (F.orig ? 'Editar deuda' : 'Nueva deuda') + '</h2>' +
-    '<div class="field"><label>Elige un dibujo</label><div class="dm-emojis">' + lista.map((x) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" ' + act('deudaEmoji', x) + '>' + x + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>Elige un dibujo</label><div class="dm-emojis">' + lista.map((x) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" aria-label="' + escapeHtml(EMOJI_NOMBRE[x] || 'Dibujo') + '" aria-pressed="' + (x === emo) + '" ' + act('deudaEmoji', x) + '>' + icDeEmoji(x, 'card') + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>Nombre</label><input id="dNombre" type="text" maxlength="40" placeholder="Coche, préstamo, tarjeta…" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('deudaNombreIn') + '></div>' +
     '<div class="dm-2c"><div class="field"><label>Total que debías</label><input id="dTotal" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.total)) + '"></div>' +
     '<div class="field"><label>Ya pagado <span class="hint">· opcional</span></label><input id="dPrevio" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.previo)) + '"></div></div>' +
@@ -4713,7 +4741,7 @@ function crearHtml() {
     op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
 }
-function crearElegido() { return verAnterior('crear') ? crearHtml() + (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('swap') + ' Ver la versión nueva</button>' : '') : crearHtmlV2(); }
+function crearElegido() { return verAnterior('crear') ? crearHtml() + (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('swap') + ' Ver la versión nueva</button>' : '') : crearHtmlV2(); }
 function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearElegido()); else openSheet(crearElegido()); }
 /* ---- buscador global: movimientos, tareas, categorías y ajustes ---- */
 const ATAJO_IC = { 'Foto de ticket': 'camera', 'Nuevo gasto': 'plus', 'Nueva tarea': 'checkCircle', 'Grupos y personas': 'users', Metas: 'flag', Inversiones: 'chart', Deudas: 'card', 'Lo que tienes': 'wallet' };
@@ -5516,18 +5544,20 @@ function openTraspasoForm(id, pre) {
   pre = pre || {};
   const desde = t ? t.cuentaId : (pre.desde || (pc && pc.id));
   FORM = { kind: 'traspaso', id: t ? t.id : null, convertir: !t && pre.convertir ? pre.convertir : null, desde, a: t ? t.cuentaDestinoId : (pre.a || (cuentasCfg().find((c) => c.id !== desde) || {}).id) };
-  const conv = !!FORM.convertir;
+  const conv = !!FORM.convertir, tec = tecladoOn() && !conv;
+  if (tec) FORM.tec = { on: !t, txt: tecTxtDe(t ? t.importe : pre.importe), neg: false, sinNeg: true, reemplazar: !!(t || pre.importe), tecla: t ? 'hecho' : 'guardar', pie: 'Escribe cuánto pasas', alGuardar: () => saveTraspaso() };
   const h = '<div class="handle"></div><h2>' + (t ? 'Editar traspaso' : conv ? 'Convertir en traspaso' : 'Traspaso entre cuentas') + '</h2>' +
     '<div class="rec-hint" style="margin:-6px 0 12px;">' + (conv ? 'Este movimiento dejará de contar como gasto o ingreso y pasará a ser un traspaso entre tus cuentas. No se duplica: es el mismo movimiento.' : 'Pasar dinero de una cuenta tuya a otra (también sacar del cajero). No es gasto ni ingreso: no cambia «Te queda este mes».') + '</div>' +
-    '<div class="field"><label>Importe (' + sym() + ')</label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(t ? t.importe : pre.importe) + '"></div>' +
+    (tec ? tecCampoHtml(FORM.tec) : '<div class="field"><label>Importe (' + sym() + ')</label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(t ? t.importe : pre.importe) + '"></div>') +
     '<div class="field"><label>Desde</label>' + trasChipsHtml('desde') + '</div>' +
     '<div class="field"><label>A</label>' + trasChipsHtml('a') + '</div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (t ? t.fecha : (pre.fecha || todayISO())) + '"></div>' +
     '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="p. ej. Para el alquiler" value="' + escapeHtml(t ? t.descripcion || '' : (pre.descripcion || '')) + '"></div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTraspaso') + '>' + (conv ? 'Convertir' : 'Guardar') + '</button></div>' +
-    (t ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTraspaso') + '>' + ic('trash') + ' Eliminar traspaso</button>' : '');
+    (t ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTraspaso') + '>' + ic('trash') + ' Eliminar traspaso</button>' : '') +
+    (tec ? tecladoHtml(FORM.tec) : '');
   if ($('#sheetBackdrop')) updateSheet(h); else openSheet(h);
-  if (!t) setTimeout(() => { const el = $('#fImporte'); if (el) el.focus(); }, 80);
+  if (tec) tecSync(); else if (!t) setTimeout(() => { const el = $('#fImporte'); if (el) el.focus(); }, 80);
 }
 async function saveTraspaso() {
   if (!FORM || FORM.kind !== 'traspaso' || FORM.guardando) return;
@@ -8212,8 +8242,8 @@ const H = {
   dmPrecios: () => { FORM = { kind: 'dmPrecios' }; openSheet(dmPreciosHtml()); },
   metaVer: ([k]) => { FORM = { kind: 'metaVer', key: k }; if ($('#sheetBackdrop')) updateSheet(metaVerHtml(k)); else openSheet(metaVerHtml(k)); },
   metaMas: () => { if (!FORM || FORM.kind !== 'metaVer') return; FORM.mas = !FORM.mas; updateSheet(metaVerHtml(FORM.key)); },
-  metaAportarR: ([k]) => { verBadge('metasH'); FORM = { kind: 'aportarR', key: k, importe: '' }; if ($('#sheetBackdrop')) updateSheet(aportarRHtml()); else openSheet(aportarRHtml()); setTimeout(() => { const el = $('#apImporte'); if (el) el.focus(); }, 120); },
-  aportarRImp: ([v]) => { if (!FORM || FORM.kind !== 'aportarR') return; FORM.importe = String(v); sentir('tic'); updateSheet(aportarRHtml()); },
+  metaAportarR: ([k]) => { verBadge('metasH'); FORM = { kind: 'aportarR', key: k, importe: '' }; if ($('#sheetBackdrop')) updateSheet(aportarRHtml()); else openSheet(aportarRHtml()); if (FORM.tec) tecSync(); else setTimeout(() => { const el = $('#apImporte'); if (el) el.focus(); }, 120); },
+  aportarRImp: ([v]) => { if (!FORM || FORM.kind !== 'aportarR') return; FORM.importe = String(v); sentir('tic'); if (FORM.tec) { FORM.tec.txt = tecTxtDe(v); FORM.tec.reemplazar = true; tecSync(true); } else updateSheet(aportarRHtml()); },
   aportarRInput: (_a, el) => {
     const F = FORM; if (!F || F.kind !== 'aportarR') return; F.importe = el.value; el.size = Math.max(1, el.value.length);
     const r = metaPorKey(F.key), imp = numCampo(el.value), nuevo = (r ? r.valor : 0) + (imp > 0 ? imp : 0), pv = $('#apPrev'), b = $('#apGuardar');
@@ -8226,7 +8256,7 @@ const H = {
   aportarRGuardar: () => aportarRGuardar(),
   deudaNueva: () => { FORM = { kind: 'deudaForm', orig: null, nombre: '', emoji: '' }; if ($('#sheetBackdrop')) updateSheet(deudaFormHtml()); else openSheet(deudaFormHtml()); },
   deudaEditar: ([n]) => { const d = deudaPorNombre(n); if (!d) return; FORM = { kind: 'deudaForm', orig: d.nombre, nombre: d.nombre, emoji: d.emoji || '', total: d.objetivo, previo: d.previo, cuotaMes: d.cuotaMes, fecha: d.fechaObjetivo || '' }; if ($('#sheetBackdrop')) updateSheet(deudaFormHtml()); else openSheet(deudaFormHtml()); },
-  deudaEmoji: ([e]) => { if (!FORM || FORM.kind !== 'deudaForm') return; FORM.emoji = e; $$('.dm-emo-b').forEach((b) => b.classList.toggle('on', b.textContent === e)); sentir('tic'); },
+  deudaEmoji: ([e]) => { if (!FORM || FORM.kind !== 'deudaForm') return; FORM.emoji = e; $$('.dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(e); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); },
   deudaNombreIn: (_a, el) => {
     const F = FORM; if (!F || F.kind !== 'deudaForm') return; F.nombre = el.value;
     // al crear una deuda con un nombre que ya tiene pagos, se avisa de que contarán
@@ -8767,7 +8797,7 @@ const H = {
     updateSheet(tabsAnSheetHtml()); render();
   },
   setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; S.tab = 'inicio'; render(); },
-  verActivo: ([nombre]) => { S.movQuery = nombre; S.movFiltroTipo = 'Inversión'; S.movPeriodo = 'todo'; S.movLimit = 120; S.tab = 'movimientos'; render(); window.scrollTo(0, 0); },
+  verActivo: ([nombre]) => { closeSheet(); irMovs({ tipo: 'Inversión', periodo: 'todo', cat: nombre }); }, // la lista de tus compras de ese activo (antes caía en el Resumen)
   // calendario
   setCalVista: ([v]) => { S.calVista = v; render(); },
   calHoy: () => { S.calFecha = todayISO(); render(); },
@@ -8990,7 +9020,7 @@ document.addEventListener('click', (e) => {
 document.addEventListener('input', (e) => dispatch('input', e));
 document.addEventListener('paste', (e) => tecPegar(e));
 // al escribir en un campo de texto se cierra el teclado de la app (nunca dos teclados a la vez)
-document.addEventListener('focusin', (e) => { const T = FORM && FORM.kind === 'mov' && FORM.tec; if (T && T.on && e.target && e.target.matches && e.target.matches('#sheetHost input:not([type=hidden]):not([type=date]), #sheetHost textarea, #sheetHost select')) tecCerrar(); });
+document.addEventListener('focusin', (e) => { const T = FORM && FORM.tec; if (T && T.on && e.target && e.target.matches && e.target.matches('#sheetHost input:not([type=hidden]):not([type=date]), #sheetHost textarea, #sheetHost select')) tecCerrar(); });
 // mantener pulsado «Borrar» medio segundo borra todo
 (function () { let t = null; const fin = () => { clearTimeout(t); t = null; if (H.tecK._largo) setTimeout(() => { H.tecK._largo = false; }, 350); };
   document.addEventListener('pointerdown', (e) => { H.tecK._largo = false; const b = e.target.closest && e.target.closest('#tec .tec-del'); if (!b) return; fin(); t = setTimeout(() => { H.tecK._largo = true; tecPulsar('clear'); }, 500); });
@@ -9064,6 +9094,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { VERSIONES, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();

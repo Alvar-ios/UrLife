@@ -35,7 +35,7 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   const m = A.escrMensaje('gusta', 'Me encanta');
   ok(m.asunto === 'PalomApp · Me gusta' && /Me encanta/.test(m.cuerpo) && !/@/.test(m.cuerpo), 'Escríbenos: asunto y mensaje sin datos personales');
   H.closeSheet([]); await sleep(300);
-  ok(e.doc.querySelector('.comparar-fab'), 'Tú: sale el botón «Antes»');
+  ok(!e.doc.querySelector('.comparar-fab'), 'Tú: el dueño ya eligió la versión nueva (22/10): sin botón «Antes»');
   // buscador encuentra lo plegado
   const bus = e.doc.querySelector('#tuBuscar'); bus.value = 'moneda'; H.tuFiltrar([], bus);
   ok(e.doc.querySelector('.tu-mas').style.display === '' && [...e.doc.querySelectorAll('.tu-mas .menu-item')].some((b) => b.style.display === '' && /Moneda/.test(b.textContent)), 'buscador: «moneda» encuentra Moneda dentro de «Más ajustes»');
@@ -141,9 +141,9 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   ok(reps.length === 2 && /Mercadona/.test(reps.join()) && /Café/.test(reps.join()) && !/Cine/.test(reps.join()), '+: «Repetir» con los gastos que se repiten (no el de una vez)');
   ok(/42,50/.test(reps.join()), '+: «Repetir» con el importe del último');
   ok(e.doc.querySelector('.crear-peq') && /Gasto fijo/.test(e.doc.querySelector('.crear-peq').textContent), '+: lo demás en pequeño');
-  ok(/Ver la versión anterior/.test(s), '+: enlace «Ver la versión anterior»');
+  ok(!/Ver la versión anterior/.test(s), '+: el dueño ya eligió (22/10): sin «Ver la versión anterior»');
   H.crearVersion([1]); await sleep(10);
-  ok(!e.doc.querySelector('.crear-4') && /Ver la versión nueva/.test(sh(e)), '+: la versión de antes, con vuelta a la nueva');
+  ok(!e.doc.querySelector('.crear-4') && !/Ver la versión nueva/.test(sh(e)), '+: la versión de antes solo existe para pruebas, sin enlaces');
   H.crearVersion([0]); await sleep(10);
   // banda del ticket
   await A.guardarTicketsUso({ usados: 55, limite: 60 }); A.openCrear(); await sleep(10);
