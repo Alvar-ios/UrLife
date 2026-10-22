@@ -760,7 +760,7 @@ function normMov(m) {
 // Los traspasos entre cuentas van aparte: no son gasto ni ingreso, así ninguna suma los ve
 function esTraspaso(m) { return !!m && m.tipo === 'Traspaso'; }
 function aplicarMovs() { const raw = S._movsRaw || []; S.traspasos = raw.filter(esTraspaso); S.movimientos = raw.filter((m) => !esTraspaso(m)).map(normMov); }
-const tipoTxt = (t) => (t === 'Factura' ? 'Gasto fijo' : t === 'Ahorro' ? 'Apartar' : t);
+const tipoTxt = (t) => (t === 'Factura' ? 'Pago fijo' : t === 'Ahorro' ? 'Apartar' : t);
 // Subcategorías que ya has usado en una categoría (y los recibos de esa categoría si es un gasto fijo)
 function subcatsDe(cat, fijo) {
   const k = normName(cat), cuenta = {};
@@ -932,7 +932,7 @@ function render() {
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
   if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
   if (_agEl || S._agFoco) { S._agFoco = false; const nv = $('#agRapida'); if (nv) { if (_agV) nv.value = _agV; try { nv.focus(); } catch (e) { /* noop */ } } }
-  if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') setTimeout(marcarJuntosVisto, 0); else if (!cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
+  if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') setTimeout(marcarJuntosVisto, 0); else if ((S._vjFuera = true) && !cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
   pintarComparar();
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse') || lsGet('soy')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
@@ -1088,7 +1088,7 @@ function inPeriodo(m) {
   return true;
 }
 const GRUPOS_TIPO = { _gastos: ['Gasto', 'Factura'], _ahorro: ['Ahorro', 'Inversión'] };
-const GRUPOS_TXT = { _gastos: 'Gastos y facturas', _ahorro: 'Apartado e invertido' };
+const GRUPOS_TXT = { _gastos: 'Gastos y pagos fijos', _ahorro: 'Apartado e invertido' };
 function periodoTxt(p) {
   if (/^m:/.test(p)) { const [y, m] = p.slice(2).split('-').map(Number); return MESES[m - 1] + ' ' + y; }
   if (/^y:/.test(p)) return 'Año ' + p.slice(2);
@@ -1306,7 +1306,7 @@ function movAddCtxHtml() {
   const f = S.movFiltroTipo, cat = S.movCat || '';
   const t = cat || f === '_gastos' || f === 'Gasto' ? 'Gasto' : f === 'Ingreso' ? 'Ingreso' : f === '_ahorro' || f === 'Ahorro' ? 'Ahorro' : f === 'Factura' ? 'Factura' : f === 'Inversión' ? 'Inversión' : f === 'Deuda' ? 'Deuda' : '';
   if (!t) return '';
-  const txt = { Gasto: cat ? 'Apuntar un gasto en ' + cat : 'Apuntar un gasto', Ingreso: 'Apuntar un ingreso', Ahorro: 'Apartar dinero', Factura: 'Apuntar un gasto fijo', 'Inversión': 'Apuntar una inversión', Deuda: 'Apuntar un pago de deuda' }[t];
+  const txt = { Gasto: cat ? 'Apuntar un gasto en ' + cat : 'Apuntar un gasto', Ingreso: 'Apuntar un ingreso', Ahorro: 'Apartar dinero', Factura: 'Apuntar un pago fijo', 'Inversión': 'Apuntar una inversión', Deuda: 'Apuntar un pago de deuda' }[t];
   return '<button type="button" class="btn sm accent mov-add-ctx" ' + act('movAddCtx', t, cat) + '>' + ic('plus') + ' ' + escapeHtml(txt) + '</button>';
 }
 // Traspasos en la lista: solo en «Todos» (sin categoría), en gris y sin sumar al balance
@@ -1524,7 +1524,7 @@ function esGastoForm() { return FORM && (FORM.tipo === 'Gasto' || FORM.tipo === 
 function fijoHtml() {
   if (!esGastoForm()) return '';
   const f = FORM.tipo === 'Factura';
-  return '<div class="segmented fijo-seg"><button type="button" class="' + (f ? '' : 'active') + '" ' + act('pickFijo', '0') + '>Del día a día</button><button type="button" class="' + (f ? 'active' : '') + '" ' + act('pickFijo', '1') + '>Fijo · recibo' + badge('fijo') + '</button></div>';
+  return '<div class="segmented fijo-seg"><button type="button" class="' + (f ? '' : 'active') + '" ' + act('pickFijo', '0') + '>Del día a día</button><button type="button" class="' + (f ? 'active' : '') + '" ' + act('pickFijo', '1') + '>Pago fijo' + badge('fijo') + '</button></div>';
 }
 function subFieldHtml(cat, actual) {
   if (!FORM || !(FORM.tipo === 'Gasto' || FORM.tipo === 'Factura')) return '';
@@ -1683,7 +1683,7 @@ function tecPegar(e) {
   if (!n || Math.abs(n) >= 1e7) return toast('Eso no parece un importe');
   T.txt = tecTxtDe(Math.round(n * 100) / 100); T.neg = n < 0; T.reemplazar = false; sentir('tic'); tecSync(true);
 }
-const TIT_NUEVO = { Gasto: 'Nuevo gasto', Ingreso: 'Nuevo ingreso', Factura: 'Nuevo gasto fijo', Ahorro: 'Apartar dinero', 'Inversión': 'Nueva inversión', Deuda: 'Pago de deuda' };
+const TIT_NUEVO = { Gasto: 'Nuevo gasto', Ingreso: 'Nuevo ingreso', Factura: 'Nuevo pago fijo', Ahorro: 'Apartar dinero', 'Inversión': 'Nueva inversión', Deuda: 'Pago de deuda' };
 function tituloNuevoMov(t) { return TIT_NUEVO[t] || 'Nuevo movimiento'; }
 function openMovForm(id, pre) {
   if (id && String(id).indexOf('c:') === 0) return openCompForm(String(id).slice(2));
@@ -3544,7 +3544,7 @@ function crearHtmlV2() {
     '<div class="crear-grid crear-4' + (compartidosDisponible() ? '' : ' tres') + '">' + op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
       (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + '</div>' +
     (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
-    '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Gasto fijo', 'k-factura') +
+    '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura') +
       op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') + '</div>' +
     (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('swap') + ' Ver la versión anterior</button>' : '');
 }
@@ -3591,7 +3591,7 @@ function renderTuAntes() {
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
     grupo('Compartir', [it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir paloma invitar whatsapp')]) +
     grupo('Tu dinero', [it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
-      it('openRecurrentes', [], 'calendar', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas'),
+      it('openRecurrentes', [], 'calendar', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recibos suscripciones'),
       it('compararToggle', [], 'swap', 'Comparar con la versión anterior', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'pruebas version anterior comparar nueva'),
       it('tuMesAbrir', [], 'calendar', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
       it('openMetas', [], 'flag', 'Metas', badge('metas') + '<span class="menu-extra">ahorro e inversión</span>', 'objetivos hucha'),
@@ -3659,7 +3659,7 @@ function renderTuV2() {
     grupo('Tu dinero', [it('openCuentas', [], 'bank', 'Cuentas y saldos', (badge('cuentas') || badge('patrimonio')) + (nCu ? '<span class="menu-extra">' + nCu + (nCu === 1 ? ' cuenta' : ' cuentas') + '</span>' : ''), 'banco saldo patrimonio'),
       it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
       it('openReglas', [], 'tag', 'Reglas de categorías', badge('reglas'), 'automatico'),
-      it('openRecurrentes', [], 'repeat', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas'),
+      it('openRecurrentes', [], 'repeat', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recibos suscripciones'),
       it('tuMesAbrir', [], 'calendar', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
       it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir invitar whatsapp juntos')]) +
     grupo('Traer y guardar', [it('impAbrir', [], 'download', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
@@ -3817,7 +3817,7 @@ function insightsHtml() {
 const VERSIONES = {
   inicio: { txt: 'Inicio', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
-  juntos: { txt: 'Juntos', desde: '2026-10-18', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  juntos: { txt: 'Juntos', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: la lista de personas de antes de los círculos
   dinero: { txt: 'Dinero', desde: '2026-10-18', variantes: [['camino', 'Camino'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes']] },
   tu: { txt: 'Tú', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   agenda: { txt: 'Agenda', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
@@ -4036,7 +4036,8 @@ function isoSemana(iso) { const d = parseISO(iso), t = new Date(Date.UTC(d.getFu
 function marcarJuntosVisto() {
   const u = juntosUltimo(), v = cfg().vistoJuntos;
   if (!u) { if (!v && S.compartidos) saveConfig({ vistoJuntos: new Date(0).toISOString() }); return; }
-  if (!v || u > v) { S._vistoJuntosAntes = v || null; saveConfig({ vistoJuntos: u }); }
+  const misma = S._vjPaso && !S._vjFuera; S._vjFuera = false; // misma visita: lo marcado al entrar se queda marcado
+  if (!v || u > v) { S._vistoJuntosAntes = v || null; S._vjPaso = { antes: misma ? S._vjPaso.antes : v || null, nuevo: u }; saveConfig({ vistoJuntos: u }); }
 }
 
 // «Así vas» en círculos: una cifra corta dentro de un aro y dos palabras debajo; al tocar, la frase entera y «Ver»
@@ -4226,7 +4227,69 @@ function renderJuntos() {
    el grupo solo con dinero («Gastos | Saldos») y la administración en «Ajustes del grupo»;
    compartir un gasto en una sola pantalla. La versión anterior sigue en el botón «Antes».
    ============================================================ */
-function juntosV2() { return versionDe('juntos') === 'nueva'; }
+function juntosV2() { return versionDe('juntos') !== 'antes'; }
+function juntosV3() { return versionDe('juntos') === 'nueva'; }
+/* ---- Juntos v3 (23/10/2026, docs/14 B1 y B3): lo que debes y te deben en círculos (Personas | Grupos) y la actividad arriba, con lo nuevo marcado ---- */
+function eurosR(v) { return (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString('es-ES')) + ' ' + sym(); }
+function cifraCirc(v) { return Math.abs(v) < 1 ? money(Math.abs(v)) : eurosR(Math.abs(v)); } // menos de 1 €: con céntimos (si no, «0 €»)
+function juntosAro(v, max, i) {
+  const R = 27, C = 2 * Math.PI * R, f = max > 0 && Math.abs(v) >= 0.005 ? Math.max(0.06, Math.min(1, Math.abs(v) / max)) : 0;
+  return '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + R + '" class="ins-aro-f"/>' + (f ? '<circle cx="32" cy="32" r="' + R + '" class="ins-aro-v" stroke-dasharray="' + (C * f).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 32 32)" style="animation-delay:' + (i * 0.06).toFixed(2) + 's"/>' : '') + '</svg>';
+}
+function juntosCircHtml(x, max, i) {
+  const v = x.v, paz = Math.abs(v) < 0.005, tono = paz ? 'paz' : v < 0 ? 'malo' : 'bueno';
+  const est = paz ? 'en paz' : x.grupo ? (v < 0 ? 'debes' : 'te deben') : (v < 0 ? 'le debes' : 'te debe');
+  return '<button type="button" class="ins-c jv-c tappable ' + tono + '" aria-label="' + escapeHtml(x.nombre + ': ' + (paz ? 'en paz' : est + ' ' + money(Math.abs(v)))) + '" ' + x.a + '>' +
+    '<span class="ins-aro">' + juntosAro(v, max, i) + (paz ? '<span class="jv-c-ok" aria-hidden="true">' + ic('check') + '</span>' : '<b class="tnum' + (cifraCirc(v).length > 5 ? ' largo' : '') + '">' + escapeHtml(cifraCirc(v)) + '</b>') +
+    '<span class="jv-c-cara">' + x.cara + '</span></span><span class="ins-l1">' + escapeHtml(x.nombre) + '</span><span class="ins-l2">' + est + '</span></button>';
+}
+function juntosV3Html(ps, gs, frase, debes, teDeben, hayComp) {
+  const yo = miUid(), ver = S.juntosVer === 'grupos' ? 'grupos' : 'personas';
+  // personas: primero con dinero pendiente (de mayor a menor), luego las que están en paz
+  let items;
+  if (ver === 'personas') {
+    const vistos = new Set(ps.map((x) => x.uid)), paz = [];
+    gs.forEach((g) => g.miembros.forEach((m) => { const u = aliasDe(g.id, m.user_id); if (u !== yo && !esMio(g.id, m.user_id) && !vistos.has(u)) { vistos.add(u); paz.push({ uid: u, nombre: m.nombre }); } }));
+    items = ps.map((x) => ({ nombre: x.nombre, v: x.neto, cara: caraHtml(x.uid, x.nombre, 'mini'), a: act('personaVer', x.uid) }))
+      .concat(paz.map((x) => ({ nombre: x.nombre, v: 0, cara: caraHtml(x.uid, x.nombre, 'mini'), a: act('personaVer', x.uid) })));
+  } else {
+    items = gs.map((g) => { const o = g.tipo === 'directo' ? otroDe(g) : null, hay = (S.compartidos || []).some((c) => c.grupoId === g.id);
+      return { nombre: nombreDestino(g), v: hay ? miSaldo(g.id) : 0, grupo: true, cara: o ? caraHtml(o.user_id, o.nombre, 'mini') : '<span class="jv-c-gr">' + escapeHtml(iniciales(g.nombre)) + '</span>', a: act('grupoVer', g.id) }; })
+      .sort((a, b) => (Math.abs(b.v) >= 0.005) - (Math.abs(a.v) >= 0.005) || Math.abs(b.v) - Math.abs(a.v));
+  }
+  const max = Math.max(0, ...items.map((x) => Math.abs(x.v)));
+  const cifras = !hayComp ? '<div class="jv3-paz">Aún no habéis compartido gastos</div>' : (debes < 0.005 && teDeben < 0.005) ? '<div class="jv3-paz">' + ic('checkCircle') + ' Estás en paz con todos</div>' :
+    '<div class="jv3-cifras tnum">' + (debes >= 0.005 ? '<span class="de">Debes <b>' + money(debes) + '</b></span>' : '') + (teDeben >= 0.005 ? '<span class="te">' + (debes >= 0.005 ? '<i>·</i> ' : '') + 'Te deben <b>' + money(teDeben) + '</b></span>' : '') + '</div>';
+  const seg = '<div class="jv3-seg"><div class="segmented" role="tablist">' + [['personas', 'Personas'], ['grupos', 'Grupos']].map(([k, l]) => '<button type="button" role="tab" aria-selected="' + (ver === k) + '" class="' + (ver === k ? 'active' : '') + '" ' + act('juntosVer', k) + '>' + l + '</button>').join('') + '</div>' +
+    (ver === 'personas' ? '<button type="button" class="link" ' + act('juntosInvitar') + '>' + ic('plus') + ' Invitar</button>' : '<button type="button" class="link" ' + act('openGrupos') + '>' + ic('plus') + ' Nuevo</button>') + '</div>';
+  const fila = items.length ? '<div class="ins-circ jv3-circ' + (items.length > 4 ? ' muchos' : '') + '">' + items.map((x, i) => juntosCircHtml(x, max, i)).join('') + '</div>' :
+    '<div class="jv3-vacio">' + (ver === 'personas' ? 'Aún no hay nadie. Invita a alguien por WhatsApp.' : 'Aún no tienes grupos. Crea uno para la casa, un viaje o el pádel.') + '</div>';
+  let h = '<div class="card jv-cab jv3-cab"><div class="jv-frase">' + frase + '</div>' + cifras + seg + fila +
+    '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
+  h += juntosActividadHtml();
+  const objs = objCompartidos('ahorro').concat(objCompartidos('deuda'));
+  if (objs.length) h += '<div class="section-title">Metas y deudas juntos</div>' + objs.map(objCardHtml).join('');
+  return h;
+}
+function juntosActividadHtml() {
+  // lo nuevo es lo de otros después de tu visita anterior (aunque al entrar ya se marque como visto)
+  const vc = cfg().vistoJuntos || null, visto = S._vjPaso && (S._vjPaso.nuevo === vc || !vc) ? S._vjPaso.antes : vc;
+  const todo = (S.compartidos || []).filter((c) => grupoDe(c.grupoId)).slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const esNueva = (c) => !!visto && (c.createdAt || '') > visto && !esMio(c.grupoId, c.creadoPor || c.pagadoPor);
+  const nuevas = todo.filter(esNueva).length, act3 = todo.filter((c, i) => i < 3 || esNueva(c)).slice(0, 6); // las 3 últimas y además lo nuevo, aunque lo tuyo sea más reciente
+  if (!act3.length) return '';
+  const miNombre = String(cfg().nombre || '').trim() || 'Tú';
+  return '<div class="section-title">Actividad' + (nuevas ? '<span class="jv-nuevas">' + (nuevas === 1 ? '1 nueva' : nuevas + ' nuevas') + '</span>' : '') + '<button class="link" ' + act('irMovs', '_comp', 'todo') + '>Ver todo</button></div><div class="card jv-act">' + act3.map((c) => {
+    const quien = c.creadoPor || c.pagadoPor, yoQ = esMio(c.grupoId, quien), liq = c.tipo === 'Liquidación', parte = miParte(c), g = grupoDe(c.grupoId);
+    const n = (u) => nombreDe(c.grupoId, u), mio = (u) => esMio(c.grupoId, u), a = Object.keys(c.reparto || {})[0], caraDe = liq ? c.pagadoPor : quien;
+    const que = liq ? (mio(c.pagadoPor) ? 'Pagaste a ' + n(a) : mio(a) ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a))
+      : (yoQ ? 'Apuntaste' : n(quien) + ' apuntó') + ' «' + (c.descripcion || c.categoria || 'un gasto') + '»';
+    return '<button type="button" class="jv-a tappable' + (esNueva(c) ? ' nueva' : '') + '" ' + act('openMovForm', 'c:' + c.id) + '>' + caraHtml(aliasDe(c.grupoId, caraDe), mio(caraDe) ? miNombre : n(caraDe)) +
+      '<span class="jv-p-n"><b>' + (esNueva(c) ? '<i class="jv-punto" aria-hidden="true"></i><span class="sr-only">Nueva: </span>' : '') + escapeHtml(que) + '</b><span>' + escapeHtml((g ? nombreDestino(g) + ' · ' : '') + haceTxt(c.createdAt)) + '</span></span>' +
+      '<span class="jv-p-v"><b class="tnum">' + money(c.importe) + '</b><span>' + (liq ? '' : 'tu parte ' + money(parte)) + '</span></span></button>';
+  }).join('') + '</div>';
+}
+
 // cada persona con su color, el mismo en toda la app
 function colorPersona(uid) { const P = COLORES_PERSONA_NUEVO, k = String(uid || ''); let h = 0; for (let i = 0; i < k.length; i++) h = (h * 31 + k.charCodeAt(i)) >>> 0; return P[h % P.length]; }
 function caraHtml(uid, nombre, cls) { return '<span class="avatar cara' + (cls ? ' ' + cls : '') + '" style="background:' + colorPersona(uid) + '" title="' + escapeHtml(nombre || '') + '">' + escapeHtml(iniciales(nombre || '?')) + '</span>'; }
@@ -4258,6 +4321,7 @@ function renderJuntosV2() {
     '<p>Divide una cena, un viaje o la casa: aquí verás quién debe a quién y lo saldáis en un toque.</p>' +
     '<button class="btn accent block" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button>' +
     '<button class="btn ghost block" ' + act('openGrupos') + '>' + ic('users') + ' Crear un grupo</button></div>';
+  if (juntosV3()) return juntosV3Html(ps, gs, frase, debes, teDeben, hayComp);
   let h = '<div class="card jv-cab"><div class="jv-frase">' + frase + '</div>' +
     (hayComp ? '<div class="jv-fichas">' + ficha('debes', 'Debes', debes, deb.length, 'de') + ficha('te', 'Te deben', teDeben, te.length, 'te') + '</div>' : '<div class="rec-hint" style="margin:4px 0 10px;">Divide una cena, un viaje o la casa con quien quieras; aquí verás quién debe a quién y lo saldáis en un toque.</div>') +
     '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
@@ -4905,7 +4969,7 @@ function crearHtml() {
     op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
     (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') +
     (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') +
-    op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Gasto fijo', 'k-factura') +
+    op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Pago fijo', 'k-factura') +
     op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
 }
@@ -4918,7 +4982,7 @@ const BUSCAR_ACCIONES = [
   ['Grupos y personas', 'compartir paloma invitar saldar deudas', 'openGrupos', []], ['Metas', 'ahorro objetivos hucha', 'irDinero', ['metas']],
   ['Inversiones', 'bolsa etf cartera fondos', 'irDinero', ['inversiones']], ['Deudas', 'prestamo hipoteca coche', 'irDinero', ['deudas']],
   ['Lo que tienes', 'patrimonio cuanto tengo total', 'irDinero', ['metas']], ['Cuentas y saldos', 'banco saldo', 'openCuentas', []],
-  ['Categorías de gasto', 'presupuestos', 'openListEditor', ['categoriasGasto']], ['Cobros y pagos recurrentes', 'nomina alquiler facturas fijas', 'openRecurrentes', []],
+  ['Categorías de gasto', 'presupuestos', 'openListEditor', ['categoriasGasto']], ['Cobros y pagos recurrentes', 'nomina alquiler facturas fijas pagos fijos recibos suscripciones', 'openRecurrentes', []],
   ['Importar extracto o Excel', 'banco csv', 'impAbrir', []], ['Reglas de categorías', 'automatico', 'openReglas', []],
   ['Calendario', 'agenda mes semana', 'irAgenda', ['calendario']], ['Tareas', 'pendientes', 'irAgenda', ['tareas']],
   ['Análisis del año', 'anual resumen', 'verAnio', []], ['Copia de seguridad', 'exportar backup json', 'exportBackup', []],
@@ -7030,7 +7094,7 @@ function impHtml() {
         '<div class="imp-sub">' + fechaCortaU(r.fecha) + ' ' + r.fecha.slice(0, 4) +
         (r.estado === 'dup' ? ' · <b style="color:var(--accent)">¿duplicado?</b>' : '') +
         (r.estado === 'traspaso' ? ' · <b style="color:var(--accent)">traspaso entre cuentas: apúntalo con «Traspaso»</b>' : '') +
-        (r.origenCat === 'regla' ? ' · por tu regla' : r.origenCat === 'historial' ? ' · sugerida' : r.origenCat === 'factura' ? ' · factura recurrente' : '') + '</div>' +
+        (r.origenCat === 'regla' ? ' · por tu regla' : r.origenCat === 'historial' ? ' · sugerida' : r.origenCat === 'factura' ? ' · pago fijo' : '') + '</div>' +
         '<div class="imp-sels"><select ' + onChange('impTipo', k) + '>' + tipos.map((t) => '<option' + (t === r.tipo ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
         '<select ' + onChange('impCat', k) + '>' + opts + '</select></div>' +
         (r.ofrecerRegla ? '<button type="button" class="link" style="font-size:12px;" ' + act('impRegla', k) + '>Recordar: «' + escapeHtml(r.ofrecerRegla) + '» → ' + escapeHtml(r.categoria) + '</button>' : '') +
@@ -7133,7 +7197,7 @@ function impNuevosConfig(filas) {
   });
   return out;
 }
-const IMP_NUEVOS_TXT = { categoriasGasto: 'Categorías de gasto', ingresos: 'Fuentes de ingreso', facturas: 'Facturas recurrentes', ahorro: 'Metas de ahorro', deudas: 'Deudas' };
+const IMP_NUEVOS_TXT = { categoriasGasto: 'Categorías de gasto', ingresos: 'Fuentes de ingreso', facturas: 'Pagos fijos', ahorro: 'Metas de ahorro', deudas: 'Deudas' };
 function impPatchConfig(filas) {
   const nuevos = impNuevosConfig(filas), c = cfg(), patch = {};
   if (nuevos.categoriasGasto.length) patch.categoriasGasto = (c.categoriasGasto || []).concat(nuevos.categoriasGasto.map((n) => ({ nombre: n, presupuesto: null })));
@@ -7478,8 +7542,8 @@ function recListaHtml() {
   return '<div class="handle"></div><h2>Cobros y pagos recurrentes</h2>' +
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 6px;">Con cada uno te avisamos en Inicio el día anterior y el mismo día, y lo verás en el calendario.</div>' +
     '<div class="section-title">Ingresos fijos</div>' + (cob.length ? '<div class="list">' + cob.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade tu nómina u otro cobro fijo.')) +
-    '<div class="section-title">Facturas y pagos</div>' + (fac.length ? '<div class="list">' + fac.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguna.')) +
-    '<div class="actions"><button class="btn ghost block" ' + act('recNuevo', 'cobro') + '>' + ic('plus') + ' Ingreso fijo</button><button class="btn ghost block" ' + act('recNuevo', 'factura') + '>' + ic('plus') + ' Factura o pago</button></div>' +
+    '<div class="section-title">Pagos fijos</div>' + (fac.length ? '<div class="list">' + fac.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade el alquiler, la luz o una suscripción.')) +
+    '<div class="actions"><button class="btn ghost block" ' + act('recNuevo', 'cobro') + '>' + ic('plus') + ' Ingreso fijo</button><button class="btn ghost block" ' + act('recNuevo', 'factura') + '>' + ic('plus') + ' Pago fijo</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 const REGLA_OPC = [['dia', 'Un día fijo del mes'], ['ultHabil', 'El último día hábil del mes'], ['priHabil', 'El primer día hábil del mes'], ['nesimo', 'Un día de la semana concreto (p. ej. el primer lunes)'], ['quincenal', 'Dos veces al mes (el 15 y el último)'], ['semanas', 'Cada cierto número de semanas'], ['meses', 'Cada cierto número de meses (trimestral, anual…)']];
@@ -7523,8 +7587,8 @@ function recEditorHtml() {
     const sug = sugerenciaMejor(rc);
     if (sug) sugerencia = '<div class="rec-learn">Tus últimos movimientos encajan mejor con <b>' + escapeHtml(reglaTexto(sug.r)) + '</b> (coincide en ' + sug.hits + ' de ' + sug.total + '). <button type="button" class="link" ' + act('recUsarSugerencia') + '>Usar esta</button></div>';
   }
-  return '<div class="handle"></div><h2>' + (F.idx != null ? 'Editar' : (esCobro ? 'Nuevo ingreso fijo' : 'Nueva factura o pago')) + '</h2>' +
-    '<div class="field"><label>Tipo</label><div class="type-toggle"><button type="button" data-t="Ingreso" class="' + (esCobro ? 'active' : '') + '" ' + act('recSetKind', 'cobro') + '>Ingreso</button><button type="button" data-t="Factura" class="' + (!esCobro ? 'active' : '') + '" ' + act('recSetKind', 'factura') + '>Factura o pago</button></div></div>' +
+  return '<div class="handle"></div><h2>' + (F.idx != null ? 'Editar' : (esCobro ? 'Nuevo ingreso fijo' : 'Nuevo pago fijo')) + '</h2>' +
+    '<div class="field"><label>Tipo</label><div class="type-toggle"><button type="button" data-t="Ingreso" class="' + (esCobro ? 'active' : '') + '" ' + act('recSetKind', 'cobro') + '>Ingreso fijo</button><button type="button" data-t="Factura" class="' + (!esCobro ? 'active' : '') + '" ' + act('recSetKind', 'factura') + '>Pago fijo</button></div></div>' +
     '<div class="field"><label>Nombre</label>' + (nombres.length ? '<div class="chips">' + nombres.map((nm) => '<button type="button" class="chip ' + (normName(nm) === normName(F.nombre) ? 'active' : '') + '" ' + act('recPickNombre', nm) + '>' + escapeHtml(nm) + '</button>').join('') + '</div>' : '') +
     '<input id="recNombre" type="text" placeholder="' + (esCobro ? 'Nómina' : 'Alquiler') + '" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('recCampo', 'nombre') + '></div>' +
     (esCobro ? '' : '<div class="field"><label>Categoría</label><select id="recCat" ' + onChange('recCampo', 'categoria') + '>' + catsGasto().map((c) => '<option' + (normName(c.nombre) === normName(F.categoria || catDeRecibo(F.nombre || '')) ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>') +
@@ -7643,7 +7707,7 @@ function repetirFieldHtml(rep) {
    ============================================================ */
 const LIST_META = {
   categoriasGasto: { title: 'Categorías de gasto', amtField: 'presupuesto', amtLabel: 'Presup./mes', icon: 'tag' },
-  facturas: { title: 'Facturas recurrentes', amtField: 'importe', amtLabel: 'Importe', icon: 'wallet',
+  facturas: { title: 'Pagos fijos', amtField: 'importe', amtLabel: 'Importe', icon: 'wallet',
     extra: [{ field: 'diaDelMes', label: 'Día del mes', type: 'day' }] },
   ahorro: { title: 'Metas de ahorro', amtField: 'objetivo', amtLabel: 'Objetivo', icon: 'flag',
     extra: [{ field: 'fechaObjetivo', label: 'Fecha objetivo', type: 'date' }, { field: 'yaAhorrado', label: 'Ya ahorrado antes', type: 'money' }] },
@@ -8455,6 +8519,7 @@ const H = {
   irMovsDeuda: ([n]) => { const d = deudaPorNombre(n); closeSheet(); irMovs({ tipo: 'Deuda', periodo: 'todo', cat: n }); S.movCatAlias = d && (d.nombresAntes || []).length ? { cat: n, nombres: d.nombresAntes.slice() } : null; render(); },
   origenVer: ([gid, volver]) => { FORM = { kind: 'origen', gid, volver: volver || '' }; if ($('#sheetBackdrop')) updateSheet(origenHtml(gid, volver)); else openSheet(origenHtml(gid, volver)); },
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
+  juntosVer: ([k]) => { S.juntosVer = k === 'grupos' ? 'grupos' : 'personas'; sentir('tic'); render(); },
   personaVer: ([uid]) => { FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid)); },
   saldarTodo: ([uid]) => { const pc = cuentaPrincipal(); FORM = { kind: 'saldarTodo', uid, cuenta: pc ? pc.id : null }; if ($('#sheetBackdrop')) updateSheet(saldarTodoHtml()); else openSheet(saldarTodoHtml()); },
   saldarTodoGuardar: async () => {

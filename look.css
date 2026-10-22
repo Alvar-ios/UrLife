@@ -1427,9 +1427,42 @@ html[data-look="nuevo"] .dia-ic.caras .avatar { position: absolute; width: 26px;
 html[data-look="nuevo"] .dia-ic.caras .avatar:first-child { top: 2px; left: 2px; }
 html[data-look="nuevo"] .dia-ic.caras .avatar.b { bottom: 2px; right: 2px; }
 html[data-look="nuevo"] .dia-fila.juntos-nov .dia-t b::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin: 0 6px 1px 0; vertical-align: middle; }
+/* ---- Juntos v3 (23/10): círculos por persona o grupo, actividad con lo nuevo ---- */
+html[data-look="nuevo"] .jv3-cifras { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 2px 0 12px; font-family: var(--font-display); font-size: 17px; }
+html[data-look="nuevo"] .jv3-cifras span { color: var(--text-muted); font-size: 14px; }
+html[data-look="nuevo"] .jv3-cifras b { font-size: 22px; font-weight: var(--num-peso, 700); letter-spacing: -.02em; }
+html[data-look="nuevo"] .jv3-cifras .de b { color: var(--expense); } html[data-look="nuevo"] .jv3-cifras .te b { color: var(--income); }
+html[data-look="nuevo"] .jv3-cifras i { color: var(--text-faint); font-style: normal; }
+html[data-look="nuevo"] .jv3-paz { display: flex; align-items: center; gap: 6px; margin: 2px 0 12px; font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--income); }
+html[data-look="nuevo"] .jv3-paz .i { width: 20px; height: 20px; }
+html[data-look="nuevo"] .jv3-seg { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+html[data-look="nuevo"] .jv3-seg .segmented { flex: 0 1 220px; margin: 0; }
+html[data-look="nuevo"] .jv3-seg .link { display: inline-flex; align-items: center; gap: 4px; min-height: 40px; font-size: 14px; }
+html[data-look="nuevo"] .jv3-seg .link .i { width: 15px; height: 15px; }
+html[data-look="nuevo"] .jv3-circ { justify-content: flex-start; gap: 10px; margin: 0 -16px 12px; }
+html[data-look="nuevo"] .jv3-circ:not(.muchos) { justify-content: space-around; }
+html[data-look="nuevo"] .jv-c { width: 70px; }
+html[data-look="nuevo"] .jv-c .ins-l1 { max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .jv-c.paz { --ic: var(--text-faint); }
+html[data-look="nuevo"] .jv-c.paz .ins-l1, html[data-look="nuevo"] .jv-c.paz .ins-l2 { color: var(--text-muted); }
+html[data-look="nuevo"] .jv-c-ok { position: relative; color: var(--text-faint); line-height: 0; }
+html[data-look="nuevo"] .ins-aro .jv-c-ok svg.i { position: static; width: 18px; height: 18px; }
+html[data-look="nuevo"] .jv-c-cara { position: absolute; right: -4px; bottom: -4px; line-height: 0; }
+html[data-look="nuevo"] .jv-c-cara .cara.mini { width: 24px; height: 24px; font-size: 9px; border: 2px solid var(--paper-raised); }
+html[data-look="nuevo"] .jv-c-gr { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; background: var(--accent); color: #fff; font-size: 9px; font-weight: 800; border: 2px solid var(--paper-raised); }
+html[data-look="nuevo"] .jv3-vacio { font-size: 13.5px; color: var(--text-muted); margin: 0 0 12px; }
+html[data-look="nuevo"] .jv-nuevas { margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11.5px; font-weight: 700; letter-spacing: 0; }
+html[data-look="nuevo"] .jv-a.nueva { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+html[data-look="nuevo"] .jv-punto { display: inline-block; width: 7px; height: 7px; margin: 0 6px 1px 0; border-radius: 50%; background: var(--accent); vertical-align: middle; }
 /* Calidad Inicio v3: toques de 44 px y cifras de 5 dígitos */
 html[data-look="nuevo"] .asivas-cambiar, html[data-look="nuevo"] .ins-cambiar, html[data-look="nuevo"] .av-volver { min-height: 44px; display: inline-flex; align-items: center; gap: 5px; }
 html[data-look="nuevo"] .hk-cel b.largo { font-size: 12px; }
 html[data-look="nuevo"] .hk-cels.cinco .hk-cel b.largo { font-size: 11px; }
+/* «Pago fijo» con su línea pequeña en el botón + (23/10) */
+html[data-look="nuevo"] .crear-op small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.2; font-weight: 500; color: var(--text-muted); }
 html[data-look="nuevo"] .section-title .asivas-cambiar { min-height: 44px; }
 html[data-look="nuevo"] .ins-aro-v.nada { display: none; }
+/* Calidad Juntos v3: «Invitar» de 44 px y que asome el 5.º círculo a 360 px */
+html[data-look="nuevo"] .jv3-seg .link { min-height: 44px; }
+html[data-look="nuevo"] .jv3-cifras .te i { margin-right: 4px; }
+@media (max-width: 370px) { html[data-look="nuevo"] .jv3-circ.muchos { gap: 6px; } html[data-look="nuevo"] .jv3-circ.muchos .jv-c { width: 62px; } html[data-look="nuevo"] .jv3-circ.muchos .jv-c .ins-l1 { max-width: 62px; } }

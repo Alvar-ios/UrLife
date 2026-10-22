@@ -23,7 +23,7 @@ function server(uid){
       err('?')}};
 }
 function env(uid,email,url){
-  const e=makeEnv({version:{juntos:1},url:url||'https://urlife-zeta.vercel.app/',cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},session:{user:{email,id:uid}},pre:w=>{
+  const e=makeEnv({version:{juntos:2},url:url||'https://urlife-zeta.vercel.app/',cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},session:{user:{email,id:uid}},pre:w=>{
     w.history.replaceState=(a,b,u)=>{w.__nuevaUrl=u};
     const ls={};Object.defineProperty(w,'localStorage',{value:{getItem:k=>ls[k]==null?null:ls[k],setItem:(k,v)=>{ls[k]=String(v)},removeItem:k=>{delete ls[k]}},configurable:true});w.__ls=ls;
     w.open=(u)=>{w.__abierto=u};

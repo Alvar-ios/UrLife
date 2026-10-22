@@ -56,7 +56,7 @@ function env(uid, opts) {
   opts = opts || {};
   const cfgApp = { categoriasGasto: [{ nombre: 'Restaurantes' }] };
   if (opts.cuentas) cfgApp.cuentas = opts.cuentas;
-  const e = makeEnv({ url: opts.url || 'https://urlife-zeta.vercel.app/', cfg: { app: cfgApp, meta: { onboarded: true } }, session: { user: { email: uid + '@ejemplo.com', id: uid } }, pre: (w) => {
+  const e = makeEnv({ version: { juntos: 1 }, url: opts.url || 'https://urlife-zeta.vercel.app/', cfg: { app: cfgApp, meta: { onboarded: true } }, session: { user: { email: uid + '@ejemplo.com', id: uid } }, pre: (w) => {
     w.history.replaceState = () => {};
     const ls = {}; Object.defineProperty(w, 'localStorage', { value: { getItem: (k) => (ls[k] == null ? null : ls[k]), setItem: (k, v) => { ls[k] = String(v); }, removeItem: (k) => { delete ls[k]; } }, configurable: true });
   } });
@@ -90,7 +90,7 @@ const clicks = (e, pre) => [...e.doc.querySelectorAll('[data-click^="' + pre + '
   ok(!/le debes/.test(app()) && /Nadie en este filtro/.test(app()), 'tocar «Te deben» filtra (Bea desaparece)');
   A.H.juntosFiltro(['']); await sleep(20);
   // el botón «Antes» vuelve a la pantalla anterior
-  A.S.verAnterior = { juntos: 1 }; A.render(); await sleep(20);
+  A.S.verAnterior = { juntos: 2 }; A.render(); await sleep(20);
   ok(/Balance con tus personas/.test(app()), 'con «Antes» se ve la pantalla de Juntos de siempre');
   A.S.verAnterior = {}; A.render(); await sleep(20);
   ok(/Juntos/.test(a.doc.querySelector('#compararHost') ? a.doc.querySelector('#compararHost').textContent + 'Juntos' : 'Juntos'), 'el botón de comparar existe en Juntos');

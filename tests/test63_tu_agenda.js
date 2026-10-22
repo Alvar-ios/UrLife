@@ -140,7 +140,7 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   const reps = [...e.doc.querySelectorAll('[data-click^="crearRepetir"]')].map((b) => b.textContent);
   ok(reps.length === 2 && /Mercadona/.test(reps.join()) && /Café/.test(reps.join()) && !/Cine/.test(reps.join()), '+: «Repetir» con los gastos que se repiten (no el de una vez)');
   ok(/42,50/.test(reps.join()), '+: «Repetir» con el importe del último');
-  ok(e.doc.querySelector('.crear-peq') && /Gasto fijo/.test(e.doc.querySelector('.crear-peq').textContent), '+: lo demás en pequeño');
+  ok(e.doc.querySelector('.crear-peq') && /Pago fijo.*recibos, facturas y suscripciones/.test(e.doc.querySelector('.crear-peq').textContent), '+: lo demás en pequeño');
   ok(!/Ver la versión anterior/.test(s), '+: el dueño ya eligió (22/10): sin «Ver la versión anterior»');
   H.crearVersion([1]); await sleep(10);
   ok(!e.doc.querySelector('.crear-4') && !/Ver la versión nueva/.test(sh(e)), '+: la versión de antes solo existe para pruebas, sin enlaces');
