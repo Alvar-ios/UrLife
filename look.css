@@ -17,7 +17,7 @@ html[data-look="nuevo"] {
   --paper: #F5F5F2; --paper-raised: #FFFFFF; --paper-sunken: #EDEDE8; --line: #E8E7E1; --ink: #14162B;
   --text: var(--ink); --text-muted: #4A4E66; --text-faint: #666A80;
   --income: #17784F; --expense: #B3312A; --bill: #2B64C7; --savings: #7C4DD0; --debt: #6E5F4B;
-  --warn: #8A5700; --warn-soft: rgba(154,97,0,.10); --income-soft: rgba(23,120,79,.10); --expense-soft: rgba(200,56,47,.10); --savings-soft: rgba(124,77,208,.11); --bill-soft: rgba(43,100,199,.11);
+  --warn: #B8430A; --warn-soft: rgba(184,67,10,.10); --income-soft: rgba(23,120,79,.10); --expense-soft: rgba(200,56,47,.10); --savings-soft: rgba(124,77,208,.11); --bill-soft: rgba(43,100,199,.11);
   --on-solid: #FFFFFF; --toast-bg: #14162B;
   --accent: var(--pl); --accent-ink: #FFFFFF; --accent-soft: var(--pl-soft);
   --hero-1: var(--h1l); --hero-2: var(--h2l); --hero-bg: var(--h1l); --hero-tile: rgba(255,255,255,.13); --hero-muted: rgba(255,255,255,.80);
@@ -32,7 +32,7 @@ html[data-look="nuevo"] {
     --seg-on: #34343D; --paper: #0A0A0C; --paper-raised: #17171B; --paper-sunken: #232329; --line: #2B2B33; --ink: #F3F3F7;
     --text-muted: #C4C4CC; --text-faint: #9C9CA6;
     --income: #52D69A; --expense: #FF7F70; --bill: #7DB1FF; --savings: #B79CFF; --debt: #D2BFA5;
-    --warn: #F5B83D; --warn-soft: rgba(245,184,61,.14); --income-soft: rgba(82,214,154,.14); --expense-soft: rgba(255,127,112,.14); --savings-soft: rgba(183,156,255,.15); --bill-soft: rgba(125,177,255,.15);
+    --warn: #FF9F43; --warn-soft: rgba(255,159,67,.14); --income-soft: rgba(82,214,154,.14); --expense-soft: rgba(255,127,112,.14); --savings-soft: rgba(183,156,255,.15); --bill-soft: rgba(125,177,255,.15);
     --on-solid: #0A0A12; --toast-bg: #2B2B33;
     --accent: var(--pd); --accent-ink: #0A0A12; --accent-soft: var(--pd-soft);
     --hero-1: var(--h1d); --hero-2: var(--h2d); --hero-bg: var(--h1d); --hero-tile: rgba(255,255,255,.10);
@@ -44,7 +44,7 @@ html[data-look="nuevo"][data-theme="dark"] {
   --seg-on: #34343D; --paper: #0A0A0C; --paper-raised: #17171B; --paper-sunken: #232329; --line: #2B2B33; --ink: #F3F3F7;
   --text-muted: #C4C4CC; --text-faint: #9C9CA6;
   --income: #52D69A; --expense: #FF7F70; --bill: #7DB1FF; --savings: #B79CFF; --debt: #D2BFA5;
-  --warn: #F5B83D; --warn-soft: rgba(245,184,61,.14); --income-soft: rgba(82,214,154,.14); --expense-soft: rgba(255,127,112,.14); --savings-soft: rgba(183,156,255,.15); --bill-soft: rgba(125,177,255,.15);
+  --warn: #FF9F43; --warn-soft: rgba(255,159,67,.14); --income-soft: rgba(82,214,154,.14); --expense-soft: rgba(255,127,112,.14); --savings-soft: rgba(183,156,255,.15); --bill-soft: rgba(125,177,255,.15);
   --on-solid: #0A0A12; --toast-bg: #2B2B33;
   --accent: var(--pd); --accent-ink: #0A0A12; --accent-soft: var(--pd-soft);
   --hero-1: var(--h1d); --hero-2: var(--h2d); --hero-bg: var(--h1d); --hero-tile: rgba(255,255,255,.10);
@@ -1004,7 +1004,7 @@ html[data-look="nuevo"] .dm-deuda-q b { font-size: 16px; font-weight: 750; }
 html[data-look="nuevo"] .dm-deuda-q span { font-size: 11.5px; color: var(--text-faint); }
 html[data-look="nuevo"] .dm-deuda-bar { position: relative; display: block; height: 6px; border-radius: 3px; background: var(--paper-sunken); overflow: hidden; }
 html[data-look="nuevo"] .dm-deuda-bar.grande { height: 10px; border-radius: 5px; margin: 10px 0 14px; }
-html[data-look="nuevo"] .dm-deuda-bar i { display: block; height: 100%; border-radius: inherit; background: var(--bill); }
+html[data-look="nuevo"] .dm-deuda-bar i { display: block; height: 100%; border-radius: inherit; background: var(--debt); }
 html[data-look="nuevo"] .dm-dq { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; font-size: 13px; color: var(--text-muted); }
 html[data-look="nuevo"] .dm-dq b { font-family: var(--font-display); font-size: 40px; font-weight: var(--num-peso); color: var(--text); letter-spacing: -.02em; line-height: 1.1; }
 html[data-look="nuevo"] .dm-mas-chips { margin-bottom: 8px; }
@@ -1246,3 +1246,44 @@ html[data-look="nuevo"] .comparar-fab.multi span i { opacity: 1; }
 @media (max-width: 340px) { html[data-look="nuevo"] .comparar-fab.multi span i { display: none; } html[data-look="nuevo"] .topbar h1 { min-width: 0; overflow-wrap: anywhere; } }
 html[data-look="nuevo"] :is(button.link, .hero-arrow) { position: relative; }
 html[data-look="nuevo"] :is(button.link, .hero-arrow)::after { content: ''; position: absolute; inset: -8px -4px; }
+
+/* ===== Cambios medianos (22/10, auditoría B3–B12) ===== */
+/* B3 · «elegido» siempre igual: fondo suave del acento, borde y texto de acento (lo macizo, solo en botones de acción) */
+html[data-look="nuevo"] :is(.pill.active, .chip-nav.active) { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+html[data-look="nuevo"] .type-toggle button.active[data-p], html[data-look="nuevo"] .type-toggle button.active[data-e] { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+html[data-look="nuevo"] .type-toggle button.active[data-t="Gasto"] { background: var(--expense-soft); color: var(--expense); box-shadow: inset 0 0 0 1.5px var(--expense); }
+html[data-look="nuevo"] .type-toggle button.active[data-t="Ingreso"] { background: var(--income-soft); color: var(--income); box-shadow: inset 0 0 0 1.5px var(--income); }
+html[data-look="nuevo"] .type-toggle button.active[data-t="Factura"] { background: var(--bill-soft); color: var(--bill); box-shadow: inset 0 0 0 1.5px var(--bill); }
+html[data-look="nuevo"] .type-toggle button.active:is([data-t="Ahorro"], [data-t="Inversión"]) { background: var(--savings-soft); color: var(--savings); box-shadow: inset 0 0 0 1.5px var(--savings); }
+html[data-look="nuevo"] .type-toggle button.active[data-t="Deuda"] { background: color-mix(in srgb, var(--debt) 14%, transparent); color: var(--debt); box-shadow: inset 0 0 0 1.5px var(--debt); }
+html[data-look="nuevo"] :is(.comp-box, .tk-quien) .chip.active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+/* B3 · cabecera de periodo: nombre a la izquierda, flechas redondas a la derecha (como en Movimientos) */
+html[data-look="nuevo"] .mov-cab .mov-per-lbl b { font-size: 24px; }
+html[data-look="nuevo"] .cal2-nav { justify-content: flex-start; gap: 8px; padding: 2px 2px 12px; }
+html[data-look="nuevo"] .cal2-nav .lbl { order: -1; flex: 1; text-align: left; min-width: 0; font-size: 20px; }
+html[data-look="nuevo"] :is(.cal2-nav, .ag-flechas) .icon-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper-raised); color: var(--text); }
+html[data-look="nuevo"] .ag-cab > b { font-size: 17px; }
+/* B4 · cada color, un significado: tareas en acento, fijos en azul, deuda en su color */
+html[data-look="nuevo"] .k-tarea .crear-ic { background: var(--accent-soft); color: var(--accent); }
+/* B8 · el botón de la casilla rápida, más discreto que el + de abajo */
+html[data-look="nuevo"] .ag-rapida-btn { width: 44px; height: 44px; background: var(--accent-soft); color: var(--accent); }
+html[data-look="nuevo"] .ag-rapida-btn .i { width: 19px; height: 19px; }
+/* B9 · categorías con su icono y su color */
+html[data-look="nuevo"] .chip-cat-ic { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; margin: 0 6px 0 -4px; background: color-mix(in srgb, var(--cc) 18%, transparent); color: color-mix(in srgb, var(--cc) 70%, var(--ink)); flex: none; }
+html[data-look="nuevo"] .chip-cat-ic .i { width: 14px; height: 14px; }
+html[data-look="nuevo"] #catChips .chip { display: inline-flex; align-items: center; }
+/* B10 · Juntos sin nada todavía */
+html[data-look="nuevo"] .jv-vacio { text-align: center; padding: 28px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+html[data-look="nuevo"] .jv-vacio-ic { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+html[data-look="nuevo"] .jv-vacio-ic .i { width: 30px; height: 30px; }
+html[data-look="nuevo"] .jv-vacio h2 { font-size: 20px; margin: 6px 0 0; }
+html[data-look="nuevo"] .jv-vacio p { color: var(--text-muted); margin: 0 0 8px; max-width: 32ch; }
+html[data-look="nuevo"] .jv-vacio .btn { width: 100%; }
+/* B11 · día vacío del calendario de Movimientos */
+html[data-look="nuevo"] .cal-nada { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+html[data-look="nuevo"] .cal-nada-btn { min-height: 40px; }
+/* B12 · atajos de Buscar con icono */
+html[data-look="nuevo"] .chip.chip-ic { display: inline-flex; align-items: center; gap: 6px; }
+html[data-look="nuevo"] .chip.chip-ic .i { width: 15px; height: 15px; color: var(--accent); }
+html[data-look="nuevo"] .cal-n { font-size: 12px; font-weight: 500; }
+html[data-look="nuevo"] body.en-movlista .topbar .tb-btn[aria-label="Buscar"] { display: none; }

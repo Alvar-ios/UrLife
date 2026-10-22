@@ -40,7 +40,7 @@ async function guardar(e,importe,cat){e.doc.querySelector('#fImporte').value=Str
  click(e,'cuentasVolver');await sleep(5);click(e,'cuentaEditar','2');await sleep(5);
  click(e,'cuentaTengo','2');await sleep(5);cs=e.store.cfg.app.cuentas;ok(cs[2].enTengo===true,'el interruptor de la hucha la suma');
  click(e,'cuentasVolver');await sleep(5);click(e,'cuentaEditar','0');await sleep(5);
- click(e,'cuentaColor','0','#A8452F');await sleep(5);cs=e.store.cfg.app.cuentas;ok(cs[0].color==='#A8452F'&&doc.querySelector('#sheetHost .cuenta-color.on[style*="#A8452F"]'),'se cambia el color de una cuenta');
+ click(e,'cuentaColor','0','#C2416C');await sleep(5);cs=e.store.cfg.app.cuentas;ok(cs[0].color==='#C2416C'&&doc.querySelector('#sheetHost .cuenta-color.on[style*="#C2416C"]'),'se cambia el color de una cuenta');
  change(e,doc.querySelector('#sheetHost .cuenta-ed select'),'efectivo');await sleep(5);cs=e.store.cfg.app.cuentas;ok(cs[0].tipo==='efectivo','se cambia el tipo');
  click(e,'cuentasVolver');await sleep(5);
  ok(cs[0].saldo===1000&&cs[0].fecha===mk+'-01','cambiar tipo o color no toca el saldo ni su fecha');

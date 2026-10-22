@@ -910,6 +910,7 @@ function render() {
   $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
   const av = $('#tbAvatar'); if (av) { av.textContent = inicialUsuario(); const v2 = !verAnterior('tu'); av.style.background = v2 ? colorPersona(miUid()) : ''; av.style.color = v2 ? '#fff' : ''; }
   document.body.classList.toggle('en-tu', S.tab === 'tu');
+  document.body.classList.toggle('en-movlista', S.tab === 'movimientos' && movVistaAct() === 'lista'); // allí ya hay una lupa que busca en la lista
   document.body.classList.toggle('en-tu2', S.tab === 'tu' && !verAnterior('tu'));
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : TITULOS[S.tab];
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
@@ -1290,7 +1291,7 @@ function renderMovCal() {
     const delDia = movs.filter((x) => (x.fecha || '').slice(0, 10) === sel).sort(cmpMov), neto = delDia.reduce((a, x) => a + (esApartado(x.tipo) ? 0 : effect(x.importe, x.tipo)), 0);
     detalle = '<div class="date-sep cal-sep"><span>' + fmtDiaLista(sel) + (delDia.length ? ' · ' + delDia.length + (delDia.length === 1 ? ' movimiento' : ' movimientos') : '') + '</span>' +
       (delDia.length ? '<span class="tnum ' + (neto >= 0 ? 'pos' : 'neg') + '">' + (neto >= 0 ? '+' : '−') + fmtM(Math.abs(neto)) + ' ' + sym() + '</span>' : '') + '</div>' +
-      (delDia.length ? '<div class="list">' + delDia.map(renderMovRow).join('') + '</div>' : '<div class="cal-nada">' + (sel > hoy ? 'Este día aún no ha llegado.' : 'Sin movimientos este día.') + '</div>');
+      (delDia.length ? '<div class="list">' + delDia.map(renderMovRow).join('') + '</div>' : '<div class="cal-nada">' + (sel > hoy ? 'Este día aún no ha llegado.' : 'Sin movimientos este día.') + (sel <= hoy ? '<button type="button" class="btn sm ghost cal-nada-btn" ' + act('gastoEnDia', sel) + '>' + ic('plus') + ' Apuntar un gasto este día</button>' : '') + '</div>');
   } else detalle = '<div class="cal-nada">Toca un día para ver sus movimientos.</div>';
   return movCuentaFiltroHtml() +
     '<div class="card cal-card"><div class="cal-sem">' + DIA_LETRA.map((l) => '<span>' + l + '</span>').join('') + '</div><div class="cal-grid">' + celdas + '</div>' +
@@ -1415,7 +1416,7 @@ function chipsHtml(tipo, current) {
   if (tipo === 'Gasto' || tipo === 'Factura') {
     const todas = catsPorUso(), max = 8, verTodas = (FORM && FORM.catTodas) || todas.indexOf(current) >= max;
     const vis = verTodas ? todas : todas.slice(0, max);
-    return '<div class="chips">' + vis.map((c) => '<button type="button" class="chip ' + (c === current ? 'active' : '') + '" ' + act('pickCat', c) + '>' + (catStd(c) ? '' : '<span class="chip-pers" title="Personalizada">•</span>') + escapeHtml(c) + '</button>').join('') +
+    return '<div class="chips">' + vis.map((c) => '<button type="button" class="chip ' + (c === current ? 'active' : '') + '" ' + act('pickCat', c) + '><span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span>' + escapeHtml(c) + '</button>').join('') +
       (todas.length > max ? '<button type="button" class="chip chip-mas" ' + act('catMas') + '>' + (verTodas ? 'Menos' : 'Más (' + (todas.length - max) + ')') + '</button>' : '') + '</div>';
   }
   const cats = categoriasPorTipo(tipo);
@@ -1489,7 +1490,7 @@ function invFieldsBaseHtml(tipo, actual) {
 }
 function updatePreview() {
   const el = $('#previewPart'); if (!el) return;
-  const pr = FORM.precio, imp = parseFloat(($('#fImporte') || {}).value);
+  const pr = FORM.precio, imp = numCampo(($('#fImporte') || {}).value);
   if (FORM.precioCargando) { el.textContent = 'Consultando el precio de ese día…'; return; }
   if (!pr || (!pr.error && pr.cierre_eur == null)) { el.textContent = ''; return; }
   if (pr.error) { el.textContent = errPrecioMsg(pr.error); return; }
@@ -1578,7 +1579,7 @@ function openMovForm(id, pre) {
     '<div class="handle"></div><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
     (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
-    '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : (pre.importe != null ? pre.importe : '')) + '" ' + onInput('onImporteInput') + '></div>' +
+    '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div>' +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
     TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + tipoTxt(t) + '</button>').join('') + '</div>' +
     '<div id="fijoBox">' + fijoHtml() + '</div></div>' +
@@ -1606,7 +1607,7 @@ async function saveMov() {
   if (FORM.guardando) return;
   const obSel = FORM.comp && FORM.comp.on && TIPO_OBJ[FORM.tipo] && FORM.comp.objetivo ? objPorId(FORM.comp.objetivo) : null;
   if (obSel && obSel.tipo === TIPO_OBJ[FORM.tipo] && FORM.comp.dest === 'g:' + obSel.grupoId) { const c = $('#fCategoria'); if (c) c.value = obSel.nombre; }
-  const importe = parseFloat($('#fImporte').value);
+  const importe = numCampo($('#fImporte').value);
   const fecha = $('#fFecha').value;
   const auto = invAuto();
   if (auto) { if (!FORM.activo) return toast('Busca y elige el activo'); const c = $('#fCategoria'); if (c) c.value = FORM.activo.nombre; }
@@ -2258,6 +2259,8 @@ function compartidosDisponible() { return !!(S.db && S.db.compartidos && gruposD
 function cents(x) { return Math.round(num(x) * 100); }
 function r2(x) { return Math.round(num(x) * 100) / 100; }
 // lee un importe escrito a mano: «8.000», «1.234,56», «12,5» o «12.5» (el punto con grupos de 3 cifras es de miles)
+// Importe para un campo de texto, con coma decimal («7,08»): en España «7.08» se lee como setecientos ocho
+function importeCampo(v) { if (v == null || v === '') return ''; const n = Number(v); return isFinite(n) ? String(n).replace('.', ',') : escapeHtml(String(v)); }
 function numCampo(v) {
   let t = String(v == null ? '' : v).replace(/[\s€]/g, '');
   if (t.indexOf(',') >= 0 && t.indexOf('.') >= 0 && t.lastIndexOf('.') > t.lastIndexOf(',')) t = t.replace(/,/g, ''); // «1,240.50» (formato inglés)
@@ -3286,7 +3289,7 @@ function renderAgendaSemanaV2() {
     '<span class="ag-flechas"><button type="button" class="icon-btn" aria-label="Semana anterior" ' + act('agendaSemana', -1) + '>' + ic('chevL') + '</button><button type="button" class="icon-btn" aria-label="Semana siguiente" ' + act('agendaSemana', 1) + '>' + ic('chevR') + '</button></span></div>';
   const tira = '<div class="semana ag-tira"><div class="semana-dias">' + [0, 1, 2, 3, 4, 5, 6].map((i) => { const iso = uAdd(lunes, i), n = (mapW[iso] || []).length;
     return '<button class="dia' + (iso === sel ? ' sel' : '') + (iso === hoy ? ' hoy' : '') + '" ' + act('agendaDia', iso) + ' aria-label="' + fmtDateLong(iso) + '"' + (iso === sel ? ' aria-current="date"' : '') + '><span class="l">' + DIA_LETRA[i] + '</span><b>' + parseISO(iso).getDate() + '</b><i class="' + (n ? 'con' : '') + '"></i></button>'; }).join('') + '</div></div>';
-  const rapida = '<div class="ag-rapida"><input type="text" id="agRapida" maxlength="120" enterkeyhint="done" autocomplete="off" placeholder="' + escapeHtml(agRapidaPh(sel)) + '" aria-label="' + escapeHtml(agRapidaPh(sel)) + '"><button type="button" class="ag-rapida-btn" aria-label="Añadir tarea" ' + act('agRapida') + '>' + ic('plus') + '</button></div>';
+  const rapida = '<div class="ag-rapida"><input type="text" id="agRapida" maxlength="120" enterkeyhint="done" autocomplete="off" placeholder="' + escapeHtml(agRapidaPh(sel)) + '" aria-label="' + escapeHtml(agRapidaPh(sel)) + '"><button type="button" class="ag-rapida-btn" aria-label="Añadir tarea" ' + act('agRapida') + '>' + ic('send') + '</button></div>';
   const pend = S.tareas.filter((t) => t.estado !== 'Completado');
   const venc = pend.filter((t) => t.fechaLimite && t.fechaLimite < hoy && t.fechaLimite !== sel).sort(cmpTarea);
   const vencH = venc.length ? '<div class="section-title ag-venc">Vencidas · ' + venc.length + '</div><div class="list">' + (abierto === 'vencidas' ? venc : venc.slice(0, 3)).map(filaT).join('') + '</div>' +
@@ -3296,7 +3299,7 @@ function renderAgendaSemanaV2() {
   const filasDia = pend.filter((t) => t.fechaLimite === sel).sort(cmpTarea).map((t) => renderTareaRow(t, { v2: true, dia: true })).join('') + (mapW[sel] || []).filter((ev) => ev.k !== 'tarea').map(calEventRow).join('');
   const diaH = '<div class="section-title">' + escapeHtml(tituloDia) + '</div>' + (filasDia ? '<div class="list">' + filasDia + '</div>' : '<div class="card ag-despejado">' + ic('checkCircle') + '<span>Día despejado.</span></div>');
   const mapN = eventosAgenda(uAdd(sel, 1), uAdd(sel, 7)), prox = [];
-  Object.keys(mapN).sort().forEach((iso) => { if (iso < hoy) return; mapN[iso].forEach((ev) => prox.push(agFilaProx(iso, ev))); });
+  Object.keys(mapN).sort().forEach((iso) => { if (iso < hoy) return; mapN[iso].forEach((ev) => { const t = ev.k === 'tarea' && ev.id ? S.tareas.find((x) => x.id === ev.id) : null; prox.push(t ? renderTareaRow(t, { v2: true }) : agFilaProx(iso, ev)); }); });
   const proxH = prox.length ? '<div class="section-title">Próximos 7 días</div><div class="list">' + (abierto === 'prox' ? prox : prox.slice(0, 5)).join('') + '</div>' + (prox.length > 5 && abierto !== 'prox' ? agVerMas('prox', prox.length, 'Ver todo') : '') : '';
   const sinF = pend.filter((t) => !t.fechaLimite).sort(cmpTarea);
   const sinFH = sinF.length ? '<div class="section-title">Sin fecha · ' + sinF.length + '</div><div class="list">' + sinF.map(filaT).join('') + '</div>' : '';
@@ -3937,6 +3940,10 @@ function renderJuntosV2() {
   const nG = gs.filter((g) => g.tipo === 'grupo').length, conSolas = gs.some((g) => g.tipo === 'directo');
   const frase = !gs.length ? 'Aún no compartes con nadie' : 'En ' + (nG ? (nG === 1 ? 'tu grupo' : 'tus ' + nG + ' grupos') : '') + (nG && conSolas ? ' y a solas' : !nG ? 'lo que compartes a solas' : '') + ', todo sumado';
   const ficha = (k, t, v, n, cls) => '<button type="button" class="jv-ficha ' + cls + (f === k ? ' on' : '') + '" ' + act('juntosFiltro', f === k ? '' : k) + '><span>' + t + '</span><b class="tnum">' + money(v) + '</b><i>' + (n ? n + (n === 1 ? ' persona' : ' personas') : 'nadie') + '</i></button>';
+  if (!gs.length && !hayComp) return '<div class="card jv-vacio"><span class="jv-vacio-ic">' + ic('users') + '</span><h2>Comparte gastos con quien quieras</h2>' +
+    '<p>Divide una cena, un viaje o la casa: aquí verás quién debe a quién y lo saldáis en un toque.</p>' +
+    '<button class="btn accent block" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button>' +
+    '<button class="btn ghost block" ' + act('openGrupos') + '>' + ic('users') + ' Crear un grupo</button></div>';
   let h = '<div class="card jv-cab"><div class="jv-frase">' + frase + '</div>' +
     (hayComp ? '<div class="jv-fichas">' + ficha('debes', 'Debes', debes, deb.length, 'de') + ficha('te', 'Te deben', teDeben, te.length, 'te') + '</div>' : '<div class="rec-hint" style="margin:4px 0 10px;">Divide una cena, un viaje o la casa con quien quieras; aquí verás quién debe a quién y lo saldáis en un toque.</div>') +
     '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
@@ -4572,6 +4579,7 @@ function crearHtml() {
 function crearElegido() { return verAnterior('crear') ? crearHtml() + (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('swap') + ' Ver la versión nueva</button>' : '') : crearHtmlV2(); }
 function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearElegido()); else openSheet(crearElegido()); }
 /* ---- buscador global: movimientos, tareas, categorías y ajustes ---- */
+const ATAJO_IC = { 'Foto de ticket': 'camera', 'Nuevo gasto': 'plus', 'Nueva tarea': 'checkCircle', 'Grupos y personas': 'users', Metas: 'flag', Inversiones: 'chart', Deudas: 'card', 'Lo que tienes': 'wallet' };
 const BUSCAR_ACCIONES = [
   ['Foto de ticket', 'camara recibo leer', 'ticketFoto', []], ['Nuevo gasto', 'apuntar añadir', 'crearIr', ['gasto']], ['Nueva tarea', 'apuntar', 'crearIr', ['tarea']],
   ['Grupos y personas', 'compartir paloma invitar saldar deudas', 'openGrupos', []], ['Metas', 'ahorro objetivos hucha', 'irDinero', ['metas']],
@@ -4589,7 +4597,7 @@ function buscarHtml() {
 }
 function buscarResHtml(q0) {
   const q = normDesc(q0);
-  if (!q) return '<div class="section-title">Atajos</div><div class="chips">' + BUSCAR_ACCIONES.slice(0, 8).map(([t, , h, a]) => '<button type="button" class="chip" ' + act('buscarIr', h, ...a) + '>' + escapeHtml(t) + '</button>').join('') + '</div>' +
+  if (!q) return '<div class="section-title">Atajos</div><div class="chips">' + BUSCAR_ACCIONES.slice(0, 8).map(([t, , h, a]) => '<button type="button" class="chip chip-ic" ' + act('buscarIr', h, ...a) + '>' + ic(ATAJO_IC[t] || 'chevR') + ' ' + escapeHtml(t) + '</button>').join('') + '</div>' +
     '<div class="rec-hint" style="margin-top:12px;">Busca movimientos por tienda, categoría o importe, tus tareas y cualquier ajuste.</div>';
   const pal = q.split(' ').filter(Boolean), casa = (txt) => { const t = normDesc(txt); return pal.every((w) => t.indexOf(w) >= 0); };
   const acc = BUSCAR_ACCIONES.filter(([t, k]) => casa(t + ' ' + k)).slice(0, 5);
@@ -5155,7 +5163,7 @@ function compGastoChip(y, m) {
 /* ---- cuentas y saldos (dinero en el banco, a mano hasta conectar el banco) ---- */
 // Varias cuentas (fase 1, ver docs/PLAN_CUENTAS.md): tipo, color, principal y si suma en «En tus cuentas».
 const TIPOS_CUENTA = [['corriente', 'Corriente'], ['ahorro', 'Ahorro'], ['efectivo', 'Efectivo'], ['broker', 'Bróker'], ['otra', 'Otra']];
-const COLORES_CUENTA = ['#3B6EA8', '#2F6F52', '#B8752A', '#7A5AA8', '#A8452F', '#5F6B73'];
+const COLORES_CUENTA = ['#475569', '#0F8A87', '#B83FB8', '#C2416C', '#5B5BD6', '#8A8F98']; // 22/10: sin el azul de fijos, el verde de ingresos ni el color de deudas
 function tipoCuenta(c) { return c && TIPOS_CUENTA.some((t) => t[0] === c.tipo) ? c.tipo : 'corriente'; }
 // por defecto suman las corrientes y el efectivo; cada cuenta tiene su interruptor
 function cuentaEnTengo(c) { return c.enTengo != null ? !!c.enTengo : ['corriente', 'efectivo'].indexOf(tipoCuenta(c)) >= 0; }
@@ -5374,7 +5382,7 @@ function openTraspasoForm(id, pre) {
   const conv = !!FORM.convertir;
   const h = '<div class="handle"></div><h2>' + (t ? 'Editar traspaso' : conv ? 'Convertir en traspaso' : 'Traspaso entre cuentas') + '</h2>' +
     '<div class="rec-hint" style="margin:-6px 0 12px;">' + (conv ? 'Este movimiento dejará de contar como gasto o ingreso y pasará a ser un traspaso entre tus cuentas. No se duplica: es el mismo movimiento.' : 'Pasar dinero de una cuenta tuya a otra (también sacar del cajero). No es gasto ni ingreso: no cambia «Te queda este mes».') + '</div>' +
-    '<div class="field"><label>Importe (' + sym() + ')</label><input id="fImporte" class="importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (t ? t.importe : (pre.importe != null ? pre.importe : '')) + '"></div>' +
+    '<div class="field"><label>Importe (' + sym() + ')</label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(t ? t.importe : pre.importe) + '"></div>' +
     '<div class="field"><label>Desde</label>' + trasChipsHtml('desde') + '</div>' +
     '<div class="field"><label>A</label>' + trasChipsHtml('a') + '</div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (t ? t.fecha : (pre.fecha || todayISO())) + '"></div>' +
@@ -5386,7 +5394,7 @@ function openTraspasoForm(id, pre) {
 }
 async function saveTraspaso() {
   if (!FORM || FORM.kind !== 'traspaso' || FORM.guardando) return;
-  const importe = parseFloat($('#fImporte').value), fecha = $('#fFecha').value;
+  const importe = numCampo($('#fImporte').value), fecha = $('#fFecha').value;
   if (!isFinite(importe) || importe <= 0) { marcarCampo('#fImporte'); return toast('Pon un importe válido'); }
   if (!cuentaPorId(FORM.desde) || !cuentaPorId(FORM.a)) return toast('Elige las dos cuentas');
   if (FORM.desde === FORM.a) return toast('Elige dos cuentas distintas');
@@ -5529,7 +5537,7 @@ function calEventos(desde, hasta) {
   const hoy = todayISO();
   if (f.tareas) S.tareas.forEach((t) => {
     if (t.estado === 'Completado' || !t.fechaLimite) return;
-    add(t.fechaLimite, { k: 'tarea', titulo: t.nombre || 'Tarea', detalle: ['Tarea', t.prioridad, t.categoria].filter(Boolean).join(' · '), venc: t.fechaLimite < hoy, click: act('openTareaForm', t.id) });
+    add(t.fechaLimite, { k: 'tarea', id: t.id, titulo: t.nombre || 'Tarea', detalle: ['Tarea', t.prioridad, t.categoria].filter(Boolean).join(' · '), venc: t.fechaLimite < hoy, click: act('openTareaForm', t.id) });
   });
   if (f.facturas) {
     recurrentes().forEach((rc) => {
@@ -6005,11 +6013,11 @@ const colGraf = (i) => { const P = S.look === 'nuevo' ? PALETTE_NUEVA : PALETTE_
 /* Cada categoría tiene siempre el mismo color (en el gráfico, en los presupuestos, en los iconos de la lista y en los filtros) */
 const COLOR_CAT_STD = {
   Vivienda: '#7B6CF6', Supermercado: '#1FA67A', 'Restaurantes y bares': '#F29A2E', Suministros: '#E6B422', Transporte: '#2E9BD6', Ocio: '#E86A9A',
-  Deporte: '#4FB3A9', Compras: '#C25BD8', 'Salud y cuidado personal': '#E5534B', Regalos: '#D98C5F', Viajes: '#3FC1E0', Suscripciones: '#9C8CF0',
-  Seguros: '#5A7BD8', 'Educación': '#A3B84A', Mascotas: '#B57A4E', Otros: '#7C8794',
+  Deporte: '#4FB3A9', Compras: '#C25BD8', 'Salud y cuidado personal': '#E5534B', Regalos: '#F97316', Viajes: '#3FC1E0', Suscripciones: '#9C8CF0',
+  Seguros: '#5A7BD8', 'Educación': '#A3B84A', Mascotas: '#F59E0B', Otros: '#7C8794',
 };
 // las personalizadas: tonos distintos de los de las estándar, por orden en tu lista (así dos tuyas no se repiten hasta la 11.ª)
-const COLOR_CAT_PROPIAS = ['#FF8A65', '#5C6BC0', '#26A69A', '#D4E157', '#AB47BC', '#FFCA28', '#EC407A', '#29B6F6', '#A1887F', '#9CCC65'];
+const COLOR_CAT_PROPIAS = ['#FB8C00', '#5C6BC0', '#26A69A', '#7CB342', '#AB47BC', '#FFA000', '#EC407A', '#29B6F6', '#F4511E', '#9CCC65']; // 22/10: sin marrones ni terracotas; naranjas limpios
 const COLOR_OTRAS = '#A3A7B3';
 function colorCat(nombre) {
   const std = catStd(nombre); if (std) return COLOR_CAT_STD[std.n] || COLOR_OTRAS;
@@ -7722,7 +7730,8 @@ const H = {
   irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; S.dineroVer = ''; if (dineroV2() && sub) S._dmIr = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
   setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; render(); },
   verAnio: () => irResumen('y:' + mesActual().y),
-  openBuscar: () => { FORM = { kind: 'buscar' }; if ($('#sheetBackdrop')) updateSheet(buscarHtml()); else openSheet(buscarHtml()); setTimeout(() => { const el = $('#qBuscar'); if (el) el.focus(); }, 80); },
+  openBuscar: () => {
+    FORM = { kind: 'buscar' }; if ($('#sheetBackdrop')) updateSheet(buscarHtml()); else openSheet(buscarHtml()); setTimeout(() => { const el = $('#qBuscar'); if (el) el.focus(); }, 80); },
   buscarGlobal: (_a, el) => { clearTimeout(S._buscarT); const pintar = () => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); }; if (S.movimientos.length > 800) S._buscarT = setTimeout(pintar, 140); else pintar(); },
   buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
   tuMasToggle: () => { S.tuMas = !S.tuMas; sentir('tic'); render(); },
@@ -8613,6 +8622,7 @@ const H = {
   setCalVista: ([v]) => { S.calVista = v; render(); },
   calHoy: () => { S.calFecha = todayISO(); render(); },
   calSelDia: ([iso]) => { S.calFecha = iso; render(); },
+  gastoEnDia: ([iso]) => openMovForm(null, { tipo: 'Gasto', fecha: iso }),
   calToggle: ([k]) => { S.calFiltros[k] = !S.calFiltros[k]; render(); },
   calMove: ([dir]) => {
     const n = Number(dir), cur = calAnchor();
