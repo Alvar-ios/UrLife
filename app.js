@@ -3747,7 +3747,7 @@ function insightsDatos() {
     frase: 'En ' + pasada.c + ' llevas ' + money(pasada.r) + ' de ' + money(pasada.p) + ': te has pasado ' + money(pasada.r - pasada.p) + '.', a: act('irMovs', '_gastos', mk, pasada.c) });
   else if (justa && actual) out.push({ tono: 'aviso', valor: Math.round(justa.r / justa.p * 100) + '\u202f%', l1: justa.c, l2: 'va justo', aro: justa.r / justa.p,
     frase: 'En ' + justa.c + ' llevas ' + money(justa.r) + ' de ' + money(justa.p) + ': te quedan ' + money(justa.p - justa.r) + '.', a: act('irMovs', '_gastos', mk, justa.c) });
-  else if (pres.length && pres.some((x) => x.r > 0) && pres.every((x) => x.r <= x.p)) out.push({ tono: 'bueno', valor: '✓', l1: 'En orden', l2: 'presupuestos', aro: 1,
+  else if (pres.length && pres.some((x) => x.r > 0) && pres.every((x) => x.r <= x.p)) out.push({ tono: 'bueno', valor: '✓', l1: 'En orden', l2: 'sin pasarte', aro: 1,
     frase: 'Vas dentro de todos tus presupuestos este mes.', a: act('heroResumen') });
   if (actual && (S.compartidos || []).length) {
     const pc = cuentaPrincipal(), neto = pc ? compartidosCuenta(pc).neto : [...new Set((S.compartidos || []).map((x) => x.grupoId).filter(Boolean))].reduce((a, gid) => a + miSaldo(gid), 0);
