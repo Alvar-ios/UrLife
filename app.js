@@ -932,6 +932,7 @@ function render() {
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
   if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
   if (_agEl || S._agFoco) { S._agFoco = false; const nv = $('#agRapida'); if (nv) { if (_agV) nv.value = _agV; try { nv.focus(); } catch (e) { /* noop */ } } }
+  if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') setTimeout(marcarJuntosVisto, 0); else if (!cfg().vistoJuntos) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
   pintarComparar();
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse') || lsGet('soy')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
@@ -3739,7 +3740,7 @@ function renderInicioNuevo() {
   }
   // los primeros pasos solo para quien empieza: a quien ya usa la app no le quitan sitio en Inicio
   if (verAnterior('inicio')) return heroMesHtml() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtml() + estosDiasHtml();
-  return heroMesHtmlV2() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtmlV2() + estosDiasHtml(true);
+  return heroMesHtmlV2() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtmlV3() + estosDiasHtml(true);
 }
 // la cifra grande, con los céntimos más pequeños
 function cifraHtml(v) { const t = money(v), i = t.lastIndexOf(','); return i < 0 ? escapeHtml(t) : escapeHtml(t.slice(0, i)) + '<small>' + escapeHtml(t.slice(i)) + '</small>'; }
@@ -3869,9 +3870,171 @@ function heroMesHtmlV2() {
     '<span class="hero2-flechas"><button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
     '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
     '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (banco ? 'En tu banco hoy' : actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (!banco && disp < 0 ? ' neg' : '') + (nuevo && !banco ? ' vacio' : '') + '">' + cifraHtml(banco ? enTusCuentas() : disp) + '</span></button>' +
-    (nuevo ? '<p class="hero-nuevo">' + (banco ? 'Apunta lo que gastas y aquí verás cuánto te queda este mes.' : 'Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.') + '</p>' : heroBarraHtml(k)) +
+    (nuevo ? '<p class="hero-nuevo">' + (banco ? 'Apunta lo que gastas y aquí verás cuánto te queda este mes.' : 'Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.') + '</p>' : heroCifrasHtml(k, y, m)) +
     (cu || pr ? '<div class="h2-datos">' + pr + cu + '</div>' : '') + '</section>';
 }
+/* ===== INICIO v3 (22/10, docs/14-inicio-juntos.md): cifras del mes, «Así vas» con iconos y a tu gusto, avisos ===== */
+// A1 · la barra y debajo los importes del mes; cada casilla abre sus movimientos
+function heroCifrasHtml(k, y, m) {
+  const gas = k.facturas + k.gastos, aho = k.ahorro, inv = k.inversion, deu = k.deuda, ing = k.ingresos, mk = mesClave(y, m);
+  const base = Math.max(ing, gas + aho + inv + deu), queda = Math.max(0, ing - gas - aho - inv - deu);
+  const trozos = [['g', gas], ['a', aho], ['v', inv], ['d', deu], ['q', queda]].filter((t) => t[1] > 0.004);
+  const barra = base > 0 ? '<div class="hero-bar" aria-hidden="true">' + trozos.map(([c, v]) => '<i class="' + c + '" style="width:' + Math.max(0, v / base * 100).toFixed(1) + '%"></i>').join('') + '</div>' : '';
+  const cel = (c, l, v, tipo) => '<button type="button" class="hk-cel tappable" ' + act('irMovs', tipo, mk) + ' aria-label="' + l + ': ' + escapeHtml(money(v)) + '"><span>' + (c ? '<i class="' + c + '"></i>' : '') + l + '</span><b class="tnum' + (c ? '' : ' ing') + '">' + escapeHtml(Math.abs(v) < 0.005 ? '0 ' + sym() : moneyShort(v)) + '</b></button>';
+  return '<div class="hero-barra">' + barra + '<div class="hk-cels' + (deu > 0.004 ? ' cinco' : '') + '">' + cel('', 'Ingresos', ing, 'Ingreso') + cel('g', 'Gastos', gas, '_gastos') + cel('a', 'Apartado', aho, 'Ahorro') + cel('v', 'Invertido', inv, 'Inversión') +
+    (deu > 0.004 ? cel('d', 'Deudas', deu, 'Deuda') : '') + '</div></div>';
+}
+// A2 · catálogo de círculos. Cada uno: { k, ic, tono, valor, l1, l2, aro, frase, a } o null si no hay datos
+const ASIVAS_TIPOS = [['auto', 'Automático', 'sparkle', 'Cambia solo según tu mes'], ['gastoMes', 'Gasto frente al mes pasado', 'arrowUp', 'Si gastas más o menos que el mes anterior'],
+  ['sube', 'Lo que más sube', 'tag', 'La categoría que más crece'], ['presu', 'Presupuestos', 'checkCircle', 'Si vas dentro de tus presupuestos'], ['dia', 'Al día', 'wallet', 'Lo que puedes gastar cada día que queda'],
+  ['sinGastos', 'Días sin gastos', 'calendar', 'Los días que no has gastado nada'], ['juntos', 'Juntos', 'users', 'Lo que debes o te deben'], ['ahorro', 'Lo que apartas', 'piggy', 'Qué parte de lo que entra apartas'],
+  ['inv', 'Inversiones', 'chart', 'Cómo se han movido esta semana'], ['cat', 'Una categoría', 'tag', 'Lo que llevas en la que elijas'], ['meta', 'Una meta', 'flag', 'Cómo va la meta que elijas']];
+function asiVasCfg() { const v = cfg().asiVas; return Array.isArray(v) && v.length === 5 ? v.map((x) => String(x || 'auto')) : ['auto', 'auto', 'auto', 'auto', 'auto']; }
+function invCambioSemana() {
+  if (!S.movimientos.some((x) => x.tipo === 'Inversión')) return null;
+  let grupos; try { grupos = inversionesPorActivo(); } catch (e) { return null; }
+  const movs = movsValorables(grupos); if (!movs.length) return null;
+  const ids = [...new Set(movs.map((x) => x.id))].sort(), desde = movs[0].fecha, clave = ids.join(',') + '|' + desde, Hs = S.historico;
+  const vigente = Hs && Hs.clave === clave && Date.now() - Hs.ts < (Hs.error ? 60000 : 600000);
+  if (!vigente && !S._histCarga && !S._histProg && activosDisponible()) S._histProg = setTimeout(() => { S._histProg = null; cargarHistorico(ids, desde, clave); }, 0);
+  if (!Hs || Hs.clave !== clave || Hs.error) return null;
+  const serie = serieCartera(movs, Hs.series); if (serie.length < 8) return null;
+  const hoyP = serie[serie.length - 1], ant = serie[serie.length - 8];
+  let flujos = 0; for (let i = serie.length - 7; i < serie.length; i++) flujos += serie[i].fl; // meter dinero nuevo no cuenta como ganancia
+  const base = ant.v + flujos; if (!(base > 0)) return null;
+  const dif = hoyP.v - base; return { dif, pct: dif / base * 100, valor: hoyP.v };
+}
+function insightsCatalogo(y, m, actual) {
+  const out = {}, mk = mesClave(y, m), g = gastoComparado(y, m), mesAnt = MESES[g.pm - 1].toLowerCase(), mesAb = MESES_ABR[g.pm - 1].toLowerCase(), k = kpisMes(y, m);
+  const euros = (v) => (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString('es-ES')) + ' ' + sym(), alturas = g.enCurso ? ' a estas alturas' : '';
+  if (g.antes.t > 0 && g.ahora.t > 0) {
+    const dif = g.ahora.t - g.antes.t, pct = Math.round(dif / g.antes.t * 100), raro = g.antes.t < 30 || Math.abs(pct) > 300;
+    out.gastoMes = { ic: dif > 0 ? 'arrowUp' : 'arrowDown', tono: dif > 0 && (raro || pct > 5) ? 'malo' : dif < 0 && (raro || pct < -5) ? 'bueno' : '', valor: raro ? (dif > 0 ? '+' : '') + euros(dif) : Math.abs(pct) < 1 ? '=' : (pct > 0 ? '+' : '−') + Math.abs(pct) + ' %',
+      l1: 'Gasto', l2: 'vs ' + mesAb, aro: Math.min(1, g.ahora.t / Math.max(g.ahora.t, g.antes.t)),
+      frase: 'Llevas ' + money(g.ahora.t) + ' gastados: ' + (Math.abs(dif) < 0.5 ? 'lo mismo' : dif > 0 ? money(dif) + ' más' : money(-dif) + ' menos') + ' que en ' + mesAnt + alturas + '.', a: act('heroResumen') };
+  }
+  const subida = Object.keys(g.ahora.o).map((c) => ({ c, d: g.ahora.o[c] - (g.antes.o[c] || 0) })).filter((x) => x.d >= 10).sort((a, b) => b.d - a.d)[0];
+  const subNom = subida ? (subida.c && subida.c !== 'undefined' && subida.c !== 'null' ? subida.c : 'Sin categoría') : '';
+  if (subida && g.antes.t > 0) out.sube = { ic: iconoCat('Gasto', subida.c, ''), tono: 'malo', color: colorCat(subida.c), valor: '+' + euros(subida.d), l1: subNom, l2: 'sube más', aro: 1,
+    frase: subNom + ' es lo que más sube: ' + money(subida.d) + ' más que en ' + mesAnt + alturas + '.', a: act('irMovs', '_gastos', mk, subida.c) };
+  const catMap = gastoPorCategoria(k.movs);
+  const pres = catsGasto().filter((c) => num(c.presupuesto) > 0).map((c) => ({ c: c.nombre, p: num(c.presupuesto), r: Math.max(0, catMap[c.nombre] || 0) }));
+  const pasada = pres.filter((x) => x.r > x.p).sort((a, b) => (b.r - b.p) - (a.r - a.p))[0];
+  const justa = pres.filter((x) => x.r <= x.p && x.r >= x.p * 0.8).sort((a, b) => b.r / b.p - a.r / a.p)[0];
+  if (pasada) out.presu = { k2: 'pasada', cat: pasada.c, ic: 'alert', tono: 'malo', valor: '+' + euros(pasada.r - pasada.p), l1: pasada.c, l2: 'te pasas', aro: 1,
+    frase: 'En ' + pasada.c + ' llevas ' + money(pasada.r) + ' de ' + money(pasada.p) + ': te has pasado ' + money(pasada.r - pasada.p) + '.', a: act('irMovs', '_gastos', mk, pasada.c) };
+  else if (justa && actual) out.presu = { ic: 'alert', tono: 'aviso', valor: Math.round(justa.r / justa.p * 100) + ' %', l1: justa.c, l2: 'va justo', aro: justa.r / justa.p,
+    frase: 'En ' + justa.c + ' llevas ' + money(justa.r) + ' de ' + money(justa.p) + ': te quedan ' + money(justa.p - justa.r) + '.', a: act('irMovs', '_gastos', mk, justa.c) };
+  else if (pres.length && pres.some((x) => x.r > 0) && pres.every((x) => x.r <= x.p)) out.presu = { ic: 'checkCircle', tono: 'bueno', valor: pres.length + '/' + pres.length, l1: 'En orden', l2: 'sin pasarte', aro: 1,
+    frase: 'Vas dentro de todos tus presupuestos este mes.', a: act('heroResumen') };
+  if (actual && (S.compartidos || []).length) {
+    const pc = cuentaPrincipal(), neto = pc ? compartidosCuenta(pc).neto : [...new Set((S.compartidos || []).map((x) => x.grupoId).filter(Boolean))].reduce((a, gid) => a + miSaldo(gid), 0);
+    if (Math.abs(neto) >= 0.01) out.juntos = { ic: 'users', tono: neto > 0 ? 'bueno' : 'aviso', valor: euros(Math.abs(neto)), l1: neto > 0 ? 'Te deben' : 'Debes', l2: 'en Juntos', aro: 1,
+      frase: (neto > 0 ? 'En Juntos te deben ' + money(neto) : 'En Juntos debes ' + money(-neto)) + ', sumando todos tus grupos.', a: act('goTab', 'juntos') };
+  }
+  const r = rangoMes(y, m), hoy = todayISO(), conGasto = new Set(k.movs.filter((x) => x.tipo === 'Gasto').map((x) => (x.fecha || '').slice(0, 10)));
+  let primero = '9999'; S.movimientos.forEach((x) => { if (x.fecha && x.fecha.slice(0, 10) < primero) primero = x.fecha.slice(0, 10); });
+  let sin = 0, dias = 0; for (let f = r.desde > primero ? r.desde : primero; f <= r.hasta && f < hoy; f = addDaysISO(f, 1)) { dias++; if (!conGasto.has(f)) sin++; }
+  if (sin >= 2 && conGasto.size) out.sinGastos = { ic: 'calendar', tono: 'bueno', valor: String(sin), l1: 'días', l2: 'sin gastos', aro: dias ? sin / dias : 1,
+    frase: (actual ? 'Este mes llevas ' : 'En ' + MESES[m - 1].toLowerCase() + ' tuviste ') + sin + ' días sin gastos del día a día (sin contar los fijos).', a: act('irMovsCal', mk) };
+  if (actual && k.disponible > 0) {
+    const quedan = Math.max(1, Math.round((parseISO(r.hasta) - parseISO(hoy)) / 864e5) + 1), d = k.disponible / quedan;
+    out.dia = { ic: 'wallet', tono: '', valor: euros(d), l1: 'Al día', l2: 'para gastar', aro: Math.min(1, quedan / 31),
+      frase: 'Con lo que te queda hoy (' + money(k.disponible) + ') y ' + quedan + (quedan === 1 ? ' día' : ' días') + ' por delante, salen ' + money(d) + ' al día. No cuenta los pagos fijos que aún no han llegado.', a: act('heroResumen') };
+  }
+  if (k.ingresos > 0 && k.ahorro + k.inversion > 0) { const p = Math.round((k.ahorro + k.inversion) / k.ingresos * 100);
+    out.ahorro = { ic: 'piggy', tono: 'bueno', valor: p + ' %', l1: 'Apartas', l2: 'de lo que entra', aro: Math.min(1, p / 100),
+      frase: 'Este mes apartas o inviertes ' + money(k.ahorro + k.inversion) + ': el ' + p + ' % de lo que te ha entrado.', a: act('irMovs', '_ahorro', mk) }; }
+  const iv = invCambioSemana();
+  if (iv) out.inv = { ic: 'chart', tono: iv.dif >= 0 ? 'bueno' : 'malo', valor: (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' %', l1: 'Inversiones', l2: '7 días', aro: Math.min(1, Math.abs(iv.pct) / 10),
+    frase: 'Tus inversiones ' + (iv.dif >= 0 ? 'han subido ' : 'han bajado ') + money(Math.abs(iv.dif)) + ' esta semana: valen ' + money(iv.valor) + '. Meter dinero nuevo no cuenta.', a: act('irDinero', 'inversiones') };
+  return out;
+}
+function asiVasFijo(key, y, m, cat) {
+  const mk = mesClave(y, m), k = kpisMes(y, m);
+  if (key.indexOf('cat:') === 0) {
+    const c = key.slice(4), v = Math.max(0, gastoPorCategoria(k.movs)[c] || 0), cg = catsGasto().find((x) => x.nombre === c), p = cg ? num(cg.presupuesto) : 0;
+    return { ic: iconoCat('Gasto', c, ''), color: colorCat(c), tono: p && v > p ? 'malo' : '', valor: agrupar(Math.round(v).toLocaleString('es-ES')) + ' ' + sym(), l1: c, l2: p ? 'de ' + moneyShort(p) : 'llevas', aro: p ? Math.min(1, v / p) : 1,
+      frase: 'En ' + c + ' llevas ' + money(v) + (p ? ' de ' + money(p) + ' de presupuesto' : '') + ' este mes.', a: act('irMovs', '_gastos', mk, c) };
+  }
+  if (key.indexOf('meta:') === 0) {
+    let r = null; try { r = metaPorKey(key.slice(5)); } catch (e) { r = null; }
+    if (!r) return null;
+    const pct = r.pct == null ? 0 : r.pct;
+    return { ic: 'flag', tono: pct >= 100 ? 'bueno' : '', valor: Math.round(pct) + ' %', l1: r.nombre, l2: 'llevas', aro: Math.min(1, pct / 100),
+      frase: 'En ' + r.nombre + ' llevas ' + money(r.valor) + (r.obj > 0 ? ' de ' + money(r.obj) + '.' : '.'), a: act('metaVer', r.key) };
+  }
+  return cat[key] || null;
+}
+function insightsDatosV3() {
+  if (!S.movimientos.length) return [];
+  const { y, m, actual } = inicioYM(), cat = insightsCatalogo(y, m, actual), elegidos = asiVasCfg();
+  const recomendados = ['gastoMes', 'sube', 'presu', 'juntos', 'sinGastos', 'dia', 'ahorro', 'inv'];
+  const usados = new Set(elegidos.filter((x) => x !== 'auto'));
+  const libres = recomendados.filter((x) => cat[x] && !usados.has(x));
+  const out = elegidos.map((key, i) => {
+    if (key === 'auto') { const x = libres.shift(); return x ? Object.assign({ k: x, hueco: i }, cat[x]) : null; }
+    const d = asiVasFijo(key, y, m, cat), t = ASIVAS_TIPOS.find((z) => z[0] === key.split(':')[0]) || [];
+    return d ? Object.assign({ k: key, hueco: i, fijo: true }, d) : { k: key, hueco: i, fijo: true, vacio: true, ic: t[2] || 'sparkle', tono: '', valor: '—', l1: (t[1] || 'Círculo').split(' ')[0], l2: 'sin datos', aro: 0, frase: 'Aún no hay datos para esto este mes.', a: act('asiVasAbrir', i) };
+  }).filter(Boolean);
+  return out;
+}
+function insightsHtmlV3() {
+  const ds = insightsDatosV3(); S._ins = ds; if (!ds.length) return '';
+  const R = 27, C = 2 * Math.PI * R;
+  return '<div class="section-title">Así vas' + badge('asivas') + '<button type="button" class="link" ' + act('asiVasAbrir', -1) + '>' + ic('sliders') + ' Cambiar</button></div><div class="ins-circ">' + ds.map((x, i) =>
+    '<button type="button" class="ins-c tappable ' + (x.tono || '') + (x.vacio ? ' vacio' : '') + '"' + (x.color ? ' style="--ic:' + x.color + '"' : '') + ' aria-label="' + escapeHtml(x.l1 + ' ' + x.l2 + ': ' + x.frase) + '" ' + act('insVer', i) + '>' +
+      '<span class="ins-aro"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + R + '" class="ins-aro-f"/><circle cx="32" cy="32" r="' + R + '" class="ins-aro-v" stroke-dasharray="' + (C * Math.max(0.04, Math.min(1, x.aro || 0))).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 32 32)" style="animation-delay:' + (i * 0.08).toFixed(2) + 's"/></svg>' +
+      '<span class="ins-cic" aria-hidden="true">' + ic(x.ic || 'sparkle') + '</span><b class="tnum' + (x.valor.length > 5 ? ' largo' : '') + '">' + escapeHtml(x.valor) + '</b></span>' +
+      '<span class="ins-l1">' + escapeHtml(x.l1) + '</span><span class="ins-l2">' + escapeHtml(x.l2) + '</span></button>').join('') + '</div>';
+}
+// La hoja «Tu "Así vas"»
+function asiVasHtml() {
+  const F = FORM, { y, m, actual } = inicioYM(), cat = insightsCatalogo(y, m, actual), sel = F.sel, v = F.v;
+  const nombre = (key) => { if (key === 'auto') return 'Auto'; if (key.indexOf('cat:') === 0) return key.slice(4); if (key.indexOf('meta:') === 0) { let r = null; try { r = metaPorKey(key.slice(5)); } catch (e) { /* */ } return r ? r.nombre : 'Una meta'; } return ({ gastoMes: 'Vs mes pasado', sube: 'Lo que sube', presu: 'Presupuestos', dia: 'Al día', sinGastos: 'Sin gastos', juntos: 'Juntos', ahorro: 'Apartas', inv: 'Inversiones' })[key] || key; };
+  const icono = (key) => (ASIVAS_TIPOS.find((t) => t[0] === key.split(':')[0]) || [])[2] || 'sparkle';
+  const huecos = '<div class="av-huecos" role="tablist" aria-label="Círculos">' + v.map((key, i) => '<button type="button" role="tab" aria-selected="' + (i === sel) + '" class="av-hueco' + (i === sel ? ' on' : '') + (key === 'auto' ? ' auto' : '') + '" ' + act('asiVasHueco', i) + '><span class="av-hueco-ic">' + ic(icono(key)) + '</span><span class="av-hueco-n">' + escapeHtml(((n) => n.length > 10 && n.indexOf(' ') < 0 ? n.slice(0, 8) + '…' : n)(nombre(key))) + '</span></button>').join('') + '</div>';
+  let lista;
+  if (F.sub === 'cat') lista = '<button type="button" class="link av-volver" ' + act('asiVasSub', '') + '>' + ic('chevL') + ' Volver</button>' + catsGasto().map((c) => c.nombre).map((c) => '<button type="button" class="av-op' + (v[sel] === 'cat:' + c ? ' on' : '') + '" ' + act('asiVasElegir', 'cat:' + c) + '><span class="av-op-ic" style="--cc:' + colorCat(c) + '">' + ic(iconoCat('Gasto', c, '')) + '</span><span class="av-op-t"><b>' + escapeHtml(c) + '</b></span><span class="av-radio"></span></button>').join('');
+  else if (F.sub === 'meta') { let ms = []; try { ms = metasStats ? (metasCfg() || []).map((x) => metaPorKey(x.id)).filter(Boolean) : []; } catch (e) { ms = []; }
+    lista = '<button type="button" class="link av-volver" ' + act('asiVasSub', '') + '>' + ic('chevL') + ' Volver</button>' + (ms.length ? ms.map((r) => '<button type="button" class="av-op' + (v[sel] === 'meta:' + r.key ? ' on' : '') + '" ' + act('asiVasElegir', 'meta:' + r.key) + '><span class="av-op-ic">' + ic('flag') + '</span><span class="av-op-t"><b>' + escapeHtml(r.nombre) + '</b><span>' + (r.pct == null ? '' : Math.round(r.pct) + ' %') + '</span></span><span class="av-radio"></span></button>').join('') : '<div class="card empty-mini">Aún no tienes metas.</div>'); }
+  else lista = ASIVAS_TIPOS.map(([key, t, icono2, d]) => {
+    const otro = key !== 'auto' && key !== 'cat' && key !== 'meta' ? v.findIndex((x, i) => i !== sel && x === key) : -1, sub = key === 'cat' || key === 'meta';
+    const on = sub ? v[sel].indexOf(key + ':') === 0 : v[sel] === key, ej = cat[key] ? cat[key].valor + ' · ' + cat[key].l1 + ' ' + cat[key].l2 : d;
+    return '<button type="button" class="av-op' + (on ? ' on' : '') + (otro >= 0 ? ' usado' : '') + '" ' + (sub ? act('asiVasSub', key) : act('asiVasElegir', key)) + '><span class="av-op-ic">' + ic(icono2) + '</span><span class="av-op-t"><b>' + escapeHtml(t) + '</b><span>' + escapeHtml(otro >= 0 ? 'Ya está en el círculo ' + (otro + 1) : key === 'auto' ? d : ej) + '</span></span>' + (sub ? '<span class="chev">' + ic('chevR') + '</span>' : '<span class="av-radio"></span>') + '</button>';
+  }).join('');
+  return '<div class="handle"></div><h2>Tu «Así vas»</h2><p class="rec-hint">Elige qué enseña cada círculo. Los «Auto» cambian solos según tu mes.</p>' + huecos +
+    '<div class="section-title">Círculo ' + (sel + 1) + '</div><div class="card menu av-lista">' + lista + '</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('asiVasReset') + '>Todo automático</button><button class="btn accent block" ' + act('asiVasGuardar') + '>Listo</button></div>';
+}
+// A4 · novedades de Juntos desde tu última visita (fecha del servidor) y aviso semanal de inversiones
+function juntosNovedades() {
+  const yo = miUid(), visto = cfg().vistoJuntos; if (!visto || !yo) return [];
+  return (S.compartidos || []).filter((c) => grupoDe(c.grupoId) && c.creadoPor && c.creadoPor !== yo && (c.createdAt || '') > visto)
+    .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+}
+function juntosUltimo() { let u = ''; (S.compartidos || []).forEach((c) => { if ((c.createdAt || '') > u) u = c.createdAt; }); return u; }
+function nombreEnGrupo(gid, uid) { const g = grupoDe(gid), mm = g && g.miembros.find((x) => x.user_id === uid); return mm ? mm.nombre : 'Alguien'; }
+function avisosInicioFilas() {
+  const filas = [], nov = juntosNovedades();
+  if (nov.length) {
+    const c = nov[0], quien = nombreEnGrupo(c.grupoId, c.creadoPor), que = quien + ' apuntó «' + (c.descripcion || c.categoria || 'un gasto') + '»';
+    filas.push({ cls: 'juntos-nov', caras: [...new Set(nov.map((x) => x.creadoPor))].slice(0, 2).map((u, i) => caraHtml(u, nombreEnGrupo(nov.find((x) => x.creadoPor === u).grupoId, u), i ? 'mini b' : 'mini')).join(''),
+      t: escapeHtml(nov.length === 1 ? que : nov.length + ' novedades en Juntos'), d: escapeHtml(nov.length === 1 ? nombreDestino(grupoDe(c.grupoId)) + ' · tu parte ' + money(miParte(c)) : que + ' y ' + (nov.length - 1) + ' más'), a: act('goTab', 'juntos') });
+  }
+  const iv = invCambioSemana(), semana = isoSemana(todayISO());
+  if (iv && Math.abs(iv.pct) >= 3 && Math.abs(iv.dif) >= 50 && cfg().invAvisoVisto !== semana)
+    filas.push({ cls: iv.dif >= 0 ? 'bien' : 'mal', icono: 'chart', t: 'Tus inversiones: ' + (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' % esta semana', d: (iv.dif >= 0 ? '+' : '−') + escapeHtml(money(Math.abs(iv.dif))) + ' · valen ' + escapeHtml(money(iv.valor)), a: act('invAvisoVer') });
+  return filas;
+}
+function isoSemana(iso) { const d = parseISO(iso), t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), dia = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - dia); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return t.getUTCFullYear() + '-S' + pad2(Math.ceil(((t - y0) / 864e5 + 1) / 7)); }
+// al entrar en Juntos se guarda hasta dónde has visto (solo si hay algo más nuevo)
+function marcarJuntosVisto() {
+  const u = juntosUltimo(), v = cfg().vistoJuntos;
+  if (!u) { if (!v && S.compartidos) saveConfig({ vistoJuntos: new Date(0).toISOString() }); return; }
+  if (!v || u > v) { S._vistoJuntosAntes = v || null; saveConfig({ vistoJuntos: u }); }
+}
+
 // «Así vas» en círculos: una cifra corta dentro de un aro y dos palabras debajo; al tocar, la frase entera y «Ver»
 function insightsDatos() {
   if (!S.movimientos.length) return [];
@@ -3986,10 +4149,11 @@ function estosDiasHtml(v2) {
   Object.keys(mapa).sort().forEach((iso) => mapa[iso].forEach((ev) => { if (ev.pagada) return; const n = daysUntil(iso);
     filas.push({ fecha: iso, t: escapeHtml(ev.titulo), d: (n === 1 ? 'Mañana' : DIAS_LARGO[dowMon(parseISO(iso))]) + ' · ' + escapeHtml(String(ev.detalle || '').replace(/ · (Pendiente|Sin registrar)$/, '')), a: ev.click || act('setInicioVista', 'tareas') }); }));
   const fechaTile = (iso) => { const d = parseISO(iso); return '<span class="dia-fecha"><i>' + MESES_ABR[d.getMonth()].toUpperCase() + '</i><b>' + d.getDate() + '</b></span>'; };
+  if (v2) { try { filas.unshift(...avisosInicioFilas()); } catch (e) { console.error(e); } }
   const filaHtml = (f) => '<div class="dia-fila' + (f.cls ? ' ' + f.cls : '') + '"><button type="button" class="dia-main" ' + (f.a || '') + '>' +
-    (f.fecha ? fechaTile(f.fecha) : '<span class="dia-ic">' + ic(f.icono) + '</span>') + '<span class="dia-t"><b>' + f.t + '</b><span>' + f.d + '</span></span>' + (f.botones ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' +
+    (f.caras ? '<span class="dia-ic caras">' + f.caras + '</span>' : f.fecha ? fechaTile(f.fecha) : '<span class="dia-ic">' + ic(f.icono) + '</span>') + '<span class="dia-t"><b>' + f.t + '</b><span>' + f.d + '</span></span>' + (f.botones ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' +
     (f.botones ? '<span class="dia-btns">' + f.botones + '</span>' : '') + '</div>';
-  if (v2) { const ins = S._ins || [], conJuntos = ins.some((x) => x.k === 'juntos'), pasada = (ins.find((x) => x.k === 'pasada') || {}).cat; // lo que ya sale en «Así vas» no se repite
+  if (v2) { const ins = S._ins || [], conJuntos = ins.some((x) => x.k === 'juntos'), pasada = (ins.find((x) => x.k === 'pasada' || x.k2 === 'pasada') || {}).cat; // lo que ya sale en «Así vas» no se repite
     for (let i = filas.length - 1; i >= 0; i--) if ((filas[i].cls === 'juntos' && conJuntos) || (filas[i].cls === 'warn' && pasada != null && filas[i].cat === pasada)) filas.splice(i, 1); }
   const CAP = v2 ? 2 : 3, todas = !!S.pendTodos, ver = todas ? filas : filas.slice(0, CAP);
   return '<div class="section-title dias-tit">Estos días <button class="link" ' + act('setInicioVista', 'tareas') + '>Agenda ' + ic('chevR') + '</button></div>' +
@@ -5843,7 +6007,7 @@ async function cargarHistorico(ids, desde, clave) {
     S.historico = r && r.series ? { ts: Date.now(), clave, series: r.series, limite: !!r.limite } : { ts: Date.now(), clave, series: {}, error: true };
   } catch (e) { S.historico = { ts: Date.now(), clave, series: {}, error: true }; }
   S._histCarga = false;
-  if (S.tab === 'dinero' && dineroSub() === 'inversiones') render();
+  if ((S.tab === 'dinero' && dineroSub() === 'inversiones') || S.tab === 'inicio') render();
 }
 // Un punto por día desde la primera aportación: participaciones acumuladas × último cierre conocido (en €).
 function serieCartera(movs, series) {
@@ -7969,7 +8133,14 @@ const H = {
     toast(v.variantes.length === 2 ? (n ? 'Viendo la versión anterior de ' + v.txt : 'Vuelves a la versión nueva') : v.txt + ': versión «' + v.variantes[n][1] + '» (' + (n + 1) + ' de ' + v.variantes.length + ')');
     render(); if (k === 'inicio') window.scrollTo(0, 0);
   },
-  insVer: ([i]) => { const x = (S._ins || [])[Number(i)]; if (!x) return; verBadge('asivas'); sentir('tic'); abrirPopup('<div class="ins-pop ' + (x.tono || '') + '"' + (x.color ? ' style="--ic:' + x.color + '"' : '') + '><b class="ins-pop-v tnum">' + escapeHtml(x.valor) + '</b><span class="ins-pop-l">' + escapeHtml(x.l1 + ' · ' + x.l2) + '</span><p>' + escapeHtml(x.frase) + '</p></div><div class="actions"><button class="btn ghost block" ' + act('popupCerrar') + '>Cerrar</button><button class="btn accent block" ' + x.a.replace('data-click="', 'data-click="insVerIr|') + '>Ver</button></div>'); },
+  asiVasAbrir: ([i]) => { cerrarPopup(); const n = Number(i); FORM = { kind: 'asiVas', sel: n >= 0 && n < 5 ? n : 0, v: asiVasCfg().slice(), sub: '' }; if ($('#sheetBackdrop')) updateSheet(asiVasHtml()); else openSheet(asiVasHtml()); },
+  asiVasHueco: ([i]) => { if (!FORM || FORM.kind !== 'asiVas') return; FORM.sel = Number(i) || 0; FORM.sub = ''; sentir('tic'); updateSheet(asiVasHtml()); },
+  asiVasSub: ([k]) => { if (!FORM || FORM.kind !== 'asiVas') return; FORM.sub = k || ''; sentir('tic'); updateSheet(asiVasHtml()); },
+  asiVasElegir: ([k]) => { if (!FORM || FORM.kind !== 'asiVas') return; const F = FORM, otro = k !== 'auto' ? F.v.findIndex((x, i) => i !== F.sel && x === k) : -1; if (otro >= 0) F.v[otro] = F.v[F.sel]; F.v[F.sel] = k; F.sub = ''; if (F.sel < 4) F.sel++; sentir('tic'); updateSheet(asiVasHtml()); },
+  asiVasReset: () => { if (!FORM || FORM.kind !== 'asiVas') return; FORM.v = ['auto', 'auto', 'auto', 'auto', 'auto']; FORM.sub = ''; sentir('tic'); updateSheet(asiVasHtml()); },
+  asiVasGuardar: async () => { if (!FORM || FORM.kind !== 'asiVas') return; const v = FORM.v.slice(); closeSheet(); await saveConfig({ asiVas: v.every((x) => x === 'auto') ? null : v }); sentir('ok'); render(); toast('Listo: así verás tu «Así vas»'); },
+  invAvisoVer: () => { saveConfig({ invAvisoVisto: isoSemana(todayISO()) }); H.irDinero(['inversiones']); },
+  insVer: ([i]) => { const x = (S._ins || [])[Number(i)]; if (!x) return; verBadge('asivas'); sentir('tic'); abrirPopup('<div class="ins-pop ' + (x.tono || '') + '"' + (x.color ? ' style="--ic:' + x.color + '"' : '') + '>' + (x.ic ? '<span class="ins-pop-ic">' + ic(x.ic) + '</span>' : '') + '<b class="ins-pop-v tnum">' + escapeHtml(x.valor) + '</b><span class="ins-pop-l">' + escapeHtml(x.l1 + ' · ' + x.l2) + '</span><p>' + escapeHtml(x.frase) + '</p>' + (x.hueco != null ? '<button type="button" class="link ins-cambiar" ' + act('asiVasAbrir', x.hueco) + '>' + ic('sliders') + ' Cambiar este círculo</button>' : '') + '</div><div class="actions"><button class="btn ghost block" ' + act('popupCerrar') + '>Cerrar</button><button class="btn accent block" ' + x.a.replace('data-click="', 'data-click="insVerIr|') + '>Ver</button></div>'); },
   insVerIr: ([accion, ...args], el, e) => { cerrarPopup(); if (H[accion]) H[accion](args, el, e); },
   insIr: ([accion, ...args], el, e) => { verBadge('asivas'); if (VIBRA.has(accion)) sentir('toque'); if (H[accion]) H[accion](args, el, e); },
   irMovsCal: ([p]) => { S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = p || mesHoyClave(); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S.movCalDia = ''; S._entrando = true; render(); window.scrollTo(0, 0); },

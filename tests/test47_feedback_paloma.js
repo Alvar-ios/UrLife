@@ -39,7 +39,7 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
 
   /* 2. Inicio: cambiar de mes, la barra y «Así vas» */
   H.goTab(['inicio']); await sleep(10);
-  ok(!!e.doc.querySelector('.hero-bar') && /Gastos/.test(e.doc.querySelector('.hero-ley').textContent) && /Te queda/.test(e.doc.querySelector('.hero-ley').textContent), 'Inicio: la barra con gastos y lo que queda, con su leyenda');
+  ok(!!e.doc.querySelector('.hero-bar') && /Ingresos/.test(e.doc.querySelector('.hk-cels').textContent) && /Gastos/.test(e.doc.querySelector('.hk-cels').textContent) && /Apartado/.test(e.doc.querySelector('.hk-cels').textContent) && /Invertido/.test(e.doc.querySelector('.hk-cels').textContent), 'Inicio: la barra y debajo los importes del mes (ingresos, gastos, apartado, invertido; 22/10)');
   ok(!!e.doc.querySelector('[data-click="inicioMes|-1"]') && e.doc.querySelector('.hero2 [aria-label="Mes siguiente"]').disabled, 'Inicio: flechas para cambiar de mes (no hacia el futuro)');
   ok(/Así vas/.test(txt(e)) && e.doc.querySelectorAll('.ins-c').length >= 2, 'Inicio: «Así vas» con datos del mes (' + [...e.doc.querySelectorAll('.ins-c')].map((x) => x.getAttribute('aria-label')).join(' | ') + ')');
   ok([...e.doc.querySelectorAll('.ins-c')].some((b) => /te deben 11,25 €/.test(b.getAttribute('aria-label'))), '«Así vas» dice lo que te deben en Juntos');
