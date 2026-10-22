@@ -6307,7 +6307,7 @@ function evolucionHtml(grupos, valorActual) {
   const H = S.historico;
   const vigente = H && H.clave === clave && Date.now() - H.ts < (H.error ? 60000 : 600000);
   if (!vigente && !S._histCarga && !S._histProg && activosDisponible()) S._histProg = setTimeout(() => { S._histProg = null; cargarHistorico(ids, desde, clave); }, 0);
-  const per = PERIODOS_INV.find((x) => x[0] === S.invPeriodo) || PERIODOS_INV[4];
+  const per = PERIODOS_INV.find((x) => x[0] === S.invPeriodo) || PERIODOS_INV[PERIODOS_INV.length - 1];
   const chips = '<div class="segmented tr-chips">' + PERIODOS_INV.map((x) => '<button class="' + (x[0] === per[0] ? 'active' : '') + '" ' + act('setInvPeriodo', x[0]) + '>' + x[1] + '</button>').join('') + '</div>';
   let cuerpo, cabecera;
   if (H && H.clave === clave && !H.error && Object.keys(H.series).length) {
