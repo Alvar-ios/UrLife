@@ -926,7 +926,7 @@ function render() {
   const resumen = S.tab === 'movimientos' && S.movVista === 'resumen', resAnual = /^y:/.test(movPerNorm(S.movPeriodo));
   if (resumen && !resAnual) { const kA = S.movPeriodo + '|' + versionDe('movResumen'); gcAnilloDraw(kA !== _donutAnim ? true : false); _donutAnim = kA; }
   if (resumen && resAnual) drawTrend();
-  if (S.tab === 'dinero' && (dineroV2() ? S.dineroVer === 'inversiones' : dineroSub() === 'inversiones')) bindInvChart();
+  if (S.tab === 'dinero' && (dineroV2() ? S.dineroVer === 'inversiones' || (dineroV3() && dm3Tab() === 'inversiones') : dineroSub() === 'inversiones')) bindInvChart();
   if (S.tab === 'dinero' && dineroV2()) { dmAnimarAporte(c); if (S._dmIr) { const el = $('#dm-' + S._dmIr); S._dmIr = null; if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } }, 60); } }
   if (S.tab === 'movimientos') movGestos(c);
   const _ent = S._entrando;
@@ -4572,7 +4572,7 @@ function dinero3Html(p, ms, hayInv, deudas, dComp) {
   let cuerpo;
   if (t === 'cuentas') cuerpo = dm3CuentasHtml(p);
   else if (t === 'metas') cuerpo = dmMetasHtml(ms);
-  else if (t === 'inversiones') cuerpo = hayInv ? dmInversionesHtml() : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('chart') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
+  else if (t === 'inversiones') cuerpo = hayInv ? renderInversionesTodo(true) : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('chart') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
   else cuerpo = dmDeudasHtml(deudas, dComp);
   return lqt + tabs + '<div class="dm3-marco"><div id="dmCuerpo" class="dm3-cuerpo">' + cuerpo + '</div></div>';
 }
@@ -4856,9 +4856,9 @@ function dmInversionesHtml() {
     orden.slice(0, 3).map(([g, v]) => invFilaV2(g, v, false)).join('') +
     (orden.length > 3 ? '<button type="button" class="dm-inv-mas" ' + act('dmVer', 'inversiones') + '>y ' + (orden.length - 3) + ' más ' + ic('chevR') + '</button>' : '') + '</div>';
 }
-function renderInversionesTodo() {
+function renderInversionesTodo(enPestana) {
   const R = invResumen(), grupos = R.grupos;
-  let h = '<button type="button" class="dm-volver" ' + act('dmVer', '') + '>' + ic('chevL') + ' Dinero</button><h2 class="dm-h1">Inversiones</h2>';
+  let h = enPestana ? '' : '<button type="button" class="dm-volver" ' + act('dmVer', '') + '>' + ic('chevL') + ' Dinero</button><h2 class="dm-h1">Inversiones</h2>';
   if (!grupos.length) return h + '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Aún no hay inversiones. Añade un movimiento de tipo <b>Inversión</b> y busca el activo (por nombre, ticker o ISIN).</div>';
   const pie = '<div class="dm-inv-pie"><div><span>Has metido</span><b class="tnum">' + money(R.metido) + '</b></div>' +
     (R.todas ? '<div><span>' + (R.gan >= 0 ? 'Ganas' : 'Pierdes') + '</span><b class="tnum" style="color:' + (R.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(R.gan) + money(Math.abs(R.gan)) + '</b></div>' : '<div><span>Valor</span><b class="tnum">' + (R.vals.some(Boolean) ? 'en camino…' : '—') + '</b></div>') + '</div>';
@@ -4874,9 +4874,48 @@ function renderInversionesTodo() {
   // avisos
   const sinVinc = grupos.filter((g) => !(g.activoId && g.conPart === g.n));
   h += sinVinc.map((g) => '<div class="dm-aviso">' + ic('alert') + '<span>' + escapeHtml(g.nombre) + ' no tiene precio porque falta elegir el activo.</span><button class="link" ' + act('verActivo', g.nombre) + '>Buscarlo</button></div>').join('');
-  h += R.todas ? inflacionV2Html(grupos, R.valor) : '';
-  h += '<button type="button" class="dm-precios" ' + act('dmPrecios') + '>' + ic('alert') + '<span>De dónde salen los precios</span>' + ic('chevR') + '</button>';
+  h += R.todas ? (enPestana ? invRentaFilaHtml(grupos, R.valor) : inflacionV2Html(grupos, R.valor)) : '';
+  h += '<button type="button" class="dm-precios" ' + act('dmPrecios') + '>' + ic(enPestana ? 'info' : 'alert') + '<span>De dónde salen los precios</span>' + ic('chevR') + '</button>';
   return h;
+}
+
+/* ---- Inversiones v3 (23/10/2026, docs/15 2.4): «1S», líneas por activo (hasta 4) y rentabilidad e inflación en su hoja ---- */
+const COLORES_ACTIVO = ['#2E9BD6', '#E6B422', '#E86A9A', '#4FB3A9', '#C25BD8'];
+function invActivosConSerie(movs, series) {
+  const ids = [...new Set(movs.map((m) => m.id))].filter((id) => (series[id] || []).length);
+  const grupos = inversionesPorActivo(), nom = (id) => ((grupos.find((g) => g.activoId === id) || {}).nombre) || 'Activo';
+  return ids.sort().map((id, i) => ({ id, nombre: nom(id), color: COLORES_ACTIVO[i % COLORES_ACTIVO.length] }));
+}
+function invLineasSel() { return Array.isArray(S.invLineas) ? S.invLineas : []; }
+function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
+  if (!dineroV3()) return [];
+  const sel = invLineasSel(); if (!sel.length) return [];
+  const n = serieTot.length - i0, paso = pts.length > 1 ? (n - 1) / (pts.length - 1) : 0;
+  return invActivosConSerie(movs, series).filter((a) => sel.indexOf(a.id) >= 0).map((a) => {
+    const sa = serieCartera(movs.filter((m) => m.id === a.id), series), off = serieTot.length - sa.length; // la serie del activo empieza en su primera compra
+    const s = series[a.id] || [];
+    const precio = (d) => { let v = null; for (let k = 0; k < s.length && s[k][0] <= d; k++) v = s[k][1]; return v; };
+    const p0 = precio(serieTot[i0].d) || (s.length ? s[0][1] : null);
+    const vals = pts.map((_, j) => { const idx = Math.min(serieTot.length - 1, i0 + Math.round(j * paso)), q = sa[idx - off];
+      if (!q) return modoR ? null : 0;
+      if (modoR) { const pr = precio(serieTot[idx].d); return pr != null && p0 ? (pr / p0 - 1) * 100 : null; }
+      return q.v; });
+    const ult = vals.filter((v) => v != null); const fill = ult.length ? ult[0] : 0;
+    return Object.assign({}, a, { vals: vals.map((v) => (v == null ? fill : v)) });
+  });
+}
+function invLineasChipsHtml(movs, series, multi) {
+  const as = invActivosConSerie(movs, series); if (as.length < 1) return '';
+  const sel = invLineasSel();
+  return '<div class="tr-lineas" role="group" aria-label="Líneas de la gráfica"><button type="button" class="chip' + (multi ? '' : ' active') + '" aria-pressed="true" ' + act('invLinea', 'total') + '><i style="background:var(--accent)"></i>Total</button>' +
+    as.map((a) => '<button type="button" class="chip' + (sel.indexOf(a.id) >= 0 ? ' active' : '') + '" aria-pressed="' + (sel.indexOf(a.id) >= 0) + '" ' + act('invLinea', a.id) + '><i style="background:' + a.color + '"></i>' + escapeHtml(a.nombre) + '</button>').join('') + '</div>';
+}
+function invRentaFilaHtml(grupos, valorActual) {
+  const movs = movsValorables(grupos); if (!movs.length || valorActual == null) return '';
+  const hoy = todayISO(), dias = (parseISO(hoy).getTime() - parseISO(movs[0].fecha).getTime()) / 864e5;
+  const r = dias < 30 ? null : xirr(movs.map((m) => ({ d: m.fecha, c: -m.imp })).concat([{ d: hoy, c: valorActual }])), inf = INFLACION_DATOS[inflacionRegion()];
+  const txt = r == null ? 'Necesitas un mes de historia' : pct1(r * 100) + ' al año · ' + (r * 100 >= inf.tasa ? 'le ganas a la inflación' : 'la inflación te gana');
+  return '<button type="button" class="dm3-renta tappable" ' + act('invRentaVer') + '><span class="dm-ic inv">' + ic('chart') + '</span><span class="dm-emp-x"><b>Rentabilidad al año e inflación</b><span class="' + (r == null ? '' : r * 100 >= inf.tasa ? 'gana' : 'pierde') + '">' + txt + '</span></span>' + ic('chevR') + '</button>';
 }
 function inflacionV2Html(grupos, valorActual) {
   const movs = movsValorables(grupos); if (!movs.length) return '';
@@ -4892,6 +4931,11 @@ function inflacionV2Html(grupos, valorActual) {
   }
   return '<div class="section-title">¿Le ganas a la inflación?</div><div class="card dm-inf">' + cuerpo + chips +
     '<div class="rec-hint" style="margin:8px 0 0;">Al año, según cuándo metiste cada euro' + (dias < 365 ? ' (con menos de un año de datos es orientativo)' : '') + '. Inflación: ' + escapeHtml(inf.que) + ', ' + escapeHtml(inf.periodo) + ' · ' + escapeHtml(inf.fuente) + '.</div></div>';
+}
+function invRentaHojaHtml() {
+  const R = invResumen();
+  return '<div class="handle"></div><h2>Rentabilidad al año e inflación</h2>' + (R.todas ? inflacionV2Html(R.grupos, R.valor).replace('<div class="section-title">¿Le ganas a la inflación?</div>', '') : '<div class="card">Aún no hay precios de todos tus activos.</div>') +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
 }
 function dmPreciosHtml() {
   const R = invResumen();
@@ -6179,7 +6223,7 @@ async function cargarValoracion(ids) {
   render();
 }
 /* ---------- Evolución de la cartera y rentabilidad anual (Fase 3D) ---------- */
-const PERIODOS_INV = [['1m', '1M', 30], ['3m', '3M', 91], ['6m', '6M', 182], ['1a', '1A', 365], ['max', 'Máx', 0]];
+const PERIODOS_INV = [['1s', '1S', 7], ['1m', '1M', 30], ['3m', '3M', 91], ['6m', '6M', 182], ['1a', '1A', 365], ['max', 'Máx', 0]];
 function addDiasISO(iso, n) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
 function movsValorables(grupos) {
   const ok = new Set(grupos.filter((g) => g.activoId && g.conPart === g.n).map((g) => g.activoId));
@@ -6281,7 +6325,7 @@ function evolucionHtml(grupos, valorActual) {
     const pts = reducirPuntos(serie.slice(i0), 48).map((p) => Object.assign({}, p, { r: ((p.I || 1) / baseI - 1) * 100 }));
     const fin = pts[pts.length - 1];
     const ch = cambioPeriodo(prev, fin);
-    const label = per[0] === 'max' ? 'desde el inicio' : 'en ' + per[1].replace('M', ' mes' + (per[2] > 31 ? 'es' : '')).replace('1A', '1 año');
+    const label = per[0] === 'max' ? 'desde el inicio' : per[0] === '1s' ? 'en 7 días' : 'en ' + per[1].replace('M', ' mes' + (per[2] > 31 ? 'es' : '')).replace('1A', '1 año');
     const sube = modoR ? fin.r >= 0 : ch.delta >= 0;
     S._invChart = { pts, prev, sube, label, modoR };
     const W = 320, Hh = 150;
@@ -6294,7 +6338,10 @@ function evolucionHtml(grupos, valorActual) {
     const ys = suavizarSerie(pts.map(val)), ysInv = suavizarSerie(pts.map((p) => p.inv));
     S._invChart.ys = ys;
     const curvaV = (arr) => curvaSuave(arr.map((v, i) => [X(i), Y(v)]));
-    const color = sube ? 'var(--income)' : 'var(--expense)';
+    const extra = invLineasExtra(movs, H.series, serie, i0, pts, modoR), multi = extra.length > 0;
+    if (multi) { const todos = vals.concat(...extra.map((l) => l.vals)); mn = Math.min(...todos); mx = Math.max(...todos); const pd = (mx - mn) * 0.1 || 1; mn -= pd; mx += pd; S._invChart.mn = mn; S._invChart.mx = mx; }
+    S._invChart.extra = extra;
+    const color = multi ? 'var(--accent)' : sube ? 'var(--income)' : 'var(--expense)';
     const lineaV = curvaV(ys), suelo = modoR ? Y(0) : Hh;
     const area = lineaV + ' L' + X(pts.length - 1).toFixed(1) + ' ' + suelo.toFixed(1) + ' L' + X(0).toFixed(1) + ' ' + suelo.toFixed(1) + ' Z';
     cabecera = modoR
@@ -6306,8 +6353,9 @@ function evolucionHtml(grupos, valorActual) {
       revelaSvg('invClip', W, Hh, per[0] + '|' + pts.length, '_invTraza') + '</defs>' +
       // la línea de referencia (lo metido, o el 0 %) es siempre una curva con los mismos puntos: así puede «moverse» al cambiar de vista
       '<path id="invRef" d="' + curvaV(modoR ? pts.map(() => 0) : ysInv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>' +
-      '<g clip-path="url(#invClip)"><path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"/>' +
-      '<path id="invLineV" class="tr-linea" d="' + lineaV + '" fill="none" style="stroke:' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></g></svg>' +
+      '<g clip-path="url(#invClip)"><path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"' + (multi ? ' opacity="0"' : '') + '/>' +
+      '<path id="invLineV" class="tr-linea" d="' + lineaV + '" fill="none" style="stroke:' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+      extra.map((l) => '<path class="tr-linea-a" d="' + curvaV(suavizarSerie(l.vals)) + '" fill="none" style="stroke:' + l.color + '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>').join('') + '</g></svg>' +
       (modoR ? '<div class="tr-cero" style="top:' + (Y(0) / Hh * 100).toFixed(1) + '%">0 %</div>' : '') +
       '<div class="tr-cursor" id="invLine"></div><div class="tr-dot" id="invDot" style="background:' + color + '"></div></div>' +
       (modoR ? '<div class="tr-legend"><span><i style="background:' + color + '"></i>Tu rentabilidad</span><span>no cambia al meter o sacar dinero</span></div>'
@@ -6317,6 +6365,7 @@ function evolucionHtml(grupos, valorActual) {
     if (ids.some((id) => !(H.series[id] || []).length)) notas.push('Algún activo aún no tiene histórico de precios; se completará en la próxima actualización.');
     if (H.limite) notas.push('Hoy se ha llegado al límite diario de consultas del proveedor de precios; el histórico se completará mañana.');
     if (notas.length) cuerpo += '<div class="tr-note">' + notas.join(' ') + '</div>';
+    if (dineroV3()) cuerpo += invLineasChipsHtml(movs, H.series, multi) + (multi ? '<div class="tr-vals" id="invVals"></div>' : '');
   } else {
     cabecera = valorActual != null ? '<div class="tr-big tnum">' + eur2(valorActual) + '</div>' : '';
     S._invChart = null;
@@ -6371,6 +6420,8 @@ function bindInvChart() {
     const x = C.pts.length > 1 ? i / (C.pts.length - 1) * 100 : 50, y = (1 - ((C.ys ? C.ys[i] : C.modoR ? p.r : p.v) - C.mn) / (C.mx - C.mn)) * 100;
     cabecera(p, 'metido: ' + eur0(p.inv));
     if (fecha) fecha.textContent = fechaCorta(p.d);
+    const vs = document.getElementById('invVals');
+    if (vs && C.extra && C.extra.length) vs.innerHTML = '<span><i style="background:var(--accent)"></i>Total <b class="tnum">' + (C.modoR ? pct1(p.r) : eur0(p.v)) + '</b></span>' + C.extra.map((l) => '<span><i style="background:' + l.color + '"></i>' + escapeHtml(l.nombre) + ' <b class="tnum">' + (l.vals[i] == null ? '—' : C.modoR ? pct1(l.vals[i]) : eur0(l.vals[i])) + '</b></span>').join('');
     line.style.left = x + '%'; line.style.display = 'block';
     dot.style.left = x + '%'; dot.style.top = y + '%'; dot.style.display = 'block';
     if (ultI !== -1 && ultI !== i && (i === 0 || i === C.pts.length - 1)) vibrar(4);
@@ -6378,6 +6429,7 @@ function bindInvChart() {
   };
   const reset = () => {
     cabecera(C.pts[C.pts.length - 1], C.label); ultI = -1;
+    const vs = document.getElementById('invVals'); if (vs) vs.innerHTML = '';
     if (fecha) fecha.textContent = '';
     line.style.display = 'none'; dot.style.display = 'none';
   };
@@ -9150,7 +9202,10 @@ const H = {
     S._trCambiaHasta = Date.now() + 500;
     const big = document.getElementById('invBig'); if (big) big.classList.add('tr-cambia');
   },
-  setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
+  setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); if (FORM && FORM.kind === 'invRenta' && $('#sheetBackdrop')) setTimeout(() => updateSheet(invRentaHojaHtml()), 0); } },
+  invRentaVer: () => { FORM = { kind: 'invRenta' }; openSheet(invRentaHojaHtml()); },
+  invLinea: ([id]) => { if (id === 'total') { S.invLineas = []; return render(); } const sel = invLineasSel().slice(), i = sel.indexOf(id);
+    if (i >= 0) sel.splice(i, 1); else { if (sel.length >= 4) return toast('Como mucho 4 líneas a la vez'); sel.push(id); } S.invLineas = sel; sentir('tic'); render(); },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
   toggleTabAn: ([id]) => {
     const sel = tabsAnElegidas(), i = sel.indexOf(id);

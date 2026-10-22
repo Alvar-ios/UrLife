@@ -1555,3 +1555,14 @@ html[data-look="nuevo"] .jv-obj-ic .i { width: 26px; height: 26px; }
 html[data-look="nuevo"] .jv-obj-n { font-weight: 650; font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-look="nuevo"] .jv-obj-bar { width: 100%; height: 6px; margin: 8px 0 4px; border-radius: 99px; background: var(--paper-sunken); overflow: hidden; }
 html[data-look="nuevo"] .jv-obj-bar i { display: block; height: 100%; border-radius: 99px; background: var(--debt); }
+/* Inversiones v3 (23/10): líneas por activo y rentabilidad en su hoja */
+html[data-look="nuevo"] .tr-lineas { display: flex; gap: 6px; overflow-x: auto; margin: 10px -4px 0; padding: 2px 4px; scrollbar-width: none; }
+html[data-look="nuevo"] .tr-lineas::-webkit-scrollbar { display: none; }
+html[data-look="nuevo"] .tr-lineas .chip { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; }
+html[data-look="nuevo"] .tr-lineas .chip i { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+html[data-look="nuevo"] .tr-vals { display: flex; flex-wrap: wrap; gap: 4px 12px; min-height: 18px; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+html[data-look="nuevo"] .tr-vals i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+html[data-look="nuevo"] .tr-vals b { color: var(--ink); }
+html[data-look="nuevo"] .dm3-renta { width: 100%; display: flex; align-items: center; gap: 11px; margin: 12px 0 0; padding: 12px 14px; border: 0; border-radius: var(--r-l, 20px); background: var(--paper-raised); box-shadow: var(--shadow); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+html[data-look="nuevo"] .dm3-renta .gana { color: var(--income); } html[data-look="nuevo"] .dm3-renta .pierde { color: var(--warn); }
+html[data-look="nuevo"] .dm3-renta > .i:last-child { width: 16px; height: 16px; color: var(--text-faint); margin-left: auto; flex: none; }
