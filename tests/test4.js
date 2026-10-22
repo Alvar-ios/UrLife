@@ -13,6 +13,7 @@ function makeEnv(seed){ // seed: {config:{app,meta}, movs:[]}
   const dom=new JSDOM('<div id="app"></div>',{runScripts:'outside-only',pretendToBeVisual:true});
   const w=dom.window;w.Auth=Auth;w.Data=Data;w.scrollTo=()=>{};
   w.eval(fs.readFileSync(require('path').join(__dirname,'..','app.js'),'utf8'));
+  w.__APP__.S.verAnterior=Object.assign({tu:1,agenda:1,crear:1},w.__APP__.S.verAnterior||{}); // 22/10: las pruebas antiguas miran Tú, Agenda y + de antes (las nuevas pasan version:{tu:0,…})
   return {w,store,doc:w.document};
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));

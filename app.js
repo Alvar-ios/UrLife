@@ -10,6 +10,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------------- Iconos (SVG inline, trazo simple) ---------------- */
 const ICONS = {
+  salir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h10M17 8l4 4-4 4"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg>',
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
@@ -794,7 +795,7 @@ const TAB_ALIAS = { analisis: 'inicio', mas: 'tu', tareas: 'agenda', calendario:
 function tabBtn(t) {
   return '<button class="tab" data-tab="' + t.id + '" ' + act('goTab', t.id) + '><span class="ic">' + ic(t.icon) + '</span><span>' + t.label + '</span></button>';
 }
-function inicialUsuario() { const n = miNombreAlguno ? (S.grupos ? miNombreAlguno() : nombreSugerido()) : nombreSugerido(); return escapeHtml((n || '?').trim().charAt(0).toUpperCase()); }
+function inicialUsuario() { const n = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido()); return escapeHtml((n || '?').trim().charAt(0).toUpperCase()); }
 function renderShell() {
   $('#app').innerHTML =
     '<nav class="rail" aria-label="Secciones"><div class="brand">Mis Finanzas<span class="sub">y Tareas</span></div>' +
@@ -905,12 +906,13 @@ function render() {
   if (!TITULOS[S.tab]) S.tab = 'inicio';
   estrAjustarTab();
   $$('[data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === S.tab));
-  const nuevoTu = ['grupos', 'patrimonio', 'cuentas', 'tumes', 'metas', 'importar', 'reglas', 'cobros'].some(badgeActivo);
+  const nuevoTu = ['grupos', 'patrimonio', 'cuentas', 'tumes', 'importar', 'reglas', 'cobros'].concat(verAnterior('tu') ? ['metas'] : []).some(badgeActivo); // en Tú nuevo, Metas vive en Dinero
   $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
-  const av = $('#tbAvatar'); if (av) av.textContent = inicialUsuario();
+  const av = $('#tbAvatar'); if (av) { av.textContent = inicialUsuario(); const v2 = !verAnterior('tu'); av.style.background = v2 ? colorPersona(miUid()) : ''; av.style.color = v2 ? '#fff' : ''; }
   document.body.classList.toggle('en-tu', S.tab === 'tu');
   const title = $('#pageTitle'); if (title) title.textContent = TITULOS[S.tab];
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
+  const _agEl = document.activeElement && document.activeElement.id === 'agRapida' ? document.activeElement : null, _agV = _agEl ? _agEl.value : null;
   if (S.tab === 'inicio') c.innerHTML = renderInicioNuevo();
   else if (S.tab === 'movimientos') c.innerHTML = renderMovTab();
   else if (S.tab === 'dinero') c.innerHTML = dineroV2() ? renderDineroV2() : renderDinero();
@@ -926,6 +928,7 @@ function render() {
   const _ent = S._entrando;
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
   if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
+  if (_agEl || S._agFoco) { S._agFoco = false; const nv = $('#agRapida'); if (nv) { if (_agV) nv.value = _agV; try { nv.focus(); } catch (e) { /* noop */ } } }
   pintarComparar();
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse') || lsGet('soy')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
@@ -1570,7 +1573,7 @@ function openMovForm(id, pre) {
   const metodos = cfg().metodosPago || [];
   openSheet(
     '<div class="handle"></div><h2>' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : 'Nuevo movimiento') + '</h2>' +
-    (!ex && !compDest && ticketsDisponible() ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto</span>' + badge('ticket') + '</button>' : '') +
+    (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
     (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
     '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + (ex ? ex.importe : (pre.importe != null ? pre.importe : '')) + '" ' + onInput('onImporteInput') + '></div>' +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
@@ -2886,7 +2889,7 @@ const ERR_TICKET = {
   no_ticket: 'No parece un ticket o no se lee bien. Prueba con otra foto: con buena luz, el ticket entero y sin arrugas.',
   sin_sesion: 'Tienes que iniciar sesión.',
 };
-function errTicket(k) { return ERR_TICKET[k] || 'No se pudo leer el ticket. Revisa tu conexión e inténtalo de nuevo.'; }
+function errTicket(k) { if (k === 'limite') return 'Has usado las ' + ticketsUso().limite + ' lecturas de este mes. Vuelven el ' + ticketsVuelven() + '.'; return ERR_TICKET[k] || 'No se pudo leer el ticket. Revisa tu conexión e inténtalo de nuevo.'; }
 async function ticketsApi(body) {
   const c = window.SUPABASE_CONFIG, ses = await window.Auth.getSession();
   if (!ses || !ses.access_token) return { error: 'sin_sesion' };
@@ -2942,6 +2945,7 @@ async function ticketPedir(F, preciso) {
   catch (e) { r = { error: 'red' }; }
   F.cargando = false;
   if (r.usados != null) { F.usados = r.usados; F.limite = r.limite; }
+  guardarTicketsUso(r);
   if (!r.error && (!r.ticket || !r.ticket.es_ticket)) r.error = 'no_ticket';
   if (r.error) { F.error = r.error; F.t = previo; if (FORM === F) updateSheet(ticketHtml()); return; }
   const t = r.ticket;
@@ -3104,7 +3108,7 @@ function ticketHtml() {
         (rep.dest ? '<div class="comp-lbl">Pagó</div><div class="chips">' + ms.map((m) => '<button type="button" class="chip ' + (rep.pagador === m.uid ? 'active' : '') + '" ' + act('tkPagador', m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>' +
           '<div class="rec-hint" style="margin-top:8px;">En cada artículo, marca quién lo toma (lo que marquéis varios se divide a partes iguales). Si hay varias unidades, pon cuántas toma cada uno.</div>' +
           tkBarraHtml(F) + '<div id="tkResumen">' + tkResumenHtml(F) + '</div>' : '<div class="rec-hint" style="margin-top:6px;">Elige con quién compartes la cuenta.</div>') + '</div>') + '</div>' : '') +
-    (F.limite ? '<div class="rec-hint" style="margin-top:10px;">Lecturas este mes: ' + F.usados + ' de ' + F.limite + '. La foto no se ha guardado.</div>' : '') +
+    (F.limite ? '<div class="rec-hint" style="margin-top:10px;">Lecturas este mes: ' + F.usados + ' de ' + F.limite + '. La foto no se ha guardado.' + (F.limite - F.usados <= 10 ? ' <span class="tk-pocos">Te quedan ' + Math.max(0, F.limite - F.usados) + '. Vuelven el ' + ticketsVuelven() + '.</span>' : '') + '</div>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('tkContinuar') + '>Continuar</button></div>';
 }
 function tkRefrescarParcial() {
@@ -3256,6 +3260,151 @@ function renderAgendaSemana() {
     (lista.length ? '<div class="list">' + lista.map(renderTareaRow).join('') + '</div>' : '<div class="card empty-mini">' + (S.tareasSub === 'completadas' ? 'Aún no has completado ninguna.' : 'Nada pendiente. ¡Bien!') + '</div>');
 }
 /* ============================================================
+   AGENDA v2 (22/10, docs/10-agenda-mas.md): casilla rápida, cada tarea una sola vez,
+   calendario solo mensual con leyenda que filtra, formulario corto y el + ordenado por uso
+   ============================================================ */
+function agendaV2() { return !verAnterior('agenda'); }
+function agRapidaPh(sel) {
+  const hoy = todayISO(), d = parseISO(sel);
+  if (sel === hoy) return 'Apunta una tarea para hoy…';
+  if (sel === uAdd(hoy, 1)) return 'Apunta una tarea para mañana…';
+  return 'Apunta una tarea para el ' + DIAS_LARGO[dowMon(d)].toLowerCase() + ' ' + d.getDate() + '…';
+}
+function agFilaProx(iso, ev) {
+  return '<div class="row ' + (ev.click ? '' : 'static') + '" ' + (ev.click || '') + '><span class="dia-col"><b>' + parseISO(iso).getDate() + '</b><span>' + DIAS_LARGO[dowMon(parseISO(iso))].slice(0, 3).toLowerCase() + '</span></span>' +
+    '<div class="main"><div class="ttl">' + escapeHtml(ev.titulo) + '</div><div class="meta" style="color:' + evColor(ev) + '">' + escapeHtml(ev.detalle) + '</div></div></div>';
+}
+function agVerMas(clave, n, txt) { return '<button type="button" class="link ag-vermas" ' + act('agendaMas', clave) + '>' + txt + ' · ' + n + '</button>'; }
+function renderAgendaSemanaV2() {
+  const hoy = todayISO(), sel = S.agendaDia || hoy, lunes = uAdd(sel, -dowMon(parseISO(sel))), lunesHoy = uAdd(hoy, -dowMon(parseISO(hoy)));
+  const mapW = eventosAgenda(lunes, uAdd(lunes, 6)), abierto = S.agendaMas || '';
+  const a = parseISO(lunes), b = parseISO(uAdd(lunes, 6));
+  const rango = 'Semana del ' + a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + MESES_ABR[a.getMonth()].toLowerCase() : '') + ' al ' + b.getDate() + ' ' + MESES_ABR[b.getMonth()].toLowerCase();
+  const cab = '<div class="ag-cab"><b>' + rango + '</b>' + (lunes !== lunesHoy ? '<button type="button" class="chip ag-hoy" ' + act('agendaDia', hoy) + '>Hoy</button>' : '') +
+    '<span class="ag-flechas"><button type="button" class="icon-btn" aria-label="Semana anterior" ' + act('agendaSemana', -1) + '>' + ic('chevL') + '</button><button type="button" class="icon-btn" aria-label="Semana siguiente" ' + act('agendaSemana', 1) + '>' + ic('chevR') + '</button></span></div>';
+  const tira = '<div class="semana ag-tira"><div class="semana-dias">' + [0, 1, 2, 3, 4, 5, 6].map((i) => { const iso = uAdd(lunes, i), n = (mapW[iso] || []).length;
+    return '<button class="dia' + (iso === sel ? ' sel' : '') + (iso === hoy ? ' hoy' : '') + '" ' + act('agendaDia', iso) + ' aria-label="' + fmtDateLong(iso) + '"' + (iso === sel ? ' aria-current="date"' : '') + '><span class="l">' + DIA_LETRA[i] + '</span><b>' + parseISO(iso).getDate() + '</b><i class="' + (n ? 'con' : '') + '"></i></button>'; }).join('') + '</div></div>';
+  const rapida = '<div class="ag-rapida"><input type="text" id="agRapida" maxlength="120" enterkeyhint="done" autocomplete="off" placeholder="' + escapeHtml(agRapidaPh(sel)) + '" aria-label="' + escapeHtml(agRapidaPh(sel)) + '"><button type="button" class="ag-rapida-btn" aria-label="Añadir tarea" ' + act('agRapida') + '>' + ic('plus') + '</button></div>';
+  const pend = S.tareas.filter((t) => t.estado !== 'Completado');
+  const venc = pend.filter((t) => t.fechaLimite && t.fechaLimite < hoy && t.fechaLimite !== sel).sort(cmpTarea);
+  const vencH = venc.length ? '<div class="section-title ag-venc">Vencidas · ' + venc.length + '</div><div class="list">' + (abierto === 'vencidas' ? venc : venc.slice(0, 3)).map(renderTareaRow).join('') + '</div>' +
+    (venc.length > 3 && abierto !== 'vencidas' ? agVerMas('vencidas', venc.length, 'Ver las') : '') : '';
+  const dSel = parseISO(sel), nom = DIAS_LARGO[dowMon(dSel)].toLowerCase() + ' ' + dSel.getDate();
+  const tituloDia = sel === hoy ? 'Hoy, ' + nom : sel === uAdd(hoy, 1) ? 'Mañana, ' + nom : sel === uAdd(hoy, -1) ? 'Ayer, ' + nom : nom.charAt(0).toUpperCase() + nom.slice(1) + ' de ' + MESES[dSel.getMonth()].toLowerCase();
+  const filasDia = pend.filter((t) => t.fechaLimite === sel).sort(cmpTarea).map(renderTareaRow).join('') + (mapW[sel] || []).filter((ev) => ev.k !== 'tarea').map(calEventRow).join('');
+  const diaH = '<div class="section-title">' + escapeHtml(tituloDia) + '</div>' + (filasDia ? '<div class="list">' + filasDia + '</div>' : '<div class="card ag-despejado">' + ic('checkCircle') + '<span>Día despejado.</span></div>');
+  const mapN = eventosAgenda(uAdd(sel, 1), uAdd(sel, 7)), prox = [];
+  Object.keys(mapN).sort().forEach((iso) => { if (iso < hoy) return; mapN[iso].forEach((ev) => prox.push(agFilaProx(iso, ev))); });
+  const proxH = prox.length ? '<div class="section-title">Próximos 7 días</div><div class="list">' + (abierto === 'prox' ? prox : prox.slice(0, 5)).join('') + '</div>' + (prox.length > 5 && abierto !== 'prox' ? agVerMas('prox', prox.length, 'Ver todo') : '') : '';
+  const sinF = pend.filter((t) => !t.fechaLimite).sort(cmpTarea);
+  const sinFH = sinF.length ? '<div class="section-title">Sin fecha · ' + sinF.length + '</div><div class="list">' + sinF.map(renderTareaRow).join('') + '</div>' : '';
+  const tope = uAdd(sel, 7), adelante = pend.filter((t) => t.fechaLimite && t.fechaLimite >= hoy && t.fechaLimite !== sel && (t.fechaLimite > tope || t.fechaLimite < sel)).sort(cmpTarea); // cada tarea sale una sola vez
+  const hechas = S.tareas.filter((t) => t.estado === 'Completado').sort((x, y) => (y.fechaFin || '').localeCompare(x.fechaFin || '')).slice(0, 20);
+  const pleg = (clave, txt, arr) => arr.length ? '<button type="button" class="ag-pleg" aria-expanded="' + (abierto === clave) + '" ' + act('agendaMas', clave) + '><span>' + txt + ' · ' + arr.length + '</span>' + ic(abierto === clave ? 'chevD' : 'chevR') + '</button>' +
+    (abierto === clave ? '<div class="list">' + arr.map(renderTareaRow).join('') + '</div>' : '') : '';
+  const plegH = (adelante.length || hechas.length) ? '<div class="ag-plegs">' + pleg('adelante', sel > hoy ? 'Otros días' : 'Más adelante', adelante) + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
+  return cab + tira + rapida + vencH + diaH + proxH + sinFH + plegH;
+}
+// Calendario v2: solo el mes; la leyenda de colores de abajo es el filtro
+function renderCalendarioV2() {
+  const anchor = calAnchor(), d = parseISO(anchor), hoy = todayISO();
+  const y = d.getFullYear(), m = d.getMonth(), dim = new Date(y, m + 1, 0).getDate();
+  const primero = y + '-' + pad2(m + 1) + '-01', ultimo = y + '-' + pad2(m + 1) + '-' + pad2(dim);
+  const map = calEventos(primero, ultimo), offset = dowMon(parseISO(primero)), esteMes = hoy.slice(0, 7) === primero.slice(0, 7);
+  let cells = DIAS_ABR.map((x) => '<div class="cal2-dow">' + x + '</div>').join('');
+  for (let i = 0; i < offset; i++) cells += '<div></div>';
+  for (let n = 1; n <= dim; n++) {
+    const iso = y + '-' + pad2(m + 1) + '-' + pad2(n), evs = map[iso] || [], colores = [];
+    evs.forEach((ev) => { const c = evColor(ev); if (colores.indexOf(c) < 0) colores.push(c); });
+    cells += '<button type="button" class="cal2-dia' + (iso === anchor ? ' sel' : '') + (iso === hoy ? ' hoy' : '') + '" ' + act('calSelDia', iso) + ' aria-label="' + n + ' de ' + MESES[m].toLowerCase() + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' cosa' : ' cosas') : '') + '"' + (iso === anchor ? ' aria-current="date"' : '') + '>' +
+      '<span class="n tnum">' + n + '</span><span class="pts">' + colores.slice(0, 4).map((c) => '<i style="background:' + c + '"></i>').join('') + '</span></button>';
+  }
+  const f = S.calFiltros, ley = [['tareas', 'Tareas', 'var(--accent)'], ['facturas', 'Cobros y pagos', 'var(--bill, var(--accent))'], ['hitos', 'Metas y deudas', 'var(--warn, var(--savings))'], ['movs', 'Movimientos', 'var(--text-faint)']];
+  const dsel = parseISO(anchor), evsSel = map[anchor] || [];
+  return '<div class="month-nav cal2-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('calMove', -1) + '>' + ic('chevL') + '</button><div class="lbl">' + MESES[m] + ' ' + y + '</div>' +
+      (esteMes ? '' : '<button type="button" class="chip cal2-hoy" ' + act('calHoy') + '>Hoy</button>') + '<button class="icon-btn" aria-label="Mes siguiente" ' + act('calMove', 1) + '>' + ic('chevR') + '</button></div>' +
+    '<div class="card cal2-card"><div class="cal2-grid">' + cells + '</div>' +
+    '<div class="cal2-ley" role="group" aria-label="Qué se ve en el calendario">' + ley.map(([k, l, c]) => '<button type="button" class="cal2-ley-i' + (f[k] ? ' on' : '') + '" aria-pressed="' + !!f[k] + '" ' + act('calToggle', k) + '><i style="' + (f[k] ? 'background:' : 'border-color:') + c + '"></i>' + l + '</button>').join('') + '</div></div>' +
+    '<div class="section-title">' + DIAS_LARGO[dowMon(dsel)] + ' ' + dsel.getDate() + ' de ' + MESES[dsel.getMonth()].toLowerCase() + '<button class="link" ' + act('tareaEnDia', anchor) + '>' + ic('plus') + ' Tarea</button></div>' +
+    (evsSel.length ? '<div class="list">' + evsSel.map(calEventRow).join('') + '</div>' : '<div class="card empty-mini">Nada este día.</div>');
+}
+/* Formulario de tarea v2: qué, para cuándo y categoría; lo demás en «Más opciones» */
+function finde(hoy) { const d = dowMon(parseISO(hoy)); return d >= 5 ? hoy : uAdd(hoy, 5 - d); }
+function tFechaChips(v) {
+  const hoy = todayISO(), opts = [['hoy', 'Hoy', hoy], ['man', 'Mañana', uAdd(hoy, 1)], ['finde', 'Este finde', finde(hoy)], ['sin', 'Sin fecha', '']];
+  const marcado = opts.find((o) => o[2] === (v || '')), otro = v && !marcado;
+  const dO = otro ? parseISO(v) : null;
+  return opts.map(([k, l, f]) => '<button type="button" class="chip' + (marcado && marcado[0] === k ? ' active' : '') + '" aria-pressed="' + !!(marcado && marcado[0] === k) + '" ' + act('tFechaPick', f) + '>' + l + '</button>').join('') +
+    '<label class="chip tf-otro' + (otro ? ' active' : '') + '">' + ic('calendar') + '<span>' + (otro ? DIAS_LARGO[dowMon(dO)].slice(0, 3) + ' ' + dO.getDate() + ' ' + MESES_ABR[dO.getMonth()].toLowerCase() : 'Otro día…') + '</span>' +
+    '<input type="date" id="tFechaOtro" aria-label="Elegir otro día" value="' + (otro ? v : '') + '" ' + onChange('tFechaOtro') + '></label>';
+}
+function openTareaFormV2(id, op) {
+  const ex = id ? S.tareas.find((t) => t.id === id) : null;
+  FORM = { kind: 'tarea', v2: true, id: ex ? ex.id : null, prioridad: ex ? (ex.prioridad || 'Media') : 'Media', estado: ex ? (ex.estado || 'Pendiente') : 'Pendiente' };
+  const fecha = ex ? (ex.fechaLimite || '') : ((op && op.fecha) || '');
+  const masAbierto = !!(ex && ((ex.prioridad && ex.prioridad !== 'Media') || ex.repetir || ex.comentario));
+  const tg = (attrName, valores, sel, action) => '<div class="type-toggle" id="' + attrName + 'Toggle">' + valores.map(([v, l]) => '<button type="button" ' + (attrName === 'prio' ? 'data-p' : 'data-e') + '="' + v + '" class="' + (v === sel ? 'active' : '') + '" ' + act(action, v) + '>' + l + '</button>').join('') + '</div>';
+  openSheet(
+    '<div class="handle"></div><h2>' + (ex ? 'Editar tarea' : 'Nueva tarea') + '</h2>' +
+    '<div class="field tf-que"><input id="tNombre" type="text" maxlength="120" aria-label="¿Qué hay que hacer?" placeholder="¿Qué hay que hacer?" value="' + escapeHtml(ex ? ex.nombre : '') + '" ' + onInput('tNombreInput') + '>' + (ex ? '' : '<div class="rec-hint">Por ejemplo: llamar al casero, renovar el DNI…</div>') + '</div>' +
+    '<div class="field"><label>¿Para cuándo?</label><input type="hidden" id="tFecha" value="' + escapeHtml(fecha) + '"><div class="chips tf-fechas" id="tFechaChips">' + tFechaChips(fecha) + '</div></div>' +
+    '<div class="field"><label>Categoría <span class="hint">· opcional</span></label><input type="hidden" id="tCategoria" value="' + escapeHtml(ex ? (ex.categoria || '') : '') + '"><div id="tCatChips"></div></div>' +
+    (ex ? '<div class="field"><label>Estado</label>' + tg('est', [['Pendiente', 'Pendiente'], ['Iniciado', 'En curso'], ['Completado', 'Hecha']], FORM.estado, 'pickEstado') + '</div>' : '') +
+    '<details class="tf-mas"' + (masAbierto ? ' open' : '') + '><summary>Más opciones' + ic('chevD') + '</summary>' +
+      '<div class="field"><label>Prioridad</label>' + tg('prio', [['Baja', 'Baja'], ['Media', 'Media'], ['Alta', 'Alta']], FORM.prioridad, 'pickPrio') + '</div>' +
+      repetirFieldHtml(ex ? ex.repetir : null) +
+      '<div class="field"><label for="tComentario">Nota <span class="hint">· opcional</span></label><input id="tComentario" type="text" value="' + escapeHtml(ex ? ex.comentario : '') + '"></div>' +
+    '</details>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTarea') + '>Guardar</button></div>' +
+    (ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTarea') + '>' + ic('trash') + ' Eliminar tarea</button>' : '')
+  );
+  tCatPintar();
+  if (!ex) setTimeout(() => { const el = $('#tNombre'); if (el) el.focus(); }, 80);
+}
+function tFechaPoner(v) { const h = $('#tFecha'); if (h) h.value = v || ''; const c = $('#tFechaChips'); if (c) c.innerHTML = tFechaChips(v || ''); sentir('tic'); }
+async function agRapidaCrear() {
+  const el = $('#agRapida'); if (!el) return;
+  const nombre = el.value.trim().replace(/\s+/g, ' '); if (!nombre) { el.focus(); return; }
+  if (agRapidaCrear._ocupado) return; agRapidaCrear._ocupado = true;
+  const hoy = todayISO(), lista = tCatLista(), cat = tCatSugerida(nombre, lista) || '';
+  const data = { nombre, categoria: cat, prioridad: 'Media', estado: 'Pendiente', fechaLimite: S.agendaDia || hoy, fechaCreacion: hoy, fechaInicio: null, fechaFin: null, comentario: '', repetir: null };
+  let r = null;
+  try { r = await withRetry(() => S.db.collection('tareas').add(data)); } catch (e) { console.error(e); toast(errMsg(e)); }
+  agRapidaCrear._ocupado = false;
+  if (!r) return;
+  el.value = ''; S._agFoco = true;
+  if (cat) { const propias = (cfg().categoriasTareas || []).filter(Boolean); if (!propias.some((c) => tCatNorm(c) === tCatNorm(cat))) saveConfig({ categoriasTareas: propias.concat([cat]) }); }
+  sentir('ok');
+  toast('Tarea añadida', { deshacer: () => write(() => S.db.collection('tareas').doc(r.id).delete()) });
+}
+/* Botón + v2: foto de ticket, cuatro grandes, «Repetir» con tus gastos habituales y lo demás en pequeño */
+function gastosHabituales() {
+  const desde = uAdd(todayISO(), -45), g = {};
+  S.movimientos.forEach((m) => {
+    if (m.tipo !== 'Gasto' || m.compartidoId || m.traspasoId || (m.fecha || '') < desde || !(num(m.importe) > 0)) return;
+    const k = normDesc((m.categoria || '') + '|' + (m.descripcion || '')); const x = g[k] = g[k] || { n: 0, ult: null };
+    x.n++; if (!x.ult || (m.fecha || '') > (x.ult.fecha || '')) x.ult = m;
+  });
+  return Object.values(g).filter((x) => x.n >= 2).sort((a, b) => b.n - a.n || (b.ult.fecha || '').localeCompare(a.ult.fecha || '')).slice(0, 3).map((x) => x.ult);
+}
+function crearTicketBandaHtml() {
+  if (!ticketsDisponible()) return '';
+  const t = ticketsUso();
+  if (t.quedan === 0) return '<button class="crear-ticket tappable agotado" ' + act('crearSinLecturas') + '><span class="crear-ic">' + ic('camera') + '</span><span><b>Foto de ticket</b><span>Sin lecturas hasta el ' + ticketsVuelven() + '</span></span></button>';
+  return '<button class="crear-ticket tappable' + (ticketsPocos() ? ' pocos' : '') + '" ' + act('crearIr', 'ticket') + '><span class="crear-ic">' + ic('camera') + '</span><span><b>Foto de ticket</b><span>' + (ticketsPocos() ? 'Te quedan ' + t.quedan + (t.quedan === 1 ? ' lectura' : ' lecturas') + ' este mes' : 'Lee los artículos y el total por ti') + '</span></span>' + badge('ticket') + '</button>';
+}
+function crearHtmlV2() {
+  const op = (accion, args, icono, txt, cls) => '<button class="crear-op tappable ' + cls + '" ' + act(accion, ...args) + '><span class="crear-ic">' + ic(icono) + '</span><span>' + txt + '</span></button>';
+  const hab = gastosHabituales();
+  return '<div class="handle"></div><h2>¿Qué quieres apuntar?</h2>' + crearTicketBandaHtml() +
+    '<div class="crear-grid crear-4' + (compartidosDisponible() ? '' : ' tres') + '">' + op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
+      (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + '</div>' +
+    (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
+    '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Gasto fijo', 'k-factura') +
+      op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') + '</div>' +
+    (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('swap') + ' Ver la versión anterior</button>' : '');
+}
+/* ============================================================
    DINERO (patrimonio, metas, inversiones, deudas y compartido) · AGENDA · TÚ  (Bloque 9)
    ============================================================ */
 const DINERO_SUBS = [['cuentas', 'Cuentas'], ['metas', 'Metas'], ['inversiones', 'Inversiones'], ['deudas', 'Deudas'], ['compartido', 'Compartido']];
@@ -3283,10 +3432,12 @@ function renderCompartidoDinero(sinBoton) {
 function renderAgenda() {
   const sub = S.agendaSub === 'calendario' ? 'calendario' : 'tareas';
   return '<div class="segmented" style="margin-bottom:14px;">' + [['tareas', 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (sub === id ? 'active' : '') + '" ' + act('irAgenda', id) + '>' + l + '</button>').join('') + '</div>' +
-    (sub === 'tareas' ? renderAgendaSemana() : renderCalendario());
+    (sub === 'tareas' ? (agendaV2() ? renderAgendaSemanaV2() : renderAgendaSemana()) : (agendaV2() ? renderCalendarioV2() : renderCalendario()));
 }
-// «Tú»: todos los ajustes en grupos, con buscador
-function renderTu() {
+// «Tú»: la versión nueva (22/10) o la de antes (botón «Antes»)
+function renderTu() { return verAnterior('tu') ? renderTuAntes() : renderTuV2(); }
+// «Tú» de antes: todos los ajustes en grupos, con buscador
+function renderTuAntes() {
   const it = (accion, args, icono, txt, extra, claves) => '<button class="menu-item" data-k="' + escapeHtml(normDesc(txt + ' ' + (claves || ''))) + '" ' + act(accion, ...args) + '><span class="ic">' + ic(icono) + '</span>' + txt + (extra || '') + '<span class="chev">' + ic('chevR') + '</span></button>';
   const lista = (key, claves) => it('openListEditor', [key], LIST_META[key].icon, LIST_META[key].title, '', claves);
   const grupo = (t, items) => '<div class="tu-grupo"><div class="section-title">' + t + '</div><div class="card menu">' + items.join('') + '</div></div>';
@@ -3319,6 +3470,106 @@ function renderTu() {
     '<div class="empty-mini" id="tuNada" style="display:none;">No hay ningún ajuste con ese nombre.</div>';
 }
 /* ============================================================
+   TÚ v2 (22/10, docs/09-tu-ajustes.md): cabecera con tu nombre, 4 grupos, «Más ajustes» plegado,
+   lecturas de tickets que quedan, «Escríbenos» y cerrar sesión con confirmación
+   ============================================================ */
+// Contacto para «Escríbenos». Lo que se ponga aquí es PÚBLICO (repositorio y web). Vacío = la fila no sale.
+const CONTACTO = { whatsapp: '', correo: '' };
+function contactoHay() { return !!(CONTACTO.whatsapp || CONTACTO.correo); }
+/* Lecturas de tickets: la app recuerda lo último que dijo la función (mes natural UTC, como cuenta el servidor) */
+function mesUTC() { return new Date().toISOString().slice(0, 7); }
+function ticketsUso() {
+  const u = cfg().ticketsUso, lim = (u && num(u.limite)) || 60;
+  if (!u || u.mes !== mesUTC()) return { limite: lim, usados: null, quedan: null };
+  return { limite: lim, usados: num(u.usados), quedan: Math.max(0, lim - num(u.usados)) };
+}
+function ticketsVuelven() { const d = new Date(), m = (d.getUTCMonth() + 1) % 12; return '1 de ' + MESES[m].toLowerCase(); }
+function ticketsPocos() { const t = ticketsUso(); return t.quedan != null && t.quedan <= 10; }
+function guardarTicketsUso(r) {
+  const mes = mesUTC(), u = cfg().ticketsUso;
+  if (r && r.usados != null) return saveConfig({ ticketsUso: { mes, usados: num(r.usados), limite: num(r.limite) || 60 } });
+  if (r && ['ia_error', 'clave_mala', 'sin_saldo'].indexOf(r.error) >= 0 && u && u.mes === mes) // el servidor ya contó esa lectura
+    return saveConfig({ ticketsUso: Object.assign({}, u, { usados: num(u.usados) + 1 }) });
+}
+function ticketsFilaExtra() {
+  const t = ticketsUso();
+  if (t.quedan == null) return '<span class="menu-extra">' + t.limite + ' al mes</span>';
+  const cls = t.quedan === 0 ? ' agotado' : t.quedan <= 10 ? ' pocos' : '';
+  return '<span class="menu-extra tk-uso' + cls + '">' + (t.quedan === 0 ? 'vuelven el ' + ticketsVuelven() : 'quedan ' + t.quedan + ' de ' + t.limite) + '</span>';
+}
+function avatarYoHtml(cls) { return '<div class="' + cls + '" style="background:' + colorPersona(miUid()) + '">' + inicialUsuario() + '</div>'; }
+function renderTuV2() {
+  const it = (accion, args, icono, txt, extra, claves, cls) => '<button class="menu-item' + (cls ? ' ' + cls : '') + '" data-k="' + escapeHtml(normDesc(txt + ' ' + (claves || ''))) + '" ' + act(accion, ...args) + '><span class="ic">' + ic(icono) + '</span>' + txt + (extra || '') + '<span class="chev">' + ic('chevR') + '</span></button>';
+  const lista = (key, icono, claves) => it('openListEditor', [key], icono || LIST_META[key].icon, LIST_META[key].title, '', claves);
+  const grupo = (t, items, cls) => '<div class="tu-grupo' + (cls ? ' ' + cls : '') + '">' + (t ? '<div class="section-title">' + t + '</div>' : '') + '<div class="card menu">' + items.filter(Boolean).join('') + '</div></div>';
+  const nGr = S.grupos ? S.grupos.filter((g) => g.tipo === 'grupo').length : null, nCu = cuentasCfg ? (cuentasCfg() || []).length : 0;
+  const parche = NOVEDADES[0] ? String(NOVEDADES[0].titulo).split('·')[0].trim() : '';
+  const nombre = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido());
+  const mas = [it('openMoneda', [], 'chart', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
+    lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'wallet', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
+    it('openLotes', [], 'list', 'Importaciones', '', 'deshacer importar'),
+    it('compararToggle', [], 'swap', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')];
+  return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t">' + escapeHtml(nombre) + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
+      '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar</button></div>' +
+    '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
+    grupo('Tu dinero', [it('openCuentas', [], 'bank', 'Cuentas y saldos', (badge('cuentas') || badge('patrimonio')) + (nCu ? '<span class="menu-extra">' + nCu + (nCu === 1 ? ' cuenta' : ' cuentas') + '</span>' : ''), 'banco saldo patrimonio'),
+      it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
+      it('openReglas', [], 'tag', 'Reglas de categorías', badge('reglas'), 'automatico'),
+      it('openRecurrentes', [], 'repeat', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas'),
+      it('tuMesAbrir', [], 'calendar', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
+      it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir invitar whatsapp juntos')]) +
+    grupo('Traer y guardar', [it('impAbrir', [], 'download', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
+      ticketsDisponible() ? it('ticketsInfo', [], 'receipt', 'Fotos de tickets', ticketsFilaExtra(), 'tickets lecturas foto camara recibo quedan') : '',
+      it('openPapelera', [], 'trash', 'Papelera', badge('papelera') + '<span class="menu-extra">' + (papeleraItems().length ? papeleraItems().length + ' dentro' : 'vacía') + '</span>', 'borrados recuperar eliminados'),
+      it('exportBackup', [], 'download', 'Copia de seguridad', '<span class="menu-extra">.json</span>', 'exportar backup')]) +
+    grupo('La app', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', badge('aspecto') + '<span class="menu-extra">' + (PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1] + '</span>', 'aspecto color paleta tipografia cifras fuente vibracion sonido estilo'),
+      '<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
+      '<div class="segmented tema-seg">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
+      it('verNovedades', ['1'], 'sparkle', 'Qué hay de nuevo', '<span class="menu-extra">' + escapeHtml(parche) + '</span>', 'novedades parche'),
+      it('startOnboardingManually', [], 'flag', 'Volver a ver la bienvenida', '', 'empezar asistente bienvenida')]) +
+    (contactoHay() ? '<div class="tu-grupo"><button type="button" class="tu2-escr tappable" data-k="escribenos contacto ayuda fallo idea sugerencia" ' + act('escrAbrir') + '><span class="ic">' + ic('send') + '</span><span><b>Escríbenos</b><span>¿Algo falla o tienes una idea? Lo lee quien hace la app.</span></span><span class="chev">' + ic('chevR') + '</span></button></div>' : '') +
+    '<div class="tu-grupo tu-mas-btn"><div class="card menu"><button type="button" class="menu-item" aria-expanded="' + (S.tuMas ? 'true' : 'false') + '" ' + act('tuMasToggle') + '><span class="ic">' + ic('sliders') + '</span>Más ajustes<span class="menu-extra">' + mas.length + '</span><span class="chev">' + ic(S.tuMas ? 'chevD' : 'chevR') + '</span></button></div></div>' +
+    '<div class="tu-grupo tu-mas"' + (S.tuMas ? '' : ' style="display:none"') + '><div class="card menu">' + mas.join('') + '</div></div>' +
+    grupo('Tu cuenta', [mfaDisponible() ? it('openSeguridad', [], 'shield', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
+      '<button class="menu-item tu2-salir" data-k="cerrar sesion salir" ' + act('logoutPreguntar') + '><span class="ic">' + ic('salir') + '</span>Cerrar sesión</button>']) +
+    '<div class="empty-mini" id="tuNada" style="display:none;">No hay ningún ajuste con ese nombre.</div>' +
+    '<p class="tu2-pie">PalomApp' + (parche ? ' · ' + escapeHtml(parche) : '') + '</p>';
+}
+function tuNombreHtml() {
+  return '<div class="handle"></div><h2>Tu nombre</h2><div class="field"><label for="tuNombreIn">¿Cómo te llamas?</label><input id="tuNombreIn" type="text" maxlength="40" autocomplete="given-name" value="' + escapeHtml(String(cfg().nombre || '').trim() || nombreSugerido()) + '"></div>' +
+    '<p class="rec-hint">Así te verán las personas con las que compartas gastos. En los grupos que ya tienes, tu nombre se cambia dentro de cada grupo.</p>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('tuNombreGuardar') + '>Guardar</button></div>';
+}
+function ticketsInfoHtml() {
+  const t = ticketsUso(), pct = t.quedan == null ? 0 : Math.round(t.usados / t.limite * 100);
+  return '<div class="handle"></div><h2>Fotos de tickets</h2>' +
+    '<p class="rec-hint">Haz una foto a un ticket y la app lee los artículos y el total por ti. La foto no se guarda en ningún sitio.</p>' +
+    '<div class="card tk-uso-card">' + (t.quedan == null ? '<b>' + t.limite + ' lecturas al mes</b><div class="rec-hint">Sabrás cuántas te quedan después de leer el primero.</div>'
+      : '<b class="tnum">' + (t.quedan === 0 ? 'No te quedan lecturas' : 'Te quedan ' + t.quedan + ' de ' + t.limite) + '</b><div class="tk-barra' + (t.quedan === 0 ? ' agotado' : t.quedan <= 10 ? ' pocos' : '') + '"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="rec-hint">Vuelven el ' + ticketsVuelven() + '.</div>') + '</div>' +
+    '<div class="actions">' + (t.quedan === 0 ? '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button>' : '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('crearIr', 'ticket') + '>' + ic('camera') + ' Leer un ticket</button>') + '</div>';
+}
+const ESCR_TIPOS = [['falla', 'alert', 'Algo falla'], ['idea', 'sparkle', 'Una idea'], ['gusta', 'heart', 'Me gusta']];
+function escrHtml() {
+  const F = FORM || {};
+  return '<div class="handle"></div><h2>Escríbenos</h2><p class="rec-hint">¿Algo falla, echas algo de menos o hay algo que te encanta? Cuéntanoslo: lo lee quien hace PalomApp.</p>' +
+    '<div class="chips escr-tipos">' + ESCR_TIPOS.map(([k, i, l]) => '<button type="button" class="chip' + (F.tipo === k ? ' active' : '') + '" aria-pressed="' + (F.tipo === k) + '" ' + act('escrTipo', k) + '>' + ic(i) + ' ' + l + '</button>').join('') + '</div>' +
+    '<div class="field"><label for="escrTxt">Tu mensaje</label><textarea id="escrTxt" rows="5" placeholder="Escribe aquí…">' + escapeHtml(F.txt || '') + '</textarea></div>' +
+    '<p class="rec-hint">Solo se añade la versión de la app y el tipo de móvil. Nada de tus cifras.</p>' +
+    '<div class="actions escr-acc">' + (CONTACTO.whatsapp ? '<button class="btn accent block" ' + act('escrEnviar', 'wa') + '>' + ic('send') + ' Enviar por WhatsApp</button>' : '') +
+    (CONTACTO.correo ? '<button class="btn ' + (CONTACTO.whatsapp ? 'ghost' : 'accent') + ' block" ' + act('escrEnviar', 'mail') + '>Enviar por correo</button>' : '') + '</div>';
+}
+function tipoMovil() { const u = navigator.userAgent || ''; return /iphone|ipad|ipod/i.test(u) ? 'iPhone' : /android/i.test(u) ? 'Android' : 'Ordenador'; }
+function escrMensaje(tipo, txt) {
+  const t = (ESCR_TIPOS.find((x) => x[0] === tipo) || [])[2];
+  const parche = NOVEDADES[0] ? String(NOVEDADES[0].titulo).split('·')[0].trim() : '';
+  return { asunto: 'PalomApp' + (t ? ' · ' + t : ''), cuerpo: txt + '\n—\n' + [parche, tipoMovil()].filter(Boolean).join(' · ') };
+}
+function logoutHtml() {
+  return '<div class="handle"></div><h2>¿Cerrar sesión en este móvil?</h2><p class="rec-hint">Tus datos siguen guardados en tu cuenta. Para volver, entra con tu correo.</p>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn danger block" ' + act('doLogout') + '>Cerrar sesión</button></div>';
+}
+/* ============================================================
    FASE 2 · PRUEBA DE ESTRUCTURA (14/10)
    A · Inicio ligero  ·  B · Juntos al frente. Solo cambia lo que se ve en ESTE dispositivo;
    los datos son los mismos. Sin elegir nada, la app de siempre.
@@ -3340,8 +3591,8 @@ function renderInicioNuevo() {
     // la Agenda vive detrás de «Agenda ›»: se vuelve a Inicio con un toque
     S.agendaSub = vista;
     return '<button class="link volver" ' + act('setInicioVista', 'hoy') + '>' + ic('chevL') + ' Inicio</button>' +
-      '<div class="segmented inicio-seg">' + [['tareas', 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (vista === id ? 'active' : '') + '" ' + act('setInicioVista', id) + '>' + l + '</button>').join('') + '</div>' +
-      (vista === 'calendario' ? renderCalendario() : renderAgendaSemana());
+      '<div class="segmented inicio-seg">' + [['tareas', agendaV2() ? 'Tareas' : 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (vista === id ? 'active' : '') + '" ' + act('setInicioVista', id) + '>' + l + '</button>').join('') + '</div>' +
+      (vista === 'calendario' ? (agendaV2() ? renderCalendarioV2() : renderCalendario()) : (agendaV2() ? renderAgendaSemanaV2() : renderAgendaSemana()));
   }
   // los primeros pasos solo para quien empieza: a quien ya usa la app no le quitan sitio en Inicio
   if (verAnterior('inicio')) return heroMesHtml() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtml() + estosDiasHtml();
@@ -3424,12 +3675,17 @@ const VERSIONES = {
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
   juntos: { txt: 'Juntos', desde: '2026-10-18', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   dinero: { txt: 'Dinero', desde: '2026-10-18', variantes: [['camino', 'Camino'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes']] },
+  tu: { txt: 'Tú', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  agenda: { txt: 'Agenda', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  crear: { txt: 'Botón +', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
 };
 function seccionVersion() {
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
   if (S.tab === 'movimientos' && movVistaAct() === 'resumen' && /^m:/.test(movPerNorm(S.movPeriodo))) return 'movResumen';
   if (S.tab === 'juntos' && gruposDisponible() && (S.grupos || []).length) return 'juntos';
   if (S.tab === 'dinero' && !S.dineroVer) return 'dinero';
+  if (S.tab === 'tu') return 'tu';
+  if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) return 'agenda';
   return '';
 }
 function versionIdx(k) { const v = VERSIONES[k], i = Number((S.verAnterior || {})[k]) || 0; return v && compararOn() && i > 0 && i < v.variantes.length ? i : 0; }
@@ -4310,7 +4566,8 @@ function crearHtml() {
     op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
 }
-function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearHtml()); else openSheet(crearHtml()); }
+function crearElegido() { return verAnterior('crear') ? crearHtml() + (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('swap') + ' Ver la versión nueva</button>' : '') : crearHtmlV2(); }
+function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearElegido()); else openSheet(crearElegido()); }
 /* ---- buscador global: movimientos, tareas, categorías y ajustes ---- */
 const BUSCAR_ACCIONES = [
   ['Foto de ticket', 'camara recibo leer', 'ticketFoto', []], ['Nuevo gasto', 'apuntar añadir', 'crearIr', ['gasto']], ['Nueva tarea', 'apuntar', 'crearIr', ['tarea']],
@@ -5259,7 +5516,7 @@ function evColor(ev) {
   if (ev.k === 'tarea') return ev.venc ? 'var(--expense)' : 'var(--accent)';
   if (ev.k === 'factura') return 'var(--bill, var(--accent))';
   if (ev.k === 'cobro') return 'var(--income)';
-  if (ev.k === 'hito') return 'var(--savings, var(--income))';
+  if (ev.k === 'hito') return 'var(--warn, var(--savings))'; // ámbar: no se confunde con el color de las tareas
   return 'var(--' + (TIPO_COLOR[ev.tipo] || 'text-faint') + ', var(--text-faint))';
 }
 // Devuelve { 'YYYY-MM-DD': [eventos] } entre dos fechas ISO (inclusive).
@@ -5936,9 +6193,12 @@ async function toggleTarea(id) {
   }
   const ok = await write(() => S.db.collection('tareas').doc(id).set(data));
   _busy.delete(id);
-  if (ok) toast(reabrir ? 'Tarea reabierta' : (sig ? '¡Hecha! La siguiente: ' + fechaCortaU(sig) : '¡Tarea completada!'), !reabrir && !sig ? { deshacer: () => toggleTarea(id) } : null);
+  const dia = S.agendaDia || todayISO(), despejado = ok && !reabrir && agendaV2() && t.fechaLimite === dia && !S.tareas.some((x) => x.id !== id && x.estado !== 'Completado' && x.fechaLimite === dia);
+  if (despejado) sentir('hito');
+  if (ok) toast(reabrir ? 'Tarea reabierta' : despejado ? '¡Día despejado!' : (sig ? '¡Hecha! La siguiente: ' + fechaCortaU(sig) : '¡Tarea completada!'), !reabrir && !sig ? { deshacer: () => toggleTarea(id) } : null);
 }
-function openTareaForm(id) {
+function openTareaForm(id, op) {
+  if (agendaV2()) return openTareaFormV2(id, op);
   const ex = id ? S.tareas.find((t) => t.id === id) : null;
   FORM = { kind: 'tarea', id: ex ? ex.id : null, prioridad: ex ? (ex.prioridad || 'Media') : 'Media', estado: ex ? (ex.estado || 'Pendiente') : 'Pendiente' };
   const cats = cfg().categoriasTareas || [];
@@ -7434,6 +7694,19 @@ const H = {
     S.tab = nueva; render(); window.scrollTo(0, 0);
   },
   agendaDia: ([iso]) => { S.agendaDia = iso; render(); },
+  agendaMas: ([k]) => { S.agendaMas = S.agendaMas === k ? '' : k; sentir('tic'); render(); },
+  agRapida: () => agRapidaCrear(),
+  tareaEnDia: ([iso]) => openTareaForm(null, { fecha: iso }),
+  tFechaPick: ([v]) => tFechaPoner(v),
+  tFechaOtro: (_a, el) => tFechaPoner(el.value),
+  crearSinLecturas: () => { closeSheet(); setTimeout(() => { openMovForm(null, { tipo: 'Gasto' }); toast('Apúntalo a mano: las lecturas vuelven el ' + ticketsVuelven()); }, 280); },
+  crearRepetir: ([id]) => {
+    const m = S.movimientos.find((x) => x.id === id); if (!m) return;
+    S._volverGrupo = null;
+    openMovForm(null, { tipo: 'Gasto', importe: num(m.importe), categoria: m.categoria, subcategoria: m.subcategoria, descripcion: m.descripcion, cuentaId: m.cuentaId });
+    setTimeout(() => { const el = $('#fImporte') || $('#mImporte'); if (el && el.select) { try { el.focus(); el.select(); } catch (e) { /* noop */ } } }, 120);
+  },
+  crearVersion: ([n]) => { S.verAnterior = Object.assign({}, S.verAnterior, { crear: Number(n) || 0 }); sentir('tic'); if (FORM && FORM.kind === 'crear') updateSheet(crearElegido()); },
   agendaSemana: ([d]) => { S.agendaDia = uAdd(S.agendaDia || todayISO(), 7 * Number(d)); render(); },
   irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
   irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; S.dineroVer = ''; if (dineroV2() && sub) S._dmIr = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
@@ -7442,9 +7715,28 @@ const H = {
   openBuscar: () => { FORM = { kind: 'buscar' }; if ($('#sheetBackdrop')) updateSheet(buscarHtml()); else openSheet(buscarHtml()); setTimeout(() => { const el = $('#qBuscar'); if (el) el.focus(); }, 80); },
   buscarGlobal: (_a, el) => { clearTimeout(S._buscarT); const pintar = () => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); }; if (S.movimientos.length > 800) S._buscarT = setTimeout(pintar, 140); else pintar(); },
   buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
+  tuMasToggle: () => { S.tuMas = !S.tuMas; sentir('tic'); render(); },
+  tuNombreAbrir: () => { FORM = { kind: 'tuNombre' }; openSheet(tuNombreHtml()); setTimeout(() => { const el = $('#tuNombreIn'); if (el) el.focus(); }, 80); },
+  tuNombreGuardar: async () => {
+    const v = (($('#tuNombreIn') || {}).value || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+    if (!v) return toast('Escribe tu nombre');
+    closeSheet(); await saveConfig({ nombre: v }); render(); sentir('ok'); toast('Nombre guardado');
+  },
+  ticketsInfo: () => { FORM = { kind: 'ticketsInfo' }; openSheet(ticketsInfoHtml()); },
+  escrAbrir: () => { if (!contactoHay()) return; FORM = { kind: 'escr', tipo: '', txt: '' }; openSheet(escrHtml()); },
+  escrTipo: ([k]) => { if (!FORM || FORM.kind !== 'escr') return; FORM.txt = ($('#escrTxt') || {}).value || ''; FORM.tipo = FORM.tipo === k ? '' : k; updateSheet(escrHtml()); },
+  escrEnviar: ([via]) => {
+    const txt = (($('#escrTxt') || {}).value || '').trim(); if (!txt) return toast('Escribe algo primero');
+    const m = escrMensaje(FORM && FORM.tipo, txt);
+    const url = via === 'wa' ? 'https://wa.me/' + String(CONTACTO.whatsapp).replace(/[^\d]/g, '') + '?text=' + encodeURIComponent(m.asunto + '\n' + m.cuerpo)
+      : 'mailto:' + CONTACTO.correo + '?subject=' + encodeURIComponent(m.asunto) + '&body=' + encodeURIComponent(m.cuerpo);
+    if (via === 'wa') window.open(url, '_blank', 'noopener'); else window.location.href = url;
+    closeSheet(); toast('Gracias por escribirnos');
+  },
+  logoutPreguntar: () => { FORM = { kind: 'logout' }; openSheet(logoutHtml()); },
   tuFiltrar: (_a, el) => {
     const q = normDesc(el.value); let n = 0;
-    $$('#content .tu-grupo').forEach((g) => { let vis = 0; g.querySelectorAll('.menu-item').forEach((b) => { const ok = !q || (b.getAttribute('data-k') || '').indexOf(q) >= 0; b.style.display = ok ? '' : 'none'; if (ok) vis++; }); g.style.display = vis ? '' : 'none'; n += vis; });
+    $$('#content .tu-grupo').forEach((g) => { if (g.classList.contains('tu-mas-btn')) { g.style.display = q ? 'none' : ''; return; } let vis = 0; g.querySelectorAll('.menu-item').forEach((b) => { const ok = !q || (b.getAttribute('data-k') || '').indexOf(q) >= 0; b.style.display = ok ? '' : 'none'; if (ok) vis++; }); g.style.display = vis && (q || !g.classList.contains('tu-mas') || S.tuMas) ? '' : 'none'; n += vis; });
     const z = $('#tuNada'); if (z) z.style.display = n ? 'none' : '';
   },
   crearIr: ([k]) => {
@@ -8313,7 +8605,7 @@ const H = {
   calToggle: ([k]) => { S.calFiltros[k] = !S.calFiltros[k]; render(); },
   calMove: ([dir]) => {
     const n = Number(dir), cur = calAnchor();
-    if (S.calVista === 'semana') { S.calFecha = addDaysISO(cur, 7 * n); }
+    if (S.calVista === 'semana' && !agendaV2()) { S.calFecha = addDaysISO(cur, 7 * n); }
     else {
       const d = parseISO(cur), t = new Date(d.getFullYear(), d.getMonth() + n, 1), hoy = new Date();
       S.calFecha = (t.getFullYear() === hoy.getFullYear() && t.getMonth() === hoy.getMonth()) ? todayISO() : dateISO(t);
@@ -8526,7 +8818,7 @@ document.addEventListener('click', (e) => {
 });
 document.addEventListener('input', (e) => dispatch('input', e));
 document.addEventListener('change', (e) => dispatch('change', e));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if ($('#popupBackdrop')) cerrarPopup(); else closeSheet(); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target && e.target.id === 'agRapida') { e.preventDefault(); agRapidaCrear(); return; } if (e.key === 'Escape') { if ($('#popupBackdrop')) cerrarPopup(); else closeSheet(); } });
 
 /* ============================================================
    ARRANQUE
@@ -8594,6 +8886,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
