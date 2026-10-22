@@ -4261,6 +4261,12 @@ const EMOJI_PISTAS = [[/viaj|japon|vacacion|escapad|playa/, '✈️'], [/casa|pi
   [/boda|anillo/, '💍'], [/beb|nin|hij/, '🍼'], [/estudi|master|curso|universi|beca/, '🎓'], [/regalo|navidad|cumple/, '🎁'], [/ordenador|movil|portatil|tele|consola|iphone/, '📱'],
   [/tarjeta|credito/, '💳'], [/prestam|amigo|familia/, '🤝'], [/mascota|perro|gato/, '🐾'], [/bici|deporte|gimnas/, '🚲']];
 function emojiSugerido(nombre, def) { const n = normName(nombre || ''); const x = EMOJI_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : (def || '🎯'); }
+// Los emojis se siguen guardando (no se tocan los datos), pero en pantalla se dibuja un icono de la app (22/10)
+const EMOJI_IC = { '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'car', '💍': 'heart', '🍼': 'heart', '🎓': 'book', '🎁': 'gift', '📱': 'bolt', '💳': 'card', '🤝': 'users', '🐾': 'paw', '🚲': 'car', '🎯': 'flag' };
+const EMOJI_NOMBRE = { '✈️': 'Viaje', '🏠': 'Casa', '🛟': 'Colchón', '🚗': 'Coche', '💍': 'Boda', '🍼': 'Bebé', '🎓': 'Estudios', '🎁': 'Regalo', '📱': 'Aparatos', '💳': 'Tarjeta', '🤝': 'Préstamo', '🐾': 'Mascota', '🚲': 'Deporte', '🎯': 'Meta' };
+function icDeEmoji(e, def) { return ic(EMOJI_IC[e] || def || 'flag'); }
+function metaIcono(r) { return icDeEmoji(emojiMeta(r), 'flag'); }
+function deudaIcono(d) { return icDeEmoji(d.emoji || emojiSugerido(d.nombre, '💳'), 'card'); }
 function emojiMeta(r) { const m = !r.compartida ? metasCfg().find((x) => x.id === r.id) : null; return (m && m.emoji) || emojiSugerido(r.nombre); }
 const DM_ESTADO_COLOR = { bien: 'var(--income)', justo: 'var(--warn, var(--accent))', gris: 'var(--text-muted)', mal: 'var(--expense)' };
 // estado de una meta en una frase corta y sobria (el rojo solo si la fecha ya pasó)
@@ -4346,7 +4352,7 @@ function dmAportarBtn(r) { return r.conseguida ? '' : '<button type="button" cla
 function dmPct(r) { return r.pct == null ? '' : '<span class="dm-pct tnum">' + Math.max(0, Math.round(r.pct)) + ' %</span>'; }
 function metaCaminoHtml(r) {
   const e = metaEstado2(r), col = e.k === 'gris' ? 'var(--accent)' : DM_ESTADO_COLOR[e.k], pct = Math.max(0, Math.min(100, r.pct || 0)), proy = metaProyeccion(r);
-  const pp = proy != null ? Math.min(100, proy / r.obj * 100) : null, emo = emojiMeta(r);
+  const pp = proy != null ? Math.min(100, proy / r.obj * 100) : null, emo = metaIcono(r);
   const hitos = (r.hitos || []).filter((x) => r.obj > 0 && x.importe < r.obj).map((x) => '<i class="dm-hito' + (x.alcanzado ? ' ok' : '') + '" style="left:' + (x.importe / r.obj * 100).toFixed(1) + '%" title="' + escapeHtml(x.nombre) + '"></i>').join('');
   return '<div class="dm-meta dm-cam" data-meta="' + escapeHtml(r.key) + '" style="--c:' + col + '"><div class="dm-m-cab"><button type="button" class="dm-m-n tappable" ' + act('metaVer', r.key) + '><b>' + escapeHtml(r.nombre) + '</b>' + dmPct(r) + (r.compartida ? '<span class="dm-g">' + ic('users') + '</span>' : '') + '</button>' + dmAportarBtn(r) + '</div>' +
     '<button type="button" class="dm-pista" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento. ' + e.t) + '" ' + act('metaVer', r.key) + '><span class="dm-pista-t"><i class="dm-cam-f" style="width:' + pct.toFixed(1) + '%"></i>' +
@@ -4361,7 +4367,7 @@ function anilloEmojiHtml(pct, color, emo, tam) {
 }
 function metaAnilloHtml(r) {
   const e = metaEstado2(r), col = DM_ESTADO_COLOR[e.k];
-  return '<div class="dm-meta dm-ani" data-meta="' + escapeHtml(r.key) + '"><button type="button" class="dm-ani-main tappable" ' + act('metaVer', r.key) + '>' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, emojiMeta(r), 46) +
+  return '<div class="dm-meta dm-ani" data-meta="' + escapeHtml(r.key) + '"><button type="button" class="dm-ani-main tappable" ' + act('metaVer', r.key) + '>' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, metaIcono(r), 46) +
     '<span class="dm-ani-x"><span class="dm-ani-n"><b>' + escapeHtml(r.nombre) + '</b>' + dmPct(r) + '</span><span class="tnum dm-ani-c">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' de ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span></span></button>' + dmAportarBtn(r) + '</div>';
 }
 function tarroHtml(r) {
@@ -4372,7 +4378,7 @@ function tarroHtml(r) {
     '<svg viewBox="0 0 76 ' + H + '" preserveAspectRatio="none" aria-hidden="true"><defs><clipPath id="tc-' + escapeHtml(r.key).replace(/[^\w-]/g, '') + '"><rect x="0" y="0" width="76" height="' + H + '" rx="14"/></clipPath></defs>' +
     '<g clip-path="url(#tc-' + escapeHtml(r.key).replace(/[^\w-]/g, '') + ')"><rect width="76" height="' + H + '" fill="var(--paper-sunken)" opacity=".55"/><g class="dm-liq">' + ola(3, 0.35) + ola(0, 0.9) + '</g></g>' +
     '<rect x=".75" y=".75" width="74.5" height="' + (H - 1.5) + '" rx="13.5" fill="none" stroke="var(--line)" stroke-width="1.5"/></svg>' +
-    '<span class="dm-tarro-e">' + emojiMeta(r) + '</span><span class="dm-tarro-p tnum">' + Math.round(pct) + ' %</span></button>' +
+    '<span class="dm-tarro-e">' + metaIcono(r) + '</span><span class="dm-tarro-p tnum">' + Math.round(pct) + ' %</span></button>' +
     '<b class="dm-tarro-n">' + escapeHtml(r.nombre) + '</b><span class="tnum dm-tarro-c">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' + dmAportarBtn(r) + '</div>';
 }
 function metaPorKey(k) { return metasStats().concat(objCompartidos('ahorro')).find((r) => r.key === k) || null; }
@@ -4390,7 +4396,7 @@ function metaVerHtml(k) {
   }
   const piezas = ((r.b && r.b.piezas) || []).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).slice(0, 3);
   const mas = FORM && FORM.mas;
-  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + emojiMeta(r) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
+  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + metaIcono(r) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
     '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
     '<div class="dm-hring">' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132) +
     '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
@@ -4566,7 +4572,7 @@ function dmDeudasHtml(ds, comp) {
   if (!st.length && !cs.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('deudaNueva') + '><span class="dm-ic">' + ic('card') + '</span><span class="dm-emp-x"><b>Apunta una deuda</b><span>Un préstamo, el coche, la tarjeta… y ve cuándo acabas</span></span>' + ic('chevR') + '</button>';
   const fila = (r, comp0) => {
     const e = comp0 ? null : deudaEstado2(r), pct = comp0 ? Math.max(0, Math.min(100, r.pct || 0)) : r.total > 0 ? Math.max(0, Math.min(100, r.pagado / r.total * 100)) : 0, g = comp0 ? grupoDe(r.o.grupoId) : null;
-    return '<button type="button" class="dm-deuda tappable" ' + (comp0 ? act('deudaCompVer', r.id) : act('deudaVer', r.nombre)) + '><span class="dm-ic deu">' + (comp0 ? ic('users') : (r.d.emoji || emojiSugerido(r.nombre, '💳'))) + '</span>' +
+    return '<button type="button" class="dm-deuda tappable" ' + (comp0 ? act('deudaCompVer', r.id) : act('deudaVer', r.nombre)) + '><span class="dm-ic deu">' + (comp0 ? ic('users') : deudaIcono(r.d)) + '</span>' +
       '<span class="dm-deuda-x"><span class="dm-deuda-top"><b>' + escapeHtml(r.nombre) + '</b><span class="dm-deuda-q"><b class="tnum">' + m0(comp0 ? r.falta : r.pend) + '</b><span>quedan' + ((comp0 ? r.obj : r.total) > 0 ? ' (de ' + m0(comp0 ? r.obj : r.total) + ')' : '') + '</span></span></span>' +
       '<span class="dm-deuda-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="dm-est" style="color:' + (e ? DM_ESTADO_COLOR[e.k] : 'var(--text-muted)') + '">' + escapeHtml(e ? e.t : (g ? nombreDestino(g) + ' · tu parte ' + money(r.falta * miProporcion(r.o)) : '')) + '</span></span></button>';
   };
@@ -4599,7 +4605,7 @@ function deudaVerHtml(nombre) {
     }
   }
   const pagos = movsDeuda(d).sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)));
-  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + escapeHtml(d.emoji || emojiSugerido(d.nombre, '💳')) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(d.nombre) + '</h2></div>' +
+  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + deudaIcono(d) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(d.nombre) + '</h2></div>' +
     '<button type="button" class="icon-btn" aria-label="Editar deuda" ' + act('deudaEditar', d.nombre) + '>' + ic('edit') + '</button></div>' +
     '<div class="dm-dq"><span>Quedan</span><b class="tnum">' + money(r.pend) + '</b><span>' + (r.total > 0 ? 'de ' + money(r.total) + ' · llevas pagado el ' + Math.round(pct) + ' %' : 'Ponle el total en «Editar»') + '</span></div>' +
     '<div class="dm-deuda-bar grande"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
@@ -4616,7 +4622,7 @@ function deudaFormHtml() {
   const F = FORM, sug = emojiSugerido(F.nombre, '💳'), lista = EMOJIS_DEUDA.indexOf(sug) < 0 ? [sug].concat(EMOJIS_DEUDA) : EMOJIS_DEUDA, emo = F.emoji || sug;
   const n = (v) => (v == null || v === '' ? '' : String(v).replace('.', ','));
   return '<div class="handle"></div><h2>' + (F.orig ? 'Editar deuda' : 'Nueva deuda') + '</h2>' +
-    '<div class="field"><label>Elige un dibujo</label><div class="dm-emojis">' + lista.map((x) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" ' + act('deudaEmoji', x) + '>' + x + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>Elige un dibujo</label><div class="dm-emojis">' + lista.map((x) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" aria-label="' + escapeHtml(EMOJI_NOMBRE[x] || 'Dibujo') + '" aria-pressed="' + (x === emo) + '" ' + act('deudaEmoji', x) + '>' + icDeEmoji(x, 'card') + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>Nombre</label><input id="dNombre" type="text" maxlength="40" placeholder="Coche, préstamo, tarjeta…" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('deudaNombreIn') + '></div>' +
     '<div class="dm-2c"><div class="field"><label>Total que debías</label><input id="dTotal" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.total)) + '"></div>' +
     '<div class="field"><label>Ya pagado <span class="hint">· opcional</span></label><input id="dPrevio" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.previo)) + '"></div></div>' +
@@ -8250,7 +8256,7 @@ const H = {
   aportarRGuardar: () => aportarRGuardar(),
   deudaNueva: () => { FORM = { kind: 'deudaForm', orig: null, nombre: '', emoji: '' }; if ($('#sheetBackdrop')) updateSheet(deudaFormHtml()); else openSheet(deudaFormHtml()); },
   deudaEditar: ([n]) => { const d = deudaPorNombre(n); if (!d) return; FORM = { kind: 'deudaForm', orig: d.nombre, nombre: d.nombre, emoji: d.emoji || '', total: d.objetivo, previo: d.previo, cuotaMes: d.cuotaMes, fecha: d.fechaObjetivo || '' }; if ($('#sheetBackdrop')) updateSheet(deudaFormHtml()); else openSheet(deudaFormHtml()); },
-  deudaEmoji: ([e]) => { if (!FORM || FORM.kind !== 'deudaForm') return; FORM.emoji = e; $$('.dm-emo-b').forEach((b) => b.classList.toggle('on', b.textContent === e)); sentir('tic'); },
+  deudaEmoji: ([e]) => { if (!FORM || FORM.kind !== 'deudaForm') return; FORM.emoji = e; $$('.dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(e); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); },
   deudaNombreIn: (_a, el) => {
     const F = FORM; if (!F || F.kind !== 'deudaForm') return; F.nombre = el.value;
     // al crear una deuda con un nombre que ya tiene pagos, se avisa de que contarán

@@ -1366,3 +1366,8 @@ html[data-look="nuevo"] .sheet.tec-abierto #apGuardar { display: none; }
 /* pop-ups: los dos botones uno al lado del otro, con aire (antes se apilaban pegados y parecían montados) */
 html[data-look="nuevo"] .popup .actions { display: flex; flex-direction: row; gap: 10px; margin-top: 16px; position: static; }
 html[data-look="nuevo"] .popup .actions .btn { flex: 1; margin: 0; }
+/* metas y deudas: iconos de la app en vez de emojis */
+html[data-look="nuevo"] :is(.dm-hemo, .dm-tarro-e, .dm-anillo-e, .dm-cam-emo) { color: var(--accent); }
+html[data-look="nuevo"] .dm-ic.deu, html[data-look="nuevo"] .dm-hcab .dm-hemo:has(+ .dm-hcab-t) { color: var(--debt); }
+html[data-look="nuevo"] .dm-emo-b { color: var(--text-muted); display: grid; place-items: center; }
+html[data-look="nuevo"] .dm-emo-b.on { color: var(--accent); }
