@@ -531,7 +531,7 @@ const S = {
   movVista: 'resumen', movFiltroTipo: 'Todos', movCuenta: '', movPeriodo: mesHoyClave(), movQuery: '', movLimit: 120,
   invModo: lsGet('invModo') === 'rentab' ? 'rentab' : 'valor',
   theme: lsGet('theme') || 'auto',
-  look: 'nuevo', paleta: lsGet('paleta') || 'violeta', tipo: lsGet('tipo') || 'bricolage',
+  look: 'nuevo', paleta: lsGet('paleta') || 'violeta', tipo: lsGet('tipo') || 'bricolage', fondo: lsGet('fondo') || 'neutro',
   loadingMsg: 'Cargando tus datos…',
   onboarding: null, _onboardPending: false,
 };
@@ -558,14 +558,16 @@ function cargarFuente(id) {
   if (!t || !t[3] || id === 'bricolage' || document.querySelector('link[data-fuente="' + id + '"]')) return;
   const l = document.createElement('link'); l.rel = 'stylesheet'; l.setAttribute('data-fuente', id); l.href = 'https://fonts.googleapis.com/css2?family=' + t[3] + '&display=swap'; document.head.appendChild(l);
 }
+const FONDOS = [['neutro', 'Neutro'], ['tinte', 'Con tu color'], ['puro', 'Negro puro', 'Blanco']];
 function applyLook(suave) {
   const r = document.documentElement;
   if (!PALETAS.some((x) => x[0] === S.paleta)) S.paleta = 'violeta';
   if (!TIPOS_CIFRA.some((x) => x[0] === S.tipo)) S.tipo = 'bricolage';
   if (suave && !reduceMotion()) { r.classList.add('cambiando'); clearTimeout(applyLook._t); applyLook._t = setTimeout(() => r.classList.remove('cambiando'), 600); }
-  r.setAttribute('data-look', S.look); r.setAttribute('data-paleta', S.paleta); r.setAttribute('data-tipo', S.tipo);
+  if (FONDOS.every((x) => x[0] !== S.fondo)) S.fondo = 'neutro';
+  r.setAttribute('data-look', S.look); r.setAttribute('data-paleta', S.paleta); r.setAttribute('data-tipo', S.tipo); r.setAttribute('data-fondo', S.fondo);
   if (S.look === 'nuevo') cargarFuente(S.tipo);
-  try { document.querySelectorAll('meta[name="theme-color"]').forEach((m) => { const osc = /dark/.test(m.getAttribute('media') || ''); m.setAttribute('content', S.look === 'nuevo' ? (osc ? '#0A0A0C' : '#F5F5F2') : (osc ? '#14172A' : '#F1EFE8')); }); } catch (e) { /* sin meta */ }
+  try { document.querySelectorAll('meta[name="theme-color"]').forEach((m) => { const osc = /dark/.test(m.getAttribute('media') || ''); m.setAttribute('content', S.look === 'nuevo' ? (S.fondo === 'puro' ? (osc ? '#000000' : '#FFFFFF') : (osc ? '#0A0A0C' : '#F5F5F2')) : (osc ? '#14172A' : '#F1EFE8')); }); } catch (e) { /* sin meta */ }
 }
 function aspectoHtml() {
   const nuevo = S.look === 'nuevo', v = vibraOn(), so = sonidoOn(), sw = (k, on) => '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + (k === 'vibra' ? 'Vibración' : 'Sonido') + '" ' + act('setSens', k) + '></button>';
@@ -573,6 +575,8 @@ function aspectoHtml() {
   const tip = TIPOS_CIFRA.map(([id, n, f]) => '<button type="button" class="asp-tp' + (S.tipo === id ? ' on' : '') + '" ' + act('setTipo', id) + '><span class="n" style="--asp-f:' + f + '">' + money(1234.56) + '</span><span class="l">' + n + '</span></button>').join('');
   return '<div class="handle"></div><h2>Aspecto y sensaciones</h2>' +
     '<div class="asp-sec"><div class="section-title" style="margin-top:0;">Color</div><div class="asp-pal">' + pal + '</div></div>' +
+    '<div class="asp-sec"><div class="section-title">Tema</div><div class="segmented asp-tema">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([k, l]) => '<button type="button" class="' + ((S.theme || 'auto') === k ? 'active' : '') + '" ' + act('setTheme', k) + '>' + l + '</button>').join('') + '</div></div>' +
+    '<div class="asp-sec"><div class="section-title">Fondo</div><div class="asp-fondos">' + FONDOS.map(([k, l, lClaro]) => '<button type="button" class="asp-fondo f-' + k + (S.fondo === k ? ' on' : '') + '" aria-pressed="' + (S.fondo === k) + '" ' + act('setFondo', k) + '><span class="asp-fondo-v"><i></i><i></i></span><span class="asp-fondo-l">' + (lClaro ? '<span class="osc">' + l + '</span><span class="cla">' + lClaro + '</span>' : l) + '</span></button>').join('') + '</div></div>' +
     '<div class="asp-sec asp-solo-nuevo"><div class="section-title">Cifras y titulares</div><div class="asp-tipos">' + tip + '</div></div>' +
     '<div class="asp-sec"><div class="section-title">Sensaciones</div>' +
     '<div class="asp-fila"><div class="t">Vibración<span>Un toque suave al guardar, completar o conseguir una meta.</span></div><button type="button" class="link" ' + act('probarSens', 'ok') + '>Probar</button>' + sw('vibra', v) + '</div>' +
@@ -830,6 +834,22 @@ function tabBtn(t) {
   return '<button class="tab" data-tab="' + t.id + '" ' + act('goTab', t.id) + '><span class="ic">' + ic(t.icon) + '</span><span>' + t.label + '</span></button>';
 }
 function inicialUsuario() { const n = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido()); return escapeHtml((n || '?').trim().charAt(0).toUpperCase()); }
+/* ---- Tu perfil (23/10, docs/15 3.1): iniciales o un dibujo y un color. Solo lo ves tú; en Juntos los demás siguen viendo tu inicial y su color ---- */
+const PERFIL_DIBUJOS = ['persona', 'sonrisa', 'estrella', 'heart', 'ball', 'plane', 'film', 'gift', 'home', 'bulb', 'paw', 'sparkle'];
+function perfilCfg() { const p = cfg().perfil || {}; return { avatar: p.avatar === 'dibujo' && PERFIL_DIBUJOS.indexOf(p.icono) >= 0 ? 'dibujo' : 'iniciales', icono: PERFIL_DIBUJOS.indexOf(p.icono) >= 0 ? p.icono : 'persona', color: COLORES_PERSONA_NUEVO.indexOf(p.color) >= 0 ? p.color : null }; }
+function inicialesDe(n) { const ps = String(n || '').trim().split(/\s+/).filter(Boolean); return escapeHtml(((ps[0] || '?').charAt(0) + (ps[1] ? ps[1].charAt(0) : '')).toUpperCase()); }
+function miColor(p) { p = p || perfilCfg(); return p.color || colorPersona(miUid()); }
+function miAvatarDentro(p, nombre) { p = p || perfilCfg(); return p.avatar === 'dibujo' ? ic(p.icono) : inicialesDe(nombre != null ? nombre : (String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido()))); }
+function perfilHtml() {
+  const F = FORM, p = { avatar: F.avatar, icono: F.icono, color: F.color }, nombre = F.nombre;
+  return '<div class="handle"></div><h2>Tu perfil</h2><div class="perfil-av" id="perfilAv" style="background:' + miColor(p) + '">' + miAvatarDentro(p, nombre) + '</div>' +
+    '<div class="segmented perfil-modo"><button type="button" class="' + (F.avatar === 'iniciales' ? 'active' : '') + '" ' + act('perfilModo', 'iniciales') + '>Iniciales</button><button type="button" class="' + (F.avatar === 'dibujo' ? 'active' : '') + '" ' + act('perfilModo', 'dibujo') + '>Un dibujo</button></div>' +
+    (F.avatar === 'dibujo' ? '<div class="perfil-dib" role="radiogroup" aria-label="Dibujo">' + PERFIL_DIBUJOS.map((k) => '<button type="button" role="radio" aria-checked="' + (F.icono === k) + '" aria-label="' + k + '" class="perfil-d' + (F.icono === k ? ' on' : '') + '" ' + act('perfilIcono', k) + '>' + ic(k) + '</button>').join('') + '</div>' : '') +
+    '<div class="field"><label>Color</label><div class="perfil-cols" role="radiogroup" aria-label="Color">' + COLORES_PERSONA_NUEVO.map((c, i) => '<button type="button" role="radio" aria-checked="' + (miColor(p) === c) + '" aria-label="Color ' + (i + 1) + '" class="perfil-c' + (miColor(p) === c ? ' on' : '') + '" style="background:' + c + '" ' + act('perfilColor', c) + '>' + (miColor(p) === c ? ic('check') : '') + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label for="tuNombreIn">Tu nombre</label><input id="tuNombreIn" type="text" maxlength="40" autocomplete="given-name" value="' + escapeHtml(nombre) + '" ' + onInput('perfilNombreIn') + '></div>' +
+    '<p class="rec-hint">Tu nombre lo ven las personas con las que compartes. El dibujo y el color, de momento, solo tú.</p>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('tuNombreGuardar') + '>Guardar</button></div>';
+}
 function renderShell() {
   $('#app').innerHTML =
     '<nav class="rail" aria-label="Secciones"><div class="brand">Mis Finanzas<span class="sub">y Tareas</span></div>' +
@@ -942,7 +962,7 @@ function render() {
   $$('[data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === S.tab));
   const nuevoTu = ['grupos', 'patrimonio', 'cuentas', 'tumes', 'importar', 'reglas', 'cobros'].concat(verAnterior('tu') ? ['metas'] : []).some(badgeActivo); // en Tú nuevo, Metas vive en Dinero
   $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
-  const av = $('#tbAvatar'); if (av) { av.textContent = inicialUsuario(); const v2 = !verAnterior('tu'); av.style.background = v2 ? colorPersona(miUid()) : ''; av.style.color = v2 ? '#fff' : ''; }
+  const av = $('#tbAvatar'); if (av) { const v2 = !verAnterior('tu'), pf = perfilCfg(); if (v2) av.innerHTML = miAvatarDentro(pf); else av.textContent = inicialUsuario(); av.classList.toggle('dib', v2 && pf.avatar === 'dibujo'); av.style.background = v2 ? miColor(pf) : ''; av.style.color = v2 ? '#fff' : ''; }
   document.body.classList.toggle('en-tu', S.tab === 'tu');
   document.body.classList.toggle('en-movlista', S.tab === 'movimientos' && movVistaAct() === 'lista'); // allí ya hay una lupa que busca en la lista
   document.body.classList.toggle('en-tu2', S.tab === 'tu' && !verAnterior('tu'));
@@ -3685,7 +3705,7 @@ function ticketsFilaExtra() {
   const cls = t.quedan === 0 ? ' agotado' : t.quedan <= 10 ? ' pocos' : '';
   return '<span class="menu-extra tk-uso' + cls + '">' + (t.quedan === 0 ? 'vuelven el ' + ticketsVuelven() : 'quedan ' + t.quedan + ' de ' + t.limite) + '</span>';
 }
-function avatarYoHtml(cls) { return '<div class="' + cls + '" style="background:' + colorPersona(miUid()) + '">' + inicialUsuario() + '</div>'; }
+function avatarYoHtml(cls) { const p = perfilCfg(); return '<div class="' + cls + (p.avatar === 'dibujo' ? ' dib' : '') + '" style="background:' + miColor(p) + '">' + miAvatarDentro(p) + '</div>'; }
 function renderTuV2() {
   const it = (accion, args, icono, txt, extra, claves, cls) => '<button class="menu-item' + (cls ? ' ' + cls : '') + '" data-k="' + escapeHtml(normDesc(txt + ' ' + (claves || ''))) + '" ' + act(accion, ...args) + '><span class="ic">' + ic(icono) + '</span>' + txt + (extra || '') + '<span class="chev">' + ic('chevR') + '</span></button>';
   const lista = (key, icono, claves) => it('openListEditor', [key], icono || LIST_META[key].icon, LIST_META[key].title, '', claves);
@@ -8653,11 +8673,16 @@ const H = {
   buscarGlobal: (_a, el) => { clearTimeout(S._buscarT); const pintar = () => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); }; if (S.movimientos.length > 800) S._buscarT = setTimeout(pintar, 140); else pintar(); },
   buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
   tuMasToggle: () => { S.tuMas = !S.tuMas; sentir('tic'); render(); },
-  tuNombreAbrir: () => { FORM = { kind: 'tuNombre' }; openSheet(tuNombreHtml()); setTimeout(() => { const el = $('#tuNombreIn'); if (el) el.focus(); }, 80); },
+  tuNombreAbrir: () => { const p = perfilCfg(); FORM = { kind: 'perfil', avatar: p.avatar, icono: p.icono, color: p.color, nombre: String(cfg().nombre || '').trim() || nombreSugerido() }; openSheet(perfilHtml()); },
+  perfilModo: ([k]) => { if (!FORM || FORM.kind !== 'perfil') return; FORM.nombre = ($('#tuNombreIn') || {}).value || FORM.nombre; FORM.avatar = k === 'dibujo' ? 'dibujo' : 'iniciales'; sentir('tic'); updateSheet(perfilHtml()); },
+  perfilIcono: ([k]) => { if (!FORM || FORM.kind !== 'perfil') return; FORM.nombre = ($('#tuNombreIn') || {}).value || FORM.nombre; FORM.icono = k; sentir('tic'); updateSheet(perfilHtml()); },
+  perfilColor: ([c]) => { if (!FORM || FORM.kind !== 'perfil') return; FORM.nombre = ($('#tuNombreIn') || {}).value || FORM.nombre; FORM.color = c; sentir('tic'); updateSheet(perfilHtml()); },
+  perfilNombreIn: (_a, el) => { if (!FORM || FORM.kind !== 'perfil') return; FORM.nombre = el.value; if (FORM.avatar === 'iniciales') { const av = $('#perfilAv'); if (av) av.innerHTML = inicialesDe(el.value); } },
   tuNombreGuardar: async () => {
     const v = (($('#tuNombreIn') || {}).value || '').trim().replace(/\s+/g, ' ').slice(0, 40);
     if (!v) return toast('Escribe tu nombre');
-    closeSheet(); await saveConfig({ nombre: v }); render(); sentir('ok'); toast('Nombre guardado');
+    const F = FORM && FORM.kind === 'perfil' ? FORM : null;
+    closeSheet(); await saveConfig(F ? { nombre: v, perfil: { avatar: F.avatar, icono: F.icono, color: F.color || null } } : { nombre: v }); render(); sentir('ok'); toast(F ? 'Perfil guardado' : 'Nombre guardado');
   },
   ticketsInfo: () => { FORM = { kind: 'ticketsInfo' }; openSheet(ticketsInfoHtml()); },
   escrAbrir: () => { if (!contactoHay()) return; FORM = { kind: 'escr', tipo: '', txt: '' }; openSheet(escrHtml()); },
@@ -9713,11 +9738,12 @@ const H = {
   },
   openAspecto: () => { verBadge('aspecto'); FORM = { kind: 'aspecto' }; TIPOS_CIFRA.forEach((t) => cargarFuente(t[0])); openSheet(aspectoHtml()); },
   setLook: ([v]) => { S.look = 'nuevo'; lsSet('look', S.look); applyLook(true); sentir('toque'); refrescarAspecto(); render(); },
+  setFondo: ([k]) => { if (FONDOS.every((x) => x[0] !== k)) return; S.fondo = k; lsSet('fondo', k); applyLook(true); sentir('tic'); refrescarAspecto(); },
   setPaleta: ([id]) => { S.paleta = id; lsSet('paleta', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
   setTipo: ([id]) => { S.tipo = id; lsSet('tipo', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
   setSens: ([k]) => { const clave = k === 'vibra' ? 'vibra' : 'sonido', on = lsGet(clave) !== '0'; lsSet(clave, on ? '0' : '1'); if (!on) sentir('ok', true); refrescarAspecto(); },
   probarSens: ([k]) => sentir(SENS[k] ? k : 'ok', true),
-  setTheme: ([t]) => { verBadge('oscuro'); S.theme = t; lsSet('theme', t); applyTheme(); render(); },
+  setTheme: ([t]) => { verBadge('oscuro'); S.theme = t; lsSet('theme', t); applyTheme(); render(); refrescarAspecto(); },
   exportBackup: () => exportBackup(),
   // onboarding
   startOnboardingManually: () => { closeSheet(); S.onboarding = freshOnboardingState(true); render(); },

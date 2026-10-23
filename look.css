@@ -1677,3 +1677,41 @@ html[data-look="nuevo"] .plan-dato a { color: var(--accent); font-weight: 600; t
 /* Calidad Dinero v3: que quepa «−4.140 €» en la ficha a 360 px y que el ✓ de la meta conseguida no choque con el «+» */
 @media (max-width: 380px) { html[data-look="nuevo"] .dm3-tabs { gap: 5px; } html[data-look="nuevo"] .dm3-tab { padding: 9px 6px; } html[data-look="nuevo"] .dm3-tab b { font-size: 13px; letter-spacing: -.02em; } }
 html[data-look="nuevo"] .dm-fm .fm-ok { top: auto; bottom: 2px; }
+/* ---- Tu perfil y Fondo (23/10, docs/15 3.1) ---- */
+html[data-look="nuevo"] .perfil-av { display: grid; place-items: center; width: 86px; height: 86px; margin: 4px auto 14px; border-radius: 50%; color: #fff; font-family: var(--font-display); font-size: 32px; font-weight: 750; }
+html[data-look="nuevo"] .perfil-av .i { width: 40px; height: 40px; }
+html[data-look="nuevo"] .perfil-modo { margin-bottom: 12px; }
+html[data-look="nuevo"] .perfil-dib { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-bottom: 12px; }
+html[data-look="nuevo"] .perfil-d { display: grid; place-items: center; height: 44px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper-raised); color: var(--text-muted); cursor: pointer; }
+html[data-look="nuevo"] .perfil-d .i { width: 20px; height: 20px; }
+html[data-look="nuevo"] .perfil-d.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+html[data-look="nuevo"] .perfil-cols { display: flex; gap: 10px; flex-wrap: wrap; }
+html[data-look="nuevo"] .perfil-c { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; color: #fff; cursor: pointer; box-shadow: 0 0 0 2px var(--paper), 0 0 0 0 transparent; }
+html[data-look="nuevo"] .perfil-c.on { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+html[data-look="nuevo"] .perfil-c .i { width: 18px; height: 18px; }
+html[data-look="nuevo"] .tb-avatar.dib .i, html[data-look="nuevo"] .tu2-av.dib .i { width: 55%; height: 55%; }
+html[data-look="nuevo"] .tu2-av.dib { display: grid; place-items: center; }
+html[data-look="nuevo"] .asp-tema { margin-bottom: 4px; }
+html[data-look="nuevo"] .asp-fondos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+html[data-look="nuevo"] .asp-fondo { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--paper-raised); color: var(--text); font: inherit; font-size: 12.5px; cursor: pointer; }
+html[data-look="nuevo"] .asp-fondo.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+html[data-look="nuevo"] .asp-fondo-v { position: relative; width: 100%; height: 54px; border-radius: 10px; overflow: hidden; background: #F5F5F2; border: 1px solid var(--line); }
+html[data-look="nuevo"] .asp-fondo-v i { position: absolute; left: 10%; right: 10%; height: 14px; border-radius: 5px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+html[data-look="nuevo"] .asp-fondo-v i:first-child { top: 10px; } html[data-look="nuevo"] .asp-fondo-v i:last-child { top: 30px; }
+html[data-look="nuevo"] .asp-fondo.f-tinte .asp-fondo-v { background: color-mix(in srgb, var(--pl) 8%, #F5F5F2); }
+html[data-look="nuevo"] .asp-fondo.f-puro .asp-fondo-v { background: #fff; }
+html[data-look="nuevo"] .asp-fondo .cla { display: none; }
+@media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .asp-fondo-v { background: #0A0A0C; } html[data-look="nuevo"]:not([data-theme="light"]) .asp-fondo-v i { background: #17171B; } html[data-look="nuevo"]:not([data-theme="light"]) .asp-fondo.f-tinte .asp-fondo-v { background: color-mix(in srgb, var(--pd) 10%, #0A0A0C); } html[data-look="nuevo"]:not([data-theme="light"]) .asp-fondo.f-puro .asp-fondo-v { background: #000; } html[data-look="nuevo"]:not([data-theme="light"]) .asp-fondo.f-puro .asp-fondo-v i { background: #141416; } }
+html[data-look="nuevo"][data-theme="dark"] .asp-fondo-v { background: #0A0A0C; } html[data-look="nuevo"][data-theme="dark"] .asp-fondo-v i { background: #17171B; } html[data-look="nuevo"][data-theme="dark"] .asp-fondo.f-tinte .asp-fondo-v { background: color-mix(in srgb, var(--pd) 10%, #0A0A0C); } html[data-look="nuevo"][data-theme="dark"] .asp-fondo.f-puro .asp-fondo-v { background: #000; }
+/* «Negro puro» se llama «Blanco» en claro */
+html[data-look="nuevo"][data-theme="light"] .asp-fondo .osc { display: none; } html[data-look="nuevo"][data-theme="light"] .asp-fondo .cla { display: inline; }
+@media (prefers-color-scheme: light) { html[data-look="nuevo"]:not([data-theme="dark"]) .asp-fondo .osc { display: none; } html[data-look="nuevo"]:not([data-theme="dark"]) .asp-fondo .cla { display: inline; } }
+/* los fondos de verdad */
+html[data-look="nuevo"][data-fondo="tinte"] { --paper: color-mix(in srgb, var(--pl) 5%, #F5F5F2); --paper-sunken: color-mix(in srgb, var(--pl) 6%, #EDEDE8); }
+html[data-look="nuevo"][data-fondo="puro"] { --paper: #FFFFFF; --paper-raised: #FFFFFF; --paper-sunken: #F1F1EE; }
+@media (prefers-color-scheme: dark) {
+  html[data-look="nuevo"][data-fondo="tinte"]:not([data-theme="light"]) { --paper: color-mix(in srgb, var(--pd) 6%, #0A0A0C); --paper-sunken: color-mix(in srgb, var(--pd) 8%, #232329); }
+  html[data-look="nuevo"][data-fondo="puro"]:not([data-theme="light"]) { --paper: #000000; --paper-raised: #141416; --paper-sunken: #1E1E22; }
+}
+html[data-look="nuevo"][data-fondo="tinte"][data-theme="dark"] { --paper: color-mix(in srgb, var(--pd) 6%, #0A0A0C); --paper-sunken: color-mix(in srgb, var(--pd) 8%, #232329); }
+html[data-look="nuevo"][data-fondo="puro"][data-theme="dark"] { --paper: #000000; --paper-raised: #141416; --paper-sunken: #1E1E22; }
