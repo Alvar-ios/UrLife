@@ -8949,7 +8949,7 @@ const H = {
     toast(v.variantes.length === 2 ? (n ? 'Viendo la versión anterior de ' + v.txt : 'Vuelves a la versión nueva') : v.txt + ': versión «' + v.variantes[n][1] + '» (' + (n + 1) + ' de ' + v.variantes.length + ')');
     render(); if (k === 'inicio') window.scrollTo(0, 0);
   },
-  asiVasAbrir: ([i]) => { cerrarPopup(); const n = Number(i); FORM = { kind: 'asiVas', sel: n >= 0 && n < 5 ? n : 0, v: asiVasCfg().slice(), sub: '' }; if ($('#sheetBackdrop')) updateSheet(asiVasHtml()); else openSheet(asiVasHtml()); },
+  asiVasAbrir: ([i]) => { cerrarPopup(); verBadge('asivas'); const n = Number(i); FORM = { kind: 'asiVas', sel: n >= 0 && n < 5 ? n : 0, v: asiVasCfg().slice(), sub: '' }; if ($('#sheetBackdrop')) updateSheet(asiVasHtml()); else openSheet(asiVasHtml()); },
   asiVasHueco: ([i]) => { if (!FORM || FORM.kind !== 'asiVas') return; FORM.sel = Number(i) || 0; FORM.sub = ''; sentir('tic'); updateSheet(asiVasHtml()); },
   asiVasSub: ([k]) => { if (!FORM || FORM.kind !== 'asiVas') return; FORM.sub = k || ''; sentir('tic'); updateSheet(asiVasHtml()); },
   asiVasElegir: ([k]) => { if (!FORM || FORM.kind !== 'asiVas') return; const F = FORM, otro = k !== 'auto' ? F.v.findIndex((x, i) => i !== F.sel && x === k) : -1; if (otro >= 0) F.v[otro] = F.v[F.sel]; F.v[F.sel] = k; F.sub = ''; if (F.sel < 4) F.sel++; sentir('tic'); updateSheet(asiVasHtml()); },
