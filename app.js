@@ -2199,7 +2199,7 @@ function nombreSugerido() {
   const e = ((S.user && S.user.email) || '').split('@')[0].replace(/[._\-]+/g, ' ').replace(/\d+/g, '').trim().split(' ')[0] || 'Yo';
   return e.charAt(0).toUpperCase() + e.slice(1);
 }
-const ERR_GRUPO = { asignado_no_valido: 'Esa persona ya no está en el grupo', agenda_borrado: 'Ese plan ya está borrado', objetivos_compartidos_forma_check: 'Esa forma no vale', carpeta_no_valida: 'Ese tema ya no existe o es de otro grupo', demasiadas_carpetas: 'Este grupo ya tiene 30 temas: cierra o borra alguno', carpeta_borrada: 'Ese tema está borrado', 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
+const ERR_GRUPO = { grupo_cerrado: 'Este grupo está cerrado: ya no se puede añadir nada', asignado_no_valido: 'Esa persona ya no está en el grupo', agenda_borrado: 'Ese plan ya está borrado', objetivos_compartidos_forma_check: 'Esa forma no vale', carpeta_no_valida: 'Ese tema ya no existe o es de otro grupo', demasiadas_carpetas: 'Este grupo ya tiene 30 temas: cierra o borra alguno', carpeta_borrada: 'Ese tema está borrado', 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
   demasiadas_invitaciones: 'Hay demasiados enlaces pendientes. Anula alguno.', demasiados_grupos: 'Has creado muchos grupos hoy. Prueba mañana.', usa_salir: 'Para irte tú, usa «Salir del grupo».', sin_sesion: 'Tienes que iniciar sesión.',
   saldo_pendiente: 'Hay cuentas pendientes. Saldadlas antes (botón «Saldar»).', reparto_no_cuadra: 'El reparto no suma el total.', reparto_no_valido: 'Revisa el reparto: solo puede incluir a miembros.', pagador_no_valido: 'Quien pagó tiene que ser del grupo.', compartido_borrado: 'Ese gasto ya se había eliminado.', objetivo_no_valido: 'Elige una meta o deuda de ese grupo.', objetivo_borrado: 'Esa meta o deuda ya se había eliminado.' };
 function errGrupo(e) { const m = String((e && (e.message || (e.original && e.original.message))) || ''); const k = Object.keys(ERR_GRUPO).find((x) => m.indexOf(x) >= 0); return k ? ERR_GRUPO[k] : 'No se pudo completar. Revisa tu conexión.'; }
@@ -4519,6 +4519,7 @@ function crRefrescar() {
    eso está en «Saldos». Solo entran gastos y pagos fijos compartidos.
    ============================================================ */
 const TEMA_ICONOS = ['plane', 'cart', 'home', 'fork', 'gift', 'car', 'ball', 'film', 'heart', 'tag'];
+const TEMA_ICONO_NOMBRE = { plane: 'Avión', cart: 'Carrito', home: 'Casa', fork: 'Cubiertos', gift: 'Regalo', car: 'Coche', ball: 'Balón', film: 'Cine', heart: 'Corazón', tag: 'Etiqueta' };
 const TEMA_IDEAS = [['plane', 'Viaje a…'], ['cart', 'Compra'], ['home', 'Casa'], ['fork', 'Cenas y salidas'], ['gift', 'Regalos']];
 function temasDisponible() { return !!(S.db && S.db.carpetas); }
 function temasDe(gid, conCerrados) { return (S.carpetas || []).filter((t) => t.grupoId === gid && (conCerrados || !t.cerrada)).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))); }
@@ -4557,7 +4558,7 @@ function temaCajaHtml() {
   if (F.temaNuevo) {
     const ico = TEMA_ICONOS.indexOf(F.temaIco) >= 0 ? F.temaIco : 'tag';
     h += '<div class="tema-nuevo-f"><input id="temaNom" type="text" maxlength="40" placeholder="Nombre (Roma 2026, Compra…)" value="' + escapeHtml(F.temaNom || '') + '" ' + onInput('temaNomIn') + '>' +
-      '<div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.slice(0, 6).map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + k + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaIco', k) + '>' + ic(k) + '</button>').join('') + '</div>' +
+      '<div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.slice(0, 6).map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + (TEMA_ICONO_NOMBRE[k] || k) + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaIco', k) + '>' + ic(k) + '</button>').join('') + '</div>' +
       '<button type="button" class="btn accent block" ' + act('temaCrearRapido') + '>Crear tema</button></div>';
   } else if (!ts.length) h += '<div class="tema-por">Para separar un viaje, la compra o la casa.</div>';
   else if (F.tema && F.temaPor && !F.temaTocado) h += '<div class="tema-por">' + escapeHtml(F.temaPor) + '</div>';
@@ -4624,7 +4625,7 @@ function temaFormHtml(g) {
   return '<div class="handle"></div><div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('temaFormCerrar') + '>' + ic('chevL') + '</button><h2>' + (T.id ? 'Cambiar tema' : 'Nuevo tema') + '</h2></div>' +
     (T.id ? '' : '<div class="chips tema-ideas">' + TEMA_IDEAS.map(([k, n]) => '<button type="button" class="chip" ' + act('temaIdea', k, n) + '>' + ic(k) + n + '</button>').join('') + '</div>') +
     '<div class="field"><label for="tfNombre">Nombre</label><input id="tfNombre" type="text" maxlength="40" placeholder="Roma 2026" value="' + escapeHtml(T.nombre || '') + '"></div>' +
-    '<div class="field"><label>Icono</label><div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + k + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaFormIco', k) + '>' + ic(k) + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>Icono</label><div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + (TEMA_ICONO_NOMBRE[k] || k) + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaFormIco', k) + '>' + ic(k) + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>Fechas <span class="hint">· opcional</span></label><div class="tema-fechas"><input id="tfDesde" type="date" aria-label="Desde" value="' + escapeHtml(T.desde || '') + '" ' + onChange('temaFormFecha') + '><span>al</span><input id="tfHasta" type="date" aria-label="Hasta" value="' + escapeHtml(T.hasta || '') + '" ' + onChange('temaFormFecha') + '></div></div>' +
     (ids.length ? '<label class="tema-meter"><input id="tfMeter" type="checkbox"' + (T.meter !== false ? ' checked' : '') + '> Meter ' + (ids.length === 1 ? 'el gasto' : 'los ' + ids.length + ' gastos') + ' de esos días</label>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('temaFormCerrar') + '>Cancelar</button><button class="btn accent block" ' + act('temaFormGuardar') + '>' + (T.id ? 'Guardar' : 'Crear tema') + '</button></div>';
@@ -4681,8 +4682,8 @@ function tareaCFilaHtml(a) {
 }
 /* ---- formulario de plan o tarea compartida ---- */
 function planAbrirForm(op) {
-  op = op || {}; const a = op.id ? agendaPorId(op.id) : null;
-  FORM = { kind: 'plan', id: a ? a.id : null, tipo: a ? a.tipo : (op.tipo || 'plan'), titulo: a ? a.titulo : (op.titulo || ''), fecha: a ? (a.fecha || '') : (op.fecha || todayISO()),
+  op = op || {}; const a = op.id ? agendaPorId(op.id) : null; S._planVolver = op.volver || null;
+  FORM = { kind: 'plan', id: a ? a.id : null, tipo: a ? a.tipo : (op.tipo || 'plan'), titulo: a ? a.titulo : (op.titulo || ''), fecha: a ? (a.fecha || '') : (op.fecha != null ? op.fecha : todayISO()),
     horaModo: a ? (a.hora ? 'hora' : a.fechaFin ? 'varios' : 'dia') : 'dia', hora: a ? horaTxt(a.hora) : '', fechaFin: a ? (a.fechaFin || '') : '', con: a ? (a.grupoId ? 'g:' + a.grupoId : 'yo') : (op.con || 'yo'),
     lugar: a ? (a.lugar || '') : '', nota: a ? (a.nota || '') : '', aviso: a ? planAviso(a.id) : 'antes', asignado: a ? (a.asignadoA || '') : '', notaAbierta: !!(a && a.nota) };
   if (FORM.tipo === 'tarea' && FORM.con === 'yo') { const g = gruposParaPlanes()[0]; FORM.con = g ? 'g:' + g.id : 'yo'; }
@@ -4710,7 +4711,7 @@ function planFormHtml() {
   else if (g) h += '<div class="rec-hint plan-de">' + ic('users') + ' ' + escapeHtml(nombreDestino(g)) + ' · lo ven todos</div>';
   if (!plan && g) { const ms = g.miembros.filter((m) => !m.baja); h += '<div class="field"><label>¿Quién se encarga?</label><div class="cr-caras plan-quien">' +
     '<button type="button" class="cr-cara' + (!F.asignado ? ' on' : '') + '" ' + act('planQuien', '') + '><span class="avatar cara plan-cualquiera">' + ic('users') + '</span><span>Quien pueda</span></button>' +
-    ms.map((m) => { const u = aliasDe(g.id, m.user_id); return '<button type="button" class="cr-cara' + (F.asignado === m.user_id ? ' on' : '') + '" ' + act('planQuien', m.user_id) + '>' + caraHtml(u, m.nombre) + '<span>' + escapeHtml(esMio(g.id, m.user_id) ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>'; }).join('') + '</div></div>'; }
+    ms.map((m) => { const u = aliasDe(g.id, m.user_id); return '<button type="button" class="cr-cara' + (F.asignado && aliasDe(g.id, F.asignado) === aliasDe(g.id, m.user_id) ? ' on' : '') + '" ' + act('planQuien', m.user_id) + '>' + caraHtml(u, m.nombre) + '<span>' + escapeHtml(esMio(g.id, m.user_id) ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>'; }).join('') + '</div></div>'; }
   if (plan) h += '<div class="field"><label for="pLugar">¿Dónde? <span class="hint">· opcional</span></label><div class="plan-lugar">' + ic('pin') + '<input id="pLugar" type="text" maxlength="120" placeholder="Restaurante, dirección…" value="' + escapeHtml(F.lugar) + '"></div></div>' +
     '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => chip('planAviso', k, F.aviso === k, l, k === 'antes' ? ic('bell') : '')).join('') + '</div><div class="rec-hint" style="margin:6px 0 0;">Te lo recordamos en Inicio al abrir la app.</div></div>';
   h += '<details class="tf-mas"' + (F.notaAbierta ? ' open' : '') + '><summary>Nota' + ic('chevD') + '</summary><div class="field"><textarea id="pNota" rows="3" maxlength="1000" aria-label="Nota">' + escapeHtml(F.nota) + '</textarea></div></details>';
@@ -4774,7 +4775,7 @@ function planVerHtml(id) {
 function planIcs(a) {
   const f = (iso) => iso.replace(/-/g, ''), esc = (s) => String(s || '').replace(/[\\;,]/g, (c) => '\\' + c).replace(/\n/g, '\\n');
   let ini, fin;
-  if (a.hora) { const t = horaTxt(a.hora).replace(':', '') + '00'; ini = 'DTSTART:' + f(a.fecha) + 'T' + t; const hh = Math.min(23, Number(horaTxt(a.hora).slice(0, 2)) + 1); fin = 'DTEND:' + f(a.fecha) + 'T' + String(hh).padStart(2, '0') + horaTxt(a.hora).slice(3, 5) + '00'; }
+  if (a.hora) { const t = horaTxt(a.hora).replace(':', '') + '00'; ini = 'DTSTART:' + f(a.fecha) + 'T' + t; let hh = Number(horaTxt(a.hora).slice(0, 2)) + 1, fd = a.fecha; if (hh > 23) { hh -= 24; fd = uAdd(a.fecha, 1); } fin = 'DTEND:' + f(fd) + 'T' + String(hh).padStart(2, '0') + horaTxt(a.hora).slice(3, 5) + '00'; } // una hora; a las 23:30 acaba a las 00:30 del día siguiente
   else { ini = 'DTSTART;VALUE=DATE:' + f(a.fecha); fin = 'DTEND;VALUE=DATE:' + f(uAdd(a.fechaFin && a.fechaFin > a.fecha ? a.fechaFin : a.fecha, 1)); }
   return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PalomApp//Planes//ES', 'BEGIN:VEVENT', 'UID:' + a.id + '@palomapp', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z', ini, fin, 'SUMMARY:' + esc(a.titulo)]
     .concat(a.lugar ? ['LOCATION:' + esc(a.lugar)] : []).concat(a.nota ? ['DESCRIPTION:' + esc(a.nota)] : []).concat(['END:VEVENT', 'END:VCALENDAR']).join('\r\n');
@@ -9039,7 +9040,7 @@ const H = {
   grupoAjustesSalir: ([id]) => { if (FORM && FORM.kind === 'grupo') { FORM.ajustes = false; updateSheet(grupoHtml(id)); } else abrirGrupo(id); },
   grupoTab: ([k]) => { if (!FORM || FORM.kind !== 'grupo') return; FORM.grupoTab = k; updateSheet(grupoHtml(FORM.id)); },
   planNuevo: ([fecha]) => planAbrirForm({ tipo: 'plan', fecha: fecha || todayISO() }),
-  planGrupoNuevo: ([gid, tipo]) => { S._planVolver = gid; planAbrirForm({ tipo: tipo === 'tarea' ? 'tarea' : 'plan', con: 'g:' + gid, fecha: tipo === 'tarea' ? '' : todayISO() }); },
+  planGrupoNuevo: ([gid, tipo]) => { planAbrirForm({ volver: gid, tipo: tipo === 'tarea' ? 'tarea' : 'plan', con: 'g:' + gid, fecha: tipo === 'tarea' ? '' : todayISO() }); },
   tfAPlan: () => { const n = $('#tNombre'), f = $('#tFecha'); planAbrirForm({ tipo: 'plan', titulo: n ? n.value : '', fecha: (f && f.value) || todayISO() }); },
   planTipo: ([t]) => { planLeerForm(); const F = FORM; if (!F || F.kind !== 'plan') return;
     if (t === 'tarea' && F.con === 'yo') { const tit = F.titulo, fe = F.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; }

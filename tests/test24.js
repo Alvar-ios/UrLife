@@ -4,7 +4,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
 const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'+pad(d.getMonth()+1);
 (async()=>{
  const v=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'Supermercado',presupuesto:300}]},meta:{onboarded:true}}});
- await sleep(80);
+ await sleep(200);
  let A=v.w.__APP__,doc=v.doc,txt=()=>doc.querySelector('#content').textContent;
  ok(/Empieza aquí/.test(txt())&&doc.querySelectorAll('.empieza-paso').length===2,'usuario nuevo: «Empieza aquí» con sus dos primeros pasos');
  click(v,'crearIr','gasto');await sleep(20);ok(/Nuevo (movimiento|gasto|ingreso|gasto fijo)|Nueva inversión|Apartar dinero|Pago de deuda/.test(doc.querySelector('#sheetHost').textContent),'«Apunta tu primer gasto» abre el formulario');
