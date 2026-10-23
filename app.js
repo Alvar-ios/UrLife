@@ -927,7 +927,7 @@ function render() {
   if (resumen && !resAnual) { const kA = S.movPeriodo + '|' + versionDe('movResumen'); gcAnilloDraw(kA !== _donutAnim ? true : false); _donutAnim = kA; }
   if (resumen && resAnual) drawTrend();
   if (S.tab === 'dinero' && (dineroV2() ? S.dineroVer === 'inversiones' : dineroSub() === 'inversiones')) bindInvChart();
-  if (S.tab === 'dinero' && dineroV2()) { dmAnimarAporte(c); if (S._dmIr) { const el = $('#dm-' + S._dmIr); S._dmIr = null; if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } }, 60); } }
+  if (S.tab === 'dinero' && dineroV2()) { cabAltoMedir(); dmAnimarAporte(c); if (S._dmIr) { const el = $('#dm-' + S._dmIr); S._dmIr = null; if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } }, 60); } }
   if (S.tab === 'movimientos') movGestos(c);
   const _ent = S._entrando;
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
@@ -1172,7 +1172,10 @@ function deslizarCuerpo(html, dir, id) {
   const nuevo = $('#' + (id || 'movCuerpo')); if (!nuevo || typeof nuevo.animate !== 'function') return;
   const marco = nuevo.parentNode, fantasma = document.createElement('div');
   fantasma.className = 'mov-fantasma'; fantasma.setAttribute('aria-hidden', 'true'); fantasma.innerHTML = html;
+  // las formas de las metas se recortan con un clipPath por id: en la copia se renombra (si no, la ola se sale de la forma)
+  fantasma.querySelectorAll('clipPath[id]').forEach((cp) => { const v = cp.id, n = v + 'g'; fantasma.querySelectorAll('[clip-path="url(#' + v + ')"]').forEach((g) => g.setAttribute('clip-path', 'url(#' + n + ')')); cp.setAttribute('data-gid', n); });
   fantasma.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+  fantasma.querySelectorAll('[data-gid]').forEach((el) => { el.id = el.getAttribute('data-gid'); el.removeAttribute('data-gid'); });
   fantasma.querySelectorAll('[data-click],[data-input],[data-change]').forEach((el) => { el.removeAttribute('data-click'); el.removeAttribute('data-input'); el.removeAttribute('data-change'); });
   marco.classList.add('deslizando'); marco.appendChild(fantasma);
   const opt = { duration: 320, easing: 'cubic-bezier(.22,1,.36,1)' };
@@ -4277,7 +4280,7 @@ function juntosObjHtml() {
   if (!ms.length && !ds.length) return '';
   const meta = (r) => { const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
     return '<button type="button" class="jv-obj tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' + formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 96) +
-      '<span class="jv-obj-p tnum">' + Math.round(pct) + ' %</span><b class="tnum">' + (r.falta > 0 ? 'Faltan ' + m0(r.falta) : '¡Conseguida!') + '</b><span class="jv-obj-e" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span></button>'; };
+      '<span class="jv-obj-p tnum">' + Math.round(pct) + ' %</span><b class="tnum">' + (r.falta > 0 ? 'Faltan ' + m0(r.falta) : '¡Conseguida!') + '</b>' + (r.falta > 0 ? '<span class="jv-obj-e" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' : '') + '</button>'; };
   const deuda = (r) => { const pct = Math.max(0, Math.min(100, r.pct || 0)), g = grupoDe(r.o.grupoId);
     return '<button type="button" class="jv-obj deu tappable" aria-label="' + escapeHtml(r.nombre + ': quedan ' + money(r.falta)) + '" ' + act('deudaCompVer', r.id) + '><span class="jv-obj-ic">' + icDeEmoji(r.o.emoji || emojiSugerido(r.nombre, '💳'), 'card') + '</span>' +
       '<span class="jv-obj-n">' + escapeHtml(r.nombre) + '</span><span class="jv-obj-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="jv-obj-p tnum">' + Math.round(pct) + ' % pagado</span><b class="tnum">' + (r.falta > 0 ? 'Quedan ' + m0(r.falta) : 'Saldada') + '</b>' +
@@ -4556,6 +4559,9 @@ function renderDineroV2() {
 }
 /* ---- Dinero v3 (23/10/2026, docs/15 2.1 y 2.2): «Lo que tienes» en una fila, 4 fichas que hacen de pestañas y cuentas en mosaico ---- */
 function dineroV3() { return versionDe('dinero') === 'formas'; }
+// alto de la cabecera (cambia a 360 px, con la fecha en dos líneas): las fichas-pestaña se quedan fijas justo debajo
+function cabAltoMedir() { const t = $('.topbar'); if (t) document.documentElement.style.setProperty('--cab-alto', Math.round(t.getBoundingClientRect().height) + 'px'); }
+window.addEventListener('resize', () => { if (S.tab === 'dinero') cabAltoMedir(); });
 const DM3_TABS = ['cuentas', 'metas', 'inversiones', 'deudas'];
 function dm3Tab() { return DM3_TABS.indexOf(S.dm3Tab) >= 0 ? S.dm3Tab : 'cuentas'; }
 function dinero3Html(p, ms, hayInv, deudas, dComp) {
@@ -4563,7 +4569,7 @@ function dinero3Html(p, ms, hayInv, deudas, dComp) {
   const lqt = '<div class="card dm3-lqt"><div class="dm3-lqt-l"><span>Lo que tienes</span><button type="button" class="dm3-info" aria-label="¿Cómo se calcula?" ' + act('dmComo') + '>' + ic('info') + '</button></div>' +
     (p.nCuentas ? '<b class="dm3-lqt-v tnum">' + money(p.total) + '</b>' : '<button type="button" class="link dm3-lqt-sin" ' + act('openCuentas') + '>Pon el saldo de tu banco</button>') +
     '<span class="dm3-lqt-f">cuentas + invertido − lo que debes</span></div>';
-  const ficha = (k, icono, nom, val, cls) => '<button type="button" role="tab" aria-selected="' + (t === k) + '" class="dm3-tab' + (t === k ? ' on' : '') + (cls ? ' ' + cls : '') + '" ' + act('dm3Tab', k) + '>' + ic(icono) + '<span>' + nom + '</span><b class="tnum">' + val + '</b></button>';
+  const ficha = (k, icono, nom, val, cls) => '<button type="button" role="tab" id="dm3t-' + k + '" aria-controls="dmCuerpo" aria-selected="' + (t === k) + '" class="dm3-tab' + (t === k ? ' on' : '') + (cls ? ' ' + cls : '') + '" ' + act('dm3Tab', k) + '>' + ic(icono) + '<span>' + nom + '</span><b class="tnum">' + val + '</b></button>';
   const tabs = '<div class="dm3-tabs" role="tablist" aria-label="Tu dinero">' +
     ficha('cuentas', 'bank', 'Cuentas', p.nCuentas ? m0(p.banco) : 'Añadir', p.nCuentas ? '' : 'vacia') +
     ficha('metas', 'flag', 'Metas', nMetas ? (nMetas === 1 ? '1 meta' : nMetas + ' metas') : 'Añadir', nMetas ? '' : 'vacia') +
@@ -4574,7 +4580,7 @@ function dinero3Html(p, ms, hayInv, deudas, dComp) {
   else if (t === 'metas') cuerpo = dmMetasHtml(ms);
   else if (t === 'inversiones') cuerpo = hayInv ? dmInversionesHtml() : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('chart') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
   else cuerpo = dmDeudasHtml(deudas, dComp);
-  return lqt + tabs + '<div class="dm3-marco"><div id="dmCuerpo" class="dm3-cuerpo">' + cuerpo + '</div></div>';
+  return lqt + tabs + '<div class="dm3-marco"><div id="dmCuerpo" class="dm3-cuerpo" role="tabpanel" aria-labelledby="dm3t-' + t + '">' + cuerpo + '</div></div>';
 }
 const ICONO_CUENTA = { corriente: 'bank', ahorro: 'piggy', efectivo: 'wallet', broker: 'chart', otra: 'wallet' };
 function dm3CuentasHtml(p) {
@@ -8246,7 +8252,7 @@ const H = {
   crearVersion: ([n]) => { S.verAnterior = Object.assign({}, S.verAnterior, { crear: Number(n) || 0 }); sentir('tic'); if (FORM && FORM.kind === 'crear') updateSheet(crearElegido()); },
   agendaSemana: ([d]) => { S.agendaDia = uAdd(S.agendaDia || todayISO(), 7 * Number(d)); render(); },
   irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
-  irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; S.dineroVer = ''; if (dineroV2() && sub) S._dmIr = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
+  irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; S.dineroVer = ''; if (dineroV2() && sub) S._dmIr = sub; if (dineroV2() && dineroV3() && DM3_TABS.indexOf(sub) >= 0) S.dm3Tab = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
   setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; render(); },
   verAnio: () => irResumen('y:' + mesActual().y),
   openBuscar: () => {
@@ -8924,7 +8930,7 @@ const H = {
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   metaGuardar: () => metaGuardar(),
   metaFormaElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.forma = FORMAS[k] ? k : null; sentir('tic'); updateSheet(metaEditorHtml()); },
-  metaNombreIn: () => { if (!FORM || FORM.kind !== 'meta' || FORM.forma) return; const el = $('#mNombre'), sug = formaSugerida(el ? el.value : ''); const g = $('.fm-grid'); if (!g || ((g.querySelector('.fm-op.sug') || {}).dataset || {}).k === sug) return; metaLeerForm(); updateSheet(metaEditorHtml()); const n = $('#mNombre'); if (n) { n.focus(); try { n.setSelectionRange(n.value.length, n.value.length); } catch (e) { /* */ } } },
+  metaNombreIn: () => { if (!FORM || FORM.kind !== 'meta' || FORM.forma) return; const el = $('#mNombre'), sug = formaSugerida(el ? el.value : ''); const g = $('.fm-grid'); if (!g || ((g.querySelector('.fm-op.sug') || {}).dataset || {}).k === sug) return; const campo = g.closest('.field'); if (campo) campo.outerHTML = formaElegirHtml(FORM.forma, el ? el.value : ''); },
   metaEliminar: (_, el) => confirmDelete(el, metaEliminar),
   metaAsignar: ([k]) => { FORM = { kind: 'asignar', metaKey: k, sel: new Set(movsPersonales().filter((x) => (x.tipo === 'Inversión' || x.tipo === 'Ahorro') && metasDeMov(x).indexOf(k) >= 0).map((x) => x.id)) }; openSheet(asignarHtml()); },
   asigMov: ([id], el) => { if (el.checked) FORM.sel.add(id); else FORM.sel.delete(id); updateSheet(asignarHtml()); },

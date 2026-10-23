@@ -1506,7 +1506,7 @@ html[data-look="nuevo"] .dm3-info .i { width: 16px; height: 16px; }
 html[data-look="nuevo"] .dm3-lqt-v { grid-row: 2; font-family: var(--font-display); font-size: 28px; font-weight: var(--num-peso, 750); letter-spacing: -.02em; line-height: 1.1; }
 html[data-look="nuevo"] .dm3-lqt-sin { grid-row: 2; justify-self: start; font-size: 15px; min-height: 40px; }
 html[data-look="nuevo"] .dm3-lqt-f { grid-row: 1 / span 2; grid-column: 2; max-width: 110px; font-size: 11.5px; line-height: 1.3; color: var(--text-faint); text-align: right; }
-html[data-look="nuevo"] .dm3-tabs { position: sticky; top: var(--cab-alto, 0px); z-index: 5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 12px 0 14px; padding: 4px 0; background: var(--paper); }
+html[data-look="nuevo"] .dm3-tabs { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--cab-alto, 0px)); z-index: 5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 12px 0 14px; padding: 4px 0; background: var(--paper); }
 html[data-look="nuevo"] .dm3-tab { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 70px; padding: 9px 8px; border: 1.5px solid transparent; border-radius: 14px; background: var(--paper-raised); box-shadow: var(--shadow); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 html[data-look="nuevo"] .dm3-tab .i { width: 16px; height: 16px; color: var(--text-muted); }
 html[data-look="nuevo"] .dm3-tab span { font-size: 11px; color: var(--text-muted); }
@@ -1555,3 +1555,6 @@ html[data-look="nuevo"] .jv-obj-ic .i { width: 26px; height: 26px; }
 html[data-look="nuevo"] .jv-obj-n { font-weight: 650; font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-look="nuevo"] .jv-obj-bar { width: 100%; height: 6px; margin: 8px 0 4px; border-radius: 99px; background: var(--paper-sunken); overflow: hidden; }
 html[data-look="nuevo"] .jv-obj-bar i { display: block; height: 100%; border-radius: 99px; background: var(--debt); }
+/* Calidad Dinero v3: que quepa «−4.140 €» en la ficha a 360 px y que el ✓ de la meta conseguida no choque con el «+» */
+@media (max-width: 380px) { html[data-look="nuevo"] .dm3-tabs { gap: 5px; } html[data-look="nuevo"] .dm3-tab { padding: 9px 6px; } html[data-look="nuevo"] .dm3-tab b { font-size: 13px; letter-spacing: -.02em; } }
+html[data-look="nuevo"] .dm-fm .fm-ok { top: auto; bottom: 2px; }
