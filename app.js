@@ -836,6 +836,7 @@ function tabBtn(t) {
 function inicialUsuario() { const n = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido()); return escapeHtml((n || '?').trim().charAt(0).toUpperCase()); }
 /* ---- Tu perfil (23/10, docs/15 3.1): iniciales o un dibujo y un color. Solo lo ves tú; en Juntos los demás siguen viendo tu inicial y su color ---- */
 const PERFIL_DIBUJOS = ['persona', 'sonrisa', 'estrella', 'heart', 'ball', 'plane', 'film', 'gift', 'home', 'bulb', 'paw', 'sparkle'];
+const PERFIL_DIBUJO_NOMBRE = { persona: 'Persona', sonrisa: 'Cara sonriente', estrella: 'Estrella', heart: 'Corazón', ball: 'Balón', plane: 'Avión', film: 'Cine', gift: 'Regalo', home: 'Casa', bulb: 'Bombilla', paw: 'Huella', sparkle: 'Destellos' };
 function perfilCfg() { const p = cfg().perfil || {}; return { avatar: p.avatar === 'dibujo' && PERFIL_DIBUJOS.indexOf(p.icono) >= 0 ? 'dibujo' : 'iniciales', icono: PERFIL_DIBUJOS.indexOf(p.icono) >= 0 ? p.icono : 'persona', color: COLORES_PERSONA_NUEVO.indexOf(p.color) >= 0 ? p.color : null }; }
 function inicialesDe(n) { const ps = String(n || '').trim().split(/\s+/).filter(Boolean); return escapeHtml(((ps[0] || '?').charAt(0) + (ps[1] ? ps[1].charAt(0) : '')).toUpperCase()); }
 function miColor(p) { p = p || perfilCfg(); return p.color || colorPersona(miUid()); }
@@ -844,7 +845,7 @@ function perfilHtml() {
   const F = FORM, p = { avatar: F.avatar, icono: F.icono, color: F.color }, nombre = F.nombre;
   return '<div class="handle"></div><h2>Tu perfil</h2><div class="perfil-av" id="perfilAv" style="background:' + miColor(p) + '">' + miAvatarDentro(p, nombre) + '</div>' +
     '<div class="segmented perfil-modo"><button type="button" class="' + (F.avatar === 'iniciales' ? 'active' : '') + '" ' + act('perfilModo', 'iniciales') + '>Iniciales</button><button type="button" class="' + (F.avatar === 'dibujo' ? 'active' : '') + '" ' + act('perfilModo', 'dibujo') + '>Un dibujo</button></div>' +
-    (F.avatar === 'dibujo' ? '<div class="perfil-dib" role="radiogroup" aria-label="Dibujo">' + PERFIL_DIBUJOS.map((k) => '<button type="button" role="radio" aria-checked="' + (F.icono === k) + '" aria-label="' + k + '" class="perfil-d' + (F.icono === k ? ' on' : '') + '" ' + act('perfilIcono', k) + '>' + ic(k) + '</button>').join('') + '</div>' : '') +
+    (F.avatar === 'dibujo' ? '<div class="perfil-dib" role="radiogroup" aria-label="Dibujo">' + PERFIL_DIBUJOS.map((k) => '<button type="button" role="radio" aria-checked="' + (F.icono === k) + '" aria-label="' + (PERFIL_DIBUJO_NOMBRE[k] || 'Dibujo') + '" class="perfil-d' + (F.icono === k ? ' on' : '') + '" ' + act('perfilIcono', k) + '>' + ic(k) + '</button>').join('') + '</div>' : '') +
     '<div class="field"><label>Color</label><div class="perfil-cols" role="radiogroup" aria-label="Color">' + COLORES_PERSONA_NUEVO.map((c, i) => '<button type="button" role="radio" aria-checked="' + (miColor(p) === c) + '" aria-label="Color ' + (i + 1) + '" class="perfil-c' + (miColor(p) === c ? ' on' : '') + '" style="background:' + c + '" ' + act('perfilColor', c) + '>' + (miColor(p) === c ? ic('check') : '') + '</button>').join('') + '</div></div>' +
     '<div class="field"><label for="tuNombreIn">Tu nombre</label><input id="tuNombreIn" type="text" maxlength="40" autocomplete="given-name" value="' + escapeHtml(nombre) + '" ' + onInput('perfilNombreIn') + '></div>' +
     '<p class="rec-hint">Tu nombre lo ven las personas con las que compartes. El dibujo y el color, de momento, solo tú.</p>' +
@@ -3400,7 +3401,7 @@ function articulosTopHtml(movs) {
 const CAT_ICONOS = [
   [/super|mercadona|carrefour|lidl|alcampo|dia\b|aldi|compra|aliment|fruta|eroski|hiper/, 'cart'],
   [/restaur|cena|comida|bar\b|bares|caf[eé]|pizza|burger|tapas|almuerzo|desayuno|glovo|just ?eat|uber ?eats/, 'fork'],
-  [/transp|gasolin|combust|coche|parking|aparcam|taxi|uber|cabify|metro|bus\b|tren|renfe|peaje|itv|taller/, 'car'],
+  [/transp|gasolin|combust|coche|parking|aparcam|taxi|uber|cabify|metro|bus\b|tren|renfe|peaje|itv|taller/, 'coche2'],
   [/ocio|cine|concierto|teatro|netflix|spotify|hbo|disney|suscrip|juego|fiesta|entrada/, 'film'],
   [/ropa|zara|primark|calzado|zapat|moda|h&m|mango/, 'shirt'],
   [/alquiler|hipoteca|casa|hogar|comunidad|mueble|ikea|limpieza/, 'home'],
@@ -3410,7 +3411,7 @@ const CAT_ICONOS = [
   [/viaje|vuelo|hotel|avi[oó]n|airbnb|vacacion/, 'plane'],
   [/educa|colegio|cole\b|libro|curso|academia|universidad|guarder/, 'book'],
 ];
-const TIPO_ICONO = { Ingreso: 'arrowUp', 'Inversión': 'chart', Ahorro: 'piggy', Deuda: 'card', Factura: 'calendar', Gasto: 'tag' };
+const TIPO_ICONO = { Ingreso: 'arrowUp', 'Inversión': 'trendUp', Ahorro: 'piggy2', Deuda: 'deuda', Factura: 'calendar', Gasto: 'tag' };
 function iconoCat(tipo, categoria, descripcion) {
   if (tipo === 'Ingreso' || tipo === 'Inversión' || tipo === 'Ahorro' || tipo === 'Deuda') return TIPO_ICONO[tipo];
   if (catStd(categoria)) return catStd(categoria).ic;
@@ -3610,7 +3611,7 @@ function crearHtmlV2() {
     (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
     '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy2', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'trendUp', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'repeat', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura') +
       op('crearIr', ['deuda'], 'deuda', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'fileIn', 'Importar', 'k-imp') + '</div>' +
-    (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('swap') + ' Ver la versión anterior</button>' : '');
+    (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '');
 }
 /* ============================================================
    DINERO (patrimonio, metas, inversiones, deudas y compartido) · AGENDA · TÚ  (Bloque 9)
@@ -3714,7 +3715,7 @@ function renderTuV2() {
   const parche = NOVEDADES[0] ? String(NOVEDADES[0].titulo).split('·')[0].trim() : '';
   const nombre = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido());
   const mas = [it('openMoneda', [], 'moneda', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
-    lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'wallet', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
+    lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'arrowUp', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
     it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar'),
     it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')];
   return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t">' + escapeHtml(nombre) + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
@@ -3757,7 +3758,7 @@ function ticketsInfoHtml() {
         '<div class="rec-hint">Vuelven el ' + ticketsVuelven() + '.</div>') + '</div>' +
     '<div class="actions">' + (t.quedan === 0 ? '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button>' : '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('crearIr', 'ticket') + '>' + ic('camera') + ' Leer un ticket</button>') + '</div>';
 }
-const ESCR_TIPOS = [['falla', 'alert', 'Algo falla'], ['idea', 'sparkle', 'Una idea'], ['gusta', 'heart', 'Me gusta']];
+const ESCR_TIPOS = [['falla', 'alert', 'Algo falla'], ['idea', 'bulb', 'Una idea'], ['gusta', 'sonrisa', 'Me gusta']];
 function escrHtml() {
   const F = FORM || {};
   return '<div class="handle"></div><h2>Escríbenos</h2><p class="rec-hint">¿Algo falla, echas algo de menos o hay algo que te encanta? Cuéntanoslo: lo lee quien hace PalomApp.</p>' +
@@ -3952,8 +3953,8 @@ function heroCifrasHtml(k, y, m) {
 // A2 · catálogo de círculos. Cada uno: { k, ic, tono, valor, l1, l2, aro, frase, a } o null si no hay datos
 const ASIVAS_TIPOS = [['auto', 'Automático', 'sparkle', 'Cambia solo según tu mes'], ['gastoMes', 'Gasto frente al mes pasado', 'arrowUp', 'Si gastas más o menos que el mes anterior'],
   ['sube', 'Lo que más sube', 'tag', 'La categoría que más crece'], ['presu', 'Presupuestos', 'checkCircle', 'Si vas dentro de tus presupuestos'], ['dia', 'Al día', 'wallet', 'Lo que puedes gastar cada día que queda'],
-  ['sinGastos', 'Días sin gastos', 'estrella', 'Los días que no has gastado nada'], ['juntos', 'Juntos', 'users', 'Lo que debes o te deben'], ['ahorro', 'Lo que apartas', 'piggy', 'Qué parte de lo que entra apartas'],
-  ['inv', 'Inversiones', 'chart', 'Cómo se han movido esta semana'], ['cat', 'Una categoría', 'tag', 'Lo que llevas en la que elijas'], ['meta', 'Una meta', 'target', 'Cómo va la meta que elijas']];
+  ['sinGastos', 'Días sin gastos', 'estrella', 'Los días que no has gastado nada'], ['juntos', 'Juntos', 'users', 'Lo que debes o te deben'], ['ahorro', 'Lo que apartas', 'piggy2', 'Qué parte de lo que entra apartas'],
+  ['inv', 'Inversiones', 'trendUp', 'Cómo se han movido esta semana'], ['cat', 'Una categoría', 'tag', 'Lo que llevas en la que elijas'], ['meta', 'Una meta', 'target', 'Cómo va la meta que elijas']];
 const ASIVAS_CORTO = { gastoMes: 'Gasto', sube: 'Lo que sube', presu: 'Presupuestos', dia: 'Al día', sinGastos: 'Sin gastos', juntos: 'Juntos', ahorro: 'Apartas', inv: 'Inversiones', cat: 'Categoría', meta: 'Meta' };
 function asiVasCfg() { const v = cfg().asiVas; return Array.isArray(v) && v.length === 5 ? v.map((x) => String(x || 'auto')) : ['auto', 'auto', 'auto', 'auto', 'auto']; }
 function invCambioSemana() {
@@ -4001,7 +4002,7 @@ function insightsCatalogo(y, m, actual) {
   const r = rangoMes(y, m), hoy = todayISO(), conGasto = new Set(k.movs.filter((x) => x.tipo === 'Gasto').map((x) => (x.fecha || '').slice(0, 10)));
   let primero = '9999'; S.movimientos.forEach((x) => { if (x.fecha && x.fecha.slice(0, 10) < primero) primero = x.fecha.slice(0, 10); });
   let sin = 0, dias = 0; for (let f = r.desde > primero ? r.desde : primero; f <= r.hasta && f < hoy; f = addDaysISO(f, 1)) { dias++; if (!conGasto.has(f)) sin++; }
-  if (sin >= 2 && conGasto.size) out.sinGastos = { ic: 'calendar', tono: 'bueno', valor: String(sin), l1: 'días', l2: 'sin gastos', aro: dias ? sin / dias : 1,
+  if (sin >= 2 && conGasto.size) out.sinGastos = { ic: 'estrella', tono: 'bueno', valor: String(sin), l1: 'días', l2: 'sin gastos', aro: dias ? sin / dias : 1,
     frase: (actual ? 'Este mes llevas ' : 'En ' + MESES[m - 1].toLowerCase() + ' tuviste ') + sin + ' días sin gastos del día a día (sin contar los fijos).', a: act('irMovsCal', mk) };
   if (actual && k.disponible > 0) {
     const quedan = Math.max(1, Math.round((parseISO(r.hasta) - parseISO(hoy)) / 864e5) + 1), d = k.disponible / quedan;
@@ -4009,10 +4010,10 @@ function insightsCatalogo(y, m, actual) {
       frase: 'Con lo que te queda hoy (' + money(k.disponible) + ') y ' + quedan + (quedan === 1 ? ' día' : ' días') + ' por delante, salen ' + money(d) + ' al día. No cuenta los pagos fijos que aún no han llegado.', a: act('heroResumen') };
   }
   if (k.ingresos > 0 && k.ahorro + k.inversion > 0) { const p = Math.round((k.ahorro + k.inversion) / k.ingresos * 100);
-    out.ahorro = { ic: 'piggy', tono: 'bueno', valor: p + ' %', l1: 'Apartas', l2: 'de lo que entra', aro: Math.min(1, p / 100),
+    out.ahorro = { ic: 'piggy2', tono: 'bueno', valor: p + ' %', l1: 'Apartas', l2: 'de lo que entra', aro: Math.min(1, p / 100),
       frase: 'Este mes apartas o inviertes ' + money(k.ahorro + k.inversion) + ': el ' + p + ' % de lo que te ha entrado.', a: act('irMovs', '_ahorro', mk) }; }
   const iv = invCambioSemana();
-  if (iv) out.inv = { ic: 'chart', tono: iv.dif >= 0 ? 'bueno' : 'malo', valor: (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' %', l1: 'Inversiones', l2: '7 días', aro: Math.min(1, Math.abs(iv.pct) / 10),
+  if (iv) out.inv = { ic: 'trendUp', tono: iv.dif >= 0 ? 'bueno' : 'malo', valor: (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' %', l1: 'Inversiones', l2: '7 días', aro: Math.min(1, Math.abs(iv.pct) / 10),
     frase: 'Tus inversiones ' + (iv.dif >= 0 ? 'han subido ' : 'han bajado ') + money(Math.abs(iv.dif)) + ' esta semana: valen ' + money(iv.valor) + '. Meter dinero nuevo no cuenta.', a: act('irDinero', 'inversiones') };
   return out;
 }
@@ -4028,7 +4029,7 @@ function asiVasFijo(key, y, m, cat) {
     let r = null; try { r = metaPorKey(key.slice(5)); } catch (e) { r = null; }
     if (!r) return null;
     const pct = r.pct == null ? 0 : r.pct;
-    return { ic: 'flag', tono: pct >= 100 ? 'bueno' : '', valor: Math.round(pct) + ' %', l1: r.nombre, l2: 'llevas', aro: Math.min(1, pct / 100),
+    return { ic: 'target', tono: pct >= 100 ? 'bueno' : '', valor: Math.round(pct) + ' %', l1: r.nombre, l2: 'llevas', aro: Math.min(1, pct / 100),
       frase: 'En ' + r.nombre + ' llevas ' + money(r.valor) + (r.obj > 0 ? ' de ' + money(r.obj) + '.' : '.'), a: act('metaVer', r.key) };
   }
   return cat[key] || null;
@@ -4347,7 +4348,7 @@ function juntosObjHtml() {
     return '<button type="button" class="jv-obj tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' + formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 96) +
       '<span class="jv-obj-p tnum">' + Math.round(pct) + ' %</span><b class="tnum">' + (r.falta > 0 ? 'Faltan ' + m0(r.falta) : '¡Conseguida!') + '</b>' + (r.falta > 0 ? '<span class="jv-obj-e" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' : '') + '</button>'; };
   const deuda = (r) => { const pct = Math.max(0, Math.min(100, r.pct || 0)), g = grupoDe(r.o.grupoId);
-    return '<button type="button" class="jv-obj deu tappable" aria-label="' + escapeHtml(r.nombre + ': quedan ' + money(r.falta)) + '" ' + act('deudaCompVer', r.id) + '><span class="jv-obj-ic">' + icDeEmoji(r.o.emoji || emojiSugerido(r.nombre, '💳'), 'card') + '</span>' +
+    return '<button type="button" class="jv-obj deu tappable" aria-label="' + escapeHtml(r.nombre + ': quedan ' + money(r.falta)) + '" ' + act('deudaCompVer', r.id) + '><span class="jv-obj-ic">' + icDeEmoji(r.o.emoji || emojiSugerido(r.nombre, '💳'), 'deuda') + '</span>' +
       '<span class="jv-obj-n">' + escapeHtml(r.nombre) + '</span><span class="jv-obj-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="jv-obj-p tnum">' + Math.round(pct) + ' % pagado</span><b class="tnum">' + (r.falta > 0 ? 'Quedan ' + m0(r.falta) : 'Saldada') + '</b>' +
       '<span class="jv-obj-e">' + escapeHtml(g ? nombreDestino(g) : '') + '</span></button>'; };
   return '<div class="section-title">Metas y deudas juntos' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('plus') + ' Nueva</button>' : '') + '</div>' +
@@ -4864,7 +4865,7 @@ const EMOJI_PISTAS = [[/viaj|japon|vacacion|escapad|playa/, '✈️'], [/casa|pi
   [/tarjeta|credito/, '💳'], [/prestam|amigo|familia/, '🤝'], [/mascota|perro|gato/, '🐾'], [/bici|deporte|gimnas/, '🚲']];
 function emojiSugerido(nombre, def) { const n = normName(nombre || ''); const x = EMOJI_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : (def || '🎯'); }
 // Los emojis se siguen guardando (no se tocan los datos), pero en pantalla se dibuja un icono de la app (22/10)
-const EMOJI_IC = { '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'car', '💍': 'heart', '🍼': 'heart', '🎓': 'book', '🎁': 'gift', '📱': 'bolt', '💳': 'card', '🤝': 'users', '🐾': 'paw', '🚲': 'car', '🎯': 'flag' };
+const EMOJI_IC = { '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'coche2', '💍': 'heart', '🍼': 'heart', '🎓': 'cap', '🎁': 'gift', '📱': 'phone', '💳': 'card', '🤝': 'manoMoneda', '🐾': 'paw', '🚲': 'car', '🎯': 'target' };
 const EMOJI_NOMBRE = { '✈️': 'Viaje', '🏠': 'Casa', '🛟': 'Colchón', '🚗': 'Coche', '💍': 'Boda', '🍼': 'Bebé', '🎓': 'Estudios', '🎁': 'Regalo', '📱': 'Aparatos', '💳': 'Tarjeta', '🤝': 'Préstamo', '🐾': 'Mascota', '🚲': 'Deporte', '🎯': 'Meta' };
 function icDeEmoji(e, def) { return ic(EMOJI_IC[e] || def || 'flag'); }
 function metaIcono(r) { return icDeEmoji(emojiMeta(r), 'target'); }
@@ -4936,11 +4937,11 @@ function dinero3Html(p, ms, hayInv, deudas, dComp) {
   let cuerpo;
   if (t === 'cuentas') cuerpo = dm3CuentasHtml(p);
   else if (t === 'metas') cuerpo = dmMetasHtml(ms);
-  else if (t === 'inversiones') cuerpo = hayInv ? renderInversionesTodo(true) : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('chart') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
+  else if (t === 'inversiones') cuerpo = hayInv ? renderInversionesTodo(true) : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('trendUp') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
   else cuerpo = dmDeudasHtml(deudas, dComp);
   return lqt + tabs + '<div class="dm3-marco"><div id="dmCuerpo" class="dm3-cuerpo" role="tabpanel" aria-labelledby="dm3t-' + t + '">' + cuerpo + '</div></div>';
 }
-const ICONO_CUENTA = { corriente: 'bank', ahorro: 'piggy', efectivo: 'wallet', broker: 'chart', otra: 'wallet' };
+const ICONO_CUENTA = { corriente: 'bank', ahorro: 'piggy2', efectivo: 'wallet', broker: 'trendUp', otra: 'wallet' };
 function dm3CuentasHtml(p) {
   const cs = cuentasCfg(), pc = cuentaPrincipal();
   if (!cs.length) return '<button type="button" class="card dm-emp tappable" ' + act('openCuentas') + '><span class="dm-ic">' + ic('bank') + '</span><span class="dm-emp-x"><b>Pon el saldo de tu banco</b><span>Así sabrás lo que tienes de verdad</span></span>' + ic('chevR') + '</button>';
@@ -4987,7 +4988,7 @@ function dmCuentasHtml() {
 function dmMetasHtml(ms) {
   const v = metasVariante(), todas = S._dmMetasTodas, lista = todas ? ms.activas : ms.activas.slice(0, 4);
   let h = '<div class="section-title" id="dm-metas">Metas' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('users') + ' Compartida</button>' : '') + '<button class="link" ' + act('metaNueva') + '>' + ic('plus') + ' Nueva</button></div>';
-  if (!ms.activas.length && !ms.hechas.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('metaNueva') + '><span class="dm-ic">' + ic('flag') + '</span><span class="dm-emp-x"><b>Crea tu primera meta</b><span>Un viaje, la casa, un colchón… y ve cómo se llena</span></span>' + ic('chevR') + '</button>';
+  if (!ms.activas.length && !ms.hechas.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('metaNueva') + '><span class="dm-ic">' + ic('target') + '</span><span class="dm-emp-x"><b>Crea tu primera meta</b><span>Un viaje, la casa, un colchón… y ve cómo se llena</span></span>' + ic('chevR') + '</button>';
   if (lista.length && v === 'formas') h += '<div class="dm-formas">' + lista.map(metaFormaHtml).join('') + '</div>';
   else if (lista.length) h += v === 'tarros' ? '<div class="card dm-tarros' + (lista.length === 1 ? ' uno' : '') + '">' + lista.map(tarroHtml).join('') + '</div>'
     : '<div class="card dm-metas dm-v-' + v + '">' + lista.map(v === 'anillos' ? metaAnilloHtml : metaCaminoHtml).join('') + '</div>';
@@ -5328,7 +5329,7 @@ function dmDeudasHtml(ds, comp) {
   const st = ds.map((d) => Object.assign(deudaStats(d), { d })), activas = st.filter((r) => !(r.total > 0 && r.pend <= 0.005)), saldadas = st.filter((r) => r.total > 0 && r.pend <= 0.005);
   const cs = comp, queda = st.reduce((a, r) => a + r.pend, 0) + cs.reduce((a, r) => a + r.falta * miProporcion(r.o), 0);
   let h = '<div class="section-title" id="dm-deudas">Deudas' + (queda > 0.005 && st.length + cs.length > 1 ? '<span class="dm-cuenta-n tnum">quedan ' + m0(queda) + '</span>' : '') + '<button class="link" ' + act('deudaNueva') + '>' + ic('plus') + ' Nueva</button></div>';
-  if (!st.length && !cs.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('deudaNueva') + '><span class="dm-ic">' + ic('card') + '</span><span class="dm-emp-x"><b>Apunta una deuda</b><span>Un préstamo, el coche, la tarjeta… y ve cuándo acabas</span></span>' + ic('chevR') + '</button>';
+  if (!st.length && !cs.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('deudaNueva') + '><span class="dm-ic">' + ic('deuda') + '</span><span class="dm-emp-x"><b>Apunta una deuda</b><span>Un préstamo, el coche, la tarjeta… y ve cuándo acabas</span></span>' + ic('chevR') + '</button>';
   const fila = (r, comp0) => {
     const e = comp0 ? null : deudaEstado2(r), pct = comp0 ? Math.max(0, Math.min(100, r.pct || 0)) : r.total > 0 ? Math.max(0, Math.min(100, r.pagado / r.total * 100)) : 0, g = comp0 ? grupoDe(r.o.grupoId) : null;
     return '<button type="button" class="dm-deuda tappable" ' + (comp0 ? act('deudaCompVer', r.id) : act('deudaVer', r.nombre)) + '><span class="dm-ic deu">' + (comp0 ? ic('users') : deudaIcono(r.d)) + '</span>' +
@@ -5500,10 +5501,10 @@ function crearHtml() {
     op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
 }
-function crearElegido() { return verAnterior('crear') ? crearHtml() + (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('swap') + ' Ver la versión nueva</button>' : '') : crearHtmlV2(); }
+function crearElegido() { return verAnterior('crear') ? crearHtml() + (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('comparar') + ' Ver la versión nueva</button>' : '') : crearHtmlV2(); }
 function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearElegido()); else openSheet(crearElegido()); }
 /* ---- buscador global: movimientos, tareas, categorías y ajustes ---- */
-const ATAJO_IC = { 'Foto de ticket': 'camera', 'Nuevo gasto': 'plus', 'Nueva tarea': 'checkCircle', 'Grupos y personas': 'users', Metas: 'flag', Inversiones: 'chart', Deudas: 'card', 'Lo que tienes': 'wallet' };
+const ATAJO_IC = { 'Foto de ticket': 'camera', 'Nuevo gasto': 'plus', 'Nueva tarea': 'checkCircle', 'Grupos y personas': 'users', Metas: 'target', Inversiones: 'trendUp', Deudas: 'deuda', 'Lo que tienes': 'wallet' };
 const BUSCAR_ACCIONES = [
   ['Foto de ticket', 'camara recibo leer', 'ticketFoto', []], ['Nuevo gasto', 'apuntar añadir', 'crearIr', ['gasto']], ['Nueva tarea', 'apuntar', 'crearIr', ['tarea']],
   ['Grupos y personas', 'compartir paloma invitar saldar deudas', 'openGrupos', []], ['Metas', 'ahorro objetivos hucha', 'irDinero', ['metas']],
@@ -7589,7 +7590,7 @@ function impHtml() {
   if (I.paso === 'archivo') {
     return h2('Importar movimientos') +
       '<div style="font-size:13.5px;color:var(--text-muted);line-height:1.5;margin:-6px 0 12px;">Sirve para el extracto de tu banco y para tu Excel de gastos: <b>.xlsx, .xls o .csv</b>. Antes de guardar verás una vista previa, y si importas dos veces el mismo archivo no se duplica nada.</div>' +
-      '<label class="imp-drop"><input type="file" id="impFile" accept=".xlsx,.xls,.csv,.txt" ' + onChange('impArchivo') + '><span>' + ic('download') + ' Elegir archivo</span></label>' +
+      '<label class="imp-drop"><input type="file" id="impFile" accept=".xlsx,.xls,.csv,.txt" ' + onChange('impArchivo') + '><span>' + ic('fileIn') + ' Elegir archivo</span></label>' +
       (I.error ? '<div class="alert" style="margin-top:12px;">' + ic('alert') + '<div>' + escapeHtml(I.error) + '</div></div>' : '') +
       (I.cargando ? '<div style="margin-top:12px;color:var(--text-faint);font-size:13.5px;">Leyendo el archivo…</div>' : '') +
       '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button></div>';
@@ -7953,7 +7954,7 @@ function reglaTexto(r) {
   if (r.t === 'dia') return Number(r.dia) >= 31 ? 'El último día de cada mes' + aj : 'El día ' + r.dia + ' de cada mes' + aj;
   if (r.t === 'habil') return 'El ' + (ORDINAL[String(r.n)] || r.n + '.º') + ' día hábil del mes';
   if (r.t === 'habilFin') return Number(r.n) === 1 ? 'Último día hábil del mes' : 'El ' + (ORDINAL[String(-Number(r.n))] || r.n + '.º por el final') + ' día hábil del mes';
-  if (r.t === 'diasMes') { const ds = (r.dias || []).map(Number).sort((a, b) => a - b).map((x) => (x >= 31 ? 'último' : x)); return 'Los días ' + ds.join(' y ') + ' de cada mes' + aj; }
+  if (r.t === 'diasMes') { const ds = [...new Set((r.dias || []).map(Number))].sort((a, b) => a - b); if (ds.length && ds[ds.length - 1] >= 31) return (ds.length > 1 ? 'El ' + ds.slice(0, -1).join(', el ') + ' y el último día' : 'El último día') + ' de cada mes' + aj; return 'Los días ' + ds.join(' y ') + ' de cada mes' + aj; }
   if (r.t === 'dias') return 'Cada ' + (Number(r.cada) || 1) + (Number(r.cada) === 1 ? ' día' : ' días');
   if (r.t === 'ultHabil') return 'Último día hábil del mes';
   if (r.t === 'priHabil') return 'Primer día hábil del mes';
@@ -7987,6 +7988,8 @@ function importePrevisto(rc, iso) {
 function toleranciaRegla(r) {
   if (r && r.t === 'semanas') return Math.max(2, Math.min(10, (Number(r.cada) || 1) * 3 - 1));
   if (r && r.t === 'quincenal') return 5;
+  if (r && r.t === 'dias') return Math.max(1, Math.min(10, Math.round((Number(r.cada) || 1) * 3 / 7) - 1));
+  if (r && r.t === 'diasMes') { const ds = (r.dias || []).map(Number); const g = ds.length === 2 ? Math.min(Math.abs(ds[0] - ds[1]), 30 - Math.abs(ds[0] - ds[1])) : 30; return Math.max(1, Math.min(5, Math.floor((g - 1) / 2))); }
   return 12;
 }
 // Para cada fecha prevista: ¿hay un movimiento que la cubra?, ¿se marcó como «no ha ocurrido»?
@@ -8153,9 +8156,9 @@ function recPreviewHtml() {
 }
 /* ---- Selector «¿Cuándo?» de los recurrentes (23/10, docs/15 3.3): tarjetas con círculo, sin teclado ni desplegables ---- */
 const REGLA_TARJETAS = [
-  ['CADA MES', [['dia', 'Un día fijo', 'Por ejemplo, el 5 de cada mes'], ['ultDia', 'El último día del mes', '30 o 31, según el mes'], ['priHabil', 'El primer día hábil', 'Sin contar fines de semana'],
+  ['CADA MES', [['dia', 'Un día fijo', 'Por ejemplo, el 1 o el 5 de cada mes'], ['ultDia', 'El último día del mes', '30 o 31, según el mes'], ['priHabil', 'El primer día hábil', 'Sin contar fines de semana'],
     ['ultHabil', 'El último día hábil', 'Muy habitual en nóminas'], ['habilFin', 'El penúltimo día hábil', 'Algunas nóminas llegan así'], ['habil', 'Otro día hábil', 'El 3.º día hábil, el antepenúltimo…'], ['nesimo', 'Un día de la semana', 'El primer lunes, el último viernes…']]],
-  ['OTRO RITMO', [['diasMes', 'Dos días al mes', 'Por ejemplo, el 1 y el 15'], ['dias', 'Cada cierto número de días', 'Cada 28 días…'], ['semanas', 'Cada semanas', 'Cada semana, cada 2 semanas…'], ['meses', 'Cada meses o años', 'Trimestral, semestral, anual…']]],
+  ['OTRO RITMO', [['diasMes', 'Dos días al mes', 'Por ejemplo, el 1 y el 15'], ['dias', 'Cada cierto número de días', 'Cada 28 días…'], ['semanas', 'Por semanas', 'Cada semana, cada 2 semanas…'], ['meses', 'Por meses o años', 'Trimestral, semestral, anual…']]],
 ];
 function reglaTarjetaDe(r) { if (!r || !r.t) return ''; if (r.t === 'dia') return Number(r.dia) >= 31 ? 'ultDia' : 'dia'; if (r.t === 'habilFin' && Number(r.n) === 1) return 'ultHabil'; if (r.t === 'habilFin' && Number(r.n) === 2) return 'habilFin'; if (r.t === 'habilFin' || r.t === 'habil') return 'habil'; if (r.t === 'quincenal') return 'diasMes'; return r.t; }
 function proxFechasRegla(r, n) { const hoy = todayISO(); return r && r.t ? ocurrencias(r, hoy, uAdd(hoy, 800)).slice(0, n || 3) : []; }
@@ -8180,15 +8183,15 @@ function recCuandoParamsHtml(r) {
   if (!r) return '';
   const chip = (accion, v, on, txt) => '<button type="button" class="chip' + (on ? ' active' : '') + '" aria-pressed="' + !!on + '" ' + act(accion, v) + '>' + txt + '</button>';
   const ajuste = () => '<div class="rec-par-l">Si cae en ' + (festivosCfg().on ? 'fin de semana o festivo' : 'fin de semana') + '</div><div class="chips">' + chip('recPar', 'ajuste|', !r.ajuste, 'Ese día') + chip('recPar', 'ajuste|antes', r.ajuste === 'antes', 'El hábil antes') + chip('recPar', 'ajuste|despues', r.ajuste === 'despues', 'El hábil después') + '</div>';
-  const rejilla = (sel, campo, multi) => '<div class="rec-dias">' + Array.from({ length: 31 }, (_, i) => i + 1).map((d) => '<button type="button" class="rec-dia' + (sel.indexOf(d) >= 0 ? ' on' : '') + '" aria-pressed="' + (sel.indexOf(d) >= 0) + '" ' + act('recPar', campo + '|' + d) + '>' + d + '</button>').join('') +
-    '<button type="button" class="rec-dia ult' + (sel.indexOf(31) >= 0 && multi ? ' on' : '') + '" ' + act('recPar', campo + '|31') + '>El último</button></div>';
+  const rejilla = (sel, campo, multi) => '<div class="rec-dias">' + Array.from({ length: 30 }, (_, i) => i + 1).map((d) => '<button type="button" class="rec-dia' + (sel.indexOf(d) >= 0 ? ' on' : '') + '" aria-pressed="' + (sel.indexOf(d) >= 0) + '" ' + act('recPar', campo + '|' + d) + '>' + d + '</button>').join('') +
+    '<button type="button" class="rec-dia ult' + (sel.indexOf(31) >= 0 ? ' on' : '') + '" aria-pressed="' + (sel.indexOf(31) >= 0) + '" ' + act('recPar', campo + '|31') + '>El último</button></div>';
   const masMenos = (campo, v, min, max, txt) => '<div class="rec-mm"><button type="button" class="rec-mm-b" aria-label="Menos" ' + act('recPar', campo + '|' + Math.max(min, v - 1)) + '>−</button><b class="tnum">' + txt + '</b><button type="button" class="rec-mm-b" aria-label="Más" ' + act('recPar', campo + '|' + Math.min(max, v + 1)) + '>+</button></div>';
   const ancla = (lbl) => '<div class="rec-par-l">' + lbl + '</div><input type="date" class="rec-ancla" aria-label="' + lbl + '" value="' + escapeHtml(r.ancla || '') + '" ' + onChange('recParAncla') + '>';
   let h = '<div class="rec-par">';
   if (r.t === 'dia' && Number(r.dia) < 31) h += '<div class="rec-par-l">Día del mes</div>' + rejilla([Number(r.dia)], 'dia', false) + ajuste();
   else if (r.t === 'dia') h += ajuste();
   else if (r.t === 'habil' || r.t === 'habilFin') { const v = r.t === 'habil' ? Number(r.n) : -Number(r.n);
-    h += '<div class="rec-par-l">¿Cuál?</div><div class="chips">' + [[1, '1.º'], [2, '2.º'], [3, '3.º'], [4, '4.º'], [-3, 'Antepenúltimo'], [-2, 'Penúltimo']].map(([n, l]) => chip('recPar', 'habilN|' + n, v === n, l)).join('') + '</div>'; }
+    h += '<div class="rec-par-l">¿Cuál?</div><div class="chips">' + [[2, '2.º'], [3, '3.º'], [4, '4.º'], [5, '5.º'], [-3, 'Antepenúltimo']].map(([n, l]) => chip('recPar', 'habilN|' + n, v === n, l)).join('') + '</div>'; }
   else if (r.t === 'nesimo') h += '<div class="rec-par-l">¿Cuál?</div><div class="chips">' + [[1, '1.º'], [2, '2.º'], [3, '3.º'], [4, '4.º'], [-2, 'Penúltimo'], [-1, 'Último']].map(([n, l]) => chip('recPar', 'n|' + n, Number(r.n) === n, l)).join('') + '</div>' +
     '<div class="rec-sem">' + ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((l, i) => '<button type="button" class="rec-sem-d' + (Number(r.dow) === i ? ' on' : '') + '" aria-label="' + DOW_LARGO[i] + '" aria-pressed="' + (Number(r.dow) === i) + '" ' + act('recPar', 'dow|' + i) + '>' + l + '</button>').join('') + '</div>';
   else if (r.t === 'diasMes') h += '<div class="rec-par-l">Toca los dos días</div>' + rejilla((r.dias || []).map(Number), 'dias', true) + ajuste();
