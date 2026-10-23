@@ -149,38 +149,45 @@ function mesCfg() { let t = {}; try { t = (S.config && S.config.mesInicio) || {}
    Si no ha llegado: mientras no pasen 7 días, sigue el mes anterior; después (o si dices «No»), empieza el día previsto.
    Las fechas futuras son previsión. Una versión antigua de la app no entiende «nomina» y usa el día fijo. ---- */
 let _cortes = null, _cortesCalc = false;
+function mesSig(k) { let y = Number(k.slice(0, 4)), m = Number(k.slice(5, 7)) + 1; if (m > 12) { m = 1; y++; } return y + '-' + pad2(m); }
 function cortesNomina() {
   const c = mesCfg(); if (!c.nomina || _cortesCalc) return null;
-  const rc = recurrentes().find((r) => r.kind === 'cobro' && normName(r.nombre) === normName(c.nomina));
-  if (!rc || !rc.regla || !rc.regla.t) return null;
   const hoy = todayISO(), movs = S.movimientos || [];
-  const clave = [hoy, movs.length, movs.length ? movs[movs.length - 1].id : '', JSON.stringify(rc.regla), rc.nombre, JSON.stringify(cfg().recEstado || {}), JSON.stringify(cfg().festivos || {})].join('|');
-  if (_cortes && _cortes.clave === clave) return _cortes.lista;
+  // se recalcula si cambia algo: la app sustituye la lista de movimientos y la configuración enteras en cada cambio
+  if (_cortes && _cortes.movs === movs && _cortes.n === movs.length && _cortes.conf === S.config && _cortes.hoy === hoy && _cortes.nom === c.nomina) return _cortes.lista;
+  const rc = recurrentes().find((r) => r.kind === 'cobro' && normName(r.nombre) === normName(c.nomina));
+  if (!rc || !rc.regla || !rc.regla.t) { _cortes = { movs, n: movs.length, conf: S.config, hoy, nom: c.nomina, lista: null }; return null; }
   _cortesCalc = true;
   try {
     const primero = movs.reduce((a, m) => (m.fecha && m.fecha < a ? m.fecha : a), hoy), desde = uAdd(primero < uAdd(hoy, -800) ? uAdd(hoy, -800) : primero, -45);
-    const occs = ocurrencias(rc.regla, desde, uAdd(hoy, 75)), est = estadoOcurrencias(rc, occs), lista = [], vistos = new Set();
-    let prev = null;
+    const occs = ocurrencias(rc.regla, desde, uAdd(hoy, 75)), est = estadoOcurrencias(rc, occs), lista = [];
+    let prev = null, prevNombre = null, prevIso = null;
     est.forEach((o) => {
+      // nombre del mes: como «desde un día» (lo cobrado el 28 de septiembre es octubre), pero siempre uno detrás de otro:
+      // una nómina que se mueve por un fin de semana o un festivo no se salta un mes ni se junta con la siguiente
       const d = uD(o.iso); let y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
-      if (d.getUTCDate() >= COBRO_FIN) { m++; if (m > 12) { m = 1; y++; } } // como «desde un día»: lo cobrado el 28 de septiembre es el mes de octubre
-      const nombre = y + '-' + pad2(m); if (vistos.has(nombre)) return; vistos.add(nombre);
+      if (d.getUTCDate() >= COBRO_FIN) { m++; if (m > 12) { m = 1; y++; } }
+      let nombre = y + '-' + pad2(m);
+      if (prevNombre) { const sig = mesSig(prevNombre), cerca = (uD(o.iso).getTime() - uD(prevIso).getTime()) / 864e5 <= 45; if (nombre <= prevNombre || (nombre > sig && cerca)) nombre = sig; }
+      prevNombre = nombre; prevIso = o.iso;
       let corte, previsto = false, esperando = false;
       if (o.mov && o.mov.fecha) corte = o.mov.fecha;
       else if (o.iso > hoy) { corte = o.iso; previsto = true; }
       else if (o.estado === 'no' || uAdd(o.iso, 7) < hoy) corte = o.iso;
       else { corte = null; esperando = true; }
-      if (corte && prev) { const dd = (uD(corte).getTime() - uD(prev).getTime()) / 864e5; if (dd < 20 || dd > 45) corte = o.iso; }
+      let ajustado = false;
+      if (corte && prev) { const dd = (uD(corte).getTime() - uD(prev).getTime()) / 864e5; if (dd < 20 || dd > 45) { corte = o.iso; ajustado = true; } }
       if (corte) prev = corte;
-      lista.push({ nombre, corte, iso: o.iso, previsto, esperando, mov: o.mov || null });
+      // ini: el día en que empieza este mes. Mientras se espera la nómina, el mes anterior sigue abierto hasta que pasen los 7 días
+      lista.push({ nombre, corte, ini: corte || uAdd(o.iso, 8), iso: o.iso, previsto, esperando, ajustado, mov: o.mov || null });
     });
-    _cortes = { clave, lista };
+    _cortes = { movs, n: movs.length, conf: S.config, hoy, nom: c.nomina, lista };
     return lista;
   } finally { _cortesCalc = false; }
 }
 function tramoNomina(iso) {
   const L = cortesNomina(); if (!L || !L.length) return null;
-  let r = null; for (let i = 0; i < L.length; i++) { if (L[i].corte && L[i].corte <= iso && !L[i].previsto) r = L[i]; else if (L[i].corte && L[i].corte <= iso && L[i].previsto) r = L[i]; }
+  let r = null; for (let i = 0; i < L.length; i++) if (L[i].ini <= iso) r = L[i];
   return r;
 }
 // día en que empieza el tramo que arranca en el mes (y, m): el día de cobro (el último del mes si no existe); en fin de semana, el viernes anterior
@@ -196,7 +203,7 @@ const COBRO_FIN = 16;
 function mesDe(iso) {
   if (!iso || iso.length < 7) return '';
   const c = mesCfg(); if (c.modo !== 'cobro') return iso.slice(0, 7);
-  if (c.nomina) { const L = cortesNomina(); if (L && L.length && L.some((x) => x.corte && x.corte <= iso.slice(0, 10))) { const t = tramoNomina(iso.slice(0, 10)); if (t) return t.nombre; } }
+  if (c.nomina) { const t = tramoNomina(iso.slice(0, 10)); if (t) return t.nombre; }
   let y = Number(iso.slice(0, 4)), m = Number(iso.slice(5, 7)); const f = iso.slice(0, 10);
   for (let i = 0; i < 2 && f >= inicioTramo(y, m, c.dia); i++) { m++; if (m > 12) { m = 1; y++; } }
   if (c.dia < COBRO_FIN) { m--; if (m < 1) { m = 12; y--; } }
@@ -206,9 +213,8 @@ function rangoMes(y, m, c0) {
   const c = c0 || mesCfg();
   if (c.modo !== 'cobro') return { desde: y + '-' + pad2(m) + '-01', hasta: y + '-' + pad2(m) + '-' + pad2(new Date(y, m, 0).getDate()) };
   if (c.nomina) { const L = cortesNomina(), k = y + '-' + pad2(m), i = L ? L.findIndex((x) => x.nombre === k) : -1;
-    if (i >= 0 && (L[i].corte || L[i].esperando)) { const a = L[i], b = L[i + 1];
-      const desde = a.corte || a.iso, finSig = b ? (b.corte || b.iso) : null;
-      return { desde, hasta: finSig ? addDaysISO(finSig, -1) : addDaysISO(desde, 30), previsto: !!(a.previsto || a.esperando || !b || b.previsto || b.esperando), esperando: !!a.esperando }; } }
+    if (i >= 0) { const a = L[i], b = L[i + 1];
+      return { desde: a.ini, hasta: b ? addDaysISO(b.ini, -1) : addDaysISO(a.ini, 30), previsto: !!(a.previsto || a.esperando || !b || b.previsto || b.esperando), esperando: !!(a.esperando || (b && b.esperando)) }; } }
   if (c.dia < COBRO_FIN) { m++; if (m > 12) { m = 1; y++; } } // el tramo que se llama «m» acaba en el mes siguiente
   return { desde: inicioTramo(m === 1 ? y - 1 : y, m === 1 ? 12 : m - 1, c.dia), hasta: addDaysISO(inicioTramo(y, m, c.dia), -1) };
 }
@@ -219,7 +225,7 @@ function sincronizarMes() {
   const a = mesActual(); S.mesSel = a.m; S.anioSel = a.y;
   if (!S.movPeriodo || /^m:/.test(S.movPeriodo)) S.movPeriodo = mesHoyClave();
 }
-function rangoTxt(y, m) { const r = rangoMes(y, m); return (fmtDateShort(r.desde) + ' – ' + fmtDateShort(r.hasta)).toLowerCase(); }
+function rangoTxt(y, m) { const r = rangoMes(y, m); return r.previsto ? ('desde el ' + fmtDateShort(r.desde)).toLowerCase() : (fmtDateShort(r.desde) + ' – ' + fmtDateShort(r.hasta)).toLowerCase(); }
 // Curva suave que pasa por todos los puntos sin inventarse picos (monótona, como d3.curveMonotoneX)
 function curvaSuave(p) {
   const n = p.length, f = (v) => v.toFixed(1);
@@ -4231,21 +4237,22 @@ function previstoHtml() {
 function tuMesNominaHtml() {
   const F = FORM, cobs = recurrentes().filter((r) => r.kind === 'cobro' && r.regla && r.regla.t);
   if (!cobs.length) return '<div class="tumes-nom"><div class="rec-hint" style="margin:0 0 8px;">Primero añade tu nómina como cobro fijo, con cuándo te suele llegar.</div><button class="btn ghost block" ' + act('openRecurrentes') + '>' + ic('plus') + ' Añadir cobro fijo</button></div>';
+  const guardada = mesCfg().nomina, perdida = guardada && !cobs.some((r) => normName(r.nombre) === normName(guardada));
   const rc = cobs.find((r) => normName(r.nombre) === normName(F.nomina)) || cobs[0]; F.nomina = rc.nombre;
   // vista previa con esta nómina, sin guardar
   const antes = S.config, prueba = Object.assign({}, S.config || {}, { mesInicio: { modo: 'cobro', dia: 28, nomina: rc.nombre } }); let L = null;
   S.config = prueba; _cortes = null; try { L = cortesNomina(); } finally { S.config = antes; _cortes = null; }
   const hoy = todayISO(), i = L ? L.reduce((a, x, k) => (x.corte && x.corte <= hoy ? k : a), -1) : -1, act0 = i >= 0 ? L[i] : null, sig = L && i >= 0 ? L.slice(i + 1).find((x) => x.corte || x.iso) : null;
   const nomMes = (k) => MESES[Number(k.slice(5, 7)) - 1];
-  const linea = (x, fut) => x ? '<div class="tumes-nom-f"><b>' + nomMes(x.nombre) + (fut ? ' empezará el ' : ' empezó el ') + fechaDiaCorta(x.corte || x.iso) + '</b>' + (fut ? '<span class="tumes-prev">Previsto</span>' : x.mov ? '<span>Ese día llegó tu nómina (' + money(x.mov.importe) + ')</span>' : '<span>No llegó: cuenta el día previsto</span>') + '</div>' : '';
-  return '<div class="tumes-nom">' + (cobs.length > 1 ? '<div class="chips">' + cobs.map((r) => '<button type="button" class="chip' + (r.nombre === rc.nombre ? ' active' : '') + '" ' + act('tuMesNomina', r.nombre) + '>' + escapeHtml(r.nombre) + '</button>').join('') + '</div>' : '') +
+  const linea = (x, fut) => x ? '<div class="tumes-nom-f"><b>' + nomMes(x.nombre) + (fut ? ' empezará el ' : ' empezó el ') + fechaDiaCorta(x.corte || x.iso) + '</b>' + (fut ? '<span class="tumes-prev">Previsto</span>' : x.mov && x.ajustado ? '<span>Tu nómina llegó el ' + fechaDiaCorta(x.mov.fecha) + ', pero tan lejos de la anterior que cuenta el día previsto</span>' : x.mov ? '<span>Ese día llegó tu nómina (' + money(x.mov.importe) + ')</span>' : '<span>No llegó: cuenta el día previsto</span>') + '</div>' : '';
+  return '<div class="tumes-nom">' + (perdida ? '<div class="rec-hint tumes-aviso" role="status" style="margin:0 0 8px;">Ya no encuentro «' + escapeHtml(guardada) + '». Mientras tanto, tu mes empieza el día ' + mesCfg().dia + '. Elige tu nómina y toca «Listo».</div>' : '') + (cobs.length > 1 ? '<div class="chips">' + cobs.map((r) => '<button type="button" class="chip' + (r.nombre === rc.nombre ? ' active' : '') + '" aria-pressed="' + (r.nombre === rc.nombre) + '" ' + act('tuMesNomina', r.nombre) + '>' + escapeHtml(r.nombre) + '</button>').join('') + '</div>' : '') +
     '<div class="tumes-nom-c">' + ic('repeat') + '<span><b>' + escapeHtml(rc.nombre) + '</b> · ' + escapeHtml(reglaTexto(rc.regla).charAt(0).toLowerCase() + reglaTexto(rc.regla).slice(1)) + '</span><button type="button" class="link" ' + act('recEditar', 'cobro', rc.idx) + '>Cambiar</button></div>' +
     linea(act0, false) + linea(sig, true) +
     '<div class="rec-hint" style="margin:8px 0 0;">La fecha siguiente es una previsión. Si tu nómina se retrasa, tu mes no cambia hasta que llegue (como mucho, 7 días). Si se adelanta, empieza ese mismo día.</div></div>';
 }
 function tuMesHtml() {
   const F = FORM, { y, m } = mesActual(), ej = (c) => { const r = rangoMes(y, m, c); return MESES[m - 1] + ': ' + (fmtDateShort(r.desde) + ' – ' + fmtDateShort(r.hasta)).toLowerCase(); };
-  const op = (k, t, d, extra) => '<button type="button" class="tumes-op' + (F.modo === k ? ' on' : '') + '" ' + act('tuMesModo', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + t + '</b><span>' + d + '</span></span></button>' + (F.modo === k && extra ? extra : '');
+  const op = (k, t, d, extra) => '<button type="button" class="tumes-op' + (F.modo === k ? ' on' : '') + '" role="radio" aria-checked="' + (F.modo === k) + '" ' + act('tuMesModo', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + t + '</b><span>' + d + '</span></span></button>' + (F.modo === k && extra ? extra : '');
   const dias = []; for (let d = 2; d <= 31; d++) dias.push(d);
   return '<div class="handle"></div><h2>Tu mes</h2>' +
     '<div class="rec-hint" style="margin:-8px 0 14px;">Elige cuándo empieza tu mes. Solo cambia cómo se agrupan tus números: no se mueve ni se borra nada.</div>' +
@@ -8340,6 +8347,8 @@ function recGuardar() {
   else { if (F.idx != null) arrDe(F.origKind).splice(F.idx, 1); arrDe(F.recKind).push(item); }
   const patch = { cobros, facturas };
   if (F.recKind === 'cobro' && !(c.ingresos || []).some((x) => normName(x) === normName(nombre))) patch.ingresos = (c.ingresos || []).concat([nombre]);
+  const mn = mesCfg().nomina; // si renombras el cobro que marca «Tu mes», se renombra también allí
+  if (prev && mn && F.origKind === 'cobro' && F.recKind === 'cobro' && normName(prev.nombre) === normName(mn) && normName(nombre) !== normName(mn)) patch.mesInicio = Object.assign({}, c.mesInicio, { nomina: nombre });
   saveConfig(patch);
   FORM = { kind: 'recLista' };
   updateSheet(recListaHtml());
@@ -8513,7 +8522,7 @@ function obGuardarMes(ob) {
   if (!ing.length) patch.ingresos = OB_INGRESOS_SERIE.slice();
   else if (ob.nomina.on && !ing.some((x) => normName(x) === normName('Nómina'))) patch.ingresos = ing.concat(['Nómina']);
   const d = obDia(ob.nomina.dia);
-  if (ob.nomina.on && d && d >= 20 && ob.mesModo === 'cobro') patch.mesInicio = { modo: 'cobro', dia: d };
+  if (ob.nomina.on && d && d >= 20 && ob.mesModo === 'cobro' && !mesCfg().nomina) patch.mesInicio = { modo: 'cobro', dia: d };
   else if (ob.nomina.on && d && d >= 20 && ob.mesModo === 'natural' && mesCfg().modo === 'cobro' && ob.mesTocado) patch.mesInicio = { modo: 'natural', dia: mesCfg().dia || 28 };
   if (Object.keys(patch).length) saveConfig(patch);
   ob.mesGuardado = { nomina: ob.nomina.on ? obDia(ob.nomina.dia) : null, fijos: ob.fijos.filter((f) => (f.nombre || '').trim()).length };
@@ -8890,7 +8899,7 @@ const H = {
   },
   closeSheet: () => closeSheet(),
   verPendiente: () => { S.pendTodos = !S.pendTodos; render(); },
-  tuMesAbrir: () => { verBadge('tumes'); const mc = mesCfg(), t = cfg().mesInicio || {}, cobs = recurrentes().filter((r) => r.kind === 'cobro' && r.regla && r.regla.t); FORM = { kind: 'tuMes', modo: mc.nomina ? 'nomina' : mc.modo, dia: mc.modo === 'cobro' ? mc.dia : (Number(t.dia) >= 2 ? Number(t.dia) : 28), nomina: mc.nomina || ((cobs.find((r) => /nomina|sueldo|salario/.test(normName(r.nombre))) || cobs[0] || {}).nombre || '') }; if ($('#sheetBackdrop')) updateSheet(tuMesHtml()); else openSheet(tuMesHtml()); },
+  tuMesAbrir: () => { verBadge('tumes'); const mc = mesCfg(), t = cfg().mesInicio || {}, cobs = recurrentes().filter((r) => r.kind === 'cobro' && r.regla && r.regla.t); FORM = { kind: 'tuMes', modo: mc.nomina ? 'nomina' : mc.modo, dia: mc.modo === 'cobro' ? mc.dia : (Number(t.dia) >= 2 ? Number(t.dia) : 28), nomina: mc.nomina || ((cobs.find((r) => /nomina|sueldo|salario/.test(normName(r.nombre).normalize('NFD').replace(/[\u0300-\u036f]/g, ''))) || cobs[0] || {}).nombre || '') }; if ($('#sheetBackdrop')) updateSheet(tuMesHtml()); else openSheet(tuMesHtml()); },
   tuMesModo: ([k]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.modo = k === 'cobro' || k === 'nomina' ? k : 'natural'; updateSheet(tuMesHtml()); },
   tuMesNomina: ([n]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.nomina = n; sentir('tic'); updateSheet(tuMesHtml()); },
   tuMesDia: (_a, el) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.dia = Math.min(31, Math.max(2, Number(el.value) || 28)); updateSheet(tuMesHtml()); },
@@ -10155,6 +10164,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { VERSIONES, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
