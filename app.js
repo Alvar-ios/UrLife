@@ -149,34 +149,38 @@ function mesCfg() { let t = {}; try { t = (S.config && S.config.mesInicio) || {}
    Si no ha llegado: mientras no pasen 7 días, sigue el mes anterior; después (o si dices «No»), empieza el día previsto.
    Las fechas futuras son previsión. Una versión antigua de la app no entiende «nomina» y usa el día fijo. ---- */
 let _cortes = null, _cortesCalc = false;
+// «Desde que llega mi nómina» solo vale para cobros de una vez al mes (Calidad 23/10): quincenales, semanales o «cada N días» usan el día fijo
+function reglaMensual(r) { if (!r || !r.t) return false; if (r.t === 'meses') return Number(r.cada) === 1; return ['dia', 'ultDia', 'priHabil', 'ultHabil', 'habil', 'habilFin', 'nesimo'].indexOf(r.t) >= 0; }
+function cobrosNomina() { return recurrentes().filter((r) => r.kind === 'cobro' && reglaMensual(r.regla)); }
 function mesSig(k) { let y = Number(k.slice(0, 4)), m = Number(k.slice(5, 7)) + 1; if (m > 12) { m = 1; y++; } return y + '-' + pad2(m); }
 function cortesNomina() {
   const c = mesCfg(); if (!c.nomina || _cortesCalc) return null;
   const hoy = todayISO(), movs = S.movimientos || [];
   // se recalcula si cambia algo: la app sustituye la lista de movimientos y la configuración enteras en cada cambio
   if (_cortes && _cortes.movs === movs && _cortes.n === movs.length && _cortes.conf === S.config && _cortes.hoy === hoy && _cortes.nom === c.nomina) return _cortes.lista;
-  const rc = recurrentes().find((r) => r.kind === 'cobro' && normName(r.nombre) === normName(c.nomina));
-  if (!rc || !rc.regla || !rc.regla.t) { _cortes = { movs, n: movs.length, conf: S.config, hoy, nom: c.nomina, lista: null }; return null; }
+  const rc = cobrosNomina().find((r) => normName(r.nombre) === normName(c.nomina));
+  if (!rc) { _cortes = { movs, n: movs.length, conf: S.config, hoy, nom: c.nomina, lista: null }; return null; }
   _cortesCalc = true;
   try {
     const primero = movs.reduce((a, m) => (m.fecha && m.fecha < a ? m.fecha : a), hoy), desde = uAdd(primero < uAdd(hoy, -800) ? uAdd(hoy, -800) : primero, -45);
     const occs = ocurrencias(rc.regla, desde, uAdd(hoy, 75)), est = estadoOcurrencias(rc, occs), lista = [];
-    let prev = null, prevNombre = null, prevIso = null;
+    let prev = null, prevNombre = null;
+    // nombre del mes: la fecha prevista + un desfase fijo según el día típico de cobro. Cobras hacia el 28 → el mes siguiente (lo del 28 sep es octubre);
+    // hacia el 5 → ese mismo mes. Unos días antes o después por un fin de semana o un festivo no cambian el nombre. Dos en el mismo mes: cuenta la primera
+    const dm = est.map((o) => Number(o.iso.slice(8, 10))).sort((x, y) => x - y), D = dm.length ? dm[Math.floor(dm.length / 2)] : 28, off = D >= COBRO_FIN ? 45 - D : 15 - D;
+    const minimo = Math.abs(num(rc.importe)) * 0.5; // un ingreso pequeño con el mismo nombre (atrasos, un ajuste) no abre el mes
     est.forEach((o) => {
-      // nombre del mes: como «desde un día» (lo cobrado el 28 de septiembre es octubre), pero siempre uno detrás de otro:
-      // una nómina que se mueve por un fin de semana o un festivo no se salta un mes ni se junta con la siguiente
-      const d = uD(o.iso); let y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
-      if (d.getUTCDate() >= COBRO_FIN) { m++; if (m > 12) { m = 1; y++; } }
-      let nombre = y + '-' + pad2(m);
-      if (prevNombre) { const sig = mesSig(prevNombre), cerca = (uD(o.iso).getTime() - uD(prevIso).getTime()) / 864e5 <= 45; if (nombre <= prevNombre || (nombre > sig && cerca)) nombre = sig; }
-      prevNombre = nombre; prevIso = o.iso;
+      const nombre = uAdd(o.iso, off).slice(0, 7);
+      if (prevNombre && nombre <= prevNombre) return;
+      prevNombre = nombre;
+      if (o.mov && minimo && Math.abs(num(o.mov.importe)) < minimo) o = Object.assign({}, o, { mov: null, estado: 'pend' });
       let corte, previsto = false, esperando = false;
       if (o.mov && o.mov.fecha) corte = o.mov.fecha;
       else if (o.iso > hoy) { corte = o.iso; previsto = true; }
       else if (o.estado === 'no' || uAdd(o.iso, 7) < hoy) corte = o.iso;
       else { corte = null; esperando = true; }
       let ajustado = false;
-      if (corte && prev) { const dd = (uD(corte).getTime() - uD(prev).getTime()) / 864e5; if (dd < 20 || dd > 45) { corte = o.iso; ajustado = true; } }
+      if (corte && prev) { const dd = (uD(corte).getTime() - uD(prev).getTime()) / 864e5; if (dd < 20 || dd > 45) { corte = o.iso; ajustado = true; if (corte > hoy) previsto = true; } }
       if (corte) prev = corte;
       // ini: el día en que empieza este mes. Mientras se espera la nómina, el mes anterior sigue abierto hasta que pasen los 7 días
       lista.push({ nombre, corte, ini: corte || uAdd(o.iso, 8), iso: o.iso, previsto, esperando, ajustado, mov: o.mov || null });
@@ -4236,7 +4240,8 @@ function previstoHtml() {
 }
 /* «Tu mes»: del 1 al 31, o desde el día que cobras */
 function tuMesNominaHtml() {
-  const F = FORM, cobs = recurrentes().filter((r) => r.kind === 'cobro' && r.regla && r.regla.t);
+  const F = FORM, todos = recurrentes().filter((r) => r.kind === 'cobro' && r.regla && r.regla.t), cobs = cobrosNomina();
+  if (todos.length && !cobs.length) return '<div class="tumes-nom"><div class="rec-hint" style="margin:0 0 8px;">Tu nómina tiene que llegarte una vez al mes. Tus cobros fijos llegan con otro ritmo (cada semana, dos veces al mes…), así que para esto no sirven.</div><button class="btn ghost block" ' + act('openRecurrentes') + '>' + ic('repeat') + ' Ver mis cobros fijos</button></div>';
   if (!cobs.length) return '<div class="tumes-nom"><div class="rec-hint" style="margin:0 0 8px;">Primero añade tu nómina como cobro fijo, con cuándo te suele llegar.</div><button class="btn ghost block" ' + act('openRecurrentes') + '>' + ic('plus') + ' Añadir cobro fijo</button></div>';
   const guardada = mesCfg().nomina, perdida = guardada && !cobs.some((r) => normName(r.nombre) === normName(guardada));
   const rc = cobs.find((r) => normName(r.nombre) === normName(F.nomina)) || cobs[0]; F.nomina = rc.nombre;
@@ -4245,11 +4250,11 @@ function tuMesNominaHtml() {
   S.config = prueba; _cortes = null; try { L = cortesNomina(); } finally { S.config = antes; _cortes = null; }
   const hoy = todayISO(), i = L ? L.reduce((a, x, k) => (x.corte && x.corte <= hoy ? k : a), -1) : -1, act0 = i >= 0 ? L[i] : null, sig = L && i >= 0 ? L.slice(i + 1).find((x) => x.corte || x.iso) : null;
   const nomMes = (k) => MESES[Number(k.slice(5, 7)) - 1];
-  const linea = (x, fut) => x ? '<div class="tumes-nom-f"><b>' + nomMes(x.nombre) + (fut ? ' empezará el ' : ' empezó el ') + fechaDiaCorta(x.corte || x.iso) + '</b>' + (fut ? '<span class="tumes-prev">Previsto</span>' : x.mov && x.ajustado ? '<span>Tu nómina llegó el ' + fechaDiaCorta(x.mov.fecha) + ', pero tan lejos de la anterior que cuenta el día previsto</span>' : x.mov ? '<span>Ese día llegó tu nómina (' + money(x.mov.importe) + ')</span>' : '<span>No llegó: cuenta el día previsto</span>') + '</div>' : '';
-  return '<div class="tumes-nom">' + (perdida ? '<div class="rec-hint tumes-aviso" role="status" style="margin:0 0 8px;">Ya no encuentro «' + escapeHtml(guardada) + '». Mientras tanto, tu mes empieza el día ' + mesCfg().dia + '. Elige tu nómina y toca «Listo».</div>' : '') + (cobs.length > 1 ? '<div class="chips">' + cobs.map((r) => '<button type="button" class="chip' + (r.nombre === rc.nombre ? ' active' : '') + '" aria-pressed="' + (r.nombre === rc.nombre) + '" ' + act('tuMesNomina', r.nombre) + '>' + escapeHtml(r.nombre) + '</button>').join('') + '</div>' : '') +
+  const linea = (x, fut) => x && fut && x.esperando ? '<div class="tumes-nom-f"><b>' + nomMes(x.nombre) + ' empezará cuando llegue tu nómina</b><span>Tocaba el ' + fechaDiaCorta(x.iso) + '. Si no llega antes del ' + fechaDiaCorta(x.ini) + ', contará desde el ' + fechaDiaCorta(x.iso) + '.</span></div>' : x ? '<div class="tumes-nom-f"><b>' + nomMes(x.nombre) + (fut ? ' empezará el ' : ' empezó el ') + fechaDiaCorta(x.corte || x.iso) + '</b>' + (fut ? '<span class="tumes-prev">Previsto</span>' : x.mov && x.ajustado ? '<span>Tu nómina llegó el ' + fechaDiaCorta(x.mov.fecha) + ', pero tan lejos de la anterior que cuenta el día previsto</span>' : x.mov ? '<span>Ese día llegó tu nómina (' + money(x.mov.importe) + ')</span>' : '<span>No llegó: cuenta el día previsto</span>') + '</div>' : '';
+  return '<div class="tumes-nom">' + (perdida ? '<div class="rec-hint tumes-aviso" role="status" style="margin:0 0 8px;">' + (todos.some((r) => normName(r.nombre) === normName(guardada)) ? '«' + escapeHtml(guardada) + '» no llega una vez al mes, así que no sirve para empezar tu mes.' : 'Ya no encuentro «' + escapeHtml(guardada) + '».') + ' Mientras tanto, tu mes empieza el día ' + mesCfg().dia + '. Elige tu nómina y toca «Listo».</div>' : '') + (cobs.length > 1 ? '<div class="chips">' + cobs.map((r) => '<button type="button" class="chip' + (r.nombre === rc.nombre ? ' active' : '') + '" aria-pressed="' + (r.nombre === rc.nombre) + '" ' + act('tuMesNomina', r.nombre) + '>' + escapeHtml(r.nombre) + '</button>').join('') + '</div>' : '') +
     '<div class="tumes-nom-c">' + ic('repeat') + '<span><b>' + escapeHtml(rc.nombre) + '</b> · ' + escapeHtml(reglaTexto(rc.regla).charAt(0).toLowerCase() + reglaTexto(rc.regla).slice(1)) + '</span><button type="button" class="link" ' + act('recEditar', 'cobro', rc.idx) + '>Cambiar</button></div>' +
     linea(act0, false) + linea(sig, true) +
-    '<div class="rec-hint" style="margin:8px 0 0;">La fecha siguiente es una previsión. Si tu nómina se retrasa, tu mes no cambia hasta que llegue (como mucho, 7 días). Si se adelanta, empieza ese mismo día.</div></div>';
+    '<div class="rec-hint" style="margin:8px 0 0;">La fecha siguiente es una previsión. Si tu nómina se retrasa, tu mes no cambia hasta que llegue; si pasan más de 7 días, cuenta desde el día previsto. Si se adelanta, empieza ese mismo día.</div></div>';
 }
 function tuMesHtml() {
   const F = FORM, { y, m } = mesActual(), ej = (c) => { const r = rangoMes(y, m, c); return MESES[m - 1] + ': ' + (fmtDateShort(r.desde) + ' – ' + fmtDateShort(r.hasta)).toLowerCase(); };
@@ -4257,12 +4262,12 @@ function tuMesHtml() {
   const dias = []; for (let d = 2; d <= 31; d++) dias.push(d);
   return '<div class="handle"></div><h2>Tu mes</h2>' +
     '<div class="rec-hint" style="margin:-8px 0 14px;">Elige cuándo empieza tu mes. Solo cambia cómo se agrupan tus números: no se mueve ni se borra nada.</div>' +
-    op('natural', 'Del 1 al 31', 'El mes del calendario. ' + ej({ modo: 'natural', dia: 1 }) + '.') +
+    '<div role="radiogroup" aria-label="Cuándo empieza tu mes">' + op('natural', 'Del 1 al 31', 'El mes del calendario. ' + ej({ modo: 'natural', dia: 1 }) + '.') +
     op('nomina', 'Desde que llega mi nómina', 'Empieza el día que te llega de verdad, aunque se adelante o se retrase.', tuMesNominaHtml()) +
     op('cobro', 'Desde un día fijo', 'Tu mes va de un día fijo al siguiente. ' + ej({ modo: 'cobro', dia: F.dia }) + '.',
       '<div class="field tumes-dia"><label>Cobro el día</label><select id="fTuMesDia" ' + onChange('tuMesDia') + '>' + dias.map((d) => '<option value="' + d + '"' + (d === F.dia ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' +
       '<div class="rec-hint" style="margin:-4px 0 10px;">Elige el día más temprano en que sueles cobrar. Si cae en fin de semana, tu mes empieza el viernes anterior; si el mes no tiene ese día, el último.</div>') +
-    '<div class="actions"><button class="btn accent block" ' + act('tuMesGuardar') + '>Listo</button></div>';
+    '</div><div class="actions"><button class="btn accent block" ' + act('tuMesGuardar') + '>Listo</button></div>';
 }
 /* «Estos días»: lo que hay que hacer o mirar (como mucho 3 a la vista) */
 function estosDiasHtml(v2) {
@@ -8922,15 +8927,15 @@ const H = {
   },
   closeSheet: () => closeSheet(),
   verPendiente: () => { S.pendTodos = !S.pendTodos; render(); },
-  tuMesAbrir: () => { verBadge('tumes'); const mc = mesCfg(), t = cfg().mesInicio || {}, cobs = recurrentes().filter((r) => r.kind === 'cobro' && r.regla && r.regla.t); FORM = { kind: 'tuMes', modo: mc.nomina ? 'nomina' : mc.modo, dia: mc.modo === 'cobro' ? mc.dia : (Number(t.dia) >= 2 ? Number(t.dia) : 28), nomina: mc.nomina || ((cobs.find((r) => /nomina|sueldo|salario/.test(normName(r.nombre).normalize('NFD').replace(/[\u0300-\u036f]/g, ''))) || cobs[0] || {}).nombre || '') }; if ($('#sheetBackdrop')) updateSheet(tuMesHtml()); else openSheet(tuMesHtml()); },
+  tuMesAbrir: () => { verBadge('tumes'); const mc = mesCfg(), t = cfg().mesInicio || {}, cobs = cobrosNomina(); FORM = { kind: 'tuMes', modo: mc.nomina ? 'nomina' : mc.modo, dia: mc.modo === 'cobro' ? mc.dia : (Number(t.dia) >= 2 ? Number(t.dia) : 28), nomina: mc.nomina || ((cobs.find((r) => /nomina|sueldo|salario/.test(normName(r.nombre).normalize('NFD').replace(/[\u0300-\u036f]/g, ''))) || cobs[0] || {}).nombre || '') }; if ($('#sheetBackdrop')) updateSheet(tuMesHtml()); else openSheet(tuMesHtml()); },
   tuMesModo: ([k]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.modo = k === 'cobro' || k === 'nomina' ? k : 'natural'; updateSheet(tuMesHtml()); },
   tuMesNomina: ([n]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.nomina = n; sentir('tic'); updateSheet(tuMesHtml()); },
   tuMesDia: (_a, el) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.dia = Math.min(31, Math.max(2, Number(el.value) || 28)); updateSheet(tuMesHtml()); },
   tuMesGuardar: () => {
     if (!FORM || FORM.kind !== 'tuMes') return;
     if (FORM.modo === 'nomina') {
-      const rc = recurrentes().find((r) => r.kind === 'cobro' && normName(r.nombre) === normName(FORM.nomina) && r.regla && r.regla.t);
-      if (!rc) return toast('Primero añade tu nómina como cobro fijo');
+      const rc = cobrosNomina().find((r) => normName(r.nombre) === normName(FORM.nomina));
+      if (!rc) return toast(recurrentes().some((r) => r.kind === 'cobro') ? 'Tu nómina tiene que llegar una vez al mes' : 'Primero añade tu nómina como cobro fijo');
       const o = ocurrencias(rc.regla, todayISO(), uAdd(todayISO(), 62))[0], dia = o ? Math.max(2, Number(o.slice(8, 10))) : FORM.dia; // el día fijo de respaldo, para versiones antiguas
       saveConfig({ mesInicio: { modo: 'cobro', dia, nomina: rc.nombre } }); _cortes = null; sincronizarMes(); sentir('ok'); toast('Tu mes empieza cuando llega «' + rc.nombre + '»'); closeSheet(); render(); return;
     }
