@@ -115,3 +115,14 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - Reemplaza (no aditivo): `validar_compartido` (acepta a las personas sin cuenta del grupo), `saldo_en_grupo` (suma lo de la persona cuyo sitio se ocupó), `cerrar_grupo` (no se cierra con deudas de alguien sin cuenta) y la regla `compartidos_editar` (según `grupos.edicion`).
 - No reescribe ningún gasto: el id de la persona sin cuenta queda como «alias» de quien ocupa su sitio.
 - Probada en la base de datos real con tres usuarios inventados dentro de una transacción que se deshace: 24 de 24 comprobaciones bien (crear, repartir, saldos, no quitar ni cerrar con deudas, ajenos sin acceso, enlace de un uso, ocupar el sitio, no reutilizar el id antiguo, edición «todos»/«autor», administradores y no quedarse sin ninguno). No quedó nada guardado.
+
+## Forma de las metas compartidas (23/10): objetivos_forma — APLICADA
+- SQL en `2026-10-23_objetivos_forma.sql`. Columna opcional `objetivos_compartidos.forma` (texto, solo letras y números, 1-20): la forma de una meta compartida o el icono de una deuda compartida, igual para todo el grupo. Vacía = la que sale del nombre.
+- Aditiva: no cambia ningún dato (3 metas, 0 con forma tras aplicarla). `validar_objetivo` no se toca y no descarta la columna (revisado su código completo). Permisos de tabla entera para `authenticated`.
+- La app solo debe mandar `forma` cuando se elige a mano.
+
+## Temas en los grupos (23/10): grupo_carpetas_temas — APLICADA
+- SQL en `2026-10-23_grupo_carpetas_temas.sql` (migración 1 de `docs/17`, con el retoque de `docs/18`: al crear un tema, el autor tiene que ser quien tiene la sesión).
+- Aditiva: tabla `grupo_carpetas` (RLS; ver/crear/editar solo miembros activos; sin DELETE; `anon` sin permisos), columna vacía `compartidos.carpeta_id`, disparadores `validar_carpeta` y `validar_carpeta_compartido` (este solo se ejecuta si el gasto lleva tema) y función `poner_carpeta`. En Realtime.
+- Comprobado después: RLS activo, 3 reglas, permisos correctos, disparadores y funciones como se esperaba, 0 gastos con tema y 0 temas (34 gastos sin tocar). Los avisos de Supabase no muestran nada nuevo salvo `poner_carpeta` ejecutable con sesión, que es lo buscado.
+- En un grupo cerrado nadie ve ni cambia temas (`es_miembro` exige grupo abierto).
