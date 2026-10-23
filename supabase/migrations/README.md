@@ -126,3 +126,8 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - Aditiva: tabla `grupo_carpetas` (RLS; ver/crear/editar solo miembros activos; sin DELETE; `anon` sin permisos), columna vacía `compartidos.carpeta_id`, disparadores `validar_carpeta` y `validar_carpeta_compartido` (este solo se ejecuta si el gasto lleva tema) y función `poner_carpeta`. En Realtime.
 - Comprobado después: RLS activo, 3 reglas, permisos correctos, disparadores y funciones como se esperaba, 0 gastos con tema y 0 temas (34 gastos sin tocar). Los avisos de Supabase no muestran nada nuevo salvo `poner_carpeta` ejecutable con sesión, que es lo buscado.
 - En un grupo cerrado nadie ve ni cambia temas (`es_miembro` exige grupo abierto).
+
+## Planes y tareas compartidas (23/10): agenda_planes — APLICADA
+- SQL en `2026-10-23_agenda_planes.sql` (migración 2 de `docs/17`; retoque: al crear en un grupo, el autor tiene que ser quien tiene la sesión).
+- Aditiva: tabla `agenda` (planes con fecha, hora y lugar; tareas del grupo con encargado y «hecha»). RLS: lo «Solo yo» solo lo ve quien lo crea; lo de un grupo, sus miembros activos. Sin DELETE; `anon` sin permisos. Disparador `validar_agenda` y función `agenda_hecha` (marcar una tarea del grupo, cualquier miembro). En Realtime.
+- No toca la tabla `tareas` (44 tareas personales sin cambios). Comprobado después: RLS, 3 reglas, permisos y funciones como se esperaba; 0 filas.
