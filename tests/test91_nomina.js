@@ -28,14 +28,16 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   H.recEditar(['cobro', 0]); await sleep(20); const rn = doc.querySelector('#recNombre'); if (rn) { rn.value = 'Sueldo'; H.recGuardar([]); await sleep(50); }
   ok(rn && A.cfg().mesInicio.nomina === 'Sueldo', 'renombrar el cobro «Nómina» a «Sueldo» también lo cambia en «Tu mes» (' + (A.cfg().mesInicio || {}).nomina + ')');
   H.closeSheet([]); await sleep(300);
-  // 2. nómina con retraso: cada 30 días; la última tocaba hace 3 días y no ha llegado
+  // 2. cobro que no es mensual (cada 30 días): el retraso ya lo prueba test92
   const movs2 = [{ id: 'a', tipo: 'Ingreso', categoria: 'Sueldo', importe: 1000, fecha: mas(-63) }, { id: 'b', tipo: 'Ingreso', categoria: 'Sueldo', importe: 1000, fecha: mas(-33) }];
   const e2 = makeEnv({ movs: movs2, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], ingresos: ['Sueldo'], cobros: [{ nombre: 'Sueldo', importe: 1000, regla: { t: 'dias', cada: 30, ancla: mas(-3) }, desde: mas(-100) }], mesInicio: { modo: 'cobro', dia: 20, nomina: 'Sueldo' } }, meta: { onboarded: true } } });
   await sleep(200);
   const B = e2.w.__APP__;
-  ok(B.mesDe(hoy) === B.mesDe(mas(-33)) && B.mesDe(mas(-34)) !== B.mesDe(mas(-33)), 'si se retrasa (3 días), sigue el mes anterior hasta que llegue');
-  const k = B.mesDe(hoy).split('-').map(Number), r = B.rangoMes(k[0], k[1]);
-  ok(r.desde === mas(-33), 'el mes en curso empezó el día que llegó la anterior');
+  // un cobro «cada 30 días» no es de una vez al mes: «Tu mes» sigue con el día fijo guardado (20) y la hoja lo explica
+  const k20 = B.mesDe(hoy), r20 = B.rangoMes(+k20.slice(0, 4), +k20.slice(5, 7));
+  ok(Number(r20.desde.slice(8, 10)) >= 18 && Number(r20.desde.slice(8, 10)) <= 20 && !r20.previsto, 'cobro «cada 30 días»: no sirve como nómina, sigue el día fijo 20 (' + r20.desde + ')');
+  B.H.tuMesAbrir([]); await sleep(5);
+  ok(/una vez al mes/.test(e2.doc.querySelector('#sheetHost').textContent), 'la hoja explica que la nómina tiene que llegar una vez al mes');
   // 3. sin cobro fijo: aviso para añadirlo
   const e3 = makeEnv({ cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
   await sleep(200);
