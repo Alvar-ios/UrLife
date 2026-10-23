@@ -927,7 +927,7 @@ function render() {
   if (resumen && !resAnual) { const kA = S.movPeriodo + '|' + versionDe('movResumen'); gcAnilloDraw(kA !== _donutAnim ? true : false); _donutAnim = kA; }
   if (resumen && resAnual) drawTrend();
   if (S.tab === 'dinero' && (dineroV2() ? S.dineroVer === 'inversiones' : dineroSub() === 'inversiones')) bindInvChart();
-  if (S.tab === 'dinero' && dineroV2()) { cabAltoMedir(); dmAnimarAporte(c); if (S._dmIr) { const el = $('#dm-' + S._dmIr); S._dmIr = null; if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } }, 60); } }
+  if (S.tab === 'dinero' && dineroV2()) { dmAnimarAporte(c); if (S._dmIr) { const el = $('#dm-' + S._dmIr); S._dmIr = null; if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } }, 60); } }
   if (S.tab === 'movimientos') movGestos(c);
   const _ent = S._entrando;
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
@@ -935,6 +935,7 @@ function render() {
   if (_agEl || S._agFoco) { S._agFoco = false; const nv = $('#agRapida'); if (nv) { if (_agV) nv.value = _agV; try { nv.focus(); } catch (e) { /* noop */ } } }
   if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') setTimeout(marcarJuntosVisto, 0); else if ((S._vjFuera = true) && !cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
   pintarComparar();
+  if (S.tab === 'dinero' && dineroV2()) cabAltoMedir(); // después de «Antes»: ese botón puede bajar la fecha a dos líneas
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse') || lsGet('soy')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
 }
@@ -4560,7 +4561,12 @@ function renderDineroV2() {
 /* ---- Dinero v3 (23/10/2026, docs/15 2.1 y 2.2): «Lo que tienes» en una fila, 4 fichas que hacen de pestañas y cuentas en mosaico ---- */
 function dineroV3() { return versionDe('dinero') === 'formas'; }
 // alto de la cabecera (cambia a 360 px, con la fecha en dos líneas): las fichas-pestaña se quedan fijas justo debajo
-function cabAltoMedir() { const t = $('.topbar'); if (t) document.documentElement.style.setProperty('--cab-alto', Math.round(t.getBoundingClientRect().height) + 'px'); }
+function cabAltoMedir() {
+  const t = $('.topbar'); if (!t) return;
+  document.documentElement.style.setProperty('--cab-alto', Math.round(t.getBoundingClientRect().height) + 'px');
+  // si la cabecera cambia de alto sin repintar (llega la letra, cambia el botón «Antes»), se vuelve a medir; cambiar la variable no cambia la cabecera, así que no hay bucle
+  if (window.ResizeObserver && cabAltoMedir._t !== t) { if (cabAltoMedir._ro) cabAltoMedir._ro.disconnect(); cabAltoMedir._t = t; cabAltoMedir._ro = new ResizeObserver(() => { if (S.tab === 'dinero') cabAltoMedir(); }); cabAltoMedir._ro.observe(t); }
+}
 window.addEventListener('resize', () => { if (S.tab === 'dinero') cabAltoMedir(); });
 const DM3_TABS = ['cuentas', 'metas', 'inversiones', 'deudas'];
 function dm3Tab() { return DM3_TABS.indexOf(S.dm3Tab) >= 0 ? S.dm3Tab : 'cuentas'; }
