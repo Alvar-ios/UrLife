@@ -10,10 +10,36 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------------- Iconos (SVG inline, trazo simple) ---------------- */
 const ICONS = {
+  piggy2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5c0-3.3 3-5.5 7-5.5 2.6 0 4.6.8 5.8 2.2l2.2-.7-.5 2.8c.6.6 1 1.4 1 2.2v1l-1.8.7a6 6 0 0 1-2.2 2.3V20h-2.5v-1.6h-4V20H7v-2.4a5 5 0 0 1-2.5-4.3Z"/><path d="M10 9.5h3"/><circle cx="16.3" cy="12" r=".8" fill="currentColor" stroke="none"/><path d="M4.6 12.2c-1.4-.2-2-1.1-1.8-2"/></svg>',
+  target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>',
+  deuda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="12" r="6"/><path d="M8 12h4"/><path d="M17.5 6.5a8 8 0 0 1 0 11"/><path d="m17.5 17.5-.2-2.9M17.5 17.5l-2.8.4"/></svg>',
+  moneda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M15 8.6a4 4 0 1 0 0 6.8"/><path d="M7.8 11h5.4M7.8 13.2h5.4"/></svg>',
+  fileIn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6"/><path d="m9 14 3 3 3-3"/></svg>',
+  archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5"/><path d="M10 12.5h4"/></svg>',
+  history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 4v4.5H8"/><path d="M12 7.5V12l3 2"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.2"/><circle cx="12" cy="7.8" r=".9" fill="currentColor" stroke="none"/></svg>',
+  megafono: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 0 0 1 1h2l7 4V5L7 9H5a1 1 0 0 0-1 1Z"/><path d="M17.5 9a4 4 0 0 1 0 6"/><path d="M7.5 15.2 8.6 20"/></svg>',
+  replay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M10.2 8.8v6.4l5-3.2z"/></svg>',
+  bulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.5h6M10 21h4"/><path d="M8.2 14.5A6 6 0 1 1 15.8 14.5c-.8.7-1.3 1.6-1.3 2.5v.5h-5V17c0-.9-.5-1.8-1.3-2.5Z"/></svg>',
+  calRango: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/><path d="M8 15h8"/><path d="M8 13.5v3M16 13.5v3"/></svg>',
+  autoTag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12.5 11.5 4H17v3"/><path d="M3 12.5 10.5 20l3.5-3.5"/><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"/><path d="M18 10.5l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z"/></svg>',
+  coin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6.5" rx="7" ry="3"/><path d="M5 6.5v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/><path d="M5 11.5v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></svg>',
+  pie: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5A8.5 8.5 0 1 0 20.5 12H12z"/><path d="M15 3.8A8.5 8.5 0 0 1 20.2 9H15z"/></svg>',
+  cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="19" height="11" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>',
+  cap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5V16c1.5 1.6 3.4 2.4 5.5 2.4s4-.8 5.5-2.4v-4.5"/><path d="M21.5 9.5V14"/></svg>',
+  manoMoneda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h3l4.5 1.5h3.2a1.5 1.5 0 0 0 0-3H11"/><path d="M6 20.5h7l6.2-3.7a1.6 1.6 0 0 0-1.6-2.8L14 15.8"/><path d="M3 13v8"/><circle cx="15.5" cy="6.5" r="3.5"/></svg>',
+  comparar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M12 4v16"/><path d="m7 10-2 2 2 2M17 10l2 2-2 2"/></svg>',
+  sonrisa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c.9 1.4 2.1 2 3.5 2s2.6-.6 3.5-2"/><circle cx="9" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r=".9" fill="currentColor" stroke="none"/></svg>',
+  candado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/></svg>',
+  estrella: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12.5" rx="2.5"/><path d="M10.3 8.8v5l4.2-2.5z"/><path d="M8 20.5h8"/></svg>',
+  velas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v3M7 15v3M17 6v3M17 18v3"/><rect x="5" y="6" width="4" height="9" rx="1"/><rect x="15" y="9" width="4" height="9" rx="1"/></svg>',
+  coche2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V13l1.6-4.2A2.5 2.5 0 0 1 8 7h8a2.5 2.5 0 0 1 2.4 1.8L20 13v3.5"/><path d="M3 13h18v3.5H3z"/><path d="M6 16.5V19M18 16.5V19"/><circle cx="7.5" cy="14.8" r=".7" fill="currentColor" stroke="none"/><circle cx="16.5" cy="14.8" r=".7" fill="currentColor" stroke="none"/><path d="M6 11h12"/></svg>',
+  persona: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6"/></svg>',
   bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg>',
-  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.4"/></svg>',
   borrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7 6-7Z"/><path d="m12 9.5 5 5M17 9.5l-5 5"/></svg>',
   salir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h10M17 8l4 4-4 4"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>',
@@ -67,6 +93,7 @@ const ICONS = {
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.5 13.5"/><path d="m21 3-6.5 18-4-7.5L3 9.5z"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
 };
+ICONS.trendUp = ICONS.piggy; // la «hucha» de antes es una flecha que sube: Apartar usa ahora piggy2, una hucha de verdad
 function ic(name) {
   const s = ICONS[name];
   return s ? s.replace('<svg ', '<svg class="i" aria-hidden="true" ') : '';
@@ -693,14 +720,14 @@ const CATS_STD = [
   { n: 'Restaurantes y bares', ic: 'fork', d: 'Comer fuera, cañas, cafés' },
   { n: 'Vivienda', ic: 'home', d: 'Alquiler o hipoteca, comunidad' },
   { n: 'Suministros', ic: 'bolt', d: 'Luz, agua, gas, internet, móvil' },
-  { n: 'Transporte', ic: 'car', d: 'Gasolina, parking, coche, transporte público' },
+  { n: 'Transporte', ic: 'coche2', d: 'Gasolina, parking, coche, transporte público' },
   { n: 'Ocio', ic: 'film', d: 'Cine, conciertos, planes' },
   { n: 'Deporte', ic: 'ball', d: 'Gimnasio, golf, pádel' },
   { n: 'Compras', ic: 'shirt', d: 'Ropa y cosas' },
   { n: 'Salud y cuidado personal', ic: 'heart', d: 'Farmacia, médico, pelu, uñas' },
   { n: 'Regalos', ic: 'gift', d: 'Cumpleaños, detalles' },
   { n: 'Viajes', ic: 'plane', d: 'Hoteles, vuelos, escapadas' },
-  { n: 'Suscripciones', ic: 'repeat', d: 'Spotify, Netflix, apps' },
+  { n: 'Suscripciones', ic: 'play', d: 'Spotify, Netflix, apps' },
   { n: 'Seguros', ic: 'shield', d: 'Coche, hogar, salud' },
   { n: 'Educación', ic: 'book', d: 'Cursos, libros, academia' },
   { n: 'Mascotas', ic: 'paw', d: 'Comida, veterinario' },
@@ -793,7 +820,7 @@ function categoriasPorTipo(tipo) {
 const TABS = [
   { id: 'inicio', label: 'Inicio', icon: 'home' },
   { id: 'movimientos', label: 'Movimientos', icon: 'list' },
-  { id: 'dinero', label: 'Dinero', icon: 'card' },
+  { id: 'dinero', label: 'Dinero', icon: 'wallet' },
   { id: 'agenda', label: 'Agenda', icon: 'calendar' },
 ];
 const TITULOS = { inicio: 'Inicio', movimientos: 'Movimientos', dinero: 'Dinero', agenda: 'Agenda', juntos: 'Juntos', tu: 'Tú' };
@@ -3561,8 +3588,8 @@ function crearHtmlV2() {
     '<div class="crear-grid crear-4' + (compartidosDisponible() ? '' : ' tres') + '">' + op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
       (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + '</div>' +
     (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
-    '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura') +
-      op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') + '</div>' +
+    '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy2', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'trendUp', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'repeat', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura') +
+      op('crearIr', ['deuda'], 'deuda', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'fileIn', 'Importar', 'k-imp') + '</div>' +
     (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('swap') + ' Ver la versión anterior</button>' : '');
 }
 /* ============================================================
@@ -3666,32 +3693,32 @@ function renderTuV2() {
   const nGr = S.grupos ? S.grupos.filter((g) => g.tipo === 'grupo').length : null, nCu = cuentasCfg ? (cuentasCfg() || []).length : 0;
   const parche = NOVEDADES[0] ? String(NOVEDADES[0].titulo).split('·')[0].trim() : '';
   const nombre = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido());
-  const mas = [it('openMoneda', [], 'chart', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
+  const mas = [it('openMoneda', [], 'moneda', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
     lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'wallet', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
-    it('openLotes', [], 'list', 'Importaciones', '', 'deshacer importar'),
-    it('compararToggle', [], 'swap', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')];
+    it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar'),
+    it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')];
   return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t">' + escapeHtml(nombre) + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
       '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar</button></div>' +
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
     grupo('Tu dinero', [it('openCuentas', [], 'bank', 'Cuentas y saldos', (badge('cuentas') || badge('patrimonio')) + (nCu ? '<span class="menu-extra">' + nCu + (nCu === 1 ? ' cuenta' : ' cuentas') + '</span>' : ''), 'banco saldo patrimonio'),
       it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
-      it('openReglas', [], 'tag', 'Reglas de categorías', badge('reglas'), 'automatico'),
+      it('openReglas', [], 'autoTag', 'Reglas de categorías', badge('reglas'), 'automatico'),
       it('openRecurrentes', [], 'repeat', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recibos suscripciones'),
-      it('tuMesAbrir', [], 'calendar', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
+      it('tuMesAbrir', [], 'calRango', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
       it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir invitar whatsapp juntos')]) +
-    grupo('Traer y guardar', [it('impAbrir', [], 'download', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
+    grupo('Traer y guardar', [it('impAbrir', [], 'fileIn', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
       ticketsDisponible() ? it('ticketsInfo', [], 'receipt', 'Fotos de tickets', ticketsFilaExtra(), 'tickets lecturas foto camara recibo quedan') : '',
       it('openPapelera', [], 'trash', 'Papelera', badge('papelera') + '<span class="menu-extra">' + (papeleraItems().length ? papeleraItems().length + ' dentro' : 'vacía') + '</span>', 'borrados recuperar eliminados'),
-      it('exportBackup', [], 'download', 'Copia de seguridad', '<span class="menu-extra">Descargar</span>', 'exportar backup json')]) +
+      it('exportBackup', [], 'archive', 'Copia de seguridad', '<span class="menu-extra">Descargar</span>', 'exportar backup json')]) +
     grupo('La app', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', badge('aspecto') + '<span class="menu-extra">' + (PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1] + '</span>', 'aspecto color paleta tipografia cifras fuente vibracion sonido estilo'),
       '<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
       '<div class="segmented tema-seg">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
-      it('verNovedades', ['1'], 'sparkle', 'Qué hay de nuevo', '<span class="menu-extra">' + escapeHtml(parche) + '</span>', 'novedades parche'),
-      it('startOnboardingManually', [], 'flag', 'Volver a ver la bienvenida', '', 'empezar asistente bienvenida')]) +
+      it('verNovedades', ['1'], 'megafono', 'Qué hay de nuevo', '<span class="menu-extra">' + escapeHtml(parche) + '</span>', 'novedades parche'),
+      it('startOnboardingManually', [], 'replay', 'Volver a ver la bienvenida', '', 'empezar asistente bienvenida')]) +
     (contactoHay() ? '<div class="tu-grupo"><button type="button" class="tu2-escr tappable" data-k="escribenos contacto ayuda fallo idea sugerencia" ' + act('escrAbrir') + '><span class="ic">' + ic('send') + '</span><span><b>Escríbenos</b><span>¿Algo falla o tienes una idea? Lo lee quien hace la app.</span></span><span class="chev">' + ic('chevR') + '</span></button></div>' : '') +
     '<div class="tu-grupo tu-mas-btn"><div class="card menu"><button type="button" class="menu-item" aria-expanded="' + (S.tuMas ? 'true' : 'false') + '" ' + act('tuMasToggle') + '><span class="ic">' + ic('sliders') + '</span>Más ajustes<span class="menu-extra">' + mas.length + '</span><span class="chev">' + ic(S.tuMas ? 'chevD' : 'chevR') + '</span></button></div></div>' +
     '<div class="tu-grupo tu-mas"' + (S.tuMas ? '' : ' style="display:none"') + '><div class="card menu">' + mas.join('') + '</div></div>' +
-    grupo('Tu cuenta', [mfaDisponible() ? it('openSeguridad', [], 'shield', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
+    grupo('Tu cuenta', [mfaDisponible() ? it('openSeguridad', [], 'candado', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
       '<button class="menu-item tu2-salir" data-k="cerrar sesion salir" ' + act('logoutPreguntar') + '><span class="ic">' + ic('salir') + '</span>Cerrar sesión</button>']) +
     '<div class="empty-mini" id="tuNada" style="display:none;">No hay ningún ajuste con ese nombre.</div>' +
     '<p class="tu2-pie">PalomApp' + (parche ? ' · ' + escapeHtml(parche) : '') + '</p>';
@@ -3864,8 +3891,8 @@ function compararOn() { return cfg().compararVersiones !== false; }
 function compararBotonHtml() {
   const k = seccionVersion(); if (!k || !VERSIONES[k] || VERSIONES[k].cerrada || !compararOn() || !allLoaded() || (!S.movimientos.length && !(S.compartidos || []).length)) return '';
   const vs = VERSIONES[k].variantes, i = versionIdx(k);
-  if (vs.length === 2) return '<button type="button" class="comparar-fab' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="' + (i ? 'Ver la versión nueva' : 'Ver la versión anterior') + '">' + ic('swap') + '<span>' + (i ? 'Ver nueva' : 'Antes') + '</span></button>';
-  return '<button type="button" class="comparar-fab multi' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="Cambiar de versión (' + vs[i][1] + ', ' + (i + 1) + ' de ' + vs.length + ')">' + ic('swap') + '<span>' + vs[i][1] + ' <i>' + (i + 1) + '/' + vs.length + '</i></span></button>';
+  if (vs.length === 2) return '<button type="button" class="comparar-fab' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="' + (i ? 'Ver la versión nueva' : 'Ver la versión anterior') + '">' + ic('comparar') + '<span>' + (i ? 'Ver nueva' : 'Antes') + '</span></button>';
+  return '<button type="button" class="comparar-fab multi' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="Cambiar de versión (' + vs[i][1] + ', ' + (i + 1) + ' de ' + vs.length + ')">' + ic('comparar') + '<span>' + vs[i][1] + ' <i>' + (i + 1) + '/' + vs.length + '</i></span></button>';
 }
 function pintarComparar() {
   let h = $('#compararHost'); if (!h) { h = document.createElement('div'); h.id = 'compararHost'; document.body.appendChild(h); }
@@ -3905,8 +3932,8 @@ function heroCifrasHtml(k, y, m) {
 // A2 · catálogo de círculos. Cada uno: { k, ic, tono, valor, l1, l2, aro, frase, a } o null si no hay datos
 const ASIVAS_TIPOS = [['auto', 'Automático', 'sparkle', 'Cambia solo según tu mes'], ['gastoMes', 'Gasto frente al mes pasado', 'arrowUp', 'Si gastas más o menos que el mes anterior'],
   ['sube', 'Lo que más sube', 'tag', 'La categoría que más crece'], ['presu', 'Presupuestos', 'checkCircle', 'Si vas dentro de tus presupuestos'], ['dia', 'Al día', 'wallet', 'Lo que puedes gastar cada día que queda'],
-  ['sinGastos', 'Días sin gastos', 'calendar', 'Los días que no has gastado nada'], ['juntos', 'Juntos', 'users', 'Lo que debes o te deben'], ['ahorro', 'Lo que apartas', 'piggy', 'Qué parte de lo que entra apartas'],
-  ['inv', 'Inversiones', 'chart', 'Cómo se han movido esta semana'], ['cat', 'Una categoría', 'tag', 'Lo que llevas en la que elijas'], ['meta', 'Una meta', 'flag', 'Cómo va la meta que elijas']];
+  ['sinGastos', 'Días sin gastos', 'estrella', 'Los días que no has gastado nada'], ['juntos', 'Juntos', 'users', 'Lo que debes o te deben'], ['ahorro', 'Lo que apartas', 'piggy', 'Qué parte de lo que entra apartas'],
+  ['inv', 'Inversiones', 'chart', 'Cómo se han movido esta semana'], ['cat', 'Una categoría', 'tag', 'Lo que llevas en la que elijas'], ['meta', 'Una meta', 'target', 'Cómo va la meta que elijas']];
 const ASIVAS_CORTO = { gastoMes: 'Gasto', sube: 'Lo que sube', presu: 'Presupuestos', dia: 'Al día', sinGastos: 'Sin gastos', juntos: 'Juntos', ahorro: 'Apartas', inv: 'Inversiones', cat: 'Categoría', meta: 'Meta' };
 function asiVasCfg() { const v = cfg().asiVas; return Array.isArray(v) && v.length === 5 ? v.map((x) => String(x || 'auto')) : ['auto', 'auto', 'auto', 'auto', 'auto']; }
 function invCambioSemana() {
@@ -4450,7 +4477,7 @@ function grupoHtmlV2(g) {
   else h += mias.map((d) => { const debo = esMio(g.id, d.de), otro = debo ? d.a : d.de;
     return '<div class="jv-tuyo ' + (debo ? 'de' : 'te') + '"><span>' + (debo ? 'Debes <b class="tnum">' + money(d.importe) + '</b> a ' + escapeHtml(nombreDe(g.id, otro)) : escapeHtml(nombreDe(g.id, otro)) + ' te debe <b class="tnum">' + money(d.importe) + '</b>') + '</span>' +
       (debo ? '<button type="button" class="jv-btn saldar" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Saldar</button>' : '<button type="button" class="jv-btn pedir" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Me ha pagado</button>') + '</div>'; }).join('');
-  if (cs.length) h += '<button type="button" class="link jv-origen" ' + act('origenVer', g.id) + '>' + ic('list') + ' ¿De dónde sale?</button>';
+  if (cs.length) h += '<button type="button" class="link jv-origen" ' + act('origenVer', g.id) + '>' + ic('info') + ' ¿De dónde sale?</button>';
   h += '<div class="segmented jv-tabs">' + [['gastos', 'Gastos'], ['saldos', 'Saldos']].concat(agendaDisponible() ? [['planes', 'Planes']] : []).map(([k, l]) => '<button class="' + (tab === k ? 'active' : '') + '" ' + act('grupoTab', k) + '>' + l + '</button>').join('') + '</div>';
   if (tab === 'gastos') {
     const gastos = cs.filter((c) => c.tipo !== 'Liquidación'), tot = gastos.reduce((a, c) => a + num(c.importe), 0), mia = gastos.reduce((a, c) => a + miParte(c), 0);
@@ -4819,8 +4846,8 @@ function emojiSugerido(nombre, def) { const n = normName(nombre || ''); const x 
 const EMOJI_IC = { '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'car', '💍': 'heart', '🍼': 'heart', '🎓': 'book', '🎁': 'gift', '📱': 'bolt', '💳': 'card', '🤝': 'users', '🐾': 'paw', '🚲': 'car', '🎯': 'flag' };
 const EMOJI_NOMBRE = { '✈️': 'Viaje', '🏠': 'Casa', '🛟': 'Colchón', '🚗': 'Coche', '💍': 'Boda', '🍼': 'Bebé', '🎓': 'Estudios', '🎁': 'Regalo', '📱': 'Aparatos', '💳': 'Tarjeta', '🤝': 'Préstamo', '🐾': 'Mascota', '🚲': 'Deporte', '🎯': 'Meta' };
 function icDeEmoji(e, def) { return ic(EMOJI_IC[e] || def || 'flag'); }
-function metaIcono(r) { return icDeEmoji(emojiMeta(r), 'flag'); }
-function deudaIcono(d) { return icDeEmoji(d.emoji || emojiSugerido(d.nombre, '💳'), 'card'); }
+function metaIcono(r) { return icDeEmoji(emojiMeta(r), 'target'); }
+function deudaIcono(d) { return icDeEmoji(d.emoji || emojiSugerido(d.nombre, '💳'), 'deuda'); }
 function emojiMeta(r) { const m = !r.compartida ? metasCfg().find((x) => x.id === r.id) : null; return (m && m.emoji) || emojiSugerido(r.nombre); }
 const DM_ESTADO_COLOR = { bien: 'var(--income)', justo: 'var(--warn, var(--accent))', gris: 'var(--text-muted)', mal: 'var(--expense)' };
 // estado de una meta en una frase corta y sobria (el rojo solo si la fecha ya pasó)
@@ -4857,7 +4884,7 @@ function renderDineroV2() {
   const deudas = (cfg().deudas || []).filter((d) => d && d.nombre), dComp = objCompartidos('deuda');
   const nada = !p.nCuentas && !hayInv && !deudas.length && !dComp.length && !ms.activas.length && !ms.hechas.length;
   if (nada) return '<div class="card dm-empezar"><div class="dm-emp-t">Empieza por aquí</div>' +
-    [['bank', 'Pon el saldo de tu banco', 'Así sabrás lo que tienes de verdad', 'openCuentas'], ['flag', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva'], ['card', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva']]
+    [['bank', 'Pon el saldo de tu banco', 'Así sabrás lo que tienes de verdad', 'openCuentas'], ['target', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva'], ['deuda', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva']]
       .map(([i, t, d, a]) => '<button type="button" class="dm-emp tappable" ' + act(a) + '><span class="dm-ic">' + ic(i) + '</span><span class="dm-emp-x"><b>' + t + '</b><span>' + d + '</span></span>' + ic('chevR') + '</button>').join('') + '</div>';
   if (dineroV3()) return dinero3Html(p, ms, hayInv, deudas, dComp);
   return lqtHtml(p) + dmCuentasHtml() + dmMetasHtml(ms) + (hayInv ? dmInversionesHtml() : '') + dmDeudasHtml(deudas, dComp);
@@ -4882,9 +4909,9 @@ function dinero3Html(p, ms, hayInv, deudas, dComp) {
   const ficha = (k, icono, nom, val, cls) => '<button type="button" role="tab" id="dm3t-' + k + '" aria-controls="dmCuerpo" aria-selected="' + (t === k) + '" class="dm3-tab' + (t === k ? ' on' : '') + (cls ? ' ' + cls : '') + '" ' + act('dm3Tab', k) + '>' + ic(icono) + '<span>' + nom + '</span><b class="tnum">' + val + '</b></button>';
   const tabs = '<div class="dm3-tabs" role="tablist" aria-label="Tu dinero">' +
     ficha('cuentas', 'bank', 'Cuentas', p.nCuentas ? m0(p.banco) : 'Añadir', p.nCuentas ? '' : 'vacia') +
-    ficha('metas', 'flag', 'Metas', nMetas ? (nMetas === 1 ? '1 meta' : nMetas + ' metas') : 'Añadir', nMetas ? '' : 'vacia') +
-    ficha('inversiones', 'chart', 'Inversiones', hayInv ? m0(p.inv) : 'Añadir', hayInv ? 'inv' : 'vacia') +
-    ficha('deudas', 'card', 'Deudas', nDeu ? (p.deudas ? '−' + m0(p.deudas) : m0(0)) : 'Añadir', nDeu ? 'deu' : 'vacia') + '</div>';
+    ficha('metas', 'target', 'Metas', nMetas ? (nMetas === 1 ? '1 meta' : nMetas + ' metas') : 'Añadir', nMetas ? '' : 'vacia') +
+    ficha('inversiones', 'trendUp', 'Inversiones', hayInv ? m0(p.inv) : 'Añadir', hayInv ? 'inv' : 'vacia') +
+    ficha('deudas', 'deuda', 'Deudas', nDeu ? (p.deudas ? '−' + m0(p.deudas) : m0(0)) : 'Añadir', nDeu ? 'deu' : 'vacia') + '</div>';
   let cuerpo;
   if (t === 'cuentas') cuerpo = dm3CuentasHtml(p);
   else if (t === 'metas') cuerpo = dmMetasHtml(ms);
@@ -5160,7 +5187,7 @@ function invResumen() {
   return { grupos, vals, todas, metido, valor, gan: valor - metido, pct: metido > 0 ? (valor - metido) / metido * 100 : null };
 }
 const signoN = (n) => (n >= 0 ? '+' : '−');
-function invIcono(t) { const k = normName(t || ''); return /cripto|bitcoin/.test(k) ? 'bolt' : /accion/.test(k) ? 'chart' : /fondo|etf|indice/.test(k) ? 'arrowUp' : 'piggy'; }
+function invIcono(t) { const k = normName(t || ''); return /cripto|bitcoin/.test(k) ? 'coin' : /accion/.test(k) ? 'velas' : /fondo|etf|indice/.test(k) ? 'pie' : 'trendUp'; }
 function invFilaV2(g, vv, completo) {
   return '<button type="button" class="dm-inv-f tappable" ' + act('verActivo', g.nombre) + '><span class="dm-ic inv">' + ic(invIcono(g.tipoActivo)) + '</span>' +
     '<span class="dm-emp-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + (!vv ? 'Sin precio todavía' : completo ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 4 }) + ' part. · aportaste ' + m0(g.total) : 'Aportaste ' + m0(g.total)) + '</span></span>' +
