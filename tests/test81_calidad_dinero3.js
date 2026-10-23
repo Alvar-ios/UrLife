@@ -90,11 +90,11 @@ function preparar(e) {
     const tarj = [...doc.querySelectorAll('.jv-objs .jv-obj')];
     ok(tarj.length === 3, 'Juntos: las 3 metas compartidas en la fila');
     H.objEditar(['o1']); await sleep(20);
-    ok(!sh().querySelector('.fm-grid'), 'el editor de una meta compartida no ofrece «Su forma» (aún no hay columna)');
+    ok(!!sh().querySelector('.fm-grid'), 'el editor de una meta compartida ofrece «Su forma» (columna creada el 23/10)');
     H.metaFormaElegir(['casa']); await sleep(10);
     ok(!('forma' in (e.w.__APP__.S.objetivos[0])), 'metaFormaElegir con una meta compartida abierta no hace nada');
     await H.objGuardar([]); await sleep(30);
-    ok(enviados.length === 1 && !('forma' in enviados[0][1]), 'guardar una meta compartida no manda «forma» a Supabase');
+    ok(enviados.length === 1 && !('forma' in enviados[0][1]), 'guardar una meta compartida sin tocar la forma no manda «forma» a Supabase');
     H.closeSheet([]); await sleep(300);
     H.objNueva(['ahorro', 'g1']); await sleep(20);
     sh().querySelector('#oNombre').value = 'Viaje a Roma'; sh().querySelector('#oObjetivo').value = '800';

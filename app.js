@@ -10,6 +10,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------------- Iconos (SVG inline, trazo simple) ---------------- */
 const ICONS = {
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg>',
   info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.4"/></svg>',
   borrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7 6-7Z"/><path d="m12 9.5 5 5M17 9.5l-5 5"/></svg>',
   salir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h10M17 8l4 4-4 4"/></svg>',
@@ -620,6 +623,8 @@ function subscribeAll() {
     render(); refrescarSheetCompartido();
   }, (e) => { console.error(e); S.compartidos = S.compartidos || []; }));
   if (S.db.aportes) _unsubs.push(S.db.aportes.suscribir((rows) => { S.aportes = rows; render(); }, (e) => { console.error(e); S.aportes = S.aportes || []; }));
+  if (S.db.agenda) _unsubs.push(S.db.agenda.suscribir((rows) => { S.agenda = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.agenda = S.agenda || []; }));
+  if (S.db.carpetas) _unsubs.push(S.db.carpetas.suscribir((rows) => { S.carpetas = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.carpetas = S.carpetas || []; }));
   if (S.db.objetivos) _unsubs.push(S.db.objetivos.suscribir((rows) => { S.objetivos = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.objetivos = S.objetivos || []; }));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
     S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
@@ -926,7 +931,7 @@ function render() {
   const resumen = S.tab === 'movimientos' && S.movVista === 'resumen', resAnual = /^y:/.test(movPerNorm(S.movPeriodo));
   if (resumen && !resAnual) { const kA = S.movPeriodo + '|' + versionDe('movResumen'); gcAnilloDraw(kA !== _donutAnim ? true : false); _donutAnim = kA; }
   if (resumen && resAnual) drawTrend();
-  if (S.tab === 'dinero' && (dineroV2() ? S.dineroVer === 'inversiones' : dineroSub() === 'inversiones')) bindInvChart();
+  if (S.tab === 'dinero' && (dineroV2() ? S.dineroVer === 'inversiones' || (dineroV3() && dm3Tab() === 'inversiones') : dineroSub() === 'inversiones')) bindInvChart();
   if (S.tab === 'dinero' && dineroV2()) { dmAnimarAporte(c); if (S._dmIr) { const el = $('#dm-' + S._dmIr); S._dmIr = null; if (el) setTimeout(() => { try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } }, 60); } }
   if (S.tab === 'movimientos') movGestos(c);
   const _ent = S._entrando;
@@ -2194,7 +2199,7 @@ function nombreSugerido() {
   const e = ((S.user && S.user.email) || '').split('@')[0].replace(/[._\-]+/g, ' ').replace(/\d+/g, '').trim().split(' ')[0] || 'Yo';
   return e.charAt(0).toUpperCase() + e.slice(1);
 }
-const ERR_GRUPO = { 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
+const ERR_GRUPO = { grupo_cerrado: 'Este grupo está cerrado: ya no se puede añadir nada', asignado_no_valido: 'Esa persona ya no está en el grupo', agenda_borrado: 'Ese plan ya está borrado', objetivos_compartidos_forma_check: 'Esa forma no vale', carpeta_no_valida: 'Ese tema ya no existe o es de otro grupo', demasiadas_carpetas: 'Este grupo ya tiene 30 temas: cierra o borra alguno', carpeta_borrada: 'Ese tema está borrado', 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
   demasiadas_invitaciones: 'Hay demasiados enlaces pendientes. Anula alguno.', demasiados_grupos: 'Has creado muchos grupos hoy. Prueba mañana.', usa_salir: 'Para irte tú, usa «Salir del grupo».', sin_sesion: 'Tienes que iniciar sesión.',
   saldo_pendiente: 'Hay cuentas pendientes. Saldadlas antes (botón «Saldar»).', reparto_no_cuadra: 'El reparto no suma el total.', reparto_no_valido: 'Revisa el reparto: solo puede incluir a miembros.', pagador_no_valido: 'Quien pagó tiene que ser del grupo.', compartido_borrado: 'Ese gasto ya se había eliminado.', objetivo_no_valido: 'Elige una meta o deuda de ese grupo.', objetivo_borrado: 'Esa meta o deuda ya se había eliminado.' };
 function errGrupo(e) { const m = String((e && (e.message || (e.original && e.original.message))) || ''); const k = Object.keys(ERR_GRUPO).find((x) => m.indexOf(x) >= 0); return k ? ERR_GRUPO[k] : 'No se pudo completar. Revisa tu conexión.'; }
@@ -2314,7 +2319,8 @@ function grupoAnadirAmigosHtml(g) {
 }
 async function abrirGrupo(id) {
   const prev = FORM && ((FORM.kind === 'grupo' && FORM.id === id) || (FORM.kind === 'saldar' && FORM.gid === id)) ? FORM : null;
-  FORM = { kind: 'grupo', id, invitaciones: [], ajustes: !!(prev && prev.kind === 'grupo' && prev.ajustes), grupoTab: prev ? prev.grupoTab : '' };
+  FORM = { kind: 'grupo', id, invitaciones: [], ajustes: !!(prev && prev.kind === 'grupo' && prev.ajustes), grupoTab: prev ? prev.grupoTab : (S._grupoTabVolver || ''), temaVer: prev && prev.kind === 'grupo' ? prev.temaVer : (S._temaVolver && S._temaVolver.gid === id ? S._temaVolver.tid : '') };
+  S._temaVolver = null; S._grupoTabVolver = null;
   if ($('#sheetBackdrop')) updateSheet(grupoHtml(id)); else openSheet(grupoHtml(id));
   try { FORM.invitaciones = await S.db.grupos.invitaciones(id); if (FORM.kind === 'grupo' && FORM.id === id) updateSheet(grupoHtml(id)); } catch (e) { /* sin lista de enlaces */ }
   // al entrar, se refresca el grupo (miembros, personas sin cuenta, administradores y ajustes) por si otro lo cambió
@@ -2729,6 +2735,7 @@ async function saveCompartido(d) {
     }
     const datos = { fecha: d.fecha, tipo: FORM.tipo, categoria: ob ? ob.nombre : huerfana ? (previo.categoria || d.categoria) : d.categoria, subcategoria: ob ? null : (d.subcategoria || null), descripcion: d.descripcion, importe: r2(d.importe), pagadoPor: cp.pagador, reparto: r.reparto, modo: cp.modo, objetivoId: ob ? ob.id : huerfana ? previo.objetivoId : null };
     if (FORM.articulos) datos.articulos = FORM.articulos;
+    const temaG = temaParaGuardar(previo, grupoId); if (temaG !== undefined) datos.carpetaId = temaG;
     let c;
     try {
       if (previo && previo.grupoId === grupoId) c = await S.db.compartidos.editar(previo.id, datos);
@@ -2739,6 +2746,7 @@ async function saveCompartido(d) {
       }
     } catch (e) { console.error(e); return toast(errGrupo(e)); }
     compAplicarLocal(c, previo && previo.id !== c.id ? previo.id : null);
+    if (datos.carpetaId) { S._temaUlt = S._temaUlt || {}; S._temaUlt[grupoId] = { id: datos.carpetaId, ts: Date.now() }; }
     guardarCuentaComp(c.id, cp.pagador === yo ? FORM.cuenta : null, previo && previo.id);
     if (cfg().ultimoCompartir !== 'g:' + grupoId) saveConfig({ ultimoCompartir: 'g:' + grupoId });
     // Tu copia personal: si pagaste tú es el cargo de tu banco. Queda enlazada y no cuenta dos veces.
@@ -2791,7 +2799,7 @@ function compRowGrupo(c) {
   }
   const v2 = juntosV2() && c.descripcion, ttl = v2 ? c.descripcion : (c.categoria || c.tipo), sub = v2 ? (c.categoria || c.tipo) : c.descripcion;
   return '<div class="row" ' + act('compAbrir', c.id, c.grupoId) + '><span class="dot" style="background:var(--' + (TIPO_COLOR[c.tipo] || 'debt') + ')"></span><div class="main"><div class="ttl">' + escapeHtml(ttl) + '</div>' +
-    '<div class="meta">' + fmtDateShort(c.fecha) + (sub ? ' · ' + escapeHtml(sub) : '') + ' · ' + (c.tipo === 'Ahorro' ? (mio(c.pagadoPor) ? 'aportaste tú' : 'aportó ' + n(c.pagadoPor)) : (mio(c.pagadoPor) ? 'pagaste tú' : 'pagó ' + n(c.pagadoPor))) + '</div></div>' +
+    '<div class="meta">' + fmtDateShort(c.fecha) + (sub ? ' · ' + escapeHtml(sub) : '') + ' · ' + (c.tipo === 'Ahorro' ? (mio(c.pagadoPor) ? 'aportaste tú' : 'aportó ' + n(c.pagadoPor)) : (mio(c.pagadoPor) ? 'pagaste tú' : 'pagó ' + n(c.pagadoPor))) + (temaPorId(c.carpetaId) ? ' · ' + escapeHtml(temaPorId(c.carpetaId).nombre) : '') + '</div></div>' +
     '<div class="amt tnum">' + money(c.importe) + '<div class="amt-sub">tu parte ' + money(miParte(c)) + '</div></div></div>';
 }
 function cuentasGrupoHtml(g) {
@@ -2952,7 +2960,8 @@ function objEditorHtml() {
         '<button class="btn accent block" style="margin-top:10px;" ' + act('objAportar', o.id) + '>' + (deuda ? 'Apuntar un pago' : 'Aportar') + '</button></div>' : '') +
     (!F.id ? '<div class="field"><label>Con</label>' + (ds.length ? '<div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (F.dest === d.k ? 'active' : '') + '" ' + act('objDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>'
         : '<div class="rec-hint">Primero crea un grupo o invita a una persona (Tú → Grupos y personas).</div>') + '</div>' : '') +
-    '<div class="field"><label>Nombre</label><input id="oNombre" type="text" maxlength="60" placeholder="' + (deuda ? 'Hipoteca' : 'Viaje a Japón') + '" value="' + v(F.nombre) + '"></div>' +
+    '<div class="field"><label>Nombre</label><input id="oNombre" type="text" maxlength="60" placeholder="' + (deuda ? 'Hipoteca' : 'Viaje a Japón') + '" value="' + v(F.nombre) + '"' + (deuda ? '' : ' ' + onInput('objNombreIn')) + '></div>' +
+    (deuda ? '' : formaElegirHtml(F.forma, F.nombre, 'objFormaElegir') + '<div class="rec-hint" style="margin:-6px 0 12px;">La forma es la misma para todo el grupo.</div>') +
     '<div class="field"><label>' + (deuda ? 'Total de la deuda' : 'Objetivo') + ' (' + sym() + ')</label><input id="oObjetivo" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="oFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
     '<div class="field"><label>' + (deuda ? 'Ya pagado antes' : 'Ya ahorrado antes') + ' (' + sym() + ') <span class="hint">· opcional</span></label><input id="oPrevio" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.previo) + '"><div class="rec-hint">Lo que ya ' + (deuda ? 'habíais pagado' : 'teníais ahorrado') + ' entre todos antes de apuntarlo aquí.</div></div>' +
@@ -2971,6 +2980,7 @@ async function objGuardar() {
   if (!nombre) return toast('Ponle un nombre');
   const n = (x) => { const y = parseFloat(x); return x === '' || x == null || !isFinite(y) ? null : y; };
   const datos = { nombre, objetivo: n(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, previo: Math.max(0, n(F.previo) || 0) };
+  if (F.tipo !== 'deuda' && F.formaTocada) datos.forma = FORMAS[F.forma] ? F.forma : null; // solo si se elige a mano (null = la del nombre)
   if (F.tipo !== 'deuda') datos.hitos = limpiarHitos(F.hitos, F.id && objPorId(F.id) ? objPorId(F.id).hitos : []);
   if (datos.objetivo != null && datos.objetivo < 0) return toast('El objetivo no puede ser negativo');
   if (F.id && !objPorId(F.id)) { closeSheet(); return toast('Esa meta o deuda ya no existe: la ha eliminado alguien del grupo'); }
@@ -3420,6 +3430,7 @@ function agRapidaPh(sel) {
   return 'Apunta una tarea para el ' + DIAS_LARGO[dowMon(d)].toLowerCase() + ' ' + d.getDate() + '…';
 }
 function agFilaProx(iso, ev) {
+  if (ev.k === 'plan') return planFilaHtml(ev, iso);
   return '<div class="row ' + (ev.click ? '' : 'static') + '" ' + (ev.click || '') + '><span class="dia-col"><b>' + parseISO(iso).getDate() + '</b><span>' + DIAS_LARGO[dowMon(parseISO(iso))].slice(0, 3).toLowerCase() + '</span></span>' +
     '<div class="main"><div class="ttl">' + escapeHtml(ev.titulo) + '</div><div class="meta" style="color:' + evColor(ev) + '">' + escapeHtml(ev.detalle) + '</div></div></div>';
 }
@@ -3441,9 +3452,10 @@ function renderAgendaSemanaV2() {
   const dSel = parseISO(sel), nom = DIAS_LARGO[dowMon(dSel)].toLowerCase() + ' ' + dSel.getDate();
   const tituloDia = sel === hoy ? 'Hoy, ' + nom : sel === uAdd(hoy, 1) ? 'Mañana, ' + nom : sel === uAdd(hoy, -1) ? 'Ayer, ' + nom : nom.charAt(0).toUpperCase() + nom.slice(1) + ' de ' + MESES[dSel.getMonth()].toLowerCase();
   const filasDia = pend.filter((t) => t.fechaLimite === sel).sort(cmpTarea).map((t) => renderTareaRow(t, { v2: true, dia: true })).join('') + (mapW[sel] || []).filter((ev) => ev.k !== 'tarea').map(calEventRow).join('');
-  const diaH = '<div class="section-title">' + escapeHtml(tituloDia) + '</div>' + (filasDia ? '<div class="list">' + filasDia + '</div>' : '<div class="card ag-despejado">' + ic('checkCircle') + '<span>Día despejado.</span></div>');
+  const diaH = '<div class="section-title">' + escapeHtml(tituloDia) + (agendaDisponible() ? '<button class="link" ' + act('planNuevo', sel) + '>' + ic('plus') + ' Plan</button>' : '') + '</div>' + (filasDia ? '<div class="list">' + filasDia + '</div>' : '<div class="card ag-despejado">' + ic('checkCircle') + '<span>Día despejado.</span></div>');
   const mapN = eventosAgenda(uAdd(sel, 1), uAdd(sel, 7)), prox = [];
-  Object.keys(mapN).sort().forEach((iso) => { if (iso < hoy) return; mapN[iso].forEach((ev) => { const t = ev.k === 'tarea' && ev.id ? S.tareas.find((x) => x.id === ev.id) : null; prox.push(t ? renderTareaRow(t, { v2: true }) : agFilaProx(iso, ev)); }); });
+  const planesVistos = new Set((mapW[sel] || []).filter((ev) => ev.k === 'plan').map((ev) => ev.id)); // un plan de varios días sale una sola vez
+  Object.keys(mapN).sort().forEach((iso) => { if (iso < hoy) return; mapN[iso].forEach((ev) => { if (ev.k === 'plan') { if (planesVistos.has(ev.id)) return; planesVistos.add(ev.id); } const t = ev.k === 'tarea' && ev.id ? S.tareas.find((x) => x.id === ev.id) : null; prox.push(t ? renderTareaRow(t, { v2: true }) : agFilaProx(iso, ev)); }); });
   const proxH = prox.length ? '<div class="section-title">Próximos 7 días</div><div class="list">' + (abierto === 'prox' ? prox : prox.slice(0, 5)).join('') + '</div>' + (prox.length > 5 && abierto !== 'prox' ? agVerMas('prox', prox.length, 'Ver todo') : '') : '';
   const sinF = pend.filter((t) => !t.fechaLimite).sort(cmpTarea);
   const sinFH = sinF.length ? '<div class="section-title">Sin fecha · ' + sinF.length + '</div><div class="list">' + sinF.map(filaT).join('') + '</div>' : '';
@@ -3466,7 +3478,7 @@ function renderCalendarioV2() {
     const iso = y + '-' + pad2(m + 1) + '-' + pad2(n), evs = map[iso] || [], colores = [];
     evs.forEach((ev) => { const c = evColor(ev); if (colores.indexOf(c) < 0) colores.push(c); });
     cells += '<button type="button" class="cal2-dia' + (iso === anchor ? ' sel' : '') + (iso === hoy ? ' hoy' : '') + '" ' + act('calSelDia', iso) + ' aria-label="' + n + ' de ' + MESES[m].toLowerCase() + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' cosa' : ' cosas') : '') + '"' + (iso === anchor ? ' aria-current="date"' : '') + '>' +
-      '<span class="n tnum">' + n + '</span><span class="pts">' + colores.slice(0, 4).map((c) => '<i style="background:' + c + '"></i>').join('') + '</span></button>';
+      '<span class="n tnum">' + n + '</span><span class="pts">' + colores.slice(0, 4).map((c) => '<i style="background:' + c + '"></i>').join('') + '</span>' + (evs.some((ev) => ev.k === 'plan') ? '<span class="cal2-plan" aria-hidden="true"></span>' : '') + '</button>';
   }
   const f = S.calFiltros, ley = [['tareas', 'Tareas', 'var(--accent)'], ['facturas', 'Cobros y pagos', 'var(--bill, var(--accent))'], ['hitos', 'Metas y deudas', 'var(--warn, var(--savings))'], ['movs', 'Movimientos', 'var(--text-faint)']];
   const dsel = parseISO(anchor), evsSel = map[anchor] || [];
@@ -3494,7 +3506,7 @@ function openTareaFormV2(id, op) {
   const masAbierto = !!(ex && ((ex.prioridad && ex.prioridad !== 'Media') || ex.repetir || ex.comentario));
   const tg = (attrName, valores, sel, action) => '<div class="type-toggle" id="' + attrName + 'Toggle">' + valores.map(([v, l]) => '<button type="button" ' + (attrName === 'prio' ? 'data-p' : 'data-e') + '="' + v + '" class="' + (v === sel ? 'active' : '') + '" ' + act(action, v) + '>' + l + '</button>').join('') + '</div>';
   openSheet(
-    '<div class="handle"></div><h2>' + (ex ? 'Editar tarea' : 'Nueva tarea') + '</h2>' +
+    '<div class="handle"></div><h2>' + (ex ? 'Editar tarea' : 'Nueva tarea') + '</h2>' + (!ex && agendaDisponible() ? '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="true" class="active">Tarea</button><button type="button" role="tab" aria-selected="false" ' + act('tfAPlan') + '>Plan</button></div>' : '') +
     '<div class="field tf-que"><input id="tNombre" type="text" maxlength="120" aria-label="¿Qué hay que hacer?" placeholder="¿Qué hay que hacer?" value="' + escapeHtml(ex ? ex.nombre : '') + '" ' + onInput('tNombreInput') + '>' + (ex ? '' : '<div class="rec-hint">Por ejemplo: llamar al casero, renovar el DNI…</div>') + '</div>' +
     '<div class="field"><label>¿Para cuándo?</label><input type="hidden" id="tFecha" value="' + escapeHtml(fecha) + '"><div class="chips tf-fechas" id="tFechaChips">' + tFechaChips(fecha) + '</div></div>' +
     '<div class="field"><label>Categoría <span class="hint">· opcional</span></label><input type="hidden" id="tCategoria" value="' + escapeHtml(ex ? (ex.categoria || '') : '') + '"><div id="tCatChips"></div></div>' +
@@ -4147,6 +4159,10 @@ function estosDiasHtml(v2) {
   ra.hoy.filter((x) => x.estado !== 'ok').forEach((x) => filas.push({ cls: 'rec', fecha: x.iso, t: escapeHtml(x.rc.nombre) + imp(x), d: 'Hoy · ' + (x.rc.kind === 'cobro' ? 'cobro previsto' : 'pago previsto'), a: act('openRecurrentes'), botones: btn('recSi', x, 'Confirmar', 'accent') }));
   tareasVencidas().slice().sort(cmpTarea).forEach((t) => { const n = -daysUntil(t.fechaLimite); filas.push({ cls: 'mal', icono: 'alert', t: escapeHtml(t.nombre || 'Tarea'), d: 'Tarea · venció ' + (n === 1 ? 'ayer' : 'hace ' + n + ' días'), a: act('openTareaForm', t.id) }); });
   S.tareas.filter((t) => t.estado !== 'Completado' && t.fechaLimite === hoy).sort(cmpTarea).forEach((t) => filas.push({ cls: 'hoy', icono: 'checkCircle', t: escapeHtml(t.nombre || 'Tarea'), d: 'Hoy · Tarea' + (t.categoria ? ' · ' + escapeHtml(t.categoria) : ''), a: act('openTareaForm', t.id) }));
+  if (agendaDisponible()) agendaItems().forEach((a) => {
+    if (a.tipo === 'plan' && a.fecha && a.fecha <= hoy && (a.fechaFin || a.fecha) >= hoy && planAviso(a.id) !== 'no') filas.push({ cls: 'hoy', icono: 'calendar', t: escapeHtml(a.titulo), d: (a.hora ? horaTxt(a.hora) : 'Hoy') + ' · ' + escapeHtml(a.grupoId && grupoDe(a.grupoId) ? nombreDestino(grupoDe(a.grupoId)) : 'Plan') + (a.lugar ? ' · ' + escapeHtml(a.lugar) : ''), a: act('planVer', a.id) });
+    else if (a.tipo === 'tarea' && !a.hechaEn && a.fecha && a.fecha <= hoy && tareaCEsMia(a)) filas.push({ cls: a.fecha < hoy ? 'mal' : 'hoy', icono: a.fecha < hoy ? 'alert' : 'checkCircle', t: escapeHtml(a.titulo), d: (a.fecha < hoy ? 'Venció el ' + fechaCortaU(a.fecha) : 'Hoy') + ' · ' + escapeHtml(nombreDestino(grupoDe(a.grupoId))), a: act('planVer', a.id) });
+  });
   presupuestoExcedido(ma.y, ma.m).forEach((c) => filas.push({ cls: 'warn', cat: c.categoria, icono: 'alert', t: escapeHtml(c.categoria) + ': te has pasado', d: money(c.real) + ' de ' + money(c.presupuesto) + ' de presupuesto', a: act('irMovs', '_gastos', mesClave(ma.y, ma.m), c.categoria) }));
   if (compartidosDisponible()) {
     const ids = [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id)), tot = r2(ids.reduce((a, id) => a + miSaldo(id), 0));
@@ -4157,6 +4173,7 @@ function estosDiasHtml(v2) {
   const f0 = S.calFiltros; S.calFiltros = { tareas: true, facturas: true, hitos: true, movs: false };
   let mapa; try { mapa = calEventos(uAdd(hoy, 1), uAdd(hoy, 7)); } finally { S.calFiltros = f0; }
   Object.keys(mapa).sort().forEach((iso) => mapa[iso].forEach((ev) => { if (ev.pagada) return; const n = daysUntil(iso);
+    if (ev.k === 'plan') { const av = planAviso(ev.id), a0 = agendaPorId(ev.id); if (av === 'no' || av === 'dia' || (av === 'antes' && n > 1) || (a0 && a0.fecha !== iso)) return; }
     filas.push({ fecha: iso, t: escapeHtml(ev.titulo), d: (n === 1 ? 'Mañana' : DIAS_LARGO[dowMon(parseISO(iso))]) + ' · ' + escapeHtml(String(ev.detalle || '').replace(/ · (Pendiente|Sin registrar)$/, '')), a: ev.click || act('setInicioVista', 'tareas') }); }));
   const fechaTile = (iso) => { const d = parseISO(iso); return '<span class="dia-fecha"><i>' + MESES_ABR[d.getMonth()].toUpperCase() + '</i><b>' + d.getDate() + '</b></span>'; };
   if (v2 && inicioV3()) { try { filas.unshift(...avisosInicioFilas()); } catch (e) { console.error(e); } }
@@ -4416,7 +4433,8 @@ function saldarTodoHtml() {
 }
 /* ---- dentro de un grupo: lo tuyo arriba y «Gastos | Saldos»; lo de administrar en «Ajustes» ---- */
 function grupoHtmlV2(g) {
-  const yo = miUid(), F = FORM || {}, tab = F.grupoTab === 'saldos' ? 'saldos' : 'gastos', o = g.tipo === 'directo' ? otroDe(g) : null;
+  const yo = miUid(), F = FORM || {}, tab = F.grupoTab === 'saldos' ? 'saldos' : F.grupoTab === 'planes' && agendaDisponible() ? 'planes' : 'gastos', o = g.tipo === 'directo' ? otroDe(g) : null;
+  if (F.temaForm && temasDisponible()) return temaFormHtml(g);
   const cs = (S.compartidos || []).filter((c) => c.grupoId === g.id), ds = deudasDe(g.id), mias = ds.filter((d) => esMio(g.id, d.de) || esMio(g.id, d.a));
   const sc = g.miembros.filter((m) => m.sinCuenta).length;
   let h = '<div class="handle"></div><div class="jv-gcab">' + (o ? caraHtml(o.user_id, o.nombre, 'grande') : '<span class="jv-g-ic grande">' + escapeHtml(iniciales(g.nombre)) + '</span>') +
@@ -4433,13 +4451,19 @@ function grupoHtmlV2(g) {
     return '<div class="jv-tuyo ' + (debo ? 'de' : 'te') + '"><span>' + (debo ? 'Debes <b class="tnum">' + money(d.importe) + '</b> a ' + escapeHtml(nombreDe(g.id, otro)) : escapeHtml(nombreDe(g.id, otro)) + ' te debe <b class="tnum">' + money(d.importe) + '</b>') + '</span>' +
       (debo ? '<button type="button" class="jv-btn saldar" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Saldar</button>' : '<button type="button" class="jv-btn pedir" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Me ha pagado</button>') + '</div>'; }).join('');
   if (cs.length) h += '<button type="button" class="link jv-origen" ' + act('origenVer', g.id) + '>' + ic('list') + ' ¿De dónde sale?</button>';
-  h += '<div class="segmented jv-tabs">' + [['gastos', 'Gastos'], ['saldos', 'Saldos']].map(([k, l]) => '<button class="' + (tab === k ? 'active' : '') + '" ' + act('grupoTab', k) + '>' + l + '</button>').join('') + '</div>';
+  h += '<div class="segmented jv-tabs">' + [['gastos', 'Gastos'], ['saldos', 'Saldos']].concat(agendaDisponible() ? [['planes', 'Planes']] : []).map(([k, l]) => '<button class="' + (tab === k ? 'active' : '') + '" ' + act('grupoTab', k) + '>' + l + '</button>').join('') + '</div>';
   if (tab === 'gastos') {
     const gastos = cs.filter((c) => c.tipo !== 'Liquidación'), tot = gastos.reduce((a, c) => a + num(c.importe), 0), mia = gastos.reduce((a, c) => a + miParte(c), 0);
+    const temaAbierto = temasDisponible() && F.temaVer ? temaPorId(F.temaVer) : null;
+    h += temasGrupoHtml(g, F);
+    if (temaAbierto && temaAbierto.grupoId === g.id) return h + temaResumenHtml(g, temaAbierto) + '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('compRapidoTema', g.id, temaAbierto.id) + '>' + ic('plus') + ' Añadir gasto</button></div>';
     if (gastos.length) h += '<div class="jv-gtot">Entre todos <b class="tnum">' + money(tot) + '</b> · tu parte <b class="tnum">' + money(mia) + '</b></div>';
+    h += porTemasHtml(g, F);
     const lista = cs.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.createdAt || '').localeCompare(a.createdAt || '')), n = F.verTodos ? lista.length : 8;
     h += lista.length ? '<div class="list">' + lista.slice(0, n).map(compRowGrupo).join('') + '</div>' + (lista.length > n ? '<button type="button" class="link" style="margin-top:8px;" ' + act('compVerTodos', g.id) + '>Ver todos (' + lista.length + ')</button>' : '') : '';
     if (g.miembros.length >= 2) h += objetivosGrupoHtml(g);
+  } else if (tab === 'planes') {
+    return h + planesGrupoHtml(g) + '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('planGrupoNuevo', g.id, 'tarea') + '>' + ic('check') + ' Tarea</button><button class="btn accent block" ' + act('planGrupoNuevo', g.id, 'plan') + '>' + ic('plus') + ' Plan</button></div>';
   } else {
     const sal = saldosDe(g.id), us = Object.keys(sal), max = Math.max(1, ...us.map((u) => Math.abs(sal[u])));
     h += '<div class="card jv-saldos">' + (us.length ? us.sort((a, b) => sal[b] - sal[a]).map((u) => { const v = sal[u] / 100, w = Math.min(50, Math.abs(sal[u]) / max * 50).toFixed(1);
@@ -4459,6 +4483,7 @@ function compRapidoHtml() {
   const cats = catsGasto().map((c) => c.nombre); if (F.cat && !cats.includes(F.cat)) cats.push(F.cat);
   return '<div class="handle"></div><h2>Compartir un gasto</h2>' +
     '<div class="cr-lbl">Con</div><div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>' +
+    temaCajaHtml() +
     '<label class="cr-imp"><input id="crImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe total" value="' + escapeHtml(F.importe || '') + '" ' + onInput('crImporte') + '><span>' + sym() + '</span></label>' +
     '<div class="field cr-que"><input id="crDesc" type="text" maxlength="80" placeholder="¿Qué fue? (cena, súper, gasolina…)" value="' + escapeHtml(F.desc || '') + '" ' + onInput('crDesc') + '>' +
       '<select id="crCat" aria-label="Categoría" ' + onChange('crCat') + '>' + cats.map((c) => '<option' + (c === F.cat ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select></div>' +
@@ -4488,11 +4513,291 @@ function crRefrescar() {
   const p = $('#crPara'); if (p) p.innerHTML = crParaHtml(ms, rep);
   const res = $('#crRes'); if (res) { res.classList.toggle('error', !!(r && r.error)); res.textContent = crResTxt(ms, imp, r); }
 }
+/* ============================================================
+   TEMAS en los grupos (23/10/2026, docs/16 apartado 3 y docs/18). En la base de datos, «carpetas».
+   Un tema separa los gastos de un viaje, la compra o la casa. Las deudas no se separan por temas:
+   eso está en «Saldos». Solo entran gastos y pagos fijos compartidos.
+   ============================================================ */
+const TEMA_ICONOS = ['plane', 'cart', 'home', 'fork', 'gift', 'car', 'ball', 'film', 'heart', 'tag'];
+const TEMA_ICONO_NOMBRE = { plane: 'Avión', cart: 'Carrito', home: 'Casa', fork: 'Cubiertos', gift: 'Regalo', car: 'Coche', ball: 'Balón', film: 'Cine', heart: 'Corazón', tag: 'Etiqueta' };
+const TEMA_IDEAS = [['plane', 'Viaje a…'], ['cart', 'Compra'], ['home', 'Casa'], ['fork', 'Cenas y salidas'], ['gift', 'Regalos']];
+function temasDisponible() { return !!(S.db && S.db.carpetas); }
+function temasDe(gid, conCerrados) { return (S.carpetas || []).filter((t) => t.grupoId === gid && (conCerrados || !t.cerrada)).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))); }
+function temaPorId(id) { return id ? (S.carpetas || []).find((t) => t.id === id) || null : null; }
+function temaIcono(t) { return TEMA_ICONOS.indexOf(t && t.icono) >= 0 ? t.icono : 'tag'; }
+function temaFechasTxt(t) {
+  if (!t || (!t.desde && !t.hasta)) return '';
+  const f = (iso) => { const d = parseISO(iso); return d ? d.getDate() + ' ' + MESES_ABR[d.getMonth()].toLowerCase() : ''; };
+  if (t.desde && t.hasta) { const a = parseISO(t.desde), b = parseISO(t.hasta); return a && b && a.getMonth() === b.getMonth() ? a.getDate() + '–' + f(t.hasta) : f(t.desde) + ' – ' + f(t.hasta); }
+  return t.desde ? 'desde el ' + f(t.desde) : 'hasta el ' + f(t.hasta);
+}
+function gastosDeTema(gid, tid) { return (S.compartidos || []).filter((c) => c.grupoId === gid && (c.tipo === 'Gasto' || c.tipo === 'Factura') && (tid === '_sin' ? !temaPorId(c.carpetaId) : c.carpetaId === tid)); }
+// El tema que viene elegido solo: el que cubre la fecha; si no, el último que usaste en ese grupo en las últimas 12 horas
+function temaSugerido(gid, fecha) {
+  const ts = temasDe(gid), porFecha = ts.find((t) => t.desde && t.hasta && fecha >= t.desde && fecha <= t.hasta);
+  if (porFecha) return { id: porFecha.id, por: 'Elegido por la fecha: ' + porFecha.nombre + ' es ' + (porFecha.desde === porFecha.hasta ? 'el ' : 'del ') + temaFechasTxt(porFecha).replace('–', ' al ') + '.' };
+  const u = (S._temaUlt || {})[gid];
+  if (u && Date.now() - u.ts < 12 * 3600e3 && ts.some((t) => t.id === u.id)) { const t = temaPorId(u.id); return { id: u.id, por: 'Elegido porque es el último que usaste: ' + t.nombre + '.' }; }
+  return { id: null, por: '' };
+}
+function temaGidDeForm() { const cp = FORM && FORM.comp; return cp && cp.dest && cp.dest.indexOf('g:') === 0 ? cp.dest.slice(2) : null; }
+function temaAutoAplicar() {
+  const F = FORM, gid = temaGidDeForm(); if (!F || !gid) { if (F) { F.tema = null; F.temaPor = ''; } return; }
+  if (F.temaTocado) return;
+  const s = temaSugerido(gid, F.fecha || todayISO()); F.tema = s.id; F.temaPor = s.por;
+}
+// «¿De qué tema?» al compartir un gasto: justo debajo de «Con»
+function temaCajaHtml() {
+  const F = FORM, gid = temaGidDeForm();
+  if (!temasDisponible() || !gid || !(F.tipo === 'Gasto' || F.tipo === 'Factura')) return '';
+  const ts = temasDe(gid), elegido = temaPorId(F.tema);
+  if (F.tema && elegido && elegido.cerrada && !ts.some((t) => t.id === F.tema)) ts.unshift(elegido);
+  const chip = (id, icono, txt) => '<button type="button" class="chip' + ((F.tema || null) === id ? ' active' : '') + '" aria-pressed="' + ((F.tema || null) === id) + '" ' + act('temaElegir', id || '') + '>' + (icono ? ic(icono) : '') + escapeHtml(txt) + '</button>';
+  let h = '<div class="tema-caja"><div class="tema-lbl">¿De qué tema? <span class="hint">· opcional</span></div><div class="chips tema-chips">' + chip(null, '', 'Ninguno') +
+    ts.map((t) => chip(t.id, temaIcono(t), t.nombre)).join('') + '<button type="button" class="chip tema-nuevo' + (F.temaNuevo ? ' active' : '') + '" ' + act('temaNuevoAbrir') + '>' + ic('plus') + (ts.length ? 'Nuevo' : 'Nuevo tema') + '</button></div>';
+  if (F.temaNuevo) {
+    const ico = TEMA_ICONOS.indexOf(F.temaIco) >= 0 ? F.temaIco : 'tag';
+    h += '<div class="tema-nuevo-f"><input id="temaNom" type="text" maxlength="40" placeholder="Nombre (Roma 2026, Compra…)" value="' + escapeHtml(F.temaNom || '') + '" ' + onInput('temaNomIn') + '>' +
+      '<div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.slice(0, 6).map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + (TEMA_ICONO_NOMBRE[k] || k) + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaIco', k) + '>' + ic(k) + '</button>').join('') + '</div>' +
+      '<button type="button" class="btn accent block" ' + act('temaCrearRapido') + '>Crear tema</button></div>';
+  } else if (!ts.length) h += '<div class="tema-por">Para separar un viaje, la compra o la casa.</div>';
+  else if (F.tema && F.temaPor && !F.temaTocado) h += '<div class="tema-por">' + escapeHtml(F.temaPor) + '</div>';
+  return h + '</div>';
+}
+// lo que se manda al guardar: solo gastos y pagos fijos de un grupo; al editar, solo si cambia
+function temaParaGuardar(previo, grupoId) {
+  const F = FORM; if (!temasDisponible() || !F || !(F.tipo === 'Gasto' || F.tipo === 'Factura')) return undefined;
+  if (F.kind !== 'compRapido' && F.tema === undefined) return undefined; // formularios sin la caja: no se toca
+  const t = temaPorId(F.tema), id = t && t.grupoId === grupoId && !t.borrado ? t.id : null;
+  if (previo && previo.grupoId === grupoId && (previo.carpetaId || null) === id) return undefined;
+  if (!previo && !id) return undefined;
+  return id;
+}
+/* ---- dentro del grupo: chips de temas, «Por temas» y el resumen de un tema ---- */
+function temasGrupoHtml(g, F) {
+  if (!temasDisponible()) return '';
+  const ts = temasDe(g.id), tv = F.temaVer && temaPorId(F.temaVer) ? F.temaVer : '';
+  if (!ts.length && !tv) return '<button type="button" class="chip tema-mas-suelto" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + ' Tema</button>';
+  return '<div class="chips tema-chips tema-grupo">' + '<button type="button" class="chip' + (tv ? '' : ' active') + '" ' + act('temaVer', '') + '>Todo</button>' +
+    ts.map((t) => '<button type="button" class="chip' + (tv === t.id ? ' active' : '') + '" ' + act('temaVer', t.id) + '>' + ic(temaIcono(t)) + escapeHtml(t.nombre) + '</button>').join('') +
+    '<button type="button" class="chip" aria-label="Nuevo tema" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + '</button></div>';
+}
+function porTemasHtml(g, F) {
+  const ts = temasDe(g.id); if (!ts.length) return '';
+  const fila = (id, icono, nombre, sub, gs) => '<button type="button" class="tema-fila tappable" ' + act('temaVer', id) + '><span class="tema-fila-ic">' + ic(icono) + '</span><span class="tema-fila-x"><b>' + escapeHtml(nombre) + '</b><span>' + escapeHtml(sub) + '</span></span><b class="tnum">' + money(gs.reduce((a, c) => a + num(c.importe), 0)) + '</b>' + ic('chevR') + '</button>';
+  const filas = ts.map((t) => { const gs = gastosDeTema(g.id, t.id); return fila(t.id, temaIcono(t), t.nombre, [temaFechasTxt(t), gs.length + (gs.length === 1 ? ' gasto' : ' gastos')].filter(Boolean).join(' · '), gs); });
+  const n = F.temasTodos ? filas.length : 4, sin = gastosDeTema(g.id, '_sin');
+  const cerrados = temasDe(g.id, true).filter((t) => t.cerrada);
+  return '<div class="card tema-por-card"><div class="tema-por-t">Por temas</div>' + filas.slice(0, n).join('') +
+    (filas.length > n ? '<button type="button" class="link" ' + act('temasTodos') + '>Ver todos (' + filas.length + ')</button>' : '') +
+    (sin.length ? '<div class="tema-fila sin"><span class="tema-fila-ic">' + ic('tag') + '</span><span class="tema-fila-x"><b>Sin tema</b><span>' + sin.length + (sin.length === 1 ? ' gasto' : ' gastos') + '</span></span><b class="tnum">' + money(sin.reduce((a, c) => a + num(c.importe), 0)) + '</b></div>' : '') +
+    (cerrados.length ? '<button type="button" class="link tema-cerrados" ' + act('temasCerrados') + '>Cerrados · ' + cerrados.length + '</button>' + (F.temasCerrados ? cerrados.map((t) => fila(t.id, temaIcono(t), t.nombre, 'cerrado', gastosDeTema(g.id, t.id))).join('') : '') : '') + '</div>';
+}
+function temaResumenHtml(g, t) {
+  const gs = gastosDeTema(g.id, t.id), tot = gs.reduce((a, c) => a + num(c.importe), 0), mia = gs.reduce((a, c) => a + miParte(c), 0);
+  const pagos = {}; gs.forEach((c) => { const u = aliasDe(g.id, c.pagadoPor); pagos[u] = (pagos[u] || 0) + num(c.importe); });
+  const quien = Object.keys(pagos).sort((a, b) => pagos[b] - pagos[a]);
+  const cats = {}; gs.forEach((c) => { const k = c.categoria || 'Otros'; cats[k] = (cats[k] || 0) + num(c.importe); });
+  let cs = Object.entries(cats).sort((a, b) => b[1] - a[1]); if (cs.length > 5) cs = cs.slice(0, 4).concat([['Otros', cs.slice(4).reduce((a, x) => a + x[1], 0)]]);
+  const entre = g.miembros.length <= 2 ? 'entre los dos' : 'entre todos';
+  let h = '<div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('temaVer', '') + '>' + ic('chevL') + '</button><span class="tema-fila-ic">' + ic(temaIcono(t)) + '</span>' +
+    '<div class="tema-cab-t"><b>' + escapeHtml(t.nombre) + '</b><span>' + escapeHtml([nombreDestino(g), temaFechasTxt(t), gs.length + (gs.length === 1 ? ' gasto' : ' gastos'), t.cerrada ? 'cerrado' : ''].filter(Boolean).join(' · ')) + '</span></div>' +
+    '<button type="button" class="icon-btn" aria-label="Opciones del tema" ' + act('temaMenu', t.id) + '>' + ic('more') + '</button></div>';
+  if (F_temaMenu(t.id)) h += temaMenuHtml(g, t);
+  h += '<div class="tema-cifras"><div><span>Gastado ' + entre + '</span><b class="tnum">' + money(tot) + '</b></div><div><span>Tu parte</span><b class="tnum">' + money(mia) + '</b></div></div>';
+  if (quien.length && tot > 0) h += '<div class="tema-sec">Quién pagó qué</div><div class="tema-quien">' + quien.map((u) => '<div class="tema-q"><span>' + escapeHtml(esMio(g.id, u) ? 'Tú' : nombreDe(g.id, u)) + '</span><span class="tema-q-bar"><i style="width:' + (pagos[u] / tot * 100).toFixed(1) + '%;background:' + colorPersona(u) + '"></i></span><b class="tnum">' + money(pagos[u]) + '</b></div>').join('') + '</div>';
+  if (cs.length && tot > 0) h += '<div class="tema-sec">En qué se fue</div><div class="tema-cats" aria-hidden="true">' + cs.map(([k, v]) => '<i style="flex:' + (v / tot).toFixed(4) + ';background:' + colorCat(k) + '"></i>').join('') + '</div>' +
+    '<div class="tema-cats-l">' + cs.map(([k, v]) => '<span><i style="background:' + colorCat(k) + '"></i>' + escapeHtml(k) + ' ' + Math.round(v / tot * 100) + ' %</span>').join('') + '</div>';
+  h += '<div class="rec-hint tema-saldos">Quién debe a quién se ve en <button type="button" class="link" ' + act('grupoTab', 'saldos') + '>Saldos</button>, con todo el grupo junto.</div>';
+  const lista = gs.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  h += lista.length ? '<div class="list">' + lista.map(compRowGrupo).join('') + '</div>' : '<div class="jv-tuyo paz">' + ic('tag') + '<span>Aún no hay gastos en este tema.</span></div>';
+  return h;
+}
+function F_temaMenu(id) { return FORM && FORM.temaMenu === id; }
+function temaMenuHtml(g, t) {
+  const b = (accion, icono, txt, cls) => '<button type="button" class="tema-menu-b' + (cls ? ' ' + cls : '') + '" ' + act(accion, t.id) + '>' + ic(icono) + '<span>' + txt + '</span></button>';
+  return '<div class="card tema-menu">' + b('temaEditar', 'edit', 'Cambiar nombre, icono o fechas') + (t.cerrada ? b('temaAbrirDeNuevo', 'repeat', 'Volver a abrir') : b('temaCerrar', 'checkCircle', 'Cerrar tema')) + b('temaBorrar', 'trash', 'Borrar tema', 'peligro') + '</div>';
+}
+// hoja «Nuevo tema» / «Cambiar tema» dentro del grupo
+function temaFormHtml(g) {
+  const T = FORM.temaForm, ico = TEMA_ICONOS.indexOf(T.icono) >= 0 ? T.icono : 'tag';
+  const ids = T.id ? [] : temaGastosEnFechas(g.id, T.desde, T.hasta);
+  return '<div class="handle"></div><div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('temaFormCerrar') + '>' + ic('chevL') + '</button><h2>' + (T.id ? 'Cambiar tema' : 'Nuevo tema') + '</h2></div>' +
+    (T.id ? '' : '<div class="chips tema-ideas">' + TEMA_IDEAS.map(([k, n]) => '<button type="button" class="chip" ' + act('temaIdea', k, n) + '>' + ic(k) + n + '</button>').join('') + '</div>') +
+    '<div class="field"><label for="tfNombre">Nombre</label><input id="tfNombre" type="text" maxlength="40" placeholder="Roma 2026" value="' + escapeHtml(T.nombre || '') + '"></div>' +
+    '<div class="field"><label>Icono</label><div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + (TEMA_ICONO_NOMBRE[k] || k) + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaFormIco', k) + '>' + ic(k) + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>Fechas <span class="hint">· opcional</span></label><div class="tema-fechas"><input id="tfDesde" type="date" aria-label="Desde" value="' + escapeHtml(T.desde || '') + '" ' + onChange('temaFormFecha') + '><span>al</span><input id="tfHasta" type="date" aria-label="Hasta" value="' + escapeHtml(T.hasta || '') + '" ' + onChange('temaFormFecha') + '></div></div>' +
+    (ids.length ? '<label class="tema-meter"><input id="tfMeter" type="checkbox"' + (T.meter !== false ? ' checked' : '') + '> Meter ' + (ids.length === 1 ? 'el gasto' : 'los ' + ids.length + ' gastos') + ' de esos días</label>' : '') +
+    '<div class="actions"><button class="btn ghost block" ' + act('temaFormCerrar') + '>Cancelar</button><button class="btn accent block" ' + act('temaFormGuardar') + '>' + (T.id ? 'Guardar' : 'Crear tema') + '</button></div>';
+}
+function temaGastosEnFechas(gid, desde, hasta) {
+  if (!desde || !hasta || hasta < desde) return [];
+  return (S.compartidos || []).filter((c) => c.grupoId === gid && (c.tipo === 'Gasto' || c.tipo === 'Factura') && !temaPorId(c.carpetaId) && c.fecha >= desde && c.fecha <= hasta).map((c) => c.id);
+}
+function temaLeerForm() { const T = FORM && FORM.temaForm; if (!T) return; const v = (s) => { const el = $(s); return el ? el.value : undefined; }; const n = v('#tfNombre'), d = v('#tfDesde'), h = v('#tfHasta'), m = $('#tfMeter'); if (n !== undefined) T.nombre = n; if (d !== undefined) T.desde = d; if (h !== undefined) T.hasta = h; if (m) T.meter = m.checked; }
+function temaAplicarLocal(t) { S.carpetas = (S.carpetas || []).filter((x) => x.id !== t.id).concat(t.borrado ? [] : [t]); }
+function temaRefrescarGrupo() { if (FORM && FORM.kind === 'grupo' && FORM.id) updateSheet(grupoHtml(FORM.id)); }
+/* ============================================================
+   PLANES (23/10/2026, docs/16 apartado 2 y docs/17): planes (con fecha, hora y lugar) y tareas compartidas en la
+   Agenda. Tabla «agenda». Las tareas personales siguen en «tareas», igual que siempre.
+   Privado de cada uno, en la configuración: agendaAvisos {id: 'no'|'dia'|'antes'|'semana'} y agendaOcultos {id: true}.
+   ============================================================ */
+const AVISOS_PLAN = [['no', 'No'], ['dia', 'Ese día'], ['antes', 'El día antes'], ['semana', '1 semana antes']];
+function agendaDisponible() { return !!(S.db && S.db.agenda); }
+function gruposParaPlanes() { return (S.grupos || []).filter((g) => !g.cerrado && (g.tipo === 'grupo' || (g.tipo === 'directo' && g.miembros.length >= 2))); }
+function agendaItems() { const oc = cfg().agendaOcultos || {}; return (S.agenda || []).filter((a) => !oc[a.id] && (!a.grupoId || grupoDe(a.grupoId))); }
+function agendaPorId(id) { return (S.agenda || []).find((a) => a.id === id) || null; }
+function planAviso(id) { const v = (cfg().agendaAvisos || {})[id]; return AVISOS_PLAN.some((x) => x[0] === v) ? v : 'antes'; }
+function tareaCEsMia(a) { return !a.asignadoA || esMio(a.grupoId, a.asignadoA); }
+function horaTxt(h) { return h ? String(h).slice(0, 5) : ''; }
+function planCuandoTxt(a) {
+  const d = parseISO(a.fecha); if (!d) return '';
+  const dia = (iso) => { const x = parseISO(iso), hoy = todayISO(); return iso === hoy ? 'hoy' : iso === uAdd(hoy, 1) ? 'mañana' : DIAS_LARGO[dowMon(x)].toLowerCase() + ' ' + x.getDate() + ' ' + MESES_ABR[x.getMonth()].toLowerCase(); };
+  let t = dia(a.fecha); if (a.fechaFin && a.fechaFin !== a.fecha) t += ' – ' + dia(a.fechaFin);
+  t = t.charAt(0).toUpperCase() + t.slice(1);
+  return t + (a.hora ? ' · ' + horaTxt(a.hora) : a.fechaFin ? '' : ' · todo el día');
+}
+// eventos para la Agenda, el calendario y «Estos días»
+function agendaEventos(add, hoy) {
+  agendaItems().forEach((a) => {
+    const g = a.grupoId ? grupoDe(a.grupoId) : null, donde = g ? nombreDestino(g) : 'Solo yo';
+    if (a.tipo === 'plan' && a.fecha) {
+      const fin = a.fechaFin && a.fechaFin > a.fecha ? a.fechaFin : a.fecha;
+      for (let d = a.fecha, n = 0; d <= fin && n < 60; d = uAdd(d, 1), n++) add(d, { k: 'plan', id: a.id, titulo: a.titulo, hora: horaTxt(a.hora), detalle: [a.hora ? horaTxt(a.hora) : fin !== a.fecha ? 'Varios días' : 'Todo el día', donde, a.lugar].filter(Boolean).join(' · '), click: act('planVer', a.id) });
+    } else if (a.tipo === 'tarea' && !a.hechaEn && a.fecha && tareaCEsMia(a)) {
+      add(a.fecha, { k: 'tareaC', id: a.id, titulo: a.titulo, venc: a.fecha < hoy, detalle: donde + (a.asignadoA ? ' · te encargas tú' : ' · quien pueda'), click: act('planVer', a.id) });
+    }
+  });
+}
+function planFilaHtml(ev, iso) {
+  const d = parseISO(iso), hoy = todayISO(), arriba = iso === hoy ? 'HOY' : DIAS_LARGO[dowMon(d)].slice(0, 3).toUpperCase(), abajo = ev.hora || String(d.getDate());
+  return '<button type="button" class="row plan-fila tappable" ' + ev.click + '><span class="plan-baldosa"><i>' + arriba + '</i><b class="tnum">' + escapeHtml(abajo) + '</b></span>' +
+    '<span class="main"><span class="ttl">' + escapeHtml(ev.titulo) + '</span><span class="meta">' + escapeHtml(ev.detalle) + '</span></span></button>';
+}
+function tareaCFilaHtml(a) {
+  const g = grupoDe(a.grupoId), quien = a.asignadoA ? (esMio(a.grupoId, a.asignadoA) ? 'tú' : nombreDe(a.grupoId, a.asignadoA)) : 'quien pueda';
+  const hecha = !!a.hechaEn;
+  return '<div class="row tareac-fila' + (hecha ? ' hecha' : '') + '"><button type="button" class="tareac-check" role="checkbox" aria-checked="' + hecha + '" aria-label="' + (hecha ? 'Marcar sin hacer' : 'Marcar hecha') + '" ' + act('tareaCHecha', a.id, hecha ? '' : '1') + '>' + (hecha ? ic('check') : '') + '</button>' +
+    '<button type="button" class="main tappable" ' + act('planVer', a.id) + '><span class="ttl">' + escapeHtml(a.titulo) + '</span><span class="meta">' + escapeHtml([g ? nombreDestino(g) : '', hecha ? 'hecha por ' + (a.hechaPor && esMio(a.grupoId, a.hechaPor) ? 'ti' : nombreDe(a.grupoId, a.hechaPor)) + ' · ' + haceTxt(a.hechaEn) : 'se encarga ' + quien, !hecha && a.fecha ? fechaCortaU(a.fecha) : ''].filter(Boolean).join(' · ')) + '</span></button></div>';
+}
+/* ---- formulario de plan o tarea compartida ---- */
+function planAbrirForm(op) {
+  op = op || {}; const a = op.id ? agendaPorId(op.id) : null; S._planVolver = op.volver || null;
+  FORM = { kind: 'plan', id: a ? a.id : null, tipo: a ? a.tipo : (op.tipo || 'plan'), titulo: a ? a.titulo : (op.titulo || ''), fecha: a ? (a.fecha || '') : (op.fecha != null ? op.fecha : todayISO()),
+    horaModo: a ? (a.hora ? 'hora' : a.fechaFin ? 'varios' : 'dia') : 'dia', hora: a ? horaTxt(a.hora) : '', fechaFin: a ? (a.fechaFin || '') : '', con: a ? (a.grupoId ? 'g:' + a.grupoId : 'yo') : (op.con || 'yo'),
+    lugar: a ? (a.lugar || '') : '', nota: a ? (a.nota || '') : '', aviso: a ? planAviso(a.id) : 'antes', asignado: a ? (a.asignadoA || '') : '', notaAbierta: !!(a && a.nota) };
+  if (FORM.tipo === 'tarea' && FORM.con === 'yo') { const g = gruposParaPlanes()[0]; FORM.con = g ? 'g:' + g.id : 'yo'; }
+  if (FORM.tipo === 'tarea' && !a && op.fecha === undefined) FORM.fecha = '';
+  if ($('#sheetBackdrop')) updateSheet(planFormHtml()); else openSheet(planFormHtml());
+  if (!a) setTimeout(() => { const el = $('#pTitulo'); if (el && !el.value) el.focus(); }, 80);
+}
+function planFormHtml() {
+  const F = FORM, plan = F.tipo === 'plan', gs = gruposParaPlanes(), hoy = todayISO();
+  const chip = (accion, v, sel, txt, extra) => '<button type="button" class="chip' + (sel ? ' active' : '') + '" aria-pressed="' + !!sel + '" ' + act(accion, v) + '>' + (extra || '') + escapeHtml(txt) + '</button>';
+  const fechas = [['Hoy', hoy], ['Mañana', uAdd(hoy, 1)], ['Este finde', finde(hoy)]].concat(plan ? [] : [['Sin fecha', '']]);
+  const marcada = fechas.some((x) => x[1] === F.fecha), dO = F.fecha && !marcada ? parseISO(F.fecha) : null;
+  const g = F.con.indexOf('g:') === 0 ? grupoDe(F.con.slice(2)) : null;
+  let h = '<div class="handle"></div><h2>' + (F.id ? (plan ? 'Editar plan' : 'Editar tarea') : (plan ? 'Nuevo plan' : 'Nueva tarea compartida')) + '</h2>';
+  if (!F.id) h += '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="' + !plan + '" class="' + (plan ? '' : 'active') + '" ' + act('planTipo', 'tarea') + '>Tarea</button><button type="button" role="tab" aria-selected="' + plan + '" class="' + (plan ? 'active' : '') + '" ' + act('planTipo', 'plan') + '>Plan</button></div>';
+  h += '<div class="field tf-que"><input id="pTitulo" type="text" maxlength="120" aria-label="' + (plan ? '¿Qué plan es?' : '¿Qué hay que hacer?') + '" placeholder="' + (plan ? '¿Qué plan es?' : '¿Qué hay que hacer?') + '" value="' + escapeHtml(F.titulo) + '"></div>' +
+    (plan && !F.id ? '<div class="rec-hint" style="margin:-6px 0 12px;">Por ejemplo: cena de cumple de Ana, vuelo a Roma…</div>' : '');
+  h += '<div class="field"><label>' + (plan ? '¿Cuándo?' : '¿Para cuándo? <span class="hint">· opcional</span>') + '</label><div class="chips">' + fechas.map(([l, v]) => chip('planFecha', v, F.fecha === v, l)).join('') +
+    '<label class="chip tf-otro' + (dO ? ' active' : '') + '">' + ic('calendar') + '<span>' + (dO ? DIAS_LARGO[dowMon(dO)].slice(0, 3) + ' ' + dO.getDate() + ' ' + MESES_ABR[dO.getMonth()].toLowerCase() : 'Otro día…') + '</span><input type="date" id="pFechaOtro" aria-label="Elegir otro día" value="' + (dO ? F.fecha : '') + '" ' + onChange('planFechaOtro') + '></label></div></div>';
+  if (plan) h += '<div class="field"><label>¿A qué hora?</label><div class="chips">' + chip('planHoraModo', 'dia', F.horaModo === 'dia', 'Todo el día') + chip('planHoraModo', 'hora', F.horaModo === 'hora', 'A una hora', ic('clock')) + chip('planHoraModo', 'varios', F.horaModo === 'varios', 'Varios días') + '</div>' +
+    (F.horaModo === 'hora' ? '<input id="pHora" type="time" class="plan-hora" aria-label="Hora" value="' + escapeHtml(F.hora) + '">' : '') +
+    (F.horaModo === 'varios' ? '<div class="tema-fechas plan-hasta"><span>Hasta</span><input id="pFin" type="date" aria-label="Hasta" min="' + escapeHtml(F.fecha) + '" value="' + escapeHtml(F.fechaFin) + '"></div>' : '') + '</div>';
+  if (!F.id) h += '<div class="field"><label>Con' + (F.con !== 'yo' ? ' <span class="hint">· lo verán todos</span>' : '') + '</label><div class="chips plan-con">' + (plan ? chip('planCon', 'yo', F.con === 'yo', 'Solo yo') : '') + gs.map((x) => chip('planCon', 'g:' + x.id, F.con === 'g:' + x.id, nombreDestino(x), x.tipo === 'grupo' ? ic('users') : '')).join('') + '</div>' +
+    (!plan && !gs.length ? '<div class="rec-hint">Las tareas compartidas son de un grupo. Las tuyas, apúntalas como siempre.</div>' : '') + '</div>';
+  else if (g) h += '<div class="rec-hint plan-de">' + ic('users') + ' ' + escapeHtml(nombreDestino(g)) + ' · lo ven todos</div>';
+  if (!plan && g) { const ms = g.miembros.filter((m) => !m.baja); h += '<div class="field"><label>¿Quién se encarga?</label><div class="cr-caras plan-quien">' +
+    '<button type="button" class="cr-cara' + (!F.asignado ? ' on' : '') + '" ' + act('planQuien', '') + '><span class="avatar cara plan-cualquiera">' + ic('users') + '</span><span>Quien pueda</span></button>' +
+    ms.map((m) => { const u = aliasDe(g.id, m.user_id); return '<button type="button" class="cr-cara' + (F.asignado && aliasDe(g.id, F.asignado) === aliasDe(g.id, m.user_id) ? ' on' : '') + '" ' + act('planQuien', m.user_id) + '>' + caraHtml(u, m.nombre) + '<span>' + escapeHtml(esMio(g.id, m.user_id) ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>'; }).join('') + '</div></div>'; }
+  if (plan) h += '<div class="field"><label for="pLugar">¿Dónde? <span class="hint">· opcional</span></label><div class="plan-lugar">' + ic('pin') + '<input id="pLugar" type="text" maxlength="120" placeholder="Restaurante, dirección…" value="' + escapeHtml(F.lugar) + '"></div></div>' +
+    '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => chip('planAviso', k, F.aviso === k, l, k === 'antes' ? ic('bell') : '')).join('') + '</div><div class="rec-hint" style="margin:6px 0 0;">Te lo recordamos en Inicio al abrir la app.</div></div>';
+  h += '<details class="tf-mas"' + (F.notaAbierta ? ' open' : '') + '><summary>Nota' + ic('chevD') + '</summary><div class="field"><textarea id="pNota" rows="3" maxlength="1000" aria-label="Nota">' + escapeHtml(F.nota) + '</textarea></div></details>';
+  h += '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('planGuardar') + '>Guardar</button></div>';
+  return h;
+}
+function planLeerForm() {
+  const F = FORM; if (!F || F.kind !== 'plan') return;
+  const v = (s) => { const el = $(s); return el ? el.value : undefined; };
+  const t = v('#pTitulo'), ho = v('#pHora'), fi = v('#pFin'), lu = v('#pLugar'), no = v('#pNota');
+  if (t !== undefined) F.titulo = t; if (ho !== undefined) F.hora = ho; if (fi !== undefined) F.fechaFin = fi; if (lu !== undefined) F.lugar = lu; if (no !== undefined) F.nota = no;
+  const d = $('details.tf-mas'); if (d) F.notaAbierta = d.open;
+}
+async function planGuardar() {
+  planLeerForm(); const F = FORM; if (!F || F.kind !== 'plan') return;
+  const titulo = String(F.titulo || '').trim().replace(/\s+/g, ' '), plan = F.tipo === 'plan';
+  if (!titulo) { toast(plan ? 'Pon qué plan es' : 'Pon qué hay que hacer'); const el = $('#pTitulo'); if (el) el.focus(); return; }
+  if (plan && !F.fecha) return toast('Elige cuándo es');
+  if (!plan && F.con === 'yo') return toast('Elige el grupo de la tarea');
+  if (plan && F.horaModo === 'hora' && !F.hora) return toast('Pon la hora');
+  if (plan && F.horaModo === 'varios' && (!F.fechaFin || F.fechaFin < F.fecha)) return toast('Pon hasta qué día (después del primero)');
+  const datos = { titulo, fecha: F.fecha || null, fechaFin: plan && F.horaModo === 'varios' ? F.fechaFin : null, hora: plan && F.horaModo === 'hora' ? F.hora : null,
+    lugar: plan ? (String(F.lugar || '').trim() || null) : null, nota: String(F.nota || '').trim() || null };
+  if (!plan) datos.asignadoA = F.asignado || null;
+  if (F.guardando) return; F.guardando = true;
+  try {
+    let a;
+    try { a = F.id ? await S.db.agenda.editar(F.id, datos) : await S.db.agenda.crear(Object.assign({ grupoId: F.con.indexOf('g:') === 0 ? F.con.slice(2) : null, tipo: F.tipo }, datos)); }
+    catch (e) { console.error(e); return toast(errGrupo(e)); }
+    agendaAplicarLocal(a);
+    if (plan) { const av = Object.assign({}, cfg().agendaAvisos || {}); if (F.aviso === 'antes') { if (av[a.id]) { delete av[a.id]; saveConfig({ agendaAvisos: av }); } } else if (av[a.id] !== F.aviso) { av[a.id] = F.aviso; saveConfig({ agendaAvisos: av }); } }
+    toast(F.id ? 'Guardado' : plan ? 'Plan apuntado' : 'Tarea apuntada');
+    const volver = S._planVolver; S._planVolver = null;
+    if (volver && grupoDe(volver)) { S._grupoTabVolver = 'planes'; abrirGrupo(volver); } else closeSheet();
+    render();
+  } finally { F.guardando = false; }
+}
+function agendaAplicarLocal(a) { if (!a) return; S.agenda = (S.agenda || []).filter((x) => x.id !== a.id).concat(a.borrado ? [] : [a]); }
+/* ---- hoja de un plan o una tarea compartida ---- */
+function planVerHtml(id) {
+  const a = agendaPorId(id);
+  if (!a) return '<div class="handle"></div><h2>Ya no está</h2><div class="card">Este plan se ha borrado.</div><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+  const g = a.grupoId ? grupoDe(a.grupoId) : null, plan = a.tipo === 'plan', puede = !g || puedeEditarComp({ grupoId: a.grupoId, creadoPor: a.creadoPor });
+  let h = '<div class="handle"></div><div class="plan-cab"><span class="plan-cab-ic">' + ic(plan ? 'calendar' : 'checkCircle') + '</span><div><h2>' + escapeHtml(a.titulo) + '</h2><span>' + escapeHtml(g ? nombreDestino(g) : 'Solo yo') + '</span></div></div>';
+  h += '<div class="card plan-datos">';
+  if (plan) h += '<div class="plan-dato">' + ic('clock') + '<span>' + escapeHtml(planCuandoTxt(a)) + '</span></div>';
+  else h += '<div class="plan-dato">' + ic('users') + '<span>' + (a.asignadoA ? 'Se encarga ' + escapeHtml(esMio(a.grupoId, a.asignadoA) ? 'tú' : nombreDe(a.grupoId, a.asignadoA)) : 'Quien pueda') + (a.fecha ? ' · para el ' + escapeHtml(fechaCortaU(a.fecha)) : '') + '</span></div>' +
+    (a.hechaEn ? '<div class="plan-dato">' + ic('check') + '<span>Hecha por ' + escapeHtml(a.hechaPor && esMio(a.grupoId, a.hechaPor) ? 'ti' : nombreDe(a.grupoId, a.hechaPor)) + ' · ' + escapeHtml(haceTxt(a.hechaEn)) + '</span></div>' : '');
+  if (a.lugar) h += '<div class="plan-dato">' + ic('pin') + '<span>' + escapeHtml(a.lugar) + ' · <a class="link" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a.lugar) + '" target="_blank" rel="noopener">Abrir en Mapas</a></span></div>';
+  if (a.nota) h += '<div class="plan-nota">' + escapeHtml(a.nota) + '</div>';
+  if (g) h += '<div class="plan-autor">Lo añadió ' + escapeHtml(a.creadoPor && esMio(a.grupoId, a.creadoPor) ? 'tú' : nombreDe(a.grupoId, a.creadoPor)) + (a.createdAt ? ' · ' + escapeHtml(haceTxt(a.createdAt)) : '') + '</div>';
+  h += '</div>';
+  if (plan) h += '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => '<button type="button" class="chip' + (planAviso(a.id) === k ? ' active' : '') + '" ' + act('planAvisoVer', a.id, k) + '>' + l + '</button>').join('') + '</div></div>';
+  else h += '<button class="btn ' + (a.hechaEn ? 'ghost' : 'accent') + ' block" ' + act('tareaCHecha', a.id, a.hechaEn ? '' : '1') + '>' + ic('check') + (a.hechaEn ? ' Marcar sin hacer' : ' Marcar hecha') + '</button>';
+  h += '<div class="plan-acc">' + (plan ? '<button type="button" class="tema-menu-b" ' + act('planIcs', a.id) + '>' + ic('calendar') + '<span>Añadir a mi calendario</span></button>' : '') +
+    (g ? '<button type="button" class="tema-menu-b" ' + act('planOcultar', a.id) + '>' + ic('close') + '<span>Ocultar de mi agenda</span></button>' : '') +
+    (puede ? '<button type="button" class="tema-menu-b" ' + act('planEditar', a.id) + '>' + ic('edit') + '<span>Editar</span></button><button type="button" class="tema-menu-b peligro" ' + act('planBorrar', a.id) + '>' + ic('trash') + '<span>Borrar</span></button>' : '') + '</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+  return h;
+}
+function planIcs(a) {
+  const f = (iso) => iso.replace(/-/g, ''), esc = (s) => String(s || '').replace(/[\\;,]/g, (c) => '\\' + c).replace(/\n/g, '\\n');
+  let ini, fin;
+  if (a.hora) { const t = horaTxt(a.hora).replace(':', '') + '00'; ini = 'DTSTART:' + f(a.fecha) + 'T' + t; let hh = Number(horaTxt(a.hora).slice(0, 2)) + 1, fd = a.fecha; if (hh > 23) { hh -= 24; fd = uAdd(a.fecha, 1); } fin = 'DTEND:' + f(fd) + 'T' + String(hh).padStart(2, '0') + horaTxt(a.hora).slice(3, 5) + '00'; } // una hora; a las 23:30 acaba a las 00:30 del día siguiente
+  else { ini = 'DTSTART;VALUE=DATE:' + f(a.fecha); fin = 'DTEND;VALUE=DATE:' + f(uAdd(a.fechaFin && a.fechaFin > a.fecha ? a.fechaFin : a.fecha, 1)); }
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PalomApp//Planes//ES', 'BEGIN:VEVENT', 'UID:' + a.id + '@palomapp', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z', ini, fin, 'SUMMARY:' + esc(a.titulo)]
+    .concat(a.lugar ? ['LOCATION:' + esc(a.lugar)] : []).concat(a.nota ? ['DESCRIPTION:' + esc(a.nota)] : []).concat(['END:VEVENT', 'END:VCALENDAR']).join('\r\n');
+}
+/* ---- pestaña «Planes» de un grupo ---- */
+function planesGrupoHtml(g) {
+  if (!agendaDisponible()) return '';
+  const hoy = todayISO(), its = (S.agenda || []).filter((a) => a.grupoId === g.id);
+  const planes = its.filter((a) => a.tipo === 'plan' && (a.fechaFin || a.fecha) >= hoy).sort((a, b) => (a.fecha + (a.hora || '')).localeCompare(b.fecha + (b.hora || '')));
+  const tareas = its.filter((a) => a.tipo === 'tarea'), pend = tareas.filter((a) => !a.hechaEn).sort((a, b) => (a.fecha || '9999').localeCompare(b.fecha || '9999')), hechas = tareas.filter((a) => a.hechaEn).sort((a, b) => String(b.hechaEn).localeCompare(String(a.hechaEn))).slice(0, 5);
+  let h = '';
+  if (!planes.length && !tareas.length) h += '<div class="jv-tuyo paz">' + ic('calendar') + '<span>Aún no hay planes. Apunta el primero: una cena, un viaje, el cumple de alguien.</span></div>';
+  if (planes.length) h += '<div class="section-title">Próximos</div><div class="list">' + planes.map((a) => planFilaHtml({ titulo: a.titulo, hora: horaTxt(a.hora), detalle: [planCuandoTxt(a), a.lugar].filter(Boolean).join(' · '), click: act('planVer', a.id) }, a.fecha)).join('') + '</div>';
+  if (tareas.length) h += '<div class="section-title">Tareas · ' + (pend.length === 1 ? '1 por hacer' : pend.length + ' por hacer') + '</div><div class="list">' + pend.concat(hechas).map(tareaCFilaHtml).join('') + '</div>';
+  return h;
+}
 function abrirCompRapido(dest) {
   const yo = miUid();
   FORM = { kind: 'compRapido', tipo: 'Gasto', id: null, compId: null, comp: { on: true }, importe: '', desc: '', cat: 'Otros', catTocada: false, fecha: todayISO(), cuenta: cuentaRecordada('') };
   const k = dest || destinoPorDefecto(); if (k) compPrepararDestino(k);
   FORM.comp.pagador = FORM.comp.pagador || yo;
+  temaAutoAplicar();
   if ($('#sheetBackdrop')) updateSheet(compRapidoHtml()); else openSheet(compRapidoHtml());
   setTimeout(() => { const el = $('#crImporte'); if (el) el.focus(); }, 120);
 }
@@ -4584,7 +4889,7 @@ function dinero3Html(p, ms, hayInv, deudas, dComp) {
   let cuerpo;
   if (t === 'cuentas') cuerpo = dm3CuentasHtml(p);
   else if (t === 'metas') cuerpo = dmMetasHtml(ms);
-  else if (t === 'inversiones') cuerpo = hayInv ? dmInversionesHtml() : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('chart') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
+  else if (t === 'inversiones') cuerpo = hayInv ? renderInversionesTodo(true) : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('chart') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
   else cuerpo = dmDeudasHtml(deudas, dComp);
   return lqt + tabs + '<div class="dm3-marco"><div id="dmCuerpo" class="dm3-cuerpo" role="tabpanel" aria-labelledby="dm3t-' + t + '">' + cuerpo + '</div></div>';
 }
@@ -4728,12 +5033,13 @@ function formaHtml(k, pct, texto, tam, o) {
   return '<span class="fm" style="width:' + tam + 'px;height:' + tam + 'px">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
 }
 // «Su forma»: las 12 en pequeño; la sugerida por el nombre lleva una marca. Elegida = null → la del nombre
-function formaElegirHtml(elegida, nombre) {
+function formaElegirHtml(elegida, nombre, accion) {
+  accion = accion || 'metaFormaElegir';
   const sug = formaSugerida(nombre), act0 = elegida || sug;
   return '<div class="field"><label>Su forma</label><div class="fm-grid" role="radiogroup" aria-label="Su forma">' + FORMAS_ORDEN.map((k) =>
-    '<button type="button" role="radio" aria-checked="' + (k === act0) + '" aria-label="' + FORMAS[k].n + (k === sug ? ' (sugerida)' : '') + '" data-k="' + k + '" class="fm-op' + (k === act0 ? ' on' : '') + (k === sug ? ' sug' : '') + '" ' + act('metaFormaElegir', k) + '>' +
+    '<button type="button" role="radio" aria-checked="' + (k === act0) + '" aria-label="' + FORMAS[k].n + (k === sug ? ' (sugerida)' : '') + '" data-k="' + k + '" class="fm-op' + (k === act0 ? ' on' : '') + (k === sug ? ' sug' : '') + '" ' + act(accion, k) + '>' +
     formaHtml(k, k === act0 ? 55 : 0, '', 38, { check: false }) + '<i>' + FORMAS[k].n + '</i></button>').join('') + '</div>' +
-    '<div class="rec-hint fm-hint">' + (elegida ? 'Elegida a mano. <button type="button" class="link" ' + act('metaFormaElegir', '') + '>Que la elija el nombre</button>' : 'Elegida por el nombre: ' + FORMAS[sug].n + '. Toca otra si quieres.') + '</div></div>';
+    '<div class="rec-hint fm-hint">' + (elegida ? 'Elegida a mano. <button type="button" class="link" ' + act(accion, '') + '>Que la elija el nombre</button>' : 'Elegida por el nombre: ' + FORMAS[sug].n + '. Toca otra si quieres.') + '</div></div>';
 }
 function metaFormaHtml(r) {
   const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
@@ -4868,9 +5174,9 @@ function dmInversionesHtml() {
     orden.slice(0, 3).map(([g, v]) => invFilaV2(g, v, false)).join('') +
     (orden.length > 3 ? '<button type="button" class="dm-inv-mas" ' + act('dmVer', 'inversiones') + '>y ' + (orden.length - 3) + ' más ' + ic('chevR') + '</button>' : '') + '</div>';
 }
-function renderInversionesTodo() {
+function renderInversionesTodo(enPestana) {
   const R = invResumen(), grupos = R.grupos;
-  let h = '<button type="button" class="dm-volver" ' + act('dmVer', '') + '>' + ic('chevL') + ' Dinero</button><h2 class="dm-h1">Inversiones</h2>';
+  let h = enPestana ? '' : '<button type="button" class="dm-volver" ' + act('dmVer', '') + '>' + ic('chevL') + ' Dinero</button><h2 class="dm-h1">Inversiones</h2>';
   if (!grupos.length) return h + '<div class="card" style="text-align:center;color:var(--text-faint);font-size:13.5px;">Aún no hay inversiones. Añade un movimiento de tipo <b>Inversión</b> y busca el activo (por nombre, ticker o ISIN).</div>';
   const pie = '<div class="dm-inv-pie"><div><span>Has metido</span><b class="tnum">' + money(R.metido) + '</b></div>' +
     (R.todas ? '<div><span>' + (R.gan >= 0 ? 'Ganas' : 'Pierdes') + '</span><b class="tnum" style="color:' + (R.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(R.gan) + money(Math.abs(R.gan)) + '</b></div>' : '<div><span>Valor</span><b class="tnum">' + (R.vals.some(Boolean) ? 'en camino…' : '—') + '</b></div>') + '</div>';
@@ -4886,9 +5192,48 @@ function renderInversionesTodo() {
   // avisos
   const sinVinc = grupos.filter((g) => !(g.activoId && g.conPart === g.n));
   h += sinVinc.map((g) => '<div class="dm-aviso">' + ic('alert') + '<span>' + escapeHtml(g.nombre) + ' no tiene precio porque falta elegir el activo.</span><button class="link" ' + act('verActivo', g.nombre) + '>Buscarlo</button></div>').join('');
-  h += R.todas ? inflacionV2Html(grupos, R.valor) : '';
-  h += '<button type="button" class="dm-precios" ' + act('dmPrecios') + '>' + ic('alert') + '<span>De dónde salen los precios</span>' + ic('chevR') + '</button>';
+  h += R.todas ? (enPestana ? invRentaFilaHtml(grupos, R.valor) : inflacionV2Html(grupos, R.valor)) : '';
+  h += '<button type="button" class="dm-precios" ' + act('dmPrecios') + '>' + ic(enPestana ? 'info' : 'alert') + '<span>De dónde salen los precios</span>' + ic('chevR') + '</button>';
   return h;
+}
+
+/* ---- Inversiones v3 (23/10/2026, docs/15 2.4): «1S», líneas por activo (hasta 4) y rentabilidad e inflación en su hoja ---- */
+const COLORES_ACTIVO = ['#2E9BD6', '#E6B422', '#E86A9A', '#4FB3A9', '#C25BD8'];
+function invActivosConSerie(movs, series) {
+  const ids = [...new Set(movs.map((m) => m.id))].filter((id) => (series[id] || []).length);
+  const grupos = inversionesPorActivo(), nom = (id) => ((grupos.find((g) => g.activoId === id) || {}).nombre) || 'Activo';
+  return ids.sort().map((id, i) => ({ id, nombre: nom(id), color: COLORES_ACTIVO[i % COLORES_ACTIVO.length] }));
+}
+function invLineasSel() { return Array.isArray(S.invLineas) ? S.invLineas : []; }
+function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
+  if (!dineroV3()) return [];
+  const sel = invLineasSel(); if (!sel.length) return [];
+  const n = serieTot.length - i0, paso = pts.length > 1 ? (n - 1) / (pts.length - 1) : 0;
+  return invActivosConSerie(movs, series).filter((a) => sel.indexOf(a.id) >= 0).map((a) => {
+    const sa = serieCartera(movs.filter((m) => m.id === a.id), series), off = serieTot.length - sa.length; // la serie del activo empieza en su primera compra
+    const s = series[a.id] || [];
+    const precio = (d) => { let v = null; for (let k = 0; k < s.length && s[k][0] <= d; k++) v = s[k][1]; return v; };
+    const p0 = precio(serieTot[i0].d) || (s.length ? s[0][1] : null);
+    const vals = pts.map((_, j) => { const idx = Math.min(serieTot.length - 1, i0 + Math.round(j * paso)), q = sa[idx - off];
+      if (!q) return modoR ? null : 0;
+      if (modoR) { const pr = precio(serieTot[idx].d); return pr != null && p0 ? (pr / p0 - 1) * 100 : null; }
+      return q.v; });
+    const ult = vals.filter((v) => v != null); const fill = ult.length ? ult[0] : 0;
+    return Object.assign({}, a, { vals: vals.map((v) => (v == null ? fill : v)) });
+  });
+}
+function invLineasChipsHtml(movs, series, multi) {
+  const as = invActivosConSerie(movs, series); if (as.length < 1) return '';
+  const sel = invLineasSel();
+  return '<div class="tr-lineas" role="group" aria-label="Líneas de la gráfica"><button type="button" class="chip' + (multi ? '' : ' active') + '" aria-pressed="true" ' + act('invLinea', 'total') + '><i style="background:var(--accent)"></i>Total</button>' +
+    as.map((a) => '<button type="button" class="chip' + (sel.indexOf(a.id) >= 0 ? ' active' : '') + '" aria-pressed="' + (sel.indexOf(a.id) >= 0) + '" ' + act('invLinea', a.id) + '><i style="background:' + a.color + '"></i>' + escapeHtml(a.nombre) + '</button>').join('') + '</div>';
+}
+function invRentaFilaHtml(grupos, valorActual) {
+  const movs = movsValorables(grupos); if (!movs.length || valorActual == null) return '';
+  const hoy = todayISO(), dias = (parseISO(hoy).getTime() - parseISO(movs[0].fecha).getTime()) / 864e5;
+  const r = dias < 30 ? null : xirr(movs.map((m) => ({ d: m.fecha, c: -m.imp })).concat([{ d: hoy, c: valorActual }])), inf = INFLACION_DATOS[inflacionRegion()];
+  const txt = r == null ? 'Necesitas un mes de historia' : pct1(r * 100) + ' al año · ' + (r * 100 >= inf.tasa ? 'le ganas a la inflación' : 'la inflación te gana');
+  return '<button type="button" class="dm3-renta tappable" ' + act('invRentaVer') + '><span class="dm-ic inv">' + ic('chart') + '</span><span class="dm-emp-x"><b>Rentabilidad al año e inflación</b><span class="' + (r == null ? '' : r * 100 >= inf.tasa ? 'gana' : 'pierde') + '">' + txt + '</span></span>' + ic('chevR') + '</button>';
 }
 function inflacionV2Html(grupos, valorActual) {
   const movs = movsValorables(grupos); if (!movs.length) return '';
@@ -4904,6 +5249,11 @@ function inflacionV2Html(grupos, valorActual) {
   }
   return '<div class="section-title">¿Le ganas a la inflación?</div><div class="card dm-inf">' + cuerpo + chips +
     '<div class="rec-hint" style="margin:8px 0 0;">Al año, según cuándo metiste cada euro' + (dias < 365 ? ' (con menos de un año de datos es orientativo)' : '') + '. Inflación: ' + escapeHtml(inf.que) + ', ' + escapeHtml(inf.periodo) + ' · ' + escapeHtml(inf.fuente) + '.</div></div>';
+}
+function invRentaHojaHtml() {
+  const R = invResumen();
+  return '<div class="handle"></div><h2>Rentabilidad al año e inflación</h2>' + (R.todas ? inflacionV2Html(R.grupos, R.valor).replace('<div class="section-title">¿Le ganas a la inflación?</div>', '') : '<div class="card">Aún no hay precios de todos tus activos.</div>') +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
 }
 function dmPreciosHtml() {
   const R = invResumen();
@@ -6052,9 +6402,10 @@ function dowMon(d) { return (d.getDay() + 6) % 7; }
 function calAnchor() { if (!S.calFecha) S.calFecha = todayISO(); return S.calFecha; }
 function normName(x) { return (x || '').trim().toLowerCase(); }
 
-const CAL_ORDEN = { tarea: 0, cobro: 1, factura: 1, hito: 2, mov: 3 };
+const CAL_ORDEN = { plan: 0, tarea: 0, tareaC: 0, cobro: 1, factura: 1, hito: 2, mov: 3 };
 function evColor(ev) {
-  if (ev.k === 'tarea') return ev.venc ? 'var(--expense)' : 'var(--accent)';
+  if (ev.k === 'tarea' || ev.k === 'tareaC') return ev.venc ? 'var(--expense)' : 'var(--accent)';
+  if (ev.k === 'plan') return 'var(--accent)';
   if (ev.k === 'factura') return 'var(--bill, var(--accent))';
   if (ev.k === 'cobro') return 'var(--income)';
   if (ev.k === 'hito') return 'var(--warn, var(--savings))'; // ámbar: no se confunde con el color de las tareas
@@ -6069,6 +6420,7 @@ function calEventos(desde, hasta) {
     if (t.estado === 'Completado' || !t.fechaLimite) return;
     add(t.fechaLimite, { k: 'tarea', id: t.id, titulo: t.nombre || 'Tarea', detalle: ['Tarea', t.prioridad, t.categoria].filter(Boolean).join(' · '), venc: t.fechaLimite < hoy, click: act('openTareaForm', t.id) });
   });
+  if (f.tareas && agendaDisponible()) agendaEventos((iso, ev) => add(iso, Object.assign({ iso }, ev)), hoy);
   if (f.facturas) {
     recurrentes().forEach((rc) => {
       if (!rc.regla) return;
@@ -6077,7 +6429,7 @@ function calEventos(desde, hasta) {
         const imp = importePrevisto(rc, o.iso);
         const est = o.estado === 'ok' ? (rc.kind === 'cobro' ? 'Cobrado' : 'Pagada') : o.estado === 'no' ? 'No ocurrió' : (o.iso < hoy ? 'Sin registrar' : 'Pendiente');
         const click = o.mov ? act('openMovForm', o.mov.id) : (o.estado === 'pend' ? act('recNuevoMov', rc.kind, rc.idx, o.iso) : '');
-        add(o.iso, { k: rc.kind === 'cobro' ? 'cobro' : 'factura', titulo: rc.nombre, detalle: (rc.kind === 'cobro' ? 'Cobro' : 'Factura') + (imp != null ? ' · ' + money(imp) : '') + ' · ' + est, pagada: o.estado === 'ok', click });
+        add(o.iso, { k: rc.kind === 'cobro' ? 'cobro' : 'factura', titulo: rc.nombre, detalle: (rc.kind === 'cobro' ? 'Cobro' : 'Pago fijo') + (imp != null ? ' · ' + money(imp) : '') + ' · ' + est, pagada: o.estado === 'ok', click });
       });
     });
   }
@@ -6093,6 +6445,7 @@ function calEventos(desde, hasta) {
   return map;
 }
 function calEventRow(ev) {
+  if (ev.k === 'plan') return planFilaHtml(ev, ev.iso);
   return '<div class="row ' + (ev.click ? '' : 'static') + '" ' + (ev.click || '') + '><span class="dot" style="background:' + evColor(ev) + '"></span>' +
     '<div class="main"><div class="ttl">' + escapeHtml(ev.titulo) + '</div><div class="meta">' + escapeHtml(ev.detalle) + '</div></div></div>';
 }
@@ -6191,7 +6544,7 @@ async function cargarValoracion(ids) {
   render();
 }
 /* ---------- Evolución de la cartera y rentabilidad anual (Fase 3D) ---------- */
-const PERIODOS_INV = [['1m', '1M', 30], ['3m', '3M', 91], ['6m', '6M', 182], ['1a', '1A', 365], ['max', 'Máx', 0]];
+const PERIODOS_INV = [['1s', '1S', 7], ['1m', '1M', 30], ['3m', '3M', 91], ['6m', '6M', 182], ['1a', '1A', 365], ['max', 'Máx', 0]];
 function addDiasISO(iso, n) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
 function movsValorables(grupos) {
   const ok = new Set(grupos.filter((g) => g.activoId && g.conPart === g.n).map((g) => g.activoId));
@@ -6275,7 +6628,7 @@ function evolucionHtml(grupos, valorActual) {
   const H = S.historico;
   const vigente = H && H.clave === clave && Date.now() - H.ts < (H.error ? 60000 : 600000);
   if (!vigente && !S._histCarga && !S._histProg && activosDisponible()) S._histProg = setTimeout(() => { S._histProg = null; cargarHistorico(ids, desde, clave); }, 0);
-  const per = PERIODOS_INV.find((x) => x[0] === S.invPeriodo) || PERIODOS_INV[4];
+  const per = PERIODOS_INV.find((x) => x[0] === S.invPeriodo) || PERIODOS_INV[PERIODOS_INV.length - 1];
   const chips = '<div class="segmented tr-chips">' + PERIODOS_INV.map((x) => '<button class="' + (x[0] === per[0] ? 'active' : '') + '" ' + act('setInvPeriodo', x[0]) + '>' + x[1] + '</button>').join('') + '</div>';
   let cuerpo, cabecera;
   if (H && H.clave === clave && !H.error && Object.keys(H.series).length) {
@@ -6293,7 +6646,7 @@ function evolucionHtml(grupos, valorActual) {
     const pts = reducirPuntos(serie.slice(i0), 48).map((p) => Object.assign({}, p, { r: ((p.I || 1) / baseI - 1) * 100 }));
     const fin = pts[pts.length - 1];
     const ch = cambioPeriodo(prev, fin);
-    const label = per[0] === 'max' ? 'desde el inicio' : 'en ' + per[1].replace('M', ' mes' + (per[2] > 31 ? 'es' : '')).replace('1A', '1 año');
+    const label = per[0] === 'max' ? 'desde el inicio' : per[0] === '1s' ? 'en 7 días' : 'en ' + per[1].replace('M', ' mes' + (per[2] > 31 ? 'es' : '')).replace('1A', '1 año');
     const sube = modoR ? fin.r >= 0 : ch.delta >= 0;
     S._invChart = { pts, prev, sube, label, modoR };
     const W = 320, Hh = 150;
@@ -6306,7 +6659,10 @@ function evolucionHtml(grupos, valorActual) {
     const ys = suavizarSerie(pts.map(val)), ysInv = suavizarSerie(pts.map((p) => p.inv));
     S._invChart.ys = ys;
     const curvaV = (arr) => curvaSuave(arr.map((v, i) => [X(i), Y(v)]));
-    const color = sube ? 'var(--income)' : 'var(--expense)';
+    const extra = invLineasExtra(movs, H.series, serie, i0, pts, modoR), multi = extra.length > 0;
+    if (multi) { const todos = vals.concat(...extra.map((l) => l.vals)); mn = Math.min(...todos); mx = Math.max(...todos); const pd = (mx - mn) * 0.1 || 1; mn -= pd; mx += pd; S._invChart.mn = mn; S._invChart.mx = mx; }
+    S._invChart.extra = extra;
+    const color = multi ? 'var(--accent)' : sube ? 'var(--income)' : 'var(--expense)';
     const lineaV = curvaV(ys), suelo = modoR ? Y(0) : Hh;
     const area = lineaV + ' L' + X(pts.length - 1).toFixed(1) + ' ' + suelo.toFixed(1) + ' L' + X(0).toFixed(1) + ' ' + suelo.toFixed(1) + ' Z';
     cabecera = modoR
@@ -6318,8 +6674,9 @@ function evolucionHtml(grupos, valorActual) {
       revelaSvg('invClip', W, Hh, per[0] + '|' + pts.length, '_invTraza') + '</defs>' +
       // la línea de referencia (lo metido, o el 0 %) es siempre una curva con los mismos puntos: así puede «moverse» al cambiar de vista
       '<path id="invRef" d="' + curvaV(modoR ? pts.map(() => 0) : ysInv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>' +
-      '<g clip-path="url(#invClip)"><path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"/>' +
-      '<path id="invLineV" class="tr-linea" d="' + lineaV + '" fill="none" style="stroke:' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></g></svg>' +
+      '<g clip-path="url(#invClip)"><path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"' + (multi ? ' opacity="0"' : '') + '/>' +
+      '<path id="invLineV" class="tr-linea" d="' + lineaV + '" fill="none" style="stroke:' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+      extra.map((l) => '<path class="tr-linea-a" d="' + curvaV(suavizarSerie(l.vals)) + '" fill="none" style="stroke:' + l.color + '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>').join('') + '</g></svg>' +
       (modoR ? '<div class="tr-cero" style="top:' + (Y(0) / Hh * 100).toFixed(1) + '%">0 %</div>' : '') +
       '<div class="tr-cursor" id="invLine"></div><div class="tr-dot" id="invDot" style="background:' + color + '"></div></div>' +
       (modoR ? '<div class="tr-legend"><span><i style="background:' + color + '"></i>Tu rentabilidad</span><span>no cambia al meter o sacar dinero</span></div>'
@@ -6329,6 +6686,7 @@ function evolucionHtml(grupos, valorActual) {
     if (ids.some((id) => !(H.series[id] || []).length)) notas.push('Algún activo aún no tiene histórico de precios; se completará en la próxima actualización.');
     if (H.limite) notas.push('Hoy se ha llegado al límite diario de consultas del proveedor de precios; el histórico se completará mañana.');
     if (notas.length) cuerpo += '<div class="tr-note">' + notas.join(' ') + '</div>';
+    if (dineroV3()) cuerpo += invLineasChipsHtml(movs, H.series, multi) + (multi ? '<div class="tr-vals" id="invVals"></div>' : '');
   } else {
     cabecera = valorActual != null ? '<div class="tr-big tnum">' + eur2(valorActual) + '</div>' : '';
     S._invChart = null;
@@ -6383,6 +6741,8 @@ function bindInvChart() {
     const x = C.pts.length > 1 ? i / (C.pts.length - 1) * 100 : 50, y = (1 - ((C.ys ? C.ys[i] : C.modoR ? p.r : p.v) - C.mn) / (C.mx - C.mn)) * 100;
     cabecera(p, 'metido: ' + eur0(p.inv));
     if (fecha) fecha.textContent = fechaCorta(p.d);
+    const vs = document.getElementById('invVals');
+    if (vs && C.extra && C.extra.length) vs.innerHTML = '<span><i style="background:var(--accent)"></i>Total <b class="tnum">' + (C.modoR ? pct1(p.r) : eur0(p.v)) + '</b></span>' + C.extra.map((l) => '<span><i style="background:' + l.color + '"></i>' + escapeHtml(l.nombre) + ' <b class="tnum">' + (l.vals[i] == null ? '—' : C.modoR ? pct1(l.vals[i]) : eur0(l.vals[i])) + '</b></span>').join('');
     line.style.left = x + '%'; line.style.display = 'block';
     dot.style.left = x + '%'; dot.style.top = y + '%'; dot.style.display = 'block';
     if (ultI !== -1 && ultI !== i && (i === 0 || i === C.pts.length - 1)) vibrar(4);
@@ -6390,6 +6750,7 @@ function bindInvChart() {
   };
   const reset = () => {
     cabecera(C.pts[C.pts.length - 1], C.label); ultI = -1;
+    const vs = document.getElementById('invVals'); if (vs) vs.innerHTML = '';
     if (fecha) fecha.textContent = '';
     line.style.display = 'none'; dot.style.display = 'none';
   };
@@ -8565,10 +8926,12 @@ const H = {
   },
   objEditar: ([id, gid]) => {
     const o = objPorId(id); if (!o) return toast('Ya no existe');
-    FORM = { kind: 'obj', tipo: o.tipo, id, volverGrupo: gid || null, dest: 'g:' + o.grupoId, nombre: o.nombre, objetivo: o.objetivo, fechaObjetivo: o.fechaObjetivo, previo: o.previo || '', hitos: (o.hitos || []).map((h) => Object.assign({}, h)) };
+    FORM = { kind: 'obj', tipo: o.tipo, id, volverGrupo: gid || null, dest: 'g:' + o.grupoId, nombre: o.nombre, objetivo: o.objetivo, fechaObjetivo: o.fechaObjetivo, previo: o.previo || '', hitos: (o.hitos || []).map((h) => Object.assign({}, h)), forma: FORMAS[o.forma] ? o.forma : null };
     objAbrir(objEditorHtml());
   },
   objDest: ([k]) => { objLeerForm(); FORM.dest = k; updateSheet(objEditorHtml()); },
+  objFormaElegir: ([k]) => { if (!FORM || FORM.kind !== 'obj') return; objLeerForm(); FORM.forma = FORMAS[k] ? k : null; FORM.formaTocada = true; sentir('tic'); updateSheet(objEditorHtml()); },
+  objNombreIn: () => { if (!FORM || FORM.kind !== 'obj' || FORM.forma) return; const el = $('#oNombre'), sug = formaSugerida(el ? el.value : ''); const g = $('.fm-grid'); if (!g || ((g.querySelector('.fm-op.sug') || {}).dataset || {}).k === sug) return; const campo = g.closest('.field'); if (campo) campo.outerHTML = formaElegirHtml(FORM.forma, el ? el.value : '', 'objFormaElegir'); },
   objCancelar: () => {
     const F = FORM, b = S._borradorMov; S._borradorMov = null;
     if (b && !F.id) return openMovForm(null, { tipo: b.tipo, importe: b.importe, fecha: b.fecha, descripcion: b.descripcion });
@@ -8676,13 +9039,88 @@ const H = {
   grupoAjustes: ([id]) => { if (!FORM || FORM.kind !== 'grupo') FORM = { kind: 'grupo', id, invitaciones: [] }; FORM.ajustes = true; updateSheet(grupoHtml(id)); },
   grupoAjustesSalir: ([id]) => { if (FORM && FORM.kind === 'grupo') { FORM.ajustes = false; updateSheet(grupoHtml(id)); } else abrirGrupo(id); },
   grupoTab: ([k]) => { if (!FORM || FORM.kind !== 'grupo') return; FORM.grupoTab = k; updateSheet(grupoHtml(FORM.id)); },
+  planNuevo: ([fecha]) => planAbrirForm({ tipo: 'plan', fecha: fecha || todayISO() }),
+  planGrupoNuevo: ([gid, tipo]) => { planAbrirForm({ volver: gid, tipo: tipo === 'tarea' ? 'tarea' : 'plan', con: 'g:' + gid, fecha: tipo === 'tarea' ? '' : todayISO() }); },
+  tfAPlan: () => { const n = $('#tNombre'), f = $('#tFecha'); planAbrirForm({ tipo: 'plan', titulo: n ? n.value : '', fecha: (f && f.value) || todayISO() }); },
+  planTipo: ([t]) => { planLeerForm(); const F = FORM; if (!F || F.kind !== 'plan') return;
+    if (t === 'tarea' && F.con === 'yo') { const tit = F.titulo, fe = F.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; }
+    F.tipo = t === 'tarea' ? 'tarea' : 'plan'; if (F.tipo === 'plan' && !F.fecha) F.fecha = todayISO(); updateSheet(planFormHtml()); },
+  planFecha: ([v]) => { planLeerForm(); FORM.fecha = v || ''; if (FORM.fechaFin && FORM.fechaFin < FORM.fecha) FORM.fechaFin = ''; sentir('tic'); updateSheet(planFormHtml()); },
+  planFechaOtro: (_a, el) => { planLeerForm(); FORM.fecha = el.value || FORM.fecha; updateSheet(planFormHtml()); },
+  planHoraModo: ([k]) => { planLeerForm(); FORM.horaModo = k; sentir('tic'); updateSheet(planFormHtml()); },
+  planCon: ([k]) => { planLeerForm(); FORM.con = k; FORM.asignado = ''; sentir('tic'); updateSheet(planFormHtml()); },
+  planQuien: ([u]) => { planLeerForm(); FORM.asignado = u || ''; sentir('tic'); updateSheet(planFormHtml()); },
+  planAviso: ([k]) => { planLeerForm(); FORM.aviso = k; sentir('tic'); updateSheet(planFormHtml()); },
+  planGuardar: () => planGuardar(),
+  planVer: ([id]) => { FORM = { kind: 'planVer', id }; if ($('#sheetBackdrop')) updateSheet(planVerHtml(id)); else openSheet(planVerHtml(id)); },
+  planEditar: ([id]) => planAbrirForm({ id }),
+  planAvisoVer: ([id, k]) => { const av = Object.assign({}, cfg().agendaAvisos || {}); if (k === 'antes') delete av[id]; else av[id] = k; saveConfig({ agendaAvisos: av }); sentir('tic'); setTimeout(() => { if (FORM && FORM.kind === 'planVer') updateSheet(planVerHtml(id)); render(); }, 0); },
+  planIcs: ([id]) => { const a = agendaPorId(id); if (!a) return; try { const url = URL.createObjectURL(new Blob([planIcs(a)], { type: 'text/calendar' })), l = document.createElement('a'); l.href = url; l.download = String(a.titulo || 'plan').replace(/[^\wáéíóúñü -]/gi, '').slice(0, 40) + '.ics'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); toast('Ábrelo para añadirlo a tu calendario'); } catch (e) { console.error(e); toast('No se ha podido preparar el archivo'); } },
+  planOcultar: ([id]) => { const oc = Object.assign({}, cfg().agendaOcultos || {}); oc[id] = true; saveConfig({ agendaOcultos: oc }); closeSheet(); render();
+    toast('Oculto de tu agenda (sigue en el grupo)', { deshacer: () => { const o2 = Object.assign({}, cfg().agendaOcultos || {}); delete o2[id]; saveConfig({ agendaOcultos: o2 }); render(); } }); },
+  planBorrar: async ([id]) => { const a = agendaPorId(id); if (!a) return;
+    try { await S.db.agenda.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
+    S.agenda = (S.agenda || []).filter((x) => x.id !== id); closeSheet(); render();
+    toast(a.tipo === 'plan' ? 'Plan borrado' : 'Tarea borrada', { deshacer: async () => { try { const r = await S.db.agenda.restaurar(id); agendaAplicarLocal(r || a); render(); } catch (e) { console.error(e); toast(errGrupo(e)); } } }); },
+  tareaCHecha: async ([id, v]) => { const a = agendaPorId(id); if (!a) return;
+    try { await S.db.rpc('agenda_hecha', { p_id: id, p_hecha: !!v }); } catch (e) { console.error(e); return toast(errGrupo(e)); }
+    a.hechaEn = v ? new Date().toISOString() : null; a.hechaPor = v ? miUid() : null; sentir(v ? 'ok' : 'tic'); render();
+    if (FORM && FORM.kind === 'planVer') updateSheet(planVerHtml(id)); else if (FORM && FORM.kind === 'grupo') updateSheet(grupoHtml(FORM.id));
+    if (v) toast('¡Hecha!', { deshacer: () => H.tareaCHecha([id, '']) }); },
+  temaElegir: ([id]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; F.tema = id || null; F.temaTocado = true; F.temaNuevo = false; sentir('tic'); updateSheet(compRapidoHtml()); },
+  temaNuevoAbrir: () => { const F = FORM; if (!F || F.kind !== 'compRapido') return; F.temaNuevo = !F.temaNuevo; updateSheet(compRapidoHtml()); if (F.temaNuevo) setTimeout(() => { const el = $('#temaNom'); if (el) el.focus(); }, 50); },
+  temaNomIn: (_a, el) => { if (FORM) FORM.temaNom = el.value; },
+  temaIco: ([k]) => { const F = FORM; if (!F) return; const el = $('#temaNom'); if (el) F.temaNom = el.value; F.temaIco = k; updateSheet(compRapidoHtml()); },
+  temaCrearRapido: async () => {
+    const F = FORM, gid = temaGidDeForm(); if (!F || !gid) return;
+    const el = $('#temaNom'), nombre = String((el ? el.value : F.temaNom) || '').trim(); if (!nombre) { toast('Ponle un nombre al tema'); if (el) el.focus(); return; }
+    if (temasDe(gid, true).some((t) => normName(t.nombre) === normName(nombre))) return toast('Ya hay un tema con ese nombre');
+    if (F.creandoTema) return; F.creandoTema = true;
+    try { const t = await S.db.carpetas.crear({ grupoId: gid, nombre, icono: TEMA_ICONOS.indexOf(F.temaIco) >= 0 ? F.temaIco : 'tag' }); temaAplicarLocal(t);
+      if (FORM !== F) return; F.tema = t.id; F.temaTocado = true; F.temaNuevo = false; F.temaNom = ''; sentir('ok'); updateSheet(compRapidoHtml()); }
+    catch (e) { console.error(e); toast(errGrupo(e)); } finally { F.creandoTema = false; }
+  },
+  compRapidoTema: ([gid, tid]) => { S._volverGrupo = gid; S._temaVolver = { gid, tid }; abrirCompRapido('g:' + gid); if (temaPorId(tid)) { FORM.tema = tid; FORM.temaTocado = true; updateSheet(compRapidoHtml()); } },
+  temaVer: ([id]) => { if (!FORM || FORM.kind !== 'grupo') return; FORM.temaVer = id || ''; FORM.temaMenu = null; FORM.grupoTab = 'gastos'; sentir('tic'); updateSheet(grupoHtml(FORM.id)); },
+  temasTodos: () => { if (FORM) { FORM.temasTodos = !FORM.temasTodos; temaRefrescarGrupo(); } },
+  temasCerrados: () => { if (FORM) { FORM.temasCerrados = !FORM.temasCerrados; temaRefrescarGrupo(); } },
+  temaMenu: ([id]) => { if (FORM) { FORM.temaMenu = FORM.temaMenu === id ? null : id; temaRefrescarGrupo(); } },
+  temaFormAbrir: ([gid, id]) => { if (!FORM || FORM.kind !== 'grupo') return; const t = temaPorId(id); FORM.temaMenu = null; FORM.temaForm = t ? { id: t.id, nombre: t.nombre, icono: temaIcono(t), desde: t.desde || '', hasta: t.hasta || '' } : { id: '', nombre: '', icono: 'tag', desde: '', hasta: '' }; temaRefrescarGrupo(); setTimeout(() => { const el = $('#tfNombre'); if (el && !t) el.focus(); }, 60); },
+  temaEditar: ([id]) => H.temaFormAbrir([FORM && FORM.id, id]),
+  temaFormCerrar: () => { if (FORM) { FORM.temaForm = null; temaRefrescarGrupo(); } },
+  temaIdea: ([k, n]) => { temaLeerForm(); const T = FORM.temaForm; T.icono = k; T.nombre = n === 'Viaje a…' ? 'Viaje a ' : n; temaRefrescarGrupo(); setTimeout(() => { const el = $('#tfNombre'); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) { /* */ } } }, 40); },
+  temaFormIco: ([k]) => { temaLeerForm(); FORM.temaForm.icono = k; temaRefrescarGrupo(); },
+  temaFormFecha: () => { temaLeerForm(); temaRefrescarGrupo(); },
+  temaFormGuardar: async () => {
+    temaLeerForm(); const F = FORM, T = F && F.temaForm; if (!T) return;
+    const nombre = String(T.nombre || '').trim(); if (!nombre) return toast('Ponle un nombre al tema');
+    if (T.desde && T.hasta && T.hasta < T.desde) return toast('La fecha final va después de la primera');
+    if (temasDe(F.id, true).some((t) => t.id !== T.id && normName(t.nombre) === normName(nombre))) return toast('Ya hay un tema con ese nombre');
+    if (T.guardando) return; T.guardando = true;
+    try {
+      const datos = { nombre, icono: TEMA_ICONOS.indexOf(T.icono) >= 0 ? T.icono : 'tag', desde: T.desde || null, hasta: T.hasta || null };
+      const ids = T.id || T.meter === false ? [] : temaGastosEnFechas(F.id, T.desde, T.hasta);
+      const t = T.id ? await S.db.carpetas.editar(T.id, datos) : await S.db.carpetas.crear(Object.assign({ grupoId: F.id }, datos));
+      temaAplicarLocal(t);
+      if (ids.length) { try { await S.db.rpc('poner_carpeta', { p_ids: ids, p_carpeta: t.id }); (S.compartidos || []).forEach((c) => { if (ids.indexOf(c.id) >= 0) c.carpetaId = t.id; }); } catch (e) { console.error(e); toast('El tema se ha creado, pero no se han podido meter los gastos: ' + errGrupo(e)); } }
+      if (FORM !== F) return; F.temaForm = null; F.temaVer = t.id; toast(T.id ? 'Tema guardado' : 'Tema creado'); temaRefrescarGrupo(); render();
+    } catch (e) { console.error(e); toast(errGrupo(e)); } finally { T.guardando = false; }
+  },
+  temaCerrar: async ([id]) => { try { const t = await S.db.carpetas.editar(id, { cerrada: new Date().toISOString() }); temaAplicarLocal(t); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; } toast('Tema cerrado: ya no sale al apuntar gastos'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
+  temaAbrirDeNuevo: async ([id]) => { try { const t = await S.db.carpetas.editar(id, { cerrada: null }); temaAplicarLocal(t); if (FORM) FORM.temaMenu = null; toast('Tema abierto otra vez'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
+  temaBorrar: async ([id]) => {
+    const t = temaPorId(id); if (!t) return;
+    try { await S.db.carpetas.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
+    S.carpetas = (S.carpetas || []).filter((x) => x.id !== id); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; } temaRefrescarGrupo(); render();
+    toast('Tema borrado: sus gastos quedan «Sin tema»', { deshacer: async () => { try { const r = await S.db.carpetas.restaurar(id); temaAplicarLocal(r || t); temaRefrescarGrupo(); render(); toast('Tema recuperado'); } catch (e) { console.error(e); toast(errGrupo(e)); } } });
+  },
   compRapido: ([dest]) => { S._volverGrupo = FORM && FORM.kind === 'grupo' ? FORM.id : null; abrirCompRapido(dest || ''); },
-  crDest: ([k]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; compPrepararDestino(k); F.comp.pagador = F.comp.pagador || miUid(); updateSheet(compRapidoHtml()); },
+  crDest: ([k]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; compPrepararDestino(k); F.comp.pagador = F.comp.pagador || miUid(); F.temaTocado = false; F.temaNuevo = false; temaAutoAplicar(); updateSheet(compRapidoHtml()); },
   crImporte: (_a, el) => { if (!FORM) return; FORM.importe = el.value; el.size = Math.max(1, el.value.length); crRefrescar(); },
   sFechaVer: () => { const i = $('#sFecha'), c = $('#sFechaChip'); if (!i) return; i.hidden = false; if (c) c.hidden = true; i.focus(); try { if (i.showPicker) i.showPicker(); } catch (e) { /* sin selector */ } },
   crDesc: (_a, el) => { const F = FORM; if (!F) return; F.desc = el.value; if (!F.catTocada) { const c = sugerirCategoria(el.value.trim(), 'Gasto'); if (c && esCatGasto(c)) { F.cat = c; const sel = $('#crCat'); if (sel && [...sel.options].some((o) => o.value === c)) sel.value = c; } } },
   crCat: (_a, el) => { if (!FORM) return; FORM.cat = el.value; FORM.catTocada = true; },
-  crFecha: (_a, el) => { if (!FORM) return; FORM.fecha = el.value; },
+  crFecha: (_a, el) => { if (!FORM) return; FORM.fecha = el.value; if (FORM.kind === 'compRapido' && !FORM.temaTocado) { temaAutoAplicar(); const c = $('.tema-caja'); if (c) c.outerHTML = temaCajaHtml(); } },
   crPagador: ([u]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; F.comp.pagador = u; updateSheet(compRapidoHtml()); },
   crIncl: ([u]) => {
     const F = FORM; if (!F || F.kind !== 'compRapido') return; const cp = F.comp, ms = miembrosComp();
@@ -9162,7 +9600,10 @@ const H = {
     S._trCambiaHasta = Date.now() + 500;
     const big = document.getElementById('invBig'); if (big) big.classList.add('tr-cambia');
   },
-  setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); } },
+  setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); if (FORM && FORM.kind === 'invRenta' && $('#sheetBackdrop')) setTimeout(() => updateSheet(invRentaHojaHtml()), 0); } },
+  invRentaVer: () => { FORM = { kind: 'invRenta' }; openSheet(invRentaHojaHtml()); },
+  invLinea: ([id]) => { if (id === 'total') { S.invLineas = []; return render(); } const sel = invLineasSel().slice(), i = sel.indexOf(id);
+    if (i >= 0) sel.splice(i, 1); else { if (sel.length >= 4) return toast('Como mucho 4 líneas a la vez'); sel.push(id); } S.invLineas = sel; sentir('tic'); render(); },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
   toggleTabAn: ([id]) => {
     const sel = tabsAnElegidas(), i = sel.indexOf(id);
@@ -9409,7 +9850,7 @@ async function enterApp(session) {
   S.user = session.user;
   S.db = window.Data;
   S.appStarted = true; S._inicioApp = Date.now(); S._novRevisado = false;
-  S.movimientos = []; S.traspasos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S.objetivos = null; S._gruposVistos = {};
+  S.movimientos = []; S.traspasos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S.objetivos = null; S.carpetas = null; S.agenda = null; S._gruposVistos = {};
   S.loaded = { mov: false, tar: false, golf: false, cfg: false };
   renderShell();
   $('#content').innerHTML = loadingHtml();
@@ -9419,7 +9860,7 @@ async function enterApp(session) {
 }
 function leaveApp() {
   S.appStarted = false;
-  S.grupos = null; S.aportes = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S._volverGrupo = null;
+  S.grupos = null; S.aportes = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S.carpetas = null; S.agenda = null; S._volverGrupo = null;
   S.user = null; S.db = null;
   S.onboarding = null; S._onboardPending = false;
   _unsubs.forEach((u) => { try { u(); } catch (e) { /* noop */ } });
