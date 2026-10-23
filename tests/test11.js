@@ -1,23 +1,24 @@
 const {makeEnv,sleep,click}=require('./harness.js');
 let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
 (async()=>{
- // alguien que ya vio el Parche 2: le sale el Parche 3
+ // alguien que ya vio el Parche 2: le salen el 8, el 7 y el 6 (máximo tres)
  let e=makeEnv({version:{dinero:3},novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-09'},meta:{onboarded:true}}});
  e.w.SUPABASE_CONFIG={url:'https://x.supabase.co',anonKey:'k'};e.w.Auth.getSession=async()=>({access_token:'t'});
  await sleep(700);
  let sh=e.doc.querySelector('#sheetHost').textContent;
- ok(/PalomApp se ha actualizado/.test(sh)&&/Parche 7/.test(sh),'la ventana de novedades (Parche 7) sale al abrir');
+ ok(/PalomApp se ha actualizado/.test(sh)&&/Parche 8/.test(sh),'la ventana de novedades (Parche 8) sale al abrir');
  const dest=[...e.doc.querySelectorAll('.nov-dest')];
- ok(dest.length===6&&/como en el banco/.test(dest[0].textContent)&&/Movimientos, más claro/.test(dest[1].textContent)&&/quién debe a quién/.test(dest[2].textContent)&&/a tu gusto/.test(dest[3].textContent)&&/iguales para todos/.test(dest[4].textContent)&&!/rediseñada/.test(sh),'destacados del Parche 7 y, como no vio el 6 ni el 5, también los suyos (máximo tres versiones)');
+ ok(dest.length===6&&/Juntos, más claro/.test(dest[0].textContent)&&/Dinero, de un vistazo/.test(dest[1].textContent)&&/como en el banco/.test(dest[2].textContent)&&/Movimientos, más claro/.test(dest[3].textContent)&&/quién debe a quién/.test(dest[4].textContent)&&!/iguales para todos/.test(sh),'destacados del Parche 8 y, como no vio el 7 ni el 6, también los suyos (máximo tres versiones)');
  ok(dest.every(d=>/NUEVO/.test(d.textContent))&&dest.slice(0,2).every(d=>d.querySelector('[data-click^="novIr"]'))&&!dest[2].querySelector('[data-click^="novIr"]'),'todos con NUEVO; botón para probar solo en los de la versión nueva');
  ok(e.doc.querySelectorAll('.nov-it').length===18&&/Y además/.test(sh),'y debajo las novedades de las tres versiones');
- ok(e.store.cfg.app.novedadesVistas==='2026-10-17','queda marcada como vista');
- click(e,'novIr','cuentas');await sleep(400);
- ok(/Cuentas y saldos/.test(e.doc.querySelector('#sheetHost').textContent)&&e.store.cfg.app.badgesVistos.cuentas,'«Crear mis cuentas» abre Cuentas y saldos y quita su etiqueta');
- e.w.__APP__.H.closeSheet([]);await sleep(300);
+ ok(dest[0].querySelector('.nov-dest-em svg.i')&&e.doc.querySelectorAll('.nov-it .nov-em svg.i').length===6,'el Parche 8 lleva iconos de la app, no emojis');
+ ok(e.store.cfg.app.novedadesVistas==='2026-10-23','queda marcada como vista');
+ click(e,'novIr','juntos');await sleep(400);
+ ok(e.w.__APP__.S.tab==='juntos'&&!e.doc.querySelector('#sheetHost .nov-hero'),'«Ir a Juntos» cierra la ventana y lleva a Juntos');
+ e.w.__APP__.H.goTab(['inicio']);await sleep(20);
  e.w.__APP__.H.goTab(['mas']);await sleep(20);click(e,'verNovedades','1');await sleep(20);
  sh=e.doc.querySelector('#sheetHost').textContent;
- ok(/Parche 7/.test(sh)&&/Parche 6/.test(sh)&&/Parche 5/.test(sh)&&/Parche 4/.test(sh)&&/Parche 3/.test(sh)&&/Parche 2/.test(sh)&&e.doc.querySelectorAll('.nov-dest .nov-dest-btn').length===2,'Más → Novedades: todas las versiones (botones solo en la última)');
+ ok(/Parche 8/.test(sh)&&/Parche 7/.test(sh)&&/Parche 6/.test(sh)&&/Parche 5/.test(sh)&&/Parche 4/.test(sh)&&/Parche 3/.test(sh)&&/Parche 2/.test(sh)&&e.doc.querySelectorAll('.nov-dest .nov-dest-btn').length===2,'Más → Novedades: todas las versiones (botones solo en la última)');
  click(e,'novIr','tumes');await sleep(400);
  ok(/Tu mes/.test(e.doc.querySelector('#sheetHost').textContent)&&!!e.doc.querySelector('#sheetHost [data-click^="tuMesModo"],#sheetHost .tumes-op,#sheetHost h2'),'tocar una novedad te lleva allí («Tu mes»)');
  ok(e.store.cfg.app.badgesVistos&&e.store.cfg.app.badgesVistos.tumes,'y quita la etiqueta de ese apartado');
@@ -36,7 +37,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
  e.w.__APP__.H.setAnalisisSub(['inversiones']);await sleep(20);
  ok(!/badge-dot/.test(btn('Inversiones').innerHTML),'al entrar desaparece');
  // quien ya la vio no la vuelve a ver
- const e2=makeEnv({version:{dinero:3},novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-17'},meta:{onboarded:true}}});
+ const e2=makeEnv({version:{dinero:3},novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-23'},meta:{onboarded:true}}});
  await sleep(700);
  ok(!e2.doc.querySelector('#sheetHost .nov-hero'),'si ya la viste, no sale otra vez');
 
@@ -46,7 +47,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
  await sleep(500);
  ok(!e3.doc.querySelector('#sheetHost .nov-hero')&&e3.store.cfg.app.novedadesVistas==='2026-10-09','mientras cargan los movimientos aún no sale ni se marca como vista');
  await sleep(1100);
- ok(!!e3.doc.querySelector('#sheetHost .nov-hero')&&e3.store.cfg.app.novedadesVistas==='2026-10-17','cuando termina de cargar, sale y se marca como vista');
+ ok(!!e3.doc.querySelector('#sheetHost .nov-hero')&&e3.store.cfg.app.novedadesVistas==='2026-10-23','cuando termina de cargar, sale y se marca como vista');
  // con otra ventana abierta espera a que se cierre
  const e4=makeEnv({version:{dinero:3},novedades:true,cfg:{app:{categoriasGasto:[{nombre:'X'}],novedadesVistas:'2026-10-09'},meta:{onboarded:true}}});
  await sleep(150);e4.w.__APP__.H.openMovForm([]);await sleep(700);

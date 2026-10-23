@@ -23,7 +23,7 @@ const html = (e) => e.doc.querySelector('#content').innerHTML;
 
   /* 1. Inicio: «Así vas» con su etiqueta; al tocar una tarjeta se quita y hace lo de siempre */
   H.goTab(['inicio']); await sleep(10);
-  ok(/Así vas <span class="badge-new ">NUEVO/.test(html(e)), 'Inicio: «Así vas» lleva NUEVO');
+  ok(/Así vas <span class="badge-new mejor">MEJORADO/.test(html(e)), 'Inicio: «Así vas» lleva MEJORADO (Parche 8)');
   const tarjeta = e.doc.querySelector('.ins-card');
   ok(tarjeta && /^insIr\|/.test(tarjeta.getAttribute('data-click')), 'las tarjetas pasan por insIr');
   tarjeta.click(); await sleep(20);
@@ -39,7 +39,7 @@ const html = (e) => e.doc.querySelector('#content').innerHTML;
 
   /* 3. Tú: «Tu mes» y «Cuentas y saldos» con NUEVO */
   H.goTab(['tu']); await sleep(10);
-  ok(/Tu mes <span class="badge-new ">NUEVO/.test(html(e)) && /Cuentas y saldos <span class="badge-new ">NUEVO/.test(html(e)), 'Tú: NUEVO en «Tu mes» y en «Cuentas y saldos»');
+  ok(/Tu mes <span class="badge-new mejor">MEJORADO/.test(html(e)) && /Cuentas y saldos <span class="badge-new ">NUEVO/.test(html(e)), 'Tú: MEJORADO en «Tu mes» (Parche 8) y NUEVO en «Cuentas y saldos»');
   ok(e.doc.querySelector('#tbAvatar').classList.contains('con-novedad'), 'punto en tu inicial mientras haya algo nuevo en Tú');
   click(e, 'tuMesAbrir'); await sleep(20);
   ok(vistos().tumes, 'al abrir «Tu mes» se quita su etiqueta');

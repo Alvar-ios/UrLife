@@ -586,6 +586,11 @@ a.btn { display: flex; align-items: center; justify-content: center; text-decora
 .nov-dest-btn { color: #fff; }
 .nov-dest.accent .nov-dest-btn { background: var(--accent); color: var(--accent-ink); }
 .nov-dest.savings .nov-dest-btn { background: var(--savings); color: var(--on-solid); }
+/* Parche 8 en adelante: iconos de la app en vez de emojis */
+.nov-dest-em svg.i { font-size: 22px; }
+.nov-dest.accent .nov-dest-em { color: var(--accent); }
+.nov-dest.savings .nov-dest-em { color: var(--savings); }
+.nov-em svg.i { font-size: 17px; color: var(--accent); }
 /* punto en la pestaña «Más» cuando hay algo nuevo sin ver */
 .tab.con-novedad .ic { position: relative; }
 .tab.con-novedad .ic::after { content: ''; position: absolute; top: -1px; right: -5px; width: 8px; height: 8px; border-radius: 50%; background: var(--income); border: 2px solid var(--paper); }
