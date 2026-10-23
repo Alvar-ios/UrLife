@@ -620,6 +620,7 @@ function subscribeAll() {
     render(); refrescarSheetCompartido();
   }, (e) => { console.error(e); S.compartidos = S.compartidos || []; }));
   if (S.db.aportes) _unsubs.push(S.db.aportes.suscribir((rows) => { S.aportes = rows; render(); }, (e) => { console.error(e); S.aportes = S.aportes || []; }));
+  if (S.db.carpetas) _unsubs.push(S.db.carpetas.suscribir((rows) => { S.carpetas = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.carpetas = S.carpetas || []; }));
   if (S.db.objetivos) _unsubs.push(S.db.objetivos.suscribir((rows) => { S.objetivos = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.objetivos = S.objetivos || []; }));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
     S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
@@ -2310,7 +2311,8 @@ function grupoAnadirAmigosHtml(g) {
 }
 async function abrirGrupo(id) {
   const prev = FORM && ((FORM.kind === 'grupo' && FORM.id === id) || (FORM.kind === 'saldar' && FORM.gid === id)) ? FORM : null;
-  FORM = { kind: 'grupo', id, invitaciones: [], ajustes: !!(prev && prev.kind === 'grupo' && prev.ajustes), grupoTab: prev ? prev.grupoTab : '' };
+  FORM = { kind: 'grupo', id, invitaciones: [], ajustes: !!(prev && prev.kind === 'grupo' && prev.ajustes), grupoTab: prev ? prev.grupoTab : '', temaVer: prev && prev.kind === 'grupo' ? prev.temaVer : (S._temaVolver && S._temaVolver.gid === id ? S._temaVolver.tid : '') };
+  S._temaVolver = null;
   if ($('#sheetBackdrop')) updateSheet(grupoHtml(id)); else openSheet(grupoHtml(id));
   try { FORM.invitaciones = await S.db.grupos.invitaciones(id); if (FORM.kind === 'grupo' && FORM.id === id) updateSheet(grupoHtml(id)); } catch (e) { /* sin lista de enlaces */ }
   // al entrar, se refresca el grupo (miembros, personas sin cuenta, administradores y ajustes) por si otro lo cambió
@@ -2725,6 +2727,7 @@ async function saveCompartido(d) {
     }
     const datos = { fecha: d.fecha, tipo: FORM.tipo, categoria: ob ? ob.nombre : huerfana ? (previo.categoria || d.categoria) : d.categoria, subcategoria: ob ? null : (d.subcategoria || null), descripcion: d.descripcion, importe: r2(d.importe), pagadoPor: cp.pagador, reparto: r.reparto, modo: cp.modo, objetivoId: ob ? ob.id : huerfana ? previo.objetivoId : null };
     if (FORM.articulos) datos.articulos = FORM.articulos;
+    const temaG = temaParaGuardar(previo, grupoId); if (temaG !== undefined) datos.carpetaId = temaG;
     let c;
     try {
       if (previo && previo.grupoId === grupoId) c = await S.db.compartidos.editar(previo.id, datos);
@@ -2735,6 +2738,7 @@ async function saveCompartido(d) {
       }
     } catch (e) { console.error(e); return toast(errGrupo(e)); }
     compAplicarLocal(c, previo && previo.id !== c.id ? previo.id : null);
+    if (datos.carpetaId) { S._temaUlt = S._temaUlt || {}; S._temaUlt[grupoId] = { id: datos.carpetaId, ts: Date.now() }; }
     guardarCuentaComp(c.id, cp.pagador === yo ? FORM.cuenta : null, previo && previo.id);
     if (cfg().ultimoCompartir !== 'g:' + grupoId) saveConfig({ ultimoCompartir: 'g:' + grupoId });
     // Tu copia personal: si pagaste tú es el cargo de tu banco. Queda enlazada y no cuenta dos veces.
@@ -2787,7 +2791,7 @@ function compRowGrupo(c) {
   }
   const v2 = juntosV2() && c.descripcion, ttl = v2 ? c.descripcion : (c.categoria || c.tipo), sub = v2 ? (c.categoria || c.tipo) : c.descripcion;
   return '<div class="row" ' + act('compAbrir', c.id, c.grupoId) + '><span class="dot" style="background:var(--' + (TIPO_COLOR[c.tipo] || 'debt') + ')"></span><div class="main"><div class="ttl">' + escapeHtml(ttl) + '</div>' +
-    '<div class="meta">' + fmtDateShort(c.fecha) + (sub ? ' · ' + escapeHtml(sub) : '') + ' · ' + (c.tipo === 'Ahorro' ? (mio(c.pagadoPor) ? 'aportaste tú' : 'aportó ' + n(c.pagadoPor)) : (mio(c.pagadoPor) ? 'pagaste tú' : 'pagó ' + n(c.pagadoPor))) + '</div></div>' +
+    '<div class="meta">' + fmtDateShort(c.fecha) + (sub ? ' · ' + escapeHtml(sub) : '') + ' · ' + (c.tipo === 'Ahorro' ? (mio(c.pagadoPor) ? 'aportaste tú' : 'aportó ' + n(c.pagadoPor)) : (mio(c.pagadoPor) ? 'pagaste tú' : 'pagó ' + n(c.pagadoPor))) + (temaPorId(c.carpetaId) ? ' · ' + escapeHtml(temaPorId(c.carpetaId).nombre) : '') + '</div></div>' +
     '<div class="amt tnum">' + money(c.importe) + '<div class="amt-sub">tu parte ' + money(miParte(c)) + '</div></div></div>';
 }
 function cuentasGrupoHtml(g) {
@@ -4415,6 +4419,7 @@ function saldarTodoHtml() {
 /* ---- dentro de un grupo: lo tuyo arriba y «Gastos | Saldos»; lo de administrar en «Ajustes» ---- */
 function grupoHtmlV2(g) {
   const yo = miUid(), F = FORM || {}, tab = F.grupoTab === 'saldos' ? 'saldos' : 'gastos', o = g.tipo === 'directo' ? otroDe(g) : null;
+  if (F.temaForm && temasDisponible()) return temaFormHtml(g);
   const cs = (S.compartidos || []).filter((c) => c.grupoId === g.id), ds = deudasDe(g.id), mias = ds.filter((d) => esMio(g.id, d.de) || esMio(g.id, d.a));
   const sc = g.miembros.filter((m) => m.sinCuenta).length;
   let h = '<div class="handle"></div><div class="jv-gcab">' + (o ? caraHtml(o.user_id, o.nombre, 'grande') : '<span class="jv-g-ic grande">' + escapeHtml(iniciales(g.nombre)) + '</span>') +
@@ -4434,7 +4439,11 @@ function grupoHtmlV2(g) {
   h += '<div class="segmented jv-tabs">' + [['gastos', 'Gastos'], ['saldos', 'Saldos']].map(([k, l]) => '<button class="' + (tab === k ? 'active' : '') + '" ' + act('grupoTab', k) + '>' + l + '</button>').join('') + '</div>';
   if (tab === 'gastos') {
     const gastos = cs.filter((c) => c.tipo !== 'Liquidación'), tot = gastos.reduce((a, c) => a + num(c.importe), 0), mia = gastos.reduce((a, c) => a + miParte(c), 0);
+    const temaAbierto = temasDisponible() && F.temaVer ? temaPorId(F.temaVer) : null;
+    h += temasGrupoHtml(g, F);
+    if (temaAbierto && temaAbierto.grupoId === g.id) return h + temaResumenHtml(g, temaAbierto) + '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('compRapidoTema', g.id, temaAbierto.id) + '>' + ic('plus') + ' Añadir gasto</button></div>';
     if (gastos.length) h += '<div class="jv-gtot">Entre todos <b class="tnum">' + money(tot) + '</b> · tu parte <b class="tnum">' + money(mia) + '</b></div>';
+    h += porTemasHtml(g, F);
     const lista = cs.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.createdAt || '').localeCompare(a.createdAt || '')), n = F.verTodos ? lista.length : 8;
     h += lista.length ? '<div class="list">' + lista.slice(0, n).map(compRowGrupo).join('') + '</div>' + (lista.length > n ? '<button type="button" class="link" style="margin-top:8px;" ' + act('compVerTodos', g.id) + '>Ver todos (' + lista.length + ')</button>' : '') : '';
     if (g.miembros.length >= 2) h += objetivosGrupoHtml(g);
@@ -4457,6 +4466,7 @@ function compRapidoHtml() {
   const cats = catsGasto().map((c) => c.nombre); if (F.cat && !cats.includes(F.cat)) cats.push(F.cat);
   return '<div class="handle"></div><h2>Compartir un gasto</h2>' +
     '<div class="cr-lbl">Con</div><div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>' +
+    temaCajaHtml() +
     '<label class="cr-imp"><input id="crImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe total" value="' + escapeHtml(F.importe || '') + '" ' + onInput('crImporte') + '><span>' + sym() + '</span></label>' +
     '<div class="field cr-que"><input id="crDesc" type="text" maxlength="80" placeholder="¿Qué fue? (cena, súper, gasolina…)" value="' + escapeHtml(F.desc || '') + '" ' + onInput('crDesc') + '>' +
       '<select id="crCat" aria-label="Categoría" ' + onChange('crCat') + '>' + cats.map((c) => '<option' + (c === F.cat ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select></div>' +
@@ -4486,11 +4496,135 @@ function crRefrescar() {
   const p = $('#crPara'); if (p) p.innerHTML = crParaHtml(ms, rep);
   const res = $('#crRes'); if (res) { res.classList.toggle('error', !!(r && r.error)); res.textContent = crResTxt(ms, imp, r); }
 }
+/* ============================================================
+   TEMAS en los grupos (23/10/2026, docs/16 apartado 3 y docs/18). En la base de datos, «carpetas».
+   Un tema separa los gastos de un viaje, la compra o la casa. Las deudas no se separan por temas:
+   eso está en «Saldos». Solo entran gastos y pagos fijos compartidos.
+   ============================================================ */
+const TEMA_ICONOS = ['plane', 'cart', 'home', 'fork', 'gift', 'car', 'ball', 'film', 'heart', 'tag'];
+const TEMA_IDEAS = [['plane', 'Viaje a…'], ['cart', 'Compra'], ['home', 'Casa'], ['fork', 'Cenas y salidas'], ['gift', 'Regalos']];
+function temasDisponible() { return !!(S.db && S.db.carpetas); }
+function temasDe(gid, conCerrados) { return (S.carpetas || []).filter((t) => t.grupoId === gid && (conCerrados || !t.cerrada)).sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))); }
+function temaPorId(id) { return id ? (S.carpetas || []).find((t) => t.id === id) || null : null; }
+function temaIcono(t) { return TEMA_ICONOS.indexOf(t && t.icono) >= 0 ? t.icono : 'tag'; }
+function temaFechasTxt(t) {
+  if (!t || (!t.desde && !t.hasta)) return '';
+  const f = (iso) => { const d = parseISO(iso); return d ? d.getDate() + ' ' + MESES_ABR[d.getMonth()].toLowerCase() : ''; };
+  if (t.desde && t.hasta) { const a = parseISO(t.desde), b = parseISO(t.hasta); return a && b && a.getMonth() === b.getMonth() ? a.getDate() + '–' + f(t.hasta) : f(t.desde) + ' – ' + f(t.hasta); }
+  return t.desde ? 'desde el ' + f(t.desde) : 'hasta el ' + f(t.hasta);
+}
+function gastosDeTema(gid, tid) { return (S.compartidos || []).filter((c) => c.grupoId === gid && (c.tipo === 'Gasto' || c.tipo === 'Factura') && (tid === '_sin' ? !temaPorId(c.carpetaId) : c.carpetaId === tid)); }
+// El tema que viene elegido solo: el que cubre la fecha; si no, el último que usaste en ese grupo en las últimas 12 horas
+function temaSugerido(gid, fecha) {
+  const ts = temasDe(gid), porFecha = ts.find((t) => t.desde && t.hasta && fecha >= t.desde && fecha <= t.hasta);
+  if (porFecha) return { id: porFecha.id, por: 'Elegido por la fecha: ' + porFecha.nombre + ' es ' + (porFecha.desde === porFecha.hasta ? 'el ' : 'del ') + temaFechasTxt(porFecha).replace('–', ' al ') + '.' };
+  const u = (S._temaUlt || {})[gid];
+  if (u && Date.now() - u.ts < 12 * 3600e3 && ts.some((t) => t.id === u.id)) { const t = temaPorId(u.id); return { id: u.id, por: 'Elegido porque es el último que usaste: ' + t.nombre + '.' }; }
+  return { id: null, por: '' };
+}
+function temaGidDeForm() { const cp = FORM && FORM.comp; return cp && cp.dest && cp.dest.indexOf('g:') === 0 ? cp.dest.slice(2) : null; }
+function temaAutoAplicar() {
+  const F = FORM, gid = temaGidDeForm(); if (!F || !gid) { if (F) { F.tema = null; F.temaPor = ''; } return; }
+  if (F.temaTocado) return;
+  const s = temaSugerido(gid, F.fecha || todayISO()); F.tema = s.id; F.temaPor = s.por;
+}
+// «¿De qué tema?» al compartir un gasto: justo debajo de «Con»
+function temaCajaHtml() {
+  const F = FORM, gid = temaGidDeForm();
+  if (!temasDisponible() || !gid || !(F.tipo === 'Gasto' || F.tipo === 'Factura')) return '';
+  const ts = temasDe(gid), elegido = temaPorId(F.tema);
+  if (F.tema && elegido && elegido.cerrada && !ts.some((t) => t.id === F.tema)) ts.unshift(elegido);
+  const chip = (id, icono, txt) => '<button type="button" class="chip' + ((F.tema || null) === id ? ' active' : '') + '" aria-pressed="' + ((F.tema || null) === id) + '" ' + act('temaElegir', id || '') + '>' + (icono ? ic(icono) : '') + escapeHtml(txt) + '</button>';
+  let h = '<div class="tema-caja"><div class="tema-lbl">¿De qué tema? <span class="hint">· opcional</span></div><div class="chips tema-chips">' + chip(null, '', 'Ninguno') +
+    ts.map((t) => chip(t.id, temaIcono(t), t.nombre)).join('') + '<button type="button" class="chip tema-nuevo' + (F.temaNuevo ? ' active' : '') + '" ' + act('temaNuevoAbrir') + '>' + ic('plus') + (ts.length ? 'Nuevo' : 'Nuevo tema') + '</button></div>';
+  if (F.temaNuevo) {
+    const ico = TEMA_ICONOS.indexOf(F.temaIco) >= 0 ? F.temaIco : 'tag';
+    h += '<div class="tema-nuevo-f"><input id="temaNom" type="text" maxlength="40" placeholder="Nombre (Roma 2026, Compra…)" value="' + escapeHtml(F.temaNom || '') + '" ' + onInput('temaNomIn') + '>' +
+      '<div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.slice(0, 6).map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + k + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaIco', k) + '>' + ic(k) + '</button>').join('') + '</div>' +
+      '<button type="button" class="btn accent block" ' + act('temaCrearRapido') + '>Crear tema</button></div>';
+  } else if (!ts.length) h += '<div class="tema-por">Para separar un viaje, la compra o la casa.</div>';
+  else if (F.tema && F.temaPor && !F.temaTocado) h += '<div class="tema-por">' + escapeHtml(F.temaPor) + '</div>';
+  return h + '</div>';
+}
+// lo que se manda al guardar: solo gastos y pagos fijos de un grupo; al editar, solo si cambia
+function temaParaGuardar(previo, grupoId) {
+  const F = FORM; if (!temasDisponible() || !F || !(F.tipo === 'Gasto' || F.tipo === 'Factura')) return undefined;
+  if (F.kind !== 'compRapido' && F.tema === undefined) return undefined; // formularios sin la caja: no se toca
+  const t = temaPorId(F.tema), id = t && t.grupoId === grupoId && !t.borrado ? t.id : null;
+  if (previo && previo.grupoId === grupoId && (previo.carpetaId || null) === id) return undefined;
+  if (!previo && !id) return undefined;
+  return id;
+}
+/* ---- dentro del grupo: chips de temas, «Por temas» y el resumen de un tema ---- */
+function temasGrupoHtml(g, F) {
+  if (!temasDisponible()) return '';
+  const ts = temasDe(g.id), tv = F.temaVer && temaPorId(F.temaVer) ? F.temaVer : '';
+  if (!ts.length && !tv) return '<button type="button" class="chip tema-mas-suelto" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + ' Tema</button>';
+  return '<div class="chips tema-chips tema-grupo">' + '<button type="button" class="chip' + (tv ? '' : ' active') + '" ' + act('temaVer', '') + '>Todo</button>' +
+    ts.map((t) => '<button type="button" class="chip' + (tv === t.id ? ' active' : '') + '" ' + act('temaVer', t.id) + '>' + ic(temaIcono(t)) + escapeHtml(t.nombre) + '</button>').join('') +
+    '<button type="button" class="chip" aria-label="Nuevo tema" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + '</button></div>';
+}
+function porTemasHtml(g, F) {
+  const ts = temasDe(g.id); if (!ts.length) return '';
+  const fila = (id, icono, nombre, sub, gs) => '<button type="button" class="tema-fila tappable" ' + act('temaVer', id) + '><span class="tema-fila-ic">' + ic(icono) + '</span><span class="tema-fila-x"><b>' + escapeHtml(nombre) + '</b><span>' + escapeHtml(sub) + '</span></span><b class="tnum">' + money(gs.reduce((a, c) => a + num(c.importe), 0)) + '</b>' + ic('chevR') + '</button>';
+  const filas = ts.map((t) => { const gs = gastosDeTema(g.id, t.id); return fila(t.id, temaIcono(t), t.nombre, [temaFechasTxt(t), gs.length + (gs.length === 1 ? ' gasto' : ' gastos')].filter(Boolean).join(' · '), gs); });
+  const n = F.temasTodos ? filas.length : 4, sin = gastosDeTema(g.id, '_sin');
+  const cerrados = temasDe(g.id, true).filter((t) => t.cerrada);
+  return '<div class="card tema-por-card"><div class="tema-por-t">Por temas</div>' + filas.slice(0, n).join('') +
+    (filas.length > n ? '<button type="button" class="link" ' + act('temasTodos') + '>Ver todos (' + filas.length + ')</button>' : '') +
+    (sin.length ? '<div class="tema-fila sin"><span class="tema-fila-ic">' + ic('tag') + '</span><span class="tema-fila-x"><b>Sin tema</b><span>' + sin.length + (sin.length === 1 ? ' gasto' : ' gastos') + '</span></span><b class="tnum">' + money(sin.reduce((a, c) => a + num(c.importe), 0)) + '</b></div>' : '') +
+    (cerrados.length ? '<button type="button" class="link tema-cerrados" ' + act('temasCerrados') + '>Cerrados · ' + cerrados.length + '</button>' + (F.temasCerrados ? cerrados.map((t) => fila(t.id, temaIcono(t), t.nombre, 'cerrado', gastosDeTema(g.id, t.id))).join('') : '') : '') + '</div>';
+}
+function temaResumenHtml(g, t) {
+  const gs = gastosDeTema(g.id, t.id), tot = gs.reduce((a, c) => a + num(c.importe), 0), mia = gs.reduce((a, c) => a + miParte(c), 0);
+  const pagos = {}; gs.forEach((c) => { const u = aliasDe(g.id, c.pagadoPor); pagos[u] = (pagos[u] || 0) + num(c.importe); });
+  const quien = Object.keys(pagos).sort((a, b) => pagos[b] - pagos[a]);
+  const cats = {}; gs.forEach((c) => { const k = c.categoria || 'Otros'; cats[k] = (cats[k] || 0) + num(c.importe); });
+  let cs = Object.entries(cats).sort((a, b) => b[1] - a[1]); if (cs.length > 5) cs = cs.slice(0, 4).concat([['Otros', cs.slice(4).reduce((a, x) => a + x[1], 0)]]);
+  const entre = g.miembros.length <= 2 ? 'entre los dos' : 'entre todos';
+  let h = '<div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('temaVer', '') + '>' + ic('chevL') + '</button><span class="tema-fila-ic">' + ic(temaIcono(t)) + '</span>' +
+    '<div class="tema-cab-t"><b>' + escapeHtml(t.nombre) + '</b><span>' + escapeHtml([nombreDestino(g), temaFechasTxt(t), gs.length + (gs.length === 1 ? ' gasto' : ' gastos'), t.cerrada ? 'cerrado' : ''].filter(Boolean).join(' · ')) + '</span></div>' +
+    '<button type="button" class="icon-btn" aria-label="Opciones del tema" ' + act('temaMenu', t.id) + '>' + ic('more') + '</button></div>';
+  if (F_temaMenu(t.id)) h += temaMenuHtml(g, t);
+  h += '<div class="tema-cifras"><div><span>Gastado ' + entre + '</span><b class="tnum">' + money(tot) + '</b></div><div><span>Tu parte</span><b class="tnum">' + money(mia) + '</b></div></div>';
+  if (quien.length && tot > 0) h += '<div class="tema-sec">Quién pagó qué</div><div class="tema-quien">' + quien.map((u) => '<div class="tema-q"><span>' + escapeHtml(esMio(g.id, u) ? 'Tú' : nombreDe(g.id, u)) + '</span><span class="tema-q-bar"><i style="width:' + (pagos[u] / tot * 100).toFixed(1) + '%;background:' + colorPersona(u) + '"></i></span><b class="tnum">' + money(pagos[u]) + '</b></div>').join('') + '</div>';
+  if (cs.length && tot > 0) h += '<div class="tema-sec">En qué se fue</div><div class="tema-cats" aria-hidden="true">' + cs.map(([k, v]) => '<i style="flex:' + (v / tot).toFixed(4) + ';background:' + colorCat(k) + '"></i>').join('') + '</div>' +
+    '<div class="tema-cats-l">' + cs.map(([k, v]) => '<span><i style="background:' + colorCat(k) + '"></i>' + escapeHtml(k) + ' ' + Math.round(v / tot * 100) + ' %</span>').join('') + '</div>';
+  h += '<div class="rec-hint tema-saldos">Quién debe a quién se ve en <button type="button" class="link" ' + act('grupoTab', 'saldos') + '>Saldos</button>, con todo el grupo junto.</div>';
+  const lista = gs.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  h += lista.length ? '<div class="list">' + lista.map(compRowGrupo).join('') + '</div>' : '<div class="jv-tuyo paz">' + ic('tag') + '<span>Aún no hay gastos en este tema.</span></div>';
+  return h;
+}
+function F_temaMenu(id) { return FORM && FORM.temaMenu === id; }
+function temaMenuHtml(g, t) {
+  const b = (accion, icono, txt, cls) => '<button type="button" class="tema-menu-b' + (cls ? ' ' + cls : '') + '" ' + act(accion, t.id) + '>' + ic(icono) + '<span>' + txt + '</span></button>';
+  return '<div class="card tema-menu">' + b('temaEditar', 'edit', 'Cambiar nombre, icono o fechas') + (t.cerrada ? b('temaAbrirDeNuevo', 'repeat', 'Volver a abrir') : b('temaCerrar', 'checkCircle', 'Cerrar tema')) + b('temaBorrar', 'trash', 'Borrar tema', 'peligro') + '</div>';
+}
+// hoja «Nuevo tema» / «Cambiar tema» dentro del grupo
+function temaFormHtml(g) {
+  const T = FORM.temaForm, ico = TEMA_ICONOS.indexOf(T.icono) >= 0 ? T.icono : 'tag';
+  const ids = T.id ? [] : temaGastosEnFechas(g.id, T.desde, T.hasta);
+  return '<div class="handle"></div><div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('temaFormCerrar') + '>' + ic('chevL') + '</button><h2>' + (T.id ? 'Cambiar tema' : 'Nuevo tema') + '</h2></div>' +
+    (T.id ? '' : '<div class="chips tema-ideas">' + TEMA_IDEAS.map(([k, n]) => '<button type="button" class="chip" ' + act('temaIdea', k, n) + '>' + ic(k) + n + '</button>').join('') + '</div>') +
+    '<div class="field"><label for="tfNombre">Nombre</label><input id="tfNombre" type="text" maxlength="40" placeholder="Roma 2026" value="' + escapeHtml(T.nombre || '') + '"></div>' +
+    '<div class="field"><label>Icono</label><div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + k + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaFormIco', k) + '>' + ic(k) + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>Fechas <span class="hint">· opcional</span></label><div class="tema-fechas"><input id="tfDesde" type="date" aria-label="Desde" value="' + escapeHtml(T.desde || '') + '" ' + onChange('temaFormFecha') + '><span>al</span><input id="tfHasta" type="date" aria-label="Hasta" value="' + escapeHtml(T.hasta || '') + '" ' + onChange('temaFormFecha') + '></div></div>' +
+    (ids.length ? '<label class="tema-meter"><input id="tfMeter" type="checkbox"' + (T.meter !== false ? ' checked' : '') + '> Meter ' + (ids.length === 1 ? 'el gasto' : 'los ' + ids.length + ' gastos') + ' de esos días</label>' : '') +
+    '<div class="actions"><button class="btn ghost block" ' + act('temaFormCerrar') + '>Cancelar</button><button class="btn accent block" ' + act('temaFormGuardar') + '>' + (T.id ? 'Guardar' : 'Crear tema') + '</button></div>';
+}
+function temaGastosEnFechas(gid, desde, hasta) {
+  if (!desde || !hasta || hasta < desde) return [];
+  return (S.compartidos || []).filter((c) => c.grupoId === gid && (c.tipo === 'Gasto' || c.tipo === 'Factura') && !temaPorId(c.carpetaId) && c.fecha >= desde && c.fecha <= hasta).map((c) => c.id);
+}
+function temaLeerForm() { const T = FORM && FORM.temaForm; if (!T) return; const v = (s) => { const el = $(s); return el ? el.value : undefined; }; const n = v('#tfNombre'), d = v('#tfDesde'), h = v('#tfHasta'), m = $('#tfMeter'); if (n !== undefined) T.nombre = n; if (d !== undefined) T.desde = d; if (h !== undefined) T.hasta = h; if (m) T.meter = m.checked; }
+function temaAplicarLocal(t) { S.carpetas = (S.carpetas || []).filter((x) => x.id !== t.id).concat(t.borrado ? [] : [t]); }
+function temaRefrescarGrupo() { if (FORM && FORM.kind === 'grupo' && FORM.id) updateSheet(grupoHtml(FORM.id)); }
 function abrirCompRapido(dest) {
   const yo = miUid();
   FORM = { kind: 'compRapido', tipo: 'Gasto', id: null, compId: null, comp: { on: true }, importe: '', desc: '', cat: 'Otros', catTocada: false, fecha: todayISO(), cuenta: cuentaRecordada('') };
   const k = dest || destinoPorDefecto(); if (k) compPrepararDestino(k);
   FORM.comp.pagador = FORM.comp.pagador || yo;
+  temaAutoAplicar();
   if ($('#sheetBackdrop')) updateSheet(compRapidoHtml()); else openSheet(compRapidoHtml());
   setTimeout(() => { const el = $('#crImporte'); if (el) el.focus(); }, 120);
 }
@@ -8721,13 +8855,60 @@ const H = {
   grupoAjustes: ([id]) => { if (!FORM || FORM.kind !== 'grupo') FORM = { kind: 'grupo', id, invitaciones: [] }; FORM.ajustes = true; updateSheet(grupoHtml(id)); },
   grupoAjustesSalir: ([id]) => { if (FORM && FORM.kind === 'grupo') { FORM.ajustes = false; updateSheet(grupoHtml(id)); } else abrirGrupo(id); },
   grupoTab: ([k]) => { if (!FORM || FORM.kind !== 'grupo') return; FORM.grupoTab = k; updateSheet(grupoHtml(FORM.id)); },
+  temaElegir: ([id]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; F.tema = id || null; F.temaTocado = true; F.temaNuevo = false; sentir('tic'); updateSheet(compRapidoHtml()); },
+  temaNuevoAbrir: () => { const F = FORM; if (!F || F.kind !== 'compRapido') return; F.temaNuevo = !F.temaNuevo; updateSheet(compRapidoHtml()); if (F.temaNuevo) setTimeout(() => { const el = $('#temaNom'); if (el) el.focus(); }, 50); },
+  temaNomIn: (_a, el) => { if (FORM) FORM.temaNom = el.value; },
+  temaIco: ([k]) => { const F = FORM; if (!F) return; const el = $('#temaNom'); if (el) F.temaNom = el.value; F.temaIco = k; updateSheet(compRapidoHtml()); },
+  temaCrearRapido: async () => {
+    const F = FORM, gid = temaGidDeForm(); if (!F || !gid) return;
+    const el = $('#temaNom'), nombre = String((el ? el.value : F.temaNom) || '').trim(); if (!nombre) { toast('Ponle un nombre al tema'); if (el) el.focus(); return; }
+    if (temasDe(gid, true).some((t) => normName(t.nombre) === normName(nombre))) return toast('Ya hay un tema con ese nombre');
+    if (F.creandoTema) return; F.creandoTema = true;
+    try { const t = await S.db.carpetas.crear({ grupoId: gid, nombre, icono: TEMA_ICONOS.indexOf(F.temaIco) >= 0 ? F.temaIco : 'tag' }); temaAplicarLocal(t);
+      if (FORM !== F) return; F.tema = t.id; F.temaTocado = true; F.temaNuevo = false; F.temaNom = ''; sentir('ok'); updateSheet(compRapidoHtml()); }
+    catch (e) { console.error(e); toast(errGrupo(e)); } finally { F.creandoTema = false; }
+  },
+  compRapidoTema: ([gid, tid]) => { S._volverGrupo = gid; S._temaVolver = { gid, tid }; abrirCompRapido('g:' + gid); if (temaPorId(tid)) { FORM.tema = tid; FORM.temaTocado = true; updateSheet(compRapidoHtml()); } },
+  temaVer: ([id]) => { if (!FORM || FORM.kind !== 'grupo') return; FORM.temaVer = id || ''; FORM.temaMenu = null; FORM.grupoTab = 'gastos'; sentir('tic'); updateSheet(grupoHtml(FORM.id)); },
+  temasTodos: () => { if (FORM) { FORM.temasTodos = !FORM.temasTodos; temaRefrescarGrupo(); } },
+  temasCerrados: () => { if (FORM) { FORM.temasCerrados = !FORM.temasCerrados; temaRefrescarGrupo(); } },
+  temaMenu: ([id]) => { if (FORM) { FORM.temaMenu = FORM.temaMenu === id ? null : id; temaRefrescarGrupo(); } },
+  temaFormAbrir: ([gid, id]) => { if (!FORM || FORM.kind !== 'grupo') return; const t = temaPorId(id); FORM.temaMenu = null; FORM.temaForm = t ? { id: t.id, nombre: t.nombre, icono: temaIcono(t), desde: t.desde || '', hasta: t.hasta || '' } : { id: '', nombre: '', icono: 'tag', desde: '', hasta: '' }; temaRefrescarGrupo(); setTimeout(() => { const el = $('#tfNombre'); if (el && !t) el.focus(); }, 60); },
+  temaEditar: ([id]) => H.temaFormAbrir([FORM && FORM.id, id]),
+  temaFormCerrar: () => { if (FORM) { FORM.temaForm = null; temaRefrescarGrupo(); } },
+  temaIdea: ([k, n]) => { temaLeerForm(); const T = FORM.temaForm; T.icono = k; T.nombre = n === 'Viaje a…' ? 'Viaje a ' : n; temaRefrescarGrupo(); setTimeout(() => { const el = $('#tfNombre'); if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) { /* */ } } }, 40); },
+  temaFormIco: ([k]) => { temaLeerForm(); FORM.temaForm.icono = k; temaRefrescarGrupo(); },
+  temaFormFecha: () => { temaLeerForm(); temaRefrescarGrupo(); },
+  temaFormGuardar: async () => {
+    temaLeerForm(); const F = FORM, T = F && F.temaForm; if (!T) return;
+    const nombre = String(T.nombre || '').trim(); if (!nombre) return toast('Ponle un nombre al tema');
+    if (T.desde && T.hasta && T.hasta < T.desde) return toast('La fecha final va después de la primera');
+    if (temasDe(F.id, true).some((t) => t.id !== T.id && normName(t.nombre) === normName(nombre))) return toast('Ya hay un tema con ese nombre');
+    if (T.guardando) return; T.guardando = true;
+    try {
+      const datos = { nombre, icono: TEMA_ICONOS.indexOf(T.icono) >= 0 ? T.icono : 'tag', desde: T.desde || null, hasta: T.hasta || null };
+      const ids = T.id || T.meter === false ? [] : temaGastosEnFechas(F.id, T.desde, T.hasta);
+      const t = T.id ? await S.db.carpetas.editar(T.id, datos) : await S.db.carpetas.crear(Object.assign({ grupoId: F.id }, datos));
+      temaAplicarLocal(t);
+      if (ids.length) { try { await S.db.rpc('poner_carpeta', { p_ids: ids, p_carpeta: t.id }); (S.compartidos || []).forEach((c) => { if (ids.indexOf(c.id) >= 0) c.carpetaId = t.id; }); } catch (e) { console.error(e); toast('El tema se ha creado, pero no se han podido meter los gastos: ' + errGrupo(e)); } }
+      if (FORM !== F) return; F.temaForm = null; F.temaVer = t.id; toast(T.id ? 'Tema guardado' : 'Tema creado'); temaRefrescarGrupo(); render();
+    } catch (e) { console.error(e); toast(errGrupo(e)); } finally { T.guardando = false; }
+  },
+  temaCerrar: async ([id]) => { try { const t = await S.db.carpetas.editar(id, { cerrada: new Date().toISOString() }); temaAplicarLocal(t); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; } toast('Tema cerrado: ya no sale al apuntar gastos'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
+  temaAbrirDeNuevo: async ([id]) => { try { const t = await S.db.carpetas.editar(id, { cerrada: null }); temaAplicarLocal(t); if (FORM) FORM.temaMenu = null; toast('Tema abierto otra vez'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
+  temaBorrar: async ([id]) => {
+    const t = temaPorId(id); if (!t) return;
+    try { await S.db.carpetas.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
+    S.carpetas = (S.carpetas || []).filter((x) => x.id !== id); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; } temaRefrescarGrupo(); render();
+    toast('Tema borrado: sus gastos quedan «Sin tema»', { deshacer: async () => { try { const r = await S.db.carpetas.restaurar(id); temaAplicarLocal(r || t); temaRefrescarGrupo(); render(); toast('Tema recuperado'); } catch (e) { console.error(e); toast(errGrupo(e)); } } });
+  },
   compRapido: ([dest]) => { S._volverGrupo = FORM && FORM.kind === 'grupo' ? FORM.id : null; abrirCompRapido(dest || ''); },
-  crDest: ([k]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; compPrepararDestino(k); F.comp.pagador = F.comp.pagador || miUid(); updateSheet(compRapidoHtml()); },
+  crDest: ([k]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; compPrepararDestino(k); F.comp.pagador = F.comp.pagador || miUid(); F.temaTocado = false; F.temaNuevo = false; temaAutoAplicar(); updateSheet(compRapidoHtml()); },
   crImporte: (_a, el) => { if (!FORM) return; FORM.importe = el.value; el.size = Math.max(1, el.value.length); crRefrescar(); },
   sFechaVer: () => { const i = $('#sFecha'), c = $('#sFechaChip'); if (!i) return; i.hidden = false; if (c) c.hidden = true; i.focus(); try { if (i.showPicker) i.showPicker(); } catch (e) { /* sin selector */ } },
   crDesc: (_a, el) => { const F = FORM; if (!F) return; F.desc = el.value; if (!F.catTocada) { const c = sugerirCategoria(el.value.trim(), 'Gasto'); if (c && esCatGasto(c)) { F.cat = c; const sel = $('#crCat'); if (sel && [...sel.options].some((o) => o.value === c)) sel.value = c; } } },
   crCat: (_a, el) => { if (!FORM) return; FORM.cat = el.value; FORM.catTocada = true; },
-  crFecha: (_a, el) => { if (!FORM) return; FORM.fecha = el.value; },
+  crFecha: (_a, el) => { if (!FORM) return; FORM.fecha = el.value; if (FORM.kind === 'compRapido' && !FORM.temaTocado) { temaAutoAplicar(); const c = $('.tema-caja'); if (c) c.outerHTML = temaCajaHtml(); } },
   crPagador: ([u]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; F.comp.pagador = u; updateSheet(compRapidoHtml()); },
   crIncl: ([u]) => {
     const F = FORM; if (!F || F.kind !== 'compRapido') return; const cp = F.comp, ms = miembrosComp();
@@ -9457,7 +9638,7 @@ async function enterApp(session) {
   S.user = session.user;
   S.db = window.Data;
   S.appStarted = true; S._inicioApp = Date.now(); S._novRevisado = false;
-  S.movimientos = []; S.traspasos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S.objetivos = null; S._gruposVistos = {};
+  S.movimientos = []; S.traspasos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S.objetivos = null; S.carpetas = null; S._gruposVistos = {};
   S.loaded = { mov: false, tar: false, golf: false, cfg: false };
   renderShell();
   $('#content').innerHTML = loadingHtml();
@@ -9467,7 +9648,7 @@ async function enterApp(session) {
 }
 function leaveApp() {
   S.appStarted = false;
-  S.grupos = null; S.aportes = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S._volverGrupo = null;
+  S.grupos = null; S.aportes = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S.carpetas = null; S._volverGrupo = null;
   S.user = null; S.db = null;
   S.onboarding = null; S._onboardPending = false;
   _unsubs.forEach((u) => { try { u(); } catch (e) { /* noop */ } });

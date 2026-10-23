@@ -285,9 +285,9 @@
       },
     };
   }
-  var compartidos = tablaCompartida('compartidos', ['id', 'grupoId', 'fecha', 'tipo', 'categoria', 'subcategoria', 'descripcion', 'importe', 'pagadoPor', 'reparto', 'modo', 'objetivoId', 'articulos'], function (r) {
+  var compartidos = tablaCompartida('compartidos', ['id', 'grupoId', 'fecha', 'tipo', 'categoria', 'subcategoria', 'descripcion', 'importe', 'pagadoPor', 'reparto', 'modo', 'objetivoId', 'articulos', 'carpetaId'], function (r) {
     return { id: r.id, grupoId: r.grupo_id, fecha: r.fecha, tipo: r.tipo, categoria: r.categoria || '', subcategoria: r.subcategoria || null, descripcion: r.descripcion || '',
-      importe: Number(r.importe), pagadoPor: r.pagado_por, reparto: r.reparto || {}, modo: r.modo || 'igual', objetivoId: r.objetivo_id || null, articulos: r.articulos || null,
+      importe: Number(r.importe), pagadoPor: r.pagado_por, reparto: r.reparto || {}, modo: r.modo || 'igual', objetivoId: r.objetivo_id || null, articulos: r.articulos || null, carpetaId: r.carpeta_id || null,
       creadoPor: r.creado_por, createdAt: r.created_at, updatedAt: r.updated_at, editadoPor: r.editado_por };
   }, ['grupo_id']);
   var objetivos = tablaCompartida('objetivos_compartidos', ['id', 'grupoId', 'tipo', 'nombre', 'objetivo', 'fechaObjetivo', 'previo', 'hitos', 'usos', 'conseguida', 'forma'], function (r) {
@@ -295,6 +295,14 @@
       fechaObjetivo: r.fecha_objetivo || null, previo: Number(r.previo || 0), hitos: r.hitos || [], usos: r.usos || [], conseguida: r.conseguida || null, forma: r.forma || null,
       creadoPor: r.creado_por, createdAt: r.created_at };
   }, ['grupo_id', 'tipo']);
+  /* ---- temas de un grupo (23/10; en la base de datos, «carpetas»). Nunca se borran de verdad: «borrado» y se pueden recuperar ---- */
+  var carpetas = tablaCompartida('grupo_carpetas', ['id', 'grupoId', 'nombre', 'icono', 'desde', 'hasta', 'cerrada'], function (r) {
+    return { id: r.id, grupoId: r.grupo_id, nombre: r.nombre, icono: r.icono || 'tag', desde: r.desde || null, hasta: r.hasta || null, cerrada: r.cerrada || null,
+      creadoPor: r.creado_por, createdAt: r.created_at };
+  }, ['grupo_id']);
+  carpetas.restaurar = function (id) {
+    return q(sb.from('grupo_carpetas').update({ borrado: null }).eq('id', id).select().single()).then(function (r) { return r ? { id: r.id, grupoId: r.grupo_id, nombre: r.nombre, icono: r.icono || 'tag', desde: r.desde || null, hasta: r.hasta || null, cerrada: r.cerrada || null, creadoPor: r.creado_por, createdAt: r.created_at } : null; });
+  };
   /* ---- aportaciones a metas compartidas (12/10): reflejo de un movimiento personal que su dueño vincula a la meta ---- */
   var aportes = tablaCompartida('objetivo_aportes', ['objetivoId', 'movId', 'fecha', 'tipo', 'importe', 'activoId', 'participaciones'], function (r) {
     return { id: r.id, objetivoId: r.objetivo_id, userId: r.user_id, movId: r.mov_id, fecha: r.fecha, tipo: r.tipo, importe: Number(r.importe),
@@ -310,5 +318,5 @@
     return q(sb.from('objetivo_aportes').update({ borrado: new Date().toISOString() }).eq('user_id', currentUid).eq('mov_id', movId).is('borrado', null).select('id'));
   };
 
-  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
+  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
 })();
