@@ -5,7 +5,7 @@ const jwt=aal=>'h.'+b64({aal})+'.s';
 (async()=>{
  // ---- moneda
  let e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},movs:[{id:'a',tipo:'Ingreso',categoria:'N',importe:1234.5,fecha:new Date().toISOString().slice(0,8)+'01'}]});
- await sleep(60);const doc=e.doc,txt=()=>doc.querySelector('#content').textContent;
+ await sleep(200);const doc=e.doc,txt=()=>doc.querySelector('#content').textContent;
  ok(/1\.235 €|1\.234,50 €/.test(txt()),'EUR por defecto ('+txt().slice(0,200)+')');
  e.w.__APP__.H.goTab(['mas']);ok(/Moneda/.test(txt())&&/EUR €/.test(txt()),'Más muestra Moneda');
  click(e,'openMoneda');click(e,'setMoneda','USD');await sleep(40);

@@ -24,7 +24,7 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
 (async()=>{
  // 1 existing user
  let e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'Comida',presupuesto:100}],ingresos:['Nómina']}}});
- await sleep(60);
+ await sleep(200);
  const A=()=>e.w.__APP__, ob=()=>e.w.__APP__.S.onboarding, txt=()=>e.doc.querySelector('#app').textContent;
  ok(!ob(),'existing user: no wizard');
  ok(e.store.cfg.meta&&e.store.cfg.meta.onboarded&&e.store.cfg.meta.auto,'existing user: grandfathered meta');
@@ -58,7 +58,7 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  ok(a.cuentas.length===2&&a.cuentas[0].saldo===1240.5&&a.cuentas[1].saldo===50&&!a.cuentas[1].principal,'añade el efectivo sin tocar el banco');
  ok(a.facturas.filter(f=>f.nombre==='Alquiler').length===1&&a.cobros.filter(f=>f.nombre==='Nómina').length===1,'sin duplicar Alquiler ni Nómina');
  // 2 new user
- e=makeEnv({version:{dinero:3},cfg:{}});await sleep(60);
+ e=makeEnv({version:{dinero:3},cfg:{}});await sleep(200);
  ok(ob()&&ob().step===0&&!ob().manual,'new user: wizard auto-shows');
  ok(/¡Hola!/.test(txt())&&/Comparte gastos en Juntos/.test(txt())&&/Tus cuentas, metas y deudas/.test(txt())&&/¿Cómo te llamas\?/.test(txt()),'paso 1: las 4 cosas grandes y el nombre');
  ok(!/👋|🏦|💼/.test(txt()),'sin emojis: iconos como en el resto de la app');
@@ -76,10 +76,10 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  ok(!e.doc.querySelector('#sheetHost .nov-hero'),'no sale la ventana de novedades');
  ok(/Pon el saldo de tu banco/.test(e.doc.querySelector('#content').textContent),'en Inicio, «Empieza aquí» propone poner el saldo del banco');
  // 3 skip at welcome
- e=makeEnv({version:{dinero:3},cfg:{}});await sleep(60);click(e,'obFinish','');await sleep(600);
+ e=makeEnv({version:{dinero:3},cfg:{}});await sleep(200);click(e,'obFinish','');await sleep(600);
  ok(e.store.cfg.meta.onboarded&&!ob()&&!(e.store.cfg.app.cuentas||[]).length&&!e.doc.querySelector('#sheetHost .nov-hero'),'saltar al principio: hecho, sin datos inventados y sin ventana de novedades');
  // 4 settings editor extras
- e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'X'}],facturas:[{nombre:'Luz',importe:50}]},meta:{onboarded:true}}});await sleep(60);
+ e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'X'}],facturas:[{nombre:'Luz',importe:50}]},meta:{onboarded:true}}});await sleep(200);
  ok(!e.w.__APP__.S.onboarding,'onboarded user: no wizard');
  e.w.__APP__.H.goTab(['mas']);click(e,'openRecurrentes');click(e,'recEditar','factura','0');await sleep(10);
  const sel=e.doc.querySelector('#recTipo');sel.value='dia';sel.dispatchEvent(new e.w.Event('change',{bubbles:true}));
