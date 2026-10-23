@@ -1715,3 +1715,39 @@ html[data-look="nuevo"][data-fondo="puro"] { --paper: #FFFFFF; --paper-raised: #
 }
 html[data-look="nuevo"][data-fondo="tinte"][data-theme="dark"] { --paper: color-mix(in srgb, var(--pd) 6%, #0A0A0C); --paper-sunken: color-mix(in srgb, var(--pd) 8%, #232329); }
 html[data-look="nuevo"][data-fondo="puro"][data-theme="dark"] { --paper: #000000; --paper-raised: #141416; --paper-sunken: #1E1E22; }
+/* ---- Selector «¿Cuándo?» y Festivos (23/10, docs/15 3.3) ---- */
+html[data-look="nuevo"] .rec-campo { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper-raised); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+html[data-look="nuevo"] .rec-campo-ic { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+html[data-look="nuevo"] .rec-campo-ic .i { width: 18px; height: 18px; }
+html[data-look="nuevo"] .rec-campo-x { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html[data-look="nuevo"] .rec-campo-x b { font-size: 14.5px; }
+html[data-look="nuevo"] .rec-campo-x span { font-size: 12px; color: var(--text-muted); }
+html[data-look="nuevo"] .rec-campo > .i:last-child { width: 16px; height: 16px; color: var(--text-faint); flex: none; }
+html[data-look="nuevo"] .rec-grupo-t { margin: 14px 2px 6px; font-size: 11.5px; font-weight: 750; letter-spacing: .06em; color: var(--text-muted); }
+html[data-look="nuevo"] .rec-ops { display: grid; gap: 8px; }
+html[data-look="nuevo"] .rec-par { margin: -2px 0 6px; padding: 12px; border-radius: 14px; background: var(--paper-sunken); }
+html[data-look="nuevo"] .rec-par-l { font-size: 12.5px; font-weight: 650; color: var(--text-muted); margin: 8px 0 6px; }
+html[data-look="nuevo"] .rec-par-l:first-child { margin-top: 0; }
+html[data-look="nuevo"] .rec-dias { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+html[data-look="nuevo"] .rec-dia { height: 40px; border: 0; border-radius: 10px; background: var(--paper-raised); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+html[data-look="nuevo"] .rec-dia.on { background: var(--accent); color: #fff; font-weight: 700; }
+html[data-look="nuevo"] .rec-dia.ult { grid-column: span 4; font-size: 13px; }
+html[data-look="nuevo"] .rec-sem { display: flex; justify-content: space-between; gap: 4px; margin-top: 10px; }
+html[data-look="nuevo"] .rec-sem-d { width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--paper-raised); color: var(--ink); font: inherit; font-weight: 650; cursor: pointer; }
+html[data-look="nuevo"] .rec-sem-d.on { background: var(--accent); color: #fff; }
+html[data-look="nuevo"] .rec-mm { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+html[data-look="nuevo"] .rec-mm-b { width: 44px; height: 44px; border: 0; border-radius: 12px; background: var(--paper-raised); color: var(--accent); font: inherit; font-size: 22px; font-weight: 700; cursor: pointer; }
+html[data-look="nuevo"] .rec-mm b { font-size: 16px; }
+html[data-look="nuevo"] .rec-ancla { width: 100%; min-height: 44px; }
+html[data-look="nuevo"] .rec-prox { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 4px; }
+html[data-look="nuevo"] .rec-prox-f { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); }
+html[data-look="nuevo"] .rec-prox-f b { font-family: var(--font-display); font-size: 20px; }
+html[data-look="nuevo"] .rec-prox-f i { font-style: normal; font-size: 11.5px; }
+html[data-look="nuevo"] .rec-fest { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 48px; margin: 8px 0; padding: 0 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper-raised); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+html[data-look="nuevo"] .rec-fest .i { width: 17px; height: 17px; color: var(--text-muted); }
+html[data-look="nuevo"] .rec-fest .menu-extra { margin-left: auto; font-size: 12.5px; color: var(--text-muted); }
+html[data-look="nuevo"] .fest-loc { display: grid; grid-template-columns: 44px 1fr 1fr; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 650; }
+html[data-look="nuevo"] .fest-loc input { min-width: 0; min-height: 44px; }
+html[data-look="nuevo"] .fest-cambios { padding: 6px 12px; }
+html[data-look="nuevo"] .fest-c { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; font-size: 13.5px; }
+html[data-look="nuevo"] .fest-c + .fest-c { border-top: 1px solid var(--line); }

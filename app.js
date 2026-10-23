@@ -7855,7 +7855,7 @@ function autoCategoriaDesc() {
    COBROS Y PAGOS RECURRENTES (Bloque 4): reglas de fechas, avisos y aprendizaje
    ============================================================ */
 const DOW_LARGO = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']; // 0 = lunes
-const ORDINAL = { '1': 'primer', '2': 'segundo', '3': 'tercer', '4': 'cuarto', '-1': 'último' };
+const ORDINAL = { '1': 'primer', '2': 'segundo', '3': 'tercer', '4': 'cuarto', '5': 'quinto', '-1': 'último', '-2': 'penúltimo', '-3': 'antepenúltimo' };
 const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 function uD(iso) { const p = String(iso).split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); }
 function uISO(d) { return d.toISOString().slice(0, 10); }
@@ -7864,25 +7864,50 @@ function dowL(d) { return (d.getUTCDay() + 6) % 7; } // 0 lunes … 6 domingo
 function esFinde(d) { return dowL(d) >= 5; }
 function ymdU(y, m, d) { return new Date(Date.UTC(y, m, d)); } // m empieza en 0
 function diasMesU(y, m) { return new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); }
+/* Festivos (23/10, docs/15 3.3): opción apagada al principio. FESTIVOS[año][zona] = 'MM-DD' de esa comunidad (nacionales incluidos), sacados del BOE */
+const FESTIVOS = { // fiestas laborales del BOE: 2026 (BOE-A-2025-21667) y 2027 (BOE-A-2026-21254), contrastadas con cada boletín autonómico. Navarra suma el 3 de diciembre (local en toda Navarra). Sin las fiestas de cada isla canaria ni las locales
+  2026: { AN: ['01-01', '01-06', '02-28', '04-02', '04-03', '05-01', '08-15', '10-12', '11-02', '12-07', '12-08', '12-25'], AR: ['01-01', '01-06', '04-02', '04-03', '04-23', '05-01', '08-15', '10-12', '11-02', '12-07', '12-08', '12-25'], AS: ['01-01', '01-06', '04-02', '04-03', '05-01', '08-15', '09-08', '10-12', '11-02', '12-07', '12-08', '12-25'], IB: ['01-01', '01-06', '03-02', '04-02', '04-03', '04-06', '05-01', '08-15', '10-12', '12-08', '12-25', '12-26'], CN: ['01-01', '01-06', '04-02', '04-03', '05-01', '05-30', '08-15', '10-12', '11-02', '12-08', '12-25'], CB: ['01-01', '01-06', '04-02', '04-03', '05-01', '07-28', '08-15', '09-15', '10-12', '12-07', '12-08', '12-25'], CL: ['01-01', '01-06', '04-02', '04-03', '04-23', '05-01', '08-15', '10-12', '11-02', '12-07', '12-08', '12-25'], CM: ['01-01', '01-06', '04-02', '04-03', '04-06', '05-01', '06-04', '08-15', '10-12', '11-02', '12-08', '12-25'], CT: ['01-01', '01-06', '04-03', '04-06', '05-01', '06-24', '08-15', '09-11', '10-12', '12-08', '12-25', '12-26'], VC: ['01-01', '01-06', '03-19', '04-03', '04-06', '05-01', '06-24', '08-15', '10-09', '10-12', '12-08', '12-25'], EX: ['01-01', '01-06', '04-02', '04-03', '05-01', '08-15', '09-08', '10-12', '11-02', '12-07', '12-08', '12-25'], GA: ['01-01', '01-06', '03-19', '04-02', '04-03', '05-01', '06-24', '07-25', '08-15', '10-12', '12-08', '12-25'], MD: ['01-01', '01-06', '04-02', '04-03', '05-01', '05-02', '08-15', '10-12', '11-02', '12-07', '12-08', '12-25'], MC: ['01-01', '01-06', '03-19', '04-02', '04-03', '05-01', '06-09', '08-15', '10-12', '12-07', '12-08', '12-25'], NC: ['01-01', '01-06', '03-19', '04-02', '04-03', '04-06', '05-01', '08-15', '10-12', '11-02', '12-03', '12-08', '12-25'], PV: ['01-01', '01-06', '03-19', '04-02', '04-03', '04-06', '05-01', '07-25', '08-15', '10-12', '12-08', '12-25'], RI: ['01-01', '01-06', '04-02', '04-03', '04-06', '05-01', '06-09', '08-15', '10-12', '12-07', '12-08', '12-25'], CE: ['01-01', '01-06', '04-02', '04-03', '05-01', '05-27', '08-05', '08-15', '09-02', '10-12', '12-08', '12-25'], ML: ['01-01', '01-06', '03-20', '04-02', '04-03', '05-01', '05-27', '08-15', '10-12', '12-07', '12-08', '12-25'] },
+  2027: { AN: ['01-01', '01-06', '03-01', '03-25', '03-26', '05-01', '08-16', '10-12', '11-01', '12-06', '12-08', '12-25'], AR: ['01-01', '01-06', '03-25', '03-26', '04-23', '05-01', '08-16', '10-12', '11-01', '12-06', '12-08', '12-25'], AS: ['01-01', '01-06', '03-25', '03-26', '05-01', '08-16', '09-08', '10-12', '11-01', '12-06', '12-08', '12-25'], IB: ['01-01', '01-06', '03-01', '03-25', '03-26', '03-29', '05-01', '10-12', '11-01', '12-06', '12-08', '12-25'], CN: ['01-01', '01-06', '03-25', '03-26', '05-01', '08-16', '10-12', '11-01', '12-06', '12-08', '12-25'], CB: ['01-01', '01-06', '03-25', '03-26', '05-01', '07-28', '09-15', '10-12', '11-01', '12-06', '12-08', '12-25'], CL: ['01-01', '01-06', '03-25', '03-26', '04-23', '05-01', '08-16', '10-12', '11-01', '12-06', '12-08', '12-25'], CM: ['01-01', '01-06', '03-25', '03-26', '05-01', '05-27', '05-31', '10-12', '11-01', '12-06', '12-08', '12-25'], CT: ['01-01', '01-06', '03-26', '03-29', '05-01', '06-24', '09-11', '10-12', '11-01', '12-06', '12-08', '12-25'], VC: ['01-01', '01-06', '03-19', '03-26', '03-29', '05-01', '10-09', '10-12', '11-01', '12-06', '12-08', '12-25'], EX: ['01-01', '01-06', '03-25', '03-26', '05-01', '09-08', '10-11', '10-12', '11-01', '12-06', '12-08', '12-25'], GA: ['01-01', '01-06', '03-19', '03-25', '03-26', '05-01', '05-17', '10-12', '11-01', '12-06', '12-08', '12-25'], MD: ['01-01', '01-06', '03-19', '03-25', '03-26', '05-01', '08-16', '10-12', '11-01', '12-06', '12-08', '12-25'], MC: ['01-01', '01-06', '03-19', '03-25', '03-26', '05-01', '06-09', '10-12', '11-01', '12-06', '12-08', '12-25'], NC: ['01-01', '01-06', '03-19', '03-25', '03-26', '03-29', '05-01', '10-12', '11-01', '12-03', '12-06', '12-08', '12-25'], PV: ['01-01', '01-06', '03-25', '03-26', '03-29', '05-01', '10-07', '10-12', '11-01', '12-06', '12-08', '12-25'], RI: ['01-01', '01-06', '03-25', '03-26', '03-29', '05-01', '06-09', '10-12', '11-01', '12-06', '12-08', '12-25'], CE: ['01-01', '01-06', '03-25', '03-26', '05-01', '05-17', '08-05', '10-12', '11-01', '12-06', '12-08', '12-25'], ML: ['01-01', '01-06', '03-10', '03-25', '03-26', '05-01', '05-17', '10-12', '11-01', '12-06', '12-08', '12-25'] }
+};
+const ZONAS_FESTIVOS = [['AN', 'Andalucía'], ['AR', 'Aragón'], ['AS', 'Asturias'], ['IB', 'Illes Balears'], ['CN', 'Canarias'], ['CB', 'Cantabria'], ['CL', 'Castilla y León'], ['CM', 'Castilla-La Mancha'], ['CT', 'Cataluña'],
+  ['VC', 'Comunitat Valenciana'], ['EX', 'Extremadura'], ['GA', 'Galicia'], ['MD', 'Comunidad de Madrid'], ['MC', 'Región de Murcia'], ['NC', 'Navarra'], ['PV', 'País Vasco'], ['RI', 'La Rioja'], ['CE', 'Ceuta'], ['ML', 'Melilla']];
+function festivosCfg() { const f = cfg().festivos || {}; return { on: !!f.on && ZONAS_FESTIVOS.some((z) => z[0] === f.zona), zona: f.zona || '', locales: f.locales || {} }; }
+const _festMemo = {};
+function festivosAnio(y) {
+  const f = festivosCfg(); if (!f.on) return null;
+  const k = y + '|' + f.zona + '|' + JSON.stringify(f.locales[y] || []);
+  if (!_festMemo[k]) { const set = new Set(); ((FESTIVOS[y] || {})[f.zona] || []).forEach((md) => set.add(y + '-' + md)); (f.locales[y] || []).forEach((iso) => { if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) set.add(iso); }); _festMemo[k] = set; }
+  return _festMemo[k];
+}
+function esFestivo(d) { const set = festivosAnio(d.getUTCFullYear()); return !!(set && set.has(uISO(d))); }
+function noHabil(d) { return esFinde(d) || esFestivo(d); }
 function ajustarFinde(d, modo) {
-  if (!modo || !esFinde(d)) return d;
+  if (!modo || !noHabil(d)) return d;
   const r = new Date(d.getTime());
-  while (esFinde(r)) r.setUTCDate(r.getUTCDate() + (modo === 'antes' ? -1 : 1));
+  for (let i = 0; i < 15 && noHabil(r); i++) r.setUTCDate(r.getUTCDate() + (modo === 'antes' ? -1 : 1));
   return r;
+}
+// el n.º día hábil del mes, desde el principio (n > 0) o desde el final (fin)
+function habilN(y, m, n, fin) {
+  const dim = diasMesU(y, m), d = ymdU(y, m, fin ? dim : 1); let k = 0;
+  for (let i = 0; i < 31; i++) { if (d.getUTCMonth() !== m) return null; if (!noHabil(d)) { k++; if (k === n) return d; } d.setUTCDate(d.getUTCDate() + (fin ? -1 : 1)); }
+  return null;
 }
 // Fechas de una regla mensual dentro de un mes (y, m con enero = 0)
 function fechasMesRegla(r, y, m) {
   const dim = diasMesU(y, m);
   if (r.t === 'dia') return [ajustarFinde(ymdU(y, m, Math.min(Math.max(1, Number(r.dia) || 1), dim)), r.ajuste)];
-  if (r.t === 'ultHabil') { const d = ymdU(y, m, dim); while (esFinde(d)) d.setUTCDate(d.getUTCDate() - 1); return [d]; }
-  if (r.t === 'priHabil') { const d = ymdU(y, m, 1); while (esFinde(d)) d.setUTCDate(d.getUTCDate() + 1); return [d]; }
+  if (r.t === 'ultHabil') { const d = habilN(y, m, 1, true); return d ? [d] : []; }
+  if (r.t === 'priHabil') { const d = habilN(y, m, 1, false); return d ? [d] : []; }
+  if (r.t === 'habil' || r.t === 'habilFin') { const d = habilN(y, m, Math.max(1, Math.min(10, Number(r.n) || 1)), r.t === 'habilFin'); return d ? [d] : []; }
+  if (r.t === 'diasMes') return [...new Set((r.dias || []).map(Number).filter((x) => x >= 1 && x <= 31).map((x) => uISO(ajustarFinde(ymdU(y, m, Math.min(x, dim)), r.ajuste))))].map(uD);
   if (r.t === 'nesimo') {
     const dow = Number(r.dow) || 0, n = Number(r.n) || 1;
     if (n > 0) {
       const d = ymdU(y, m, 1); while (dowL(d) !== dow) d.setUTCDate(d.getUTCDate() + 1);
       d.setUTCDate(d.getUTCDate() + 7 * (n - 1)); return d.getUTCMonth() === m ? [d] : [];
     }
-    const d = ymdU(y, m, dim); while (dowL(d) !== dow) d.setUTCDate(d.getUTCDate() - 1); return [d];
+    const d = ymdU(y, m, dim); while (dowL(d) !== dow) d.setUTCDate(d.getUTCDate() - 1); d.setUTCDate(d.getUTCDate() + 7 * (n + 1)); return d.getUTCMonth() === m ? [d] : [];
   }
   if (r.t === 'quincenal') return [ajustarFinde(ymdU(y, m, 15), r.ajuste), ajustarFinde(ymdU(y, m, dim), r.ajuste)];
   return [];
@@ -7903,9 +7928,9 @@ function ocurrencias(r, desde, hasta) {
     }
     return out;
   }
-  if (r.t === 'semanas') {
+  if (r.t === 'semanas' || r.t === 'dias') {
     if (!r.ancla) return [];
-    const paso = Math.max(1, Math.min(52, Number(r.cada) || 1)) * 7 * 864e5;
+    const paso = (r.t === 'dias' ? Math.max(1, Math.min(365, Number(r.cada) || 1)) : Math.max(1, Math.min(52, Number(r.cada) || 1)) * 7) * 864e5;
     const a = uD(r.ancla).getTime();
     let k = Math.ceil((uD(desde).getTime() - a) / paso);
     for (let i = 0; i < 1000; i++, k++) { const iso = uISO(new Date(a + k * paso)); if (iso > hasta) break; if (iso >= desde) out.push(iso); }
@@ -7922,8 +7947,13 @@ function ocurrencias(r, desde, hasta) {
 }
 function reglaTexto(r) {
   if (!r || !r.t) return 'Sin fecha';
-  const aj = r.ajuste === 'antes' ? ' (si cae en finde, el viernes antes)' : r.ajuste === 'despues' ? ' (si cae en finde, el lunes después)' : '';
-  if (r.t === 'dia') return 'El día ' + r.dia + ' de cada mes' + aj;
+  const fo = festivosCfg().on;
+  const aj = r.ajuste === 'antes' ? (fo ? ' (si cae en finde o festivo, el día hábil antes)' : ' (si cae en finde, el viernes antes)') : r.ajuste === 'despues' ? (fo ? ' (si cae en finde o festivo, el día hábil después)' : ' (si cae en finde, el lunes después)') : '';
+  if (r.t === 'dia') return Number(r.dia) >= 31 ? 'El último día de cada mes' + aj : 'El día ' + r.dia + ' de cada mes' + aj;
+  if (r.t === 'habil') return 'El ' + (ORDINAL[String(r.n)] || r.n + '.º') + ' día hábil del mes';
+  if (r.t === 'habilFin') return Number(r.n) === 1 ? 'Último día hábil del mes' : 'El ' + (ORDINAL[String(-Number(r.n))] || r.n + '.º por el final') + ' día hábil del mes';
+  if (r.t === 'diasMes') { const ds = (r.dias || []).map(Number).sort((a, b) => a - b).map((x) => (x >= 31 ? 'último' : x)); return 'Los días ' + ds.join(' y ') + ' de cada mes' + aj; }
+  if (r.t === 'dias') return 'Cada ' + (Number(r.cada) || 1) + (Number(r.cada) === 1 ? ' día' : ' días');
   if (r.t === 'ultHabil') return 'Último día hábil del mes';
   if (r.t === 'priHabil') return 'Primer día hábil del mes';
   if (r.t === 'nesimo') return 'El ' + ORDINAL[String(r.n)] + ' ' + DOW_LARGO[Number(r.dow) || 0] + ' de cada mes';
@@ -8050,7 +8080,8 @@ function aprenderRegla(fechas) {
   cands.push({ t: 'ultHabil' }, { t: 'priHabil' });
   for (let d = 1; d <= 31; d++) ['antes', 'despues'].forEach((aj) => cands.push({ t: 'dia', dia: d, ajuste: aj }));
   cands.push({ t: 'quincenal', ajuste: '' }, { t: 'quincenal', ajuste: 'antes' });
-  [1, 2, 3, 4, -1].forEach((n) => { for (let w = 0; w < 7; w++) cands.push({ t: 'nesimo', n, dow: w }); });
+  cands.push({ t: 'habilFin', n: 2 }, { t: 'habilFin', n: 3 }, { t: 'habil', n: 2 }, { t: 'habil', n: 3 });
+  [1, 2, 3, 4, -1, -2].forEach((n) => { for (let w = 0; w < 7; w++) cands.push({ t: 'nesimo', n, dow: w }); });
   [1, 2, 4].forEach((c) => cands.push({ t: 'semanas', cada: c, ancla: fechas[fechas.length - 1] }));
   [2, 3, 6, 12].forEach((c) => cands.push({ t: 'meses', cada: c, ancla: fechas[fechas.length - 1], ajuste: '' }));
   let best = null;
@@ -8060,7 +8091,7 @@ function aprenderRegla(fechas) {
   });
   return best && best.hits >= 2 ? best : null;
 }
-const mismaRegla = (a, b) => ['t', 'dia', 'ajuste', 'n', 'dow', 'cada'].every((k) => String((a || {})[k] == null ? '' : a[k]) === String((b || {})[k] == null ? '' : b[k]));
+const mismaRegla = (a, b) => ['t', 'dia', 'ajuste', 'n', 'dow', 'cada', 'dias'].every((k) => String((a || {})[k] == null ? '' : a[k]) === String((b || {})[k] == null ? '' : b[k]));
 function sugerenciaMejor(rc) {
   const fechas = fechasHistorial(rc.tipo, rc.nombre);
   const best = aprenderRegla(fechas);
@@ -8081,6 +8112,7 @@ function recListaHtml() {
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 6px;">Con cada uno te avisamos en Inicio el día anterior y el mismo día, y lo verás en el calendario.</div>' +
     '<div class="section-title">Ingresos fijos</div>' + (cob.length ? '<div class="list">' + cob.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade tu nómina u otro cobro fijo.')) +
     '<div class="section-title">Pagos fijos</div>' + (fac.length ? '<div class="list">' + fac.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade el alquiler, la luz o una suscripción.')) +
+    '<button type="button" class="rec-fest tappable" ' + act('festivosAbrir') + '>' + ic('calendar') + '<span>Festivos</span><span class="menu-extra">' + (festivosCfg().on ? escapeHtml((ZONAS_FESTIVOS.find((z) => z[0] === festivosCfg().zona) || [])[1] || '') : 'solo fines de semana') + '</span>' + ic('chevR') + '</button>' +
     '<div class="actions"><button class="btn ghost block" ' + act('recNuevo', 'cobro') + '>' + ic('plus') + ' Ingreso fijo</button><button class="btn ghost block" ' + act('recNuevo', 'factura') + '>' + ic('plus') + ' Pago fijo</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
@@ -8091,6 +8123,11 @@ function reglaPorDefecto(t) {
   if (t === 'quincenal') return { t, ajuste: '' };
   if (t === 'semanas') return { t, cada: 2, ancla: todayISO() };
   if (t === 'meses') return { t, cada: 3, ancla: todayISO(), ajuste: '' };
+  if (t === 'habil') return { t, n: 3 };
+  if (t === 'habilFin') return { t, n: 2 };
+  if (t === 'ultDia') return { t: 'dia', dia: 31, ajuste: '' };
+  if (t === 'diasMes') return { t, dias: [1, 15], ajuste: '' };
+  if (t === 'dias') return { t, cada: 28, ancla: todayISO() };
   return t ? { t } : null;
 }
 function recParamsHtml(r) {
@@ -8113,7 +8150,77 @@ function recPreviewHtml() {
   const ex = (FORM.extras || []).map(Number);
   return occ.length ? 'Próximas fechas: <b>' + occ.map((o) => fechaCortaU(o) + (ex.includes(Number(o.slice(5, 7))) ? ' (con paga extra)' : '')).join(' · ') + '</b>' : 'Revisa la regla: no sale ninguna fecha.';
 }
+/* ---- Selector «¿Cuándo?» de los recurrentes (23/10, docs/15 3.3): tarjetas con círculo, sin teclado ni desplegables ---- */
+const REGLA_TARJETAS = [
+  ['CADA MES', [['dia', 'Un día fijo', 'Por ejemplo, el 5 de cada mes'], ['ultDia', 'El último día del mes', '30 o 31, según el mes'], ['priHabil', 'El primer día hábil', 'Sin contar fines de semana'],
+    ['ultHabil', 'El último día hábil', 'Muy habitual en nóminas'], ['habilFin', 'El penúltimo día hábil', 'Algunas nóminas llegan así'], ['habil', 'Otro día hábil', 'El 3.º día hábil, el antepenúltimo…'], ['nesimo', 'Un día de la semana', 'El primer lunes, el último viernes…']]],
+  ['OTRO RITMO', [['diasMes', 'Dos días al mes', 'Por ejemplo, el 1 y el 15'], ['dias', 'Cada cierto número de días', 'Cada 28 días…'], ['semanas', 'Cada semanas', 'Cada semana, cada 2 semanas…'], ['meses', 'Cada meses o años', 'Trimestral, semestral, anual…']]],
+];
+function reglaTarjetaDe(r) { if (!r || !r.t) return ''; if (r.t === 'dia') return Number(r.dia) >= 31 ? 'ultDia' : 'dia'; if (r.t === 'habilFin' && Number(r.n) === 1) return 'ultHabil'; if (r.t === 'habilFin' && Number(r.n) === 2) return 'habilFin'; if (r.t === 'habilFin' || r.t === 'habil') return 'habil'; if (r.t === 'quincenal') return 'diasMes'; return r.t; }
+function proxFechasRegla(r, n) { const hoy = todayISO(); return r && r.t ? ocurrencias(r, hoy, uAdd(hoy, 800)).slice(0, n || 3) : []; }
+function fechaDiaCorta(iso) { const d = uD(iso); return DOW_LARGO[dowL(d)].slice(0, 3) + ' ' + d.getUTCDate() + ' ' + MESES_CORTO[d.getUTCMonth()]; }
+function recCampoReglaHtml(r, esCobro) {
+  const px = proxFechasRegla(r, 3);
+  return '<div class="field"><label>¿Cuándo ' + (esCobro ? 'te suele llegar' : 'se paga') + '?</label><button type="button" class="rec-campo tappable" id="recCampo" ' + act('recCuando') + '><span class="rec-campo-ic">' + ic('repeat') + '</span>' +
+    '<span class="rec-campo-x"><b>' + escapeHtml(r && r.t ? reglaTexto(r) : 'Elige cuándo') + '</b><span>' + escapeHtml(px.length ? 'Próximos: ' + px.map(fechaDiaCorta).join(' · ') : 'Toca para elegir') + '</span></span>' + ic('chevR') + '</button></div>';
+}
+function recCuandoHtml() {
+  const F = FORM, r = F.reglaTmp, sel = reglaTarjetaDe(r), esCobro = F.recKind === 'cobro', fo = festivosCfg().on;
+  const tarjeta = ([k, t, d]) => { const pr = k === sel ? null : proxFechasRegla(reglaPorDefecto(k === 'ultDia' ? 'ultDia' : k), 1)[0];
+    return '<button type="button" class="tumes-op rec-op' + (k === sel ? ' on' : '') + '" role="radio" aria-checked="' + (k === sel) + '" ' + act('recCuandoTipo', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + t + '</b><span>' + d + (pr ? ' · la próxima, ' + fechaDiaCorta(pr) : '') + '</span></span></button>' + (k === sel ? recCuandoParamsHtml(r) : ''); };
+  const px = proxFechasRegla(r, 3);
+  return '<div class="handle"></div><div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('recCuandoVolver') + '>' + ic('chevL') + '</button><h2>' + (esCobro ? '¿Cuándo te suele llegar?' : '¿Cuándo se paga?') + '</h2></div>' +
+    REGLA_TARJETAS.map(([g, ops]) => '<div class="rec-grupo-t">' + g + '</div><div class="rec-ops" role="radiogroup">' + ops.map(tarjeta).join('') + '</div>').join('') +
+    (fo ? '' : '<div class="rec-hint">«Día hábil» cuenta solo los fines de semana. <button type="button" class="link" ' + act('festivosAbrir') + '>Saltar también festivos</button></div>') +
+    '<div class="rec-prox">' + (px.length ? px.map((iso) => '<span class="rec-prox-f"><b>' + uD(iso).getUTCDate() + '</b><i>' + MESES_CORTO[uD(iso).getUTCMonth()] + ' · ' + DOW_LARGO[dowL(uD(iso))].slice(0, 3) + '</i></span>').join('') : '<span class="rec-hint">Elige una opción para ver las fechas.</span>') + '</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('recCuandoVolver') + '>Cancelar</button><button class="btn accent block" ' + act('recCuandoUsar') + (r && r.t ? '' : ' disabled') + '>Usar esta</button></div>';
+}
+function recCuandoParamsHtml(r) {
+  if (!r) return '';
+  const chip = (accion, v, on, txt) => '<button type="button" class="chip' + (on ? ' active' : '') + '" aria-pressed="' + !!on + '" ' + act(accion, v) + '>' + txt + '</button>';
+  const ajuste = () => '<div class="rec-par-l">Si cae en ' + (festivosCfg().on ? 'fin de semana o festivo' : 'fin de semana') + '</div><div class="chips">' + chip('recPar', 'ajuste|', !r.ajuste, 'Ese día') + chip('recPar', 'ajuste|antes', r.ajuste === 'antes', 'El hábil antes') + chip('recPar', 'ajuste|despues', r.ajuste === 'despues', 'El hábil después') + '</div>';
+  const rejilla = (sel, campo, multi) => '<div class="rec-dias">' + Array.from({ length: 31 }, (_, i) => i + 1).map((d) => '<button type="button" class="rec-dia' + (sel.indexOf(d) >= 0 ? ' on' : '') + '" aria-pressed="' + (sel.indexOf(d) >= 0) + '" ' + act('recPar', campo + '|' + d) + '>' + d + '</button>').join('') +
+    '<button type="button" class="rec-dia ult' + (sel.indexOf(31) >= 0 && multi ? ' on' : '') + '" ' + act('recPar', campo + '|31') + '>El último</button></div>';
+  const masMenos = (campo, v, min, max, txt) => '<div class="rec-mm"><button type="button" class="rec-mm-b" aria-label="Menos" ' + act('recPar', campo + '|' + Math.max(min, v - 1)) + '>−</button><b class="tnum">' + txt + '</b><button type="button" class="rec-mm-b" aria-label="Más" ' + act('recPar', campo + '|' + Math.min(max, v + 1)) + '>+</button></div>';
+  const ancla = (lbl) => '<div class="rec-par-l">' + lbl + '</div><input type="date" class="rec-ancla" aria-label="' + lbl + '" value="' + escapeHtml(r.ancla || '') + '" ' + onChange('recParAncla') + '>';
+  let h = '<div class="rec-par">';
+  if (r.t === 'dia' && Number(r.dia) < 31) h += '<div class="rec-par-l">Día del mes</div>' + rejilla([Number(r.dia)], 'dia', false) + ajuste();
+  else if (r.t === 'dia') h += ajuste();
+  else if (r.t === 'habil' || r.t === 'habilFin') { const v = r.t === 'habil' ? Number(r.n) : -Number(r.n);
+    h += '<div class="rec-par-l">¿Cuál?</div><div class="chips">' + [[1, '1.º'], [2, '2.º'], [3, '3.º'], [4, '4.º'], [-3, 'Antepenúltimo'], [-2, 'Penúltimo']].map(([n, l]) => chip('recPar', 'habilN|' + n, v === n, l)).join('') + '</div>'; }
+  else if (r.t === 'nesimo') h += '<div class="rec-par-l">¿Cuál?</div><div class="chips">' + [[1, '1.º'], [2, '2.º'], [3, '3.º'], [4, '4.º'], [-2, 'Penúltimo'], [-1, 'Último']].map(([n, l]) => chip('recPar', 'n|' + n, Number(r.n) === n, l)).join('') + '</div>' +
+    '<div class="rec-sem">' + ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((l, i) => '<button type="button" class="rec-sem-d' + (Number(r.dow) === i ? ' on' : '') + '" aria-label="' + DOW_LARGO[i] + '" aria-pressed="' + (Number(r.dow) === i) + '" ' + act('recPar', 'dow|' + i) + '>' + l + '</button>').join('') + '</div>';
+  else if (r.t === 'diasMes') h += '<div class="rec-par-l">Toca los dos días</div>' + rejilla((r.dias || []).map(Number), 'dias', true) + ajuste();
+  else if (r.t === 'dias') h += '<div class="rec-par-l">Cada cuántos días</div>' + masMenos('cada', Number(r.cada) || 1, 1, 365, (Number(r.cada) || 1) + ' días') + ancla('Un día en que ocurrió u ocurrirá');
+  else if (r.t === 'semanas') h += '<div class="rec-par-l">Cada cuántas semanas</div>' + masMenos('cada', Number(r.cada) || 1, 1, 52, Number(r.cada) === 1 ? 'Cada semana' : 'Cada ' + r.cada + ' semanas') + ancla('Un día en que ocurrió u ocurrirá');
+  else if (r.t === 'meses') h += '<div class="rec-par-l">Cada cuántos meses</div><div class="chips">' + [[1, 'Cada mes'], [3, 'Trimestral'], [6, 'Semestral'], [12, 'Anual']].map(([c, l]) => chip('recPar', 'cada|' + c, Number(r.cada) === c, l)).join('') + '</div>' + masMenos('cada', Number(r.cada) || 1, 1, 24, 'Cada ' + (Number(r.cada) || 1) + (Number(r.cada) === 1 ? ' mes' : ' meses')) + ancla('Un día en que ocurrió u ocurrirá') + ajuste();
+  return h + '</div>';
+}
+
+/* ---- «Festivos»: elegir tu comunidad y tus 2 fiestas locales ---- */
+function festivosHtml() {
+  const F = FORM, y = new Date().getFullYear(), q = normName(F.busca || ''), zs = ZONAS_FESTIVOS.filter(([k, n]) => !q || normName(n).indexOf(q) >= 0);
+  const anios = [y, y + 1], falta = anios.filter((a) => !FESTIVOS[a]);
+  let h = '<div class="handle"></div><div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('festivosCerrar') + '>' + ic('chevL') + '</button><h2>Festivos</h2></div>' +
+    '<div class="asp-fila"><div class="t">Saltar festivos en los días hábiles<span>Si lo enciendes, «día hábil» y «si cae en fin de semana» también se saltan los festivos de tu zona.</span></div><button type="button" class="switch' + (F.on ? ' on' : '') + '" role="switch" aria-checked="' + !!F.on + '" aria-label="Saltar festivos" ' + act('festivosOn') + '></button></div>';
+  if (F.on) {
+    h += '<div class="section-title">¿Dónde trabajas?</div><div class="rec-hint" style="margin-top:-6px;">Los bancos y las nóminas siguen el calendario del sitio de trabajo.</div>' +
+      '<div class="field"><input type="search" id="festBusca" placeholder="Buscar comunidad" aria-label="Buscar comunidad" value="' + escapeHtml(F.busca || '') + '" ' + onInput('festivosBusca') + '></div>' +
+      '<div class="rec-ops" role="radiogroup" id="festZonas">' + zs.map(([k, n]) => '<button type="button" class="tumes-op' + (F.zona === k ? ' on' : '') + '" role="radio" aria-checked="' + (F.zona === k) + '" ' + act('festivosZona', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + escapeHtml(n) + '</b></span></button>').join('') + '</div>';
+    h += '<div class="section-title">Fiestas de tu pueblo <span class="hint">· opcional</span></div><div class="rec-hint" style="margin-top:-6px;">Cada municipio tiene 2. Pon las de tu sitio de trabajo.</div>' +
+      anios.map((a) => '<div class="fest-loc"><span>' + a + '</span>' + [0, 1].map((i) => '<input type="date" aria-label="Fiesta local ' + (i + 1) + ' de ' + a + '" min="' + a + '-01-01" max="' + a + '-12-31" value="' + escapeHtml(((F.locales || {})[a] || [])[i] || '') + '" ' + onChange('festivosLocal', a, i) + '>').join('') + '</div>').join('');
+    if (falta.length) h += '<div class="rec-hint">Aún no tenemos los festivos de ' + falta.join(' y ') + ': ese año solo se saltan los fines de semana.</div>';
+    const rs = recurrentes().filter((rc) => rc.regla && rc.regla.t);
+    if (rs.length && F.zona) { const antes = cfg().festivos, ahora = { on: true, zona: F.zona, locales: F.locales || {} };
+      const prox = (rc, fz) => { S.config = Object.assign({}, S.config || {}, { festivos: fz }); try { return ocurrencias(rc.regla, todayISO(), uAdd(todayISO(), 400))[0] || null; } finally { S.config = Object.assign({}, S.config, { festivos: antes }); } };
+      const filas = rs.map((rc) => [rc.nombre, prox(rc, { on: false }), prox(rc, ahora)]).filter((x) => x[1] && x[2]);
+      if (filas.length) h += '<div class="section-title">Así cambian tus fechas</div><div class="card fest-cambios">' + filas.map(([n, a, b]) => '<div class="fest-c"><span>' + escapeHtml(n) + '</span><b class="tnum">' + fechaDiaCorta(a) + (a !== b ? ' → ' + fechaDiaCorta(b) : ' · igual') + '</b></div>').join('') + '</div>';
+    }
+  }
+  return h + '<div class="actions"><button class="btn accent block" ' + act('festivosGuardar') + '>Listo</button></div>';
+}
 function recEditorHtml() {
+  if (FORM && FORM.paso === 'cuando') return recCuandoHtml();
   const F = FORM, r = F.regla, esCobro = F.recKind === 'cobro';
   const nombres = esCobro ? (cfg().ingresos || []).filter(Boolean) : [];
   const meses = MESES_CORTO.map((mm, i) => '<button type="button" class="chip ' + ((F.extras || []).map(Number).includes(i + 1) ? 'active' : '') + '" ' + act('recExtra', i + 1) + '>' + mm + '</button>').join('');
@@ -8132,14 +8239,11 @@ function recEditorHtml() {
     (esCobro ? '' : '<div class="field"><label>Categoría</label><select id="recCat" ' + onChange('recCampo', 'categoria') + '>' + catsGasto().map((c) => '<option' + (normName(c.nombre) === normName(F.categoria || catDeRecibo(F.nombre || '')) ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>') +
     (hayVariasCuentas() ? '<div class="field"><label>' + (esCobro ? 'Llega a la cuenta' : 'Sale de la cuenta') + '</label><div class="chips" id="recCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (F.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('recCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
     '<div class="field"><label>Importe previsto (' + sym() + ') <span class="hint">· opcional</span></label><input id="recImporte" type="number" step="0.01" inputmode="decimal" value="' + (F.importe == null ? '' : escapeHtml(F.importe)) + '" ' + onInput('recCampo', 'importe') + '></div>' +
-    '<div class="field"><label>¿Cuándo ' + (esCobro ? 'te suele llegar' : 'se paga') + '?</label><select id="recTipo" ' + onChange('recTipo') + '><option value="">Elige una opción…</option>' +
-    REGLA_OPC.map(([v, l]) => '<option value="' + v + '"' + (r && r.t === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
-    (esCobro ? '<div class="rec-hint">Lo más habitual: entre el 1 y el 5, entre el 28 y el 30, o el último día hábil. Si dudas, usa «Aprender de mi historial».</div>' : '') + '</div>' +
-    '<div id="recParams">' + recParamsHtml(r) + '</div>' +
+    recCampoReglaHtml(r, esCobro) + (esCobro && !(r && r.t) ? '<div class="rec-hint" style="margin-top:-6px;">Lo más habitual: entre el 1 y el 5, entre el 28 y el 30, o el último día hábil. Si dudas, usa «Aprender de mi historial».</div>' : '') +
     '<button type="button" class="link" style="margin:0 0 6px;" ' + act('recAprender') + '>' + ic('sparkle') + ' Aprender de mi historial</button>' + aprendido + sugerencia +
     (esCobro ? '<div class="field" style="margin-top:10px;"><label>Pagas extra <span class="hint">· meses en que cobras el doble</span></label><div class="chips">' + meses + '</div></div>' : '') +
     '<div class="rec-prev" id="recPrev">' + recPreviewHtml() + '</div>' +
-    '<div class="rec-hint">«Día hábil» cuenta los fines de semana, todavía no los festivos.</div>' +
+    '<button type="button" class="rec-fest tappable" ' + act('festivosAbrir') + '>' + ic('calendar') + '<span>Festivos</span><span class="menu-extra">' + (festivosCfg().on ? escapeHtml((ZONAS_FESTIVOS.find((z) => z[0] === festivosCfg().zona) || [])[1] || '') : 'solo fines de semana') + '</span>' + ic('chevR') + '</button>' +
     '<div class="actions"><button class="btn ghost block" ' + act('openRecurrentes') + '>Cancelar</button><button class="btn accent block" ' + act('recGuardar') + '>Guardar</button></div>' +
     (F.idx != null ? '<button class="btn danger block" style="margin-top:10px;" ' + act('recEliminar') + '>' + ic('trash') + ' Eliminar</button>' : '');
 }
@@ -8160,6 +8264,8 @@ function recGuardar() {
   let regla = F.regla && F.regla.t ? Object.assign({}, F.regla) : null;
   if (regla && regla.t === 'dia') { const d = parseInt(regla.dia, 10); if (!(d >= 1 && d <= 31)) return toast('El día tiene que estar entre 1 y 31'); regla.dia = d; }
   if (regla && regla.t === 'meses') { const c = parseInt(regla.cada, 10); if (!(c >= 1 && c <= 24)) return toast('Pon cada cuántos meses (1 a 24)'); if (!regla.ancla) return toast('Pon una fecha de referencia'); regla.cada = c; }
+  if (regla && regla.t === 'dias') { const c = parseInt(regla.cada, 10); if (!(c >= 1 && c <= 365)) return toast('Pon cada cuántos días (1 a 365)'); if (!regla.ancla) return toast('Pon una fecha de referencia'); regla.cada = c; }
+  if (regla && regla.t === 'diasMes' && (regla.dias || []).length !== 2) return toast('Elige los dos días del mes');
   if (regla && regla.t === 'semanas') { const c = parseInt(regla.cada, 10); if (!(c >= 1 && c <= 52)) return toast('Pon cada cuántas semanas (1 a 52)'); if (!regla.ancla) return toast('Pon una fecha de referencia'); regla.cada = c; }
   const c = cfg(), cobros = (c.cobros || []).slice(), facturas = (c.facturas || []).slice();
   const arrDe = (k) => (k === 'cobro' ? cobros : facturas);
@@ -9343,6 +9449,27 @@ const H = {
   recTipo: (_, el) => { FORM.regla = reglaPorDefecto(el.value); FORM.aprendido = null; const p = $('#recParams'); if (p) p.innerHTML = recParamsHtml(FORM.regla); recRefrescarPrev(); },
   recParam: ([f], el) => { if (!FORM.regla) return; const v = el.value; FORM.regla = Object.assign({}, FORM.regla, { [f]: (f === 'dia' || f === 'cada' || f === 'n' || f === 'dow') ? (v === '' ? '' : Number(v)) : v }); delete FORM.regla.aprendida; recRefrescarPrev(); },
   recExtra: ([m]) => { const n = Number(m), ex = (FORM.extras || []).map(Number); FORM.extras = ex.includes(n) ? ex.filter((x) => x !== n) : ex.concat([n]); FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; updateSheet(recEditorHtml()); },
+  recCuando: () => { const F = FORM; if (!F || F.kind !== 'rec') return; F.nombre = (($('#recNombre') || {}).value || F.nombre || '').trim(); const cat = $('#recCat'); if (cat) F.categoria = cat.value; F.paso = 'cuando'; F.reglaTmp = F.regla && F.regla.t ? JSON.parse(JSON.stringify(F.regla)) : null; if (F.reglaTmp) delete F.reglaTmp.aprendida; updateSheet(recEditorHtml()); },
+  recCuandoTipo: ([k]) => { const F = FORM; if (!F || F.paso !== 'cuando') return; F.reglaTmp = k === 'ultHabil' ? { t: 'ultHabil' } : k === 'priHabil' ? { t: 'priHabil' } : reglaPorDefecto(k); if (k === 'nesimo') F.reglaTmp = { t: 'nesimo', n: 1, dow: 0 }; sentir('tic'); updateSheet(recEditorHtml()); },
+  recPar: ([spec]) => { const F = FORM; if (!F || F.paso !== 'cuando' || !F.reglaTmp) return; const i = String(spec).indexOf('|'), campo = String(spec).slice(0, i), v = String(spec).slice(i + 1), r = F.reglaTmp;
+    if (campo === 'dias') { const d = Number(v), ds = (r.dias || []).map(Number).filter((x) => x !== d); F.reglaTmp.dias = (r.dias || []).map(Number).indexOf(d) >= 0 ? ds : ds.concat([d]).slice(-2); }
+    else if (campo === 'habilN') { const n = Number(v); F.reglaTmp = n > 0 ? { t: 'habil', n } : { t: 'habilFin', n: -n }; }
+    else if (campo === 'ajuste') r.ajuste = v;
+    else r[campo] = Number(v);
+    sentir('tic'); updateSheet(recEditorHtml()); },
+  recParAncla: (_a, el) => { if (FORM && FORM.reglaTmp) { FORM.reglaTmp.ancla = el.value; updateSheet(recEditorHtml()); } },
+  recCuandoUsar: () => { const F = FORM; if (!F || !F.reglaTmp) return; if (F.reglaTmp.t === 'diasMes' && (F.reglaTmp.dias || []).length !== 2) return toast('Elige los dos días del mes'); F.regla = F.reglaTmp; F.reglaTmp = null; F.paso = null; F.aprendido = null; sentir('ok'); updateSheet(recEditorHtml()); },
+  recCuandoVolver: () => { const F = FORM; if (!F) return; F.paso = null; F.reglaTmp = null; updateSheet(recEditorHtml()); },
+  festivosAbrir: () => { const f = cfg().festivos || {}; const prev = FORM; FORM = { kind: 'festivos', on: !!f.on, zona: f.zona || '', locales: JSON.parse(JSON.stringify(f.locales || {})), busca: '', volver: prev }; if ($('#sheetBackdrop')) updateSheet(festivosHtml()); else openSheet(festivosHtml()); },
+  festivosOn: () => { if (FORM && FORM.kind === 'festivos') { FORM.on = !FORM.on; sentir('tic'); updateSheet(festivosHtml()); } },
+  festivosZona: ([k]) => { if (FORM && FORM.kind === 'festivos') { FORM.zona = k; sentir('tic'); updateSheet(festivosHtml()); } },
+  festivosBusca: (_a, el) => { if (!FORM || FORM.kind !== 'festivos') return; FORM.busca = el.value; const q = normName(el.value), box = $('#festZonas'); if (box) box.querySelectorAll('.tumes-op').forEach((b) => { b.hidden = !!q && normName(b.textContent).indexOf(q) < 0; }); },
+  festivosLocal: ([a, i], el) => { if (!FORM || FORM.kind !== 'festivos') return; const L = FORM.locales[a] = (FORM.locales[a] || ['', '']).slice(0, 2); while (L.length < 2) L.push(''); L[Number(i)] = el.value || ''; FORM.locales[a] = L; updateSheet(festivosHtml()); },
+  festivosGuardar: async () => { const F = FORM; if (!F || F.kind !== 'festivos') return; if (F.on && !F.zona) return toast('Elige dónde trabajas');
+    const loc = {}; Object.keys(F.locales || {}).forEach((a) => { const v = (F.locales[a] || []).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x) && x.slice(0, 4) === String(a)); if (v.length) loc[a] = v; });
+    await saveConfig({ festivos: { on: !!F.on, zona: F.zona || null, locales: loc } }); toast(F.on ? 'Festivos guardados' : 'Solo se saltan los fines de semana');
+    const v = F.volver; if (v && v.kind === 'rec') { FORM = v; updateSheet(recEditorHtml()); } else if (v && v.kind === 'recLista') { FORM = v; updateSheet(recListaHtml()); } else closeSheet(); render(); },
+  festivosCerrar: () => { const v = FORM && FORM.volver; if (v && v.kind === 'rec') { FORM = v; updateSheet(recEditorHtml()); } else if (v && v.kind === 'recLista') { FORM = v; updateSheet(recListaHtml()); } else closeSheet(); },
   recAprender: () => {
     FORM.nombre = (($('#recNombre') || {}).value || '').trim();
     if (!FORM.nombre) { toast('Escribe primero el nombre'); return; }
