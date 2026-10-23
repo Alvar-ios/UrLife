@@ -290,9 +290,9 @@
       importe: Number(r.importe), pagadoPor: r.pagado_por, reparto: r.reparto || {}, modo: r.modo || 'igual', objetivoId: r.objetivo_id || null, articulos: r.articulos || null,
       creadoPor: r.creado_por, createdAt: r.created_at, updatedAt: r.updated_at, editadoPor: r.editado_por };
   }, ['grupo_id']);
-  var objetivos = tablaCompartida('objetivos_compartidos', ['id', 'grupoId', 'tipo', 'nombre', 'objetivo', 'fechaObjetivo', 'previo', 'hitos', 'usos', 'conseguida'], function (r) {
+  var objetivos = tablaCompartida('objetivos_compartidos', ['id', 'grupoId', 'tipo', 'nombre', 'objetivo', 'fechaObjetivo', 'previo', 'hitos', 'usos', 'conseguida', 'forma'], function (r) {
     return { id: r.id, grupoId: r.grupo_id, tipo: r.tipo, nombre: r.nombre, objetivo: r.objetivo == null ? null : Number(r.objetivo),
-      fechaObjetivo: r.fecha_objetivo || null, previo: Number(r.previo || 0), hitos: r.hitos || [], usos: r.usos || [], conseguida: r.conseguida || null,
+      fechaObjetivo: r.fecha_objetivo || null, previo: Number(r.previo || 0), hitos: r.hitos || [], usos: r.usos || [], conseguida: r.conseguida || null, forma: r.forma || null,
       creadoPor: r.creado_por, createdAt: r.created_at };
   }, ['grupo_id', 'tipo']);
   /* ---- aportaciones a metas compartidas (12/10): reflejo de un movimiento personal que su dueño vincula a la meta ---- */

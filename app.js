@@ -2190,7 +2190,7 @@ function nombreSugerido() {
   const e = ((S.user && S.user.email) || '').split('@')[0].replace(/[._\-]+/g, ' ').replace(/\d+/g, '').trim().split(' ')[0] || 'Yo';
   return e.charAt(0).toUpperCase() + e.slice(1);
 }
-const ERR_GRUPO = { 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
+const ERR_GRUPO = { objetivos_compartidos_forma_check: 'Esa forma no vale', carpeta_no_valida: 'Ese tema ya no existe o es de otro grupo', demasiadas_carpetas: 'Este grupo ya tiene 30 temas: cierra o borra alguno', carpeta_borrada: 'Ese tema está borrado', 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
   demasiadas_invitaciones: 'Hay demasiados enlaces pendientes. Anula alguno.', demasiados_grupos: 'Has creado muchos grupos hoy. Prueba mañana.', usa_salir: 'Para irte tú, usa «Salir del grupo».', sin_sesion: 'Tienes que iniciar sesión.',
   saldo_pendiente: 'Hay cuentas pendientes. Saldadlas antes (botón «Saldar»).', reparto_no_cuadra: 'El reparto no suma el total.', reparto_no_valido: 'Revisa el reparto: solo puede incluir a miembros.', pagador_no_valido: 'Quien pagó tiene que ser del grupo.', compartido_borrado: 'Ese gasto ya se había eliminado.', objetivo_no_valido: 'Elige una meta o deuda de ese grupo.', objetivo_borrado: 'Esa meta o deuda ya se había eliminado.' };
 function errGrupo(e) { const m = String((e && (e.message || (e.original && e.original.message))) || ''); const k = Object.keys(ERR_GRUPO).find((x) => m.indexOf(x) >= 0); return k ? ERR_GRUPO[k] : 'No se pudo completar. Revisa tu conexión.'; }
@@ -2948,7 +2948,8 @@ function objEditorHtml() {
         '<button class="btn accent block" style="margin-top:10px;" ' + act('objAportar', o.id) + '>' + (deuda ? 'Apuntar un pago' : 'Aportar') + '</button></div>' : '') +
     (!F.id ? '<div class="field"><label>Con</label>' + (ds.length ? '<div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (F.dest === d.k ? 'active' : '') + '" ' + act('objDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>'
         : '<div class="rec-hint">Primero crea un grupo o invita a una persona (Tú → Grupos y personas).</div>') + '</div>' : '') +
-    '<div class="field"><label>Nombre</label><input id="oNombre" type="text" maxlength="60" placeholder="' + (deuda ? 'Hipoteca' : 'Viaje a Japón') + '" value="' + v(F.nombre) + '"></div>' +
+    '<div class="field"><label>Nombre</label><input id="oNombre" type="text" maxlength="60" placeholder="' + (deuda ? 'Hipoteca' : 'Viaje a Japón') + '" value="' + v(F.nombre) + '"' + (deuda ? '' : ' ' + onInput('objNombreIn')) + '></div>' +
+    (deuda ? '' : formaElegirHtml(F.forma, F.nombre, 'objFormaElegir') + '<div class="rec-hint" style="margin:-6px 0 12px;">La forma es la misma para todo el grupo.</div>') +
     '<div class="field"><label>' + (deuda ? 'Total de la deuda' : 'Objetivo') + ' (' + sym() + ')</label><input id="oObjetivo" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="oFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
     '<div class="field"><label>' + (deuda ? 'Ya pagado antes' : 'Ya ahorrado antes') + ' (' + sym() + ') <span class="hint">· opcional</span></label><input id="oPrevio" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.previo) + '"><div class="rec-hint">Lo que ya ' + (deuda ? 'habíais pagado' : 'teníais ahorrado') + ' entre todos antes de apuntarlo aquí.</div></div>' +
@@ -2967,6 +2968,7 @@ async function objGuardar() {
   if (!nombre) return toast('Ponle un nombre');
   const n = (x) => { const y = parseFloat(x); return x === '' || x == null || !isFinite(y) ? null : y; };
   const datos = { nombre, objetivo: n(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, previo: Math.max(0, n(F.previo) || 0) };
+  if (F.tipo !== 'deuda' && F.formaTocada) datos.forma = FORMAS[F.forma] ? F.forma : null; // solo si se elige a mano (null = la del nombre)
   if (F.tipo !== 'deuda') datos.hitos = limpiarHitos(F.hitos, F.id && objPorId(F.id) ? objPorId(F.id).hitos : []);
   if (datos.objetivo != null && datos.objetivo < 0) return toast('El objetivo no puede ser negativo');
   if (F.id && !objPorId(F.id)) { closeSheet(); return toast('Esa meta o deuda ya no existe: la ha eliminado alguien del grupo'); }
@@ -4716,12 +4718,13 @@ function formaHtml(k, pct, texto, tam, o) {
   return '<span class="fm" style="width:' + tam + 'px;height:' + tam + 'px">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
 }
 // «Su forma»: las 12 en pequeño; la sugerida por el nombre lleva una marca. Elegida = null → la del nombre
-function formaElegirHtml(elegida, nombre) {
+function formaElegirHtml(elegida, nombre, accion) {
+  accion = accion || 'metaFormaElegir';
   const sug = formaSugerida(nombre), act0 = elegida || sug;
   return '<div class="field"><label>Su forma</label><div class="fm-grid" role="radiogroup" aria-label="Su forma">' + FORMAS_ORDEN.map((k) =>
-    '<button type="button" role="radio" aria-checked="' + (k === act0) + '" aria-label="' + FORMAS[k].n + (k === sug ? ' (sugerida)' : '') + '" data-k="' + k + '" class="fm-op' + (k === act0 ? ' on' : '') + (k === sug ? ' sug' : '') + '" ' + act('metaFormaElegir', k) + '>' +
+    '<button type="button" role="radio" aria-checked="' + (k === act0) + '" aria-label="' + FORMAS[k].n + (k === sug ? ' (sugerida)' : '') + '" data-k="' + k + '" class="fm-op' + (k === act0 ? ' on' : '') + (k === sug ? ' sug' : '') + '" ' + act(accion, k) + '>' +
     formaHtml(k, k === act0 ? 55 : 0, '', 38, { check: false }) + '<i>' + FORMAS[k].n + '</i></button>').join('') + '</div>' +
-    '<div class="rec-hint fm-hint">' + (elegida ? 'Elegida a mano. <button type="button" class="link" ' + act('metaFormaElegir', '') + '>Que la elija el nombre</button>' : 'Elegida por el nombre: ' + FORMAS[sug].n + '. Toca otra si quieres.') + '</div></div>';
+    '<div class="rec-hint fm-hint">' + (elegida ? 'Elegida a mano. <button type="button" class="link" ' + act(accion, '') + '>Que la elija el nombre</button>' : 'Elegida por el nombre: ' + FORMAS[sug].n + '. Toca otra si quieres.') + '</div></div>';
 }
 function metaFormaHtml(r) {
   const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
@@ -8605,10 +8608,12 @@ const H = {
   },
   objEditar: ([id, gid]) => {
     const o = objPorId(id); if (!o) return toast('Ya no existe');
-    FORM = { kind: 'obj', tipo: o.tipo, id, volverGrupo: gid || null, dest: 'g:' + o.grupoId, nombre: o.nombre, objetivo: o.objetivo, fechaObjetivo: o.fechaObjetivo, previo: o.previo || '', hitos: (o.hitos || []).map((h) => Object.assign({}, h)) };
+    FORM = { kind: 'obj', tipo: o.tipo, id, volverGrupo: gid || null, dest: 'g:' + o.grupoId, nombre: o.nombre, objetivo: o.objetivo, fechaObjetivo: o.fechaObjetivo, previo: o.previo || '', hitos: (o.hitos || []).map((h) => Object.assign({}, h)), forma: FORMAS[o.forma] ? o.forma : null };
     objAbrir(objEditorHtml());
   },
   objDest: ([k]) => { objLeerForm(); FORM.dest = k; updateSheet(objEditorHtml()); },
+  objFormaElegir: ([k]) => { if (!FORM || FORM.kind !== 'obj') return; objLeerForm(); FORM.forma = FORMAS[k] ? k : null; FORM.formaTocada = true; sentir('tic'); updateSheet(objEditorHtml()); },
+  objNombreIn: () => { if (!FORM || FORM.kind !== 'obj' || FORM.forma) return; const el = $('#oNombre'), sug = formaSugerida(el ? el.value : ''); const g = $('.fm-grid'); if (!g || ((g.querySelector('.fm-op.sug') || {}).dataset || {}).k === sug) return; objLeerForm(); updateSheet(objEditorHtml()); const n = $('#oNombre'); if (n) { n.focus(); try { n.setSelectionRange(n.value.length, n.value.length); } catch (e) { /* */ } } },
   objCancelar: () => {
     const F = FORM, b = S._borradorMov; S._borradorMov = null;
     if (b && !F.id) return openMovForm(null, { tipo: b.tipo, importe: b.importe, fecha: b.fecha, descripcion: b.descripcion });
