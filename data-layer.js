@@ -295,6 +295,13 @@
       fechaObjetivo: r.fecha_objetivo || null, previo: Number(r.previo || 0), hitos: r.hitos || [], usos: r.usos || [], conseguida: r.conseguida || null, forma: r.forma || null,
       creadoPor: r.creado_por, createdAt: r.created_at };
   }, ['grupo_id', 'tipo']);
+  /* ---- planes y tareas compartidas (23/10, tabla «agenda»). Nunca se borran de verdad: «borrado» y se pueden recuperar ---- */
+  function deAgenda(r) {
+    return { id: r.id, grupoId: r.grupo_id || null, tipo: r.tipo, titulo: r.titulo, fecha: r.fecha || null, fechaFin: r.fecha_fin || null, hora: r.hora || null, lugar: r.lugar || null, nota: r.nota || null,
+      asignadoA: r.asignado_a || null, hechaEn: r.hecha_en || null, hechaPor: r.hecha_por || null, creadoPor: r.creado_por, createdAt: r.created_at, updatedAt: r.updated_at, editadoPor: r.editado_por };
+  }
+  var agenda = tablaCompartida('agenda', ['id', 'grupoId', 'tipo', 'titulo', 'fecha', 'fechaFin', 'hora', 'lugar', 'nota', 'asignadoA'], deAgenda, ['grupo_id', 'tipo']);
+  agenda.restaurar = function (id) { return q(sb.from('agenda').update({ borrado: null }).eq('id', id).select().single()).then(function (r) { return r ? deAgenda(r) : null; }); };
   /* ---- temas de un grupo (23/10; en la base de datos, «carpetas»). Nunca se borran de verdad: «borrado» y se pueden recuperar ---- */
   var carpetas = tablaCompartida('grupo_carpetas', ['id', 'grupoId', 'nombre', 'icono', 'desde', 'hasta', 'cerrada'], function (r) {
     return { id: r.id, grupoId: r.grupo_id, nombre: r.nombre, icono: r.icono || 'tag', desde: r.desde || null, hasta: r.hasta || null, cerrada: r.cerrada || null,
@@ -318,5 +325,5 @@
     return q(sb.from('objetivo_aportes').update({ borrado: new Date().toISOString() }).eq('user_id', currentUid).eq('mov_id', movId).is('borrado', null).select('id'));
   };
 
-  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
+  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
 })();
