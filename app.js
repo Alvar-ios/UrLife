@@ -10,6 +10,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------------- Iconos (SVG inline, trazo simple) ---------------- */
 const ICONS = {
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.4"/></svg>',
   borrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7 6-7Z"/><path d="m12 9.5 5 5M17 9.5l-5 5"/></svg>',
   salir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h10M17 8l4 4-4 4"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>',
@@ -934,6 +935,7 @@ function render() {
   if (_agEl || S._agFoco) { S._agFoco = false; const nv = $('#agRapida'); if (nv) { if (_agV) nv.value = _agV; try { nv.focus(); } catch (e) { /* noop */ } } }
   if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') setTimeout(marcarJuntosVisto, 0); else if ((S._vjFuera = true) && !cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
   pintarComparar();
+  if (S.tab === 'dinero' && dineroV2()) cabAltoMedir(); // después de «Antes»: ese botón puede bajar la fecha a dos líneas
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse') || lsGet('soy')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
 }
@@ -1167,11 +1169,14 @@ function movDeslizar(cambio, dir) {
   S._deslizando = html != null && !reduceMotion();
   try { render(); if (S._deslizando) deslizarCuerpo(html, dir); } finally { S._deslizando = false; }
 }
-function deslizarCuerpo(html, dir) {
-  const nuevo = $('#movCuerpo'); if (!nuevo || typeof nuevo.animate !== 'function') return;
+function deslizarCuerpo(html, dir, id) {
+  const nuevo = $('#' + (id || 'movCuerpo')); if (!nuevo || typeof nuevo.animate !== 'function') return;
   const marco = nuevo.parentNode, fantasma = document.createElement('div');
   fantasma.className = 'mov-fantasma'; fantasma.setAttribute('aria-hidden', 'true'); fantasma.innerHTML = html;
+  // las formas de las metas se recortan con un clipPath por id: en la copia se renombra (si no, la ola se sale de la forma)
+  fantasma.querySelectorAll('clipPath[id]').forEach((cp) => { const v = cp.id, n = v + 'g'; fantasma.querySelectorAll('[clip-path="url(#' + v + ')"]').forEach((g) => g.setAttribute('clip-path', 'url(#' + n + ')')); cp.setAttribute('data-gid', n); });
   fantasma.querySelectorAll('[id]').forEach((el) => el.removeAttribute('id'));
+  fantasma.querySelectorAll('[data-gid]').forEach((el) => { el.id = el.getAttribute('data-gid'); el.removeAttribute('data-gid'); });
   fantasma.querySelectorAll('[data-click],[data-input],[data-change]').forEach((el) => { el.removeAttribute('data-click'); el.removeAttribute('data-input'); el.removeAttribute('data-change'); });
   marco.classList.add('deslizando'); marco.appendChild(fantasma);
   const opt = { duration: 320, easing: 'cubic-bezier(.22,1,.36,1)' };
@@ -3818,7 +3823,7 @@ const VERSIONES = {
   inicio: { txt: 'Inicio', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
   juntos: { txt: 'Juntos', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: la lista de personas de antes de los círculos
-  dinero: { txt: 'Dinero', desde: '2026-10-18', variantes: [['camino', 'Camino'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes']] },
+  dinero: { txt: 'Dinero', desde: '2026-10-23', variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
   tu: { txt: 'Tú', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   agenda: { txt: 'Agenda', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
@@ -4267,9 +4272,22 @@ function juntosV3Html(ps, gs, frase, debes, teDeben, hayComp) {
   let h = '<div class="card jv-cab jv3-cab"><div class="jv-frase">' + frase + '</div>' + cifras + seg + fila +
     '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
   h += juntosActividadHtml();
-  const objs = objCompartidos('ahorro').concat(objCompartidos('deuda'));
-  if (objs.length) h += '<div class="section-title">Metas y deudas juntos</div>' + objs.map(objCardHtml).join('');
+  h += juntosObjHtml();
   return h;
+}
+/* B2 · metas y deudas juntos, visuales: una fila que se desliza; la meta con su forma, la deuda con su icono; «Faltan X» */
+function juntosObjHtml() {
+  const ms = objCompartidos('ahorro'), ds = objCompartidos('deuda');
+  if (!ms.length && !ds.length) return '';
+  const meta = (r) => { const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
+    return '<button type="button" class="jv-obj tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' + formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 96) +
+      '<span class="jv-obj-p tnum">' + Math.round(pct) + ' %</span><b class="tnum">' + (r.falta > 0 ? 'Faltan ' + m0(r.falta) : '¡Conseguida!') + '</b>' + (r.falta > 0 ? '<span class="jv-obj-e" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' : '') + '</button>'; };
+  const deuda = (r) => { const pct = Math.max(0, Math.min(100, r.pct || 0)), g = grupoDe(r.o.grupoId);
+    return '<button type="button" class="jv-obj deu tappable" aria-label="' + escapeHtml(r.nombre + ': quedan ' + money(r.falta)) + '" ' + act('deudaCompVer', r.id) + '><span class="jv-obj-ic">' + icDeEmoji(r.o.emoji || emojiSugerido(r.nombre, '💳'), 'card') + '</span>' +
+      '<span class="jv-obj-n">' + escapeHtml(r.nombre) + '</span><span class="jv-obj-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="jv-obj-p tnum">' + Math.round(pct) + ' % pagado</span><b class="tnum">' + (r.falta > 0 ? 'Quedan ' + m0(r.falta) : 'Saldada') + '</b>' +
+      '<span class="jv-obj-e">' + escapeHtml(g ? nombreDestino(g) : '') + '</span></button>'; };
+  return '<div class="section-title">Metas y deudas juntos' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('plus') + ' Nueva</button>' : '') + '</div>' +
+    '<div class="jv-objs">' + ms.map(meta).join('') + ds.map(deuda).join('') + '</div>';
 }
 function juntosActividadHtml() {
   // lo nuevo es lo de otros después de tu visita anterior (aunque al entrar ya se marque como visto)
@@ -4485,7 +4503,7 @@ function abrirCompRapido(dest) {
    ============================================================ */
 const m0 = (n) => eur0(Math.round(num(n))).replace(' €', '\u00a0€');
 function dineroV2() { return versionDe('dinero') !== 'antes'; }
-function metasVariante() { const v = versionDe('dinero'); return v === 'antes' ? 'camino' : v; }
+function metasVariante() { const v = versionDe('dinero'); return v === 'antes' ? 'camino' : v; } // «camino» = la de antes del 23/10
 function mesLargo(iso) { const d = typeof iso === 'string' ? parseISO(iso) : iso; if (!d) return ''; const m = MESES[d.getMonth()].toLowerCase(); return d.getFullYear() === new Date().getFullYear() ? m : m + ' de ' + d.getFullYear(); }
 function mesCortoAnio(d) { return MESES_ABR[d.getMonth()].toLowerCase() + ' ' + d.getFullYear(); }
 function sumaMeses(n) { const d = new Date(); d.setDate(15); d.setMonth(d.getMonth() + n); return d; }
@@ -4537,7 +4555,53 @@ function renderDineroV2() {
   if (nada) return '<div class="card dm-empezar"><div class="dm-emp-t">Empieza por aquí</div>' +
     [['bank', 'Pon el saldo de tu banco', 'Así sabrás lo que tienes de verdad', 'openCuentas'], ['flag', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva'], ['card', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva']]
       .map(([i, t, d, a]) => '<button type="button" class="dm-emp tappable" ' + act(a) + '><span class="dm-ic">' + ic(i) + '</span><span class="dm-emp-x"><b>' + t + '</b><span>' + d + '</span></span>' + ic('chevR') + '</button>').join('') + '</div>';
+  if (dineroV3()) return dinero3Html(p, ms, hayInv, deudas, dComp);
   return lqtHtml(p) + dmCuentasHtml() + dmMetasHtml(ms) + (hayInv ? dmInversionesHtml() : '') + dmDeudasHtml(deudas, dComp);
+}
+/* ---- Dinero v3 (23/10/2026, docs/15 2.1 y 2.2): «Lo que tienes» en una fila, 4 fichas que hacen de pestañas y cuentas en mosaico ---- */
+function dineroV3() { return versionDe('dinero') === 'formas'; }
+// alto de la cabecera (cambia a 360 px, con la fecha en dos líneas): las fichas-pestaña se quedan fijas justo debajo
+function cabAltoMedir() {
+  const t = $('.topbar'); if (!t) return;
+  document.documentElement.style.setProperty('--cab-alto', Math.round(t.getBoundingClientRect().height) + 'px');
+  // si la cabecera cambia de alto sin repintar (llega la letra, cambia el botón «Antes»), se vuelve a medir; cambiar la variable no cambia la cabecera, así que no hay bucle
+  if (window.ResizeObserver && cabAltoMedir._t !== t) { if (cabAltoMedir._ro) cabAltoMedir._ro.disconnect(); cabAltoMedir._t = t; cabAltoMedir._ro = new ResizeObserver(() => { if (S.tab === 'dinero') cabAltoMedir(); }); cabAltoMedir._ro.observe(t); }
+}
+window.addEventListener('resize', () => { if (S.tab === 'dinero') cabAltoMedir(); });
+const DM3_TABS = ['cuentas', 'metas', 'inversiones', 'deudas'];
+function dm3Tab() { return DM3_TABS.indexOf(S.dm3Tab) >= 0 ? S.dm3Tab : 'cuentas'; }
+function dinero3Html(p, ms, hayInv, deudas, dComp) {
+  const t = dm3Tab(), nMetas = ms.activas.length + ms.hechas.length, nDeu = deudas.length + dComp.length;
+  const lqt = '<div class="card dm3-lqt"><div class="dm3-lqt-l"><span>Lo que tienes</span><button type="button" class="dm3-info" aria-label="¿Cómo se calcula?" ' + act('dmComo') + '>' + ic('info') + '</button></div>' +
+    (p.nCuentas ? '<b class="dm3-lqt-v tnum">' + money(p.total) + '</b>' : '<button type="button" class="link dm3-lqt-sin" ' + act('openCuentas') + '>Pon el saldo de tu banco</button>') +
+    '<span class="dm3-lqt-f">cuentas + invertido − lo que debes</span></div>';
+  const ficha = (k, icono, nom, val, cls) => '<button type="button" role="tab" id="dm3t-' + k + '" aria-controls="dmCuerpo" aria-selected="' + (t === k) + '" class="dm3-tab' + (t === k ? ' on' : '') + (cls ? ' ' + cls : '') + '" ' + act('dm3Tab', k) + '>' + ic(icono) + '<span>' + nom + '</span><b class="tnum">' + val + '</b></button>';
+  const tabs = '<div class="dm3-tabs" role="tablist" aria-label="Tu dinero">' +
+    ficha('cuentas', 'bank', 'Cuentas', p.nCuentas ? m0(p.banco) : 'Añadir', p.nCuentas ? '' : 'vacia') +
+    ficha('metas', 'flag', 'Metas', nMetas ? (nMetas === 1 ? '1 meta' : nMetas + ' metas') : 'Añadir', nMetas ? '' : 'vacia') +
+    ficha('inversiones', 'chart', 'Inversiones', hayInv ? m0(p.inv) : 'Añadir', hayInv ? 'inv' : 'vacia') +
+    ficha('deudas', 'card', 'Deudas', nDeu ? (p.deudas ? '−' + m0(p.deudas) : m0(0)) : 'Añadir', nDeu ? 'deu' : 'vacia') + '</div>';
+  let cuerpo;
+  if (t === 'cuentas') cuerpo = dm3CuentasHtml(p);
+  else if (t === 'metas') cuerpo = dmMetasHtml(ms);
+  else if (t === 'inversiones') cuerpo = hayInv ? dmInversionesHtml() : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('chart') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
+  else cuerpo = dmDeudasHtml(deudas, dComp);
+  return lqt + tabs + '<div class="dm3-marco"><div id="dmCuerpo" class="dm3-cuerpo" role="tabpanel" aria-labelledby="dm3t-' + t + '">' + cuerpo + '</div></div>';
+}
+const ICONO_CUENTA = { corriente: 'bank', ahorro: 'piggy', efectivo: 'wallet', broker: 'chart', otra: 'wallet' };
+function dm3CuentasHtml(p) {
+  const cs = cuentasCfg(), pc = cuentaPrincipal();
+  if (!cs.length) return '<button type="button" class="card dm-emp tappable" ' + act('openCuentas') + '><span class="dm-ic">' + ic('bank') + '</span><span class="dm-emp-x"><b>Pon el saldo de tu banco</b><span>Así sabrás lo que tienes de verdad</span></span>' + ic('chevR') + '</button>';
+  const conSaldo = cs.filter((c) => cuentaEnTengo(c) && num(saldoCuenta(c)) > 0), tot = conSaldo.reduce((a, c) => a + num(saldoCuenta(c)), 0);
+  const barra = tot > 0 && conSaldo.length > 1 ? '<div class="dm3-reparto" aria-hidden="true">' + conSaldo.map((c) => '<i style="width:' + (num(saldoCuenta(c)) / tot * 100).toFixed(1) + '%;background:' + colorCuenta(c) + '"></i>').join('') + '</div>' +
+    '<div class="dm3-rep-ley">' + conSaldo.map((c) => '<span><i style="background:' + colorCuenta(c) + '"></i>' + escapeHtml(c.nombre) + ' ' + Math.round(num(saldoCuenta(c)) / tot * 100) + ' %</span>').join('') + '</div>' : '';
+  const tile = (c) => { const v = saldoCuenta(c), ap = pc && pc.id === c.id && p.ahorroDentro && p.ahorro > 0.005 && p.ahorro <= p.banco + 0.005 ? m0(p.ahorro) + ' apartados' : '';
+    const linea = v == null ? '<span class="pon">Pon el saldo</span>' : !cuentaEnTengo(c) ? 'no suma' : ap || (tipoCuentaTxt(c) + (pc && pc.id === c.id ? ' · principal' : ''));
+    return '<button type="button" class="dm3-cta tappable" style="--cc:' + colorCuenta(c) + '" ' + act('cuentaVer', c.id) + '><span class="dm3-cta-ic">' + ic(ICONO_CUENTA[tipoCuenta(c)] || 'wallet') + '</span>' +
+      '<span class="dm3-cta-n">' + escapeHtml(c.nombre) + '</span><b class="tnum">' + (v == null ? '—' : money(v)) + '</b><span class="dm3-cta-l">' + linea + '</span></button>'; };
+  return '<div class="card dm3-cuentas">' + barra + '<div class="dm3-mosaico">' + cs.map(tile).join('') +
+    '<button type="button" class="dm3-cta nueva tappable" ' + act('openCuentas') + '>' + ic('plus') + '<span>Añadir cuenta</span></button></div>' + sinSaldoAvisoHtml() + (p.ahorroDentro && p.ahorro > p.banco + 0.005 ? '<div class="dm-lqt-nota">Tus metas suman <b class="tnum">' + m0(p.ahorro) + '</b>, más de lo que hay en tus cuentas. ¿Lo tienes en otra cuenta? <button type="button" class="link" ' + act('openCuentas') + '>Añádela</button></div>' : '') +
+    '<div class="dm3-acc">' + (cs.length > 1 ? '<button class="btn ghost block" ' + act('crearIr', 'traspaso') + '>' + ic('swap') + ' Traspaso</button>' : '') + '<button class="btn ghost block" ' + act('openCuentas') + '>' + ic('edit') + ' Editar</button></div></div>';
 }
 function lqtHtml(p) {
   const ficha = (k, t, v, cls, a) => '<button type="button" class="dm-ficha ' + cls + '" ' + a + '><span>' + t + '</span><b class="tnum">' + v + '</b></button>';
@@ -4572,12 +4636,13 @@ function dmMetasHtml(ms) {
   const v = metasVariante(), todas = S._dmMetasTodas, lista = todas ? ms.activas : ms.activas.slice(0, 4);
   let h = '<div class="section-title" id="dm-metas">Metas' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('users') + ' Compartida</button>' : '') + '<button class="link" ' + act('metaNueva') + '>' + ic('plus') + ' Nueva</button></div>';
   if (!ms.activas.length && !ms.hechas.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('metaNueva') + '><span class="dm-ic">' + ic('flag') + '</span><span class="dm-emp-x"><b>Crea tu primera meta</b><span>Un viaje, la casa, un colchón… y ve cómo se llena</span></span>' + ic('chevR') + '</button>';
-  if (lista.length) h += v === 'tarros' ? '<div class="card dm-tarros' + (lista.length === 1 ? ' uno' : '') + '">' + lista.map(tarroHtml).join('') + '</div>'
+  if (lista.length && v === 'formas') h += '<div class="dm-formas">' + lista.map(metaFormaHtml).join('') + '</div>';
+  else if (lista.length) h += v === 'tarros' ? '<div class="card dm-tarros' + (lista.length === 1 ? ' uno' : '') + '">' + lista.map(tarroHtml).join('') + '</div>'
     : '<div class="card dm-metas dm-v-' + v + '">' + lista.map(v === 'anillos' ? metaAnilloHtml : metaCaminoHtml).join('') + '</div>';
   if (ms.activas.length > 4) h += '<button type="button" class="link dm-mas" ' + act('dmMetasTodas') + '>' + (todas ? 'Ver menos' : 'Ver las ' + ms.activas.length + ' metas') + '</button>';
   if (v === 'camino' && ms.activas.length === 1) h += '<button type="button" class="dm-invita tappable" ' + act('metaNueva') + '>¿Ahorras para algo más? Una meta para cada cosa.</button>';
   if (ms.hechas.length) h += '<button type="button" class="dm-pliega" ' + act('dmHechas') + '>✓ Conseguidas (' + ms.hechas.length + ')' + ic(S._dmHechas ? 'chevD' : 'chevR') + '</button>' +
-    (S._dmHechas ? '<div class="card dm-metas dm-v-anillos">' + ms.hechas.map(metaAnilloHtml).join('') + '</div>' : '');
+    (S._dmHechas ? (v === 'formas' ? '<div class="dm-formas">' + ms.hechas.map(metaFormaHtml).join('') + '</div>' : '<div class="card dm-metas dm-v-anillos">' + ms.hechas.map(metaAnilloHtml).join('') + '</div>') : '');
   return h;
 }
 function dmAportarBtn(r) { return r.conseguida ? '' : '<button type="button" class="dm-aportar" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>'; }
@@ -4613,6 +4678,71 @@ function tarroHtml(r) {
     '<span class="dm-tarro-e">' + metaIcono(r) + '</span><span class="dm-tarro-p tnum">' + Math.round(pct) + ' %</span></button>' +
     '<b class="dm-tarro-n">' + escapeHtml(r.nombre) + '</b><span class="tnum dm-tarro-c">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span><span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' + dmAportarBtn(r) + '</div>';
 }
+
+/* ---- Formas de las metas (23/10/2026, docs/15 2.3, v2): trazo fino como los iconos, relleno suave del color de la app y el nombre escrito dentro ---- */
+const FORMAS = {
+  tarro: { n: 'Tarro', fill: 'M26 28H74Q84 28 84 38V84Q84 94 74 94H26Q16 94 16 84V38Q16 28 26 28Z', top: 28, bot: 94, ly: 58,
+    c: '<rect x="22" y="12" width="56" height="12" rx="4"/><path d="M26 28H74Q84 28 84 38V84Q84 94 74 94H26Q16 94 16 84V38Q16 28 26 28Z"/>', d: '<path d="M24 40v18"/>' },
+  hucha: { n: 'Hucha', fill: 'M14 60a36 28 0 1 0 72 0a36 28 0 1 0 -72 0Z', top: 32, bot: 88, ly: 64,
+    c: '<ellipse cx="50" cy="60" rx="36" ry="28"/><path d="M84 52h6q3 0 3 3v8q0 3-3 3h-6"/><path d="M34 37l6-14 10 11"/><path d="M30 86v8h8v-6M62 88v6h8v-8"/><path d="M14 58q-8-1-7-9"/><circle cx="72" cy="52" r="1.6" fill="currentColor"/>', d: '<path d="M42 38h16"/>' },
+  casa: { n: 'Casa', fill: 'M50 10L90 44V92H10V44Z', top: 10, bot: 92, ly: 54, c: '<path d="M50 10L90 44V92H10V44Z"/><path d="M70 27V14h10v22"/>', d: '<path d="M42 92V74q0-4 4-4h8q4 0 4 4v18"/>' },
+  maleta: { n: 'Maleta', fill: 'M20 30H80Q90 30 90 40V82Q90 92 80 92H20Q10 92 10 82V40Q10 30 20 30Z', top: 30, bot: 92, ly: 61,
+    c: '<path d="M20 30H80Q90 30 90 40V82Q90 92 80 92H20Q10 92 10 82V40Q10 30 20 30Z"/><path d="M37 30V20q0-6 6-6h14q6 0 6 6v10"/>', d: '<path d="M27 30v62M73 30v62"/>' },
+  avion: { n: 'Avión', fill: 'M50 6Q80 6 80 34V66Q80 94 50 94Q20 94 20 66V34Q20 6 50 6Z', top: 6, bot: 94, ly: 54,
+    c: '<path d="M50 6Q80 6 80 34V66Q80 94 50 94Q20 94 20 66V34Q20 6 50 6Z"/>', d: '<path d="M50 14Q72 14 72 36V64Q72 86 50 86Q28 86 28 64V36Q28 14 50 14Z"/>' },
+  coche: { n: 'Coche', fill: 'M6 74V58Q6 51 13 50L26 47L36 30Q38 27 43 27H64Q69 27 71 31L80 47L88 49Q94 51 94 58V74Z', top: 27, bot: 74, ly: 60,
+    c: '<path d="M6 74V58Q6 51 13 50L26 47L36 30Q38 27 43 27H64Q69 27 71 31L80 47L88 49Q94 51 94 58V74H6Z"/><circle cx="28" cy="76" r="9" fill="var(--paper-raised)"/><circle cx="72" cy="76" r="9" fill="var(--paper-raised)"/>', d: '<path d="M30 47h47"/>' },
+  anillo: { n: 'Anillo', fill: 'M28 16H72L92 40L50 92L8 40Z', top: 16, bot: 92, ly: 54, c: '<path d="M28 16H72L92 40L50 92L8 40Z"/>', d: '<path d="M8 40H92M28 16L38 40L50 16L62 40L72 16M38 40L50 92L62 40"/>' },
+  regalo: { n: 'Regalo', fill: 'M8 32H92V46H86V90H14V46H8Z', top: 32, bot: 90, ly: 66,
+    c: '<rect x="8" y="32" width="84" height="14" rx="3"/><rect x="14" y="46" width="72" height="44" rx="3"/><path d="M50 32C42 16 26 16 30 26 32 31 42 32 50 32ZM50 32C58 16 74 16 70 26 68 31 58 32 50 32Z"/>', d: '<path d="M50 32v58"/>' },
+  estudios: { n: 'Libro', fill: 'M22 8H80Q86 8 86 14V86Q86 92 80 92H22Q14 92 14 84V16Q14 8 22 8Z', top: 8, bot: 92, ly: 54,
+    c: '<path d="M22 8H80Q86 8 86 14V86Q86 92 80 92H22Q14 92 14 84V16Q14 8 22 8Z"/>', d: '<path d="M26 8v84"/>' },
+  mascota: { n: 'Huella', fill: 'M24 70a26 22 0 1 0 52 0a26 22 0 1 0 -52 0ZM10 40a9 11 0 1 0 18 0a9 11 0 1 0 -18 0ZM29 20a9 11 0 1 0 18 0a9 11 0 1 0 -18 0ZM53 20a9 11 0 1 0 18 0a9 11 0 1 0 -18 0ZM72 40a9 11 0 1 0 18 0a9 11 0 1 0 -18 0Z', top: 9, bot: 92, ly: 71,
+    c: '<ellipse cx="50" cy="70" rx="26" ry="22"/><ellipse cx="19" cy="40" rx="9" ry="11"/><ellipse cx="38" cy="20" rx="9" ry="11"/><ellipse cx="62" cy="20" rx="9" ry="11"/><ellipse cx="81" cy="40" rx="9" ry="11"/>', d: '' },
+  colchon: { n: 'Escudo', fill: 'M50 7L88 21V47C88 71 72 87 50 94C28 87 12 71 12 47V21Z', top: 7, bot: 94, ly: 50, c: '<path d="M50 7L88 21V47C88 71 72 87 50 94C28 87 12 71 12 47V21Z"/>', d: '<path d="M50 16v70"/>' },
+  tecno: { n: 'Portátil', fill: 'M16 14H84Q90 14 90 20V66H10V20Q10 14 16 14Z', top: 14, bot: 66, ly: 40, c: '<path d="M16 14H84Q90 14 90 20V66H10V20Q10 14 16 14Z"/><path d="M3 76H97L91 86H9Z"/>', d: '' },
+};
+const FORMAS_ORDEN = ['tarro', 'maleta', 'avion', 'casa', 'coche', 'anillo', 'regalo', 'estudios', 'mascota', 'colchon', 'tecno', 'hucha'];
+const FORMA_PISTAS = [[/vuelo|avion/, 'avion'], [/viaj|vacacion|escapad|playa|japon|interrail/, 'maleta'], [/casa|piso|hipotec|entrada|vivienda|alquiler|reforma/, 'casa'],
+  [/coche|moto|carnet/, 'coche'], [/boda|anillo|pedida/, 'anillo'], [/regalo|navidad|cumple|reyes/, 'regalo'], [/estudi|master|curso|universi|beca|oposicion/, 'estudios'],
+  [/mascota|perro|gato|veterinari/, 'mascota'], [/colch|emergen|imprevist|fondo de/, 'colchon'], [/ordenador|movil|portatil|tele|consola|iphone|tablet/, 'tecno'], [/hucha|ahorro/, 'hucha']];
+function formaSugerida(nombre) { const n = normName(nombre || ''); const x = FORMA_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : 'tarro'; }
+// la forma de una meta: la elegida (personal en la config; compartida en la columna «forma» cuando exista) o la que sale del nombre
+function metaForma(r) {
+  let k = null;
+  if (r && r.compartida) k = r.o && r.o.forma; else { const m = r && metasCfg().find((x) => x.id === r.id); k = m && m.forma; }
+  return FORMAS[k] ? k : formaSugerida(r && r.nombre);
+}
+let _formaN = 0;
+// Dibuja la forma llena hasta pct. texto: nombre (o %) dentro; tam en px. o: { grande, check, sinOla }
+function formaHtml(k, pct, texto, tam, o) {
+  o = o || {}; const F = FORMAS[k] || FORMAS.tarro, id = 'fm' + (_formaN++), p = Math.max(0, Math.min(100, Number(pct) || 0));
+  const y = F.bot - (F.bot - F.top) * p / 100, hecha = p >= 100, ns = 'vector-effect="non-scaling-stroke"';
+  const ola = 'M-40 ' + y.toFixed(1) + ' q12.5 -3 25 0 t25 0 t25 0 t25 0 t25 0 t25 0';
+  const svg = '<svg class="fm-svg" width="' + tam + '" height="' + tam + '" viewBox="-2 -2 104 104" aria-hidden="true"><defs><clipPath id="' + id + '"><path d="' + F.fill + '"/></clipPath></defs>' +
+    '<g clip-path="url(#' + id + ')">' + (p > 0 ? '<g class="fm-liq"><path class="fm-agua" d="' + ola + ' V104 H-40 Z"/>' + (!hecha ? '<path class="fm-sup" d="' + ola + '" ' + ns + '/>' : '') + '</g>' : '') + '</g>' +
+    (F.d ? '<g class="fm-det" ' + ns + '>' + F.d.replace(/<path /g, '<path ' + ns + ' ') + '</g>' : '') +
+    '<g class="fm-con' + (hecha ? ' hecha' : '') + '">' + F.c.replace(/<(path|rect|ellipse|circle) /g, '<$1 ' + ns + ' ') + '</g></svg>';
+  let ly = F.ly; if (p > 0 && p < 100 && Math.abs(y - ly) < 11) ly = y > ly ? Math.max(F.top + 9, y - 13) : Math.min(F.bot - 9, y + 13);
+  const txt = texto ? '<span class="fm-t' + (o.grande ? ' g' : '') + '" style="top:' + ((ly + 2) / 104 * tam).toFixed(0) + 'px">' + texto + '</span>' : '';
+  return '<span class="fm" style="width:' + tam + 'px;height:' + tam + 'px">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
+}
+// «Su forma»: las 12 en pequeño; la sugerida por el nombre lleva una marca. Elegida = null → la del nombre
+function formaElegirHtml(elegida, nombre) {
+  const sug = formaSugerida(nombre), act0 = elegida || sug;
+  return '<div class="field"><label>Su forma</label><div class="fm-grid" role="radiogroup" aria-label="Su forma">' + FORMAS_ORDEN.map((k) =>
+    '<button type="button" role="radio" aria-checked="' + (k === act0) + '" aria-label="' + FORMAS[k].n + (k === sug ? ' (sugerida)' : '') + '" data-k="' + k + '" class="fm-op' + (k === act0 ? ' on' : '') + (k === sug ? ' sug' : '') + '" ' + act('metaFormaElegir', k) + '>' +
+    formaHtml(k, k === act0 ? 55 : 0, '', 38, { check: false }) + '<i>' + FORMAS[k].n + '</i></button>').join('') + '</div>' +
+    '<div class="rec-hint fm-hint">' + (elegida ? 'Elegida a mano. <button type="button" class="link" ' + act('metaFormaElegir', '') + '>Que la elija el nombre</button>' : 'Elegida por el nombre: ' + FORMAS[sug].n + '. Toca otra si quieres.') + '</div></div>';
+}
+function metaFormaHtml(r) {
+  const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
+  return '<div class="dm-fm" data-meta="' + escapeHtml(r.key) + '"><button type="button" class="dm-fm-main tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento. ' + e.t) + '" ' + act('metaVer', r.key) + '>' +
+    formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 104, { users: r.compartida }) +
+    '<span class="dm-fm-p tnum">' + (r.pct == null ? '—' : Math.round(pct) + ' %') + '</span><span class="dm-fm-c tnum">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span>' +
+    '<span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span></button>' +
+    (r.conseguida ? '' : '<button type="button" class="dm-fm-mas" aria-label="Aportar a ' + escapeHtml(r.nombre) + '" ' + act('metaAportarR', r.key) + '>' + ic('plus') + '</button>') + '</div>';
+}
 function metaPorKey(k) { return metasStats().concat(objCompartidos('ahorro')).find((r) => r.key === k) || null; }
 // hoja de una meta: lo esencial arriba, un solo consejo y «Aportar»; lo demás en «Más»
 function metaVerHtml(k) {
@@ -4630,7 +4760,7 @@ function metaVerHtml(k) {
   const mas = FORM && FORM.mas;
   return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + metaIcono(r) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
     '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
-    '<div class="dm-hring">' + anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132) +
+    '<div class="dm-hring">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132, { grande: true }) : anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132)) +
     '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
     (consejo ? '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(consejo) + '</div>' : '') +
     (r.conseguida ? '' : '<button class="btn accent block" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>') +
@@ -5422,7 +5552,7 @@ function metaEditorHtml() {
   const F = FORM, v = (x) => (x == null ? '' : escapeHtml(x));
   return '<div class="handle"></div><h2>' + (F.id ? 'Editar meta' : 'Nueva meta') + '</h2>' +
     '<div class="rec-hint" style="margin:-8px 0 12px;">Una meta junta lo que apartas y lo que inviertes para ella. Al apuntar un movimiento eliges «¿Para qué meta?».</div>' +
-    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '"></div>' +
+    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '" ' + onInput('metaNombreIn') + '></div>' + (metasVariante() === 'formas' ? formaElegirHtml(F.forma, F.nombre) : '') +
     '<div class="field"><label>Objetivo (' + sym() + ')</label><input id="mObjetivo" type="number" step="0.01" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="mFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
     '<div class="field"><label>Lo que ya tenías antes (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"></div>' +
@@ -5433,7 +5563,7 @@ function metaEditorHtml() {
 }
 function metaAbrirEditor(id) {
   const m = id ? metasCfg().find((x) => x.id === id) : null;
-  FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null };
+  FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null, forma: m && FORMAS[m.forma] ? m.forma : null };
   if ($('#sheetBackdrop')) updateSheet(metaEditorHtml()); else openSheet(metaEditorHtml());
 }
 function metaLeerForm() {
@@ -5449,8 +5579,9 @@ async function metaGuardar() {
   const numOrNull = (x) => { const n = parseFloat(x); return x === '' || x == null || !isFinite(n) ? null : n; };
   const idx = F.id ? arr.findIndex((m) => m && m.id === F.id) : -1;
   const prev = idx >= 0 ? arr[idx] : {};
-  const item = Object.assign({}, prev, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
+  const item = Object.assign({}, prev, F.forma ? { forma: F.forma } : {}, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
   delete item.tipo; // todas las metas son híbridas
+  if (!F.forma) delete item.forma; // sin elegir: la que sale del nombre
   // renombrar: los movimientos de Ahorro que se enlazaban por el nombre antiguo pasan a enlazarse por el identificador
   if (F.id && F.nombreOrig && normName(F.nombreOrig) !== normName(F.nombre)) {
     const ligados = S.movimientos.filter((x) => x.tipo === 'Ahorro' && !x.metaId && normName(x.categoria) === normName(F.nombreOrig));
@@ -6075,7 +6206,7 @@ async function cargarHistorico(ids, desde, clave) {
     S.historico = r && r.series ? { ts: Date.now(), clave, series: r.series, limite: !!r.limite } : { ts: Date.now(), clave, series: {}, error: true };
   } catch (e) { S.historico = { ts: Date.now(), clave, series: {}, error: true }; }
   S._histCarga = false;
-  if ((S.tab === 'dinero' && dineroSub() === 'inversiones') || S.tab === 'inicio') render();
+  if ((S.tab === 'dinero' && (dineroSub() === 'inversiones' || (dineroV2() && dineroV3()))) || S.tab === 'inicio') render();
 }
 // Un punto por día desde la primera aportación: participaciones acumuladas × último cierre conocido (en €).
 function serieCartera(movs, series) {
@@ -8127,7 +8258,7 @@ const H = {
   crearVersion: ([n]) => { S.verAnterior = Object.assign({}, S.verAnterior, { crear: Number(n) || 0 }); sentir('tic'); if (FORM && FORM.kind === 'crear') updateSheet(crearElegido()); },
   agendaSemana: ([d]) => { S.agendaDia = uAdd(S.agendaDia || todayISO(), 7 * Number(d)); render(); },
   irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
-  irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; S.dineroVer = ''; if (dineroV2() && sub) S._dmIr = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
+  irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; S.dineroVer = ''; if (dineroV2() && sub) S._dmIr = sub; if (dineroV2() && dineroV3() && DM3_TABS.indexOf(sub) >= 0) S.dm3Tab = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
   setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; render(); },
   verAnio: () => irResumen('y:' + mesActual().y),
   openBuscar: () => {
@@ -8472,7 +8603,8 @@ const H = {
     if (x.deudas.length === 1) { const d = x.deudas[0]; FORM = { kind: 'saldar', gid: d.gid, de: d.de, a: d.a, max: r2(d.importe), rapido: true }; openSheet(saldarHtml(FORM)); }
     else abrirGrupo(x.deudas.slice().sort((a, b) => b.importe - a.importe)[0].gid);
   },
-  dmIr: ([k]) => { const el = $('#dm-' + k); if (el) try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } },
+  dm3Tab: ([k]) => { const a = DM3_TABS.indexOf(dm3Tab()), b = DM3_TABS.indexOf(k); if (b < 0 || a === b) return; sentir('tic'); const viejo = $('#dmCuerpo'), html = viejo ? viejo.innerHTML : null; S.dm3Tab = k; S._deslizando = html != null && !reduceMotion(); try { render(); if (S._deslizando) deslizarCuerpo(html, b > a ? 1 : -1, 'dmCuerpo'); } finally { S._deslizando = false; } },
+  dmIr: ([k]) => { if (dineroV3() && DM3_TABS.indexOf(k) >= 0) { S.dm3Tab = k; if (S.tab !== 'dinero') return H.goTab(['dinero']); return render(); } const el = $('#dm-' + k); if (el) try { el.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* */ } },
   dmComo: () => { FORM = { kind: 'dmComo' }; openSheet(dmComoHtml()); },
   dmMetasTodas: () => { S._dmMetasTodas = !S._dmMetasTodas; render(); },
   dmHechas: () => { S._dmHechas = !S._dmHechas; render(); },
@@ -8803,6 +8935,8 @@ const H = {
   usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   metaGuardar: () => metaGuardar(),
+  metaFormaElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.forma = FORMAS[k] ? k : null; sentir('tic'); updateSheet(metaEditorHtml()); },
+  metaNombreIn: () => { if (!FORM || FORM.kind !== 'meta' || FORM.forma) return; const el = $('#mNombre'), sug = formaSugerida(el ? el.value : ''); const g = $('.fm-grid'); if (!g || ((g.querySelector('.fm-op.sug') || {}).dataset || {}).k === sug) return; const campo = g.closest('.field'); if (campo) campo.outerHTML = formaElegirHtml(FORM.forma, el ? el.value : ''); },
   metaEliminar: (_, el) => confirmDelete(el, metaEliminar),
   metaAsignar: ([k]) => { FORM = { kind: 'asignar', metaKey: k, sel: new Set(movsPersonales().filter((x) => (x.tipo === 'Inversión' || x.tipo === 'Ahorro') && metasDeMov(x).indexOf(k) >= 0).map((x) => x.id)) }; openSheet(asignarHtml()); },
   asigMov: ([id], el) => { if (el.checked) FORM.sel.add(id); else FORM.sel.delete(id); updateSheet(asignarHtml()); },

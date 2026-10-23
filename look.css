@@ -1462,7 +1462,99 @@ html[data-look="nuevo"] .hk-cels.cinco .hk-cel b.largo { font-size: 11px; }
 html[data-look="nuevo"] .crear-op small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.2; font-weight: 500; color: var(--text-muted); }
 html[data-look="nuevo"] .section-title .asivas-cambiar { min-height: 44px; }
 html[data-look="nuevo"] .ins-aro-v.nada { display: none; }
+/* ---- Formas de las metas (23/10, docs/15 2.3 v2) ---- */
+html[data-look="nuevo"] .fm { position: relative; display: inline-block; flex: none; }
+html[data-look="nuevo"] .fm-svg { display: block; overflow: visible; }
+html[data-look="nuevo"] .fm-agua { fill: var(--accent); opacity: .16; }
+html[data-look="nuevo"] .fm-sup { fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; }
+html[data-look="nuevo"] .fm-det { fill: none; stroke: var(--text-faint); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+html[data-look="nuevo"] .fm-con { fill: none; stroke: var(--text-muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--text-muted); }
+html[data-look="nuevo"] .fm-con.hecha { stroke: var(--accent); color: var(--accent); }
+html[data-look="nuevo"] .fm-t { position: absolute; left: 18%; right: 18%; transform: translateY(-50%); text-align: center; font: 650 11.5px/1.15 var(--font-body, Inter), sans-serif; color: var(--ink); letter-spacing: -.01em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; text-shadow: 0 0 6px var(--paper-raised), 0 0 2px var(--paper-raised); pointer-events: none; }
+html[data-look="nuevo"] .fm-t.g { font: 750 22px/1 var(--font-display); }
+html[data-look="nuevo"] .fm-t.g b { font: inherit; }
+html[data-look="nuevo"] .fm-ok { position: absolute; right: 2px; top: 2px; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; }
+html[data-look="nuevo"] .fm-ok .i { width: 13px; height: 13px; }
+html[data-look="nuevo"] .fm-us { position: absolute; left: 0; top: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--paper-raised); color: var(--text-muted); display: grid; place-items: center; box-shadow: var(--shadow); }
+html[data-look="nuevo"] .fm-us .i { width: 12px; height: 12px; }
+@media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .fm-agua { opacity: .24; } }
+html[data-look="nuevo"][data-theme="dark"] .fm-agua { opacity: .24; }
+/* mosaico de metas */
+html[data-look="nuevo"] .dm-formas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+html[data-look="nuevo"] .dm-fm { position: relative; }
+html[data-look="nuevo"] .dm-fm-main { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 8px 12px; border: 0; border-radius: var(--r-l, 20px); background: var(--paper-raised); box-shadow: var(--shadow); color: inherit; font: inherit; cursor: pointer; text-align: center; }
+html[data-look="nuevo"] .dm-fm-main .fm { margin-bottom: 6px; }
+html[data-look="nuevo"] .dm-fm-p { font-family: var(--font-display); font-weight: 750; font-size: 16px; color: var(--ink); }
+html[data-look="nuevo"] .dm-fm-c { font-size: 12.5px; color: var(--text-muted); }
+html[data-look="nuevo"] .dm-fm .dm-est { font-size: 12px; line-height: 1.25; margin-top: 2px; }
+html[data-look="nuevo"] .dm-fm-mas { position: absolute; right: 2px; top: 2px; width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: none; padding: 0; cursor: pointer; }
+html[data-look="nuevo"] .dm-fm-mas::before { content: ''; position: absolute; width: 34px; height: 34px; border-radius: 50%; background: var(--accent-soft); }
+html[data-look="nuevo"] .dm-fm-mas .i { position: relative; width: 17px; height: 17px; color: var(--accent); }
+/* «Su forma» */
+html[data-look="nuevo"] .fm-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+html[data-look="nuevo"] .fm-op { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 60px; padding: 6px 0 4px; border: 1.5px solid transparent; border-radius: 12px; background: var(--paper-sunken); color: var(--text-muted); font: inherit; cursor: pointer; }
+html[data-look="nuevo"] .fm-op i { font-style: normal; font-size: 9.5px; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .fm-op.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+html[data-look="nuevo"] .fm-op.sug::after { content: ''; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+html[data-look="nuevo"] .fm-hint { margin-top: 6px; }
+html[data-look="nuevo"] .dm-hring .fm { flex: none; }
+/* ---- Dinero v3 (23/10): «Lo que tienes» en una fila, fichas-pestaña y cuentas en mosaico ---- */
+html[data-look="nuevo"] .dm3-lqt { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 10px; padding: 14px 16px; }
+html[data-look="nuevo"] .dm3-lqt-l { display: flex; align-items: center; gap: 2px; font-size: 13px; color: var(--text-muted); }
+html[data-look="nuevo"] .dm3-info { display: grid; place-items: center; width: 36px; height: 36px; margin: -8px 0; border: 0; background: none; color: var(--text-faint); cursor: pointer; }
+html[data-look="nuevo"] .dm3-info .i { width: 16px; height: 16px; }
+html[data-look="nuevo"] .dm3-lqt-v { grid-row: 2; font-family: var(--font-display); font-size: 28px; font-weight: var(--num-peso, 750); letter-spacing: -.02em; line-height: 1.1; }
+html[data-look="nuevo"] .dm3-lqt-sin { grid-row: 2; justify-self: start; font-size: 15px; min-height: 40px; }
+html[data-look="nuevo"] .dm3-lqt-f { grid-row: 1 / span 2; grid-column: 2; max-width: 110px; font-size: 11.5px; line-height: 1.3; color: var(--text-faint); text-align: right; }
+html[data-look="nuevo"] .dm3-tabs { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--cab-alto, 0px)); z-index: 5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 12px 0 14px; padding: 4px 0; background: var(--paper); }
+html[data-look="nuevo"] .dm3-tab { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 70px; padding: 9px 8px; border: 1.5px solid transparent; border-radius: 14px; background: var(--paper-raised); box-shadow: var(--shadow); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+html[data-look="nuevo"] .dm3-tab .i { width: 16px; height: 16px; color: var(--text-muted); }
+html[data-look="nuevo"] .dm3-tab span { font-size: 11px; color: var(--text-muted); }
+html[data-look="nuevo"] .dm3-tab b { font-family: var(--font-display); font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+html[data-look="nuevo"] .dm3-tab.inv b { color: var(--savings); } html[data-look="nuevo"] .dm3-tab.deu b { color: var(--debt); }
+html[data-look="nuevo"] .dm3-tab.vacia b { color: var(--accent); font-weight: 600; font-size: 13px; }
+html[data-look="nuevo"] .dm3-tab.on { border-color: var(--accent); background: var(--accent-soft); }
+html[data-look="nuevo"] .dm3-tab.on .i { color: var(--accent); }
+html[data-look="nuevo"] .dm3-tab.on::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 10px; height: 10px; margin-left: -5px; transform: rotate(45deg); background: var(--accent-soft); border-right: 1.5px solid var(--accent); border-bottom: 1.5px solid var(--accent); }
+html[data-look="nuevo"] .dm3-marco { position: relative; overflow: hidden; margin: 0 -16px; padding: 0 16px; }
+html[data-look="nuevo"] .dm3-marco.deslizando { overflow: hidden; }
+html[data-look="nuevo"] .dm3-marco .mov-fantasma { position: absolute; top: 0; left: 16px; right: 16px; pointer-events: none; }
+html[data-look="nuevo"] .dm3-cuerpo > .section-title:first-child { margin-top: 0; }
+html[data-look="nuevo"] .dm3-reparto { display: flex; height: 8px; border-radius: 99px; overflow: hidden; gap: 2px; margin-bottom: 6px; }
+html[data-look="nuevo"] .dm3-reparto i { display: block; height: 100%; }
+html[data-look="nuevo"] .dm3-rep-ley { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--text-muted); margin-bottom: 12px; }
+html[data-look="nuevo"] .dm3-rep-ley i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
+html[data-look="nuevo"] .dm3-mosaico { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+html[data-look="nuevo"] .dm3-cta { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 88px; padding: 12px 12px 10px 14px; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+html[data-look="nuevo"] .dm3-cta::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cc); }
+html[data-look="nuevo"] .dm3-cta-ic { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: color-mix(in srgb, var(--cc) 16%, transparent); color: var(--cc); margin-bottom: 2px; }
+html[data-look="nuevo"] .dm3-cta-ic .i { width: 15px; height: 15px; }
+html[data-look="nuevo"] .dm3-cta-n { font-size: 12.5px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .dm3-cta b { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+html[data-look="nuevo"] .dm3-cta-l { font-size: 11px; color: var(--text-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .dm3-cta-l .pon { color: var(--accent); font-weight: 600; }
+html[data-look="nuevo"] .dm3-cta.nueva { align-items: center; justify-content: center; border-style: dashed; color: var(--accent); background: none; font-weight: 600; font-size: 13px; }
+html[data-look="nuevo"] .dm3-cta.nueva::before { display: none; }
+html[data-look="nuevo"] .dm3-cta.nueva .i { width: 18px; height: 18px; }
+html[data-look="nuevo"] .dm3-acc { display: flex; gap: 8px; margin-top: 12px; }
+html[data-look="nuevo"] .dm3-acc .btn { min-height: 44px; }
 /* Calidad Juntos v3: «Invitar» de 44 px y que asome el 5.º círculo a 360 px */
 html[data-look="nuevo"] .jv3-seg .link { min-height: 44px; }
 html[data-look="nuevo"] .jv3-cifras .te i { margin-right: 4px; }
 @media (max-width: 370px) { html[data-look="nuevo"] .jv3-circ.muchos { gap: 6px; } html[data-look="nuevo"] .jv3-circ.muchos .jv-c { width: 62px; } html[data-look="nuevo"] .jv3-circ.muchos .jv-c .ins-l1 { max-width: 62px; } }
+/* Juntos B2 (23/10): metas y deudas juntos, con forma */
+html[data-look="nuevo"] .jv-objs { display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 8px; scroll-padding-inline: 16px; scrollbar-width: none; }
+html[data-look="nuevo"] .jv-objs::-webkit-scrollbar { display: none; }
+html[data-look="nuevo"] .jv-obj { flex: 0 0 158px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 10px 12px; border: 0; border-radius: var(--r-l, 20px); background: var(--paper-raised); box-shadow: var(--shadow); color: inherit; font: inherit; text-align: center; cursor: pointer; }
+html[data-look="nuevo"] .jv-obj .fm { margin-bottom: 6px; }
+html[data-look="nuevo"] .jv-obj b { font-family: var(--font-display); font-size: 18px; font-weight: 750; letter-spacing: -.01em; }
+html[data-look="nuevo"] .jv-obj-p { font-size: 12px; color: var(--text-muted); }
+html[data-look="nuevo"] .jv-obj-e { font-size: 11.5px; line-height: 1.25; color: var(--text-muted); }
+html[data-look="nuevo"] .jv-obj-ic { display: grid; place-items: center; width: 56px; height: 56px; margin: 8px 0 6px; border-radius: 50%; background: color-mix(in srgb, var(--debt) 18%, transparent); color: color-mix(in srgb, var(--debt) 70%, var(--ink)); }
+html[data-look="nuevo"] .jv-obj-ic .i { width: 26px; height: 26px; }
+html[data-look="nuevo"] .jv-obj-n { font-weight: 650; font-size: 13px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .jv-obj-bar { width: 100%; height: 6px; margin: 8px 0 4px; border-radius: 99px; background: var(--paper-sunken); overflow: hidden; }
+html[data-look="nuevo"] .jv-obj-bar i { display: block; height: 100%; border-radius: 99px; background: var(--debt); }
+/* Calidad Dinero v3: que quepa «−4.140 €» en la ficha a 360 px y que el ✓ de la meta conseguida no choque con el «+» */
+@media (max-width: 380px) { html[data-look="nuevo"] .dm3-tabs { gap: 5px; } html[data-look="nuevo"] .dm3-tab { padding: 9px 6px; } html[data-look="nuevo"] .dm3-tab b { font-size: 13px; letter-spacing: -.02em; } }
+html[data-look="nuevo"] .dm-fm .fm-ok { top: auto; bottom: 2px; }
