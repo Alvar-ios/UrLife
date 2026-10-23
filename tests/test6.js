@@ -33,14 +33,14 @@ const jwt=aal=>'h.'+b64({aal})+'.s';
  ok(/Código incorrecto/.test(e2.doc.body.textContent),'código malo: mensaje');
  ok(!e2.w.__APP__.S.appStarted,'sigue sin entrar');
  // aal2 -> entra
- let e3=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},movs:[],session:sess('aal2',[{id:'F1',status:'verified',factor_type:'totp'}]),pre:pre(mkSb([]))});await sleep(60);
+ let e3=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},movs:[],session:sess('aal2',[{id:'F1',status:'verified',factor_type:'totp'}]),pre:pre(mkSb([]))});await sleep(200);
  ok(e3.w.__APP__.S.appStarted,'aal2 entra');
  // sin factores -> entra y ofrece activar
  let e4=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}},movs:[],pre:pre(mkSb([{id:'OLD',status:'unverified',factor_type:'totp'}]))});
- await sleep(60);ok(e4.w.__APP__.S.appStarted,'sin factor verificado: entra normal');
+ await sleep(200);ok(e4.w.__APP__.S.appStarted,'sin factor verificado: entra normal');
  e4.w.__APP__.H.goTab(['mas']);ok(/Verificación en dos pasos/.test(e4.doc.querySelector('#content').textContent),'Más ofrece 2FA');
  click(e4,'openSeguridad');await sleep(40);ok(/Activar/.test(e4.doc.querySelector('#sheetHost').textContent),'sheet: activar');
- click(e4,'mfaStart');await sleep(60);
+ click(e4,'mfaStart');await sleep(200);
  ok(calls.some(c=>c[0]==='unenroll'&&c[1]==='OLD')&&calls.some(c=>c[0]==='enroll'),'limpia intento abandonado y enrola');
  ok(!!e4.doc.querySelector('#sheetHost img')&&/ABCDEF/.test(e4.doc.querySelector('#sheetHost').textContent),'muestra QR y clave');
  e4.doc.querySelector('#mfaCode').value='12';click(e4,'mfaConfirm','F2');await sleep(30);

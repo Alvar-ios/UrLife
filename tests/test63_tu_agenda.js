@@ -54,7 +54,7 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   await A.guardarTicketsUso({ usados: 3, limite: 60 });
   // nombre
   H.tuNombreAbrir([]); await sleep(10);
-  ok(/¿Cómo te llamas\?/.test(sh(e)), 'Editar: hoja «Tu nombre»');
+  ok(/Tu perfil/.test(sh(e)) && /Tu nombre/.test(sh(e)), 'Editar: hoja «Tu perfil» (desde el 23/10; antes «Tu nombre»)');
   shDoc(e, '#tuNombreIn').value = '  Lu  ';
   await H.tuNombreGuardar([]); await sleep(20);
   ok(A.cfg().nombre === 'Lu' && e.store.cfg.app.nombre === 'Lu', 'Editar: guarda el nombre (sin espacios de más)');

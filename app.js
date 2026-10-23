@@ -10,10 +10,36 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------------- Iconos (SVG inline, trazo simple) ---------------- */
 const ICONS = {
+  piggy2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5c0-3.3 3-5.5 7-5.5 2.6 0 4.6.8 5.8 2.2l2.2-.7-.5 2.8c.6.6 1 1.4 1 2.2v1l-1.8.7a6 6 0 0 1-2.2 2.3V20h-2.5v-1.6h-4V20H7v-2.4a5 5 0 0 1-2.5-4.3Z"/><path d="M10 9.5h3"/><circle cx="16.3" cy="12" r=".8" fill="currentColor" stroke="none"/><path d="M4.6 12.2c-1.4-.2-2-1.1-1.8-2"/></svg>',
+  target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>',
+  deuda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="12" r="6"/><path d="M8 12h4"/><path d="M17.5 6.5a8 8 0 0 1 0 11"/><path d="m17.5 17.5-.2-2.9M17.5 17.5l-2.8.4"/></svg>',
+  moneda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M15 8.6a4 4 0 1 0 0 6.8"/><path d="M7.8 11h5.4M7.8 13.2h5.4"/></svg>',
+  fileIn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6"/><path d="m9 14 3 3 3-3"/></svg>',
+  archive: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4.5" rx="1"/><path d="M5 8.5V19a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8.5"/><path d="M10 12.5h4"/></svg>',
+  history: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 4v4.5H8"/><path d="M12 7.5V12l3 2"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.2"/><circle cx="12" cy="7.8" r=".9" fill="currentColor" stroke="none"/></svg>',
+  megafono: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4a1 1 0 0 0 1 1h2l7 4V5L7 9H5a1 1 0 0 0-1 1Z"/><path d="M17.5 9a4 4 0 0 1 0 6"/><path d="M7.5 15.2 8.6 20"/></svg>',
+  replay: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M10.2 8.8v6.4l5-3.2z"/></svg>',
+  bulb: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17.5h6M10 21h4"/><path d="M8.2 14.5A6 6 0 1 1 15.8 14.5c-.8.7-1.3 1.6-1.3 2.5v.5h-5V17c0-.9-.5-1.8-1.3-2.5Z"/></svg>',
+  calRango: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/><path d="M8 15h8"/><path d="M8 13.5v3M16 13.5v3"/></svg>',
+  autoTag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12.5 11.5 4H17v3"/><path d="M3 12.5 10.5 20l3.5-3.5"/><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"/><path d="M18 10.5l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z"/></svg>',
+  coin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6.5" rx="7" ry="3"/><path d="M5 6.5v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/><path d="M5 11.5v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></svg>',
+  pie: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5A8.5 8.5 0 1 0 20.5 12H12z"/><path d="M15 3.8A8.5 8.5 0 0 1 20.2 9H15z"/></svg>',
+  cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6.5" width="19" height="11" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.5v5M18 9.5v5"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>',
+  cap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5V16c1.5 1.6 3.4 2.4 5.5 2.4s4-.8 5.5-2.4v-4.5"/><path d="M21.5 9.5V14"/></svg>',
+  manoMoneda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h3l4.5 1.5h3.2a1.5 1.5 0 0 0 0-3H11"/><path d="M6 20.5h7l6.2-3.7a1.6 1.6 0 0 0-1.6-2.8L14 15.8"/><path d="M3 13v8"/><circle cx="15.5" cy="6.5" r="3.5"/></svg>',
+  comparar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M12 4v16"/><path d="m7 10-2 2 2 2M17 10l2 2-2 2"/></svg>',
+  sonrisa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c.9 1.4 2.1 2 3.5 2s2.6-.6 3.5-2"/><circle cx="9" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r=".9" fill="currentColor" stroke="none"/></svg>',
+  candado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/></svg>',
+  estrella: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12.5" rx="2.5"/><path d="M10.3 8.8v5l4.2-2.5z"/><path d="M8 20.5h8"/></svg>',
+  velas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v3M7 15v3M17 6v3M17 18v3"/><rect x="5" y="6" width="4" height="9" rx="1"/><rect x="15" y="9" width="4" height="9" rx="1"/></svg>',
+  coche2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5V13l1.6-4.2A2.5 2.5 0 0 1 8 7h8a2.5 2.5 0 0 1 2.4 1.8L20 13v3.5"/><path d="M3 13h18v3.5H3z"/><path d="M6 16.5V19M18 16.5V19"/><circle cx="7.5" cy="14.8" r=".7" fill="currentColor" stroke="none"/><circle cx="16.5" cy="14.8" r=".7" fill="currentColor" stroke="none"/><path d="M6 11h12"/></svg>',
+  persona: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6"/></svg>',
   bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15Z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.3"/></svg>',
-  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.4"/></svg>',
   borrar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-6-7 6-7Z"/><path d="m12 9.5 5 5M17 9.5l-5 5"/></svg>',
   salir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M10 12h10M17 8l4 4-4 4"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>',
@@ -67,6 +93,7 @@ const ICONS = {
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.5 13.5"/><path d="m21 3-6.5 18-4-7.5L3 9.5z"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
 };
+ICONS.trendUp = ICONS.piggy; // la «hucha» de antes es una flecha que sube: Apartar usa ahora piggy2, una hucha de verdad
 function ic(name) {
   const s = ICONS[name];
   return s ? s.replace('<svg ', '<svg class="i" aria-hidden="true" ') : '';
@@ -117,7 +144,52 @@ function importeFilaHtml(importe, tipo) {
 function pad2(n) { return String(n).padStart(2, '0'); }
 function mesHoyClave() { return 'm:' + mesDe(todayISO()); }
 /* ---- «Tu mes»: del 1 al 31, o desde el día que cobras. Solo cambia cómo se agrupan los números: no toca ningún movimiento ---- */
-function mesCfg() { let t = {}; try { t = (S.config && S.config.mesInicio) || {}; } catch (e) { /* al arrancar todavía no hay estado */ } const dia = Math.round(Number(t.dia)); return t.modo === 'cobro' && dia >= 2 && dia <= 31 ? { modo: 'cobro', dia } : { modo: 'natural', dia: 1 }; }
+function mesCfg() { let t = {}; try { t = (S.config && S.config.mesInicio) || {}; } catch (e) { /* al arrancar todavía no hay estado */ } const dia = Math.round(Number(t.dia)); return t.modo === 'cobro' && dia >= 2 && dia <= 31 ? (t.nomina ? { modo: 'cobro', dia, nomina: String(t.nomina) } : { modo: 'cobro', dia }) : { modo: 'natural', dia: 1 }; }
+/* ---- A5 (23/10, docs/14): «Desde que llega mi nómina». Cada tramo empieza el día que llegó de verdad la nómina (el cobro fijo elegido).
+   Si no ha llegado: mientras no pasen 7 días, sigue el mes anterior; después (o si dices «No»), empieza el día previsto.
+   Las fechas futuras son previsión. Una versión antigua de la app no entiende «nomina» y usa el día fijo. ---- */
+let _cortes = null, _cortesCalc = false;
+function mesSig(k) { let y = Number(k.slice(0, 4)), m = Number(k.slice(5, 7)) + 1; if (m > 12) { m = 1; y++; } return y + '-' + pad2(m); }
+function cortesNomina() {
+  const c = mesCfg(); if (!c.nomina || _cortesCalc) return null;
+  const hoy = todayISO(), movs = S.movimientos || [];
+  // se recalcula si cambia algo: la app sustituye la lista de movimientos y la configuración enteras en cada cambio
+  if (_cortes && _cortes.movs === movs && _cortes.n === movs.length && _cortes.conf === S.config && _cortes.hoy === hoy && _cortes.nom === c.nomina) return _cortes.lista;
+  const rc = recurrentes().find((r) => r.kind === 'cobro' && normName(r.nombre) === normName(c.nomina));
+  if (!rc || !rc.regla || !rc.regla.t) { _cortes = { movs, n: movs.length, conf: S.config, hoy, nom: c.nomina, lista: null }; return null; }
+  _cortesCalc = true;
+  try {
+    const primero = movs.reduce((a, m) => (m.fecha && m.fecha < a ? m.fecha : a), hoy), desde = uAdd(primero < uAdd(hoy, -800) ? uAdd(hoy, -800) : primero, -45);
+    const occs = ocurrencias(rc.regla, desde, uAdd(hoy, 75)), est = estadoOcurrencias(rc, occs), lista = [];
+    let prev = null, prevNombre = null, prevIso = null;
+    est.forEach((o) => {
+      // nombre del mes: como «desde un día» (lo cobrado el 28 de septiembre es octubre), pero siempre uno detrás de otro:
+      // una nómina que se mueve por un fin de semana o un festivo no se salta un mes ni se junta con la siguiente
+      const d = uD(o.iso); let y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
+      if (d.getUTCDate() >= COBRO_FIN) { m++; if (m > 12) { m = 1; y++; } }
+      let nombre = y + '-' + pad2(m);
+      if (prevNombre) { const sig = mesSig(prevNombre), cerca = (uD(o.iso).getTime() - uD(prevIso).getTime()) / 864e5 <= 45; if (nombre <= prevNombre || (nombre > sig && cerca)) nombre = sig; }
+      prevNombre = nombre; prevIso = o.iso;
+      let corte, previsto = false, esperando = false;
+      if (o.mov && o.mov.fecha) corte = o.mov.fecha;
+      else if (o.iso > hoy) { corte = o.iso; previsto = true; }
+      else if (o.estado === 'no' || uAdd(o.iso, 7) < hoy) corte = o.iso;
+      else { corte = null; esperando = true; }
+      let ajustado = false;
+      if (corte && prev) { const dd = (uD(corte).getTime() - uD(prev).getTime()) / 864e5; if (dd < 20 || dd > 45) { corte = o.iso; ajustado = true; } }
+      if (corte) prev = corte;
+      // ini: el día en que empieza este mes. Mientras se espera la nómina, el mes anterior sigue abierto hasta que pasen los 7 días
+      lista.push({ nombre, corte, ini: corte || uAdd(o.iso, 8), iso: o.iso, previsto, esperando, ajustado, mov: o.mov || null });
+    });
+    _cortes = { movs, n: movs.length, conf: S.config, hoy, nom: c.nomina, lista };
+    return lista;
+  } finally { _cortesCalc = false; }
+}
+function tramoNomina(iso) {
+  const L = cortesNomina(); if (!L || !L.length) return null;
+  let r = null; for (let i = 0; i < L.length; i++) if (L[i].ini <= iso) r = L[i];
+  return r;
+}
 // día en que empieza el tramo que arranca en el mes (y, m): el día de cobro (el último del mes si no existe); en fin de semana, el viernes anterior
 function inicioTramo(y, m, dia) {
   const d = new Date(y, m - 1, Math.min(dia, new Date(y, m, 0).getDate())), dw = d.getDay();
@@ -131,6 +203,7 @@ const COBRO_FIN = 16;
 function mesDe(iso) {
   if (!iso || iso.length < 7) return '';
   const c = mesCfg(); if (c.modo !== 'cobro') return iso.slice(0, 7);
+  if (c.nomina) { const t = tramoNomina(iso.slice(0, 10)); if (t) return t.nombre; }
   let y = Number(iso.slice(0, 4)), m = Number(iso.slice(5, 7)); const f = iso.slice(0, 10);
   for (let i = 0; i < 2 && f >= inicioTramo(y, m, c.dia); i++) { m++; if (m > 12) { m = 1; y++; } }
   if (c.dia < COBRO_FIN) { m--; if (m < 1) { m = 12; y--; } }
@@ -139,6 +212,9 @@ function mesDe(iso) {
 function rangoMes(y, m, c0) {
   const c = c0 || mesCfg();
   if (c.modo !== 'cobro') return { desde: y + '-' + pad2(m) + '-01', hasta: y + '-' + pad2(m) + '-' + pad2(new Date(y, m, 0).getDate()) };
+  if (c.nomina) { const L = cortesNomina(), k = y + '-' + pad2(m), i = L ? L.findIndex((x) => x.nombre === k) : -1;
+    if (i >= 0) { const a = L[i], b = L[i + 1];
+      return { desde: a.ini, hasta: b ? addDaysISO(b.ini, -1) : addDaysISO(a.ini, 30), previsto: !!(a.previsto || a.esperando || !b || b.previsto || b.esperando), esperando: !!(a.esperando || (b && b.esperando)) }; } }
   if (c.dia < COBRO_FIN) { m++; if (m > 12) { m = 1; y++; } } // el tramo que se llama «m» acaba en el mes siguiente
   return { desde: inicioTramo(m === 1 ? y - 1 : y, m === 1 ? 12 : m - 1, c.dia), hasta: addDaysISO(inicioTramo(y, m, c.dia), -1) };
 }
@@ -149,7 +225,7 @@ function sincronizarMes() {
   const a = mesActual(); S.mesSel = a.m; S.anioSel = a.y;
   if (!S.movPeriodo || /^m:/.test(S.movPeriodo)) S.movPeriodo = mesHoyClave();
 }
-function rangoTxt(y, m) { const r = rangoMes(y, m); return (fmtDateShort(r.desde) + ' – ' + fmtDateShort(r.hasta)).toLowerCase(); }
+function rangoTxt(y, m) { const r = rangoMes(y, m); return r.previsto ? ('desde el ' + fmtDateShort(r.desde)).toLowerCase() : (fmtDateShort(r.desde) + ' – ' + fmtDateShort(r.hasta)).toLowerCase(); }
 // Curva suave que pasa por todos los puntos sin inventarse picos (monótona, como d3.curveMonotoneX)
 function curvaSuave(p) {
   const n = p.length, f = (v) => v.toFixed(1);
@@ -504,7 +580,7 @@ const S = {
   movVista: 'resumen', movFiltroTipo: 'Todos', movCuenta: '', movPeriodo: mesHoyClave(), movQuery: '', movLimit: 120,
   invModo: lsGet('invModo') === 'rentab' ? 'rentab' : 'valor',
   theme: lsGet('theme') || 'auto',
-  look: 'nuevo', paleta: lsGet('paleta') || 'violeta', tipo: lsGet('tipo') || 'bricolage',
+  look: 'nuevo', paleta: lsGet('paleta') || 'violeta', tipo: lsGet('tipo') || 'bricolage', fondo: lsGet('fondo') || 'neutro',
   loadingMsg: 'Cargando tus datos…',
   onboarding: null, _onboardPending: false,
 };
@@ -531,14 +607,16 @@ function cargarFuente(id) {
   if (!t || !t[3] || id === 'bricolage' || document.querySelector('link[data-fuente="' + id + '"]')) return;
   const l = document.createElement('link'); l.rel = 'stylesheet'; l.setAttribute('data-fuente', id); l.href = 'https://fonts.googleapis.com/css2?family=' + t[3] + '&display=swap'; document.head.appendChild(l);
 }
+const FONDOS = [['neutro', 'Neutro'], ['tinte', 'Con tu color'], ['puro', 'Negro puro', 'Blanco']];
 function applyLook(suave) {
   const r = document.documentElement;
   if (!PALETAS.some((x) => x[0] === S.paleta)) S.paleta = 'violeta';
   if (!TIPOS_CIFRA.some((x) => x[0] === S.tipo)) S.tipo = 'bricolage';
   if (suave && !reduceMotion()) { r.classList.add('cambiando'); clearTimeout(applyLook._t); applyLook._t = setTimeout(() => r.classList.remove('cambiando'), 600); }
-  r.setAttribute('data-look', S.look); r.setAttribute('data-paleta', S.paleta); r.setAttribute('data-tipo', S.tipo);
+  if (FONDOS.every((x) => x[0] !== S.fondo)) S.fondo = 'neutro';
+  r.setAttribute('data-look', S.look); r.setAttribute('data-paleta', S.paleta); r.setAttribute('data-tipo', S.tipo); r.setAttribute('data-fondo', S.fondo);
   if (S.look === 'nuevo') cargarFuente(S.tipo);
-  try { document.querySelectorAll('meta[name="theme-color"]').forEach((m) => { const osc = /dark/.test(m.getAttribute('media') || ''); m.setAttribute('content', S.look === 'nuevo' ? (osc ? '#0A0A0C' : '#F5F5F2') : (osc ? '#14172A' : '#F1EFE8')); }); } catch (e) { /* sin meta */ }
+  try { document.querySelectorAll('meta[name="theme-color"]').forEach((m) => { const osc = /dark/.test(m.getAttribute('media') || ''); m.setAttribute('content', S.look === 'nuevo' ? (S.fondo === 'puro' ? (osc ? '#000000' : '#FFFFFF') : (osc ? '#0A0A0C' : '#F5F5F2')) : (osc ? '#14172A' : '#F1EFE8')); }); } catch (e) { /* sin meta */ }
 }
 function aspectoHtml() {
   const nuevo = S.look === 'nuevo', v = vibraOn(), so = sonidoOn(), sw = (k, on) => '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + (k === 'vibra' ? 'Vibración' : 'Sonido') + '" ' + act('setSens', k) + '></button>';
@@ -546,6 +624,8 @@ function aspectoHtml() {
   const tip = TIPOS_CIFRA.map(([id, n, f]) => '<button type="button" class="asp-tp' + (S.tipo === id ? ' on' : '') + '" ' + act('setTipo', id) + '><span class="n" style="--asp-f:' + f + '">' + money(1234.56) + '</span><span class="l">' + n + '</span></button>').join('');
   return '<div class="handle"></div><h2>Aspecto y sensaciones</h2>' +
     '<div class="asp-sec"><div class="section-title" style="margin-top:0;">Color</div><div class="asp-pal">' + pal + '</div></div>' +
+    '<div class="asp-sec"><div class="section-title">Tema</div><div class="segmented asp-tema">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([k, l]) => '<button type="button" class="' + ((S.theme || 'auto') === k ? 'active' : '') + '" ' + act('setTheme', k) + '>' + l + '</button>').join('') + '</div></div>' +
+    '<div class="asp-sec"><div class="section-title">Fondo</div><div class="asp-fondos">' + FONDOS.map(([k, l, lClaro]) => '<button type="button" class="asp-fondo f-' + k + (S.fondo === k ? ' on' : '') + '" aria-pressed="' + (S.fondo === k) + '" ' + act('setFondo', k) + '><span class="asp-fondo-v"><i></i><i></i></span><span class="asp-fondo-l">' + (lClaro ? '<span class="osc">' + l + '</span><span class="cla">' + lClaro + '</span>' : l) + '</span></button>').join('') + '</div></div>' +
     '<div class="asp-sec asp-solo-nuevo"><div class="section-title">Cifras y titulares</div><div class="asp-tipos">' + tip + '</div></div>' +
     '<div class="asp-sec"><div class="section-title">Sensaciones</div>' +
     '<div class="asp-fila"><div class="t">Vibración<span>Un toque suave al guardar, completar o conseguir una meta.</span></div><button type="button" class="link" ' + act('probarSens', 'ok') + '>Probar</button>' + sw('vibra', v) + '</div>' +
@@ -693,14 +773,14 @@ const CATS_STD = [
   { n: 'Restaurantes y bares', ic: 'fork', d: 'Comer fuera, cañas, cafés' },
   { n: 'Vivienda', ic: 'home', d: 'Alquiler o hipoteca, comunidad' },
   { n: 'Suministros', ic: 'bolt', d: 'Luz, agua, gas, internet, móvil' },
-  { n: 'Transporte', ic: 'car', d: 'Gasolina, parking, coche, transporte público' },
+  { n: 'Transporte', ic: 'coche2', d: 'Gasolina, parking, coche, transporte público' },
   { n: 'Ocio', ic: 'film', d: 'Cine, conciertos, planes' },
   { n: 'Deporte', ic: 'ball', d: 'Gimnasio, golf, pádel' },
   { n: 'Compras', ic: 'shirt', d: 'Ropa y cosas' },
   { n: 'Salud y cuidado personal', ic: 'heart', d: 'Farmacia, médico, pelu, uñas' },
   { n: 'Regalos', ic: 'gift', d: 'Cumpleaños, detalles' },
   { n: 'Viajes', ic: 'plane', d: 'Hoteles, vuelos, escapadas' },
-  { n: 'Suscripciones', ic: 'repeat', d: 'Spotify, Netflix, apps' },
+  { n: 'Suscripciones', ic: 'play', d: 'Spotify, Netflix, apps' },
   { n: 'Seguros', ic: 'shield', d: 'Coche, hogar, salud' },
   { n: 'Educación', ic: 'book', d: 'Cursos, libros, academia' },
   { n: 'Mascotas', ic: 'paw', d: 'Comida, veterinario' },
@@ -793,7 +873,7 @@ function categoriasPorTipo(tipo) {
 const TABS = [
   { id: 'inicio', label: 'Inicio', icon: 'home' },
   { id: 'movimientos', label: 'Movimientos', icon: 'list' },
-  { id: 'dinero', label: 'Dinero', icon: 'card' },
+  { id: 'dinero', label: 'Dinero', icon: 'wallet' },
   { id: 'agenda', label: 'Agenda', icon: 'calendar' },
 ];
 const TITULOS = { inicio: 'Inicio', movimientos: 'Movimientos', dinero: 'Dinero', agenda: 'Agenda', juntos: 'Juntos', tu: 'Tú' };
@@ -803,6 +883,23 @@ function tabBtn(t) {
   return '<button class="tab" data-tab="' + t.id + '" ' + act('goTab', t.id) + '><span class="ic">' + ic(t.icon) + '</span><span>' + t.label + '</span></button>';
 }
 function inicialUsuario() { const n = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido()); return escapeHtml((n || '?').trim().charAt(0).toUpperCase()); }
+/* ---- Tu perfil (23/10, docs/15 3.1): iniciales o un dibujo y un color. Solo lo ves tú; en Juntos los demás siguen viendo tu inicial y su color ---- */
+const PERFIL_DIBUJOS = ['persona', 'sonrisa', 'estrella', 'heart', 'ball', 'plane', 'film', 'gift', 'home', 'bulb', 'paw', 'sparkle'];
+const PERFIL_DIBUJO_NOMBRE = { persona: 'Persona', sonrisa: 'Cara sonriente', estrella: 'Estrella', heart: 'Corazón', ball: 'Balón', plane: 'Avión', film: 'Cine', gift: 'Regalo', home: 'Casa', bulb: 'Bombilla', paw: 'Huella', sparkle: 'Destellos' };
+function perfilCfg() { const p = cfg().perfil || {}; return { avatar: p.avatar === 'dibujo' && PERFIL_DIBUJOS.indexOf(p.icono) >= 0 ? 'dibujo' : 'iniciales', icono: PERFIL_DIBUJOS.indexOf(p.icono) >= 0 ? p.icono : 'persona', color: COLORES_PERSONA_NUEVO.indexOf(p.color) >= 0 ? p.color : null }; }
+function inicialesDe(n) { const ps = String(n || '').trim().split(/\s+/).filter(Boolean); return escapeHtml(((ps[0] || '?').charAt(0) + (ps[1] ? ps[1].charAt(0) : '')).toUpperCase()); }
+function miColor(p) { p = p || perfilCfg(); return p.color || colorPersona(miUid()); }
+function miAvatarDentro(p, nombre) { p = p || perfilCfg(); return p.avatar === 'dibujo' ? ic(p.icono) : inicialesDe(nombre != null ? nombre : (String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido()))); }
+function perfilHtml() {
+  const F = FORM, p = { avatar: F.avatar, icono: F.icono, color: F.color }, nombre = F.nombre;
+  return '<div class="handle"></div><h2>Tu perfil</h2><div class="perfil-av" id="perfilAv" style="background:' + miColor(p) + '">' + miAvatarDentro(p, nombre) + '</div>' +
+    '<div class="segmented perfil-modo"><button type="button" class="' + (F.avatar === 'iniciales' ? 'active' : '') + '" ' + act('perfilModo', 'iniciales') + '>Iniciales</button><button type="button" class="' + (F.avatar === 'dibujo' ? 'active' : '') + '" ' + act('perfilModo', 'dibujo') + '>Un dibujo</button></div>' +
+    (F.avatar === 'dibujo' ? '<div class="perfil-dib" role="radiogroup" aria-label="Dibujo">' + PERFIL_DIBUJOS.map((k) => '<button type="button" role="radio" aria-checked="' + (F.icono === k) + '" aria-label="' + (PERFIL_DIBUJO_NOMBRE[k] || 'Dibujo') + '" class="perfil-d' + (F.icono === k ? ' on' : '') + '" ' + act('perfilIcono', k) + '>' + ic(k) + '</button>').join('') + '</div>' : '') +
+    '<div class="field"><label>Color</label><div class="perfil-cols" role="radiogroup" aria-label="Color">' + COLORES_PERSONA_NUEVO.map((c, i) => '<button type="button" role="radio" aria-checked="' + (miColor(p) === c) + '" aria-label="Color ' + (i + 1) + '" class="perfil-c' + (miColor(p) === c ? ' on' : '') + '" style="background:' + c + '" ' + act('perfilColor', c) + '>' + (miColor(p) === c ? ic('check') : '') + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label for="tuNombreIn">Tu nombre</label><input id="tuNombreIn" type="text" maxlength="40" autocomplete="given-name" value="' + escapeHtml(nombre) + '" ' + onInput('perfilNombreIn') + '></div>' +
+    '<p class="rec-hint">Tu nombre lo ven las personas con las que compartes. El dibujo y el color, de momento, solo tú.</p>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('tuNombreGuardar') + '>Guardar</button></div>';
+}
 function renderShell() {
   $('#app').innerHTML =
     '<nav class="rail" aria-label="Secciones"><div class="brand">Mis Finanzas<span class="sub">y Tareas</span></div>' +
@@ -915,7 +1012,7 @@ function render() {
   $$('[data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === S.tab));
   const nuevoTu = ['grupos', 'patrimonio', 'cuentas', 'tumes', 'importar', 'reglas', 'cobros'].concat(verAnterior('tu') ? ['metas'] : []).some(badgeActivo); // en Tú nuevo, Metas vive en Dinero
   $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
-  const av = $('#tbAvatar'); if (av) { av.textContent = inicialUsuario(); const v2 = !verAnterior('tu'); av.style.background = v2 ? colorPersona(miUid()) : ''; av.style.color = v2 ? '#fff' : ''; }
+  const av = $('#tbAvatar'); if (av) { const v2 = !verAnterior('tu'), pf = perfilCfg(); if (v2) av.innerHTML = miAvatarDentro(pf); else av.textContent = inicialUsuario(); av.classList.toggle('dib', v2 && pf.avatar === 'dibujo'); av.style.background = v2 ? miColor(pf) : ''; av.style.color = v2 ? '#fff' : ''; }
   document.body.classList.toggle('en-tu', S.tab === 'tu');
   document.body.classList.toggle('en-movlista', S.tab === 'movimientos' && movVistaAct() === 'lista'); // allí ya hay una lupa que busca en la lista
   document.body.classList.toggle('en-tu2', S.tab === 'tu' && !verAnterior('tu'));
@@ -3353,7 +3450,7 @@ function articulosTopHtml(movs) {
 const CAT_ICONOS = [
   [/super|mercadona|carrefour|lidl|alcampo|dia\b|aldi|compra|aliment|fruta|eroski|hiper/, 'cart'],
   [/restaur|cena|comida|bar\b|bares|caf[eé]|pizza|burger|tapas|almuerzo|desayuno|glovo|just ?eat|uber ?eats/, 'fork'],
-  [/transp|gasolin|combust|coche|parking|aparcam|taxi|uber|cabify|metro|bus\b|tren|renfe|peaje|itv|taller/, 'car'],
+  [/transp|gasolin|combust|coche|parking|aparcam|taxi|uber|cabify|metro|bus\b|tren|renfe|peaje|itv|taller/, 'coche2'],
   [/ocio|cine|concierto|teatro|netflix|spotify|hbo|disney|suscrip|juego|fiesta|entrada/, 'film'],
   [/ropa|zara|primark|calzado|zapat|moda|h&m|mango/, 'shirt'],
   [/alquiler|hipoteca|casa|hogar|comunidad|mueble|ikea|limpieza/, 'home'],
@@ -3363,7 +3460,7 @@ const CAT_ICONOS = [
   [/viaje|vuelo|hotel|avi[oó]n|airbnb|vacacion/, 'plane'],
   [/educa|colegio|cole\b|libro|curso|academia|universidad|guarder/, 'book'],
 ];
-const TIPO_ICONO = { Ingreso: 'arrowUp', 'Inversión': 'chart', Ahorro: 'piggy', Deuda: 'card', Factura: 'calendar', Gasto: 'tag' };
+const TIPO_ICONO = { Ingreso: 'arrowUp', 'Inversión': 'trendUp', Ahorro: 'piggy2', Deuda: 'deuda', Factura: 'calendar', Gasto: 'tag' };
 function iconoCat(tipo, categoria, descripcion) {
   if (tipo === 'Ingreso' || tipo === 'Inversión' || tipo === 'Ahorro' || tipo === 'Deuda') return TIPO_ICONO[tipo];
   if (catStd(categoria)) return catStd(categoria).ic;
@@ -3561,9 +3658,9 @@ function crearHtmlV2() {
     '<div class="crear-grid crear-4' + (compartidosDisponible() ? '' : ' tres') + '">' + op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
       (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + '</div>' +
     (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
-    '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'chart', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'calendar', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura') +
-      op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') + '</div>' +
-    (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('swap') + ' Ver la versión anterior</button>' : '');
+    '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy2', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'trendUp', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'repeat', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura') +
+      op('crearIr', ['deuda'], 'deuda', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'fileIn', 'Importar', 'k-imp') + '</div>' +
+    (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '');
 }
 /* ============================================================
    DINERO (patrimonio, metas, inversiones, deudas y compartido) · AGENDA · TÚ  (Bloque 9)
@@ -3658,7 +3755,7 @@ function ticketsFilaExtra() {
   const cls = t.quedan === 0 ? ' agotado' : t.quedan <= 10 ? ' pocos' : '';
   return '<span class="menu-extra tk-uso' + cls + '">' + (t.quedan === 0 ? 'vuelven el ' + ticketsVuelven() : 'quedan ' + t.quedan + ' de ' + t.limite) + '</span>';
 }
-function avatarYoHtml(cls) { return '<div class="' + cls + '" style="background:' + colorPersona(miUid()) + '">' + inicialUsuario() + '</div>'; }
+function avatarYoHtml(cls) { const p = perfilCfg(); return '<div class="' + cls + (p.avatar === 'dibujo' ? ' dib' : '') + '" style="background:' + miColor(p) + '">' + miAvatarDentro(p) + '</div>'; }
 function renderTuV2() {
   const it = (accion, args, icono, txt, extra, claves, cls) => '<button class="menu-item' + (cls ? ' ' + cls : '') + '" data-k="' + escapeHtml(normDesc(txt + ' ' + (claves || ''))) + '" ' + act(accion, ...args) + '><span class="ic">' + ic(icono) + '</span>' + txt + (extra || '') + '<span class="chev">' + ic('chevR') + '</span></button>';
   const lista = (key, icono, claves) => it('openListEditor', [key], icono || LIST_META[key].icon, LIST_META[key].title, '', claves);
@@ -3666,32 +3763,32 @@ function renderTuV2() {
   const nGr = S.grupos ? S.grupos.filter((g) => g.tipo === 'grupo').length : null, nCu = cuentasCfg ? (cuentasCfg() || []).length : 0;
   const parche = NOVEDADES[0] ? String(NOVEDADES[0].titulo).split('·')[0].trim() : '';
   const nombre = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido());
-  const mas = [it('openMoneda', [], 'chart', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
-    lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'wallet', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
-    it('openLotes', [], 'list', 'Importaciones', '', 'deshacer importar'),
-    it('compararToggle', [], 'swap', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')];
+  const mas = [it('openMoneda', [], 'moneda', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
+    lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'arrowUp', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
+    it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar'),
+    it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')];
   return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t">' + escapeHtml(nombre) + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
       '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar</button></div>' +
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
     grupo('Tu dinero', [it('openCuentas', [], 'bank', 'Cuentas y saldos', (badge('cuentas') || badge('patrimonio')) + (nCu ? '<span class="menu-extra">' + nCu + (nCu === 1 ? ' cuenta' : ' cuentas') + '</span>' : ''), 'banco saldo patrimonio'),
       it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
-      it('openReglas', [], 'tag', 'Reglas de categorías', badge('reglas'), 'automatico'),
+      it('openReglas', [], 'autoTag', 'Reglas de categorías', badge('reglas'), 'automatico'),
       it('openRecurrentes', [], 'repeat', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recibos suscripciones'),
-      it('tuMesAbrir', [], 'calendar', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
+      it('tuMesAbrir', [], 'calRango', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
       it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir invitar whatsapp juntos')]) +
-    grupo('Traer y guardar', [it('impAbrir', [], 'download', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
+    grupo('Traer y guardar', [it('impAbrir', [], 'fileIn', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
       ticketsDisponible() ? it('ticketsInfo', [], 'receipt', 'Fotos de tickets', ticketsFilaExtra(), 'tickets lecturas foto camara recibo quedan') : '',
       it('openPapelera', [], 'trash', 'Papelera', badge('papelera') + '<span class="menu-extra">' + (papeleraItems().length ? papeleraItems().length + ' dentro' : 'vacía') + '</span>', 'borrados recuperar eliminados'),
-      it('exportBackup', [], 'download', 'Copia de seguridad', '<span class="menu-extra">Descargar</span>', 'exportar backup json')]) +
+      it('exportBackup', [], 'archive', 'Copia de seguridad', '<span class="menu-extra">Descargar</span>', 'exportar backup json')]) +
     grupo('La app', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', badge('aspecto') + '<span class="menu-extra">' + (PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1] + '</span>', 'aspecto color paleta tipografia cifras fuente vibracion sonido estilo'),
       '<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
       '<div class="segmented tema-seg">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
-      it('verNovedades', ['1'], 'sparkle', 'Qué hay de nuevo', '<span class="menu-extra">' + escapeHtml(parche) + '</span>', 'novedades parche'),
-      it('startOnboardingManually', [], 'flag', 'Volver a ver la bienvenida', '', 'empezar asistente bienvenida')]) +
+      it('verNovedades', ['1'], 'megafono', 'Qué hay de nuevo', '<span class="menu-extra">' + escapeHtml(parche) + '</span>', 'novedades parche'),
+      it('startOnboardingManually', [], 'replay', 'Volver a ver la bienvenida', '', 'empezar asistente bienvenida')]) +
     (contactoHay() ? '<div class="tu-grupo"><button type="button" class="tu2-escr tappable" data-k="escribenos contacto ayuda fallo idea sugerencia" ' + act('escrAbrir') + '><span class="ic">' + ic('send') + '</span><span><b>Escríbenos</b><span>¿Algo falla o tienes una idea? Lo lee quien hace la app.</span></span><span class="chev">' + ic('chevR') + '</span></button></div>' : '') +
     '<div class="tu-grupo tu-mas-btn"><div class="card menu"><button type="button" class="menu-item" aria-expanded="' + (S.tuMas ? 'true' : 'false') + '" ' + act('tuMasToggle') + '><span class="ic">' + ic('sliders') + '</span>Más ajustes<span class="menu-extra">' + mas.length + '</span><span class="chev">' + ic(S.tuMas ? 'chevD' : 'chevR') + '</span></button></div></div>' +
     '<div class="tu-grupo tu-mas"' + (S.tuMas ? '' : ' style="display:none"') + '><div class="card menu">' + mas.join('') + '</div></div>' +
-    grupo('Tu cuenta', [mfaDisponible() ? it('openSeguridad', [], 'shield', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
+    grupo('Tu cuenta', [mfaDisponible() ? it('openSeguridad', [], 'candado', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
       '<button class="menu-item tu2-salir" data-k="cerrar sesion salir" ' + act('logoutPreguntar') + '><span class="ic">' + ic('salir') + '</span>Cerrar sesión</button>']) +
     '<div class="empty-mini" id="tuNada" style="display:none;">No hay ningún ajuste con ese nombre.</div>' +
     '<p class="tu2-pie">PalomApp' + (parche ? ' · ' + escapeHtml(parche) : '') + '</p>';
@@ -3710,7 +3807,7 @@ function ticketsInfoHtml() {
         '<div class="rec-hint">Vuelven el ' + ticketsVuelven() + '.</div>') + '</div>' +
     '<div class="actions">' + (t.quedan === 0 ? '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button>' : '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('crearIr', 'ticket') + '>' + ic('camera') + ' Leer un ticket</button>') + '</div>';
 }
-const ESCR_TIPOS = [['falla', 'alert', 'Algo falla'], ['idea', 'sparkle', 'Una idea'], ['gusta', 'heart', 'Me gusta']];
+const ESCR_TIPOS = [['falla', 'alert', 'Algo falla'], ['idea', 'bulb', 'Una idea'], ['gusta', 'sonrisa', 'Me gusta']];
 function escrHtml() {
   const F = FORM || {};
   return '<div class="handle"></div><h2>Escríbenos</h2><p class="rec-hint">¿Algo falla, echas algo de menos o hay algo que te encanta? Cuéntanoslo: lo lee quien hace PalomApp.</p>' +
@@ -3761,7 +3858,7 @@ function renderInicioNuevo() {
 }
 // la cifra grande, con los céntimos más pequeños
 function cifraHtml(v) { const t = money(v), i = t.lastIndexOf(','); return i < 0 ? escapeHtml(t) : escapeHtml(t.slice(0, i)) + '<small>' + escapeHtml(t.slice(i)) + '</small>'; }
-function mesPillTxt(y, m) { const mc = mesCfg(); return mc.modo === 'cobro' ? 'desde el ' + fmtDateShort(rangoMes(y, m).desde).toLowerCase() : 'del 1 al ' + new Date(y, m, 0).getDate(); }
+function mesPillTxt(y, m) { const mc = mesCfg(); if (mc.modo !== 'cobro') return 'del 1 al ' + new Date(y, m, 0).getDate(); const r = rangoMes(y, m); return r.esperando ? 'esperando tu nómina' : 'desde el ' + fmtDateShort(r.desde).toLowerCase(); }
 /* Inicio responde a dos preguntas: «¿cómo voy este mes?» (la tarjeta) y «¿qué tengo que hacer estos días?» (la lista) */
 // mes que se mira en Inicio (por defecto, el actual)
 function inicioYM() { const a = mesActual(), p = S.inicioMes; if (p && /^m:\d{4}-\d{2}$/.test(p)) { const [y, m] = p.slice(2).split('-').map(Number); if (y * 12 + m <= a.y * 12 + a.m) return { y, m, actual: y === a.y && m === a.m }; } return { y: a.y, m: a.m, actual: true }; }
@@ -3864,8 +3961,8 @@ function compararOn() { return cfg().compararVersiones !== false; }
 function compararBotonHtml() {
   const k = seccionVersion(); if (!k || !VERSIONES[k] || VERSIONES[k].cerrada || !compararOn() || !allLoaded() || (!S.movimientos.length && !(S.compartidos || []).length)) return '';
   const vs = VERSIONES[k].variantes, i = versionIdx(k);
-  if (vs.length === 2) return '<button type="button" class="comparar-fab' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="' + (i ? 'Ver la versión nueva' : 'Ver la versión anterior') + '">' + ic('swap') + '<span>' + (i ? 'Ver nueva' : 'Antes') + '</span></button>';
-  return '<button type="button" class="comparar-fab multi' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="Cambiar de versión (' + vs[i][1] + ', ' + (i + 1) + ' de ' + vs.length + ')">' + ic('swap') + '<span>' + vs[i][1] + ' <i>' + (i + 1) + '/' + vs.length + '</i></span></button>';
+  if (vs.length === 2) return '<button type="button" class="comparar-fab' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="' + (i ? 'Ver la versión nueva' : 'Ver la versión anterior') + '">' + ic('comparar') + '<span>' + (i ? 'Ver nueva' : 'Antes') + '</span></button>';
+  return '<button type="button" class="comparar-fab multi' + (i ? ' ant' : '') + '" ' + act('compararCambiar', k) + ' aria-label="Cambiar de versión (' + vs[i][1] + ', ' + (i + 1) + ' de ' + vs.length + ')">' + ic('comparar') + '<span>' + vs[i][1] + ' <i>' + (i + 1) + '/' + vs.length + '</i></span></button>';
 }
 function pintarComparar() {
   let h = $('#compararHost'); if (!h) { h = document.createElement('div'); h.id = 'compararHost'; document.body.appendChild(h); }
@@ -3905,8 +4002,8 @@ function heroCifrasHtml(k, y, m) {
 // A2 · catálogo de círculos. Cada uno: { k, ic, tono, valor, l1, l2, aro, frase, a } o null si no hay datos
 const ASIVAS_TIPOS = [['auto', 'Automático', 'sparkle', 'Cambia solo según tu mes'], ['gastoMes', 'Gasto frente al mes pasado', 'arrowUp', 'Si gastas más o menos que el mes anterior'],
   ['sube', 'Lo que más sube', 'tag', 'La categoría que más crece'], ['presu', 'Presupuestos', 'checkCircle', 'Si vas dentro de tus presupuestos'], ['dia', 'Al día', 'wallet', 'Lo que puedes gastar cada día que queda'],
-  ['sinGastos', 'Días sin gastos', 'calendar', 'Los días que no has gastado nada'], ['juntos', 'Juntos', 'users', 'Lo que debes o te deben'], ['ahorro', 'Lo que apartas', 'piggy', 'Qué parte de lo que entra apartas'],
-  ['inv', 'Inversiones', 'chart', 'Cómo se han movido esta semana'], ['cat', 'Una categoría', 'tag', 'Lo que llevas en la que elijas'], ['meta', 'Una meta', 'flag', 'Cómo va la meta que elijas']];
+  ['sinGastos', 'Días sin gastos', 'estrella', 'Los días que no has gastado nada'], ['juntos', 'Juntos', 'users', 'Lo que debes o te deben'], ['ahorro', 'Lo que apartas', 'piggy2', 'Qué parte de lo que entra apartas'],
+  ['inv', 'Inversiones', 'trendUp', 'Cómo se han movido esta semana'], ['cat', 'Una categoría', 'tag', 'Lo que llevas en la que elijas'], ['meta', 'Una meta', 'target', 'Cómo va la meta que elijas']];
 const ASIVAS_CORTO = { gastoMes: 'Gasto', sube: 'Lo que sube', presu: 'Presupuestos', dia: 'Al día', sinGastos: 'Sin gastos', juntos: 'Juntos', ahorro: 'Apartas', inv: 'Inversiones', cat: 'Categoría', meta: 'Meta' };
 function asiVasCfg() { const v = cfg().asiVas; return Array.isArray(v) && v.length === 5 ? v.map((x) => String(x || 'auto')) : ['auto', 'auto', 'auto', 'auto', 'auto']; }
 function invCambioSemana() {
@@ -3954,7 +4051,7 @@ function insightsCatalogo(y, m, actual) {
   const r = rangoMes(y, m), hoy = todayISO(), conGasto = new Set(k.movs.filter((x) => x.tipo === 'Gasto').map((x) => (x.fecha || '').slice(0, 10)));
   let primero = '9999'; S.movimientos.forEach((x) => { if (x.fecha && x.fecha.slice(0, 10) < primero) primero = x.fecha.slice(0, 10); });
   let sin = 0, dias = 0; for (let f = r.desde > primero ? r.desde : primero; f <= r.hasta && f < hoy; f = addDaysISO(f, 1)) { dias++; if (!conGasto.has(f)) sin++; }
-  if (sin >= 2 && conGasto.size) out.sinGastos = { ic: 'calendar', tono: 'bueno', valor: String(sin), l1: 'días', l2: 'sin gastos', aro: dias ? sin / dias : 1,
+  if (sin >= 2 && conGasto.size) out.sinGastos = { ic: 'estrella', tono: 'bueno', valor: String(sin), l1: 'días', l2: 'sin gastos', aro: dias ? sin / dias : 1,
     frase: (actual ? 'Este mes llevas ' : 'En ' + MESES[m - 1].toLowerCase() + ' tuviste ') + sin + ' días sin gastos del día a día (sin contar los fijos).', a: act('irMovsCal', mk) };
   if (actual && k.disponible > 0) {
     const quedan = Math.max(1, Math.round((parseISO(r.hasta) - parseISO(hoy)) / 864e5) + 1), d = k.disponible / quedan;
@@ -3962,10 +4059,10 @@ function insightsCatalogo(y, m, actual) {
       frase: 'Con lo que te queda hoy (' + money(k.disponible) + ') y ' + quedan + (quedan === 1 ? ' día' : ' días') + ' por delante, salen ' + money(d) + ' al día. No cuenta los pagos fijos que aún no han llegado.', a: act('heroResumen') };
   }
   if (k.ingresos > 0 && k.ahorro + k.inversion > 0) { const p = Math.round((k.ahorro + k.inversion) / k.ingresos * 100);
-    out.ahorro = { ic: 'piggy', tono: 'bueno', valor: p + ' %', l1: 'Apartas', l2: 'de lo que entra', aro: Math.min(1, p / 100),
+    out.ahorro = { ic: 'piggy2', tono: 'bueno', valor: p + ' %', l1: 'Apartas', l2: 'de lo que entra', aro: Math.min(1, p / 100),
       frase: 'Este mes apartas o inviertes ' + money(k.ahorro + k.inversion) + ': el ' + p + ' % de lo que te ha entrado.', a: act('irMovs', '_ahorro', mk) }; }
   const iv = invCambioSemana();
-  if (iv) out.inv = { ic: 'chart', tono: iv.dif >= 0 ? 'bueno' : 'malo', valor: (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' %', l1: 'Inversiones', l2: '7 días', aro: Math.min(1, Math.abs(iv.pct) / 10),
+  if (iv) out.inv = { ic: 'trendUp', tono: iv.dif >= 0 ? 'bueno' : 'malo', valor: (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' %', l1: 'Inversiones', l2: '7 días', aro: Math.min(1, Math.abs(iv.pct) / 10),
     frase: 'Tus inversiones ' + (iv.dif >= 0 ? 'han subido ' : 'han bajado ') + money(Math.abs(iv.dif)) + ' esta semana: valen ' + money(iv.valor) + '. Meter dinero nuevo no cuenta.', a: act('irDinero', 'inversiones') };
   return out;
 }
@@ -3981,7 +4078,7 @@ function asiVasFijo(key, y, m, cat) {
     let r = null; try { r = metaPorKey(key.slice(5)); } catch (e) { r = null; }
     if (!r) return null;
     const pct = r.pct == null ? 0 : r.pct;
-    return { ic: 'flag', tono: pct >= 100 ? 'bueno' : '', valor: Math.round(pct) + ' %', l1: r.nombre, l2: 'llevas', aro: Math.min(1, pct / 100),
+    return { ic: 'target', tono: pct >= 100 ? 'bueno' : '', valor: Math.round(pct) + ' %', l1: r.nombre, l2: 'llevas', aro: Math.min(1, pct / 100),
       frase: 'En ' + r.nombre + ' llevas ' + money(r.valor) + (r.obj > 0 ? ' de ' + money(r.obj) + '.' : '.'), a: act('metaVer', r.key) };
   }
   return cat[key] || null;
@@ -4138,14 +4235,31 @@ function previstoHtml() {
     '<div class="actions"><button class="btn ghost block" ' + act('openRecurrentes') + '>Ver mis fijos</button><button class="btn accent block" ' + act('closeSheet') + '>Entendido</button></div>';
 }
 /* «Tu mes»: del 1 al 31, o desde el día que cobras */
+function tuMesNominaHtml() {
+  const F = FORM, cobs = recurrentes().filter((r) => r.kind === 'cobro' && r.regla && r.regla.t);
+  if (!cobs.length) return '<div class="tumes-nom"><div class="rec-hint" style="margin:0 0 8px;">Primero añade tu nómina como cobro fijo, con cuándo te suele llegar.</div><button class="btn ghost block" ' + act('openRecurrentes') + '>' + ic('plus') + ' Añadir cobro fijo</button></div>';
+  const guardada = mesCfg().nomina, perdida = guardada && !cobs.some((r) => normName(r.nombre) === normName(guardada));
+  const rc = cobs.find((r) => normName(r.nombre) === normName(F.nomina)) || cobs[0]; F.nomina = rc.nombre;
+  // vista previa con esta nómina, sin guardar
+  const antes = S.config, prueba = Object.assign({}, S.config || {}, { mesInicio: { modo: 'cobro', dia: 28, nomina: rc.nombre } }); let L = null;
+  S.config = prueba; _cortes = null; try { L = cortesNomina(); } finally { S.config = antes; _cortes = null; }
+  const hoy = todayISO(), i = L ? L.reduce((a, x, k) => (x.corte && x.corte <= hoy ? k : a), -1) : -1, act0 = i >= 0 ? L[i] : null, sig = L && i >= 0 ? L.slice(i + 1).find((x) => x.corte || x.iso) : null;
+  const nomMes = (k) => MESES[Number(k.slice(5, 7)) - 1];
+  const linea = (x, fut) => x ? '<div class="tumes-nom-f"><b>' + nomMes(x.nombre) + (fut ? ' empezará el ' : ' empezó el ') + fechaDiaCorta(x.corte || x.iso) + '</b>' + (fut ? '<span class="tumes-prev">Previsto</span>' : x.mov && x.ajustado ? '<span>Tu nómina llegó el ' + fechaDiaCorta(x.mov.fecha) + ', pero tan lejos de la anterior que cuenta el día previsto</span>' : x.mov ? '<span>Ese día llegó tu nómina (' + money(x.mov.importe) + ')</span>' : '<span>No llegó: cuenta el día previsto</span>') + '</div>' : '';
+  return '<div class="tumes-nom">' + (perdida ? '<div class="rec-hint tumes-aviso" role="status" style="margin:0 0 8px;">Ya no encuentro «' + escapeHtml(guardada) + '». Mientras tanto, tu mes empieza el día ' + mesCfg().dia + '. Elige tu nómina y toca «Listo».</div>' : '') + (cobs.length > 1 ? '<div class="chips">' + cobs.map((r) => '<button type="button" class="chip' + (r.nombre === rc.nombre ? ' active' : '') + '" aria-pressed="' + (r.nombre === rc.nombre) + '" ' + act('tuMesNomina', r.nombre) + '>' + escapeHtml(r.nombre) + '</button>').join('') + '</div>' : '') +
+    '<div class="tumes-nom-c">' + ic('repeat') + '<span><b>' + escapeHtml(rc.nombre) + '</b> · ' + escapeHtml(reglaTexto(rc.regla).charAt(0).toLowerCase() + reglaTexto(rc.regla).slice(1)) + '</span><button type="button" class="link" ' + act('recEditar', 'cobro', rc.idx) + '>Cambiar</button></div>' +
+    linea(act0, false) + linea(sig, true) +
+    '<div class="rec-hint" style="margin:8px 0 0;">La fecha siguiente es una previsión. Si tu nómina se retrasa, tu mes no cambia hasta que llegue (como mucho, 7 días). Si se adelanta, empieza ese mismo día.</div></div>';
+}
 function tuMesHtml() {
   const F = FORM, { y, m } = mesActual(), ej = (c) => { const r = rangoMes(y, m, c); return MESES[m - 1] + ': ' + (fmtDateShort(r.desde) + ' – ' + fmtDateShort(r.hasta)).toLowerCase(); };
-  const op = (k, t, d, extra) => '<button type="button" class="tumes-op' + (F.modo === k ? ' on' : '') + '" ' + act('tuMesModo', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + t + '</b><span>' + d + '</span></span></button>' + (F.modo === k && extra ? extra : '');
+  const op = (k, t, d, extra) => '<button type="button" class="tumes-op' + (F.modo === k ? ' on' : '') + '" role="radio" aria-checked="' + (F.modo === k) + '" ' + act('tuMesModo', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + t + '</b><span>' + d + '</span></span></button>' + (F.modo === k && extra ? extra : '');
   const dias = []; for (let d = 2; d <= 31; d++) dias.push(d);
   return '<div class="handle"></div><h2>Tu mes</h2>' +
     '<div class="rec-hint" style="margin:-8px 0 14px;">Elige cuándo empieza tu mes. Solo cambia cómo se agrupan tus números: no se mueve ni se borra nada.</div>' +
     op('natural', 'Del 1 al 31', 'El mes del calendario. ' + ej({ modo: 'natural', dia: 1 }) + '.') +
-    op('cobro', 'Desde el día que cobro', 'Tu mes va de nómina a nómina. ' + ej({ modo: 'cobro', dia: F.dia }) + '.',
+    op('nomina', 'Desde que llega mi nómina', 'Empieza el día que te llega de verdad, aunque se adelante o se retrase.', tuMesNominaHtml()) +
+    op('cobro', 'Desde un día fijo', 'Tu mes va de un día fijo al siguiente. ' + ej({ modo: 'cobro', dia: F.dia }) + '.',
       '<div class="field tumes-dia"><label>Cobro el día</label><select id="fTuMesDia" ' + onChange('tuMesDia') + '>' + dias.map((d) => '<option value="' + d + '"' + (d === F.dia ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' +
       '<div class="rec-hint" style="margin:-4px 0 10px;">Elige el día más temprano en que sueles cobrar. Si cae en fin de semana, tu mes empieza el viernes anterior; si el mes no tiene ese día, el último.</div>') +
     '<div class="actions"><button class="btn accent block" ' + act('tuMesGuardar') + '>Listo</button></div>';
@@ -4300,7 +4414,7 @@ function juntosObjHtml() {
     return '<button type="button" class="jv-obj tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' + formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 96) +
       '<span class="jv-obj-p tnum">' + Math.round(pct) + ' %</span><b class="tnum">' + (r.falta > 0 ? 'Faltan ' + m0(r.falta) : '¡Conseguida!') + '</b>' + (r.falta > 0 ? '<span class="jv-obj-e" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' : '') + '</button>'; };
   const deuda = (r) => { const pct = Math.max(0, Math.min(100, r.pct || 0)), g = grupoDe(r.o.grupoId);
-    return '<button type="button" class="jv-obj deu tappable" aria-label="' + escapeHtml(r.nombre + ': quedan ' + money(r.falta)) + '" ' + act('deudaCompVer', r.id) + '><span class="jv-obj-ic">' + icDeEmoji(r.o.emoji || emojiSugerido(r.nombre, '💳'), 'card') + '</span>' +
+    return '<button type="button" class="jv-obj deu tappable" aria-label="' + escapeHtml(r.nombre + ': quedan ' + money(r.falta)) + '" ' + act('deudaCompVer', r.id) + '><span class="jv-obj-ic">' + icDeEmoji(r.o.emoji || emojiSugerido(r.nombre, '💳'), 'deuda') + '</span>' +
       '<span class="jv-obj-n">' + escapeHtml(r.nombre) + '</span><span class="jv-obj-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="jv-obj-p tnum">' + Math.round(pct) + ' % pagado</span><b class="tnum">' + (r.falta > 0 ? 'Quedan ' + m0(r.falta) : 'Saldada') + '</b>' +
       '<span class="jv-obj-e">' + escapeHtml(g ? nombreDestino(g) : '') + '</span></button>'; };
   return '<div class="section-title">Metas y deudas juntos' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('plus') + ' Nueva</button>' : '') + '</div>' +
@@ -4450,7 +4564,7 @@ function grupoHtmlV2(g) {
   else h += mias.map((d) => { const debo = esMio(g.id, d.de), otro = debo ? d.a : d.de;
     return '<div class="jv-tuyo ' + (debo ? 'de' : 'te') + '"><span>' + (debo ? 'Debes <b class="tnum">' + money(d.importe) + '</b> a ' + escapeHtml(nombreDe(g.id, otro)) : escapeHtml(nombreDe(g.id, otro)) + ' te debe <b class="tnum">' + money(d.importe) + '</b>') + '</span>' +
       (debo ? '<button type="button" class="jv-btn saldar" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Saldar</button>' : '<button type="button" class="jv-btn pedir" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Me ha pagado</button>') + '</div>'; }).join('');
-  if (cs.length) h += '<button type="button" class="link jv-origen" ' + act('origenVer', g.id) + '>' + ic('list') + ' ¿De dónde sale?</button>';
+  if (cs.length) h += '<button type="button" class="link jv-origen" ' + act('origenVer', g.id) + '>' + ic('info') + ' ¿De dónde sale?</button>';
   h += '<div class="segmented jv-tabs">' + [['gastos', 'Gastos'], ['saldos', 'Saldos']].concat(agendaDisponible() ? [['planes', 'Planes']] : []).map(([k, l]) => '<button class="' + (tab === k ? 'active' : '') + '" ' + act('grupoTab', k) + '>' + l + '</button>').join('') + '</div>';
   if (tab === 'gastos') {
     const gastos = cs.filter((c) => c.tipo !== 'Liquidación'), tot = gastos.reduce((a, c) => a + num(c.importe), 0), mia = gastos.reduce((a, c) => a + miParte(c), 0);
@@ -4817,11 +4931,11 @@ const EMOJI_PISTAS = [[/viaj|japon|vacacion|escapad|playa/, '✈️'], [/casa|pi
   [/tarjeta|credito/, '💳'], [/prestam|amigo|familia/, '🤝'], [/mascota|perro|gato/, '🐾'], [/bici|deporte|gimnas/, '🚲']];
 function emojiSugerido(nombre, def) { const n = normName(nombre || ''); const x = EMOJI_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : (def || '🎯'); }
 // Los emojis se siguen guardando (no se tocan los datos), pero en pantalla se dibuja un icono de la app (22/10)
-const EMOJI_IC = { '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'car', '💍': 'heart', '🍼': 'heart', '🎓': 'book', '🎁': 'gift', '📱': 'bolt', '💳': 'card', '🤝': 'users', '🐾': 'paw', '🚲': 'car', '🎯': 'flag' };
+const EMOJI_IC = { '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'coche2', '💍': 'heart', '🍼': 'heart', '🎓': 'cap', '🎁': 'gift', '📱': 'phone', '💳': 'card', '🤝': 'manoMoneda', '🐾': 'paw', '🚲': 'car', '🎯': 'target' };
 const EMOJI_NOMBRE = { '✈️': 'Viaje', '🏠': 'Casa', '🛟': 'Colchón', '🚗': 'Coche', '💍': 'Boda', '🍼': 'Bebé', '🎓': 'Estudios', '🎁': 'Regalo', '📱': 'Aparatos', '💳': 'Tarjeta', '🤝': 'Préstamo', '🐾': 'Mascota', '🚲': 'Deporte', '🎯': 'Meta' };
 function icDeEmoji(e, def) { return ic(EMOJI_IC[e] || def || 'flag'); }
-function metaIcono(r) { return icDeEmoji(emojiMeta(r), 'flag'); }
-function deudaIcono(d) { return icDeEmoji(d.emoji || emojiSugerido(d.nombre, '💳'), 'card'); }
+function metaIcono(r) { return icDeEmoji(emojiMeta(r), 'target'); }
+function deudaIcono(d) { return icDeEmoji(d.emoji || emojiSugerido(d.nombre, '💳'), 'deuda'); }
 function emojiMeta(r) { const m = !r.compartida ? metasCfg().find((x) => x.id === r.id) : null; return (m && m.emoji) || emojiSugerido(r.nombre); }
 const DM_ESTADO_COLOR = { bien: 'var(--income)', justo: 'var(--warn, var(--accent))', gris: 'var(--text-muted)', mal: 'var(--expense)' };
 // estado de una meta en una frase corta y sobria (el rojo solo si la fecha ya pasó)
@@ -4858,7 +4972,7 @@ function renderDineroV2() {
   const deudas = (cfg().deudas || []).filter((d) => d && d.nombre), dComp = objCompartidos('deuda');
   const nada = !p.nCuentas && !hayInv && !deudas.length && !dComp.length && !ms.activas.length && !ms.hechas.length;
   if (nada) return '<div class="card dm-empezar"><div class="dm-emp-t">Empieza por aquí</div>' +
-    [['bank', 'Pon el saldo de tu banco', 'Así sabrás lo que tienes de verdad', 'openCuentas'], ['flag', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva'], ['card', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva']]
+    [['bank', 'Pon el saldo de tu banco', 'Así sabrás lo que tienes de verdad', 'openCuentas'], ['target', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva'], ['deuda', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva']]
       .map(([i, t, d, a]) => '<button type="button" class="dm-emp tappable" ' + act(a) + '><span class="dm-ic">' + ic(i) + '</span><span class="dm-emp-x"><b>' + t + '</b><span>' + d + '</span></span>' + ic('chevR') + '</button>').join('') + '</div>';
   if (dineroV3()) return dinero3Html(p, ms, hayInv, deudas, dComp);
   return lqtHtml(p) + dmCuentasHtml() + dmMetasHtml(ms) + (hayInv ? dmInversionesHtml() : '') + dmDeudasHtml(deudas, dComp);
@@ -4883,17 +4997,17 @@ function dinero3Html(p, ms, hayInv, deudas, dComp) {
   const ficha = (k, icono, nom, val, cls) => '<button type="button" role="tab" id="dm3t-' + k + '" aria-controls="dmCuerpo" aria-selected="' + (t === k) + '" class="dm3-tab' + (t === k ? ' on' : '') + (cls ? ' ' + cls : '') + '" ' + act('dm3Tab', k) + '>' + ic(icono) + '<span>' + nom + '</span><b class="tnum">' + val + '</b></button>';
   const tabs = '<div class="dm3-tabs" role="tablist" aria-label="Tu dinero">' +
     ficha('cuentas', 'bank', 'Cuentas', p.nCuentas ? m0(p.banco) : 'Añadir', p.nCuentas ? '' : 'vacia') +
-    ficha('metas', 'flag', 'Metas', nMetas ? (nMetas === 1 ? '1 meta' : nMetas + ' metas') : 'Añadir', nMetas ? '' : 'vacia') +
-    ficha('inversiones', 'chart', 'Inversiones', hayInv ? m0(p.inv) : 'Añadir', hayInv ? 'inv' : 'vacia') +
-    ficha('deudas', 'card', 'Deudas', nDeu ? (p.deudas ? '−' + m0(p.deudas) : m0(0)) : 'Añadir', nDeu ? 'deu' : 'vacia') + '</div>';
+    ficha('metas', 'target', 'Metas', nMetas ? (nMetas === 1 ? '1 meta' : nMetas + ' metas') : 'Añadir', nMetas ? '' : 'vacia') +
+    ficha('inversiones', 'trendUp', 'Inversiones', hayInv ? m0(p.inv) : 'Añadir', hayInv ? 'inv' : 'vacia') +
+    ficha('deudas', 'deuda', 'Deudas', nDeu ? (p.deudas ? '−' + m0(p.deudas) : m0(0)) : 'Añadir', nDeu ? 'deu' : 'vacia') + '</div>';
   let cuerpo;
   if (t === 'cuentas') cuerpo = dm3CuentasHtml(p);
   else if (t === 'metas') cuerpo = dmMetasHtml(ms);
-  else if (t === 'inversiones') cuerpo = hayInv ? renderInversionesTodo(true) : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('chart') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
+  else if (t === 'inversiones') cuerpo = hayInv ? renderInversionesTodo(true) : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('trendUp') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
   else cuerpo = dmDeudasHtml(deudas, dComp);
   return lqt + tabs + '<div class="dm3-marco"><div id="dmCuerpo" class="dm3-cuerpo" role="tabpanel" aria-labelledby="dm3t-' + t + '">' + cuerpo + '</div></div>';
 }
-const ICONO_CUENTA = { corriente: 'bank', ahorro: 'piggy', efectivo: 'wallet', broker: 'chart', otra: 'wallet' };
+const ICONO_CUENTA = { corriente: 'bank', ahorro: 'piggy2', efectivo: 'wallet', broker: 'trendUp', otra: 'wallet' };
 function dm3CuentasHtml(p) {
   const cs = cuentasCfg(), pc = cuentaPrincipal();
   if (!cs.length) return '<button type="button" class="card dm-emp tappable" ' + act('openCuentas') + '><span class="dm-ic">' + ic('bank') + '</span><span class="dm-emp-x"><b>Pon el saldo de tu banco</b><span>Así sabrás lo que tienes de verdad</span></span>' + ic('chevR') + '</button>';
@@ -4940,7 +5054,7 @@ function dmCuentasHtml() {
 function dmMetasHtml(ms) {
   const v = metasVariante(), todas = S._dmMetasTodas, lista = todas ? ms.activas : ms.activas.slice(0, 4);
   let h = '<div class="section-title" id="dm-metas">Metas' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('users') + ' Compartida</button>' : '') + '<button class="link" ' + act('metaNueva') + '>' + ic('plus') + ' Nueva</button></div>';
-  if (!ms.activas.length && !ms.hechas.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('metaNueva') + '><span class="dm-ic">' + ic('flag') + '</span><span class="dm-emp-x"><b>Crea tu primera meta</b><span>Un viaje, la casa, un colchón… y ve cómo se llena</span></span>' + ic('chevR') + '</button>';
+  if (!ms.activas.length && !ms.hechas.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('metaNueva') + '><span class="dm-ic">' + ic('target') + '</span><span class="dm-emp-x"><b>Crea tu primera meta</b><span>Un viaje, la casa, un colchón… y ve cómo se llena</span></span>' + ic('chevR') + '</button>';
   if (lista.length && v === 'formas') h += '<div class="dm-formas">' + lista.map(metaFormaHtml).join('') + '</div>';
   else if (lista.length) h += v === 'tarros' ? '<div class="card dm-tarros' + (lista.length === 1 ? ' uno' : '') + '">' + lista.map(tarroHtml).join('') + '</div>'
     : '<div class="card dm-metas dm-v-' + v + '">' + lista.map(v === 'anillos' ? metaAnilloHtml : metaCaminoHtml).join('') + '</div>';
@@ -5161,7 +5275,7 @@ function invResumen() {
   return { grupos, vals, todas, metido, valor, gan: valor - metido, pct: metido > 0 ? (valor - metido) / metido * 100 : null };
 }
 const signoN = (n) => (n >= 0 ? '+' : '−');
-function invIcono(t) { const k = normName(t || ''); return /cripto|bitcoin/.test(k) ? 'bolt' : /accion/.test(k) ? 'chart' : /fondo|etf|indice/.test(k) ? 'arrowUp' : 'piggy'; }
+function invIcono(t) { const k = normName(t || ''); return /cripto|bitcoin/.test(k) ? 'coin' : /accion/.test(k) ? 'velas' : /fondo|etf|indice/.test(k) ? 'pie' : 'trendUp'; }
 function invFilaV2(g, vv, completo) {
   return '<button type="button" class="dm-inv-f tappable" ' + act('verActivo', g.nombre) + '><span class="dm-ic inv">' + ic(invIcono(g.tipoActivo)) + '</span>' +
     '<span class="dm-emp-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + (!vv ? 'Sin precio todavía' : completo ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 4 }) + ' part. · aportaste ' + m0(g.total) : 'Aportaste ' + m0(g.total)) + '</span></span>' +
@@ -5281,7 +5395,7 @@ function dmDeudasHtml(ds, comp) {
   const st = ds.map((d) => Object.assign(deudaStats(d), { d })), activas = st.filter((r) => !(r.total > 0 && r.pend <= 0.005)), saldadas = st.filter((r) => r.total > 0 && r.pend <= 0.005);
   const cs = comp, queda = st.reduce((a, r) => a + r.pend, 0) + cs.reduce((a, r) => a + r.falta * miProporcion(r.o), 0);
   let h = '<div class="section-title" id="dm-deudas">Deudas' + (queda > 0.005 && st.length + cs.length > 1 ? '<span class="dm-cuenta-n tnum">quedan ' + m0(queda) + '</span>' : '') + '<button class="link" ' + act('deudaNueva') + '>' + ic('plus') + ' Nueva</button></div>';
-  if (!st.length && !cs.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('deudaNueva') + '><span class="dm-ic">' + ic('card') + '</span><span class="dm-emp-x"><b>Apunta una deuda</b><span>Un préstamo, el coche, la tarjeta… y ve cuándo acabas</span></span>' + ic('chevR') + '</button>';
+  if (!st.length && !cs.length) return h + '<button type="button" class="card dm-emp tappable" ' + act('deudaNueva') + '><span class="dm-ic">' + ic('deuda') + '</span><span class="dm-emp-x"><b>Apunta una deuda</b><span>Un préstamo, el coche, la tarjeta… y ve cuándo acabas</span></span>' + ic('chevR') + '</button>';
   const fila = (r, comp0) => {
     const e = comp0 ? null : deudaEstado2(r), pct = comp0 ? Math.max(0, Math.min(100, r.pct || 0)) : r.total > 0 ? Math.max(0, Math.min(100, r.pagado / r.total * 100)) : 0, g = comp0 ? grupoDe(r.o.grupoId) : null;
     return '<button type="button" class="dm-deuda tappable" ' + (comp0 ? act('deudaCompVer', r.id) : act('deudaVer', r.nombre)) + '><span class="dm-ic deu">' + (comp0 ? ic('users') : deudaIcono(r.d)) + '</span>' +
@@ -5453,10 +5567,10 @@ function crearHtml() {
     op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
 }
-function crearElegido() { return verAnterior('crear') ? crearHtml() + (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('swap') + ' Ver la versión nueva</button>' : '') : crearHtmlV2(); }
+function crearElegido() { return verAnterior('crear') ? crearHtml() + (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('comparar') + ' Ver la versión nueva</button>' : '') : crearHtmlV2(); }
 function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearElegido()); else openSheet(crearElegido()); }
 /* ---- buscador global: movimientos, tareas, categorías y ajustes ---- */
-const ATAJO_IC = { 'Foto de ticket': 'camera', 'Nuevo gasto': 'plus', 'Nueva tarea': 'checkCircle', 'Grupos y personas': 'users', Metas: 'flag', Inversiones: 'chart', Deudas: 'card', 'Lo que tienes': 'wallet' };
+const ATAJO_IC = { 'Foto de ticket': 'camera', 'Nuevo gasto': 'plus', 'Nueva tarea': 'checkCircle', 'Grupos y personas': 'users', Metas: 'target', Inversiones: 'trendUp', Deudas: 'deuda', 'Lo que tienes': 'wallet' };
 const BUSCAR_ACCIONES = [
   ['Foto de ticket', 'camara recibo leer', 'ticketFoto', []], ['Nuevo gasto', 'apuntar añadir', 'crearIr', ['gasto']], ['Nueva tarea', 'apuntar', 'crearIr', ['tarea']],
   ['Grupos y personas', 'compartir paloma invitar saldar deudas', 'openGrupos', []], ['Metas', 'ahorro objetivos hucha', 'irDinero', ['metas']],
@@ -7542,7 +7656,7 @@ function impHtml() {
   if (I.paso === 'archivo') {
     return h2('Importar movimientos') +
       '<div style="font-size:13.5px;color:var(--text-muted);line-height:1.5;margin:-6px 0 12px;">Sirve para el extracto de tu banco y para tu Excel de gastos: <b>.xlsx, .xls o .csv</b>. Antes de guardar verás una vista previa, y si importas dos veces el mismo archivo no se duplica nada.</div>' +
-      '<label class="imp-drop"><input type="file" id="impFile" accept=".xlsx,.xls,.csv,.txt" ' + onChange('impArchivo') + '><span>' + ic('download') + ' Elegir archivo</span></label>' +
+      '<label class="imp-drop"><input type="file" id="impFile" accept=".xlsx,.xls,.csv,.txt" ' + onChange('impArchivo') + '><span>' + ic('fileIn') + ' Elegir archivo</span></label>' +
       (I.error ? '<div class="alert" style="margin-top:12px;">' + ic('alert') + '<div>' + escapeHtml(I.error) + '</div></div>' : '') +
       (I.cargando ? '<div style="margin-top:12px;color:var(--text-faint);font-size:13.5px;">Leyendo el archivo…</div>' : '') +
       '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button></div>';
@@ -7809,7 +7923,7 @@ function autoCategoriaDesc() {
    COBROS Y PAGOS RECURRENTES (Bloque 4): reglas de fechas, avisos y aprendizaje
    ============================================================ */
 const DOW_LARGO = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']; // 0 = lunes
-const ORDINAL = { '1': 'primer', '2': 'segundo', '3': 'tercer', '4': 'cuarto', '-1': 'último' };
+const ORDINAL = { '1': 'primer', '2': 'segundo', '3': 'tercer', '4': 'cuarto', '5': 'quinto', '-1': 'último', '-2': 'penúltimo', '-3': 'antepenúltimo' };
 const MESES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 function uD(iso) { const p = String(iso).split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); }
 function uISO(d) { return d.toISOString().slice(0, 10); }
@@ -7818,25 +7932,50 @@ function dowL(d) { return (d.getUTCDay() + 6) % 7; } // 0 lunes … 6 domingo
 function esFinde(d) { return dowL(d) >= 5; }
 function ymdU(y, m, d) { return new Date(Date.UTC(y, m, d)); } // m empieza en 0
 function diasMesU(y, m) { return new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); }
+/* Festivos (23/10, docs/15 3.3): opción apagada al principio. FESTIVOS[año][zona] = 'MM-DD' de esa comunidad (nacionales incluidos), sacados del BOE */
+const FESTIVOS = { // fiestas laborales del BOE: 2026 (BOE-A-2025-21667) y 2027 (BOE-A-2026-21254), contrastadas con cada boletín autonómico. Navarra suma el 3 de diciembre (local en toda Navarra). Sin las fiestas de cada isla canaria ni las locales
+  2026: { AN: ['01-01', '01-06', '02-28', '04-02', '04-03', '05-01', '08-15', '10-12', '11-02', '12-07', '12-08', '12-25'], AR: ['01-01', '01-06', '04-02', '04-03', '04-23', '05-01', '08-15', '10-12', '11-02', '12-07', '12-08', '12-25'], AS: ['01-01', '01-06', '04-02', '04-03', '05-01', '08-15', '09-08', '10-12', '11-02', '12-07', '12-08', '12-25'], IB: ['01-01', '01-06', '03-02', '04-02', '04-03', '04-06', '05-01', '08-15', '10-12', '12-08', '12-25', '12-26'], CN: ['01-01', '01-06', '04-02', '04-03', '05-01', '05-30', '08-15', '10-12', '11-02', '12-08', '12-25'], CB: ['01-01', '01-06', '04-02', '04-03', '05-01', '07-28', '08-15', '09-15', '10-12', '12-07', '12-08', '12-25'], CL: ['01-01', '01-06', '04-02', '04-03', '04-23', '05-01', '08-15', '10-12', '11-02', '12-07', '12-08', '12-25'], CM: ['01-01', '01-06', '04-02', '04-03', '04-06', '05-01', '06-04', '08-15', '10-12', '11-02', '12-08', '12-25'], CT: ['01-01', '01-06', '04-03', '04-06', '05-01', '06-24', '08-15', '09-11', '10-12', '12-08', '12-25', '12-26'], VC: ['01-01', '01-06', '03-19', '04-03', '04-06', '05-01', '06-24', '08-15', '10-09', '10-12', '12-08', '12-25'], EX: ['01-01', '01-06', '04-02', '04-03', '05-01', '08-15', '09-08', '10-12', '11-02', '12-07', '12-08', '12-25'], GA: ['01-01', '01-06', '03-19', '04-02', '04-03', '05-01', '06-24', '07-25', '08-15', '10-12', '12-08', '12-25'], MD: ['01-01', '01-06', '04-02', '04-03', '05-01', '05-02', '08-15', '10-12', '11-02', '12-07', '12-08', '12-25'], MC: ['01-01', '01-06', '03-19', '04-02', '04-03', '05-01', '06-09', '08-15', '10-12', '12-07', '12-08', '12-25'], NC: ['01-01', '01-06', '03-19', '04-02', '04-03', '04-06', '05-01', '08-15', '10-12', '11-02', '12-03', '12-08', '12-25'], PV: ['01-01', '01-06', '03-19', '04-02', '04-03', '04-06', '05-01', '07-25', '08-15', '10-12', '12-08', '12-25'], RI: ['01-01', '01-06', '04-02', '04-03', '04-06', '05-01', '06-09', '08-15', '10-12', '12-07', '12-08', '12-25'], CE: ['01-01', '01-06', '04-02', '04-03', '05-01', '05-27', '08-05', '08-15', '09-02', '10-12', '12-08', '12-25'], ML: ['01-01', '01-06', '03-20', '04-02', '04-03', '05-01', '05-27', '08-15', '10-12', '12-07', '12-08', '12-25'] },
+  2027: { AN: ['01-01', '01-06', '03-01', '03-25', '03-26', '05-01', '08-16', '10-12', '11-01', '12-06', '12-08', '12-25'], AR: ['01-01', '01-06', '03-25', '03-26', '04-23', '05-01', '08-16', '10-12', '11-01', '12-06', '12-08', '12-25'], AS: ['01-01', '01-06', '03-25', '03-26', '05-01', '08-16', '09-08', '10-12', '11-01', '12-06', '12-08', '12-25'], IB: ['01-01', '01-06', '03-01', '03-25', '03-26', '03-29', '05-01', '10-12', '11-01', '12-06', '12-08', '12-25'], CN: ['01-01', '01-06', '03-25', '03-26', '05-01', '08-16', '10-12', '11-01', '12-06', '12-08', '12-25'], CB: ['01-01', '01-06', '03-25', '03-26', '05-01', '07-28', '09-15', '10-12', '11-01', '12-06', '12-08', '12-25'], CL: ['01-01', '01-06', '03-25', '03-26', '04-23', '05-01', '08-16', '10-12', '11-01', '12-06', '12-08', '12-25'], CM: ['01-01', '01-06', '03-25', '03-26', '05-01', '05-27', '05-31', '10-12', '11-01', '12-06', '12-08', '12-25'], CT: ['01-01', '01-06', '03-26', '03-29', '05-01', '06-24', '09-11', '10-12', '11-01', '12-06', '12-08', '12-25'], VC: ['01-01', '01-06', '03-19', '03-26', '03-29', '05-01', '10-09', '10-12', '11-01', '12-06', '12-08', '12-25'], EX: ['01-01', '01-06', '03-25', '03-26', '05-01', '09-08', '10-11', '10-12', '11-01', '12-06', '12-08', '12-25'], GA: ['01-01', '01-06', '03-19', '03-25', '03-26', '05-01', '05-17', '10-12', '11-01', '12-06', '12-08', '12-25'], MD: ['01-01', '01-06', '03-19', '03-25', '03-26', '05-01', '08-16', '10-12', '11-01', '12-06', '12-08', '12-25'], MC: ['01-01', '01-06', '03-19', '03-25', '03-26', '05-01', '06-09', '10-12', '11-01', '12-06', '12-08', '12-25'], NC: ['01-01', '01-06', '03-19', '03-25', '03-26', '03-29', '05-01', '10-12', '11-01', '12-03', '12-06', '12-08', '12-25'], PV: ['01-01', '01-06', '03-25', '03-26', '03-29', '05-01', '10-07', '10-12', '11-01', '12-06', '12-08', '12-25'], RI: ['01-01', '01-06', '03-25', '03-26', '03-29', '05-01', '06-09', '10-12', '11-01', '12-06', '12-08', '12-25'], CE: ['01-01', '01-06', '03-25', '03-26', '05-01', '05-17', '08-05', '10-12', '11-01', '12-06', '12-08', '12-25'], ML: ['01-01', '01-06', '03-10', '03-25', '03-26', '05-01', '05-17', '10-12', '11-01', '12-06', '12-08', '12-25'] }
+};
+const ZONAS_FESTIVOS = [['AN', 'Andalucía'], ['AR', 'Aragón'], ['AS', 'Asturias'], ['IB', 'Illes Balears'], ['CN', 'Canarias'], ['CB', 'Cantabria'], ['CL', 'Castilla y León'], ['CM', 'Castilla-La Mancha'], ['CT', 'Cataluña'],
+  ['VC', 'Comunitat Valenciana'], ['EX', 'Extremadura'], ['GA', 'Galicia'], ['MD', 'Comunidad de Madrid'], ['MC', 'Región de Murcia'], ['NC', 'Navarra'], ['PV', 'País Vasco'], ['RI', 'La Rioja'], ['CE', 'Ceuta'], ['ML', 'Melilla']];
+function festivosCfg() { const f = cfg().festivos || {}; return { on: !!f.on && ZONAS_FESTIVOS.some((z) => z[0] === f.zona), zona: f.zona || '', locales: f.locales || {} }; }
+const _festMemo = {};
+function festivosAnio(y) {
+  const f = festivosCfg(); if (!f.on) return null;
+  const k = y + '|' + f.zona + '|' + JSON.stringify(f.locales[y] || []);
+  if (!_festMemo[k]) { const set = new Set(); ((FESTIVOS[y] || {})[f.zona] || []).forEach((md) => set.add(y + '-' + md)); (f.locales[y] || []).forEach((iso) => { if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) set.add(iso); }); _festMemo[k] = set; }
+  return _festMemo[k];
+}
+function esFestivo(d) { const set = festivosAnio(d.getUTCFullYear()); return !!(set && set.has(uISO(d))); }
+function noHabil(d) { return esFinde(d) || esFestivo(d); }
 function ajustarFinde(d, modo) {
-  if (!modo || !esFinde(d)) return d;
+  if (!modo || !noHabil(d)) return d;
   const r = new Date(d.getTime());
-  while (esFinde(r)) r.setUTCDate(r.getUTCDate() + (modo === 'antes' ? -1 : 1));
+  for (let i = 0; i < 15 && noHabil(r); i++) r.setUTCDate(r.getUTCDate() + (modo === 'antes' ? -1 : 1));
   return r;
+}
+// el n.º día hábil del mes, desde el principio (n > 0) o desde el final (fin)
+function habilN(y, m, n, fin) {
+  const dim = diasMesU(y, m), d = ymdU(y, m, fin ? dim : 1); let k = 0;
+  for (let i = 0; i < 31; i++) { if (d.getUTCMonth() !== m) return null; if (!noHabil(d)) { k++; if (k === n) return d; } d.setUTCDate(d.getUTCDate() + (fin ? -1 : 1)); }
+  return null;
 }
 // Fechas de una regla mensual dentro de un mes (y, m con enero = 0)
 function fechasMesRegla(r, y, m) {
   const dim = diasMesU(y, m);
   if (r.t === 'dia') return [ajustarFinde(ymdU(y, m, Math.min(Math.max(1, Number(r.dia) || 1), dim)), r.ajuste)];
-  if (r.t === 'ultHabil') { const d = ymdU(y, m, dim); while (esFinde(d)) d.setUTCDate(d.getUTCDate() - 1); return [d]; }
-  if (r.t === 'priHabil') { const d = ymdU(y, m, 1); while (esFinde(d)) d.setUTCDate(d.getUTCDate() + 1); return [d]; }
+  if (r.t === 'ultHabil') { const d = habilN(y, m, 1, true); return d ? [d] : []; }
+  if (r.t === 'priHabil') { const d = habilN(y, m, 1, false); return d ? [d] : []; }
+  if (r.t === 'habil' || r.t === 'habilFin') { const d = habilN(y, m, Math.max(1, Math.min(10, Number(r.n) || 1)), r.t === 'habilFin'); return d ? [d] : []; }
+  if (r.t === 'diasMes') return [...new Set((r.dias || []).map(Number).filter((x) => x >= 1 && x <= 31).map((x) => uISO(ajustarFinde(ymdU(y, m, Math.min(x, dim)), r.ajuste))))].map(uD);
   if (r.t === 'nesimo') {
     const dow = Number(r.dow) || 0, n = Number(r.n) || 1;
     if (n > 0) {
       const d = ymdU(y, m, 1); while (dowL(d) !== dow) d.setUTCDate(d.getUTCDate() + 1);
       d.setUTCDate(d.getUTCDate() + 7 * (n - 1)); return d.getUTCMonth() === m ? [d] : [];
     }
-    const d = ymdU(y, m, dim); while (dowL(d) !== dow) d.setUTCDate(d.getUTCDate() - 1); return [d];
+    const d = ymdU(y, m, dim); while (dowL(d) !== dow) d.setUTCDate(d.getUTCDate() - 1); d.setUTCDate(d.getUTCDate() + 7 * (n + 1)); return d.getUTCMonth() === m ? [d] : [];
   }
   if (r.t === 'quincenal') return [ajustarFinde(ymdU(y, m, 15), r.ajuste), ajustarFinde(ymdU(y, m, dim), r.ajuste)];
   return [];
@@ -7857,9 +7996,9 @@ function ocurrencias(r, desde, hasta) {
     }
     return out;
   }
-  if (r.t === 'semanas') {
+  if (r.t === 'semanas' || r.t === 'dias') {
     if (!r.ancla) return [];
-    const paso = Math.max(1, Math.min(52, Number(r.cada) || 1)) * 7 * 864e5;
+    const paso = (r.t === 'dias' ? Math.max(1, Math.min(365, Number(r.cada) || 1)) : Math.max(1, Math.min(52, Number(r.cada) || 1)) * 7) * 864e5;
     const a = uD(r.ancla).getTime();
     let k = Math.ceil((uD(desde).getTime() - a) / paso);
     for (let i = 0; i < 1000; i++, k++) { const iso = uISO(new Date(a + k * paso)); if (iso > hasta) break; if (iso >= desde) out.push(iso); }
@@ -7876,8 +8015,13 @@ function ocurrencias(r, desde, hasta) {
 }
 function reglaTexto(r) {
   if (!r || !r.t) return 'Sin fecha';
-  const aj = r.ajuste === 'antes' ? ' (si cae en finde, el viernes antes)' : r.ajuste === 'despues' ? ' (si cae en finde, el lunes después)' : '';
-  if (r.t === 'dia') return 'El día ' + r.dia + ' de cada mes' + aj;
+  const fo = festivosCfg().on;
+  const aj = r.ajuste === 'antes' ? (fo ? ' (si cae en finde o festivo, el día hábil antes)' : ' (si cae en finde, el viernes antes)') : r.ajuste === 'despues' ? (fo ? ' (si cae en finde o festivo, el día hábil después)' : ' (si cae en finde, el lunes después)') : '';
+  if (r.t === 'dia') return Number(r.dia) >= 31 ? 'El último día de cada mes' + aj : 'El día ' + r.dia + ' de cada mes' + aj;
+  if (r.t === 'habil') return 'El ' + (ORDINAL[String(r.n)] || r.n + '.º') + ' día hábil del mes';
+  if (r.t === 'habilFin') return Number(r.n) === 1 ? 'Último día hábil del mes' : 'El ' + (ORDINAL[String(-Number(r.n))] || r.n + '.º por el final') + ' día hábil del mes';
+  if (r.t === 'diasMes') { const ds = [...new Set((r.dias || []).map(Number))].sort((a, b) => a - b); if (ds.length && ds[ds.length - 1] >= 31) return (ds.length > 1 ? 'El ' + ds.slice(0, -1).join(', el ') + ' y el último día' : 'El último día') + ' de cada mes' + aj; return 'Los días ' + ds.join(' y ') + ' de cada mes' + aj; }
+  if (r.t === 'dias') return 'Cada ' + (Number(r.cada) || 1) + (Number(r.cada) === 1 ? ' día' : ' días');
   if (r.t === 'ultHabil') return 'Último día hábil del mes';
   if (r.t === 'priHabil') return 'Primer día hábil del mes';
   if (r.t === 'nesimo') return 'El ' + ORDINAL[String(r.n)] + ' ' + DOW_LARGO[Number(r.dow) || 0] + ' de cada mes';
@@ -7910,6 +8054,8 @@ function importePrevisto(rc, iso) {
 function toleranciaRegla(r) {
   if (r && r.t === 'semanas') return Math.max(2, Math.min(10, (Number(r.cada) || 1) * 3 - 1));
   if (r && r.t === 'quincenal') return 5;
+  if (r && r.t === 'dias') return Math.max(1, Math.min(10, Math.round((Number(r.cada) || 1) * 3 / 7) - 1));
+  if (r && r.t === 'diasMes') { const ds = (r.dias || []).map(Number); const g = ds.length === 2 ? Math.min(Math.abs(ds[0] - ds[1]), 30 - Math.abs(ds[0] - ds[1])) : 30; return Math.max(1, Math.min(5, Math.floor((g - 1) / 2))); }
   return 12;
 }
 // Para cada fecha prevista: ¿hay un movimiento que la cubra?, ¿se marcó como «no ha ocurrido»?
@@ -8004,7 +8150,8 @@ function aprenderRegla(fechas) {
   cands.push({ t: 'ultHabil' }, { t: 'priHabil' });
   for (let d = 1; d <= 31; d++) ['antes', 'despues'].forEach((aj) => cands.push({ t: 'dia', dia: d, ajuste: aj }));
   cands.push({ t: 'quincenal', ajuste: '' }, { t: 'quincenal', ajuste: 'antes' });
-  [1, 2, 3, 4, -1].forEach((n) => { for (let w = 0; w < 7; w++) cands.push({ t: 'nesimo', n, dow: w }); });
+  cands.push({ t: 'habilFin', n: 2 }, { t: 'habilFin', n: 3 }, { t: 'habil', n: 2 }, { t: 'habil', n: 3 });
+  [1, 2, 3, 4, -1, -2].forEach((n) => { for (let w = 0; w < 7; w++) cands.push({ t: 'nesimo', n, dow: w }); });
   [1, 2, 4].forEach((c) => cands.push({ t: 'semanas', cada: c, ancla: fechas[fechas.length - 1] }));
   [2, 3, 6, 12].forEach((c) => cands.push({ t: 'meses', cada: c, ancla: fechas[fechas.length - 1], ajuste: '' }));
   let best = null;
@@ -8014,7 +8161,7 @@ function aprenderRegla(fechas) {
   });
   return best && best.hits >= 2 ? best : null;
 }
-const mismaRegla = (a, b) => ['t', 'dia', 'ajuste', 'n', 'dow', 'cada'].every((k) => String((a || {})[k] == null ? '' : a[k]) === String((b || {})[k] == null ? '' : b[k]));
+const mismaRegla = (a, b) => ['t', 'dia', 'ajuste', 'n', 'dow', 'cada', 'dias'].every((k) => String((a || {})[k] == null ? '' : a[k]) === String((b || {})[k] == null ? '' : b[k]));
 function sugerenciaMejor(rc) {
   const fechas = fechasHistorial(rc.tipo, rc.nombre);
   const best = aprenderRegla(fechas);
@@ -8035,6 +8182,7 @@ function recListaHtml() {
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 6px;">Con cada uno te avisamos en Inicio el día anterior y el mismo día, y lo verás en el calendario.</div>' +
     '<div class="section-title">Ingresos fijos</div>' + (cob.length ? '<div class="list">' + cob.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade tu nómina u otro cobro fijo.')) +
     '<div class="section-title">Pagos fijos</div>' + (fac.length ? '<div class="list">' + fac.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade el alquiler, la luz o una suscripción.')) +
+    '<button type="button" class="rec-fest tappable" ' + act('festivosAbrir') + '>' + ic('calendar') + '<span>Festivos</span><span class="menu-extra">' + (festivosCfg().on ? escapeHtml((ZONAS_FESTIVOS.find((z) => z[0] === festivosCfg().zona) || [])[1] || '') : 'solo fines de semana') + '</span>' + ic('chevR') + '</button>' +
     '<div class="actions"><button class="btn ghost block" ' + act('recNuevo', 'cobro') + '>' + ic('plus') + ' Ingreso fijo</button><button class="btn ghost block" ' + act('recNuevo', 'factura') + '>' + ic('plus') + ' Pago fijo</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
@@ -8045,6 +8193,11 @@ function reglaPorDefecto(t) {
   if (t === 'quincenal') return { t, ajuste: '' };
   if (t === 'semanas') return { t, cada: 2, ancla: todayISO() };
   if (t === 'meses') return { t, cada: 3, ancla: todayISO(), ajuste: '' };
+  if (t === 'habil') return { t, n: 3 };
+  if (t === 'habilFin') return { t, n: 2 };
+  if (t === 'ultDia') return { t: 'dia', dia: 31, ajuste: '' };
+  if (t === 'diasMes') return { t, dias: [1, 15], ajuste: '' };
+  if (t === 'dias') return { t, cada: 28, ancla: todayISO() };
   return t ? { t } : null;
 }
 function recParamsHtml(r) {
@@ -8067,7 +8220,77 @@ function recPreviewHtml() {
   const ex = (FORM.extras || []).map(Number);
   return occ.length ? 'Próximas fechas: <b>' + occ.map((o) => fechaCortaU(o) + (ex.includes(Number(o.slice(5, 7))) ? ' (con paga extra)' : '')).join(' · ') + '</b>' : 'Revisa la regla: no sale ninguna fecha.';
 }
+/* ---- Selector «¿Cuándo?» de los recurrentes (23/10, docs/15 3.3): tarjetas con círculo, sin teclado ni desplegables ---- */
+const REGLA_TARJETAS = [
+  ['CADA MES', [['dia', 'Un día fijo', 'Por ejemplo, el 1 o el 5 de cada mes'], ['ultDia', 'El último día del mes', '30 o 31, según el mes'], ['priHabil', 'El primer día hábil', 'Sin contar fines de semana'],
+    ['ultHabil', 'El último día hábil', 'Muy habitual en nóminas'], ['habilFin', 'El penúltimo día hábil', 'Algunas nóminas llegan así'], ['habil', 'Otro día hábil', 'El 3.º día hábil, el antepenúltimo…'], ['nesimo', 'Un día de la semana', 'El primer lunes, el último viernes…']]],
+  ['OTRO RITMO', [['diasMes', 'Dos días al mes', 'Por ejemplo, el 1 y el 15'], ['dias', 'Cada cierto número de días', 'Cada 28 días…'], ['semanas', 'Por semanas', 'Cada semana, cada 2 semanas…'], ['meses', 'Por meses o años', 'Trimestral, semestral, anual…']]],
+];
+function reglaTarjetaDe(r) { if (!r || !r.t) return ''; if (r.t === 'dia') return Number(r.dia) >= 31 ? 'ultDia' : 'dia'; if (r.t === 'habilFin' && Number(r.n) === 1) return 'ultHabil'; if (r.t === 'habilFin' && Number(r.n) === 2) return 'habilFin'; if (r.t === 'habilFin' || r.t === 'habil') return 'habil'; if (r.t === 'quincenal') return 'diasMes'; return r.t; }
+function proxFechasRegla(r, n) { const hoy = todayISO(); return r && r.t ? ocurrencias(r, hoy, uAdd(hoy, 800)).slice(0, n || 3) : []; }
+function fechaDiaCorta(iso) { const d = uD(iso); return DOW_LARGO[dowL(d)].slice(0, 3) + ' ' + d.getUTCDate() + ' ' + MESES_CORTO[d.getUTCMonth()]; }
+function recCampoReglaHtml(r, esCobro) {
+  const px = proxFechasRegla(r, 3);
+  return '<div class="field"><label>¿Cuándo ' + (esCobro ? 'te suele llegar' : 'se paga') + '?</label><button type="button" class="rec-campo tappable" id="recCampo" ' + act('recCuando') + '><span class="rec-campo-ic">' + ic('repeat') + '</span>' +
+    '<span class="rec-campo-x"><b>' + escapeHtml(r && r.t ? reglaTexto(r) : 'Elige cuándo') + '</b><span>' + escapeHtml(px.length ? 'Próximos: ' + px.map(fechaDiaCorta).join(' · ') : 'Toca para elegir') + '</span></span>' + ic('chevR') + '</button></div>';
+}
+function recCuandoHtml() {
+  const F = FORM, r = F.reglaTmp, sel = reglaTarjetaDe(r), esCobro = F.recKind === 'cobro', fo = festivosCfg().on;
+  const tarjeta = ([k, t, d]) => { const pr = k === sel ? null : proxFechasRegla(reglaPorDefecto(k === 'ultDia' ? 'ultDia' : k), 1)[0];
+    return '<button type="button" class="tumes-op rec-op' + (k === sel ? ' on' : '') + '" role="radio" aria-checked="' + (k === sel) + '" ' + act('recCuandoTipo', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + t + '</b><span>' + d + (pr ? ' · la próxima, ' + fechaDiaCorta(pr) : '') + '</span></span></button>' + (k === sel ? recCuandoParamsHtml(r) : ''); };
+  const px = proxFechasRegla(r, 3);
+  return '<div class="handle"></div><div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('recCuandoVolver') + '>' + ic('chevL') + '</button><h2>' + (esCobro ? '¿Cuándo te suele llegar?' : '¿Cuándo se paga?') + '</h2></div>' +
+    REGLA_TARJETAS.map(([g, ops]) => '<div class="rec-grupo-t">' + g + '</div><div class="rec-ops" role="radiogroup">' + ops.map(tarjeta).join('') + '</div>').join('') +
+    (fo ? '' : '<div class="rec-hint">«Día hábil» cuenta solo los fines de semana. <button type="button" class="link" ' + act('festivosAbrir') + '>Saltar también festivos</button></div>') +
+    '<div class="rec-prox">' + (px.length ? px.map((iso) => '<span class="rec-prox-f"><b>' + uD(iso).getUTCDate() + '</b><i>' + MESES_CORTO[uD(iso).getUTCMonth()] + ' · ' + DOW_LARGO[dowL(uD(iso))].slice(0, 3) + '</i></span>').join('') : '<span class="rec-hint">Elige una opción para ver las fechas.</span>') + '</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('recCuandoVolver') + '>Cancelar</button><button class="btn accent block" ' + act('recCuandoUsar') + (r && r.t ? '' : ' disabled') + '>Usar esta</button></div>';
+}
+function recCuandoParamsHtml(r) {
+  if (!r) return '';
+  const chip = (accion, v, on, txt) => '<button type="button" class="chip' + (on ? ' active' : '') + '" aria-pressed="' + !!on + '" ' + act(accion, v) + '>' + txt + '</button>';
+  const ajuste = () => '<div class="rec-par-l">Si cae en ' + (festivosCfg().on ? 'fin de semana o festivo' : 'fin de semana') + '</div><div class="chips">' + chip('recPar', 'ajuste|', !r.ajuste, 'Ese día') + chip('recPar', 'ajuste|antes', r.ajuste === 'antes', 'El hábil antes') + chip('recPar', 'ajuste|despues', r.ajuste === 'despues', 'El hábil después') + '</div>';
+  const rejilla = (sel, campo, multi) => '<div class="rec-dias">' + Array.from({ length: 30 }, (_, i) => i + 1).map((d) => '<button type="button" class="rec-dia' + (sel.indexOf(d) >= 0 ? ' on' : '') + '" aria-pressed="' + (sel.indexOf(d) >= 0) + '" ' + act('recPar', campo + '|' + d) + '>' + d + '</button>').join('') +
+    '<button type="button" class="rec-dia ult' + (sel.indexOf(31) >= 0 ? ' on' : '') + '" aria-pressed="' + (sel.indexOf(31) >= 0) + '" ' + act('recPar', campo + '|31') + '>El último</button></div>';
+  const masMenos = (campo, v, min, max, txt) => '<div class="rec-mm"><button type="button" class="rec-mm-b" aria-label="Menos" ' + act('recPar', campo + '|' + Math.max(min, v - 1)) + '>−</button><b class="tnum">' + txt + '</b><button type="button" class="rec-mm-b" aria-label="Más" ' + act('recPar', campo + '|' + Math.min(max, v + 1)) + '>+</button></div>';
+  const ancla = (lbl) => '<div class="rec-par-l">' + lbl + '</div><input type="date" class="rec-ancla" aria-label="' + lbl + '" value="' + escapeHtml(r.ancla || '') + '" ' + onChange('recParAncla') + '>';
+  let h = '<div class="rec-par">';
+  if (r.t === 'dia' && Number(r.dia) < 31) h += '<div class="rec-par-l">Día del mes</div>' + rejilla([Number(r.dia)], 'dia', false) + ajuste();
+  else if (r.t === 'dia') h += ajuste();
+  else if (r.t === 'habil' || r.t === 'habilFin') { const v = r.t === 'habil' ? Number(r.n) : -Number(r.n);
+    h += '<div class="rec-par-l">¿Cuál?</div><div class="chips">' + [[2, '2.º'], [3, '3.º'], [4, '4.º'], [5, '5.º'], [-3, 'Antepenúltimo']].map(([n, l]) => chip('recPar', 'habilN|' + n, v === n, l)).join('') + '</div>'; }
+  else if (r.t === 'nesimo') h += '<div class="rec-par-l">¿Cuál?</div><div class="chips">' + [[1, '1.º'], [2, '2.º'], [3, '3.º'], [4, '4.º'], [-2, 'Penúltimo'], [-1, 'Último']].map(([n, l]) => chip('recPar', 'n|' + n, Number(r.n) === n, l)).join('') + '</div>' +
+    '<div class="rec-sem">' + ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((l, i) => '<button type="button" class="rec-sem-d' + (Number(r.dow) === i ? ' on' : '') + '" aria-label="' + DOW_LARGO[i] + '" aria-pressed="' + (Number(r.dow) === i) + '" ' + act('recPar', 'dow|' + i) + '>' + l + '</button>').join('') + '</div>';
+  else if (r.t === 'diasMes') h += '<div class="rec-par-l">Toca los dos días</div>' + rejilla((r.dias || []).map(Number), 'dias', true) + ajuste();
+  else if (r.t === 'dias') h += '<div class="rec-par-l">Cada cuántos días</div>' + masMenos('cada', Number(r.cada) || 1, 1, 365, (Number(r.cada) || 1) + ' días') + ancla('Un día en que ocurrió u ocurrirá');
+  else if (r.t === 'semanas') h += '<div class="rec-par-l">Cada cuántas semanas</div>' + masMenos('cada', Number(r.cada) || 1, 1, 52, Number(r.cada) === 1 ? 'Cada semana' : 'Cada ' + r.cada + ' semanas') + ancla('Un día en que ocurrió u ocurrirá');
+  else if (r.t === 'meses') h += '<div class="rec-par-l">Cada cuántos meses</div><div class="chips">' + [[1, 'Cada mes'], [3, 'Trimestral'], [6, 'Semestral'], [12, 'Anual']].map(([c, l]) => chip('recPar', 'cada|' + c, Number(r.cada) === c, l)).join('') + '</div>' + masMenos('cada', Number(r.cada) || 1, 1, 24, 'Cada ' + (Number(r.cada) || 1) + (Number(r.cada) === 1 ? ' mes' : ' meses')) + ancla('Un día en que ocurrió u ocurrirá') + ajuste();
+  return h + '</div>';
+}
+
+/* ---- «Festivos»: elegir tu comunidad y tus 2 fiestas locales ---- */
+function festivosHtml() {
+  const F = FORM, y = new Date().getFullYear(), q = normName(F.busca || ''), zs = ZONAS_FESTIVOS.filter(([k, n]) => !q || normName(n).indexOf(q) >= 0);
+  const anios = [y, y + 1], falta = anios.filter((a) => !FESTIVOS[a]);
+  let h = '<div class="handle"></div><div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('festivosCerrar') + '>' + ic('chevL') + '</button><h2>Festivos</h2></div>' +
+    '<div class="asp-fila"><div class="t">Saltar festivos en los días hábiles<span>Si lo enciendes, «día hábil» y «si cae en fin de semana» también se saltan los festivos de tu zona.</span></div><button type="button" class="switch' + (F.on ? ' on' : '') + '" role="switch" aria-checked="' + !!F.on + '" aria-label="Saltar festivos" ' + act('festivosOn') + '></button></div>';
+  if (F.on) {
+    h += '<div class="section-title">¿Dónde trabajas?</div><div class="rec-hint" style="margin-top:-6px;">Los bancos y las nóminas siguen el calendario del sitio de trabajo.</div>' +
+      '<div class="field"><input type="search" id="festBusca" placeholder="Buscar comunidad" aria-label="Buscar comunidad" value="' + escapeHtml(F.busca || '') + '" ' + onInput('festivosBusca') + '></div>' +
+      '<div class="rec-ops" role="radiogroup" id="festZonas">' + zs.map(([k, n]) => '<button type="button" class="tumes-op' + (F.zona === k ? ' on' : '') + '" role="radio" aria-checked="' + (F.zona === k) + '" ' + act('festivosZona', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + escapeHtml(n) + '</b></span></button>').join('') + '</div>';
+    h += '<div class="section-title">Fiestas de tu pueblo <span class="hint">· opcional</span></div><div class="rec-hint" style="margin-top:-6px;">Cada municipio tiene 2. Pon las de tu sitio de trabajo.</div>' +
+      anios.map((a) => '<div class="fest-loc"><span>' + a + '</span>' + [0, 1].map((i) => '<input type="date" aria-label="Fiesta local ' + (i + 1) + ' de ' + a + '" min="' + a + '-01-01" max="' + a + '-12-31" value="' + escapeHtml(((F.locales || {})[a] || [])[i] || '') + '" ' + onChange('festivosLocal', a, i) + '>').join('') + '</div>').join('');
+    if (falta.length) h += '<div class="rec-hint">Aún no tenemos los festivos de ' + falta.join(' y ') + ': ese año solo se saltan los fines de semana.</div>';
+    const rs = recurrentes().filter((rc) => rc.regla && rc.regla.t);
+    if (rs.length && F.zona) { const antes = cfg().festivos, ahora = { on: true, zona: F.zona, locales: F.locales || {} };
+      const prox = (rc, fz) => { S.config = Object.assign({}, S.config || {}, { festivos: fz }); try { return ocurrencias(rc.regla, todayISO(), uAdd(todayISO(), 400))[0] || null; } finally { S.config = Object.assign({}, S.config, { festivos: antes }); } };
+      const filas = rs.map((rc) => [rc.nombre, prox(rc, { on: false }), prox(rc, ahora)]).filter((x) => x[1] && x[2]);
+      if (filas.length) h += '<div class="section-title">Así cambian tus fechas</div><div class="card fest-cambios">' + filas.map(([n, a, b]) => '<div class="fest-c"><span>' + escapeHtml(n) + '</span><b class="tnum">' + fechaDiaCorta(a) + (a !== b ? ' → ' + fechaDiaCorta(b) : ' · igual') + '</b></div>').join('') + '</div>';
+    }
+  }
+  return h + '<div class="actions"><button class="btn accent block" ' + act('festivosGuardar') + '>Listo</button></div>';
+}
 function recEditorHtml() {
+  if (FORM && FORM.paso === 'cuando') return recCuandoHtml();
   const F = FORM, r = F.regla, esCobro = F.recKind === 'cobro';
   const nombres = esCobro ? (cfg().ingresos || []).filter(Boolean) : [];
   const meses = MESES_CORTO.map((mm, i) => '<button type="button" class="chip ' + ((F.extras || []).map(Number).includes(i + 1) ? 'active' : '') + '" ' + act('recExtra', i + 1) + '>' + mm + '</button>').join('');
@@ -8086,14 +8309,11 @@ function recEditorHtml() {
     (esCobro ? '' : '<div class="field"><label>Categoría</label><select id="recCat" ' + onChange('recCampo', 'categoria') + '>' + catsGasto().map((c) => '<option' + (normName(c.nombre) === normName(F.categoria || catDeRecibo(F.nombre || '')) ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>') +
     (hayVariasCuentas() ? '<div class="field"><label>' + (esCobro ? 'Llega a la cuenta' : 'Sale de la cuenta') + '</label><div class="chips" id="recCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (F.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('recCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
     '<div class="field"><label>Importe previsto (' + sym() + ') <span class="hint">· opcional</span></label><input id="recImporte" type="number" step="0.01" inputmode="decimal" value="' + (F.importe == null ? '' : escapeHtml(F.importe)) + '" ' + onInput('recCampo', 'importe') + '></div>' +
-    '<div class="field"><label>¿Cuándo ' + (esCobro ? 'te suele llegar' : 'se paga') + '?</label><select id="recTipo" ' + onChange('recTipo') + '><option value="">Elige una opción…</option>' +
-    REGLA_OPC.map(([v, l]) => '<option value="' + v + '"' + (r && r.t === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
-    (esCobro ? '<div class="rec-hint">Lo más habitual: entre el 1 y el 5, entre el 28 y el 30, o el último día hábil. Si dudas, usa «Aprender de mi historial».</div>' : '') + '</div>' +
-    '<div id="recParams">' + recParamsHtml(r) + '</div>' +
+    recCampoReglaHtml(r, esCobro) + (esCobro && !(r && r.t) ? '<div class="rec-hint" style="margin-top:-6px;">Lo más habitual: entre el 1 y el 5, entre el 28 y el 30, o el último día hábil. Si dudas, usa «Aprender de mi historial».</div>' : '') +
     '<button type="button" class="link" style="margin:0 0 6px;" ' + act('recAprender') + '>' + ic('sparkle') + ' Aprender de mi historial</button>' + aprendido + sugerencia +
     (esCobro ? '<div class="field" style="margin-top:10px;"><label>Pagas extra <span class="hint">· meses en que cobras el doble</span></label><div class="chips">' + meses + '</div></div>' : '') +
     '<div class="rec-prev" id="recPrev">' + recPreviewHtml() + '</div>' +
-    '<div class="rec-hint">«Día hábil» cuenta los fines de semana, todavía no los festivos.</div>' +
+    '<button type="button" class="rec-fest tappable" ' + act('festivosAbrir') + '>' + ic('calendar') + '<span>Festivos</span><span class="menu-extra">' + (festivosCfg().on ? escapeHtml((ZONAS_FESTIVOS.find((z) => z[0] === festivosCfg().zona) || [])[1] || '') : 'solo fines de semana') + '</span>' + ic('chevR') + '</button>' +
     '<div class="actions"><button class="btn ghost block" ' + act('openRecurrentes') + '>Cancelar</button><button class="btn accent block" ' + act('recGuardar') + '>Guardar</button></div>' +
     (F.idx != null ? '<button class="btn danger block" style="margin-top:10px;" ' + act('recEliminar') + '>' + ic('trash') + ' Eliminar</button>' : '');
 }
@@ -8114,6 +8334,8 @@ function recGuardar() {
   let regla = F.regla && F.regla.t ? Object.assign({}, F.regla) : null;
   if (regla && regla.t === 'dia') { const d = parseInt(regla.dia, 10); if (!(d >= 1 && d <= 31)) return toast('El día tiene que estar entre 1 y 31'); regla.dia = d; }
   if (regla && regla.t === 'meses') { const c = parseInt(regla.cada, 10); if (!(c >= 1 && c <= 24)) return toast('Pon cada cuántos meses (1 a 24)'); if (!regla.ancla) return toast('Pon una fecha de referencia'); regla.cada = c; }
+  if (regla && regla.t === 'dias') { const c = parseInt(regla.cada, 10); if (!(c >= 1 && c <= 365)) return toast('Pon cada cuántos días (1 a 365)'); if (!regla.ancla) return toast('Pon una fecha de referencia'); regla.cada = c; }
+  if (regla && regla.t === 'diasMes' && (regla.dias || []).length !== 2) return toast('Elige los dos días del mes');
   if (regla && regla.t === 'semanas') { const c = parseInt(regla.cada, 10); if (!(c >= 1 && c <= 52)) return toast('Pon cada cuántas semanas (1 a 52)'); if (!regla.ancla) return toast('Pon una fecha de referencia'); regla.cada = c; }
   const c = cfg(), cobros = (c.cobros || []).slice(), facturas = (c.facturas || []).slice();
   const arrDe = (k) => (k === 'cobro' ? cobros : facturas);
@@ -8128,6 +8350,8 @@ function recGuardar() {
   else { if (F.idx != null) arrDe(F.origKind).splice(F.idx, 1); arrDe(F.recKind).push(item); }
   const patch = { cobros, facturas };
   if (F.recKind === 'cobro' && !(c.ingresos || []).some((x) => normName(x) === normName(nombre))) patch.ingresos = (c.ingresos || []).concat([nombre]);
+  const mn = mesCfg().nomina; // si renombras el cobro que marca «Tu mes», se renombra también allí
+  if (prev && mn && F.origKind === 'cobro' && F.recKind === 'cobro' && normName(prev.nombre) === normName(mn) && normName(nombre) !== normName(mn)) patch.mesInicio = Object.assign({}, c.mesInicio, { nomina: nombre });
   saveConfig(patch);
   FORM = { kind: 'recLista' };
   updateSheet(recListaHtml());
@@ -8301,7 +8525,7 @@ function obGuardarMes(ob) {
   if (!ing.length) patch.ingresos = OB_INGRESOS_SERIE.slice();
   else if (ob.nomina.on && !ing.some((x) => normName(x) === normName('Nómina'))) patch.ingresos = ing.concat(['Nómina']);
   const d = obDia(ob.nomina.dia);
-  if (ob.nomina.on && d && d >= 20 && ob.mesModo === 'cobro') patch.mesInicio = { modo: 'cobro', dia: d };
+  if (ob.nomina.on && d && d >= 20 && ob.mesModo === 'cobro' && !mesCfg().nomina) patch.mesInicio = { modo: 'cobro', dia: d };
   else if (ob.nomina.on && d && d >= 20 && ob.mesModo === 'natural' && mesCfg().modo === 'cobro' && ob.mesTocado) patch.mesInicio = { modo: 'natural', dia: mesCfg().dia || 28 };
   if (Object.keys(patch).length) saveConfig(patch);
   ob.mesGuardado = { nomina: ob.nomina.on ? obDia(ob.nomina.dia) : null, fijos: ob.fijos.filter((f) => (f.nombre || '').trim()).length };
@@ -8627,11 +8851,16 @@ const H = {
   buscarGlobal: (_a, el) => { clearTimeout(S._buscarT); const pintar = () => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); }; if (S.movimientos.length > 800) S._buscarT = setTimeout(pintar, 140); else pintar(); },
   buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
   tuMasToggle: () => { S.tuMas = !S.tuMas; sentir('tic'); render(); },
-  tuNombreAbrir: () => { FORM = { kind: 'tuNombre' }; openSheet(tuNombreHtml()); setTimeout(() => { const el = $('#tuNombreIn'); if (el) el.focus(); }, 80); },
+  tuNombreAbrir: () => { const p = perfilCfg(); FORM = { kind: 'perfil', avatar: p.avatar, icono: p.icono, color: p.color, nombre: String(cfg().nombre || '').trim() || nombreSugerido() }; openSheet(perfilHtml()); },
+  perfilModo: ([k]) => { if (!FORM || FORM.kind !== 'perfil') return; FORM.nombre = ($('#tuNombreIn') || {}).value || FORM.nombre; FORM.avatar = k === 'dibujo' ? 'dibujo' : 'iniciales'; sentir('tic'); updateSheet(perfilHtml()); },
+  perfilIcono: ([k]) => { if (!FORM || FORM.kind !== 'perfil') return; FORM.nombre = ($('#tuNombreIn') || {}).value || FORM.nombre; FORM.icono = k; sentir('tic'); updateSheet(perfilHtml()); },
+  perfilColor: ([c]) => { if (!FORM || FORM.kind !== 'perfil') return; FORM.nombre = ($('#tuNombreIn') || {}).value || FORM.nombre; FORM.color = c; sentir('tic'); updateSheet(perfilHtml()); },
+  perfilNombreIn: (_a, el) => { if (!FORM || FORM.kind !== 'perfil') return; FORM.nombre = el.value; if (FORM.avatar === 'iniciales') { const av = $('#perfilAv'); if (av) av.innerHTML = inicialesDe(el.value); } },
   tuNombreGuardar: async () => {
     const v = (($('#tuNombreIn') || {}).value || '').trim().replace(/\s+/g, ' ').slice(0, 40);
     if (!v) return toast('Escribe tu nombre');
-    closeSheet(); await saveConfig({ nombre: v }); render(); sentir('ok'); toast('Nombre guardado');
+    const F = FORM && FORM.kind === 'perfil' ? FORM : null;
+    closeSheet(); await saveConfig(F ? { nombre: v, perfil: { avatar: F.avatar, icono: F.icono, color: F.color || null } } : { nombre: v }); render(); sentir('ok'); toast(F ? 'Perfil guardado' : 'Nombre guardado');
   },
   ticketsInfo: () => { FORM = { kind: 'ticketsInfo' }; openSheet(ticketsInfoHtml()); },
   escrAbrir: () => { if (!contactoHay()) return; FORM = { kind: 'escr', tipo: '', txt: '' }; openSheet(escrHtml()); },
@@ -8673,12 +8902,19 @@ const H = {
   },
   closeSheet: () => closeSheet(),
   verPendiente: () => { S.pendTodos = !S.pendTodos; render(); },
-  tuMesAbrir: () => { verBadge('tumes'); const mc = mesCfg(), t = cfg().mesInicio || {}; FORM = { kind: 'tuMes', modo: mc.modo, dia: mc.modo === 'cobro' ? mc.dia : (Number(t.dia) >= 2 ? Number(t.dia) : 28) }; if ($('#sheetBackdrop')) updateSheet(tuMesHtml()); else openSheet(tuMesHtml()); },
-  tuMesModo: ([k]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.modo = k === 'cobro' ? 'cobro' : 'natural'; updateSheet(tuMesHtml()); },
+  tuMesAbrir: () => { verBadge('tumes'); const mc = mesCfg(), t = cfg().mesInicio || {}, cobs = recurrentes().filter((r) => r.kind === 'cobro' && r.regla && r.regla.t); FORM = { kind: 'tuMes', modo: mc.nomina ? 'nomina' : mc.modo, dia: mc.modo === 'cobro' ? mc.dia : (Number(t.dia) >= 2 ? Number(t.dia) : 28), nomina: mc.nomina || ((cobs.find((r) => /nomina|sueldo|salario/.test(normName(r.nombre).normalize('NFD').replace(/[\u0300-\u036f]/g, ''))) || cobs[0] || {}).nombre || '') }; if ($('#sheetBackdrop')) updateSheet(tuMesHtml()); else openSheet(tuMesHtml()); },
+  tuMesModo: ([k]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.modo = k === 'cobro' || k === 'nomina' ? k : 'natural'; updateSheet(tuMesHtml()); },
+  tuMesNomina: ([n]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.nomina = n; sentir('tic'); updateSheet(tuMesHtml()); },
   tuMesDia: (_a, el) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.dia = Math.min(31, Math.max(2, Number(el.value) || 28)); updateSheet(tuMesHtml()); },
   tuMesGuardar: () => {
     if (!FORM || FORM.kind !== 'tuMes') return;
-    saveConfig({ mesInicio: { modo: FORM.modo, dia: FORM.dia } }); sincronizarMes(); sentir('ok');
+    if (FORM.modo === 'nomina') {
+      const rc = recurrentes().find((r) => r.kind === 'cobro' && normName(r.nombre) === normName(FORM.nomina) && r.regla && r.regla.t);
+      if (!rc) return toast('Primero añade tu nómina como cobro fijo');
+      const o = ocurrencias(rc.regla, todayISO(), uAdd(todayISO(), 62))[0], dia = o ? Math.max(2, Number(o.slice(8, 10))) : FORM.dia; // el día fijo de respaldo, para versiones antiguas
+      saveConfig({ mesInicio: { modo: 'cobro', dia, nomina: rc.nombre } }); _cortes = null; sincronizarMes(); sentir('ok'); toast('Tu mes empieza cuando llega «' + rc.nombre + '»'); closeSheet(); render(); return;
+    }
+    saveConfig({ mesInicio: { modo: FORM.modo, dia: FORM.dia } }); _cortes = null; sincronizarMes(); sentir('ok');
     toast(FORM.modo === 'cobro' ? 'Tu mes empieza el día ' + FORM.dia : 'Tu mes va del 1 al 31');
     closeSheet(); render();
   },
@@ -9292,6 +9528,27 @@ const H = {
   recTipo: (_, el) => { FORM.regla = reglaPorDefecto(el.value); FORM.aprendido = null; const p = $('#recParams'); if (p) p.innerHTML = recParamsHtml(FORM.regla); recRefrescarPrev(); },
   recParam: ([f], el) => { if (!FORM.regla) return; const v = el.value; FORM.regla = Object.assign({}, FORM.regla, { [f]: (f === 'dia' || f === 'cada' || f === 'n' || f === 'dow') ? (v === '' ? '' : Number(v)) : v }); delete FORM.regla.aprendida; recRefrescarPrev(); },
   recExtra: ([m]) => { const n = Number(m), ex = (FORM.extras || []).map(Number); FORM.extras = ex.includes(n) ? ex.filter((x) => x !== n) : ex.concat([n]); FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; updateSheet(recEditorHtml()); },
+  recCuando: () => { const F = FORM; if (!F || F.kind !== 'rec') return; F.nombre = (($('#recNombre') || {}).value || F.nombre || '').trim(); const cat = $('#recCat'); if (cat) F.categoria = cat.value; F.paso = 'cuando'; F.reglaTmp = F.regla && F.regla.t ? JSON.parse(JSON.stringify(F.regla)) : null; if (F.reglaTmp) delete F.reglaTmp.aprendida; updateSheet(recEditorHtml()); },
+  recCuandoTipo: ([k]) => { const F = FORM; if (!F || F.paso !== 'cuando') return; F.reglaTmp = k === 'ultHabil' ? { t: 'ultHabil' } : k === 'priHabil' ? { t: 'priHabil' } : reglaPorDefecto(k); if (k === 'nesimo') F.reglaTmp = { t: 'nesimo', n: 1, dow: 0 }; sentir('tic'); updateSheet(recEditorHtml()); },
+  recPar: ([spec]) => { const F = FORM; if (!F || F.paso !== 'cuando' || !F.reglaTmp) return; const i = String(spec).indexOf('|'), campo = String(spec).slice(0, i), v = String(spec).slice(i + 1), r = F.reglaTmp;
+    if (campo === 'dias') { const d = Number(v), ds = (r.dias || []).map(Number).filter((x) => x !== d); F.reglaTmp.dias = (r.dias || []).map(Number).indexOf(d) >= 0 ? ds : ds.concat([d]).slice(-2); }
+    else if (campo === 'habilN') { const n = Number(v); F.reglaTmp = n > 0 ? { t: 'habil', n } : { t: 'habilFin', n: -n }; }
+    else if (campo === 'ajuste') r.ajuste = v;
+    else r[campo] = Number(v);
+    sentir('tic'); updateSheet(recEditorHtml()); },
+  recParAncla: (_a, el) => { if (FORM && FORM.reglaTmp) { FORM.reglaTmp.ancla = el.value; updateSheet(recEditorHtml()); } },
+  recCuandoUsar: () => { const F = FORM; if (!F || !F.reglaTmp) return; if (F.reglaTmp.t === 'diasMes' && (F.reglaTmp.dias || []).length !== 2) return toast('Elige los dos días del mes'); F.regla = F.reglaTmp; F.reglaTmp = null; F.paso = null; F.aprendido = null; sentir('ok'); updateSheet(recEditorHtml()); },
+  recCuandoVolver: () => { const F = FORM; if (!F) return; F.paso = null; F.reglaTmp = null; updateSheet(recEditorHtml()); },
+  festivosAbrir: () => { const f = cfg().festivos || {}; const prev = FORM; FORM = { kind: 'festivos', on: !!f.on, zona: f.zona || '', locales: JSON.parse(JSON.stringify(f.locales || {})), busca: '', volver: prev }; if ($('#sheetBackdrop')) updateSheet(festivosHtml()); else openSheet(festivosHtml()); },
+  festivosOn: () => { if (FORM && FORM.kind === 'festivos') { FORM.on = !FORM.on; sentir('tic'); updateSheet(festivosHtml()); } },
+  festivosZona: ([k]) => { if (FORM && FORM.kind === 'festivos') { FORM.zona = k; sentir('tic'); updateSheet(festivosHtml()); } },
+  festivosBusca: (_a, el) => { if (!FORM || FORM.kind !== 'festivos') return; FORM.busca = el.value; const q = normName(el.value), box = $('#festZonas'); if (box) box.querySelectorAll('.tumes-op').forEach((b) => { b.hidden = !!q && normName(b.textContent).indexOf(q) < 0; }); },
+  festivosLocal: ([a, i], el) => { if (!FORM || FORM.kind !== 'festivos') return; const L = FORM.locales[a] = (FORM.locales[a] || ['', '']).slice(0, 2); while (L.length < 2) L.push(''); L[Number(i)] = el.value || ''; FORM.locales[a] = L; updateSheet(festivosHtml()); },
+  festivosGuardar: async () => { const F = FORM; if (!F || F.kind !== 'festivos') return; if (F.on && !F.zona) return toast('Elige dónde trabajas');
+    const loc = {}; Object.keys(F.locales || {}).forEach((a) => { const v = (F.locales[a] || []).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x) && x.slice(0, 4) === String(a)); if (v.length) loc[a] = v; });
+    await saveConfig({ festivos: { on: !!F.on, zona: F.zona || null, locales: loc } }); toast(F.on ? 'Festivos guardados' : 'Solo se saltan los fines de semana');
+    const v = F.volver; if (v && v.kind === 'rec') { FORM = v; updateSheet(recEditorHtml()); } else if (v && v.kind === 'recLista') { FORM = v; updateSheet(recListaHtml()); } else closeSheet(); render(); },
+  festivosCerrar: () => { const v = FORM && FORM.volver; if (v && v.kind === 'rec') { FORM = v; updateSheet(recEditorHtml()); } else if (v && v.kind === 'recLista') { FORM = v; updateSheet(recListaHtml()); } else closeSheet(); },
   recAprender: () => {
     FORM.nombre = (($('#recNombre') || {}).value || '').trim();
     if (!FORM.nombre) { toast('Escribe primero el nombre'); return; }
@@ -9687,11 +9944,12 @@ const H = {
   },
   openAspecto: () => { verBadge('aspecto'); FORM = { kind: 'aspecto' }; TIPOS_CIFRA.forEach((t) => cargarFuente(t[0])); openSheet(aspectoHtml()); },
   setLook: ([v]) => { S.look = 'nuevo'; lsSet('look', S.look); applyLook(true); sentir('toque'); refrescarAspecto(); render(); },
+  setFondo: ([k]) => { if (FONDOS.every((x) => x[0] !== k)) return; S.fondo = k; lsSet('fondo', k); applyLook(true); sentir('tic'); refrescarAspecto(); },
   setPaleta: ([id]) => { S.paleta = id; lsSet('paleta', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
   setTipo: ([id]) => { S.tipo = id; lsSet('tipo', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
   setSens: ([k]) => { const clave = k === 'vibra' ? 'vibra' : 'sonido', on = lsGet(clave) !== '0'; lsSet(clave, on ? '0' : '1'); if (!on) sentir('ok', true); refrescarAspecto(); },
   probarSens: ([k]) => sentir(SENS[k] ? k : 'ok', true),
-  setTheme: ([t]) => { verBadge('oscuro'); S.theme = t; lsSet('theme', t); applyTheme(); render(); },
+  setTheme: ([t]) => { verBadge('oscuro'); S.theme = t; lsSet('theme', t); applyTheme(); render(); refrescarAspecto(); },
   exportBackup: () => exportBackup(),
   // onboarding
   startOnboardingManually: () => { closeSheet(); S.onboarding = freshOnboardingState(true); render(); },
@@ -9909,6 +10167,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { VERSIONES, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();

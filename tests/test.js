@@ -82,9 +82,9 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  e=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'X'}],facturas:[{nombre:'Luz',importe:50}]},meta:{onboarded:true}}});await sleep(200);
  ok(!e.w.__APP__.S.onboarding,'onboarded user: no wizard');
  e.w.__APP__.H.goTab(['mas']);click(e,'openRecurrentes');click(e,'recEditar','factura','0');await sleep(10);
- const sel=e.doc.querySelector('#recTipo');sel.value='dia';sel.dispatchEvent(new e.w.Event('change',{bubbles:true}));
- const d=e.doc.querySelector('#recDia');ok(!!d,'editor shows día del mes');
- d.value='15';d.dispatchEvent(new e.w.Event('input',{bubbles:true}));click(e,'recGuardar');await sleep(20);
+ click(e,'recCuando');click(e,'recCuandoTipo','dia');await sleep(5);
+ ok(!!e.doc.querySelector('.rec-dias'),'editor shows día del mes (rejilla de días, 23/10)');
+ click(e,'recPar','dia|15');click(e,'recCuandoUsar');click(e,'recGuardar');await sleep(20);
  ok(e.store.cfg.app.facturas[0].diaDelMes===15&&e.store.cfg.app.facturas[0].importe===50&&e.store.cfg.app.facturas[0].regla.t==='dia','editor saves día, keeps importe');
  click(e,'closeSheet');await sleep(250);click(e,'openListEditor','deudas');click(e,'listAdd','deudas');await sleep(20);
  ok(e.doc.querySelector('[data-change*="deudas|0|recurrencia"]')&&e.doc.querySelector('input[type=date]'),'deudas editor has fecha+recurrencia');

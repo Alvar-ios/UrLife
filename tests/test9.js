@@ -78,9 +78,9 @@ const hoy=loc(new Date()), dHoy=Number(hoy.slice(8));
  // cambiar tipo de regla manualmente en una existente
  const iA=e.store.cfg.app.facturas.findIndex(f=>f.nombre==='Alquiler');
  click(e,'recEditar','factura',String(iA));await sleep(20);
- setv('#recTipo','nesimo','change');await sleep(10);
- ok(!!doc.querySelector('#recN')&&!!doc.querySelector('#recDow'),'parámetros de «día de la semana»');
- setv('#recN','-1','change');setv('#recDow','4','change');
+ click(e,'recCuando');click(e,'recCuandoTipo','nesimo');await sleep(10);
+ ok(!!doc.querySelector('.rec-sem')&&/Penúltimo/.test(doc.querySelector('#sheetHost').textContent),'parámetros de «día de la semana» (selector nuevo, 23/10)');
+ click(e,'recPar','n|-1');click(e,'recPar','dow|4');click(e,'recCuandoUsar');await sleep(5);
  ok(/Próximas fechas/.test(doc.querySelector('#recPrev').textContent),'preview se actualiza');
  click(e,'recGuardar');await sleep(30);
  const alq=e.store.cfg.app.facturas.find(f=>f.nombre==='Alquiler');

@@ -45,7 +45,7 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
 
   /* 4. La hoja «Tu mes» */
   click(e, 'tuMesAbrir'); await sleep(10);
-  ok(/Tu mes/.test(sh(e)) && /Del 1 al 31/.test(sh(e)) && /Desde el día que cobro/.test(sh(e)) && !!e.doc.querySelector('#fTuMesDia'), 'la hoja ofrece las dos opciones y el día de cobro');
+  ok(/Tu mes/.test(sh(e)) && /Del 1 al 31/.test(sh(e)) && /Desde un día fijo/.test(sh(e)) && !!e.doc.querySelector('#fTuMesDia'), 'la hoja ofrece las opciones («Desde un día fijo», renombrada el 23/10) y el día de cobro');
   click(e, 'tuMesModo', 'natural'); await sleep(10); click(e, 'tuMesGuardar'); await sleep(30);
   ok(e.store.cfg.app.mesInicio.modo === 'natural' && /del 1 al/.test(e.doc.querySelector('.mes-pill').textContent), 'cambiar a «del 1 al 31» se guarda y se ve al momento');
   click(e, 'tuMesAbrir'); await sleep(10); click(e, 'tuMesModo', 'cobro'); await sleep(10);
