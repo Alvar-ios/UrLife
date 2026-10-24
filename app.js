@@ -913,7 +913,7 @@ function renderShell() {
     '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
     '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('goTab', 'inicio') + '>' + ic('chevL') + '</button>' +
     '<div><h1 id="pageTitle"></h1><div class="sub">' + fmtDateLong(todayISO()) + '</div></div></div>' +
-    '<div class="tb-r"><span id="compararHost"></span><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
+    '<div class="tb-r"><span id="compararHost"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda" ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
     '<nav class="tabbar" aria-label="Secciones">' + tabBtn(tabsNav()[0]) + tabBtn(tabsNav()[1]) +
     '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabBtn(tabsNav()[2]) + tabBtn(tabsNav()[3]) + '</nav>' +
@@ -1019,6 +1019,8 @@ function render() {
   $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
   const av = $('#tbAvatar'); if (av) { const v2 = !verAnterior('tu'), pf = perfilCfg(); if (v2) av.innerHTML = miAvatarDentro(pf); else av.textContent = inicialUsuario(); av.classList.toggle('dib', v2 && pf.avatar === 'dibujo'); av.style.background = v2 ? miColor(pf) : ''; av.style.color = v2 ? '#fff' : ''; }
   document.body.classList.toggle('en-tu', S.tab === 'tu');
+  // 24/10 (docs/19, opción A): la Agenda a un toque desde arriba, con lo que hay hoy
+  const tbA = $('#tbAgenda'); if (tbA) { const enAg = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0); tbA.classList.toggle('on', enAg); tbA.setAttribute('aria-current', enAg ? 'page' : 'false'); const n = allLoaded() ? agendaHoyN() : 0, nb = $('#tbAgendaN'); if (nb) { nb.hidden = !n; nb.textContent = n > 9 ? '9+' : String(n); } tbA.setAttribute('aria-label', 'Agenda' + (n ? ', ' + n + (n === 1 ? ' cosa hoy' : ' cosas hoy') : '')); }
   document.body.classList.toggle('en-movlista', S.tab === 'movimientos' && movVistaAct() === 'lista'); // allí ya hay una lupa que busca en la lista
   document.body.classList.toggle('en-tu2', S.tab === 'tu' && !verAnterior('tu'));
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : TITULOS[S.tab];
@@ -1159,7 +1161,9 @@ function movCabHtml(dir) {
   const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
   const flecha = (d, ok, icono, aria) => '<button class="mov-flecha" aria-label="' + aria + '" ' + (ok ? act('movPerMover', d) : 'disabled') + '>' + ic(icono) + '</button>';
   return '<div class="mov-cab' + (modo === 'todo' ? ' todo' : '') + '"><div class="mov-cab-txt"><button class="mov-per-lbl' + anim + '" aria-label="Elegir mes" ' + act('movMesAbrir') + '><b>' + lbl + '</b><span class="mov-chev">' + ic('chevD') + '</span></button>' +
-    '<div class="mov-cab-sub' + anim + '">' + sub + '</div></div>' +
+    '<div class="mov-cab-sub' + anim + '">' + sub + '</div>' +
+    // 24/10: el año entero a un toque (antes, dentro de «Elegir mes»)
+    (movVistaAct() !== 'calendario' && modo !== 'todo' ? '<div class="mov-modo" role="radiogroup" aria-label="Ver por">' + [['mes', 'Mes'], ['anio', 'Año']].map(([k, l]) => '<button type="button" role="radio" aria-checked="' + (modo === k) + '" class="' + (modo === k ? 'on' : '') + '" ' + act('movModoCab', k) + '>' + l + '</button>').join('') + '</div>' : '') + '</div>' +
     (modo === 'todo' ? '' : '<div class="mov-flechas">' + flecha(-1, ant, 'chevL', modo === 'anio' ? 'Año anterior' : 'Mes anterior') + flecha(1, sig, 'chevR', modo === 'anio' ? 'Año siguiente' : 'Mes siguiente') + '</div>') + '</div>';
 }
 // Hoja «Elegir mes»: un mes, un año entero o (en la Lista) todo tu historial
@@ -1261,7 +1265,7 @@ function movVistaSegHtml() {
 function renderMovTab() {
   const v = movVistaAct(), dir = S._movDir || 0; S._movDir = 0;
   if (v !== 'lista') { const p = movPerNorm(S.movPeriodo); if (!/^m:/.test(p) && !(v === 'resumen' && /^y:/.test(p))) S.movPeriodo = mesHoyClave(); }
-  const cuerpo = v === 'resumen' ? renderMovResumen() : v === 'calendario' ? renderMovCal() : renderMovimientos();
+  const cuerpo = v === 'resumen' ? renderMovResumen() : v === 'calendario' ? (agendaV2() ? calCapasHtml('dinero') : '') + renderMovCal() : renderMovimientos();
   return movVistaSegHtml() + (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
     movCabHtml(dir) + '<div class="mov-marco"><div id="movCuerpo" class="mov-cuerpo-' + v + '">' + cuerpo + '</div></div>';
 }
@@ -3570,7 +3574,12 @@ function renderAgendaSemanaV2() {
   return cab + tira + rapida + vencH + diaH + proxH + sinFH + plegH;
 }
 // Calendario v2: solo el mes; la leyenda de colores de abajo es el filtro
+// Un solo calendario con dos capas: «Planes y tareas» (Agenda) y «Dinero» (Movimientos → Calendario)
+function calCapasHtml(capa) {
+  return '<div class="segmented cal-capas" role="radiogroup" aria-label="Qué ver en el calendario">' + [['planes', 'Planes y tareas'], ['dinero', 'Dinero']].map(([k, l]) => '<button type="button" role="radio" aria-checked="' + (capa === k) + '" class="' + (capa === k ? 'active' : '') + '" ' + act('calCapa', k) + '>' + l + '</button>').join('') + '</div>';
+}
 function renderCalendarioV2() {
+  if (S.calFiltros && S.calFiltros.movs) S.calFiltros = Object.assign({}, S.calFiltros, { movs: false }); // el dinero vive en su capa («Dinero»)
   const anchor = calAnchor(), d = parseISO(anchor), hoy = todayISO();
   const y = d.getFullYear(), m = d.getMonth(), dim = new Date(y, m + 1, 0).getDate();
   const primero = y + '-' + pad2(m + 1) + '-01', ultimo = y + '-' + pad2(m + 1) + '-' + pad2(dim);
@@ -3583,9 +3592,9 @@ function renderCalendarioV2() {
     cells += '<button type="button" class="cal2-dia' + (iso === anchor ? ' sel' : '') + (iso === hoy ? ' hoy' : '') + '" ' + act('calSelDia', iso) + ' aria-label="' + n + ' de ' + MESES[m].toLowerCase() + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' cosa' : ' cosas') : '') + '"' + (iso === anchor ? ' aria-current="date"' : '') + '>' +
       '<span class="n tnum">' + n + '</span><span class="pts">' + colores.slice(0, 4).map((c) => '<i style="background:' + c + '"></i>').join('') + '</span>' + (evs.some((ev) => ev.k === 'plan') ? '<span class="cal2-plan" aria-hidden="true"></span>' : '') + '</button>';
   }
-  const f = S.calFiltros, ley = [['tareas', 'Tareas', 'var(--accent)'], ['facturas', 'Cobros y pagos', 'var(--bill, var(--accent))'], ['hitos', 'Metas y deudas', 'var(--warn, var(--savings))'], ['movs', 'Movimientos', 'var(--text-faint)']];
+  const f = S.calFiltros, ley = [['tareas', 'Tareas y planes', 'var(--accent)'], ['facturas', 'Cobros y pagos', 'var(--bill, var(--accent))'], ['hitos', 'Metas y deudas', 'var(--warn, var(--savings))']];
   const dsel = parseISO(anchor), evsSel = map[anchor] || [];
-  return '<div class="month-nav cal2-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('calMove', -1) + '>' + ic('chevL') + '</button><div class="lbl">' + MESES[m] + ' ' + y + '</div>' +
+  return calCapasHtml('planes') + '<div class="month-nav cal2-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('calMove', -1) + '>' + ic('chevL') + '</button><div class="lbl">' + MESES[m] + ' ' + y + '</div>' +
       (esteMes ? '' : '<button type="button" class="chip cal2-hoy" ' + act('calHoy') + '>Hoy</button>') + '<button class="icon-btn" aria-label="Mes siguiente" ' + act('calMove', 1) + '>' + ic('chevR') + '</button></div>' +
     '<div class="card cal2-card"><div class="cal2-grid">' + cells + '</div>' +
     '<div class="cal2-ley" role="group" aria-label="Qué se ve en el calendario">' + ley.map(([k, l, c]) => '<button type="button" class="cal2-ley-i' + (f[k] ? ' on' : '') + '" aria-pressed="' + !!f[k] + '" ' + act('calToggle', k) + '><i style="' + (f[k] ? 'background:' : 'border-color:') + c + '"></i>' + l + '</button>').join('') + '</div></div>' +
@@ -4418,8 +4427,8 @@ function juntosObjHtml() {
   const ms = objCompartidos('ahorro'), ds = objCompartidos('deuda');
   if (!ms.length && !ds.length) return '';
   const meta = (r) => { const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
-    return '<button type="button" class="jv-obj tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' + formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 96) +
-      '<span class="jv-obj-p tnum">' + Math.round(pct) + ' %</span><b class="tnum">' + (r.falta > 0 ? 'Faltan ' + m0(r.falta) : '¡Conseguida!') + '</b>' + (r.falta > 0 ? '<span class="jv-obj-e" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' : '') + '</button>'; };
+    return '<button type="button" class="jv-obj tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' + formaHtml(metaForma(r), pct, '<b class="tnum">' + Math.round(pct) + ' %</b>', 96, { color: metaColor(Object.assign({ compartida: true }, r)), grande: true }) +
+      '<span class="jv-obj-p">' + escapeHtml(r.nombre) + '</span><b class="tnum">' + (r.falta > 0 ? 'Faltan ' + m0(r.falta) : '¡Conseguida!') + '</b>' + (r.falta > 0 ? '<span class="jv-obj-e" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' : '') + '</button>'; };
   const deuda = (r) => { const pct = Math.max(0, Math.min(100, r.pct || 0)), g = grupoDe(r.o.grupoId);
     return '<button type="button" class="jv-obj deu tappable" aria-label="' + escapeHtml(r.nombre + ': quedan ' + money(r.falta)) + '" ' + act('deudaCompVer', r.id) + '><span class="jv-obj-ic">' + icDeEmoji(r.o.emoji || emojiSugerido(r.nombre, '💳'), 'deuda') + '</span>' +
       '<span class="jv-obj-n">' + escapeHtml(r.nombre) + '</span><span class="jv-obj-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="jv-obj-p tnum">' + Math.round(pct) + ' % pagado</span><b class="tnum">' + (r.falta > 0 ? 'Quedan ' + m0(r.falta) : 'Saldada') + '</b>' +
@@ -4779,6 +4788,12 @@ function planCuandoTxt(a) {
   return t + (a.hora ? ' · ' + horaTxt(a.hora) : a.fechaFin ? '' : ' · todo el día');
 }
 // eventos para la Agenda, el calendario y «Estos días»
+// cuántas cosas hay hoy en la Agenda: tus tareas para hoy (sin hacer) y los planes y tareas compartidas de hoy
+function agendaHoyN() {
+  const hoy = todayISO(); let n = (S.tareas || []).filter((t) => t.estado !== 'Completado' && t.fechaLimite === hoy).length;
+  try { if (agendaDisponible()) agendaEventos((iso, ev) => { if (iso === hoy && (ev.k === 'plan' || ev.k === 'tareaC')) n++; }, hoy); } catch (e) { /* sin agenda compartida */ }
+  return n;
+}
 function agendaEventos(add, hoy) {
   agendaItems().forEach((a) => {
     const g = a.grupoId ? grupoDe(a.grupoId) : null, donde = g ? nombreDestino(g) : 'Solo yo';
@@ -5138,6 +5153,20 @@ const FORMA_PISTAS = [[/vuelo|avion/, 'avion'], [/viaj|vacacion|escapad|playa|ja
   [/mascota|perro|gato|veterinari/, 'mascota'], [/colch|emergen|imprevist|fondo de/, 'colchon'], [/ordenador|movil|portatil|tele|consola|iphone|tablet/, 'tecno'], [/hucha|ahorro/, 'hucha']];
 function formaSugerida(nombre) { const n = normName(nombre || ''); const x = FORMA_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : 'tarro'; }
 // la forma de una meta: la elegida (personal en la config; compartida en la columna «forma» cuando exista) o la que sale del nombre
+/* ---- Metas con color propio (24/10, docs/19 3.3): 5 colores sin rojo, verde ni naranja; [oscuro, claro] ---- */
+const META_COLORES = { violeta: ['#9B7BFF', '#6D3FD9', 'Violeta'], cielo: ['#4DB0F5', '#1F78C2', 'Cielo'], turquesa: ['#2CCFBD', '#0E8A7E', 'Turquesa'], frambuesa: ['#F26A9E', '#C02E68', 'Frambuesa'], ambar: ['#F5BE45', '#A86F00', 'Ámbar'] };
+const META_COLORES_ORDEN = ['violeta', 'cielo', 'turquesa', 'frambuesa', 'ambar'];
+function hashTxt(t) { let h = 0; for (const ch of String(t || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
+function metaColor(r) {
+  if (!r) return 'violeta';
+  if (r.compartida) return META_COLORES_ORDEN[hashTxt(r.o && r.o.id || r.id || r.nombre) % 5]; // igual para todo el grupo, sin guardar nada
+  const ms = metasCfg(), i = ms.findIndex((x) => x.id === r.id), m = ms[i];
+  return m && META_COLORES[m.color] ? m.color : META_COLORES_ORDEN[(i < 0 ? ms.length : i) % 5];
+}
+function metaColorStyle(k) { const c = META_COLORES[k] || META_COLORES.violeta; return '--fcd:' + c[0] + ';--fcl:' + c[1]; }
+function metaColoresHtml(sel, accion) {
+  return '<div class="field"><label>Su color</label><div class="fm-colores" role="radiogroup" aria-label="Su color">' + META_COLORES_ORDEN.map((k) => '<button type="button" role="radio" aria-checked="' + (k === sel) + '" aria-label="' + META_COLORES[k][2] + '" class="fm-col' + (k === sel ? ' on' : '') + '" style="' + metaColorStyle(k) + '" ' + act(accion, k) + '>' + (k === sel ? ic('check') : '') + '</button>').join('') + '</div></div>';
+}
 function metaForma(r) {
   let k = null;
   if (r && r.compartida) k = r.o && r.o.forma; else { const m = r && metasCfg().find((x) => x.id === r.id); k = m && m.forma; }
@@ -5149,13 +5178,15 @@ function formaHtml(k, pct, texto, tam, o) {
   o = o || {}; const F = FORMAS[k] || FORMAS.tarro, id = 'fm' + (_formaN++), p = Math.max(0, Math.min(100, Number(pct) || 0));
   const y = F.bot - (F.bot - F.top) * p / 100, hecha = p >= 100, ns = 'vector-effect="non-scaling-stroke"';
   const ola = 'M-40 ' + y.toFixed(1) + ' q12.5 -3 25 0 t25 0 t25 0 t25 0 t25 0 t25 0';
+  const cristal = !!o.color;
   const svg = '<svg class="fm-svg" width="' + tam + '" height="' + tam + '" viewBox="-2 -2 104 104" aria-hidden="true"><defs><clipPath id="' + id + '"><path d="' + F.fill + '"/></clipPath></defs>' +
-    '<g clip-path="url(#' + id + ')">' + (p > 0 ? '<g class="fm-liq"><path class="fm-agua" d="' + ola + ' V104 H-40 Z"/>' + (!hecha ? '<path class="fm-sup" d="' + ola + '" ' + ns + '/>' : '') + '</g>' : '') + '</g>' +
+    (cristal ? '<path class="fm-fondo" d="' + F.fill + '"/>' : '') +
+    '<g clip-path="url(#' + id + ')">' + (cristal ? '<path class="fm-brillo" d="M18 ' + (F.top + 14) + ' Q24 ' + (F.top + 4) + ' 38 ' + (F.top + 4) + '" ' + ns + '/>' : '') + (p > 0 ? '<g class="fm-liq"><path class="fm-agua" d="' + ola + ' V104 H-40 Z"/>' + (!hecha ? '<path class="fm-sup" d="' + ola + '" ' + ns + '/>' : '') + '</g>' : '') + '</g>' +
     (F.d ? '<g class="fm-det" ' + ns + '>' + F.d.replace(/<path /g, '<path ' + ns + ' ') + '</g>' : '') +
     '<g class="fm-con' + (hecha ? ' hecha' : '') + '">' + F.c.replace(/<(path|rect|ellipse|circle) /g, '<$1 ' + ns + ' ') + '</g></svg>';
   let ly = F.ly; if (p > 0 && p < 100 && Math.abs(y - ly) < 11) ly = y > ly ? Math.max(F.top + 9, y - 13) : Math.min(F.bot - 9, y + 13);
   const txt = texto ? '<span class="fm-t' + (o.grande ? ' g' : '') + '" style="top:' + ((ly + 2) / 104 * tam).toFixed(0) + 'px">' + texto + '</span>' : '';
-  return '<span class="fm" style="width:' + tam + 'px;height:' + tam + 'px">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
+  return '<span class="fm' + (cristal ? ' cristal' : '') + '" style="width:' + tam + 'px;height:' + tam + 'px' + (cristal ? ';' + metaColorStyle(o.color) : '') + '">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
 }
 // «Su forma»: las 12 en pequeño; la sugerida por el nombre lleva una marca. Elegida = null → la del nombre
 function formaElegirHtml(elegida, nombre, accion) {
@@ -5169,8 +5200,8 @@ function formaElegirHtml(elegida, nombre, accion) {
 function metaFormaHtml(r) {
   const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
   return '<div class="dm-fm" data-meta="' + escapeHtml(r.key) + '"><button type="button" class="dm-fm-main tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento. ' + e.t) + '" ' + act('metaVer', r.key) + '>' +
-    formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 104, { users: r.compartida }) +
-    '<span class="dm-fm-p tnum">' + (r.pct == null ? '—' : Math.round(pct) + ' %') + '</span><span class="dm-fm-c tnum">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span>' +
+    formaHtml(metaForma(r), pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(pct) + ' %') + '</b>', 104, { users: r.compartida, color: metaColor(r), grande: true }) +
+    '<span class="dm-fm-p dm-fm-n">' + escapeHtml(r.nombre) + '</span><span class="dm-fm-c tnum">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span>' +
     '<span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span></button>' +
     (r.conseguida ? '' : '<button type="button" class="dm-fm-mas" aria-label="Aportar a ' + escapeHtml(r.nombre) + '" ' + act('metaAportarR', r.key) + '>' + ic('plus') + '</button>') + '</div>';
 }
@@ -5189,9 +5220,9 @@ function metaVerHtml(k) {
   }
   const piezas = ((r.b && r.b.piezas) || []).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).slice(0, 3);
   const mas = FORM && FORM.mas;
-  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + metaIcono(r) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
+  return '<div class="handle"></div><div class="dm-hcab">' + (metasVariante() === 'formas' ? '' : '<span class="dm-hemo">' + metaIcono(r) + '</span>') + '<div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
     '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
-    '<div class="dm-hring">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132, { grande: true }) : anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132)) +
+    '<div class="dm-hring">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132, { color: metaColor(r), grande: true }) : anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132)) +
     '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
     (consejo ? '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(consejo) + '</div>' : '') +
     (r.conseguida ? '' : '<button class="btn accent block" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>') +
@@ -5308,6 +5339,7 @@ function renderInversionesTodo(enPestana) {
     (R.todas ? '<div><span>' + (R.gan >= 0 ? 'Ganas' : 'Pierdes') + '</span><b class="tnum" style="color:' + (R.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(R.gan) + money(Math.abs(R.gan)) + '</b></div>' : '<div><span>Valor</span><b class="tnum">' + (R.vals.some(Boolean) ? 'en camino…' : '—') + '</b></div>') + '</div>';
   const ev = R.vals.some(Boolean) ? evolucionHtml(grupos, R.todas ? R.valor : null) : '';
   h += ev ? ev.replace(/<\/div>$/, pie + '</div>') : '<div class="card tr-card">' + pie + '</div>';
+  if (dineroV3()) h += invCadaUnoHtml(R);
   // tus activos con su reparto por tipo
   const porTipo = {}; grupos.forEach((g, i) => { const k = g.tipoActivo || 'Otros'; porTipo[k] = (porTipo[k] || 0) + (R.vals[i] ? R.vals[i].valor : g.total); });
   const tipos = Object.entries(porTipo).sort((a, b) => b[1] - a[1]), totT = tipos.reduce((a, x) => a + x[1], 0), colT = ['var(--savings)', 'var(--income)', 'var(--bill)', 'var(--warn, var(--accent))', 'var(--debt)'];
@@ -5347,7 +5379,8 @@ function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
     const sa = serieCartera(movs.filter((m) => m.id === a.id), series), off = serieTot.length - sa.length; // la serie del activo empieza en su primera compra
     const s = series[a.id] || [];
     const precio = (d) => { let v = null; for (let k = 0; k < s.length && s[k][0] <= d; k++) v = s[k][1]; return v; };
-    const p0 = precio(serieTot[i0].d) || (s.length ? s[0][1] : null);
+    const compra0 = (movs.filter((m) => m.id === a.id).map((m) => m.fecha).sort()[0]) || serieTot[i0].d, dIni = compra0 > serieTot[i0].d ? compra0 : serieTot[i0].d; // desde su primera compra (o el inicio del periodo)
+    const p0 = precio(dIni) || (s.length ? s[0][1] : null);
     const vals = pts.map((_, j) => { const idx = Math.min(serieTot.length - 1, i0 + Math.round(j * paso)), q = sa[idx - off];
       if (!q) return modoR ? null : 0;
       if (modoR) { const pr = precio(serieTot[idx].d); return pr != null && p0 ? (pr / p0 - 1) * 100 : null; }
@@ -5356,11 +5389,60 @@ function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
     return Object.assign({}, a, { vals: vals.map((v) => (v == null ? fill : v)) });
   });
 }
-function invLineasChipsHtml(movs, series, multi) {
+// rentabilidad al año de un activo (la misma cuenta que la del total: según cuándo metiste cada euro); null con menos de un mes
+function invAnualActivo(g, vv) {
+  if (!vv) return null; const movs = movsValorables([g]); if (!movs.length) return null;
+  const hoy = todayISO(); if ((parseISO(hoy).getTime() - parseISO(movs[0].fecha).getTime()) / 864e5 < 30) return null;
+  const r = xirr(movs.map((m) => ({ d: m.fecha, c: -m.imp })).concat([{ d: hoy, c: vv.valor }])); return r == null ? (vv.gan > 0 ? 1000 : -100) : r * 100; // xirr no da cifra si pasa del 1.000 % al año
+}
+function invAnualTxt(v) { return v == null ? '—' : v >= 1000 ? 'más de +1.000 %' : pct1(v); }
+function invDiasActivo(g) { const m = movsValorables([g]); return m.length ? (parseISO(todayISO()).getTime() - parseISO(m[0].fecha).getTime()) / 864e5 : 0; }
+// «Qué tal va cada uno»: una barra por activo, desde que empezaste o al año (24/10, docs/19)
+function invCadaUnoHtml(R) {
+  const filas = R.grupos.map((g, i) => ({ g, vv: R.vals[i] })).filter((x) => x.vv && x.vv.pct != null);
+  if (!filas.length) return '';
+  const anio = S.invBarras === 'anio';
+  filas.forEach((x) => { x.v = anio ? invAnualActivo(x.g, x.vv) : x.vv.pct; });
+  const conV = filas.filter((x) => x.v != null).sort((a, b) => b.v - a.v), sinV = filas.filter((x) => x.v == null);
+  const mx = Math.max(1, ...conV.map((x) => Math.abs(x.v)));
+  const fila = (x) => { const col = colorActivo(x.g.activoId) || 'var(--accent)', w = x.v == null ? 0 : Math.max(2, Math.abs(x.v) / mx * 50);
+    return '<button type="button" class="inv-cu-f tappable" ' + act('verActivo', x.g.nombre) + ' aria-label="' + escapeHtml(x.g.nombre + ': ' + (x.v == null ? 'sin datos' : pct1(x.v))) + '"><span class="inv-cu-n"><i style="background:' + col + '"></i>' + escapeHtml(invCorto(x.g.activoId, x.g.nombre)) + '</span>' +
+      '<span class="inv-cu-b"><i class="' + (x.v != null && x.v < 0 ? 'neg' : 'pos') + '" style="width:' + w.toFixed(1) + '%"></i></span>' +
+      '<span class="inv-cu-v"><b class="tnum" style="color:' + (x.v == null ? 'var(--text-faint)' : x.v >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (anio ? invAnualTxt(x.v) : pct1(x.v)) + '</b><span class="tnum">' + (anio ? (x.v == null ? 'menos de un mes' : 'al año') : signoN(x.vv.gan) + money(Math.abs(x.vv.gan))) + '</span></span></button>'; };
+  return '<div class="section-title">Qué tal va cada uno</div><div class="card inv-cu"><div class="segmented inv-cu-seg">' + [['total', 'Desde que empezaste'], ['anio', 'Al año']].map(([k, l]) => '<button type="button" class="' + ((anio ? 'anio' : 'total') === k ? 'active' : '') + '" aria-pressed="' + ((anio ? 'anio' : 'total') === k) + '" ' + act('invBarras', k) + '>' + l + '</button>').join('') + '</div>' +
+    conV.concat(sinV).map(fila).join('') + '<div class="rec-hint" style="margin:8px 0 0;">' + (anio ? 'Al año, según cuándo metiste cada euro (como la del total).' + (filas.some((x) => x.v != null && invDiasActivo(x.g) < 365) ? ' Con menos de un año de datos es orientativo.' : '') : 'Lo que ganas o pierdes sobre lo que metiste.') + ' Toca uno para abrir su hoja.</div></div>';
+}
+// nombre corto de un activo: su símbolo (BTC, IWDA) o las primeras letras del nombre
+function invCorto(id, nombre) {
+  const v = S.valoracion && S.valoracion.valores && S.valoracion.valores[id], sim = v && v.activo && v.activo.simbolo ? String(v.activo.simbolo).split('.')[0] : '';
+  if (sim && sim.length <= 8) return sim.toUpperCase();
+  const pal = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+  return (pal.length > 1 ? pal.map((w) => w[0]).join('').slice(0, 4) : (pal[0] || '?').slice(0, 6)).toUpperCase();
+}
+function invLineasChipsHtml(movs, series, multi, apila) {
   const as = invActivosConSerie(movs, series); if (as.length < 1) return '';
-  const sel = invLineasSel();
-  return '<div class="tr-lineas" role="group" aria-label="Líneas de la gráfica"><button type="button" class="chip' + (multi ? '' : ' active') + '" aria-pressed="' + !multi + '" ' + act('invLinea', 'total') + '><i style="background:var(--accent)"></i>Total</button>' +
-    as.map((a) => '<button type="button" class="chip' + (sel.indexOf(a.id) >= 0 ? ' active' : '') + '" aria-pressed="' + (sel.indexOf(a.id) >= 0) + '" ' + act('invLinea', a.id) + '><i style="background:' + a.color + '"></i>' + escapeHtml(a.nombre) + '</button>').join('') + '</div>';
+  const sel = invLineasSel(), R = invResumen(), valor = (id) => { const i = R.grupos.findIndex((g) => g.activoId === id); return i < 0 ? 0 : R.vals[i] ? R.vals[i].valor : R.grupos[i].total; };
+  const orden = as.slice().sort((a, b) => valor(b.id) - valor(a.id)), vis = as.length > 5 ? orden.slice(0, 4) : orden;
+  sel.forEach((id) => { if (!vis.some((a) => a.id === id)) { const a = as.find((x) => x.id === id); if (a) vis.push(a); } });
+  return '<div class="tr-lineas" role="group" aria-label="Activos en la gráfica"><button type="button" class="chip tr-tot' + (multi ? '' : ' active') + '" aria-pressed="' + !multi + '" ' + act('invLinea', 'total') + '><i style="background:' + (apila ? 'var(--ink)' : 'var(--accent)') + '"></i>Total</button>' +
+    vis.map((a) => '<button type="button" class="chip' + (sel.indexOf(a.id) >= 0 ? ' active' : '') + '" aria-pressed="' + (sel.indexOf(a.id) >= 0) + '" aria-label="' + escapeHtml(a.nombre) + '" title="' + escapeHtml(a.nombre) + '" ' + act('invLinea', a.id) + '><i style="background:' + a.color + '"></i>' + escapeHtml(invCorto(a.id, a.nombre)) + '</button>').join('') +
+    (as.length > vis.length ? '<button type="button" class="chip" ' + act('invLineasElegir') + '>Elegir…</button>' : '') + '</div>' +
+    '<div class="tr-lineas-ayuda">' + (multi ? (apila ? 'Cada franja es lo que vale ese activo; lo gris, el resto. El borde de arriba es el total.' : 'La línea gruesa es el total; las finas, cada activo.') : 'Toca un activo para verlo en la gráfica.') + '</div>';
+}
+function invLineasHojaHtml() {
+  const R = invResumen(), sel = invLineasSel(), H0 = S.historico, conSerie = new Set(H0 && H0.series ? Object.keys(H0.series).filter((k) => (H0.series[k] || []).length) : []), as = R.grupos.filter((g) => g.activoId && conSerie.has(g.activoId));
+  return '<div class="handle"></div><h2>Activos en la gráfica</h2><div class="rec-hint" style="margin:-8px 0 12px;">Como mucho 4 a la vez.</div><div class="card menu">' +
+    as.map((g) => { const on = sel.indexOf(g.activoId) >= 0; return '<button type="button" class="menu-item inv-elegir' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" ' + act('invLineaHoja', g.activoId) + '><span class="inv-elegir-c" style="--ac:' + (colorActivo(g.activoId) || 'var(--accent)') + '">' + (on ? ic('check') : '') + '</span><span class="inv-elegir-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + escapeHtml(invCorto(g.activoId, g.nombre)) + '</span></span></button>'; }).join('') + '</div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+// repinta solo la tarjeta de la gráfica (sin mover la pantalla)
+function repintarInvCard() {
+  const card = document.getElementById('invCard'); if (!card) return render();
+  const R = invResumen(), ev = evolucionHtml(R.grupos, R.todas ? R.valor : null);
+  const pie = card.querySelector('.dm-inv-pie'), tmp = document.createElement('div'); tmp.innerHTML = ev;
+  const nuevo = tmp.firstElementChild; if (!nuevo) return render();
+  if (pie) nuevo.appendChild(pie);
+  card.replaceWith(nuevo); bindInvChart();
 }
 function invRentaFilaHtml(grupos, valorActual) {
   const movs = movsValorables(grupos); if (!movs.length || valorActual == null) return '';
@@ -5399,15 +5481,33 @@ function activoGraficaHtml(g, col) {
   const movs = movsValorables([g]); if (!movs.length) return '';
   const serie = serieCartera(movs, H.series); if (serie.length < 2) return '';
   const per = PERIODOS_INV.find((x) => x[0] === S.activoPer) || PERIODOS_INV.find((x) => x[0] === S.invPeriodo) || PERIODOS_INV[PERIODOS_INV.length - 1];
-  const i0 = per[2] ? Math.max(0, serie.length - 1 - per[2]) : 0, tramo = serie.slice(i0).map((q) => q.v);
-  const pts = reducirPuntos(tramo, 60), mn = Math.min(...pts), mx = Math.max(...pts), W = 300, Hh = 80, rg = mx - mn || 1;
-  const xy = pts.map((v, i) => [i / Math.max(1, pts.length - 1) * W, Hh - 6 - (v - mn) / rg * (Hh - 12)]);
+  const modoR = S.activoModo === 'rentab';
+  const i0 = per[2] ? Math.max(0, serie.length - 1 - per[2]) : 0;
+  // precio de cada día (el último conocido)
+  const precio = (d) => { let v = null; for (let k = 0; k < serieP.length && serieP[k][0] <= d; k++) v = serieP[k][1]; return v == null ? serieP[0][1] : v; };
+  const p0 = precio(serie[i0].d) || 1;
+  const tramoD = serie.slice(i0), tramo = tramoD.map((q) => (modoR ? (precio(q.d) / p0 - 1) * 100 : q.v));
+  const idx = reducirIdx(tramo.length, 60), pts = idx.map((k) => tramo[k]);
+  let mn = Math.min(...pts), mx = Math.max(...pts); if (modoR) { mn = Math.min(mn, 0); mx = Math.max(mx, 0); } const rg = mx - mn || 1, W = 300, Hh = 80;
+  const X = (i) => i / Math.max(1, pts.length - 1) * W, Y = (v) => Hh - 6 - (v - mn) / rg * (Hh - 12);
+  const xy = pts.map((v, i) => [X(i), Y(v)]);
   // lo que has ganado o perdido en el periodo: lo que cambió el valor menos lo que metiste en ese tiempo
   const t0 = serie[i0], t1 = serie[serie.length - 1], vv = valorDeGrupo(g), dif = per[0] === 'max' && vv ? vv.gan : (t1.v - t0.v) - (t1.inv - t0.inv);
-  return '<div class="act-graf"><div class="act-graf-c"><span>' + (dif >= 0 ? 'Ganas ' : 'Pierdes ') + escapeHtml(per[0] === 'max' ? 'desde que empezaste' : 'en ' + (per[0] === '1s' ? '7 días' : per[0] === '1m' ? 'un mes' : per[0] === '3m' ? '3 meses' : per[0] === '6m' ? '6 meses' : 'un año')) + '</span><b class="tnum" style="color:' + (dif >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + money(Math.abs(dif)) + '</b></div>' +
-    '<svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" class="act-svg" role="img" aria-label="Evolución del valor de ' + escapeHtml(g.nombre) + '"><path d="' + curvaSuave(xy) + '" fill="none" stroke="' + (col || 'var(--savings)') + '" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>' +
+  const cuando = per[0] === 'max' ? 'desde que empezaste' : 'en ' + (per[0] === '1s' ? '7 días' : per[0] === '1m' ? 'un mes' : per[0] === '3m' ? '3 meses' : per[0] === '6m' ? '6 meses' : 'un año');
+  const rFin = tramo[tramo.length - 1];
+  const cab = modoR ? '<span>El precio ' + (rFin >= 0 ? 'ha subido ' : 'ha bajado ') + cuando + '</span><b class="tnum" style="color:' + (rFin >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + pct1(rFin) + '</b>'
+    : '<span>' + (dif >= 0 ? 'Ganas ' : 'Pierdes ') + escapeHtml(cuando) + '</span><b class="tnum" style="color:' + (dif >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + money(Math.abs(dif)) + '</b>';
+  // en «Rentabilidad», un punto en cada compra
+  const compras = modoR ? movs.filter((m) => m.fecha >= tramoD[0].d).map((m) => { const k = tramoD.findIndex((q) => q.d >= m.fecha); if (k < 0) return ''; const j = idx.reduce((a, x, n) => (Math.abs(x - k) < Math.abs(idx[a] - k) ? n : a), 0); return '<circle cx="' + X(j).toFixed(1) + '" cy="' + Y(pts[j]).toFixed(1) + '" r="3.2" fill="var(--paper-raised)" stroke="' + (col || 'var(--savings)') + '" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'; }).join('') : '';
+  return '<div class="act-graf"><div class="segmented act-modo">' + [['valor', 'Valor'], ['rentab', 'Rentabilidad']].map(([k, l]) => '<button type="button" class="' + ((modoR ? 'rentab' : 'valor') === k ? 'active' : '') + '" aria-pressed="' + ((modoR ? 'rentab' : 'valor') === k) + '" ' + act('activoModo', k) + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="act-graf-c">' + cab + '</div>' +
+    '<svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" class="act-svg" role="img" aria-label="' + (modoR ? 'Evolución del precio de ' : 'Evolución del valor de ') + escapeHtml(g.nombre) + '">' + (modoR ? '<line x1="0" x2="' + W + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="var(--text-faint)" stroke-dasharray="2 4" stroke-width="1" vector-effect="non-scaling-stroke"/>' : '') +
+    '<path d="' + curvaSuave(xy) + '" fill="none" stroke="' + (col || 'var(--savings)') + '" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linecap="round"/>' + compras + '</svg>' +
+    (modoR ? '<div class="rec-hint" style="margin:0 0 8px;">Solo cuenta cómo se movió el precio: aportar no cambia la línea. Los puntos son tus compras.</div>' : '') +
     '<div class="segmented tr-chips">' + PERIODOS_INV.map((x) => '<button type="button" class="' + (x[0] === per[0] ? 'active' : '') + '" aria-pressed="' + (x[0] === per[0]) + '" ' + act('activoPer', x[0]) + '>' + x[1] + '</button>').join('') + '</div></div>';
 }
+// índices repartidos (conserva el primero y el último)
+function reducirIdx(n, max) { if (n <= max) return Array.from({ length: n }, (_, i) => i); const out = []; for (let i = 0; i < max; i++) out.push(Math.round(i * (n - 1) / (max - 1))); return out; }
 function activoVerHtml(nombre) {
   const g = activoGrupo(nombre);
   if (!g) return '<div class="handle"></div><h2>' + escapeHtml(nombre || 'Inversión') + '</h2><div class="card">Ya no hay movimientos de este activo.</div><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
@@ -5419,7 +5519,8 @@ function activoVerHtml(nombre) {
   const sinPrecio = !(g.activoId && g.conPart === g.n), aVincular = sinPrecio ? movs.find((m) => !m.activoId || m.participaciones == null || m.participaciones === '') : null;
   return '<div class="handle"></div><div class="act-cab"><span class="dm-ic inv"' + (col ? ' style="--ac:' + col + '"' : '') + '>' + ic(invIcono(g.tipoActivo)) + '</span><div><h2>' + escapeHtml(g.nombre) + '</h2><span>' + escapeHtml(tipo) + (a && a.simbolo ? ' · ' + escapeHtml(a.simbolo) : '') + '</span></div></div>' +
     '<div class="act-valor"><span>' + (vv ? 'Vale hoy' : 'Has metido') + '</span><b class="tnum">' + money(vv ? vv.valor : g.total) + '</b>' +
-      (vv ? '<em class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (vv.gan >= 0 ? 'Ganas ' : 'Pierdes ') + money(Math.abs(vv.gan)) + (vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</em>' : '') + '</div>' +
+      (vv ? '<em class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (vv.gan >= 0 ? 'Ganas ' : 'Pierdes ') + money(Math.abs(vv.gan)) + (vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</em>' : '') +
+      (vv ? '<em class="tnum act-anio">Al año ' + (invAnualActivo(g, vv) == null ? '<span>necesita un mes de historia</span>' : invAnualTxt(invAnualActivo(g, vv)) + ' <span>según cuándo metiste cada euro' + (invDiasActivo(g) < 365 ? ' (orientativo: menos de un año)' : '') + '</span>') + '</em>' : '') + '</div>' +
     activoGraficaHtml(g, col) +
     (sinPrecio ? '<div class="dm-aviso">' + ic('info') + '<span>Sin precio: ' + (g.activoId ? 'a alguna aportación le faltan las participaciones.' : 'falta elegir el activo en sus aportaciones.') + '</span>' + (aVincular ? '<button class="link" ' + act('activoArreglar', aVincular.id) + '>Buscar el activo</button>' : '') + '</div>' : '') +
     '<div class="act-cifras">' + cifra('Aportaste', money(g.total)) + cifra('Tienes', enPart ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.' : '—') +
@@ -6085,7 +6186,7 @@ function metaEditorHtml() {
   const F = FORM, v = (x) => (x == null ? '' : escapeHtml(x));
   return '<div class="handle"></div><h2>' + (F.id ? 'Editar meta' : 'Nueva meta') + '</h2>' +
     '<div class="rec-hint" style="margin:-8px 0 12px;">Una meta junta lo que apartas y lo que inviertes para ella. Al apuntar un movimiento eliges «¿Para qué meta?».</div>' +
-    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '" ' + onInput('metaNombreIn') + '></div>' + (metasVariante() === 'formas' ? formaElegirHtml(F.forma, F.nombre) : '') +
+    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '" ' + onInput('metaNombreIn') + '></div>' + (metasVariante() === 'formas' ? formaElegirHtml(F.forma, F.nombre) + metaColoresHtml(F.color || metaColor({ id: F.id }), 'metaColorElegir') : '') +
     '<div class="field"><label>Objetivo (' + sym() + ')</label><input id="mObjetivo" type="number" step="0.01" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="mFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
     '<div class="field"><label>Lo que ya tenías antes (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"></div>' +
@@ -6096,7 +6197,7 @@ function metaEditorHtml() {
 }
 function metaAbrirEditor(id) {
   const m = id ? metasCfg().find((x) => x.id === id) : null;
-  FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null, forma: m && FORMAS[m.forma] ? m.forma : null };
+  FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null, forma: m && FORMAS[m.forma] ? m.forma : null, color: m && META_COLORES[m.color] ? m.color : null };
   if ($('#sheetBackdrop')) updateSheet(metaEditorHtml()); else openSheet(metaEditorHtml());
 }
 function metaLeerForm() {
@@ -6112,7 +6213,7 @@ async function metaGuardar() {
   const numOrNull = (x) => { const n = parseFloat(x); return x === '' || x == null || !isFinite(n) ? null : n; };
   const idx = F.id ? arr.findIndex((m) => m && m.id === F.id) : -1;
   const prev = idx >= 0 ? arr[idx] : {};
-  const item = Object.assign({}, prev, F.forma ? { forma: F.forma } : {}, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
+  const item = Object.assign({}, prev, F.forma ? { forma: F.forma } : {}, META_COLORES[F.color] ? { color: F.color } : !prev || !META_COLORES[prev.color] ? { color: metaColor({ id: F.id }) } : {}, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
   delete item.tipo; // todas las metas son híbridas
   if (!F.forma) delete item.forma; // sin elegir: la que sale del nombre
   // renombrar: los movimientos de Ahorro que se enlazaban por el nombre antiguo pasan a enlazarse por el identificador
@@ -6800,7 +6901,7 @@ function xirr(flujos) {
   }
   return (lo + hi) / 2;
 }
-const pct1 = (n) => (n >= 0 ? '+' : '−') + Math.abs(n).toFixed(1).replace('.', ',') + ' %';
+const pct1 = (n) => (n >= 0 ? '+' : '−') + agrupar(Math.abs(n).toFixed(1).replace('.', ',')) + ' %';
 const eurS = (n) => (n >= 0 ? '+' : '−') + fmt2(Math.abs(n)) + ' €';
 function fechaCorta(iso) { const d = parseISO(iso); return d ? d.getDate() + ' ' + MESES_ABR[d.getMonth()].toLowerCase() + ' ' + d.getFullYear() : ''; }
 function evolucionHtml(grupos, valorActual) {
@@ -6844,9 +6945,27 @@ function evolucionHtml(grupos, valorActual) {
     const curvaV = (arr) => curvaSuave(arr.map((v, i) => [X(i), Y(v)]));
     const extra = invLineasExtra(movs, H.series, serie, i0, pts, modoR), multi = extra.length > 0;
     if (multi) { const todos = vals.concat(...extra.map((l) => l.vals)); mn = Math.min(...todos); mx = Math.max(...todos); const pd = (mx - mn) * 0.1 || 1; mn -= pd; mx += pd; S._invChart.mn = mn; S._invChart.mx = mx; }
-    S._invChart.extra = extra;
+    S._invChart.extra = extra.map((l) => Object.assign({}, l, { corto: invCorto(l.id, l.nombre) }));
+    // 24/10 (docs/19): en «Valor» los activos elegidos se apilan desde 0 (el borde de arriba es el total); en «Rentabilidad», líneas en %
+    const apila = multi && !modoR;
+    if (apila) { mn = 0; mx = Math.max(...pts.map((p) => p.v)) * 1.08 || 1; S._invChart.mn = mn; S._invChart.mx = mx; }
     const color = multi ? 'var(--accent)' : sube ? 'var(--income)' : 'var(--expense)';
     const lineaV = curvaV(ys), suelo = modoR ? Y(0) : Hh;
+    let franjas = '', etiquetas = [];
+    if (apila) {
+      let base = pts.map(() => 0);
+      const banda = (abajo, arriba, fill, op) => { const up = arriba.map((v, i) => [X(i), Y(v)]), dn = abajo.map((v, i) => [X(i), Y(v)]).reverse(); return '<path d="' + curvaSuave(up) + ' L' + dn.map((q) => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L') + ' Z" fill="' + fill + '" fill-opacity="' + op + '" stroke="none"/>'; };
+      extra.forEach((l) => { const sv = suavizarSerie(l.vals), arriba = base.map((b, i) => b + Math.max(0, sv[i])); franjas += banda(base, arriba, l.color, '.78'); base = arriba; });
+      franjas += banda(base, ys.map((v, i) => Math.max(v, base[i])), 'var(--text-faint)', '.28'); // «Otros»: lo que no has elegido
+      etiquetas.push({ y: Y(ys[ys.length - 1]), txt: 'Total ' + eur0(pts[pts.length - 1].v), color: 'var(--ink)', total: true });
+    } else if (multi) {
+      etiquetas = [{ y: Y(ys[ys.length - 1]), txt: 'Total ' + pct1(fin.r), color: 'var(--accent)', total: true }]
+        .concat(extra.map((l) => ({ y: Y(l.vals[l.vals.length - 1]), txt: invCorto(l.id, l.nombre) + ' ' + pct1(l.vals[l.vals.length - 1]), color: l.color })));
+    }
+    // etiquetas al final de cada línea; si dos chocan, se separan
+    etiquetas.sort((a, b) => a.y - b.y); for (let k = 1; k < etiquetas.length; k++) if (etiquetas[k].y - etiquetas[k - 1].y < 15) etiquetas[k].y = etiquetas[k - 1].y + 15;
+    if (etiquetas.length > 3) etiquetas = etiquetas.filter((x) => x.total);
+    const etiqHtml = etiquetas.map((e) => '<span class="tr-etq' + (e.total ? ' total' : '') + '" style="top:' + Math.max(0, Math.min(92, e.y / Hh * 100)).toFixed(1) + '%;--lc:' + e.color + '">' + escapeHtml(e.txt) + '</span>').join('');
     const area = lineaV + ' L' + X(pts.length - 1).toFixed(1) + ' ' + suelo.toFixed(1) + ' L' + X(0).toFixed(1) + ' ' + suelo.toFixed(1) + ' Z';
     cabecera = modoR
       ? '<div class="tr-big tnum' + (Date.now() < (S._trCambiaHasta || 0) ? ' tr-cambia' : '') + '" id="invBig" style="color:' + color + '">' + pct1(fin.r) + '</div>' +
@@ -6856,27 +6975,28 @@ function evolucionHtml(grupos, valorActual) {
     cuerpo = '<div class="tr-chart" id="invChart"><svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none"><defs>' + degradado('invGrad', color, 0.2) +
       revelaSvg('invClip', W, Hh, per[0] + '|' + pts.length, '_invTraza') + '</defs>' +
       // la línea de referencia (lo metido, o el 0 %) es siempre una curva con los mismos puntos: así puede «moverse» al cambiar de vista
-      '<path id="invRef" d="' + curvaV(modoR ? pts.map(() => 0) : ysInv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>' +
-      '<g clip-path="url(#invClip)"><path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"' + (multi ? ' opacity="0"' : '') + '/>' +
-      '<path id="invLineV" class="tr-linea" d="' + lineaV + '" fill="none" style="stroke:' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
-      extra.map((l) => '<path class="tr-linea-a" d="' + curvaV(suavizarSerie(l.vals)) + '" fill="none" style="stroke:' + l.color + '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>').join('') + '</g></svg>' +
-      (modoR ? '<div class="tr-cero" style="top:' + (Y(0) / Hh * 100).toFixed(1) + '%">0 %</div>' : '') +
-      '<div class="tr-cursor" id="invLine"></div><div class="tr-dot" id="invDot" style="background:' + color + '"></div></div>' +
-      (modoR ? '<div class="tr-legend"><span><i style="background:' + color + '"></i>Tu rentabilidad</span><span>no cambia al meter o sacar dinero</span></div>'
+      '<path id="invRef" d="' + curvaV(modoR ? pts.map(() => 0) : ysInv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity="' + (apila ? 0 : '.7') + '"/>' +
+      '<g clip-path="url(#invClip)">' + franjas + '<path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"' + (apila ? ' opacity="0"' : '') + '/>' +
+      (apila ? '' : extra.map((l) => '<path class="tr-linea-a' + (l.id === S._invLineaNueva ? ' nueva' : '') + '" pathLength="1" d="' + curvaV(suavizarSerie(l.vals)) + '" fill="none" style="stroke:' + l.color + '" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>').join('')) +
+      '<path id="invLineV" class="tr-linea' + (multi ? ' total' : '') + '" d="' + lineaV + '" fill="none" style="stroke:' + (apila ? 'var(--ink)' : color) + '" stroke-width="' + (multi ? 3.4 : 2.2) + '" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+      '</g></svg>' + etiqHtml +
+      (modoR && !multi ? '<div class="tr-cero" style="top:' + (Y(0) / Hh * 100).toFixed(1) + '%">0 %</div>' : '') +
+      '<div class="tr-cursor" id="invLine"></div><div class="tr-dot" id="invDot" style="background:' + (apila ? 'var(--ink)' : color) + '"></div></div>' +
+      (multi ? '' : modoR ? '<div class="tr-legend"><span><i style="background:' + color + '"></i>Tu rentabilidad</span><span>no cambia al meter o sacar dinero</span></div>'
         : '<div class="tr-legend"><span><i style="background:' + color + '"></i>Valor de tu cartera</span><span><i class="dash"></i>Lo que has metido</span></div>');
     const notas = [];
     if (movs.some((m) => m.ajuste)) notas.push('Los tramos que vienen de movimientos de «Ajuste» son aproximados: se cuentan desde la fecha del ajuste.');
     if (ids.some((id) => !(H.series[id] || []).length)) notas.push('Algún activo aún no tiene histórico de precios; se completará en la próxima actualización.');
     if (H.limite) notas.push('Hoy se ha llegado al límite diario de consultas del proveedor de precios; el histórico se completará mañana.');
     if (notas.length) cuerpo += '<div class="tr-note">' + notas.join(' ') + '</div>';
-    if (dineroV3()) cuerpo += invLineasChipsHtml(movs, H.series, multi) + (multi ? '<div class="tr-vals" id="invVals"></div>' : '');
+    if (dineroV3()) cuerpo += invLineasChipsHtml(movs, H.series, multi, apila) + (multi ? '<div class="tr-vals" id="invVals"></div>' : '');
   } else {
     cabecera = valorActual != null ? '<div class="tr-big tnum">' + eur2(valorActual) + '</div>' : '';
     S._invChart = null;
     cuerpo = '<div class="tr-chart tr-empty">' + (H && H.clave === clave && H.error ? 'No se ha podido cargar la evolución. Se volverá a intentar en un momento.' : 'Cargando evolución…') + '</div>';
   }
   const modos = S._invChart || (H && H.clave === clave && !H.error) ? '<div class="segmented tr-modo">' + [['valor', 'Valor'], ['rentab', 'Rentabilidad']].map((x) => '<button class="' + (S.invModo === x[0] ? 'active' : '') + '" ' + act('setInvModo', x[0]) + '>' + x[1] + (x[0] === 'rentab' ? badge('rentab') : '') + '</button>').join('') + '</div>' : '';
-  return '<div class="card tr-card">' + modos + '<div class="tr-head">' + cabecera + '<div class="tr-fecha" id="invFecha"></div></div>' + cuerpo + chips + '</div>';
+  return '<div class="card tr-card" id="invCard">' + modos + '<div class="tr-head">' + cabecera + '<div class="tr-fecha" id="invFecha"></div></div>' + cuerpo + chips + '</div>';
 }
 // suavizado ligero (1-2-1, dos pasadas) para que la línea no tenga picos de un día; el primer y el último punto no cambian
 function suavizarSerie(arr) {
@@ -6925,7 +7045,7 @@ function bindInvChart() {
     cabecera(p, 'metido: ' + eur0(p.inv));
     if (fecha) fecha.textContent = fechaCorta(p.d);
     const vs = document.getElementById('invVals');
-    if (vs && C.extra && C.extra.length) vs.innerHTML = '<span><i style="background:var(--accent)"></i>Total <b class="tnum">' + (C.modoR ? pct1(p.r) : eur0(p.v)) + '</b></span>' + C.extra.map((l) => '<span><i style="background:' + l.color + '"></i>' + escapeHtml(l.nombre) + ' <b class="tnum">' + (l.vals[i] == null ? '—' : C.modoR ? pct1(l.vals[i]) : eur0(l.vals[i])) + '</b></span>').join('');
+    if (vs && C.extra && C.extra.length) vs.innerHTML = '<span><i style="background:' + (C.modoR ? 'var(--accent)' : 'var(--ink)') + '"></i>Total <b class="tnum">' + (C.modoR ? pct1(p.r) : eur0(p.v)) + '</b></span>' + C.extra.map((l) => '<span><i style="background:' + l.color + '"></i>' + escapeHtml(l.corto || l.nombre) + ' <b class="tnum">' + (l.vals[i] == null ? '—' : C.modoR ? pct1(l.vals[i]) : eur0(l.vals[i])) + '</b></span>').join('');
     line.style.left = x + '%'; line.style.display = 'block';
     dot.style.left = x + '%'; dot.style.top = y + '%'; dot.style.display = 'block';
     if (ultI !== -1 && ultI !== i && (i === 0 || i === C.pts.length - 1)) vibrar(4);
@@ -8399,7 +8519,7 @@ function recEditorHtml() {
     '<div class="field"><label>Tipo</label><div class="type-toggle"><button type="button" data-t="Ingreso" class="' + (esCobro ? 'active' : '') + '" ' + act('recSetKind', 'cobro') + '>Ingreso fijo</button><button type="button" data-t="Factura" class="' + (!esCobro ? 'active' : '') + '" ' + act('recSetKind', 'factura') + '>Pago fijo</button></div></div>' +
     '<div class="field"><label>Nombre</label>' + (nombres.length > 1 ? '<div class="chips">' + nombres.map((nm) => '<button type="button" class="chip ' + (normName(nm) === normName(F.nombre) ? 'active' : '') + '" ' + act('recPickNombre', nm) + '>' + escapeHtml(nm) + '</button>').join('') + '</div>' : '') +
     '<input id="recNombre" type="text" placeholder="' + (esCobro ? 'Nómina' : 'Alquiler') + '" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('recCampo', 'nombre') + '></div>' +
-    (esCobro ? '' : '<div class="field"><label>Categoría</label><select id="recCat" ' + onChange('recCampo', 'categoria') + '>' + catsGasto().map((c) => '<option' + (normName(c.nombre) === normName(F.categoria || catDeRecibo(F.nombre || '')) ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>') +
+    (esCobro ? '' : recCatCampoHtml()) +
     (hayVariasCuentas() ? '<div class="field"><label>' + (esCobro ? 'Llega a la cuenta' : 'Sale de la cuenta') + '</label><div class="chips" id="recCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (F.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('recCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
     '<div class="field"><label>Importe previsto (' + sym() + ') <span class="hint">· opcional</span></label><input id="recImporte" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(F.importe) + '" ' + onInput('recCampo', 'importe') + '></div>' +
     recCampoReglaHtml(r, esCobro) + (esCobro && !(r && r.t) ? '<div class="rec-hint" style="margin-top:-6px;">Lo más habitual: entre el 1 y el 5, entre el 28 y el 30, o el último día hábil. Si dudas, usa «Aprender de mi historial».</div>' : '') +
@@ -8410,11 +8530,18 @@ function recEditorHtml() {
     '<div class="actions"><button class="btn ghost block" ' + act('openRecurrentes') + '>Cancelar</button><button class="btn accent block" ' + act('recGuardar') + '>Guardar</button></div>' +
     (F.idx != null ? '<button class="btn danger block" style="margin-top:10px;" ' + act('recEliminar') + '>' + ic('trash') + ' Eliminar</button>' : '');
 }
+// Categoría de un pago fijo: chips con icono y color, como al apuntar un gasto (24/10, docs/15 3.4). Se guarda en el campo oculto #recCat
+function recCatCampoHtml() {
+  const F = FORM, auto = !F.categoria, cur = F.categoria || (F.nombre ? catDeRecibo(F.nombre) : ''), todas = catsPorUso(), max = 8, pos = todas.findIndex((c) => normName(c) === normName(cur)), verTodas = F.catTodas || (!auto && pos >= max), vis = verTodas ? todas : todas.slice(0, max);
+  return '<div class="field" id="recCatCampo"><label>Categoría' + (auto ? ' <span class="hint">· se elige sola por el nombre</span>' : '') + '</label><input type="hidden" id="recCat" value="' + escapeHtml(auto ? '' : cur) + '"><div class="chips" role="radiogroup" aria-label="Categoría">' +
+    vis.map((c) => '<button type="button" class="chip' + (normName(c) === normName(cur) ? ' active' : '') + '" role="radio" aria-checked="' + (normName(c) === normName(cur)) + '" ' + act('recCatElegir', c) + '><span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span>' + escapeHtml(c) + '</button>').join('') +
+    (todas.length > max ? '<button type="button" class="chip chip-mas" ' + act('recCatMas') + '>' + (verTodas ? 'Menos' : 'Más (' + (todas.length - max) + ')') + '</button>' : '') + '</div></div>';
+}
 function recRefrescarPrev() { const el = $('#recPrev'); if (el) el.innerHTML = recPreviewHtml(); }
 function recAbrirEditor(kind, idx) {
   const it = idx != null ? ((cfg()[kind === 'cobro' ? 'cobros' : 'facturas'] || [])[Number(idx)] || null) : null;
   FORM = { kind: 'rec', recKind: kind, origKind: kind, idx: it ? Number(idx) : null, nombre: it ? it.nombre : '', importe: it && it.importe != null ? it.importe : null,
-    tituloEd: it ? it.nombre : '', regla: it ? (reglaDe(it) ? Object.assign({}, reglaDe(it)) : null) : null, extras: it && it.extras ? it.extras.slice() : [], aprendido: null, cuenta: it && cuentaPorId(it.cuentaId) ? it.cuentaId : null };
+    tituloEd: it ? it.nombre : '', regla: it ? (reglaDe(it) ? Object.assign({}, reglaDe(it)) : null) : null, extras: it && it.extras ? it.extras.slice() : [], aprendido: null, cuenta: it && cuentaPorId(it.cuentaId) ? it.cuentaId : null, categoria: it && it.categoria ? it.categoria : undefined }; // la categoría guardada (antes salía siempre la que se deduce del nombre)
   openSheet(recEditorHtml());
 }
 function recGuardar() {
@@ -8936,6 +9063,13 @@ const H = {
   },
   crearVersion: ([n]) => { S.verAnterior = Object.assign({}, S.verAnterior, { crear: Number(n) || 0 }); sentir('tic'); if (FORM && FORM.kind === 'crear') updateSheet(crearElegido()); },
   agendaSemana: ([d]) => { S.agendaDia = uAdd(S.agendaDia || todayISO(), 7 * Number(d)); render(); },
+  calCapa: ([k]) => {
+    sentir('tic');
+    if (k === 'dinero') { if (S.tab === 'movimientos') return; const a = calAnchor(); S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = 'm:' + mesDe(a); S.movCalDia = ''; S._entrando = true; render(); window.scrollTo(0, 0); return; }
+    if (S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0)) return;
+    const p = movPerNorm(S.movPeriodo), hoy = todayISO(), dia = S.movCalDia || (/^m:/.test(p) && mesDe(hoy) === p.slice(2) ? hoy : /^m:/.test(p) ? rangoMes(+p.slice(2, 6), +p.slice(7, 9)).desde : hoy);
+    S.calFecha = dia; S.agendaSub = 'calendario'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0);
+  },
   irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
   irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; S.dineroVer = ''; if (dineroV2() && sub) S._dmIr = sub; if (dineroV2() && dineroV3() && DM3_TABS.indexOf(sub) >= 0) S.dm3Tab = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
   setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; render(); },
@@ -9096,6 +9230,13 @@ const H = {
     else return;
     const nuevo = S.movPeriodo; S.movPeriodo = p; S.movLimit = 120; S.movCalDia = ''; S._gcAbierta = '';
     movDeslizar(() => { S.movPeriodo = nuevo; S._movDir = d; }, d);
+  },
+  movModoCab: ([k]) => {
+    const antes = movPerNorm(S.movPeriodo), ya = mesActual().y, y = /^[my]:/.test(antes) ? Number(antes.slice(2, 6)) : ya;
+    const nuevo = k === 'anio' ? 'y:' + y : /^m:/.test(antes) ? antes : y === ya ? mesHoyClave() : mesClave(y, 12);
+    if (nuevo === antes) return; sentir('tic');
+    S.movLimit = 120; S.movCalDia = ''; S._gcAbierta = ''; _donutAnim = '';
+    movDeslizar(() => { S.movPeriodo = nuevo; }, k === 'anio' ? 1 : -1);
   },
   setMovModo: ([k]) => {
     const p = movPerNorm(S.movPeriodo), ya = mesActual().y, y = /^[my]:/.test(p) ? Number(p.slice(2, 6)) : ya;
@@ -9628,8 +9769,10 @@ const H = {
   recCuenta: ([id]) => { if (!FORM || FORM.kind !== 'rec') return; FORM.cuenta = id; $$('#recCuentas .chip').forEach((b) => b.classList.toggle('active', b.getAttribute('data-click') === 'recCuenta|' + encodeURIComponent(id))); sentir('tic'); },
   recEditar: ([k, i]) => recAbrirEditor(k, i),
   recSetKind: ([k]) => { if (FORM.kind !== 'rec') return; FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; FORM.recKind = k; FORM.aprendido = null; updateSheet(recEditorHtml()); },
-  recPickNombre: ([n]) => { FORM.nombre = n; const el = $('#recNombre'); if (el) el.value = n; $$('#sheetBackdrop .chips .chip').forEach((c) => { if (c.textContent && !/^[a-z]{3}$/.test(c.textContent)) c.classList.toggle('active', normName(c.textContent) === normName(n)); }); },
-  recCampo: ([f], el) => { if (f === 'importe') FORM.importe = el.value === '' ? null : el.value; else FORM[f] = el.value; },
+  recPickNombre: ([n]) => { FORM.nombre = n; const el = $('#recNombre'); if (el) el.value = n; $$('#sheetBackdrop [data-click^="recPickNombre|"]').forEach((c) => c.classList.toggle('active', normName(c.textContent) === normName(n))); if (!FORM.categoria) { const el2 = $('#recCatCampo'); if (el2) el2.outerHTML = recCatCampoHtml(); } },
+  recCatElegir: ([c]) => { if (!FORM || FORM.kind !== 'rec') return; FORM.categoria = c; const el = $('#recCatCampo'); if (el) el.outerHTML = recCatCampoHtml(); sentir('tic'); },
+  recCatMas: () => { if (!FORM || FORM.kind !== 'rec') return; FORM.catTodas = !FORM.catTodas; const el = $('#recCatCampo'); if (el) el.outerHTML = recCatCampoHtml(); },
+  recCampo: ([f], el) => { if (f === 'importe') FORM.importe = el.value === '' ? null : el.value; else FORM[f] = el.value; if (f === 'nombre' && !FORM.categoria && FORM.recKind !== 'cobro') { const c = $('#recCatCampo'); if (c) c.outerHTML = recCatCampoHtml(); } },
   recTipo: (_, el) => { FORM.regla = reglaPorDefecto(el.value); FORM.aprendido = null; const p = $('#recParams'); if (p) p.innerHTML = recParamsHtml(FORM.regla); recRefrescarPrev(); },
   recParam: ([f], el) => { if (!FORM.regla) return; const v = el.value; FORM.regla = Object.assign({}, FORM.regla, { [f]: (f === 'dia' || f === 'cada' || f === 'n' || f === 'dow') ? (v === '' ? '' : Number(v)) : v }); delete FORM.regla.aprendida; recRefrescarPrev(); },
   recExtra: ([m]) => { const n = Number(m), ex = (FORM.extras || []).map(Number); FORM.extras = ex.includes(n) ? ex.filter((x) => x !== n) : ex.concat([n]); FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; updateSheet(recEditorHtml()); },
@@ -9736,6 +9879,7 @@ const H = {
   usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   metaGuardar: () => metaGuardar(),
+  metaColorElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta' || !META_COLORES[k]) return; metaLeerForm(); FORM.color = k; sentir('tic'); updateSheet(metaEditorHtml()); },
   metaFormaElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.forma = FORMAS[k] ? k : null; sentir('tic'); updateSheet(metaEditorHtml()); },
   metaNombreIn: () => { if (!FORM || FORM.kind !== 'meta' || FORM.forma) return; const el = $('#mNombre'), sug = formaSugerida(el ? el.value : ''); const g = $('.fm-grid'); if (!g || ((g.querySelector('.fm-op.sug') || {}).dataset || {}).k === sug) return; const campo = g.closest('.field'); if (campo) campo.outerHTML = formaElegirHtml(FORM.forma, el ? el.value : ''); },
   metaEliminar: (_, el) => confirmDelete(el, metaEliminar),
@@ -9965,8 +10109,20 @@ const H = {
   },
   setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); if (FORM && FORM.kind === 'invRenta' && $('#sheetBackdrop')) setTimeout(() => updateSheet(invRentaHojaHtml()), 0); } },
   invRentaVer: () => { FORM = { kind: 'invRenta' }; openSheet(invRentaHojaHtml()); },
-  invLinea: ([id]) => { if (id === 'total') { S.invLineas = []; return render(); } const sel = invLineasSel().slice(), i = sel.indexOf(id);
-    if (i >= 0) sel.splice(i, 1); else { if (sel.length >= 4) return toast('Como mucho 4 líneas a la vez'); sel.push(id); } S.invLineas = sel; sentir('tic'); render(); },
+  invLinea: ([id]) => {
+    if (id === 'total') { if (!invLineasSel().length) return; S.invLineas = []; sentir('tic'); return repintarInvCard(); }
+    const sel = invLineasSel().slice(), i = sel.indexOf(id);
+    if (i >= 0) sel.splice(i, 1); else { if (sel.length >= 4) return toast('Como mucho 4 activos a la vez'); sel.push(id); }
+    S.invLineas = sel; S._invLineaNueva = i >= 0 ? '' : id; sentir('tic'); repintarInvCard(); S._invLineaNueva = '';
+  },
+  invBarras: ([k]) => { S.invBarras = k === 'anio' ? 'anio' : 'total'; sentir('tic'); const el = $('.inv-cu'); if (el) { const t = document.createElement('div'); t.innerHTML = invCadaUnoHtml(invResumen()); const nuevo = t.querySelector('.inv-cu'); if (nuevo) el.replaceWith(nuevo); } else render(); },
+  invLineasElegir: () => { FORM = { kind: 'invLineas' }; openSheet(invLineasHojaHtml()); },
+  invLineaHoja: ([id]) => {
+    const H0 = S.historico; if (!(H0 && H0.series && (H0.series[id] || []).length)) return toast('Ese activo aún no tiene precios para la gráfica');
+    const sel = invLineasSel().slice(), i = sel.indexOf(id);
+    if (i >= 0) sel.splice(i, 1); else { if (sel.length >= 4) return toast('Como mucho 4 activos a la vez'); sel.push(id); }
+    S.invLineas = sel; sentir('tic'); updateSheet(invLineasHojaHtml()); repintarInvCard();
+  },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
   toggleTabAn: ([id]) => {
     const sel = tabsAnElegidas(), i = sel.indexOf(id);
@@ -9977,6 +10133,7 @@ const H = {
   setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; S.tab = 'inicio'; render(); },
   verActivo: ([nombre]) => { FORM = { kind: 'activo', nombre }; if ($('#sheetBackdrop')) updateSheet(activoVerHtml(nombre)); else openSheet(activoVerHtml(nombre)); }, // hoja del activo (24/10)
   activoEnMovs: ([nombre]) => { closeSheet(); irMovs({ tipo: 'Inversión', periodo: 'todo', cat: nombre }); }, // la lista de tus compras de ese activo
+  activoModo: ([k]) => { if (!FORM || FORM.kind !== 'activo') return; S.activoModo = k === 'rentab' ? 'rentab' : 'valor'; sentir('tic'); updateSheet(activoVerHtml(FORM.nombre)); },
   activoPer: ([k]) => { if (!FORM || FORM.kind !== 'activo') return; S.activoPer = k; sentir('tic'); updateSheet(activoVerHtml(FORM.nombre)); },
   activoMov: ([id]) => openMovForm(id),
   activoArreglar: ([id]) => openMovForm(id),
@@ -10280,6 +10437,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { VERSIONES, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();

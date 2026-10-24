@@ -24,14 +24,14 @@ const d = new Date(), hoy = d.getFullYear() + '-' + String(d.getMonth() + 1).pad
   click(e, 'setInvPeriodo', '1s'); await sleep(20);
   ok(/en 7 días/.test(doc.querySelector('#invChg').textContent), '«1S» dice «en 7 días»');
   const chips = [...doc.querySelectorAll('.tr-lineas .chip')].map((x) => x.textContent);
-  ok(chips.join('|') === 'Total|Fondo Uno|Acción Dos', 'chips de líneas: Total y uno por activo (' + chips.join('|') + ')');
+  ok(chips.length === 3 && chips[0] === 'Total' && chips.indexOf('FU') > 0 && chips.indexOf('AD') > 0, 'chips de líneas: Total y uno por activo, con nombre corto (24/10: ' + chips.join('|') + ')');
   ok(doc.querySelectorAll('#invChart .tr-linea-a').length === 0, 'por defecto, solo el total');
   H.invLinea(['X1']); await sleep(20); H.invLinea(['X2']); await sleep(20);
-  ok(doc.querySelectorAll('#invChart .tr-linea-a').length === 2 && doc.querySelector('#invVals'), 'con dos activos elegidos salen sus dos líneas');
-  ok(doc.querySelector('#invLineV').style.stroke === 'var(--accent)', 'con varias líneas, el total va del color de la app (ni verde ni rojo)');
+  ok(doc.querySelectorAll('#invChart path[fill-opacity]').length === 3 && doc.querySelector('#invVals'), 'con dos activos elegidos salen sus dos franjas y la del resto (24/10: en «Valor» se apilan)');
+  ok(['var(--ink)', 'var(--accent)'].indexOf(doc.querySelector('#invLineV').style.stroke) >= 0, 'con varios activos, el total no va ni verde ni rojo');
   const el = doc.querySelector('#invChart'); el.getBoundingClientRect = () => ({ left: 0, width: 100, top: 0, height: 150 });
   const ev = new e.w.Event('pointerdown', { bubbles: true }); ev.clientX = 50; ev.pointerId = 1; ev.pointerType = 'touch'; ev.buttons = 1; el.dispatchEvent(ev);
-  ok(/Total/.test(doc.querySelector('#invVals').textContent) && /Fondo Uno/.test(doc.querySelector('#invVals').textContent), 'al arrastrar el dedo, el valor de cada línea debajo');
+  ok(/Total/.test(doc.querySelector('#invVals').textContent) && /FU/.test(doc.querySelector('#invVals').textContent), 'al arrastrar el dedo, el valor de cada línea debajo (con su nombre corto)');
   H.invLinea(['total']); await sleep(20);
   ok(doc.querySelectorAll('#invChart .tr-linea-a').length === 0, '«Total» vuelve a la línea sola');
   click(e, 'setInvPeriodo', 'max'); await sleep(20);

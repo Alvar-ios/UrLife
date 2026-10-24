@@ -9,7 +9,7 @@ let S_;
   H.goTab(['dinero']); await sleep(30); H.dm3Tab(['metas']); await sleep(20);
   const cards = [...doc.querySelectorAll('.dm-formas .dm-fm')];
   ok(cards.length === 2, 'dos metas activas en el mosaico (la conseguida va plegada)');
-  ok(cards[0] && /Viaje a Japón/.test(cards[0].querySelector('.fm-t').textContent) && /40 %/.test(cards[0].textContent), 'el nombre va escrito dentro de la forma y debajo el %');
+  ok(cards[0] && /40 %/.test(cards[0].querySelector('.fm-t').textContent) && /Viaje a Japón/.test(cards[0].textContent), 'dentro de la forma el %, y el nombre debajo (24/10: cambió el orden, docs/19)');
   ok(cards.every((c) => c.querySelector('.dm-fm-mas[aria-label^="Aportar"]')), 'cada meta lleva su «+» para aportar');
   ok(/Conseguidas \(1\)/.test(doc.querySelector('#content').textContent), 'la conseguida, plegada en «Conseguidas (1)»');
   H.dmHechas([]); await sleep(20);

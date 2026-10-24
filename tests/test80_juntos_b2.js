@@ -17,7 +17,7 @@ console.error = () => {};
   H.goTab(['juntos']); await sleep(40);
   const tarj = [...doc.querySelectorAll('.jv-objs .jv-obj')];
   ok(tarj.length === 2, 'una fila con la meta y la deuda juntas');
-  ok(tarj[0] && tarj[0].querySelector('.fm .fm-t') && /Viaje Lisboa/.test(tarj[0].querySelector('.fm-t').textContent) && /Faltan 600/.test(tarj[0].textContent) && /50 %/.test(tarj[0].textContent), 'meta: su forma (maleta por el nombre), el nombre dentro, 50 % y «Faltan 600 €»');
+  ok(tarj[0] && tarj[0].querySelector('.fm .fm-t') && /50 %/.test(tarj[0].querySelector('.fm-t').textContent) && /Viaje Lisboa/.test(tarj[0].textContent) && /Faltan 600/.test(tarj[0].textContent) && /50 %/.test(tarj[0].textContent), 'meta: su forma, el 50 % dentro, el nombre debajo y «Faltan 600 €» (24/10)');
   ok(tarj[1] && tarj[1].classList.contains('deu') && /Quedan 450/.test(tarj[1].textContent) && tarj[1].querySelector('.jv-obj-ic svg'), 'deuda: icono, «Quedan 450 €»');
   tarj[0].click(); await sleep(20);
   ok(/Viaje Lisboa/.test(doc.querySelector('#sheetHost').textContent) && doc.querySelector('#sheetHost .fm'), 'tocar la meta abre su hoja, con la forma');
