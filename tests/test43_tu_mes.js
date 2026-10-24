@@ -49,7 +49,7 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
   click(e, 'tuMesModo', 'natural'); await sleep(10); click(e, 'tuMesGuardar'); await sleep(30);
   ok(e.store.cfg.app.mesInicio.modo === 'natural' && /del 1 al/.test(e.doc.querySelector('.mes-pill').textContent), 'cambiar a «del 1 al 31» se guarda y se ve al momento');
   click(e, 'tuMesAbrir'); await sleep(10); click(e, 'tuMesModo', 'cobro'); await sleep(10);
-  const sel = e.doc.querySelector('#fTuMesDia'); sel.value = '25'; sel.dispatchEvent(new e.w.Event('change', { bubbles: true })); await sleep(10);
+  e.w.__APP__.H.tuMesDiaB([25]); await sleep(10); // 24/10: «Cobro el día» es una rejilla de días, sin desplegable
   click(e, 'tuMesGuardar'); await sleep(30);
   ok(e.store.cfg.app.mesInicio.modo === 'cobro' && e.store.cfg.app.mesInicio.dia === 25, 'y volver a «desde que cobro» con otro día');
   A.H.goTab(['tu']); await sleep(10);

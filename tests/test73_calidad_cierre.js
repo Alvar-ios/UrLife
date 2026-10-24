@@ -138,7 +138,7 @@ const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) =
     const bs = [...doc.querySelectorAll('#sheetHost .dm-emo-b')];
     ok(bs.length >= 6 && bs.every((b) => b.getAttribute('aria-label') && b.querySelector('svg.i')), 'elegir dibujo de deuda: iconos con nombre para el lector de pantalla');
     const casa = bs.find((b) => b.getAttribute('aria-label') === 'Casa'); casa.click(); await sleep(5);
-    ok(casa.classList.contains('on') && casa.getAttribute('aria-pressed') === 'true' && bs.filter((b) => b.classList.contains('on')).length === 1, 'elegir dibujo: se marca solo el tocado');
+    ok(casa.classList.contains('on') && casa.getAttribute('aria-checked') === 'true' && bs.filter((b) => b.classList.contains('on')).length === 1, 'elegir icono: se marca solo el tocado (24/10: radio con aria-checked)');
     H.closeSheet([]); await sleep(300);
     const guardado = e.store.cfg.app || {};
     // estilos: el icono de la meta no debe heredar las reglas pensadas para el dibujo del tarro o del anillo,

@@ -118,6 +118,7 @@ const MONEDAS = {
   JPY: { s: '¥', dec: 0, n: 'Yen japonés' }, CHF: { s: 'CHF', dec: 2, n: 'Franco suizo' }, CAD: { s: 'C$', dec: 2, n: 'Dólar canadiense' },
   AUD: { s: 'A$', dec: 2, n: 'Dólar australiano' }, MXN: { s: 'MX$', dec: 2, n: 'Peso mexicano' }
 };
+function fmtEjMoneda(k) { const d = MONEDAS[k].dec; return agrupar((1234.5).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d })) + ' ' + MONEDAS[k].s; }
 function monedaCod() { const c = S && S.config && S.config.moneda; return MONEDAS[c] ? c : 'EUR'; }
 function sym() { return MONEDAS[monedaCod()].s; }
 function fmtM(n) { const d = MONEDAS[monedaCod()].dec; return agrupar(n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d })); }
@@ -298,7 +299,7 @@ function toast(msg, opts) {
   const aviso = opts.aviso || TOAST_AVISO.test(msg);
   el.innerHTML = '<span class="toast-ic ' + (aviso ? 'aviso' : 'ok') + '">' + ic(aviso ? 'alert' : 'check') + '</span><span class="toast-txt"></span>' + (opts.deshacer ? '<button type="button" class="toast-btn">Deshacer</button>' : '');
   el.querySelector('.toast-txt').textContent = msg;
-  if (opts.deshacer) el.querySelector('.toast-btn').onclick = () => { el.classList.remove('show'); clearTimeout(toast._t); opts.deshacer(); };
+  if (opts.deshacer) el.querySelector('.toast-btn').onclick = (ev) => { if (ev && ev.currentTarget) ev.currentTarget.onclick = null; else el.querySelector('.toast-btn').onclick = null; el.classList.remove('show'); clearTimeout(toast._t); opts.deshacer(); };
   el.classList.toggle('con-accion', !!opts.deshacer);
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   clearTimeout(toast._t);
@@ -537,7 +538,7 @@ function papeleraHtml() {
       '<button class="btn sm accent" ' + act('papeleraRecuperar', x.k, x.id) + '>Recuperar</button></div>';
   };
   return '<div class="handle"></div><h2>Papelera</h2>' +
-    (items.length ? '<div class="list">' + items.map(fila).join('') + '</div>' : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Está vacía. Lo que borres (movimientos y tareas) aparecerá aquí durante ' + PAPELERA_DIAS + ' días.</div>') +
+    (items.length ? '<div class="list">' + items.map(fila).join('') + '</div>' : '<div class="aj-vacio"><span class="aj-vacio-ic">' + ic('trash') + '</span><b>Está vacía</b><span>Lo que borres (movimientos y tareas) aparecerá aquí durante ' + PAPELERA_DIAS + ' días.</span></div>') +
     '<div class="rec-hint" style="margin-top:10px;">Pasados ' + PAPELERA_DIAS + ' días se borra para siempre. Lo que quitas al deshacer una importación no pasa por aquí.</div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
@@ -1808,13 +1809,14 @@ function openMovForm(id, pre) {
   const compDest = pre && pre.comp, objPre = pre && pre.objetivo;
   pre = (!ex && pre) || {};
   const tipoIni = ex ? ex.tipo : pre.tipo ? pre.tipo : (S.tab === 'movimientos' && TIPOS.indexOf(S.movFiltroTipo) >= 0 ? S.movFiltroTipo : 'Gasto');
-  FORM = { kind: 'mov', id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
+  FORM = { kind: 'mov', id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : (pre && pre.tipoActivo) || '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
   if (compDest) { FORM.comp = { on: true, objetivo: objPre || null }; compPrepararDestino(compDest); }
-  FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
+  FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) || (!ex && pre.tipo === 'Inversión' && pre.categoria && !pre.activoId) ? 'manual' : 'auto';
   FORM.metaSel = ex ? metaDeMov(ex) : (pre.metaSel || '');
   FORM.metaSels = ex ? metasDeMov(ex.tipo === 'Inversión' ? ex : Object.assign({}, ex, { tipo: 'Inversión', metaIds: ex.metaId ? [ex.metaId] : [] })) : (pre.metaSel ? [pre.metaSel] : []);
   FORM.cuenta = comp ? cuentaDeComp(comp) : ex ? (cuentaPorId(ex.cuentaId) ? ex.cuentaId : cuentaRecordada('')) : (pre.cuentaId && cuentaPorId(pre.cuentaId) ? pre.cuentaId : cuentaRecordada(pre.categoria));
   if (ex && ex.activoId) { FORM.activo = { activo_id: ex.activoId, nombre: ex.categoria, tipo: ex.tipoActivo || '', simbolo: '', moneda: '' }; FORM.partOrig = ex.participaciones == null ? null : Number(ex.participaciones); }
+  else if (!ex && pre.activoId && tipoIni === 'Inversión') FORM.activo = { activo_id: pre.activoId, nombre: pre.categoria || '', tipo: pre.tipoActivo || '', simbolo: '', moneda: '' }; // «Invertir más» desde la hoja del activo
   const metodos = cfg().metodosPago || [];
   const tec = tecladoOn(), impIni = ex ? ex.importe : pre.importe, corta = tec && !ex && !comp && !compDest && (tipoIni === 'Gasto' || tipoIni === 'Ingreso');
   if (tec) FORM.tec = { on: !ex, txt: tecTxtDe(impIni), neg: tecNum(impIni) < 0, reemplazar: !!tecTxtDe(impIni), corta, tecla: corta ? 'guardar' : 'hecho' };
@@ -2339,7 +2341,7 @@ function gruposListaHtml() {
         '<div class="main"><div class="ttl">' + escapeHtml(g.nombre) + '</div><div class="meta">' + g.miembros.map((m) => escapeHtml(m.nombre)).join(', ') + saldoMeta(g) + '</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>'
         : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no estás en ningún grupo. Crea uno e invita por WhatsApp.</div>') +
       '<div class="section-title">Amigos' + badge('amigos') + '</div>' + amigosListaHtml(ps, saldoMeta)) +
-    '<div class="actions"><button class="btn ghost block" ' + act('grupoNuevo') + '>' + ic('plus') + ' Crear grupo</button><button class="btn ghost block" ' + act('personaNueva') + '>' + ic('plus') + ' Invitar a una persona</button></div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('grupoNuevo') + '>' + ic('plus') + ' Crear grupo</button><button class="btn ghost block" ' + act('personaNueva') + '>' + ic('plus') + ' Invitar</button></div>' +
     '<div class="actions" style="margin-top:8px;"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 function amigosListaHtml(ps, saldoMeta) {
@@ -3711,7 +3713,7 @@ function renderTuAntes() {
     grupo('Tu dinero', [it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
       it('openRecurrentes', [], 'calendar', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recibos suscripciones'),
       it('compararToggle', [], 'swap', 'Comparar con la versión anterior', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'pruebas version anterior comparar nueva'),
-      it('tuMesAbrir', [], 'calendar', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
+      it('tuMesAbrir', [], 'calendar', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().nomina && cortesNomina() ? 'desde tu nómina' : mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
       it('openMetas', [], 'flag', 'Metas', badge('metas') + '<span class="menu-extra">ahorro e inversión</span>', 'objetivos hucha'),
       lista('deudas', 'prestamo hipoteca'), lista('ingresos', 'nomina'), lista('metodosPago', 'tarjeta bizum efectivo'),
       it('openCuentas', [], 'bank', 'Cuentas y saldos', badge('cuentas') || badge('patrimonio'), 'banco saldo patrimonio')]) +
@@ -3771,14 +3773,14 @@ function renderTuV2() {
     lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'arrowUp', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
     it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar'),
     it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')];
-  return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t">' + escapeHtml(nombre) + badge('perfil') + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
+  return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t"><span class="t-n">' + escapeHtml(nombre) + '</span>' + badge('perfil') + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
       '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar</button></div>' +
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
     grupo('Tu dinero', [it('openCuentas', [], 'bank', 'Cuentas y saldos', (badge('cuentas') || badge('patrimonio')) + (nCu ? '<span class="menu-extra">' + nCu + (nCu === 1 ? ' cuenta' : ' cuentas') + '</span>' : ''), 'banco saldo patrimonio'),
       it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
       it('openReglas', [], 'autoTag', 'Reglas de categorías', badge('reglas'), 'automatico'),
       it('openRecurrentes', [], 'repeat', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recibos suscripciones'),
-      it('tuMesAbrir', [], 'calRango', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
+      it('tuMesAbrir', [], 'calRango', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().nomina && cortesNomina() ? 'desde tu nómina' : mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
       it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir invitar whatsapp juntos')]) +
     grupo('Traer y guardar', [it('impAbrir', [], 'fileIn', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
       ticketsDisponible() ? it('ticketsInfo', [], 'receipt', 'Fotos de tickets', ticketsFilaExtra(), 'tickets lecturas foto camara recibo quedan') : '',
@@ -4265,7 +4267,7 @@ function tuMesHtml() {
     '<div role="radiogroup" aria-label="Cuándo empieza tu mes">' + op('natural', 'Del 1 al 31', 'El mes del calendario. ' + ej({ modo: 'natural', dia: 1 }) + '.') +
     op('nomina', 'Desde que llega mi nómina', 'Empieza el día que te llega de verdad, aunque se adelante o se retrase.', tuMesNominaHtml()) +
     op('cobro', 'Desde un día fijo', 'Tu mes va de un día fijo al siguiente. ' + ej({ modo: 'cobro', dia: F.dia }) + '.',
-      '<div class="field tumes-dia"><label>Cobro el día</label><select id="fTuMesDia" ' + onChange('tuMesDia') + '>' + dias.map((d) => '<option value="' + d + '"' + (d === F.dia ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></div>' +
+      '<div class="field tumes-dia" id="fTuMesDia"><label>Cobro el día</label><div class="rec-dias" role="radiogroup" aria-label="Cobro el día">' + dias.map((d) => '<button type="button" class="rec-dia' + (d === F.dia ? ' on' : '') + '" role="radio" aria-checked="' + (d === F.dia) + '" ' + act('tuMesDiaB', d) + '>' + d + '</button>').join('') + '</div></div>' +
       '<div class="rec-hint" style="margin:-4px 0 10px;">Elige el día más temprano en que sueles cobrar. Si cae en fin de semana, tu mes empieza el viernes anterior; si el mes no tiene ese día, el último.</div>') +
     '</div><div class="actions"><button class="btn accent block" ' + act('tuMesGuardar') + '>Listo</button></div>';
 }
@@ -4673,7 +4675,7 @@ function temaCajaHtml() {
   if (F.tema && elegido && elegido.cerrada && !ts.some((t) => t.id === F.tema)) ts.unshift(elegido);
   const chip = (id, icono, txt) => '<button type="button" class="chip' + ((F.tema || null) === id ? ' active' : '') + '" aria-pressed="' + ((F.tema || null) === id) + '" ' + act('temaElegir', id || '') + '>' + (icono ? ic(icono) : '') + escapeHtml(txt) + '</button>';
   let h = '<div class="tema-caja"><div class="tema-lbl">¿De qué tema? <span class="hint">· opcional</span>' + badge('temas') + '</div><div class="chips tema-chips">' + chip(null, '', 'Ninguno') +
-    ts.map((t) => chip(t.id, temaIcono(t), t.nombre)).join('') + '<button type="button" class="chip tema-nuevo' + (F.temaNuevo ? ' active' : '') + '" ' + act('temaNuevoAbrir') + '>' + ic('plus') + (ts.length ? 'Nuevo' : 'Nuevo tema') + '</button></div>';
+    ts.map((t) => chip(t.id, temaIcono(t), t.nombre)).join('') + '<button type="button" class="chip tema-nuevo' + (F.temaNuevo ? ' active' : '') + '" aria-expanded="' + !!F.temaNuevo + '" ' + act('temaNuevoAbrir') + '>' + ic('plus') + (ts.length ? 'Nuevo' : 'Nuevo tema') + '</button></div>';
   if (F.temaNuevo) {
     const ico = TEMA_ICONOS.indexOf(F.temaIco) >= 0 ? F.temaIco : 'tag';
     h += '<div class="tema-nuevo-f"><input id="temaNom" type="text" maxlength="40" placeholder="Nombre (Roma 2026, Compra…)" value="' + escapeHtml(F.temaNom || '') + '" ' + onInput('temaNomIn') + '>' +
@@ -4697,8 +4699,8 @@ function temasGrupoHtml(g, F) {
   if (!temasDisponible()) return '';
   const ts = temasDe(g.id), tv = F.temaVer && temaPorId(F.temaVer) ? F.temaVer : '';
   if (!ts.length && !tv) return '<button type="button" class="chip tema-mas-suelto" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + ' Tema' + badge('temas') + '</button>';
-  return '<div class="chips tema-chips tema-grupo">' + '<button type="button" class="chip' + (tv ? '' : ' active') + '" ' + act('temaVer', '') + '>Todo</button>' +
-    ts.map((t) => '<button type="button" class="chip' + (tv === t.id ? ' active' : '') + '" ' + act('temaVer', t.id) + '>' + ic(temaIcono(t)) + escapeHtml(t.nombre) + '</button>').join('') +
+  return '<div class="chips tema-chips tema-grupo">' + '<button type="button" class="chip' + (tv ? '' : ' active') + '" aria-pressed="' + !tv + '" ' + act('temaVer', '') + '>Todo</button>' +
+    ts.map((t) => '<button type="button" class="chip' + (tv === t.id ? ' active' : '') + '" aria-pressed="' + (tv === t.id) + '" ' + act('temaVer', t.id) + '>' + ic(temaIcono(t)) + escapeHtml(t.nombre) + '</button>').join('') +
     '<button type="button" class="chip" aria-label="Nuevo tema" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + '</button></div>';
 }
 function porTemasHtml(g, F) {
@@ -4743,7 +4745,7 @@ function temaFormHtml(g) {
   const ids = T.id ? [] : temaGastosEnFechas(g.id, T.desde, T.hasta);
   return '<div class="handle"></div><div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('temaFormCerrar') + '>' + ic('chevL') + '</button><h2>' + (T.id ? 'Cambiar tema' : 'Nuevo tema') + '</h2></div>' +
     (T.id ? '' : '<div class="chips tema-ideas">' + TEMA_IDEAS.map(([k, n]) => '<button type="button" class="chip" ' + act('temaIdea', k, n) + '>' + ic(k) + n + '</button>').join('') + '</div>') +
-    '<div class="field"><label for="tfNombre">Nombre</label><input id="tfNombre" type="text" maxlength="40" placeholder="Roma 2026" value="' + escapeHtml(T.nombre || '') + '"></div>' +
+    '<div class="field"><label for="tfNombre">Nombre</label><input id="tfNombre" type="text" maxlength="40" placeholder="Roma 2026" value="' + escapeHtml(T.nombre || '') + '" ' + onInput('temaFormNomIn') + '></div>' +
     '<div class="field"><label>Icono</label><div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + (TEMA_ICONO_NOMBRE[k] || k) + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaFormIco', k) + '>' + ic(k) + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>Fechas <span class="hint">· opcional</span></label><div class="tema-fechas"><input id="tfDesde" type="date" aria-label="Desde" value="' + escapeHtml(T.desde || '') + '" ' + onChange('temaFormFecha') + '><span>al</span><input id="tfHasta" type="date" aria-label="Hasta" value="' + escapeHtml(T.hasta || '') + '" ' + onChange('temaFormFecha') + '></div></div>' +
     (ids.length ? '<label class="tema-meter"><input id="tfMeter" type="checkbox"' + (T.meter !== false ? ' checked' : '') + '> Meter ' + (ids.length === 1 ? 'el gasto' : 'los ' + ids.length + ' gastos') + ' de esos días</label>' : '') +
@@ -4883,7 +4885,7 @@ function planVerHtml(id) {
   if (a.nota) h += '<div class="plan-nota">' + escapeHtml(a.nota) + '</div>';
   if (g) h += '<div class="plan-autor">Lo añadió ' + escapeHtml(a.creadoPor && esMio(a.grupoId, a.creadoPor) ? 'tú' : nombreDe(a.grupoId, a.creadoPor)) + (a.createdAt ? ' · ' + escapeHtml(haceTxt(a.createdAt)) : '') + '</div>';
   h += '</div>';
-  if (plan) h += '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => '<button type="button" class="chip' + (planAviso(a.id) === k ? ' active' : '') + '" ' + act('planAvisoVer', a.id, k) + '>' + l + '</button>').join('') + '</div></div>';
+  if (plan) h += '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => '<button type="button" class="chip' + (planAviso(a.id) === k ? ' active' : '') + '" aria-pressed="' + (planAviso(a.id) === k) + '" ' + act('planAvisoVer', a.id, k) + '>' + l + '</button>').join('') + '</div></div>';
   else h += '<button class="btn ' + (a.hechaEn ? 'ghost' : 'accent') + ' block" ' + act('tareaCHecha', a.id, a.hechaEn ? '' : '1') + '>' + ic('check') + (a.hechaEn ? ' Marcar sin hacer' : ' Marcar hecha') + '</button>';
   h += '<div class="plan-acc">' + (plan ? '<button type="button" class="tema-menu-b" ' + act('planIcs', a.id) + '>' + ic('calendar') + '<span>Añadir a mi calendario</span></button>' : '') +
     (g ? '<button type="button" class="tema-menu-b" ' + act('planOcultar', a.id) + '>' + ic('close') + '<span>Ocultar de mi agenda</span></button>' : '') +
@@ -4936,11 +4938,15 @@ const EMOJI_PISTAS = [[/viaj|japon|vacacion|escapad|playa/, '✈️'], [/casa|pi
   [/tarjeta|credito/, '💳'], [/prestam|amigo|familia/, '🤝'], [/mascota|perro|gato/, '🐾'], [/bici|deporte|gimnas/, '🚲']];
 function emojiSugerido(nombre, def) { const n = normName(nombre || ''); const x = EMOJI_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : (def || '🎯'); }
 // Los emojis se siguen guardando (no se tocan los datos), pero en pantalla se dibuja un icono de la app (22/10)
-const EMOJI_IC = { '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'coche2', '💍': 'heart', '🍼': 'heart', '🎓': 'cap', '🎁': 'gift', '📱': 'phone', '💳': 'card', '🤝': 'manoMoneda', '🐾': 'paw', '🚲': 'car', '🎯': 'target' };
+const EMOJI_IC = { '🧾': 'deuda', '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'coche2', '💍': 'heart', '🍼': 'heart', '🎓': 'cap', '🎁': 'gift', '📱': 'phone', '💳': 'card', '🤝': 'manoMoneda', '🐾': 'paw', '🚲': 'car', '🎯': 'target' };
 const EMOJI_NOMBRE = { '✈️': 'Viaje', '🏠': 'Casa', '🛟': 'Colchón', '🚗': 'Coche', '💍': 'Boda', '🍼': 'Bebé', '🎓': 'Estudios', '🎁': 'Regalo', '📱': 'Aparatos', '💳': 'Tarjeta', '🤝': 'Préstamo', '🐾': 'Mascota', '🚲': 'Deporte', '🎯': 'Meta' };
 function icDeEmoji(e, def) { return ic(EMOJI_IC[e] || def || 'flag'); }
 function metaIcono(r) { return icDeEmoji(emojiMeta(r), 'target'); }
-function deudaIcono(d) { return icDeEmoji(d.emoji || emojiSugerido(d.nombre, '💳'), 'deuda'); }
+/* ---- Deudas con icono (24/10, docs/15 2.5). Se sigue guardando en «emoji» (lo entienden también las versiones antiguas); se pinta con el icono de la app ---- */
+const DEUDA_ICONOS = [['🚗', 'coche2', 'Coche'], ['🏠', 'home', 'Casa'], ['📱', 'phone', 'Móvil'], ['💳', 'card', 'Tarjeta'], ['🎓', 'cap', 'Estudios'], ['🤝', 'manoMoneda', 'Alguien cercano'], ['🧾', 'deuda', 'Otra']];
+const DEUDA_PISTAS = [[/coche|moto/, '🚗'], [/casa|piso|hipotec|reforma/, '🏠'], [/movil|ordenador|portatil|tele|consola|iphone/, '📱'], [/tarjeta|credito|aplazad/, '💳'], [/estudi|master|matricula/, '🎓'], [/amig|familia|mama|papa|herman|madre|padre/, '🤝']];
+function deudaEmojiSug(nombre) { const n = normName(nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''); const x = DEUDA_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : '🧾'; }
+function deudaIcono(d) { return icDeEmoji(d.emoji || deudaEmojiSug(d.nombre), 'deuda'); }
 function emojiMeta(r) { const m = !r.compartida ? metasCfg().find((x) => x.id === r.id) : null; return (m && m.emoji) || emojiSugerido(r.nombre); }
 const DM_ESTADO_COLOR = { bien: 'var(--income)', justo: 'var(--warn, var(--accent))', gris: 'var(--text-muted)', mal: 'var(--expense)' };
 // estado de una meta en una frase corta y sobria (el rojo solo si la fecha ya pasó)
@@ -5282,7 +5288,8 @@ function invResumen() {
 const signoN = (n) => (n >= 0 ? '+' : '−');
 function invIcono(t) { const k = normName(t || ''); return /cripto|bitcoin/.test(k) ? 'coin' : /accion/.test(k) ? 'velas' : /fondo|etf|indice/.test(k) ? 'pie' : 'trendUp'; }
 function invFilaV2(g, vv, completo) {
-  return '<button type="button" class="dm-inv-f tappable" ' + act('verActivo', g.nombre) + '><span class="dm-ic inv">' + ic(invIcono(g.tipoActivo)) + '</span>' +
+  const col = colorActivo(g.activoId);
+  return '<button type="button" class="dm-inv-f tappable" ' + act('verActivo', g.nombre) + '><span class="dm-ic inv"' + (col ? ' style="--ac:' + col + '"' : '') + '>' + ic(invIcono(g.tipoActivo)) + '</span>' +
     '<span class="dm-emp-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + (!vv ? 'Sin precio todavía' : completo ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 4 }) + ' part. · aportaste ' + m0(g.total) : 'Aportaste ' + m0(g.total)) + '</span></span>' +
     '<span class="dm-inv-v"><b class="tnum">' + (vv ? money(vv.valor) : m0(g.total)) + '</b>' + (vv ? '<span class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(vv.gan) + money(Math.abs(vv.gan)) + (completo && vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</span>' : '') + '</span></button>';
 }
@@ -5318,10 +5325,18 @@ function renderInversionesTodo(enPestana) {
 
 /* ---- Inversiones v3 (23/10/2026, docs/15 2.4): «1S», líneas por activo (hasta 4) y rentabilidad e inflación en su hoja ---- */
 const COLORES_ACTIVO = ['#2E9BD6', '#E6B422', '#E86A9A', '#4FB3A9', '#C25BD8'];
+// cada activo tiene siempre el mismo color: por su orden entre todos tus activos con precio
+function colorActivo(id) {
+  if (!id) return null;
+  // por orden de primera compra: un activo nuevo va al final y no cambia el color de los demás
+  const pri = {}; S.movimientos.forEach((m) => { if (m.tipo === 'Inversión' && m.activoId) { const f = m.fecha || '9999'; if (!pri[m.activoId] || f < pri[m.activoId]) pri[m.activoId] = f; } });
+  const ids = Object.keys(pri).sort((a, b) => (pri[a] < pri[b] ? -1 : pri[a] > pri[b] ? 1 : a < b ? -1 : 1)), i = ids.indexOf(id);
+  return i < 0 ? null : COLORES_ACTIVO[i % COLORES_ACTIVO.length];
+}
 function invActivosConSerie(movs, series) {
   const ids = [...new Set(movs.map((m) => m.id))].filter((id) => (series[id] || []).length);
   const grupos = inversionesPorActivo(), nom = (id) => ((grupos.find((g) => g.activoId === id) || {}).nombre) || 'Activo';
-  return ids.sort().map((id, i) => ({ id, nombre: nom(id), color: COLORES_ACTIVO[i % COLORES_ACTIVO.length] }));
+  return ids.sort().map((id) => ({ id, nombre: nom(id), color: colorActivo(id) || COLORES_ACTIVO[0] }));
 }
 function invLineasSel() { return Array.isArray(S.invLineas) ? S.invLineas : []; }
 function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
@@ -5344,7 +5359,7 @@ function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
 function invLineasChipsHtml(movs, series, multi) {
   const as = invActivosConSerie(movs, series); if (as.length < 1) return '';
   const sel = invLineasSel();
-  return '<div class="tr-lineas" role="group" aria-label="Líneas de la gráfica"><button type="button" class="chip' + (multi ? '' : ' active') + '" aria-pressed="true" ' + act('invLinea', 'total') + '><i style="background:var(--accent)"></i>Total</button>' +
+  return '<div class="tr-lineas" role="group" aria-label="Líneas de la gráfica"><button type="button" class="chip' + (multi ? '' : ' active') + '" aria-pressed="' + !multi + '" ' + act('invLinea', 'total') + '><i style="background:var(--accent)"></i>Total</button>' +
     as.map((a) => '<button type="button" class="chip' + (sel.indexOf(a.id) >= 0 ? ' active' : '') + '" aria-pressed="' + (sel.indexOf(a.id) >= 0) + '" ' + act('invLinea', a.id) + '><i style="background:' + a.color + '"></i>' + escapeHtml(a.nombre) + '</button>').join('') + '</div>';
 }
 function invRentaFilaHtml(grupos, valorActual) {
@@ -5373,6 +5388,47 @@ function invRentaHojaHtml() {
   const R = invResumen();
   return '<div class="handle"></div><h2>Rentabilidad al año e inflación</h2>' + (R.todas ? inflacionV2Html(R.grupos, R.valor).replace('<div class="section-title">¿Le ganas a la inflación?</div>', '') : '<div class="card">Aún no hay precios de todos tus activos.</div>') +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+}
+/* ---- Hoja de cada activo (24/10, docs/15 2.4): valor, gráfica pequeña, 4 cifras, tus aportaciones y botones ---- */
+const TIPO_ACTIVO_TXT = { crypto: 'Criptomoneda', cripto: 'Criptomoneda', accion: 'Acción', acción: 'Acción', etf: 'Fondo cotizado (ETF)', fondo: 'Fondo', indice: 'Índice' };
+function activoGrupo(nombre) { const gs = inversionesPorActivo(); return gs.find((g) => g.nombre === nombre) || gs.find((g) => normName(g.nombre) === normName(nombre)) || null; }
+function activoMovs(g) { return S.movimientos.filter((m) => m.tipo === 'Inversión' && (g.activoId ? m.activoId === g.activoId : !m.activoId && normName(m.categoria) === normName(g.nombre))).sort((a, b) => ((b.fecha || '') < (a.fecha || '') ? -1 : 1)); }
+function activoGraficaHtml(g, col) {
+  const H = S.historico, serieP = H && !H.error && H.series ? H.series[g.activoId] : null;
+  if (!g.activoId || !serieP || !serieP.length) return '';
+  const movs = movsValorables([g]); if (!movs.length) return '';
+  const serie = serieCartera(movs, H.series); if (serie.length < 2) return '';
+  const per = PERIODOS_INV.find((x) => x[0] === S.activoPer) || PERIODOS_INV.find((x) => x[0] === S.invPeriodo) || PERIODOS_INV[PERIODOS_INV.length - 1];
+  const i0 = per[2] ? Math.max(0, serie.length - 1 - per[2]) : 0, tramo = serie.slice(i0).map((q) => q.v);
+  const pts = reducirPuntos(tramo, 60), mn = Math.min(...pts), mx = Math.max(...pts), W = 300, Hh = 80, rg = mx - mn || 1;
+  const xy = pts.map((v, i) => [i / Math.max(1, pts.length - 1) * W, Hh - 6 - (v - mn) / rg * (Hh - 12)]);
+  // lo que has ganado o perdido en el periodo: lo que cambió el valor menos lo que metiste en ese tiempo
+  const t0 = serie[i0], t1 = serie[serie.length - 1], vv = valorDeGrupo(g), dif = per[0] === 'max' && vv ? vv.gan : (t1.v - t0.v) - (t1.inv - t0.inv);
+  return '<div class="act-graf"><div class="act-graf-c"><span>' + (dif >= 0 ? 'Ganas ' : 'Pierdes ') + escapeHtml(per[0] === 'max' ? 'desde que empezaste' : 'en ' + (per[0] === '1s' ? '7 días' : per[0] === '1m' ? 'un mes' : per[0] === '3m' ? '3 meses' : per[0] === '6m' ? '6 meses' : 'un año')) + '</span><b class="tnum" style="color:' + (dif >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + money(Math.abs(dif)) + '</b></div>' +
+    '<svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" class="act-svg" role="img" aria-label="Evolución del valor de ' + escapeHtml(g.nombre) + '"><path d="' + curvaSuave(xy) + '" fill="none" stroke="' + (col || 'var(--savings)') + '" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>' +
+    '<div class="segmented tr-chips">' + PERIODOS_INV.map((x) => '<button type="button" class="' + (x[0] === per[0] ? 'active' : '') + '" aria-pressed="' + (x[0] === per[0]) + '" ' + act('activoPer', x[0]) + '>' + x[1] + '</button>').join('') + '</div></div>';
+}
+function activoVerHtml(nombre) {
+  const g = activoGrupo(nombre);
+  if (!g) return '<div class="handle"></div><h2>' + escapeHtml(nombre || 'Inversión') + '</h2><div class="card">Ya no hay movimientos de este activo.</div><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+  const vv = valorDeGrupo(g), col = colorActivo(g.activoId), a = vv && vv.v && vv.v.activo ? vv.v.activo : null, movs = activoMovs(g);
+  const tipo = TIPO_ACTIVO_TXT[normName(g.tipoActivo || (a && a.tipo) || '')] || g.tipoActivo || (a && a.tipo) || 'Inversión';
+  const cifra = (l, v) => '<div class="act-cifra"><span>' + l + '</span><b class="tnum">' + v + '</b></div>';
+  const enPart = g.activoId && g.conPart === g.n && g.part > 0;
+  const precio = vv && vv.v ? money(vv.v.cierre_eur) + (vv.v.fecha_precio ? '<i>' + fechaDiaCorta(vv.v.fecha_precio) + '</i>' : '') : '—';
+  const sinPrecio = !(g.activoId && g.conPart === g.n), aVincular = sinPrecio ? movs.find((m) => !m.activoId || m.participaciones == null || m.participaciones === '') : null;
+  return '<div class="handle"></div><div class="act-cab"><span class="dm-ic inv"' + (col ? ' style="--ac:' + col + '"' : '') + '>' + ic(invIcono(g.tipoActivo)) + '</span><div><h2>' + escapeHtml(g.nombre) + '</h2><span>' + escapeHtml(tipo) + (a && a.simbolo ? ' · ' + escapeHtml(a.simbolo) : '') + '</span></div></div>' +
+    '<div class="act-valor"><span>' + (vv ? 'Vale hoy' : 'Has metido') + '</span><b class="tnum">' + money(vv ? vv.valor : g.total) + '</b>' +
+      (vv ? '<em class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (vv.gan >= 0 ? 'Ganas ' : 'Pierdes ') + money(Math.abs(vv.gan)) + (vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</em>' : '') + '</div>' +
+    activoGraficaHtml(g, col) +
+    (sinPrecio ? '<div class="dm-aviso">' + ic('info') + '<span>Sin precio: ' + (g.activoId ? 'a alguna aportación le faltan las participaciones.' : 'falta elegir el activo en sus aportaciones.') + '</span>' + (aVincular ? '<button class="link" ' + act('activoArreglar', aVincular.id) + '>Buscar el activo</button>' : '') + '</div>' : '') +
+    '<div class="act-cifras">' + cifra('Aportaste', money(g.total)) + cifra('Tienes', enPart ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.' : '—') +
+      cifra('Te costó de media', enPart ? money(g.total / g.part) : '—') + cifra('Último precio', precio) + '</div>' +
+    '<div class="section-title">Tus aportaciones<span class="dm-cuenta-n">' + movs.length + '</span></div><div class="card act-movs">' +
+      movs.slice(0, 12).map((m) => '<button type="button" class="act-mov tappable" ' + act('activoMov', m.id) + '><span>' + escapeHtml(fmtDateShort(m.fecha || '')) + (m.descripcion ? ' · ' + escapeHtml(m.descripcion) : '') + '</span><b class="tnum">' + money(m.importe) + '</b>' + (m.participaciones != null && m.participaciones !== '' ? '<i class="tnum">' + Number(m.participaciones).toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.</i>' : '') + ic('chevR') + '</button>').join('') +
+      (movs.length > 12 ? '<button type="button" class="dm-inv-mas" ' + act('activoEnMovs', g.nombre) + '>Ver las ' + movs.length + ' en Movimientos ' + ic('chevR') + '</button>' : '') + '</div>' +
+    '<div class="act-botones"><button class="btn accent block" ' + act('activoInvertir', g.nombre) + '>' + ic('plus') + ' Invertir más</button>' +
+      '<div class="act-bot2"><button class="btn ghost block" ' + act('activoEnMovs', g.nombre) + '>' + ic('list') + ' Movimientos</button><button class="btn ghost block" ' + act('dmPrecios') + '>' + ic('info') + ' Precios</button></div></div>';
 }
 function dmPreciosHtml() {
   const R = invResumen();
@@ -5448,19 +5504,27 @@ function deudaVerHtml(nombre) {
     (pagos.length ? '<div class="section-title">Últimos pagos<button class="link" ' + act('irMovsDeuda', d.nombre) + '>Ver todos</button></div><div class="card dm-ult">' + pagos.slice(0, 3).map((x) => '<div class="dm-ult-f"><span>' + fmtDateShort(x.fecha) + '</span><b class="tnum">' + money(x.importe) + '</b></div>').join('') + '</div>' : '') +
     (num(d.previo) ? '<div class="rec-hint">Incluye ' + money(num(d.previo)) + ' que pagaste antes de usar la app. Sin intereses.</div>' : '<div class="rec-hint">Sin contar intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</div>');
 }
-const EMOJIS_DEUDA = ['🚗', '🏠', '📱', '💳', '🎓', '🤝'];
 function deudaFormHtml() {
-  const F = FORM, sug = emojiSugerido(F.nombre, '💳'), lista = EMOJIS_DEUDA.indexOf(sug) < 0 ? [sug].concat(EMOJIS_DEUDA) : EMOJIS_DEUDA, emo = F.emoji || sug;
+  const F = FORM, antiguo = F.emoji && !DEUDA_ICONOS.some((x) => x[0] === F.emoji) && EMOJI_IC[F.emoji] ? [[F.emoji, EMOJI_IC[F.emoji], EMOJI_NOMBRE[F.emoji] || 'El de antes']] : [];
+  const opciones = antiguo.concat(DEUDA_ICONOS), conocido = opciones.some((x) => x[0] === F.emoji), emo = conocido ? F.emoji : deudaEmojiSug(F.nombre);
   const n = (v) => (v == null || v === '' ? '' : String(v).replace('.', ','));
   return '<div class="handle"></div><h2>' + (F.orig ? 'Editar deuda' : 'Nueva deuda') + '</h2>' +
-    '<div class="field"><label>Elige un dibujo</label><div class="dm-emojis">' + lista.map((x) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" aria-label="' + escapeHtml(EMOJI_NOMBRE[x] || 'Dibujo') + '" aria-pressed="' + (x === emo) + '" ' + act('deudaEmoji', x) + '>' + icDeEmoji(x, 'card') + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>Su icono <span class="hint">· se elige solo por el nombre</span></label><div class="dm-emojis deu-ics" role="radiogroup" aria-label="Su icono"' + (antiguo.length ? ' style="grid-template-columns:repeat(8,minmax(0,1fr))"' : '') + '>' + opciones.map(([x, i, l]) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" role="radio" aria-label="' + l + '" aria-checked="' + (x === emo) + '" ' + act('deudaEmoji', x) + '>' + ic(i) + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>Nombre</label><input id="dNombre" type="text" maxlength="40" placeholder="Coche, préstamo, tarjeta…" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('deudaNombreIn') + '></div>' +
     '<div class="dm-2c"><div class="field"><label>Total que debías</label><input id="dTotal" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.total)) + '"></div>' +
     '<div class="field"><label>Ya pagado <span class="hint">· opcional</span></label><input id="dPrevio" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.previo)) + '"></div></div>' +
-    '<div class="dm-2c"><div class="field"><label>Al mes <span class="hint">· opcional</span></label><input id="dCuota" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.cuotaMes)) + '"></div>' +
-    '<div class="field"><label>Acabar en <span class="hint">· opcional</span></label><input id="dFecha" type="month" value="' + escapeHtml((F.fecha || '').slice(0, 7)) + '"></div></div>' +
+    '<div><div class="field"><label>Al mes <span class="hint">· opcional</span></label><input id="dCuota" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.cuotaMes)) + '"></div>' +
+    '</div>' + mesAnioCampoHtml('Acabar en', 'dFecha', (F.fecha || '').slice(0, 7), 'deudaMes') +
     '<div class="dm-nota">' + ic('alert') + '<span>«Ya pagado» es lo que pagaste antes de usar la app. No contamos intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</span></div>' +
     '<div id="dAviso"></div><button class="btn accent block" ' + act('deudaGuardar') + '>Guardar deuda</button>';
+}
+// Selector de mes y año propio (el del sistema enseña «--------- ----»): 12 meses y el año con − y +. Guarda 'AAAA-MM' en un campo oculto
+function mesAnioCampoHtml(lbl, id, ym, accion) {
+  const hoy = todayISO(), y = /^\d{4}-\d{2}$/.test(ym || '') ? Number(ym.slice(0, 4)) : Number((FORM && FORM._maY) || hoy.slice(0, 4)), m = /^\d{4}-\d{2}$/.test(ym || '') ? Number(ym.slice(5, 7)) : 0;
+  return '<div class="field ma-campo" id="' + id + 'Campo"><label>' + lbl + ' <span class="hint">· opcional</span></label><input type="hidden" id="' + id + '" value="' + escapeHtml(m ? ym : '') + '">' +
+    '<div class="ma-anio"><button type="button" class="rec-mm-b" aria-label="Año anterior" ' + act(accion, 'y|' + (y - 1)) + '>−</button><b class="tnum">' + y + '</b><button type="button" class="rec-mm-b" aria-label="Año siguiente" ' + act(accion, 'y|' + (y + 1)) + '>+</button>' +
+      (m ? '<button type="button" class="link ma-quitar" ' + act(accion, 'm|0') + '>Sin fecha</button>' : '') + '</div>' +
+    '<div class="ma-meses" role="radiogroup" aria-label="' + escapeHtml(lbl) + '">' + MESES_CORTO.map((t, i) => '<button type="button" class="ma-mes' + (m === i + 1 ? ' on' : '') + '" role="radio" aria-checked="' + (m === i + 1) + '" aria-label="' + MESES[i] + ' de ' + y + '" ' + act(accion, 'm|' + (i + 1)) + '>' + t + '</button>').join('') + '</div></div>';
 }
 // lee un importe opcional: vacío → null; texto raro o negativo → NaN
 function importeOpcional(v) { const s = String(v == null ? '' : v).trim(); if (!s) return null; if (!/^[\d.,\s€]+$/.test(s) || !/\d/.test(s)) return NaN; const x = numCampo(s); return isFinite(x) && x >= 0 ? r2(x) : NaN; }
@@ -5480,7 +5544,7 @@ async function deudaGuardar() {
   if (choca) { marcarCampo('#dNombre'); return toast('Ya tienes una deuda con ese nombre: elige otro para no mezclar sus pagos'); }
   const prev = i >= 0 ? lista[i] : {}, antes = (prev.nombresAntes || []).slice();
   if (F.orig && normName(F.orig) !== k && !antes.some((x) => normName(x) === normName(F.orig))) antes.push(F.orig);
-  const nueva = Object.assign({}, prev, { nombre, objetivo: total, previo, cuotaMes: cuota, fechaObjetivo: fecha || null, emoji: F.emoji || emojiSugerido(nombre, '💳') });
+  const nueva = Object.assign({}, prev, { nombre, objetivo: total, previo, cuotaMes: cuota, fechaObjetivo: fecha || null, emoji: DEUDA_ICONOS.some((x) => x[0] === F.emoji) || (F.emoji && EMOJI_IC[F.emoji]) ? F.emoji : deudaEmojiSug(nombre) });
   if (antes.length) nueva.nombresAntes = antes;
   if (!nueva.id) nueva.id = 'd' + Date.now().toString(36);
   if (i >= 0) lista[i] = nueva; else lista.push(nueva);
@@ -6435,7 +6499,7 @@ function cuentasHtml() {
     '<div class="rec-hint" style="margin:-8px 0 12px;">Toca una cuenta para cambiar su saldo, su tipo o su color.</div>' +
     (cs.length ? '<div class="card cuentas-lista">' + cs.map((c, i) => {
       const v = saldoCuenta(c), pc = cuentaPrincipal();
-      return '<button class="row cuenta-fila tappable" ' + act('cuentaEditar', i) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' +
+      return '<button class="row cuenta-fila tappable" ' + act('cuentaEditar', i) + '><span class="aj-ic" style="--cc:' + colorCuenta(c) + '">' + ic(ICONO_CUENTA[tipoCuenta(c)] || 'wallet') + '</span>' +
         '<div class="main"><div class="ttl">' + escapeHtml(c.nombre || 'Cuenta sin nombre') + '</div><div class="meta">' + escapeHtml([tipoCuentaTxt(c), pc && pc.id === c.id && cuentasCfg().length >= 2 ? 'principal' : '', cuentaEnTengo(c) ? '' : 'no suma'].filter(Boolean).join(' · ')) + '</div></div>' +
         '<div class="amt tnum">' + (v == null ? '<span style="color:var(--accent)">Pon el saldo</span>' : money(v)) + '</div><span class="chev-s">' + ic('chevR') + '</span></button>';
     }).join('') + '</div>'
@@ -7905,16 +7969,19 @@ function lotesHtml() {
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 function reglasHtml() {
-  const rs = cfg().reglasCat || [];
+  const rs = cfg().reglasCat || [], tipo = (FORM && FORM.kind === 'reglas' && FORM.rgTipo) || '';
+  const tipos = [['', 'Cualquiera']].concat(TIPOS.filter((t) => t !== 'Inversión').map((t) => [t, t === 'Factura' ? 'Pago fijo' : t]));
+  const sugs = tipo === 'Ingreso' ? (cfg().ingresos || []) : catsGasto().map((c) => c.nombre);
   return '<div class="handle"></div><h2>Reglas de categorías</h2>' +
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Si la descripción de un movimiento contiene el texto, se le pone la categoría sola (al apuntarlo y al importar).</div>' +
-    (rs.length ? '<div class="list">' + rs.map((r, i) => '<div class="row static"><div class="main"><div class="ttl">«' + escapeHtml(r.texto) + '» → ' + escapeHtml(r.categoria) + '</div><div class="meta">' + escapeHtml(r.tipo || 'Cualquier tipo') + '</div></div><button class="rm" aria-label="Quitar" ' + act('reglaQuitar', i) + '>' + ic('close') + '</button></div>').join('') + '</div>'
+    (rs.length ? '<div class="list">' + rs.map((r, i) => '<div class="row static"><div class="main"><div class="ttl">«' + escapeHtml(r.texto) + '» → ' + escapeHtml(r.categoria) + '</div><div class="meta">' + escapeHtml(r.tipo === 'Factura' ? 'Pago fijo' : r.tipo || 'Cualquier tipo') + '</div></div><button class="rm" aria-label="Borrar la regla «' + escapeHtml(r.texto) + '»" ' + act('reglaQuitar', i) + '>' + ic('trash') + '</button></div>').join('') + '</div>'
       : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no tienes reglas. Se crean al apuntar un movimiento con descripción («Recordar…») o al importar.</div>') +
     '<div class="section-title">Añadir regla</div><div class="card">' +
     '<div class="field"><label>Si la descripción contiene</label><input id="rgTexto" type="text" placeholder="mercadona"></div>' +
-    '<div class="field"><label>Tipo</label><select id="rgTipo"><option value="">Cualquiera</option>' + TIPOS.filter((t) => t !== 'Inversión').map((t) => '<option>' + t + '</option>').join('') + '</select></div>' +
-    '<div class="field" style="margin-bottom:0;"><label>Categoría</label><input id="rgCat" type="text" placeholder="Alimentación"></div></div>' +
-    '<div class="actions"><button class="btn ghost block" ' + act('reglaAnadir') + '>' + ic('plus') + ' Añadir</button><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+    '<div class="field"><label>Tipo</label><input type="hidden" id="rgTipo" value="' + escapeHtml(tipo) + '"><div class="chips" role="radiogroup" aria-label="Tipo">' + tipos.map(([v, l]) => '<button type="button" class="chip' + (v === tipo ? ' active' : '') + '" role="radio" aria-checked="' + (v === tipo) + '" ' + act('reglaTipo', v) + '>' + escapeHtml(l) + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>Categoría</label><input id="rgCat" type="text" placeholder="Supermercado" list="rgCatLista" autocomplete="off"><datalist id="rgCatLista">' + sugs.map((n) => '<option value="' + escapeHtml(n) + '">').join('') + '</datalist></div>' +
+    '<button class="btn ghost block" ' + act('reglaAnadir') + '>' + ic('plus') + ' Añadir regla</button></div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 function guardarRegla(texto, categoria, tipo) {
   const t = normDesc(texto); if (!t || !categoria) return false;
@@ -8197,9 +8264,10 @@ function sugerenciaMejor(rc) {
 /* ---- Pantalla «Cobros y pagos recurrentes» ---- */
 function recListaHtml() {
   const rs = recurrentes(), hoy = todayISO();
-  const prox = (rc) => { const o = rc.regla ? ocurrencias(rc.regla, hoy, uAdd(hoy, 400))[0] : null; return o ? 'próximo ' + fechaCortaU(o) : ''; };
-  const fila = (rc) => '<div class="row" ' + act('recEditar', rc.kind, rc.idx) + '><span class="dot" style="background:' + (rc.kind === 'cobro' ? 'var(--income)' : 'var(--bill, var(--accent))') + '"></span>' +
-    '<div class="main"><div class="ttl">' + escapeHtml(rc.nombre) + '</div><div class="meta">' + escapeHtml(rc.regla ? reglaTexto(rc.regla) + ' · ' + prox(rc) : 'Sin fecha: tócalo para elegir cuándo') + '</div></div>' +
+  const prox = (rc) => { const o = rc.regla ? ocurrencias(rc.regla, hoy, uAdd(hoy, 400))[0] : null; return o ? 'Próximo: ' + fechaDiaCorta(o) : ''; };
+  const icRec = (rc) => { if (rc.kind === 'cobro') return '<span class="aj-ic" style="--cc:var(--income)">' + ic('arrowUp') + '</span>'; const it = (cfg().facturas || [])[rc.idx] || {}, cat = it.categoria || catDeRecibo(rc.nombre); return '<span class="aj-ic" style="--cc:' + colorCat(cat) + '">' + ic(iconoCat('Factura', cat, rc.nombre)) + '</span>'; };
+  const fila = (rc) => '<div class="row rec-fila" ' + act('recEditar', rc.kind, rc.idx) + '>' + icRec(rc) +
+    '<div class="main"><div class="ttl">' + escapeHtml(rc.nombre) + '</div><div class="meta">' + escapeHtml(rc.regla ? reglaTexto(rc.regla) : 'Sin fecha: tócalo para elegir cuándo') + '</div>' + (rc.regla && prox(rc) ? '<div class="meta">' + escapeHtml(prox(rc)) + '</div>' : '') + '</div>' +
     '<div class="amt tnum">' + (rc.importe == null || rc.importe === '' ? '—' : money(rc.importe)) + '</div></div>';
   const cob = rs.filter((r) => r.kind === 'cobro'), fac = rs.filter((r) => r.kind === 'factura');
   const vacio = (t) => '<div class="card" style="color:var(--text-faint);font-size:13.5px;">' + t + '</div>';
@@ -8327,13 +8395,13 @@ function recEditorHtml() {
     const sug = sugerenciaMejor(rc);
     if (sug) sugerencia = '<div class="rec-learn">Tus últimos movimientos encajan mejor con <b>' + escapeHtml(reglaTexto(sug.r)) + '</b> (coincide en ' + sug.hits + ' de ' + sug.total + '). <button type="button" class="link" ' + act('recUsarSugerencia') + '>Usar esta</button></div>';
   }
-  return '<div class="handle"></div><h2>' + (F.idx != null ? 'Editar' : (esCobro ? 'Nuevo ingreso fijo' : 'Nuevo pago fijo')) + '</h2>' +
+  return '<div class="handle"></div><h2>' + (F.idx != null ? escapeHtml(F.tituloEd || F.nombre || 'Editar') : (esCobro ? 'Nuevo ingreso fijo' : 'Nuevo pago fijo')) + '</h2>' +
     '<div class="field"><label>Tipo</label><div class="type-toggle"><button type="button" data-t="Ingreso" class="' + (esCobro ? 'active' : '') + '" ' + act('recSetKind', 'cobro') + '>Ingreso fijo</button><button type="button" data-t="Factura" class="' + (!esCobro ? 'active' : '') + '" ' + act('recSetKind', 'factura') + '>Pago fijo</button></div></div>' +
-    '<div class="field"><label>Nombre</label>' + (nombres.length ? '<div class="chips">' + nombres.map((nm) => '<button type="button" class="chip ' + (normName(nm) === normName(F.nombre) ? 'active' : '') + '" ' + act('recPickNombre', nm) + '>' + escapeHtml(nm) + '</button>').join('') + '</div>' : '') +
+    '<div class="field"><label>Nombre</label>' + (nombres.length > 1 ? '<div class="chips">' + nombres.map((nm) => '<button type="button" class="chip ' + (normName(nm) === normName(F.nombre) ? 'active' : '') + '" ' + act('recPickNombre', nm) + '>' + escapeHtml(nm) + '</button>').join('') + '</div>' : '') +
     '<input id="recNombre" type="text" placeholder="' + (esCobro ? 'Nómina' : 'Alquiler') + '" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('recCampo', 'nombre') + '></div>' +
     (esCobro ? '' : '<div class="field"><label>Categoría</label><select id="recCat" ' + onChange('recCampo', 'categoria') + '>' + catsGasto().map((c) => '<option' + (normName(c.nombre) === normName(F.categoria || catDeRecibo(F.nombre || '')) ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>') +
     (hayVariasCuentas() ? '<div class="field"><label>' + (esCobro ? 'Llega a la cuenta' : 'Sale de la cuenta') + '</label><div class="chips" id="recCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (F.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('recCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
-    '<div class="field"><label>Importe previsto (' + sym() + ') <span class="hint">· opcional</span></label><input id="recImporte" type="number" step="0.01" inputmode="decimal" value="' + (F.importe == null ? '' : escapeHtml(F.importe)) + '" ' + onInput('recCampo', 'importe') + '></div>' +
+    '<div class="field"><label>Importe previsto (' + sym() + ') <span class="hint">· opcional</span></label><input id="recImporte" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(F.importe) + '" ' + onInput('recCampo', 'importe') + '></div>' +
     recCampoReglaHtml(r, esCobro) + (esCobro && !(r && r.t) ? '<div class="rec-hint" style="margin-top:-6px;">Lo más habitual: entre el 1 y el 5, entre el 28 y el 30, o el último día hábil. Si dudas, usa «Aprender de mi historial».</div>' : '') +
     '<button type="button" class="link" style="margin:0 0 6px;" ' + act('recAprender') + '>' + ic('sparkle') + ' Aprender de mi historial</button>' + aprendido + sugerencia +
     (esCobro ? '<div class="field" style="margin-top:10px;"><label>Pagas extra <span class="hint">· meses en que cobras el doble</span></label><div class="chips">' + meses + '</div></div>' : '') +
@@ -8346,7 +8414,7 @@ function recRefrescarPrev() { const el = $('#recPrev'); if (el) el.innerHTML = r
 function recAbrirEditor(kind, idx) {
   const it = idx != null ? ((cfg()[kind === 'cobro' ? 'cobros' : 'facturas'] || [])[Number(idx)] || null) : null;
   FORM = { kind: 'rec', recKind: kind, origKind: kind, idx: it ? Number(idx) : null, nombre: it ? it.nombre : '', importe: it && it.importe != null ? it.importe : null,
-    regla: it ? (reglaDe(it) ? Object.assign({}, reglaDe(it)) : null) : null, extras: it && it.extras ? it.extras.slice() : [], aprendido: null, cuenta: it && cuentaPorId(it.cuentaId) ? it.cuentaId : null };
+    tituloEd: it ? it.nombre : '', regla: it ? (reglaDe(it) ? Object.assign({}, reglaDe(it)) : null) : null, extras: it && it.extras ? it.extras.slice() : [], aprendido: null, cuenta: it && cuentaPorId(it.cuentaId) ? it.cuentaId : null };
   openSheet(recEditorHtml());
 }
 function recGuardar() {
@@ -8354,7 +8422,7 @@ function recGuardar() {
   const nombre = ($('#recNombre').value || '').trim();
   if (!nombre) return toast('Ponle un nombre');
   const impTxt = $('#recImporte').value;
-  const importe = impTxt === '' ? null : parseFloat(impTxt);
+  const importe = importeOpcional(impTxt); if (Number.isNaN(importe)) { marcarCampo('#recImporte'); return toast('Revisa el importe'); }
   if (impTxt !== '' && !isFinite(importe)) return toast('Revisa el importe');
   let regla = F.regla && F.regla.t ? Object.assign({}, F.regla) : null;
   if (regla && regla.t === 'dia') { const d = parseInt(regla.dia, 10); if (!(d >= 1 && d <= 31)) return toast('El día tiene que estar entre 1 y 31'); regla.dia = d; }
@@ -8742,14 +8810,14 @@ function extraFieldHtml(key, i, def, value) {
 const AVISO_CAT_PERS = 'Las personalizadas son solo tuyas: es posible que otras personas no las tengan y no podrás compartir gastos con ellas. Si encaja en una estándar, usa esa y apunta el detalle (p. ej. «Salud y cuidado personal · Uñas»).';
 function catsEditorHtml() {
   const lista = catsGasto(), pers = lista.filter((c) => !c.std);
-  const pres = (c) => '<input class="amt" type="number" step="0.01" inputmode="decimal" placeholder="€/mes" aria-label="Presupuesto al mes de ' + escapeHtml(c.nombre) + '" value="' + (c.presupuesto == null ? '' : c.presupuesto) + '" ' + onChange('catPres', c.nombre) + '>';
+  const pres = (c) => '<input class="amt" type="text" inputmode="decimal" autocomplete="off" placeholder="' + sym() + '/mes" aria-label="Presupuesto al mes de ' + escapeHtml(c.nombre) + '" value="' + importeCampo(c.presupuesto) + '" ' + onChange('catPres', c.nombre) + '>';
   return '<div class="handle"></div><h2>Categorías y presupuestos</h2>' +
     '<div class="rec-hint" style="margin:-8px 0 12px;">Las estándar son iguales para todos y no se pueden borrar: así un gasto compartido cae en la misma categoría para cada uno. Ponles un presupuesto al mes si quieres.</div>' +
     '<div class="section-title" style="margin-top:4px;">Estándar</div><div class="card config-list">' +
-    lista.filter((c) => c.std).map((c) => { const s = catStd(c.nombre); return '<div class="cat-std-row"><span class="mov-ic t-expense" aria-hidden="true">' + ic(s.ic) + '</span><div class="cn"><b>' + escapeHtml(c.nombre) + '</b><span>' + escapeHtml(s.d) + '</span></div>' + pres(c) + '</div>'; }).join('') + '</div>' +
+    lista.filter((c) => c.std).map((c) => { const s = catStd(c.nombre); return '<div class="cat-std-row"><span class="mov-ic t-cat" style="--cc:' + colorCat(c.nombre) + '" aria-hidden="true">' + ic(s.ic) + '</span><div class="cn"><b>' + escapeHtml(c.nombre) + '</b><span>' + escapeHtml(s.d) + '</span></div>' + pres(c) + '</div>'; }).join('') + '</div>' +
     '<div class="section-title">Tus categorías personalizadas</div>' +
     (pers.length ? '<div class="card config-list">' + pers.map((c) => '<div class="cat-std-row"><input class="cn-in" value="' + escapeHtml(c.nombre) + '" aria-label="Nombre" ' + onChange('catRenombrar', c.nombre) + '>' + pres(c) +
-      '<button class="rm" aria-label="Quitar ' + escapeHtml(c.nombre) + '" ' + act('catQuitar', c.nombre) + '>' + ic('close') + '</button></div>').join('') + '</div>' : '') +
+      '<button class="rm" aria-label="Borrar ' + escapeHtml(c.nombre) + '" ' + act('catQuitar', c.nombre) + '>' + ic('trash') + '</button></div>').join('') + '</div>' : '') +
     '<div class="cat-aviso" style="margin:10px 0;">' + ic('alert') + '<span>' + AVISO_CAT_PERS + '</span></div>' +
     '<div class="row2" style="display:flex;gap:8px;"><input id="catNuevaIn" placeholder="Nueva categoría personalizada" style="flex:1;"><button class="btn ghost" ' + act('catNueva') + '>' + ic('plus') + ' Añadir</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
@@ -8758,18 +8826,19 @@ function catsEditorHtml() {
 function guardarCats(lista) {
   saveConfig({ categoriasGasto: lista.filter((c) => !c.std || (c.presupuesto != null && c.presupuesto !== '')).map((c) => ({ nombre: c.nombre, presupuesto: c.presupuesto == null || c.presupuesto === '' ? null : Number(c.presupuesto) })) });
 }
+function icMetodo(n) { const k = normName(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''); return /efectivo|metalico/.test(k) ? 'cash' : /bizum/.test(k) ? 'phone' : /transfer|banco/.test(k) ? 'bank' : /tarjeta|credito|debito|visa|master/.test(k) ? 'card' : 'wallet'; }
 function listEditorHtml(key) {
   if (key === 'categoriasGasto') return catsEditorHtml();
   const meta = LIST_META[key];
   const items = (cfg()[key] || []);
   const rows = items.map((it, i) => meta.simple
-    ? '<div class="row2"><input value="' + escapeHtml(it) + '" placeholder="Nombre" ' + onChange('listChange', key, i, '') + '><button class="rm" aria-label="Quitar" ' + act('listRemove', key, i) + '>' + ic('close') + '</button></div>'
+    ? '<div class="row2">' + (key === 'metodosPago' ? '<span class="aj-ic sm">' + ic(icMetodo(it)) + '</span>' : '') + '<input value="' + escapeHtml(it) + '" placeholder="Nombre" aria-label="Nombre" ' + onChange('listChange', key, i, '') + '><button class="rm" aria-label="Borrar «' + escapeHtml(it) + '»" ' + act('listRemove', key, i) + '>' + ic('trash') + '</button></div>'
     : '<div class="row2"><input value="' + escapeHtml(it.nombre) + '" placeholder="Nombre" ' + onChange('listChange', key, i, 'nombre') + '>' +
       '<input class="amt" type="number" step="0.01" inputmode="decimal" value="' + (it[meta.amtField] == null ? '' : it[meta.amtField]) + '" placeholder="' + meta.amtLabel + '" ' + onChange('listChange', key, i, meta.amtField) + '>' +
       (meta.extra || []).map((def) => extraFieldHtml(key, i, def, it[def.field])).join('') +
-      '<button class="rm" aria-label="Quitar" ' + act('listRemove', key, i) + '>' + ic('close') + '</button></div>').join('');
+      '<button class="rm" aria-label="Borrar" ' + act('listRemove', key, i) + '>' + ic('trash') + '</button></div>').join('');
   return '<div class="handle"></div><h2>' + meta.title + '</h2>' +
-    '<div class="card config-list">' + (rows || '<div style="padding:16px;color:var(--text-faint);font-size:13.5px;">Vacío. Añade el primero abajo.</div>') + '</div>' +
+    '<div class="card config-list">' + (rows || '<div style="padding:16px;color:var(--text-faint);font-size:13.5px;">Aún no tienes ninguno. Toca «Añadir».</div>') + '</div>' +
     '<div style="margin-top:12px;"><button class="btn ghost block" ' + act('listAdd', key) + '>' + ic('plus') + ' Añadir</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('listDone', key) + '>Listo</button></div>';
 }
@@ -8930,6 +8999,7 @@ const H = {
   tuMesAbrir: () => { verBadge('tumes'); const mc = mesCfg(), t = cfg().mesInicio || {}, cobs = cobrosNomina(); FORM = { kind: 'tuMes', modo: mc.nomina ? 'nomina' : mc.modo, dia: mc.modo === 'cobro' ? mc.dia : (Number(t.dia) >= 2 ? Number(t.dia) : 28), nomina: mc.nomina || ((cobs.find((r) => /nomina|sueldo|salario/.test(normName(r.nombre).normalize('NFD').replace(/[\u0300-\u036f]/g, ''))) || cobs[0] || {}).nombre || '') }; if ($('#sheetBackdrop')) updateSheet(tuMesHtml()); else openSheet(tuMesHtml()); },
   tuMesModo: ([k]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.modo = k === 'cobro' || k === 'nomina' ? k : 'natural'; updateSheet(tuMesHtml()); },
   tuMesNomina: ([n]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.nomina = n; sentir('tic'); updateSheet(tuMesHtml()); },
+  tuMesDiaB: ([d]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.dia = Math.min(31, Math.max(2, Number(d) || 28)); sentir('tic'); const sc = $('#sheetHost .sheet'), y = sc ? sc.scrollTop : 0; updateSheet(tuMesHtml()); const s2 = $('#sheetHost .sheet'); if (s2) s2.scrollTop = y; },
   tuMesDia: (_a, el) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.dia = Math.min(31, Math.max(2, Number(el.value) || 28)); updateSheet(tuMesHtml()); },
   tuMesGuardar: () => {
     if (!FORM || FORM.kind !== 'tuMes') return;
@@ -9251,9 +9321,17 @@ const H = {
   aportarRGuardar: () => aportarRGuardar(),
   deudaNueva: () => { FORM = { kind: 'deudaForm', orig: null, nombre: '', emoji: '' }; if ($('#sheetBackdrop')) updateSheet(deudaFormHtml()); else openSheet(deudaFormHtml()); },
   deudaEditar: ([n]) => { const d = deudaPorNombre(n); if (!d) return; FORM = { kind: 'deudaForm', orig: d.nombre, nombre: d.nombre, emoji: d.emoji || '', total: d.objetivo, previo: d.previo, cuotaMes: d.cuotaMes, fecha: d.fechaObjetivo || '' }; if ($('#sheetBackdrop')) updateSheet(deudaFormHtml()); else openSheet(deudaFormHtml()); },
-  deudaEmoji: ([e]) => { if (!FORM || FORM.kind !== 'deudaForm') return; FORM.emoji = e; $$('.dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(e); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); },
+  deudaMes: ([v]) => {
+    const F = FORM; if (!F || F.kind !== 'deudaForm') return; const [k, n] = String(v).split('|'), cur = (F.fecha || '').slice(0, 7), y = /^\d{4}-\d{2}$/.test(cur) ? Number(cur.slice(0, 4)) : Number(F._maY || todayISO().slice(0, 4)), m = /^\d{4}-\d{2}$/.test(cur) ? Number(cur.slice(5, 7)) : 0;
+    ['dNombre', 'dTotal', 'dPrevio', 'dCuota'].forEach((id) => { const el = $('#' + id); if (el) F[{ dNombre: 'nombre', dTotal: 'total', dPrevio: 'previo', dCuota: 'cuotaMes' }[id]] = el.value; }); // lo escrito no se pierde
+    if (k === 'y') { const ny = Math.max(2000, Math.min(2100, Number(n))); F._maY = ny; F.fecha = m ? ny + '-' + pad2(m) : ''; }
+    else { const nm = Number(n); F.fecha = nm ? y + '-' + pad2(nm) : ''; F._maY = y; }
+    const c = $('#dFechaCampo'); if (c) c.outerHTML = mesAnioCampoHtml('Acabar en', 'dFecha', F.fecha, 'deudaMes'); sentir('tic');
+  },
+  deudaEmoji: ([e]) => { if (!FORM || FORM.kind !== 'deudaForm') return; FORM.emoji = e; $$('.dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(e); b.classList.toggle('on', on); b.setAttribute(b.hasAttribute('aria-checked') ? 'aria-checked' : 'aria-pressed', String(on)); }); sentir('tic'); },
   deudaNombreIn: (_a, el) => {
     const F = FORM; if (!F || F.kind !== 'deudaForm') return; F.nombre = el.value;
+    if (!DEUDA_ICONOS.some((x) => x[0] === F.emoji) && !(F.emoji && EMOJI_IC[F.emoji])) { const sug = deudaEmojiSug(el.value); $$('.deu-ics .dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(sug); b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }); }
     // al crear una deuda con un nombre que ya tiene pagos, se avisa de que contarán
     const av = $('#dAviso'); if (!av) return; const k = normName(el.value || ''), n = k && !F.orig ? movsPersonales().filter((x) => x.tipo === 'Deuda' && normName(x.categoria || '') === k).length : 0;
     av.innerHTML = n ? '<div class="dm-consejo k-justo">Hay ' + n + (n === 1 ? ' pago' : ' pagos') + ' con este nombre en Movimientos: se contarán en esta deuda.</div>' : '';
@@ -9331,6 +9409,7 @@ const H = {
   temaElegir: ([id]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; verBadge('temas'); F.tema = id || null; F.temaTocado = true; F.temaNuevo = false; sentir('tic'); updateSheet(compRapidoHtml()); },
   temaNuevoAbrir: () => { const F = FORM; if (!F || F.kind !== 'compRapido') return; verBadge('temas'); F.temaNuevo = !F.temaNuevo; updateSheet(compRapidoHtml()); if (F.temaNuevo) setTimeout(() => { const el = $('#temaNom'); if (el) el.focus(); }, 50); },
   temaNomIn: (_a, el) => { if (FORM) FORM.temaNom = el.value; },
+  temaFormNomIn: (_a, el) => { if (FORM && FORM.temaForm) FORM.temaForm.nombre = el.value; }, // si llega un cambio de otra persona y se repinta, el nombre escrito no se pierde
   temaIco: ([k]) => { const F = FORM; if (!F) return; const el = $('#temaNom'); if (el) F.temaNom = el.value; F.temaIco = k; updateSheet(compRapidoHtml()); },
   temaCrearRapido: async () => {
     const F = FORM, gid = temaGidDeForm(); if (!F || !gid) return;
@@ -9539,6 +9618,7 @@ const H = {
   loteDeshacer: ([id], el) => confirmDelete(el, async () => { if (await deshacerLote(id)) setTimeout(() => updateSheet(lotesHtml()), 400); }),
   openReglas: () => { verBadge('reglas'); FORM = { kind: 'reglas' }; openSheet(reglasHtml()); },
   reglaQuitar: ([i]) => { const rs = (cfg().reglasCat || []).slice(); rs.splice(Number(i), 1); saveConfig({ reglasCat: rs }); updateSheet(reglasHtml()); },
+  reglaTipo: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || '', c = ($('#rgCat') || {}).value || ''; FORM.rgTipo = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c; sentir('tic'); },
   reglaAnadir: () => { const t = $('#rgTexto').value, c = $('#rgCat').value.trim(); if (!normDesc(t) || !c) return toast('Pon el texto y la categoría'); guardarRegla(t, c, $('#rgTipo').value); updateSheet(reglasHtml()); toast('Regla añadida'); },
   onDescInput: () => { autoCategoriaDesc(); refrescarReglaBox(); },
   reglaCheck: (_, el) => { FORM.recordar = el.checked; },
@@ -9895,7 +9975,12 @@ const H = {
     updateSheet(tabsAnSheetHtml()); render();
   },
   setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; S.tab = 'inicio'; render(); },
-  verActivo: ([nombre]) => { closeSheet(); irMovs({ tipo: 'Inversión', periodo: 'todo', cat: nombre }); }, // la lista de tus compras de ese activo (antes caía en el Resumen)
+  verActivo: ([nombre]) => { FORM = { kind: 'activo', nombre }; if ($('#sheetBackdrop')) updateSheet(activoVerHtml(nombre)); else openSheet(activoVerHtml(nombre)); }, // hoja del activo (24/10)
+  activoEnMovs: ([nombre]) => { closeSheet(); irMovs({ tipo: 'Inversión', periodo: 'todo', cat: nombre }); }, // la lista de tus compras de ese activo
+  activoPer: ([k]) => { if (!FORM || FORM.kind !== 'activo') return; S.activoPer = k; sentir('tic'); updateSheet(activoVerHtml(FORM.nombre)); },
+  activoMov: ([id]) => openMovForm(id),
+  activoArreglar: ([id]) => openMovForm(id),
+  activoInvertir: ([nombre]) => { const g = activoGrupo(nombre); openMovForm(null, { tipo: 'Inversión', categoria: g ? g.nombre : nombre, activoId: g ? g.activoId : null, tipoActivo: g ? g.tipoActivo : '' }); },
   // calendario
   setCalVista: ([v]) => { S.calVista = v; render(); },
   calHoy: () => { S.calFecha = todayISO(); render(); },
@@ -9912,7 +9997,7 @@ const H = {
     render();
   },
   // más
-  catPres: ([n], el) => { const v = el.value === '' ? null : parseFloat(el.value); if (v != null && !isFinite(v)) return toast('Revisa el presupuesto'); guardarCats(catsGasto().map((c) => (c.nombre === n ? Object.assign({}, c, { presupuesto: v }) : c))); },
+  catPres: ([n], el) => { const v = importeOpcional(el.value); if (Number.isNaN(v)) return toast('Revisa el presupuesto'); if (v != null && !isFinite(v)) return toast('Revisa el presupuesto'); guardarCats(catsGasto().map((c) => (c.nombre === n ? Object.assign({}, c, { presupuesto: v }) : c))); },
   catRenombrar: ([n], el) => {
     const v = el.value.trim(); if (!v || v === n) return;
     if (esCatStd(v) || ALIAS_STD[normName(v)]) { el.value = n; return toast('«' + v + '» ya es una categoría estándar'); }
@@ -9942,9 +10027,11 @@ const H = {
     const inputs = $$('.config-list .row2 input:first-child'); if (inputs.length) inputs[inputs.length - 1].focus();
   },
   listRemove: ([key, i]) => {
-    const items = (cfg()[key] || []).slice(); items.splice(Number(i), 1);
+    const items = (cfg()[key] || []).slice(), quitado = items.splice(Number(i), 1)[0];
     saveConfig({ [key]: items });
     updateSheet(listEditorHtml(key));
+    const n = typeof quitado === 'string' ? quitado : quitado && quitado.nombre;
+    toast((n ? '«' + n + '» borrado' : 'Borrado'), { deshacer: () => { const ahora = (cfg()[key] || []).slice(); ahora.splice(Math.min(Number(i), ahora.length), 0, quitado); saveConfig({ [key]: ahora }); if (FORM && FORM.kind === 'list' && $('#sheetBackdrop')) updateSheet(listEditorHtml(key)); } });
   },
   listChange: ([key, i, field], el) => {
     const meta = LIST_META[key], idx = Number(i);
@@ -10022,9 +10109,9 @@ const H = {
   // moneda
   openMoneda: () => openSheet('<div class="handle"></div><h2>Moneda</h2>' +
     '<p style="color:var(--text-faint);font-size:13.5px;line-height:1.5;margin:0 0 12px;">Cambia el símbolo y el formato de todos los importes. <b>No convierte</b> tus datos: un importe de 100 pasará de «100 €» a «100 $». Úsalo si llevas tus cuentas en esa moneda.</p>' +
-    '<div class="chips">' + Object.keys(MONEDAS).map((k) => '<button type="button" class="chip ' + (monedaCod() === k ? 'active' : '') + '" ' + act('setMoneda', k) + '>' + k + ' ' + MONEDAS[k].s + '</button>').join('') + '</div>' +
-    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Hecho</button></div>'),
-  setMoneda: ([k]) => { if (!MONEDAS[k]) return; saveConfig({ moneda: k }); H.openMoneda(); render(); },
+    '<div class="rec-ops" role="radiogroup" aria-label="Moneda">' + Object.keys(MONEDAS).map((k) => '<button type="button" class="tumes-op' + (monedaCod() === k ? ' on' : '') + '" role="radio" aria-checked="' + (monedaCod() === k) + '" ' + act('setMoneda', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + escapeHtml(MONEDAS[k].n) + ' · ' + escapeHtml(MONEDAS[k].s) + '</b><span>' + k + ' · ' + escapeHtml(fmtEjMoneda(k)) + '</span></span></button>').join('') + '</div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>'),
+  setMoneda: ([k]) => { if (!MONEDAS[k]) return; saveConfig({ moneda: k }); const sc = $('#sheetHost .sheet'), y = sc ? sc.scrollTop : 0; H.openMoneda(); const s2 = $('#sheetHost .sheet'); if (s2) s2.scrollTop = y; render(); },
   // 2FA
   openSeguridad: async () => { openSheet('<div class="handle"></div><h2>Verificación en dos pasos</h2><p>Cargando…</p>'); updateSheet(await mfaSheetHtml()); },
   mfaStart: async () => {
@@ -10193,6 +10280,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { VERSIONES, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
