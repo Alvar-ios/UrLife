@@ -5220,7 +5220,7 @@ function metaVerHtml(k) {
   }
   const piezas = ((r.b && r.b.piezas) || []).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).slice(0, 3);
   const mas = FORM && FORM.mas;
-  return '<div class="handle"></div><div class="dm-hcab">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '', 40, { color: metaColor(r), check: false }) : '<span class="dm-hemo">' + metaIcono(r) + '</span>') + '<div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
+  return '<div class="handle"></div><div class="dm-hcab">' + (metasVariante() === 'formas' ? '' : '<span class="dm-hemo">' + metaIcono(r) + '</span>') + '<div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
     '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
     '<div class="dm-hring">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132, { color: metaColor(r), grande: true }) : anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132)) +
     '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
@@ -6213,7 +6213,7 @@ async function metaGuardar() {
   const numOrNull = (x) => { const n = parseFloat(x); return x === '' || x == null || !isFinite(n) ? null : n; };
   const idx = F.id ? arr.findIndex((m) => m && m.id === F.id) : -1;
   const prev = idx >= 0 ? arr[idx] : {};
-  const item = Object.assign({}, prev, F.forma ? { forma: F.forma } : {}, F.color && META_COLORES[F.color] ? { color: F.color } : {}, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
+  const item = Object.assign({}, prev, F.forma ? { forma: F.forma } : {}, META_COLORES[F.color] ? { color: F.color } : !prev || !META_COLORES[prev.color] ? { color: metaColor({ id: F.id }) } : {}, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
   delete item.tipo; // todas las metas son híbridas
   if (!F.forma) delete item.forma; // sin elegir: la que sale del nombre
   // renombrar: los movimientos de Ahorro que se enlazaban por el nombre antiguo pasan a enlazarse por el identificador
@@ -9066,7 +9066,7 @@ const H = {
   calCapa: ([k]) => {
     sentir('tic');
     if (k === 'dinero') { if (S.tab === 'movimientos') return; const a = calAnchor(); S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = 'm:' + mesDe(a); S.movCalDia = ''; S._entrando = true; render(); window.scrollTo(0, 0); return; }
-    if (S.tab === 'agenda') return;
+    if (S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0)) return;
     const p = movPerNorm(S.movPeriodo), hoy = todayISO(), dia = S.movCalDia || (/^m:/.test(p) && mesDe(hoy) === p.slice(2) ? hoy : /^m:/.test(p) ? rangoMes(+p.slice(2, 6), +p.slice(7, 9)).desde : hoy);
     S.calFecha = dia; S.agendaSub = 'calendario'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0);
   },

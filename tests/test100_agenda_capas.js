@@ -2,7 +2,7 @@
 console.error = () => {};
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
-const hoy = new Date().toISOString().slice(0, 10);
+const _d = new Date(), hoy = _d.getFullYear() + '-' + String(_d.getMonth() + 1).padStart(2, '0') + '-' + String(_d.getDate()).padStart(2, '0'); // fecha local
 (async () => {
   const e = makeEnv({ version: { agenda: 0 },
     movs: [{ id: 'g1', tipo: 'Gasto', categoria: 'Otros', importe: 12, fecha: hoy }], cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });

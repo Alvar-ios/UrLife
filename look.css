@@ -1897,3 +1897,7 @@ html[data-look="nuevo"] .fm-col .i { width: 18px; height: 18px; }
 html[data-look="nuevo"] .fm.cristal .fm-t { color: color-mix(in srgb, var(--fc) 70%, #000); text-shadow: 0 0 3px #fff, 0 0 6px #fff, 0 0 2px #fff; }
 @media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .fm.cristal .fm-t { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.55); } }
 html[data-look="nuevo"][data-theme="dark"] .fm.cristal .fm-t { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.55); }
+/* el % de la meta, siempre legible: una pastilla suave detrás (Calidad 24/10) */
+html[data-look="nuevo"] .fm.cristal .fm-t.g b { display: inline-block; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--paper-raised) 78%, transparent); color: color-mix(in srgb, var(--fc) 62%, var(--ink)); text-shadow: none; }
+html[data-look="nuevo"] .fm.cristal .fm-t.g { text-shadow: none; }
+html[data-look="nuevo"] .jv-obj .jv-obj-p { font-size: 13.5px; font-weight: 700; color: var(--text); }
