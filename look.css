@@ -1873,3 +1873,27 @@ html[data-look="nuevo"] .topbar .tb-agenda.on { background: var(--accent-soft); 
 html[data-look="nuevo"] .tb-n { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--paper); }
 html[data-look="nuevo"] .tb-n[hidden] { display: none; }
 html[data-look="nuevo"] .cal-capas { margin: 0 0 12px; }
+
+/* ---- Metas «de cristal» con su color (24/10, docs/19 3.3) ---- */
+html[data-look="nuevo"] .fm.cristal { --fc: var(--fcl); }
+@media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .fm.cristal { --fc: var(--fcd); } }
+html[data-look="nuevo"][data-theme="dark"] .fm.cristal { --fc: var(--fcd); }
+html[data-look="nuevo"] .fm.cristal .fm-fondo { fill: var(--fc); fill-opacity: .14; stroke: none; }
+html[data-look="nuevo"] .fm.cristal .fm-agua { fill: var(--fc); opacity: .82; }
+html[data-look="nuevo"] .fm.cristal .fm-sup { stroke: color-mix(in srgb, var(--fc) 70%, #fff); stroke-width: 2; }
+html[data-look="nuevo"] .fm.cristal .fm-con, html[data-look="nuevo"] .fm.cristal .fm-con.hecha { stroke: var(--fc); color: var(--fc); stroke-width: 2.2; }
+html[data-look="nuevo"] .fm.cristal .fm-det { stroke: var(--fc); opacity: .35; }
+html[data-look="nuevo"] .fm.cristal .fm-brillo { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; opacity: .45; }
+html[data-look="nuevo"] .fm.cristal .fm-t { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.45); }
+html[data-look="nuevo"] .fm.cristal .fm-t.g { font-size: 19px; }
+html[data-look="nuevo"] .fm.cristal .fm-ok { background: var(--fc); }
+html[data-look="nuevo"] .dm-fm-n { font-weight: 700; font-size: 14px; line-height: 1.25; text-align: center; overflow-wrap: anywhere; color: var(--text); }
+html[data-look="nuevo"] .fm-colores { display: flex; gap: 10px; }
+html[data-look="nuevo"] .fm-col { width: 40px; height: 40px; border-radius: 50%; border: 0; display: grid; place-items: center; color: #fff; background: var(--fcl); }
+@media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .fm-col { background: var(--fcd); } }
+html[data-look="nuevo"][data-theme="dark"] .fm-col { background: var(--fcd); }
+html[data-look="nuevo"] .fm-col.on { box-shadow: 0 0 0 3px var(--paper-raised), 0 0 0 5px var(--text); }
+html[data-look="nuevo"] .fm-col .i { width: 18px; height: 18px; }
+html[data-look="nuevo"] .fm.cristal .fm-t { color: color-mix(in srgb, var(--fc) 70%, #000); text-shadow: 0 0 3px #fff, 0 0 6px #fff, 0 0 2px #fff; }
+@media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .fm.cristal .fm-t { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.55); } }
+html[data-look="nuevo"][data-theme="dark"] .fm.cristal .fm-t { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.55); }

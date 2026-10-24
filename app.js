@@ -4427,8 +4427,8 @@ function juntosObjHtml() {
   const ms = objCompartidos('ahorro'), ds = objCompartidos('deuda');
   if (!ms.length && !ds.length) return '';
   const meta = (r) => { const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
-    return '<button type="button" class="jv-obj tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' + formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 96) +
-      '<span class="jv-obj-p tnum">' + Math.round(pct) + ' %</span><b class="tnum">' + (r.falta > 0 ? 'Faltan ' + m0(r.falta) : '¡Conseguida!') + '</b>' + (r.falta > 0 ? '<span class="jv-obj-e" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' : '') + '</button>'; };
+    return '<button type="button" class="jv-obj tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' + formaHtml(metaForma(r), pct, '<b class="tnum">' + Math.round(pct) + ' %</b>', 96, { color: metaColor(Object.assign({ compartida: true }, r)), grande: true }) +
+      '<span class="jv-obj-p">' + escapeHtml(r.nombre) + '</span><b class="tnum">' + (r.falta > 0 ? 'Faltan ' + m0(r.falta) : '¡Conseguida!') + '</b>' + (r.falta > 0 ? '<span class="jv-obj-e" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span>' : '') + '</button>'; };
   const deuda = (r) => { const pct = Math.max(0, Math.min(100, r.pct || 0)), g = grupoDe(r.o.grupoId);
     return '<button type="button" class="jv-obj deu tappable" aria-label="' + escapeHtml(r.nombre + ': quedan ' + money(r.falta)) + '" ' + act('deudaCompVer', r.id) + '><span class="jv-obj-ic">' + icDeEmoji(r.o.emoji || emojiSugerido(r.nombre, '💳'), 'deuda') + '</span>' +
       '<span class="jv-obj-n">' + escapeHtml(r.nombre) + '</span><span class="jv-obj-bar"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="jv-obj-p tnum">' + Math.round(pct) + ' % pagado</span><b class="tnum">' + (r.falta > 0 ? 'Quedan ' + m0(r.falta) : 'Saldada') + '</b>' +
@@ -5153,6 +5153,20 @@ const FORMA_PISTAS = [[/vuelo|avion/, 'avion'], [/viaj|vacacion|escapad|playa|ja
   [/mascota|perro|gato|veterinari/, 'mascota'], [/colch|emergen|imprevist|fondo de/, 'colchon'], [/ordenador|movil|portatil|tele|consola|iphone|tablet/, 'tecno'], [/hucha|ahorro/, 'hucha']];
 function formaSugerida(nombre) { const n = normName(nombre || ''); const x = FORMA_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : 'tarro'; }
 // la forma de una meta: la elegida (personal en la config; compartida en la columna «forma» cuando exista) o la que sale del nombre
+/* ---- Metas con color propio (24/10, docs/19 3.3): 5 colores sin rojo, verde ni naranja; [oscuro, claro] ---- */
+const META_COLORES = { violeta: ['#9B7BFF', '#6D3FD9', 'Violeta'], cielo: ['#4DB0F5', '#1F78C2', 'Cielo'], turquesa: ['#2CCFBD', '#0E8A7E', 'Turquesa'], frambuesa: ['#F26A9E', '#C02E68', 'Frambuesa'], ambar: ['#F5BE45', '#A86F00', 'Ámbar'] };
+const META_COLORES_ORDEN = ['violeta', 'cielo', 'turquesa', 'frambuesa', 'ambar'];
+function hashTxt(t) { let h = 0; for (const ch of String(t || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h; }
+function metaColor(r) {
+  if (!r) return 'violeta';
+  if (r.compartida) return META_COLORES_ORDEN[hashTxt(r.o && r.o.id || r.id || r.nombre) % 5]; // igual para todo el grupo, sin guardar nada
+  const ms = metasCfg(), i = ms.findIndex((x) => x.id === r.id), m = ms[i];
+  return m && META_COLORES[m.color] ? m.color : META_COLORES_ORDEN[(i < 0 ? ms.length : i) % 5];
+}
+function metaColorStyle(k) { const c = META_COLORES[k] || META_COLORES.violeta; return '--fcd:' + c[0] + ';--fcl:' + c[1]; }
+function metaColoresHtml(sel, accion) {
+  return '<div class="field"><label>Su color</label><div class="fm-colores" role="radiogroup" aria-label="Su color">' + META_COLORES_ORDEN.map((k) => '<button type="button" role="radio" aria-checked="' + (k === sel) + '" aria-label="' + META_COLORES[k][2] + '" class="fm-col' + (k === sel ? ' on' : '') + '" style="' + metaColorStyle(k) + '" ' + act(accion, k) + '>' + (k === sel ? ic('check') : '') + '</button>').join('') + '</div></div>';
+}
 function metaForma(r) {
   let k = null;
   if (r && r.compartida) k = r.o && r.o.forma; else { const m = r && metasCfg().find((x) => x.id === r.id); k = m && m.forma; }
@@ -5164,13 +5178,15 @@ function formaHtml(k, pct, texto, tam, o) {
   o = o || {}; const F = FORMAS[k] || FORMAS.tarro, id = 'fm' + (_formaN++), p = Math.max(0, Math.min(100, Number(pct) || 0));
   const y = F.bot - (F.bot - F.top) * p / 100, hecha = p >= 100, ns = 'vector-effect="non-scaling-stroke"';
   const ola = 'M-40 ' + y.toFixed(1) + ' q12.5 -3 25 0 t25 0 t25 0 t25 0 t25 0 t25 0';
+  const cristal = !!o.color;
   const svg = '<svg class="fm-svg" width="' + tam + '" height="' + tam + '" viewBox="-2 -2 104 104" aria-hidden="true"><defs><clipPath id="' + id + '"><path d="' + F.fill + '"/></clipPath></defs>' +
-    '<g clip-path="url(#' + id + ')">' + (p > 0 ? '<g class="fm-liq"><path class="fm-agua" d="' + ola + ' V104 H-40 Z"/>' + (!hecha ? '<path class="fm-sup" d="' + ola + '" ' + ns + '/>' : '') + '</g>' : '') + '</g>' +
+    (cristal ? '<path class="fm-fondo" d="' + F.fill + '"/>' : '') +
+    '<g clip-path="url(#' + id + ')">' + (cristal ? '<path class="fm-brillo" d="M18 ' + (F.top + 14) + ' Q24 ' + (F.top + 4) + ' 38 ' + (F.top + 4) + '" ' + ns + '/>' : '') + (p > 0 ? '<g class="fm-liq"><path class="fm-agua" d="' + ola + ' V104 H-40 Z"/>' + (!hecha ? '<path class="fm-sup" d="' + ola + '" ' + ns + '/>' : '') + '</g>' : '') + '</g>' +
     (F.d ? '<g class="fm-det" ' + ns + '>' + F.d.replace(/<path /g, '<path ' + ns + ' ') + '</g>' : '') +
     '<g class="fm-con' + (hecha ? ' hecha' : '') + '">' + F.c.replace(/<(path|rect|ellipse|circle) /g, '<$1 ' + ns + ' ') + '</g></svg>';
   let ly = F.ly; if (p > 0 && p < 100 && Math.abs(y - ly) < 11) ly = y > ly ? Math.max(F.top + 9, y - 13) : Math.min(F.bot - 9, y + 13);
   const txt = texto ? '<span class="fm-t' + (o.grande ? ' g' : '') + '" style="top:' + ((ly + 2) / 104 * tam).toFixed(0) + 'px">' + texto + '</span>' : '';
-  return '<span class="fm" style="width:' + tam + 'px;height:' + tam + 'px">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
+  return '<span class="fm' + (cristal ? ' cristal' : '') + '" style="width:' + tam + 'px;height:' + tam + 'px' + (cristal ? ';' + metaColorStyle(o.color) : '') + '">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
 }
 // «Su forma»: las 12 en pequeño; la sugerida por el nombre lleva una marca. Elegida = null → la del nombre
 function formaElegirHtml(elegida, nombre, accion) {
@@ -5184,8 +5200,8 @@ function formaElegirHtml(elegida, nombre, accion) {
 function metaFormaHtml(r) {
   const e = metaEstado2(r), pct = Math.max(0, Math.min(100, r.pct || 0));
   return '<div class="dm-fm" data-meta="' + escapeHtml(r.key) + '"><button type="button" class="dm-fm-main tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(pct) + ' por ciento. ' + e.t) + '" ' + act('metaVer', r.key) + '>' +
-    formaHtml(metaForma(r), pct, escapeHtml(r.nombre), 104, { users: r.compartida }) +
-    '<span class="dm-fm-p tnum">' + (r.pct == null ? '—' : Math.round(pct) + ' %') + '</span><span class="dm-fm-c tnum">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span>' +
+    formaHtml(metaForma(r), pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(pct) + ' %') + '</b>', 104, { users: r.compartida, color: metaColor(r), grande: true }) +
+    '<span class="dm-fm-p dm-fm-n">' + escapeHtml(r.nombre) + '</span><span class="dm-fm-c tnum">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span>' +
     '<span class="dm-est" style="color:' + DM_ESTADO_COLOR[e.k] + '">' + escapeHtml(e.t) + '</span></button>' +
     (r.conseguida ? '' : '<button type="button" class="dm-fm-mas" aria-label="Aportar a ' + escapeHtml(r.nombre) + '" ' + act('metaAportarR', r.key) + '>' + ic('plus') + '</button>') + '</div>';
 }
@@ -5204,9 +5220,9 @@ function metaVerHtml(k) {
   }
   const piezas = ((r.b && r.b.piezas) || []).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).slice(0, 3);
   const mas = FORM && FORM.mas;
-  return '<div class="handle"></div><div class="dm-hcab"><span class="dm-hemo">' + metaIcono(r) + '</span><div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
+  return '<div class="handle"></div><div class="dm-hcab">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '', 40, { color: metaColor(r), check: false }) : '<span class="dm-hemo">' + metaIcono(r) + '</span>') + '<div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
     '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
-    '<div class="dm-hring">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132, { grande: true }) : anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132)) +
+    '<div class="dm-hring">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132, { color: metaColor(r), grande: true }) : anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132)) +
     '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
     (consejo ? '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(consejo) + '</div>' : '') +
     (r.conseguida ? '' : '<button class="btn accent block" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>') +
@@ -6167,7 +6183,7 @@ function metaEditorHtml() {
   const F = FORM, v = (x) => (x == null ? '' : escapeHtml(x));
   return '<div class="handle"></div><h2>' + (F.id ? 'Editar meta' : 'Nueva meta') + '</h2>' +
     '<div class="rec-hint" style="margin:-8px 0 12px;">Una meta junta lo que apartas y lo que inviertes para ella. Al apuntar un movimiento eliges «¿Para qué meta?».</div>' +
-    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '" ' + onInput('metaNombreIn') + '></div>' + (metasVariante() === 'formas' ? formaElegirHtml(F.forma, F.nombre) : '') +
+    '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '" ' + onInput('metaNombreIn') + '></div>' + (metasVariante() === 'formas' ? formaElegirHtml(F.forma, F.nombre) + metaColoresHtml(F.color || metaColor({ id: F.id }), 'metaColorElegir') : '') +
     '<div class="field"><label>Objetivo (' + sym() + ')</label><input id="mObjetivo" type="number" step="0.01" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="mFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
     '<div class="field"><label>Lo que ya tenías antes (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"></div>' +
@@ -6178,7 +6194,7 @@ function metaEditorHtml() {
 }
 function metaAbrirEditor(id) {
   const m = id ? metasCfg().find((x) => x.id === id) : null;
-  FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null, forma: m && FORMAS[m.forma] ? m.forma : null };
+  FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null, forma: m && FORMAS[m.forma] ? m.forma : null, color: m && META_COLORES[m.color] ? m.color : null };
   if ($('#sheetBackdrop')) updateSheet(metaEditorHtml()); else openSheet(metaEditorHtml());
 }
 function metaLeerForm() {
@@ -6194,7 +6210,7 @@ async function metaGuardar() {
   const numOrNull = (x) => { const n = parseFloat(x); return x === '' || x == null || !isFinite(n) ? null : n; };
   const idx = F.id ? arr.findIndex((m) => m && m.id === F.id) : -1;
   const prev = idx >= 0 ? arr[idx] : {};
-  const item = Object.assign({}, prev, F.forma ? { forma: F.forma } : {}, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
+  const item = Object.assign({}, prev, F.forma ? { forma: F.forma } : {}, F.color && META_COLORES[F.color] ? { color: F.color } : {}, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
   delete item.tipo; // todas las metas son híbridas
   if (!F.forma) delete item.forma; // sin elegir: la que sale del nombre
   // renombrar: los movimientos de Ahorro que se enlazaban por el nombre antiguo pasan a enlazarse por el identificador
@@ -9859,6 +9875,7 @@ const H = {
   usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   metaGuardar: () => metaGuardar(),
+  metaColorElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta' || !META_COLORES[k]) return; metaLeerForm(); FORM.color = k; sentir('tic'); updateSheet(metaEditorHtml()); },
   metaFormaElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.forma = FORMAS[k] ? k : null; sentir('tic'); updateSheet(metaEditorHtml()); },
   metaNombreIn: () => { if (!FORM || FORM.kind !== 'meta' || FORM.forma) return; const el = $('#mNombre'), sug = formaSugerida(el ? el.value : ''); const g = $('.fm-grid'); if (!g || ((g.querySelector('.fm-op.sug') || {}).dataset || {}).k === sug) return; const campo = g.closest('.field'); if (campo) campo.outerHTML = formaElegirHtml(FORM.forma, el ? el.value : ''); },
   metaEliminar: (_, el) => confirmDelete(el, metaEliminar),
