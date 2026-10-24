@@ -5363,7 +5363,8 @@ function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
     const sa = serieCartera(movs.filter((m) => m.id === a.id), series), off = serieTot.length - sa.length; // la serie del activo empieza en su primera compra
     const s = series[a.id] || [];
     const precio = (d) => { let v = null; for (let k = 0; k < s.length && s[k][0] <= d; k++) v = s[k][1]; return v; };
-    const p0 = precio(serieTot[i0].d) || (s.length ? s[0][1] : null);
+    const compra0 = (movs.filter((m) => m.id === a.id).map((m) => m.fecha).sort()[0]) || serieTot[i0].d, dIni = compra0 > serieTot[i0].d ? compra0 : serieTot[i0].d; // desde su primera compra (o el inicio del periodo)
+    const p0 = precio(dIni) || (s.length ? s[0][1] : null);
     const vals = pts.map((_, j) => { const idx = Math.min(serieTot.length - 1, i0 + Math.round(j * paso)), q = sa[idx - off];
       if (!q) return modoR ? null : 0;
       if (modoR) { const pr = precio(serieTot[idx].d); return pr != null && p0 ? (pr / p0 - 1) * 100 : null; }
@@ -5376,8 +5377,10 @@ function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
 function invAnualActivo(g, vv) {
   if (!vv) return null; const movs = movsValorables([g]); if (!movs.length) return null;
   const hoy = todayISO(); if ((parseISO(hoy).getTime() - parseISO(movs[0].fecha).getTime()) / 864e5 < 30) return null;
-  const r = xirr(movs.map((m) => ({ d: m.fecha, c: -m.imp })).concat([{ d: hoy, c: vv.valor }])); return r == null ? null : r * 100;
+  const r = xirr(movs.map((m) => ({ d: m.fecha, c: -m.imp })).concat([{ d: hoy, c: vv.valor }])); return r == null ? (vv.gan > 0 ? 1000 : -100) : r * 100; // xirr no da cifra si pasa del 1.000 % al año
 }
+function invAnualTxt(v) { return v == null ? '—' : v >= 1000 ? 'más de +1.000 %' : pct1(v); }
+function invDiasActivo(g) { const m = movsValorables([g]); return m.length ? (parseISO(todayISO()).getTime() - parseISO(m[0].fecha).getTime()) / 864e5 : 0; }
 // «Qué tal va cada uno»: una barra por activo, desde que empezaste o al año (24/10, docs/19)
 function invCadaUnoHtml(R) {
   const filas = R.grupos.map((g, i) => ({ g, vv: R.vals[i] })).filter((x) => x.vv && x.vv.pct != null);
@@ -5389,9 +5392,9 @@ function invCadaUnoHtml(R) {
   const fila = (x) => { const col = colorActivo(x.g.activoId) || 'var(--accent)', w = x.v == null ? 0 : Math.max(2, Math.abs(x.v) / mx * 50);
     return '<button type="button" class="inv-cu-f tappable" ' + act('verActivo', x.g.nombre) + ' aria-label="' + escapeHtml(x.g.nombre + ': ' + (x.v == null ? 'sin datos' : pct1(x.v))) + '"><span class="inv-cu-n"><i style="background:' + col + '"></i>' + escapeHtml(invCorto(x.g.activoId, x.g.nombre)) + '</span>' +
       '<span class="inv-cu-b"><i class="' + (x.v != null && x.v < 0 ? 'neg' : 'pos') + '" style="width:' + w.toFixed(1) + '%"></i></span>' +
-      '<span class="inv-cu-v"><b class="tnum" style="color:' + (x.v == null ? 'var(--text-faint)' : x.v >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (x.v == null ? '—' : pct1(x.v)) + '</b><span class="tnum">' + (anio ? (x.v == null ? 'menos de un mes' : 'al año') : signoN(x.vv.gan) + money(Math.abs(x.vv.gan))) + '</span></span></button>'; };
+      '<span class="inv-cu-v"><b class="tnum" style="color:' + (x.v == null ? 'var(--text-faint)' : x.v >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (anio ? invAnualTxt(x.v) : pct1(x.v)) + '</b><span class="tnum">' + (anio ? (x.v == null ? 'menos de un mes' : 'al año') : signoN(x.vv.gan) + money(Math.abs(x.vv.gan))) + '</span></span></button>'; };
   return '<div class="section-title">Qué tal va cada uno</div><div class="card inv-cu"><div class="segmented inv-cu-seg">' + [['total', 'Desde que empezaste'], ['anio', 'Al año']].map(([k, l]) => '<button type="button" class="' + ((anio ? 'anio' : 'total') === k ? 'active' : '') + '" aria-pressed="' + ((anio ? 'anio' : 'total') === k) + '" ' + act('invBarras', k) + '>' + l + '</button>').join('') + '</div>' +
-    conV.concat(sinV).map(fila).join('') + '<div class="rec-hint" style="margin:8px 0 0;">' + (anio ? 'Al año, según cuándo metiste cada euro (como la del total).' : 'Lo que ganas o pierdes sobre lo que metiste.') + ' Toca uno para abrir su hoja.</div></div>';
+    conV.concat(sinV).map(fila).join('') + '<div class="rec-hint" style="margin:8px 0 0;">' + (anio ? 'Al año, según cuándo metiste cada euro (como la del total).' + (filas.some((x) => x.v != null && invDiasActivo(x.g) < 365) ? ' Con menos de un año de datos es orientativo.' : '') : 'Lo que ganas o pierdes sobre lo que metiste.') + ' Toca uno para abrir su hoja.</div></div>';
 }
 // nombre corto de un activo: su símbolo (BTC, IWDA) o las primeras letras del nombre
 function invCorto(id, nombre) {
@@ -5411,7 +5414,7 @@ function invLineasChipsHtml(movs, series, multi, apila) {
     '<div class="tr-lineas-ayuda">' + (multi ? (apila ? 'Cada franja es lo que vale ese activo; lo gris, el resto. El borde de arriba es el total.' : 'La línea gruesa es el total; las finas, cada activo.') : 'Toca un activo para verlo en la gráfica.') + '</div>';
 }
 function invLineasHojaHtml() {
-  const R = invResumen(), sel = invLineasSel(), as = R.grupos.filter((g) => g.activoId);
+  const R = invResumen(), sel = invLineasSel(), H0 = S.historico, conSerie = new Set(H0 && H0.series ? Object.keys(H0.series).filter((k) => (H0.series[k] || []).length) : []), as = R.grupos.filter((g) => g.activoId && conSerie.has(g.activoId));
   return '<div class="handle"></div><h2>Activos en la gráfica</h2><div class="rec-hint" style="margin:-8px 0 12px;">Como mucho 4 a la vez.</div><div class="card menu">' +
     as.map((g) => { const on = sel.indexOf(g.activoId) >= 0; return '<button type="button" class="menu-item inv-elegir' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" ' + act('invLineaHoja', g.activoId) + '><span class="inv-elegir-c" style="--ac:' + (colorActivo(g.activoId) || 'var(--accent)') + '">' + (on ? ic('check') : '') + '</span><span class="inv-elegir-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + escapeHtml(invCorto(g.activoId, g.nombre)) + '</span></span></button>'; }).join('') + '</div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
@@ -5501,7 +5504,7 @@ function activoVerHtml(nombre) {
   return '<div class="handle"></div><div class="act-cab"><span class="dm-ic inv"' + (col ? ' style="--ac:' + col + '"' : '') + '>' + ic(invIcono(g.tipoActivo)) + '</span><div><h2>' + escapeHtml(g.nombre) + '</h2><span>' + escapeHtml(tipo) + (a && a.simbolo ? ' · ' + escapeHtml(a.simbolo) : '') + '</span></div></div>' +
     '<div class="act-valor"><span>' + (vv ? 'Vale hoy' : 'Has metido') + '</span><b class="tnum">' + money(vv ? vv.valor : g.total) + '</b>' +
       (vv ? '<em class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (vv.gan >= 0 ? 'Ganas ' : 'Pierdes ') + money(Math.abs(vv.gan)) + (vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</em>' : '') +
-      (vv && invAnualActivo(g, vv) != null ? '<em class="tnum act-anio">Al año ' + pct1(invAnualActivo(g, vv)) + ' <span>según cuándo metiste cada euro</span></em>' : '') + '</div>' +
+      (vv ? '<em class="tnum act-anio">Al año ' + (invAnualActivo(g, vv) == null ? '<span>necesita un mes de historia</span>' : invAnualTxt(invAnualActivo(g, vv)) + ' <span>según cuándo metiste cada euro' + (invDiasActivo(g) < 365 ? ' (orientativo: menos de un año)' : '') + '</span>') + '</em>' : '') + '</div>' +
     activoGraficaHtml(g, col) +
     (sinPrecio ? '<div class="dm-aviso">' + ic('info') + '<span>Sin precio: ' + (g.activoId ? 'a alguna aportación le faltan las participaciones.' : 'falta elegir el activo en sus aportaciones.') + '</span>' + (aVincular ? '<button class="link" ' + act('activoArreglar', aVincular.id) + '>Buscar el activo</button>' : '') + '</div>' : '') +
     '<div class="act-cifras">' + cifra('Aportaste', money(g.total)) + cifra('Tienes', enPart ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.' : '—') +
@@ -6882,7 +6885,7 @@ function xirr(flujos) {
   }
   return (lo + hi) / 2;
 }
-const pct1 = (n) => (n >= 0 ? '+' : '−') + Math.abs(n).toFixed(1).replace('.', ',') + ' %';
+const pct1 = (n) => (n >= 0 ? '+' : '−') + agrupar(Math.abs(n).toFixed(1).replace('.', ',')) + ' %';
 const eurS = (n) => (n >= 0 ? '+' : '−') + fmt2(Math.abs(n)) + ' €';
 function fechaCorta(iso) { const d = parseISO(iso); return d ? d.getDate() + ' ' + MESES_ABR[d.getMonth()].toLowerCase() + ' ' + d.getFullYear() : ''; }
 function evolucionHtml(grupos, valorActual) {
@@ -6926,7 +6929,7 @@ function evolucionHtml(grupos, valorActual) {
     const curvaV = (arr) => curvaSuave(arr.map((v, i) => [X(i), Y(v)]));
     const extra = invLineasExtra(movs, H.series, serie, i0, pts, modoR), multi = extra.length > 0;
     if (multi) { const todos = vals.concat(...extra.map((l) => l.vals)); mn = Math.min(...todos); mx = Math.max(...todos); const pd = (mx - mn) * 0.1 || 1; mn -= pd; mx += pd; S._invChart.mn = mn; S._invChart.mx = mx; }
-    S._invChart.extra = extra;
+    S._invChart.extra = extra.map((l) => Object.assign({}, l, { corto: invCorto(l.id, l.nombre) }));
     // 24/10 (docs/19): en «Valor» los activos elegidos se apilan desde 0 (el borde de arriba es el total); en «Rentabilidad», líneas en %
     const apila = multi && !modoR;
     if (apila) { mn = 0; mx = Math.max(...pts.map((p) => p.v)) * 1.08 || 1; S._invChart.mn = mn; S._invChart.mx = mx; }
@@ -6945,6 +6948,7 @@ function evolucionHtml(grupos, valorActual) {
     }
     // etiquetas al final de cada línea; si dos chocan, se separan
     etiquetas.sort((a, b) => a.y - b.y); for (let k = 1; k < etiquetas.length; k++) if (etiquetas[k].y - etiquetas[k - 1].y < 15) etiquetas[k].y = etiquetas[k - 1].y + 15;
+    if (etiquetas.length > 3) etiquetas = etiquetas.filter((x) => x.total);
     const etiqHtml = etiquetas.map((e) => '<span class="tr-etq' + (e.total ? ' total' : '') + '" style="top:' + Math.max(0, Math.min(92, e.y / Hh * 100)).toFixed(1) + '%;--lc:' + e.color + '">' + escapeHtml(e.txt) + '</span>').join('');
     const area = lineaV + ' L' + X(pts.length - 1).toFixed(1) + ' ' + suelo.toFixed(1) + ' L' + X(0).toFixed(1) + ' ' + suelo.toFixed(1) + ' Z';
     cabecera = modoR
@@ -6960,8 +6964,8 @@ function evolucionHtml(grupos, valorActual) {
       (apila ? '' : extra.map((l) => '<path class="tr-linea-a' + (l.id === S._invLineaNueva ? ' nueva' : '') + '" pathLength="1" d="' + curvaV(suavizarSerie(l.vals)) + '" fill="none" style="stroke:' + l.color + '" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>').join('')) +
       '<path id="invLineV" class="tr-linea' + (multi ? ' total' : '') + '" d="' + lineaV + '" fill="none" style="stroke:' + (apila ? 'var(--ink)' : color) + '" stroke-width="' + (multi ? 3.4 : 2.2) + '" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
       '</g></svg>' + etiqHtml +
-      (modoR ? '<div class="tr-cero" style="top:' + (Y(0) / Hh * 100).toFixed(1) + '%">0 %</div>' : '') +
-      '<div class="tr-cursor" id="invLine"></div><div class="tr-dot" id="invDot" style="background:' + color + '"></div></div>' +
+      (modoR && !multi ? '<div class="tr-cero" style="top:' + (Y(0) / Hh * 100).toFixed(1) + '%">0 %</div>' : '') +
+      '<div class="tr-cursor" id="invLine"></div><div class="tr-dot" id="invDot" style="background:' + (apila ? 'var(--ink)' : color) + '"></div></div>' +
       (multi ? '' : modoR ? '<div class="tr-legend"><span><i style="background:' + color + '"></i>Tu rentabilidad</span><span>no cambia al meter o sacar dinero</span></div>'
         : '<div class="tr-legend"><span><i style="background:' + color + '"></i>Valor de tu cartera</span><span><i class="dash"></i>Lo que has metido</span></div>');
     const notas = [];
@@ -7025,7 +7029,7 @@ function bindInvChart() {
     cabecera(p, 'metido: ' + eur0(p.inv));
     if (fecha) fecha.textContent = fechaCorta(p.d);
     const vs = document.getElementById('invVals');
-    if (vs && C.extra && C.extra.length) vs.innerHTML = '<span><i style="background:var(--accent)"></i>Total <b class="tnum">' + (C.modoR ? pct1(p.r) : eur0(p.v)) + '</b></span>' + C.extra.map((l) => '<span><i style="background:' + l.color + '"></i>' + escapeHtml(l.nombre) + ' <b class="tnum">' + (l.vals[i] == null ? '—' : C.modoR ? pct1(l.vals[i]) : eur0(l.vals[i])) + '</b></span>').join('');
+    if (vs && C.extra && C.extra.length) vs.innerHTML = '<span><i style="background:' + (C.modoR ? 'var(--accent)' : 'var(--ink)') + '"></i>Total <b class="tnum">' + (C.modoR ? pct1(p.r) : eur0(p.v)) + '</b></span>' + C.extra.map((l) => '<span><i style="background:' + l.color + '"></i>' + escapeHtml(l.corto || l.nombre) + ' <b class="tnum">' + (l.vals[i] == null ? '—' : C.modoR ? pct1(l.vals[i]) : eur0(l.vals[i])) + '</b></span>').join('');
     line.style.left = x + '%'; line.style.display = 'block';
     dot.style.left = x + '%'; dot.style.top = y + '%'; dot.style.display = 'block';
     if (ultI !== -1 && ultI !== i && (i === 0 || i === C.pts.length - 1)) vibrar(4);
@@ -10097,6 +10101,7 @@ const H = {
   invBarras: ([k]) => { S.invBarras = k === 'anio' ? 'anio' : 'total'; sentir('tic'); const el = $('.inv-cu'); if (el) { const t = document.createElement('div'); t.innerHTML = invCadaUnoHtml(invResumen()); const nuevo = t.querySelector('.inv-cu'); if (nuevo) el.replaceWith(nuevo); } else render(); },
   invLineasElegir: () => { FORM = { kind: 'invLineas' }; openSheet(invLineasHojaHtml()); },
   invLineaHoja: ([id]) => {
+    const H0 = S.historico; if (!(H0 && H0.series && (H0.series[id] || []).length)) return toast('Ese activo aún no tiene precios para la gráfica');
     const sel = invLineasSel().slice(), i = sel.indexOf(id);
     if (i >= 0) sel.splice(i, 1); else { if (sel.length >= 4) return toast('Como mucho 4 activos a la vez'); sel.push(id); }
     S.invLineas = sel; sentir('tic'); updateSheet(invLineasHojaHtml()); repintarInvCard();
