@@ -8499,8 +8499,8 @@ function recEditorHtml() {
 }
 // Categoría de un pago fijo: chips con icono y color, como al apuntar un gasto (24/10, docs/15 3.4). Se guarda en el campo oculto #recCat
 function recCatCampoHtml() {
-  const F = FORM, cur = F.categoria || catDeRecibo(F.nombre || ''), todas = catsPorUso(), max = 8, verTodas = F.catTodas || todas.indexOf(cur) >= max, vis = verTodas ? todas : todas.slice(0, max);
-  return '<div class="field" id="recCatCampo"><label>Categoría</label><input type="hidden" id="recCat" value="' + escapeHtml(cur) + '"><div class="chips" role="radiogroup" aria-label="Categoría">' +
+  const F = FORM, auto = !F.categoria, cur = F.categoria || (F.nombre ? catDeRecibo(F.nombre) : ''), todas = catsPorUso(), max = 8, pos = todas.findIndex((c) => normName(c) === normName(cur)), verTodas = F.catTodas || (!auto && pos >= max), vis = verTodas ? todas : todas.slice(0, max);
+  return '<div class="field" id="recCatCampo"><label>Categoría' + (auto ? ' <span class="hint">· se elige sola por el nombre</span>' : '') + '</label><input type="hidden" id="recCat" value="' + escapeHtml(auto ? '' : cur) + '"><div class="chips" role="radiogroup" aria-label="Categoría">' +
     vis.map((c) => '<button type="button" class="chip' + (normName(c) === normName(cur) ? ' active' : '') + '" role="radio" aria-checked="' + (normName(c) === normName(cur)) + '" ' + act('recCatElegir', c) + '><span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span>' + escapeHtml(c) + '</button>').join('') +
     (todas.length > max ? '<button type="button" class="chip chip-mas" ' + act('recCatMas') + '>' + (verTodas ? 'Menos' : 'Más (' + (todas.length - max) + ')') + '</button>' : '') + '</div></div>';
 }
@@ -9729,10 +9729,10 @@ const H = {
   recCuenta: ([id]) => { if (!FORM || FORM.kind !== 'rec') return; FORM.cuenta = id; $$('#recCuentas .chip').forEach((b) => b.classList.toggle('active', b.getAttribute('data-click') === 'recCuenta|' + encodeURIComponent(id))); sentir('tic'); },
   recEditar: ([k, i]) => recAbrirEditor(k, i),
   recSetKind: ([k]) => { if (FORM.kind !== 'rec') return; FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; FORM.recKind = k; FORM.aprendido = null; updateSheet(recEditorHtml()); },
-  recPickNombre: ([n]) => { FORM.nombre = n; const el = $('#recNombre'); if (el) el.value = n; $$('#sheetBackdrop .chips .chip').forEach((c) => { if (c.textContent && !/^[a-z]{3}$/.test(c.textContent)) c.classList.toggle('active', normName(c.textContent) === normName(n)); }); },
+  recPickNombre: ([n]) => { FORM.nombre = n; const el = $('#recNombre'); if (el) el.value = n; $$('#sheetBackdrop [data-click^="recPickNombre|"]').forEach((c) => c.classList.toggle('active', normName(c.textContent) === normName(n))); if (!FORM.categoria) { const el2 = $('#recCatCampo'); if (el2) el2.outerHTML = recCatCampoHtml(); } },
   recCatElegir: ([c]) => { if (!FORM || FORM.kind !== 'rec') return; FORM.categoria = c; const el = $('#recCatCampo'); if (el) el.outerHTML = recCatCampoHtml(); sentir('tic'); },
   recCatMas: () => { if (!FORM || FORM.kind !== 'rec') return; FORM.catTodas = !FORM.catTodas; const el = $('#recCatCampo'); if (el) el.outerHTML = recCatCampoHtml(); },
-  recCampo: ([f], el) => { if (f === 'importe') FORM.importe = el.value === '' ? null : el.value; else FORM[f] = el.value; },
+  recCampo: ([f], el) => { if (f === 'importe') FORM.importe = el.value === '' ? null : el.value; else FORM[f] = el.value; if (f === 'nombre' && !FORM.categoria && FORM.recKind !== 'cobro') { const c = $('#recCatCampo'); if (c) c.outerHTML = recCatCampoHtml(); } },
   recTipo: (_, el) => { FORM.regla = reglaPorDefecto(el.value); FORM.aprendido = null; const p = $('#recParams'); if (p) p.innerHTML = recParamsHtml(FORM.regla); recRefrescarPrev(); },
   recParam: ([f], el) => { if (!FORM.regla) return; const v = el.value; FORM.regla = Object.assign({}, FORM.regla, { [f]: (f === 'dia' || f === 'cada' || f === 'n' || f === 'dow') ? (v === '' ? '' : Number(v)) : v }); delete FORM.regla.aprendida; recRefrescarPrev(); },
   recExtra: ([m]) => { const n = Number(m), ex = (FORM.extras || []).map(Number); FORM.extras = ex.includes(n) ? ex.filter((x) => x !== n) : ex.concat([n]); FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; updateSheet(recEditorHtml()); },
