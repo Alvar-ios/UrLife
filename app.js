@@ -5310,6 +5310,7 @@ function renderInversionesTodo(enPestana) {
     (R.todas ? '<div><span>' + (R.gan >= 0 ? 'Ganas' : 'Pierdes') + '</span><b class="tnum" style="color:' + (R.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(R.gan) + money(Math.abs(R.gan)) + '</b></div>' : '<div><span>Valor</span><b class="tnum">' + (R.vals.some(Boolean) ? 'en camino…' : '—') + '</b></div>') + '</div>';
   const ev = R.vals.some(Boolean) ? evolucionHtml(grupos, R.todas ? R.valor : null) : '';
   h += ev ? ev.replace(/<\/div>$/, pie + '</div>') : '<div class="card tr-card">' + pie + '</div>';
+  if (dineroV3()) h += invCadaUnoHtml(R);
   // tus activos con su reparto por tipo
   const porTipo = {}; grupos.forEach((g, i) => { const k = g.tipoActivo || 'Otros'; porTipo[k] = (porTipo[k] || 0) + (R.vals[i] ? R.vals[i].valor : g.total); });
   const tipos = Object.entries(porTipo).sort((a, b) => b[1] - a[1]), totT = tipos.reduce((a, x) => a + x[1], 0), colT = ['var(--savings)', 'var(--income)', 'var(--bill)', 'var(--warn, var(--accent))', 'var(--debt)'];
@@ -5358,11 +5359,58 @@ function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
     return Object.assign({}, a, { vals: vals.map((v) => (v == null ? fill : v)) });
   });
 }
-function invLineasChipsHtml(movs, series, multi) {
+// rentabilidad al año de un activo (la misma cuenta que la del total: según cuándo metiste cada euro); null con menos de un mes
+function invAnualActivo(g, vv) {
+  if (!vv) return null; const movs = movsValorables([g]); if (!movs.length) return null;
+  const hoy = todayISO(); if ((parseISO(hoy).getTime() - parseISO(movs[0].fecha).getTime()) / 864e5 < 30) return null;
+  const r = xirr(movs.map((m) => ({ d: m.fecha, c: -m.imp })).concat([{ d: hoy, c: vv.valor }])); return r == null ? null : r * 100;
+}
+// «Qué tal va cada uno»: una barra por activo, desde que empezaste o al año (24/10, docs/19)
+function invCadaUnoHtml(R) {
+  const filas = R.grupos.map((g, i) => ({ g, vv: R.vals[i] })).filter((x) => x.vv && x.vv.pct != null);
+  if (!filas.length) return '';
+  const anio = S.invBarras === 'anio';
+  filas.forEach((x) => { x.v = anio ? invAnualActivo(x.g, x.vv) : x.vv.pct; });
+  const conV = filas.filter((x) => x.v != null).sort((a, b) => b.v - a.v), sinV = filas.filter((x) => x.v == null);
+  const mx = Math.max(1, ...conV.map((x) => Math.abs(x.v)));
+  const fila = (x) => { const col = colorActivo(x.g.activoId) || 'var(--accent)', w = x.v == null ? 0 : Math.max(2, Math.abs(x.v) / mx * 50);
+    return '<button type="button" class="inv-cu-f tappable" ' + act('verActivo', x.g.nombre) + ' aria-label="' + escapeHtml(x.g.nombre + ': ' + (x.v == null ? 'sin datos' : pct1(x.v))) + '"><span class="inv-cu-n"><i style="background:' + col + '"></i>' + escapeHtml(invCorto(x.g.activoId, x.g.nombre)) + '</span>' +
+      '<span class="inv-cu-b"><i class="' + (x.v != null && x.v < 0 ? 'neg' : 'pos') + '" style="width:' + w.toFixed(1) + '%"></i></span>' +
+      '<span class="inv-cu-v"><b class="tnum" style="color:' + (x.v == null ? 'var(--text-faint)' : x.v >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (x.v == null ? '—' : pct1(x.v)) + '</b><span class="tnum">' + (anio ? (x.v == null ? 'menos de un mes' : 'al año') : signoN(x.vv.gan) + money(Math.abs(x.vv.gan))) + '</span></span></button>'; };
+  return '<div class="section-title">Qué tal va cada uno</div><div class="card inv-cu"><div class="segmented inv-cu-seg">' + [['total', 'Desde que empezaste'], ['anio', 'Al año']].map(([k, l]) => '<button type="button" class="' + ((anio ? 'anio' : 'total') === k ? 'active' : '') + '" aria-pressed="' + ((anio ? 'anio' : 'total') === k) + '" ' + act('invBarras', k) + '>' + l + '</button>').join('') + '</div>' +
+    conV.concat(sinV).map(fila).join('') + '<div class="rec-hint" style="margin:8px 0 0;">' + (anio ? 'Al año, según cuándo metiste cada euro (como la del total).' : 'Lo que ganas o pierdes sobre lo que metiste.') + ' Toca uno para abrir su hoja.</div></div>';
+}
+// nombre corto de un activo: su símbolo (BTC, IWDA) o las primeras letras del nombre
+function invCorto(id, nombre) {
+  const v = S.valoracion && S.valoracion.valores && S.valoracion.valores[id], sim = v && v.activo && v.activo.simbolo ? String(v.activo.simbolo).split('.')[0] : '';
+  if (sim && sim.length <= 8) return sim.toUpperCase();
+  const pal = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+  return (pal.length > 1 ? pal.map((w) => w[0]).join('').slice(0, 4) : (pal[0] || '?').slice(0, 6)).toUpperCase();
+}
+function invLineasChipsHtml(movs, series, multi, apila) {
   const as = invActivosConSerie(movs, series); if (as.length < 1) return '';
-  const sel = invLineasSel();
-  return '<div class="tr-lineas" role="group" aria-label="Líneas de la gráfica"><button type="button" class="chip' + (multi ? '' : ' active') + '" aria-pressed="' + !multi + '" ' + act('invLinea', 'total') + '><i style="background:var(--accent)"></i>Total</button>' +
-    as.map((a) => '<button type="button" class="chip' + (sel.indexOf(a.id) >= 0 ? ' active' : '') + '" aria-pressed="' + (sel.indexOf(a.id) >= 0) + '" ' + act('invLinea', a.id) + '><i style="background:' + a.color + '"></i>' + escapeHtml(a.nombre) + '</button>').join('') + '</div>';
+  const sel = invLineasSel(), R = invResumen(), valor = (id) => { const i = R.grupos.findIndex((g) => g.activoId === id); return i < 0 ? 0 : R.vals[i] ? R.vals[i].valor : R.grupos[i].total; };
+  const orden = as.slice().sort((a, b) => valor(b.id) - valor(a.id)), vis = as.length > 5 ? orden.slice(0, 4) : orden;
+  sel.forEach((id) => { if (!vis.some((a) => a.id === id)) { const a = as.find((x) => x.id === id); if (a) vis.push(a); } });
+  return '<div class="tr-lineas" role="group" aria-label="Activos en la gráfica"><button type="button" class="chip tr-tot' + (multi ? '' : ' active') + '" aria-pressed="' + !multi + '" ' + act('invLinea', 'total') + '><i style="background:' + (apila ? 'var(--ink)' : 'var(--accent)') + '"></i>Total</button>' +
+    vis.map((a) => '<button type="button" class="chip' + (sel.indexOf(a.id) >= 0 ? ' active' : '') + '" aria-pressed="' + (sel.indexOf(a.id) >= 0) + '" aria-label="' + escapeHtml(a.nombre) + '" title="' + escapeHtml(a.nombre) + '" ' + act('invLinea', a.id) + '><i style="background:' + a.color + '"></i>' + escapeHtml(invCorto(a.id, a.nombre)) + '</button>').join('') +
+    (as.length > vis.length ? '<button type="button" class="chip" ' + act('invLineasElegir') + '>Elegir…</button>' : '') + '</div>' +
+    '<div class="tr-lineas-ayuda">' + (multi ? (apila ? 'Cada franja es lo que vale ese activo; lo gris, el resto. El borde de arriba es el total.' : 'La línea gruesa es el total; las finas, cada activo.') : 'Toca un activo para verlo en la gráfica.') + '</div>';
+}
+function invLineasHojaHtml() {
+  const R = invResumen(), sel = invLineasSel(), as = R.grupos.filter((g) => g.activoId);
+  return '<div class="handle"></div><h2>Activos en la gráfica</h2><div class="rec-hint" style="margin:-8px 0 12px;">Como mucho 4 a la vez.</div><div class="card menu">' +
+    as.map((g) => { const on = sel.indexOf(g.activoId) >= 0; return '<button type="button" class="menu-item inv-elegir' + (on ? ' on' : '') + '" role="checkbox" aria-checked="' + on + '" ' + act('invLineaHoja', g.activoId) + '><span class="inv-elegir-c" style="--ac:' + (colorActivo(g.activoId) || 'var(--accent)') + '">' + (on ? ic('check') : '') + '</span><span class="inv-elegir-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + escapeHtml(invCorto(g.activoId, g.nombre)) + '</span></span></button>'; }).join('') + '</div>' +
+    '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+// repinta solo la tarjeta de la gráfica (sin mover la pantalla)
+function repintarInvCard() {
+  const card = document.getElementById('invCard'); if (!card) return render();
+  const R = invResumen(), ev = evolucionHtml(R.grupos, R.todas ? R.valor : null);
+  const pie = card.querySelector('.dm-inv-pie'), tmp = document.createElement('div'); tmp.innerHTML = ev;
+  const nuevo = tmp.firstElementChild; if (!nuevo) return render();
+  if (pie) nuevo.appendChild(pie);
+  card.replaceWith(nuevo); bindInvChart();
 }
 function invRentaFilaHtml(grupos, valorActual) {
   const movs = movsValorables(grupos); if (!movs.length || valorActual == null) return '';
@@ -5401,15 +5449,33 @@ function activoGraficaHtml(g, col) {
   const movs = movsValorables([g]); if (!movs.length) return '';
   const serie = serieCartera(movs, H.series); if (serie.length < 2) return '';
   const per = PERIODOS_INV.find((x) => x[0] === S.activoPer) || PERIODOS_INV.find((x) => x[0] === S.invPeriodo) || PERIODOS_INV[PERIODOS_INV.length - 1];
-  const i0 = per[2] ? Math.max(0, serie.length - 1 - per[2]) : 0, tramo = serie.slice(i0).map((q) => q.v);
-  const pts = reducirPuntos(tramo, 60), mn = Math.min(...pts), mx = Math.max(...pts), W = 300, Hh = 80, rg = mx - mn || 1;
-  const xy = pts.map((v, i) => [i / Math.max(1, pts.length - 1) * W, Hh - 6 - (v - mn) / rg * (Hh - 12)]);
+  const modoR = S.activoModo === 'rentab';
+  const i0 = per[2] ? Math.max(0, serie.length - 1 - per[2]) : 0;
+  // precio de cada día (el último conocido)
+  const precio = (d) => { let v = null; for (let k = 0; k < serieP.length && serieP[k][0] <= d; k++) v = serieP[k][1]; return v == null ? serieP[0][1] : v; };
+  const p0 = precio(serie[i0].d) || 1;
+  const tramoD = serie.slice(i0), tramo = tramoD.map((q) => (modoR ? (precio(q.d) / p0 - 1) * 100 : q.v));
+  const idx = reducirIdx(tramo.length, 60), pts = idx.map((k) => tramo[k]);
+  let mn = Math.min(...pts), mx = Math.max(...pts); if (modoR) { mn = Math.min(mn, 0); mx = Math.max(mx, 0); } const rg = mx - mn || 1, W = 300, Hh = 80;
+  const X = (i) => i / Math.max(1, pts.length - 1) * W, Y = (v) => Hh - 6 - (v - mn) / rg * (Hh - 12);
+  const xy = pts.map((v, i) => [X(i), Y(v)]);
   // lo que has ganado o perdido en el periodo: lo que cambió el valor menos lo que metiste en ese tiempo
   const t0 = serie[i0], t1 = serie[serie.length - 1], vv = valorDeGrupo(g), dif = per[0] === 'max' && vv ? vv.gan : (t1.v - t0.v) - (t1.inv - t0.inv);
-  return '<div class="act-graf"><div class="act-graf-c"><span>' + (dif >= 0 ? 'Ganas ' : 'Pierdes ') + escapeHtml(per[0] === 'max' ? 'desde que empezaste' : 'en ' + (per[0] === '1s' ? '7 días' : per[0] === '1m' ? 'un mes' : per[0] === '3m' ? '3 meses' : per[0] === '6m' ? '6 meses' : 'un año')) + '</span><b class="tnum" style="color:' + (dif >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + money(Math.abs(dif)) + '</b></div>' +
-    '<svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" class="act-svg" role="img" aria-label="Evolución del valor de ' + escapeHtml(g.nombre) + '"><path d="' + curvaSuave(xy) + '" fill="none" stroke="' + (col || 'var(--savings)') + '" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>' +
+  const cuando = per[0] === 'max' ? 'desde que empezaste' : 'en ' + (per[0] === '1s' ? '7 días' : per[0] === '1m' ? 'un mes' : per[0] === '3m' ? '3 meses' : per[0] === '6m' ? '6 meses' : 'un año');
+  const rFin = tramo[tramo.length - 1];
+  const cab = modoR ? '<span>El precio ' + (rFin >= 0 ? 'ha subido ' : 'ha bajado ') + cuando + '</span><b class="tnum" style="color:' + (rFin >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + pct1(rFin) + '</b>'
+    : '<span>' + (dif >= 0 ? 'Ganas ' : 'Pierdes ') + escapeHtml(cuando) + '</span><b class="tnum" style="color:' + (dif >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + money(Math.abs(dif)) + '</b>';
+  // en «Rentabilidad», un punto en cada compra
+  const compras = modoR ? movs.filter((m) => m.fecha >= tramoD[0].d).map((m) => { const k = tramoD.findIndex((q) => q.d >= m.fecha); if (k < 0) return ''; const j = idx.reduce((a, x, n) => (Math.abs(x - k) < Math.abs(idx[a] - k) ? n : a), 0); return '<circle cx="' + X(j).toFixed(1) + '" cy="' + Y(pts[j]).toFixed(1) + '" r="3.2" fill="var(--paper-raised)" stroke="' + (col || 'var(--savings)') + '" stroke-width="1.6" vector-effect="non-scaling-stroke"/>'; }).join('') : '';
+  return '<div class="act-graf"><div class="segmented act-modo">' + [['valor', 'Valor'], ['rentab', 'Rentabilidad']].map(([k, l]) => '<button type="button" class="' + ((modoR ? 'rentab' : 'valor') === k ? 'active' : '') + '" aria-pressed="' + ((modoR ? 'rentab' : 'valor') === k) + '" ' + act('activoModo', k) + '>' + l + '</button>').join('') + '</div>' +
+    '<div class="act-graf-c">' + cab + '</div>' +
+    '<svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" class="act-svg" role="img" aria-label="' + (modoR ? 'Evolución del precio de ' : 'Evolución del valor de ') + escapeHtml(g.nombre) + '">' + (modoR ? '<line x1="0" x2="' + W + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="var(--text-faint)" stroke-dasharray="2 4" stroke-width="1" vector-effect="non-scaling-stroke"/>' : '') +
+    '<path d="' + curvaSuave(xy) + '" fill="none" stroke="' + (col || 'var(--savings)') + '" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linecap="round"/>' + compras + '</svg>' +
+    (modoR ? '<div class="rec-hint" style="margin:0 0 8px;">Solo cuenta cómo se movió el precio: aportar no cambia la línea. Los puntos son tus compras.</div>' : '') +
     '<div class="segmented tr-chips">' + PERIODOS_INV.map((x) => '<button type="button" class="' + (x[0] === per[0] ? 'active' : '') + '" aria-pressed="' + (x[0] === per[0]) + '" ' + act('activoPer', x[0]) + '>' + x[1] + '</button>').join('') + '</div></div>';
 }
+// índices repartidos (conserva el primero y el último)
+function reducirIdx(n, max) { if (n <= max) return Array.from({ length: n }, (_, i) => i); const out = []; for (let i = 0; i < max; i++) out.push(Math.round(i * (n - 1) / (max - 1))); return out; }
 function activoVerHtml(nombre) {
   const g = activoGrupo(nombre);
   if (!g) return '<div class="handle"></div><h2>' + escapeHtml(nombre || 'Inversión') + '</h2><div class="card">Ya no hay movimientos de este activo.</div><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
@@ -5421,7 +5487,8 @@ function activoVerHtml(nombre) {
   const sinPrecio = !(g.activoId && g.conPart === g.n), aVincular = sinPrecio ? movs.find((m) => !m.activoId || m.participaciones == null || m.participaciones === '') : null;
   return '<div class="handle"></div><div class="act-cab"><span class="dm-ic inv"' + (col ? ' style="--ac:' + col + '"' : '') + '>' + ic(invIcono(g.tipoActivo)) + '</span><div><h2>' + escapeHtml(g.nombre) + '</h2><span>' + escapeHtml(tipo) + (a && a.simbolo ? ' · ' + escapeHtml(a.simbolo) : '') + '</span></div></div>' +
     '<div class="act-valor"><span>' + (vv ? 'Vale hoy' : 'Has metido') + '</span><b class="tnum">' + money(vv ? vv.valor : g.total) + '</b>' +
-      (vv ? '<em class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (vv.gan >= 0 ? 'Ganas ' : 'Pierdes ') + money(Math.abs(vv.gan)) + (vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</em>' : '') + '</div>' +
+      (vv ? '<em class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (vv.gan >= 0 ? 'Ganas ' : 'Pierdes ') + money(Math.abs(vv.gan)) + (vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</em>' : '') +
+      (vv && invAnualActivo(g, vv) != null ? '<em class="tnum act-anio">Al año ' + pct1(invAnualActivo(g, vv)) + ' <span>según cuándo metiste cada euro</span></em>' : '') + '</div>' +
     activoGraficaHtml(g, col) +
     (sinPrecio ? '<div class="dm-aviso">' + ic('info') + '<span>Sin precio: ' + (g.activoId ? 'a alguna aportación le faltan las participaciones.' : 'falta elegir el activo en sus aportaciones.') + '</span>' + (aVincular ? '<button class="link" ' + act('activoArreglar', aVincular.id) + '>Buscar el activo</button>' : '') + '</div>' : '') +
     '<div class="act-cifras">' + cifra('Aportaste', money(g.total)) + cifra('Tienes', enPart ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.' : '—') +
@@ -6847,8 +6914,25 @@ function evolucionHtml(grupos, valorActual) {
     const extra = invLineasExtra(movs, H.series, serie, i0, pts, modoR), multi = extra.length > 0;
     if (multi) { const todos = vals.concat(...extra.map((l) => l.vals)); mn = Math.min(...todos); mx = Math.max(...todos); const pd = (mx - mn) * 0.1 || 1; mn -= pd; mx += pd; S._invChart.mn = mn; S._invChart.mx = mx; }
     S._invChart.extra = extra;
+    // 24/10 (docs/19): en «Valor» los activos elegidos se apilan desde 0 (el borde de arriba es el total); en «Rentabilidad», líneas en %
+    const apila = multi && !modoR;
+    if (apila) { mn = 0; mx = Math.max(...pts.map((p) => p.v)) * 1.08 || 1; S._invChart.mn = mn; S._invChart.mx = mx; }
     const color = multi ? 'var(--accent)' : sube ? 'var(--income)' : 'var(--expense)';
     const lineaV = curvaV(ys), suelo = modoR ? Y(0) : Hh;
+    let franjas = '', etiquetas = [];
+    if (apila) {
+      let base = pts.map(() => 0);
+      const banda = (abajo, arriba, fill, op) => { const up = arriba.map((v, i) => [X(i), Y(v)]), dn = abajo.map((v, i) => [X(i), Y(v)]).reverse(); return '<path d="' + curvaSuave(up) + ' L' + dn.map((q) => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L') + ' Z" fill="' + fill + '" fill-opacity="' + op + '" stroke="none"/>'; };
+      extra.forEach((l) => { const sv = suavizarSerie(l.vals), arriba = base.map((b, i) => b + Math.max(0, sv[i])); franjas += banda(base, arriba, l.color, '.78'); base = arriba; });
+      franjas += banda(base, ys.map((v, i) => Math.max(v, base[i])), 'var(--text-faint)', '.28'); // «Otros»: lo que no has elegido
+      etiquetas.push({ y: Y(ys[ys.length - 1]), txt: 'Total ' + eur0(pts[pts.length - 1].v), color: 'var(--ink)', total: true });
+    } else if (multi) {
+      etiquetas = [{ y: Y(ys[ys.length - 1]), txt: 'Total ' + pct1(fin.r), color: 'var(--accent)', total: true }]
+        .concat(extra.map((l) => ({ y: Y(l.vals[l.vals.length - 1]), txt: invCorto(l.id, l.nombre) + ' ' + pct1(l.vals[l.vals.length - 1]), color: l.color })));
+    }
+    // etiquetas al final de cada línea; si dos chocan, se separan
+    etiquetas.sort((a, b) => a.y - b.y); for (let k = 1; k < etiquetas.length; k++) if (etiquetas[k].y - etiquetas[k - 1].y < 15) etiquetas[k].y = etiquetas[k - 1].y + 15;
+    const etiqHtml = etiquetas.map((e) => '<span class="tr-etq' + (e.total ? ' total' : '') + '" style="top:' + Math.max(0, Math.min(92, e.y / Hh * 100)).toFixed(1) + '%;--lc:' + e.color + '">' + escapeHtml(e.txt) + '</span>').join('');
     const area = lineaV + ' L' + X(pts.length - 1).toFixed(1) + ' ' + suelo.toFixed(1) + ' L' + X(0).toFixed(1) + ' ' + suelo.toFixed(1) + ' Z';
     cabecera = modoR
       ? '<div class="tr-big tnum' + (Date.now() < (S._trCambiaHasta || 0) ? ' tr-cambia' : '') + '" id="invBig" style="color:' + color + '">' + pct1(fin.r) + '</div>' +
@@ -6858,27 +6942,28 @@ function evolucionHtml(grupos, valorActual) {
     cuerpo = '<div class="tr-chart" id="invChart"><svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none"><defs>' + degradado('invGrad', color, 0.2) +
       revelaSvg('invClip', W, Hh, per[0] + '|' + pts.length, '_invTraza') + '</defs>' +
       // la línea de referencia (lo metido, o el 0 %) es siempre una curva con los mismos puntos: así puede «moverse» al cambiar de vista
-      '<path id="invRef" d="' + curvaV(modoR ? pts.map(() => 0) : ysInv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity=".7"/>' +
-      '<g clip-path="url(#invClip)"><path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"' + (multi ? ' opacity="0"' : '') + '/>' +
-      '<path id="invLineV" class="tr-linea" d="' + lineaV + '" fill="none" style="stroke:' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
-      extra.map((l) => '<path class="tr-linea-a" d="' + curvaV(suavizarSerie(l.vals)) + '" fill="none" style="stroke:' + l.color + '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>').join('') + '</g></svg>' +
+      '<path id="invRef" d="' + curvaV(modoR ? pts.map(() => 0) : ysInv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity="' + (apila ? 0 : '.7') + '"/>' +
+      '<g clip-path="url(#invClip)">' + franjas + '<path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"' + (apila ? ' opacity="0"' : '') + '/>' +
+      (apila ? '' : extra.map((l) => '<path class="tr-linea-a' + (l.id === S._invLineaNueva ? ' nueva' : '') + '" pathLength="1" d="' + curvaV(suavizarSerie(l.vals)) + '" fill="none" style="stroke:' + l.color + '" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>').join('')) +
+      '<path id="invLineV" class="tr-linea' + (multi ? ' total' : '') + '" d="' + lineaV + '" fill="none" style="stroke:' + (apila ? 'var(--ink)' : color) + '" stroke-width="' + (multi ? 3.4 : 2.2) + '" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
+      '</g></svg>' + etiqHtml +
       (modoR ? '<div class="tr-cero" style="top:' + (Y(0) / Hh * 100).toFixed(1) + '%">0 %</div>' : '') +
       '<div class="tr-cursor" id="invLine"></div><div class="tr-dot" id="invDot" style="background:' + color + '"></div></div>' +
-      (modoR ? '<div class="tr-legend"><span><i style="background:' + color + '"></i>Tu rentabilidad</span><span>no cambia al meter o sacar dinero</span></div>'
+      (multi ? '' : modoR ? '<div class="tr-legend"><span><i style="background:' + color + '"></i>Tu rentabilidad</span><span>no cambia al meter o sacar dinero</span></div>'
         : '<div class="tr-legend"><span><i style="background:' + color + '"></i>Valor de tu cartera</span><span><i class="dash"></i>Lo que has metido</span></div>');
     const notas = [];
     if (movs.some((m) => m.ajuste)) notas.push('Los tramos que vienen de movimientos de «Ajuste» son aproximados: se cuentan desde la fecha del ajuste.');
     if (ids.some((id) => !(H.series[id] || []).length)) notas.push('Algún activo aún no tiene histórico de precios; se completará en la próxima actualización.');
     if (H.limite) notas.push('Hoy se ha llegado al límite diario de consultas del proveedor de precios; el histórico se completará mañana.');
     if (notas.length) cuerpo += '<div class="tr-note">' + notas.join(' ') + '</div>';
-    if (dineroV3()) cuerpo += invLineasChipsHtml(movs, H.series, multi) + (multi ? '<div class="tr-vals" id="invVals"></div>' : '');
+    if (dineroV3()) cuerpo += invLineasChipsHtml(movs, H.series, multi, apila) + (multi ? '<div class="tr-vals" id="invVals"></div>' : '');
   } else {
     cabecera = valorActual != null ? '<div class="tr-big tnum">' + eur2(valorActual) + '</div>' : '';
     S._invChart = null;
     cuerpo = '<div class="tr-chart tr-empty">' + (H && H.clave === clave && H.error ? 'No se ha podido cargar la evolución. Se volverá a intentar en un momento.' : 'Cargando evolución…') + '</div>';
   }
   const modos = S._invChart || (H && H.clave === clave && !H.error) ? '<div class="segmented tr-modo">' + [['valor', 'Valor'], ['rentab', 'Rentabilidad']].map((x) => '<button class="' + (S.invModo === x[0] ? 'active' : '') + '" ' + act('setInvModo', x[0]) + '>' + x[1] + (x[0] === 'rentab' ? badge('rentab') : '') + '</button>').join('') + '</div>' : '';
-  return '<div class="card tr-card">' + modos + '<div class="tr-head">' + cabecera + '<div class="tr-fecha" id="invFecha"></div></div>' + cuerpo + chips + '</div>';
+  return '<div class="card tr-card" id="invCard">' + modos + '<div class="tr-head">' + cabecera + '<div class="tr-fecha" id="invFecha"></div></div>' + cuerpo + chips + '</div>';
 }
 // suavizado ligero (1-2-1, dos pasadas) para que la línea no tenga picos de un día; el primer y el último punto no cambian
 function suavizarSerie(arr) {
@@ -9983,8 +10068,19 @@ const H = {
   },
   setInflacion: ([k]) => { if (INFLACION_DATOS[k]) { saveConfig({ inflacionRegion: k }); render(); if (FORM && FORM.kind === 'invRenta' && $('#sheetBackdrop')) setTimeout(() => updateSheet(invRentaHojaHtml()), 0); } },
   invRentaVer: () => { FORM = { kind: 'invRenta' }; openSheet(invRentaHojaHtml()); },
-  invLinea: ([id]) => { if (id === 'total') { S.invLineas = []; return render(); } const sel = invLineasSel().slice(), i = sel.indexOf(id);
-    if (i >= 0) sel.splice(i, 1); else { if (sel.length >= 4) return toast('Como mucho 4 líneas a la vez'); sel.push(id); } S.invLineas = sel; sentir('tic'); render(); },
+  invLinea: ([id]) => {
+    if (id === 'total') { if (!invLineasSel().length) return; S.invLineas = []; sentir('tic'); return repintarInvCard(); }
+    const sel = invLineasSel().slice(), i = sel.indexOf(id);
+    if (i >= 0) sel.splice(i, 1); else { if (sel.length >= 4) return toast('Como mucho 4 activos a la vez'); sel.push(id); }
+    S.invLineas = sel; S._invLineaNueva = i >= 0 ? '' : id; sentir('tic'); repintarInvCard(); S._invLineaNueva = '';
+  },
+  invBarras: ([k]) => { S.invBarras = k === 'anio' ? 'anio' : 'total'; sentir('tic'); const el = $('.inv-cu'); if (el) { const t = document.createElement('div'); t.innerHTML = invCadaUnoHtml(invResumen()); const nuevo = t.querySelector('.inv-cu'); if (nuevo) el.replaceWith(nuevo); } else render(); },
+  invLineasElegir: () => { FORM = { kind: 'invLineas' }; openSheet(invLineasHojaHtml()); },
+  invLineaHoja: ([id]) => {
+    const sel = invLineasSel().slice(), i = sel.indexOf(id);
+    if (i >= 0) sel.splice(i, 1); else { if (sel.length >= 4) return toast('Como mucho 4 activos a la vez'); sel.push(id); }
+    S.invLineas = sel; sentir('tic'); updateSheet(invLineasHojaHtml()); repintarInvCard();
+  },
   openTabsAn: () => openSheet(tabsAnSheetHtml()),
   toggleTabAn: ([id]) => {
     const sel = tabsAnElegidas(), i = sel.indexOf(id);
@@ -9995,6 +10091,7 @@ const H = {
   setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; S.tab = 'inicio'; render(); },
   verActivo: ([nombre]) => { FORM = { kind: 'activo', nombre }; if ($('#sheetBackdrop')) updateSheet(activoVerHtml(nombre)); else openSheet(activoVerHtml(nombre)); }, // hoja del activo (24/10)
   activoEnMovs: ([nombre]) => { closeSheet(); irMovs({ tipo: 'Inversión', periodo: 'todo', cat: nombre }); }, // la lista de tus compras de ese activo
+  activoModo: ([k]) => { if (!FORM || FORM.kind !== 'activo') return; S.activoModo = k === 'rentab' ? 'rentab' : 'valor'; sentir('tic'); updateSheet(activoVerHtml(FORM.nombre)); },
   activoPer: ([k]) => { if (!FORM || FORM.kind !== 'activo') return; S.activoPer = k; sentir('tic'); updateSheet(activoVerHtml(FORM.nombre)); },
   activoMov: ([id]) => openMovForm(id),
   activoArreglar: ([id]) => openMovForm(id),
@@ -10298,6 +10395,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { VERSIONES, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
