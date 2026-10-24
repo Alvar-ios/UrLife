@@ -122,3 +122,90 @@ Sacados del icono oficial de cada web (medido el 24/10/2026) o de Simple Icons. 
 - Prueba propia de favicons (Google y DuckDuckGo, 27 dominios) y colores medidos: 24/10/2026, no guardada en el repositorio porque contiene logos.
 
 Para el PDF: poner los dos bocetos grandes en la primera página y la tabla 2.3 como semáforo (verde, ámbar, rojo) de las tres opciones.
+
+---
+
+## Paquete de logos (24/10)
+
+*El dueño decidió el 24/10/2026: logos de verdad, guardados dentro de la app y nunca pedidos fuera. Este es el paquete preparado por Producto. No hay nada programado: Desarrollo lo integra después. Rama `fase4/logos`, sin fusionar.*
+
+### Conclusión
+
+1. **Hay 9 logos de 33** (8 símbolos y 2 de ellos son texto: bunq y Coinbase). Pesan **12 KB en total** (9 SVG + `logos.json`), el mayor 2,6 KB.
+2. **Faltan 24**, entre ellos todos los grandes bancos españoles (BBVA, Santander, ING, Sabadell…). No es que no existan: están en Wikimedia Commons, pero **Wikimedia nos bloqueó por exceso de peticiones** (la salida a internet de esta sesión es compartida) durante más de 2 horas, y dejamos de insistir. Hay que hacerlo en otra sesión, despacio.
+3. Mientras tanto, esos 24 salen con **color de marca + letras**. 8 no tienen todavía color de marca (Kutxabank, Ibercaja, Cajamar, EVO, Laboral Kutxa, Caja Rural, Self Bank, Scalable Capital, XTB): van en gris.
+4. Todos los logos son **marcas registradas** de cada banco. Se usan solo para que cada persona reconozca el banco de su propia cuenta, sin dar a entender ninguna relación con el banco. Si un banco lo pide, se quita su archivo y su cuenta vuelve a color + letras.
+
+![Muestra de todas las fichas en claro y oscuro](img/logos-muestra.png)
+*Muestra (25/10/2026): ficha de 40 px con todos los bancos de la lista, en modo claro y oscuro. Verde «logo» = SVG guardado; ocre «texto» = el SVG es un logotipo de letras; gris «letras» = color + letras; rojo «sin color» = falta el color de marca.*
+
+### Lo conseguido
+
+| Banco | Fichero | Tipo | Ficha | Fuente | Licencia |
+|---|---|---|---|---|---|
+| CaixaBank | `caixabank.svg` | símbolo (estrella) | azul `#007EAE`, dibujo blanco | [Simple Icons](https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/caixabank.svg) | CC0 (paquete); marca registrada |
+| Revolut | `revolut.svg` | símbolo (R) | casi negro, dibujo blanco | [Simple Icons](https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/revolut.svg) | CC0 (paquete); marca registrada |
+| N26 | `n26.svg` | símbolo («N26») | verde azulado, dibujo blanco | [Simple Icons](https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/n26.svg) | CC0 (paquete); marca registrada |
+| Wise | `wise.svg` | símbolo (bandera) | verde lima, dibujo verde oscuro | [Simple Icons](https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/wise.svg) | CC0 (paquete); marca registrada |
+| Deutsche Bank | `deutschebank.svg` | símbolo (barra en cuadro) | azul, dibujo blanco | [Simple Icons](https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/deutschebank.svg) | CC0 (paquete); marca registrada |
+| bunq | `bunq.svg` | **texto** («bunq», se lee) | azul, letras blancas | [Simple Icons](https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/bunq.svg) | CC0 (paquete); marca registrada |
+| Coinbase | `coinbase.svg` | **texto** (no se lee a 40 px) | azul, letras blancas | [Simple Icons](https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/coinbase.svg) | CC0 (paquete); marca registrada |
+| Binance | `binance.svg` | símbolo (rombos) | fondo oscuro, dibujo amarillo | [Simple Icons](https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/binance.svg) | CC0 (paquete); marca registrada |
+| PayPal | `paypal.svg` | símbolo (P a dos azules) | fondo blanco | [gilbarbara/logos](https://github.com/gilbarbara/logos/blob/main/logos/paypal.svg) (vía `@iconify-json/logos` 1.2.17) | CC0 (paquete); marca registrada |
+
+Cómo leer `logos/logos.json`: `fondo: 'color'` = ficha del color de marca con el dibujo encima (el SVG ya trae su color); `'claro'` = ficha blanca; `'oscuro'` = ficha casi negra (en la muestra, `#16181D`). Con `tipo: 'texto'` la app debería usar color + letras (Coinbase seguro; bunq se lee y puede quedarse con su logo). Cada SVG es un dibujo ajustado a su caja: en la ficha va a unos 24 px (60 %). Fichas blancas, casi negras o muy claras llevan un borde fino según el modo, como en la muestra.
+
+Limpieza: todos pasados por `svgo`; comprobado que ninguno tiene scripts, enlaces externos, imágenes incrustadas ni metadatos.
+
+### Lo que falta (24) y dónde buscarlo
+
+| Banco o bróker | Candidato en Wikimedia Commons (sin descargar ni revisar licencia) |
+|---|---|
+| BBVA | `BBVA logo 2025.svg` |
+| Santander | `Banco Santander Logotipo.svg` (llama + texto: recortar la llama) |
+| ING | `ING Group (wordmark).svg` (buscar el león) |
+| Sabadell | `Banco-Sabadell-Logo.svg`, `BSabadell Logo.svg` |
+| Bankinter | `Bankinter.svg` |
+| Unicaja | `Unicaja logo.svg`, `Logotipo Unicaja Banco.svg` |
+| Abanca | `Abanca logo.svg` |
+| Kutxabank | `Nuevo Logo Kutxabank.svg` |
+| Ibercaja | `Ibercaja-logo-2025.svg` |
+| Trade Republic | `Trade Republic Logo 2024.svg` |
+| eToro | `EToro Logo 2026.svg` |
+| DEGIRO | `Degiro logo.svg` |
+| Interactive Brokers | `Interactive Brokers Logo (2014).svg` |
+| EVO Banco | `EVO Banco logo.svg` |
+| Caja Rural | `Caja Rural.svg` |
+| Self Bank | `Self Bank by Singular Bank.svg` |
+| Scalable Capital | `Scalable Capital Logo 2024.svg` |
+| XTB | `XTB logo.svg` |
+| Openbank, imagin, MyInvestor, Indexa Capital, Cajamar, Laboral Kutxa | **ninguno en SVG** en Commons (solo PNG/JPG o nada): se quedan con color + letras |
+
+Al ser casi todos logotipos con texto, habrá que **recortar el símbolo** (la llama de Santander, el león de ING…) o marcarlos `tipo: 'texto'`. Muchos logos de Commons son «dominio público por ser solo texto» o marcas sin licencia libre: hay que leer la licencia de cada uno al descargarlo.
+
+### Riesgos
+
+- **Marca registrada:** igual que en el apartado 4. Además, el repositorio es público, así que estos 9 dibujos quedan publicados en GitHub.
+- **Simple Icons ha retirado logos cuando una marca lo pidió.** Por eso no hemos buscado versiones antiguas del paquete: si un logo ya no está, no lo usamos.
+- **Paquete a medias:** con 9 de 33 se mezclan fichas con logo y con letras. Puede verse desigual hasta que lleguen los de Commons.
+
+### Preguntas para el dueño
+
+1. **¿Integramos ya estos 9 y el resto con color + letras, o esperamos a tener los bancos españoles?** *Bloquea a Desarrollo.* Recomendamos integrar ya: la ficha de letras ya está pensada y se cambia sola cuando llegue el logo.
+2. Coinbase: ¿color + «C» en vez de su logotipo, que no se lee? Recomendamos que sí.
+3. ¿Echas en falta algún banco que uséis Paloma, Alfredo o tú y no esté en la lista?
+
+### Lo que no hemos podido averiguar o confirmar
+
+- No hemos podido descargar nada de Wikimedia Commons (bloqueo por exceso de peticiones, 24/10/2026, 22:00–00:15). Las licencias de los candidatos de Commons están **sin revisar**.
+- No hay color de marca para Kutxabank, Ibercaja, Cajamar, EVO, Laboral Kutxa, Caja Rural, Self Bank, Scalable Capital ni XTB.
+- No hemos leído el manual de marca de cada banco para ver si permite este uso.
+- La muestra está hecha en un navegador de escritorio a 40 px; no se ha probado en un móvil real ni dentro de la app.
+
+### Fuentes (consultadas el 24 y 25/10/2026)
+
+- Simple Icons 16.35.0 (npm `simple-icons`): [repositorio](https://github.com/simple-icons/simple-icons) y [aviso de licencias y marcas](https://github.com/simple-icons/simple-icons/blob/develop/DISCLAIMER.md)
+- gilbarbara/logos, CC0 (npm `@iconify-json/logos` 1.2.17): [repositorio](https://github.com/gilbarbara/logos)
+- Búsqueda de candidatos en Wikimedia Commons (API de búsqueda, 24/10/2026).
+
+Para el PDF: poner la muestra a toda página y la tabla de «Lo que falta» como lista corta de logos pendientes.

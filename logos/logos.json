@@ -1,0 +1,83 @@
+{
+ "caixabank": {
+  "n": "CaixaBank",
+  "color": "#007EAE",
+  "svg": "caixabank.svg",
+  "fondo": "color",
+  "fuente": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/caixabank.svg",
+  "licencia": "Simple Icons 16.35.0: paquete CC0-1.0; el logo no trae licencia propia y es marca registrada de su dueño",
+  "tipo": "simbolo"
+ },
+ "revolut": {
+  "n": "Revolut",
+  "color": "#191C1F",
+  "svg": "revolut.svg",
+  "fondo": "color",
+  "fuente": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/revolut.svg",
+  "licencia": "Simple Icons 16.35.0: paquete CC0-1.0; el logo no trae licencia propia y es marca registrada de su dueño",
+  "tipo": "simbolo"
+ },
+ "n26": {
+  "n": "N26",
+  "color": "#48AC98",
+  "svg": "n26.svg",
+  "fondo": "color",
+  "fuente": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/n26.svg",
+  "licencia": "Simple Icons 16.35.0: paquete CC0-1.0; el logo no trae licencia propia y es marca registrada de su dueño",
+  "tipo": "simbolo"
+ },
+ "wise": {
+  "n": "Wise",
+  "color": "#9FE870",
+  "svg": "wise.svg",
+  "fondo": "color",
+  "fuente": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/wise.svg",
+  "licencia": "Simple Icons 16.35.0: paquete CC0-1.0; el logo no trae licencia propia y es marca registrada de su dueño",
+  "tipo": "simbolo"
+ },
+ "deutschebank": {
+  "n": "Deutsche Bank",
+  "color": "#0018A8",
+  "svg": "deutschebank.svg",
+  "fondo": "color",
+  "fuente": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/deutschebank.svg",
+  "licencia": "Simple Icons 16.35.0: paquete CC0-1.0; el logo no trae licencia propia y es marca registrada de su dueño",
+  "tipo": "simbolo"
+ },
+ "bunq": {
+  "n": "bunq",
+  "color": "#3394D7",
+  "svg": "bunq.svg",
+  "fondo": "color",
+  "fuente": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/bunq.svg",
+  "licencia": "Simple Icons 16.35.0: paquete CC0-1.0; el logo no trae licencia propia y es marca registrada de su dueño",
+  "tipo": "texto"
+ },
+ "coinbase": {
+  "n": "Coinbase",
+  "color": "#0052FF",
+  "svg": "coinbase.svg",
+  "fondo": "color",
+  "fuente": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/coinbase.svg",
+  "licencia": "Simple Icons 16.35.0: paquete CC0-1.0; el logo no trae licencia propia y es marca registrada de su dueño",
+  "tipo": "texto"
+ },
+ "binance": {
+  "n": "Binance",
+  "color": "#F0B90B",
+  "svg": "binance.svg",
+  "fondo": "oscuro",
+  "fuente": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/binance.svg",
+  "licencia": "Simple Icons 16.35.0: paquete CC0-1.0; el logo no trae licencia propia y es marca registrada de su dueño",
+  "tipo": "simbolo"
+ },
+ "paypal": {
+  "n": "PayPal",
+  "color": "#002991",
+  "svg": "paypal.svg",
+  "fondo": "claro",
+  "fuente": "https://github.com/gilbarbara/logos/blob/main/logos/paypal.svg",
+  "licencia": "gilbarbara/logos (SVG Porn, vía @iconify-json/logos 1.2.17): paquete CC0-1.0; el logo es marca registrada de su dueño",
+  "tipo": "simbolo"
+ }
+}
