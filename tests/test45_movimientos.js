@@ -31,7 +31,7 @@ const MOVS = [
   H.goTab(['movimientos']); await sleep(10);
   ok(S.movVista === 'resumen' && /En qué gastas/.test(txt(e)), 'al entrar en Movimientos se abre el Resumen');
   ok([...doc.querySelectorAll('.mov-vista button')].map((b) => b.textContent).join('|') === 'Resumen|Lista|Calendario', 'tres vistas: Resumen | Lista | Calendario');
-  ok(!!doc.querySelector('.mov-cab .mov-per-lbl') && !doc.querySelector('.mov-modo') && !doc.querySelector('.mov-nav'), 'cabecera limpia: el nombre del mes (sin tarjeta ni «Mes / Año»)');
+  ok(!!doc.querySelector('.mov-cab .mov-per-lbl') && !doc.querySelector('.mov-nav'), 'cabecera: el nombre del mes, sin tarjeta (24/10: vuelve «Mes | Año» a un toque, lo pidió el dueño)');
   ok(doc.querySelectorAll('.kpi-mes .kpi').length === 4, 'las 4 cifras siguen');
 
   /* 2. «En qué gastas» (18/10): una lista con gasto, % y presupuesto; arriba la tira de colores (versión Barras) */
