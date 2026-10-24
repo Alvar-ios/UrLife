@@ -1823,3 +1823,8 @@ html[data-look="nuevo"] .tema-fila-x b { white-space: normal; display: -webkit-b
 html[data-look="nuevo"] .tema-cab h2 { overflow-wrap: anywhere; min-width: 0; }
 html[data-look="nuevo"] .tema-chips .chip { max-width: 100%; }
 html[data-look="nuevo"] .rec-fila .meta { white-space: normal; overflow: visible; text-overflow: clip; }
+
+/* ---- Movimientos: «Mes | Año» a un toque (24/10) ---- */
+html[data-look="nuevo"] .mov-modo { display: inline-flex; gap: 2px; margin-top: 8px; padding: 3px; border-radius: 999px; background: var(--paper-sunken); }
+html[data-look="nuevo"] .mov-modo button { min-height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--text-dim); font: inherit; font-size: 13.5px; font-weight: 600; }
+html[data-look="nuevo"] .mov-modo button.on { background: var(--paper-raised); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }

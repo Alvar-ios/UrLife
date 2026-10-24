@@ -1159,7 +1159,9 @@ function movCabHtml(dir) {
   const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
   const flecha = (d, ok, icono, aria) => '<button class="mov-flecha" aria-label="' + aria + '" ' + (ok ? act('movPerMover', d) : 'disabled') + '>' + ic(icono) + '</button>';
   return '<div class="mov-cab' + (modo === 'todo' ? ' todo' : '') + '"><div class="mov-cab-txt"><button class="mov-per-lbl' + anim + '" aria-label="Elegir mes" ' + act('movMesAbrir') + '><b>' + lbl + '</b><span class="mov-chev">' + ic('chevD') + '</span></button>' +
-    '<div class="mov-cab-sub' + anim + '">' + sub + '</div></div>' +
+    '<div class="mov-cab-sub' + anim + '">' + sub + '</div>' +
+    // 24/10: el año entero a un toque (antes, dentro de «Elegir mes»)
+    (movVistaAct() !== 'calendario' && modo !== 'todo' ? '<div class="mov-modo" role="radiogroup" aria-label="Ver por">' + [['mes', 'Mes'], ['anio', 'Año']].map(([k, l]) => '<button type="button" role="radio" aria-checked="' + (modo === k) + '" class="' + (modo === k ? 'on' : '') + '" ' + act('movModoCab', k) + '>' + l + '</button>').join('') + '</div>' : '') + '</div>' +
     (modo === 'todo' ? '' : '<div class="mov-flechas">' + flecha(-1, ant, 'chevL', modo === 'anio' ? 'Año anterior' : 'Mes anterior') + flecha(1, sig, 'chevR', modo === 'anio' ? 'Año siguiente' : 'Mes siguiente') + '</div>') + '</div>';
 }
 // Hoja «Elegir mes»: un mes, un año entero o (en la Lista) todo tu historial
@@ -8399,7 +8401,7 @@ function recEditorHtml() {
     '<div class="field"><label>Tipo</label><div class="type-toggle"><button type="button" data-t="Ingreso" class="' + (esCobro ? 'active' : '') + '" ' + act('recSetKind', 'cobro') + '>Ingreso fijo</button><button type="button" data-t="Factura" class="' + (!esCobro ? 'active' : '') + '" ' + act('recSetKind', 'factura') + '>Pago fijo</button></div></div>' +
     '<div class="field"><label>Nombre</label>' + (nombres.length > 1 ? '<div class="chips">' + nombres.map((nm) => '<button type="button" class="chip ' + (normName(nm) === normName(F.nombre) ? 'active' : '') + '" ' + act('recPickNombre', nm) + '>' + escapeHtml(nm) + '</button>').join('') + '</div>' : '') +
     '<input id="recNombre" type="text" placeholder="' + (esCobro ? 'Nómina' : 'Alquiler') + '" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('recCampo', 'nombre') + '></div>' +
-    (esCobro ? '' : '<div class="field"><label>Categoría</label><select id="recCat" ' + onChange('recCampo', 'categoria') + '>' + catsGasto().map((c) => '<option' + (normName(c.nombre) === normName(F.categoria || catDeRecibo(F.nombre || '')) ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>') +
+    (esCobro ? '' : recCatCampoHtml()) +
     (hayVariasCuentas() ? '<div class="field"><label>' + (esCobro ? 'Llega a la cuenta' : 'Sale de la cuenta') + '</label><div class="chips" id="recCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (F.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('recCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
     '<div class="field"><label>Importe previsto (' + sym() + ') <span class="hint">· opcional</span></label><input id="recImporte" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(F.importe) + '" ' + onInput('recCampo', 'importe') + '></div>' +
     recCampoReglaHtml(r, esCobro) + (esCobro && !(r && r.t) ? '<div class="rec-hint" style="margin-top:-6px;">Lo más habitual: entre el 1 y el 5, entre el 28 y el 30, o el último día hábil. Si dudas, usa «Aprender de mi historial».</div>' : '') +
@@ -8410,11 +8412,18 @@ function recEditorHtml() {
     '<div class="actions"><button class="btn ghost block" ' + act('openRecurrentes') + '>Cancelar</button><button class="btn accent block" ' + act('recGuardar') + '>Guardar</button></div>' +
     (F.idx != null ? '<button class="btn danger block" style="margin-top:10px;" ' + act('recEliminar') + '>' + ic('trash') + ' Eliminar</button>' : '');
 }
+// Categoría de un pago fijo: chips con icono y color, como al apuntar un gasto (24/10, docs/15 3.4). Se guarda en el campo oculto #recCat
+function recCatCampoHtml() {
+  const F = FORM, cur = F.categoria || catDeRecibo(F.nombre || ''), todas = catsPorUso(), max = 8, verTodas = F.catTodas || todas.indexOf(cur) >= max, vis = verTodas ? todas : todas.slice(0, max);
+  return '<div class="field" id="recCatCampo"><label>Categoría</label><input type="hidden" id="recCat" value="' + escapeHtml(cur) + '"><div class="chips" role="radiogroup" aria-label="Categoría">' +
+    vis.map((c) => '<button type="button" class="chip' + (normName(c) === normName(cur) ? ' active' : '') + '" role="radio" aria-checked="' + (normName(c) === normName(cur)) + '" ' + act('recCatElegir', c) + '><span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span>' + escapeHtml(c) + '</button>').join('') +
+    (todas.length > max ? '<button type="button" class="chip chip-mas" ' + act('recCatMas') + '>' + (verTodas ? 'Menos' : 'Más (' + (todas.length - max) + ')') + '</button>' : '') + '</div></div>';
+}
 function recRefrescarPrev() { const el = $('#recPrev'); if (el) el.innerHTML = recPreviewHtml(); }
 function recAbrirEditor(kind, idx) {
   const it = idx != null ? ((cfg()[kind === 'cobro' ? 'cobros' : 'facturas'] || [])[Number(idx)] || null) : null;
   FORM = { kind: 'rec', recKind: kind, origKind: kind, idx: it ? Number(idx) : null, nombre: it ? it.nombre : '', importe: it && it.importe != null ? it.importe : null,
-    tituloEd: it ? it.nombre : '', regla: it ? (reglaDe(it) ? Object.assign({}, reglaDe(it)) : null) : null, extras: it && it.extras ? it.extras.slice() : [], aprendido: null, cuenta: it && cuentaPorId(it.cuentaId) ? it.cuentaId : null };
+    tituloEd: it ? it.nombre : '', regla: it ? (reglaDe(it) ? Object.assign({}, reglaDe(it)) : null) : null, extras: it && it.extras ? it.extras.slice() : [], aprendido: null, cuenta: it && cuentaPorId(it.cuentaId) ? it.cuentaId : null, categoria: it && it.categoria ? it.categoria : undefined }; // la categoría guardada (antes salía siempre la que se deduce del nombre)
   openSheet(recEditorHtml());
 }
 function recGuardar() {
@@ -9097,6 +9106,13 @@ const H = {
     const nuevo = S.movPeriodo; S.movPeriodo = p; S.movLimit = 120; S.movCalDia = ''; S._gcAbierta = '';
     movDeslizar(() => { S.movPeriodo = nuevo; S._movDir = d; }, d);
   },
+  movModoCab: ([k]) => {
+    const antes = movPerNorm(S.movPeriodo), ya = mesActual().y, y = /^[my]:/.test(antes) ? Number(antes.slice(2, 6)) : ya;
+    const nuevo = k === 'anio' ? 'y:' + y : /^m:/.test(antes) ? antes : y === ya ? mesHoyClave() : mesClave(y, 12);
+    if (nuevo === antes) return; sentir('tic');
+    S.movLimit = 120; S.movCalDia = ''; S._gcAbierta = ''; _donutAnim = '';
+    movDeslizar(() => { S.movPeriodo = nuevo; }, k === 'anio' ? 1 : -1);
+  },
   setMovModo: ([k]) => {
     const p = movPerNorm(S.movPeriodo), ya = mesActual().y, y = /^[my]:/.test(p) ? Number(p.slice(2, 6)) : ya;
     if (k === 'mes') S.movPeriodo = /^m:/.test(p) ? p : y === ya ? mesHoyClave() : mesClave(y, 12);
@@ -9629,6 +9645,8 @@ const H = {
   recEditar: ([k, i]) => recAbrirEditor(k, i),
   recSetKind: ([k]) => { if (FORM.kind !== 'rec') return; FORM.nombre = ($('#recNombre') || {}).value || FORM.nombre; FORM.recKind = k; FORM.aprendido = null; updateSheet(recEditorHtml()); },
   recPickNombre: ([n]) => { FORM.nombre = n; const el = $('#recNombre'); if (el) el.value = n; $$('#sheetBackdrop .chips .chip').forEach((c) => { if (c.textContent && !/^[a-z]{3}$/.test(c.textContent)) c.classList.toggle('active', normName(c.textContent) === normName(n)); }); },
+  recCatElegir: ([c]) => { if (!FORM || FORM.kind !== 'rec') return; FORM.categoria = c; const el = $('#recCatCampo'); if (el) el.outerHTML = recCatCampoHtml(); sentir('tic'); },
+  recCatMas: () => { if (!FORM || FORM.kind !== 'rec') return; FORM.catTodas = !FORM.catTodas; const el = $('#recCatCampo'); if (el) el.outerHTML = recCatCampoHtml(); },
   recCampo: ([f], el) => { if (f === 'importe') FORM.importe = el.value === '' ? null : el.value; else FORM[f] = el.value; },
   recTipo: (_, el) => { FORM.regla = reglaPorDefecto(el.value); FORM.aprendido = null; const p = $('#recParams'); if (p) p.innerHTML = recParamsHtml(FORM.regla); recRefrescarPrev(); },
   recParam: ([f], el) => { if (!FORM.regla) return; const v = el.value; FORM.regla = Object.assign({}, FORM.regla, { [f]: (f === 'dia' || f === 'cada' || f === 'n' || f === 'dow') ? (v === '' ? '' : Number(v)) : v }); delete FORM.regla.aprendida; recRefrescarPrev(); },
