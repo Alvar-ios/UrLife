@@ -131,9 +131,9 @@ Para el PDF: poner los dos bocetos grandes en la primera página y la tabla 2.3 
 
 ### Conclusión
 
-1. **Hay 9 logos de 33** (8 símbolos y 2 de ellos son texto: bunq y Coinbase). Pesan **12 KB en total** (9 SVG + `logos.json`), el mayor 2,6 KB.
+1. **Hay 9 logos de 33**: 7 son símbolo y 2 son logotipo de texto (bunq y Coinbase). Pesan **12 KB en total** (9 SVG + `logos.json`), el mayor 2,6 KB.
 2. **Faltan 24**, entre ellos todos los grandes bancos españoles (BBVA, Santander, ING, Sabadell…). No es que no existan: están en Wikimedia Commons, pero **Wikimedia nos bloqueó por exceso de peticiones** (la salida a internet de esta sesión es compartida) durante más de 2 horas, y dejamos de insistir. Hay que hacerlo en otra sesión, despacio.
-3. Mientras tanto, esos 24 salen con **color de marca + letras**. 8 no tienen todavía color de marca (Kutxabank, Ibercaja, Cajamar, EVO, Laboral Kutxa, Caja Rural, Self Bank, Scalable Capital, XTB): van en gris.
+3. Mientras tanto, esos 24 salen con **color de marca + letras**. 9 no tienen todavía color de marca (Kutxabank, Ibercaja, Cajamar, EVO, Laboral Kutxa, Caja Rural, Self Bank, Scalable Capital, XTB): van en gris.
 4. Todos los logos son **marcas registradas** de cada banco. Se usan solo para que cada persona reconozca el banco de su propia cuenta, sin dar a entender ninguna relación con el banco. Si un banco lo pide, se quita su archivo y su cuenta vuelve a color + letras.
 
 ![Muestra de todas las fichas en claro y oscuro](img/logos-muestra.png)
