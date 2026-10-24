@@ -31,7 +31,7 @@ const d = new Date(), hoy = d.getFullYear() + '-' + String(d.getMonth() + 1).pad
   ok(['var(--ink)', 'var(--accent)'].indexOf(doc.querySelector('#invLineV').style.stroke) >= 0, 'con varios activos, el total no va ni verde ni rojo');
   const el = doc.querySelector('#invChart'); el.getBoundingClientRect = () => ({ left: 0, width: 100, top: 0, height: 150 });
   const ev = new e.w.Event('pointerdown', { bubbles: true }); ev.clientX = 50; ev.pointerId = 1; ev.pointerType = 'touch'; ev.buttons = 1; el.dispatchEvent(ev);
-  ok(/Total/.test(doc.querySelector('#invVals').textContent) && /Fondo Uno/.test(doc.querySelector('#invVals').textContent), 'al arrastrar el dedo, el valor de cada línea debajo');
+  ok(/Total/.test(doc.querySelector('#invVals').textContent) && /FU/.test(doc.querySelector('#invVals').textContent), 'al arrastrar el dedo, el valor de cada línea debajo (con su nombre corto)');
   H.invLinea(['total']); await sleep(20);
   ok(doc.querySelectorAll('#invChart .tr-linea-a').length === 0, '«Total» vuelve a la línea sola');
   click(e, 'setInvPeriodo', 'max'); await sleep(20);
