@@ -3773,7 +3773,7 @@ function renderTuV2() {
     lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'arrowUp', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
     it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar'),
     it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')];
-  return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t">' + escapeHtml(nombre) + badge('perfil') + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
+  return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t"><span class="t-n">' + escapeHtml(nombre) + '</span>' + badge('perfil') + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
       '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar</button></div>' +
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
     grupo('Tu dinero', [it('openCuentas', [], 'bank', 'Cuentas y saldos', (badge('cuentas') || badge('patrimonio')) + (nCu ? '<span class="menu-extra">' + nCu + (nCu === 1 ? ' cuenta' : ' cuentas') + '</span>' : ''), 'banco saldo patrimonio'),
@@ -4675,7 +4675,7 @@ function temaCajaHtml() {
   if (F.tema && elegido && elegido.cerrada && !ts.some((t) => t.id === F.tema)) ts.unshift(elegido);
   const chip = (id, icono, txt) => '<button type="button" class="chip' + ((F.tema || null) === id ? ' active' : '') + '" aria-pressed="' + ((F.tema || null) === id) + '" ' + act('temaElegir', id || '') + '>' + (icono ? ic(icono) : '') + escapeHtml(txt) + '</button>';
   let h = '<div class="tema-caja"><div class="tema-lbl">¿De qué tema? <span class="hint">· opcional</span>' + badge('temas') + '</div><div class="chips tema-chips">' + chip(null, '', 'Ninguno') +
-    ts.map((t) => chip(t.id, temaIcono(t), t.nombre)).join('') + '<button type="button" class="chip tema-nuevo' + (F.temaNuevo ? ' active' : '') + '" ' + act('temaNuevoAbrir') + '>' + ic('plus') + (ts.length ? 'Nuevo' : 'Nuevo tema') + '</button></div>';
+    ts.map((t) => chip(t.id, temaIcono(t), t.nombre)).join('') + '<button type="button" class="chip tema-nuevo' + (F.temaNuevo ? ' active' : '') + '" aria-expanded="' + !!F.temaNuevo + '" ' + act('temaNuevoAbrir') + '>' + ic('plus') + (ts.length ? 'Nuevo' : 'Nuevo tema') + '</button></div>';
   if (F.temaNuevo) {
     const ico = TEMA_ICONOS.indexOf(F.temaIco) >= 0 ? F.temaIco : 'tag';
     h += '<div class="tema-nuevo-f"><input id="temaNom" type="text" maxlength="40" placeholder="Nombre (Roma 2026, Compra…)" value="' + escapeHtml(F.temaNom || '') + '" ' + onInput('temaNomIn') + '>' +
@@ -4699,8 +4699,8 @@ function temasGrupoHtml(g, F) {
   if (!temasDisponible()) return '';
   const ts = temasDe(g.id), tv = F.temaVer && temaPorId(F.temaVer) ? F.temaVer : '';
   if (!ts.length && !tv) return '<button type="button" class="chip tema-mas-suelto" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + ' Tema' + badge('temas') + '</button>';
-  return '<div class="chips tema-chips tema-grupo">' + '<button type="button" class="chip' + (tv ? '' : ' active') + '" ' + act('temaVer', '') + '>Todo</button>' +
-    ts.map((t) => '<button type="button" class="chip' + (tv === t.id ? ' active' : '') + '" ' + act('temaVer', t.id) + '>' + ic(temaIcono(t)) + escapeHtml(t.nombre) + '</button>').join('') +
+  return '<div class="chips tema-chips tema-grupo">' + '<button type="button" class="chip' + (tv ? '' : ' active') + '" aria-pressed="' + !tv + '" ' + act('temaVer', '') + '>Todo</button>' +
+    ts.map((t) => '<button type="button" class="chip' + (tv === t.id ? ' active' : '') + '" aria-pressed="' + (tv === t.id) + '" ' + act('temaVer', t.id) + '>' + ic(temaIcono(t)) + escapeHtml(t.nombre) + '</button>').join('') +
     '<button type="button" class="chip" aria-label="Nuevo tema" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + '</button></div>';
 }
 function porTemasHtml(g, F) {
@@ -4745,7 +4745,7 @@ function temaFormHtml(g) {
   const ids = T.id ? [] : temaGastosEnFechas(g.id, T.desde, T.hasta);
   return '<div class="handle"></div><div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('temaFormCerrar') + '>' + ic('chevL') + '</button><h2>' + (T.id ? 'Cambiar tema' : 'Nuevo tema') + '</h2></div>' +
     (T.id ? '' : '<div class="chips tema-ideas">' + TEMA_IDEAS.map(([k, n]) => '<button type="button" class="chip" ' + act('temaIdea', k, n) + '>' + ic(k) + n + '</button>').join('') + '</div>') +
-    '<div class="field"><label for="tfNombre">Nombre</label><input id="tfNombre" type="text" maxlength="40" placeholder="Roma 2026" value="' + escapeHtml(T.nombre || '') + '"></div>' +
+    '<div class="field"><label for="tfNombre">Nombre</label><input id="tfNombre" type="text" maxlength="40" placeholder="Roma 2026" value="' + escapeHtml(T.nombre || '') + '" ' + onInput('temaFormNomIn') + '></div>' +
     '<div class="field"><label>Icono</label><div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + (TEMA_ICONO_NOMBRE[k] || k) + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaFormIco', k) + '>' + ic(k) + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>Fechas <span class="hint">· opcional</span></label><div class="tema-fechas"><input id="tfDesde" type="date" aria-label="Desde" value="' + escapeHtml(T.desde || '') + '" ' + onChange('temaFormFecha') + '><span>al</span><input id="tfHasta" type="date" aria-label="Hasta" value="' + escapeHtml(T.hasta || '') + '" ' + onChange('temaFormFecha') + '></div></div>' +
     (ids.length ? '<label class="tema-meter"><input id="tfMeter" type="checkbox"' + (T.meter !== false ? ' checked' : '') + '> Meter ' + (ids.length === 1 ? 'el gasto' : 'los ' + ids.length + ' gastos') + ' de esos días</label>' : '') +
@@ -4885,7 +4885,7 @@ function planVerHtml(id) {
   if (a.nota) h += '<div class="plan-nota">' + escapeHtml(a.nota) + '</div>';
   if (g) h += '<div class="plan-autor">Lo añadió ' + escapeHtml(a.creadoPor && esMio(a.grupoId, a.creadoPor) ? 'tú' : nombreDe(a.grupoId, a.creadoPor)) + (a.createdAt ? ' · ' + escapeHtml(haceTxt(a.createdAt)) : '') + '</div>';
   h += '</div>';
-  if (plan) h += '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => '<button type="button" class="chip' + (planAviso(a.id) === k ? ' active' : '') + '" ' + act('planAvisoVer', a.id, k) + '>' + l + '</button>').join('') + '</div></div>';
+  if (plan) h += '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => '<button type="button" class="chip' + (planAviso(a.id) === k ? ' active' : '') + '" aria-pressed="' + (planAviso(a.id) === k) + '" ' + act('planAvisoVer', a.id, k) + '>' + l + '</button>').join('') + '</div></div>';
   else h += '<button class="btn ' + (a.hechaEn ? 'ghost' : 'accent') + ' block" ' + act('tareaCHecha', a.id, a.hechaEn ? '' : '1') + '>' + ic('check') + (a.hechaEn ? ' Marcar sin hacer' : ' Marcar hecha') + '</button>';
   h += '<div class="plan-acc">' + (plan ? '<button type="button" class="tema-menu-b" ' + act('planIcs', a.id) + '>' + ic('calendar') + '<span>Añadir a mi calendario</span></button>' : '') +
     (g ? '<button type="button" class="tema-menu-b" ' + act('planOcultar', a.id) + '>' + ic('close') + '<span>Ocultar de mi agenda</span></button>' : '') +
@@ -5357,7 +5357,7 @@ function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
 function invLineasChipsHtml(movs, series, multi) {
   const as = invActivosConSerie(movs, series); if (as.length < 1) return '';
   const sel = invLineasSel();
-  return '<div class="tr-lineas" role="group" aria-label="Líneas de la gráfica"><button type="button" class="chip' + (multi ? '' : ' active') + '" aria-pressed="true" ' + act('invLinea', 'total') + '><i style="background:var(--accent)"></i>Total</button>' +
+  return '<div class="tr-lineas" role="group" aria-label="Líneas de la gráfica"><button type="button" class="chip' + (multi ? '' : ' active') + '" aria-pressed="' + !multi + '" ' + act('invLinea', 'total') + '><i style="background:var(--accent)"></i>Total</button>' +
     as.map((a) => '<button type="button" class="chip' + (sel.indexOf(a.id) >= 0 ? ' active' : '') + '" aria-pressed="' + (sel.indexOf(a.id) >= 0) + '" ' + act('invLinea', a.id) + '><i style="background:' + a.color + '"></i>' + escapeHtml(a.nombre) + '</button>').join('') + '</div>';
 }
 function invRentaFilaHtml(grupos, valorActual) {
@@ -9406,6 +9406,7 @@ const H = {
   temaElegir: ([id]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; verBadge('temas'); F.tema = id || null; F.temaTocado = true; F.temaNuevo = false; sentir('tic'); updateSheet(compRapidoHtml()); },
   temaNuevoAbrir: () => { const F = FORM; if (!F || F.kind !== 'compRapido') return; verBadge('temas'); F.temaNuevo = !F.temaNuevo; updateSheet(compRapidoHtml()); if (F.temaNuevo) setTimeout(() => { const el = $('#temaNom'); if (el) el.focus(); }, 50); },
   temaNomIn: (_a, el) => { if (FORM) FORM.temaNom = el.value; },
+  temaFormNomIn: (_a, el) => { if (FORM && FORM.temaForm) FORM.temaForm.nombre = el.value; }, // si llega un cambio de otra persona y se repinta, el nombre escrito no se pierde
   temaIco: ([k]) => { const F = FORM; if (!F) return; const el = $('#temaNom'); if (el) F.temaNom = el.value; F.temaIco = k; updateSheet(compRapidoHtml()); },
   temaCrearRapido: async () => {
     const F = FORM, gid = temaGidDeForm(); if (!F || !gid) return;
