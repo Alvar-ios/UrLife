@@ -4937,11 +4937,15 @@ const EMOJI_PISTAS = [[/viaj|japon|vacacion|escapad|playa/, '✈️'], [/casa|pi
   [/tarjeta|credito/, '💳'], [/prestam|amigo|familia/, '🤝'], [/mascota|perro|gato/, '🐾'], [/bici|deporte|gimnas/, '🚲']];
 function emojiSugerido(nombre, def) { const n = normName(nombre || ''); const x = EMOJI_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : (def || '🎯'); }
 // Los emojis se siguen guardando (no se tocan los datos), pero en pantalla se dibuja un icono de la app (22/10)
-const EMOJI_IC = { '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'coche2', '💍': 'heart', '🍼': 'heart', '🎓': 'cap', '🎁': 'gift', '📱': 'phone', '💳': 'card', '🤝': 'manoMoneda', '🐾': 'paw', '🚲': 'car', '🎯': 'target' };
+const EMOJI_IC = { '🧾': 'deuda', '✈️': 'plane', '🏠': 'home', '🛟': 'shield', '🚗': 'coche2', '💍': 'heart', '🍼': 'heart', '🎓': 'cap', '🎁': 'gift', '📱': 'phone', '💳': 'card', '🤝': 'manoMoneda', '🐾': 'paw', '🚲': 'car', '🎯': 'target' };
 const EMOJI_NOMBRE = { '✈️': 'Viaje', '🏠': 'Casa', '🛟': 'Colchón', '🚗': 'Coche', '💍': 'Boda', '🍼': 'Bebé', '🎓': 'Estudios', '🎁': 'Regalo', '📱': 'Aparatos', '💳': 'Tarjeta', '🤝': 'Préstamo', '🐾': 'Mascota', '🚲': 'Deporte', '🎯': 'Meta' };
 function icDeEmoji(e, def) { return ic(EMOJI_IC[e] || def || 'flag'); }
 function metaIcono(r) { return icDeEmoji(emojiMeta(r), 'target'); }
-function deudaIcono(d) { return icDeEmoji(d.emoji || emojiSugerido(d.nombre, '💳'), 'deuda'); }
+/* ---- Deudas con icono (24/10, docs/15 2.5). Se sigue guardando en «emoji» (lo entienden también las versiones antiguas); se pinta con el icono de la app ---- */
+const DEUDA_ICONOS = [['🚗', 'coche2', 'Coche'], ['🏠', 'home', 'Casa'], ['📱', 'phone', 'Móvil'], ['💳', 'card', 'Tarjeta'], ['🎓', 'cap', 'Estudios'], ['🤝', 'manoMoneda', 'Alguien cercano'], ['🧾', 'deuda', 'Otra']];
+const DEUDA_PISTAS = [[/coche|moto/, '🚗'], [/casa|piso|hipotec|reforma/, '🏠'], [/movil|ordenador|portatil|tele|consola|iphone/, '📱'], [/tarjeta|credito|aplazad/, '💳'], [/estudi|master|matricula/, '🎓'], [/amig|familia|mama|papa|herman|madre|padre/, '🤝']];
+function deudaEmojiSug(nombre) { const n = normName(nombre || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''); const x = DEUDA_PISTAS.find(([re]) => re.test(n)); return x ? x[1] : '🧾'; }
+function deudaIcono(d) { return icDeEmoji(d.emoji || deudaEmojiSug(d.nombre), 'deuda'); }
 function emojiMeta(r) { const m = !r.compartida ? metasCfg().find((x) => x.id === r.id) : null; return (m && m.emoji) || emojiSugerido(r.nombre); }
 const DM_ESTADO_COLOR = { bien: 'var(--income)', justo: 'var(--warn, var(--accent))', gris: 'var(--text-muted)', mal: 'var(--expense)' };
 // estado de una meta en una frase corta y sobria (el rojo solo si la fecha ya pasó)
@@ -5497,19 +5501,26 @@ function deudaVerHtml(nombre) {
     (pagos.length ? '<div class="section-title">Últimos pagos<button class="link" ' + act('irMovsDeuda', d.nombre) + '>Ver todos</button></div><div class="card dm-ult">' + pagos.slice(0, 3).map((x) => '<div class="dm-ult-f"><span>' + fmtDateShort(x.fecha) + '</span><b class="tnum">' + money(x.importe) + '</b></div>').join('') + '</div>' : '') +
     (num(d.previo) ? '<div class="rec-hint">Incluye ' + money(num(d.previo)) + ' que pagaste antes de usar la app. Sin intereses.</div>' : '<div class="rec-hint">Sin contar intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</div>');
 }
-const EMOJIS_DEUDA = ['🚗', '🏠', '📱', '💳', '🎓', '🤝'];
 function deudaFormHtml() {
-  const F = FORM, sug = emojiSugerido(F.nombre, '💳'), lista = EMOJIS_DEUDA.indexOf(sug) < 0 ? [sug].concat(EMOJIS_DEUDA) : EMOJIS_DEUDA, emo = F.emoji || sug;
+  const F = FORM, conocido = DEUDA_ICONOS.some((x) => x[0] === F.emoji), emo = conocido ? F.emoji : deudaEmojiSug(F.nombre);
   const n = (v) => (v == null || v === '' ? '' : String(v).replace('.', ','));
   return '<div class="handle"></div><h2>' + (F.orig ? 'Editar deuda' : 'Nueva deuda') + '</h2>' +
-    '<div class="field"><label>Elige un dibujo</label><div class="dm-emojis">' + lista.map((x) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" aria-label="' + escapeHtml(EMOJI_NOMBRE[x] || 'Dibujo') + '" aria-pressed="' + (x === emo) + '" ' + act('deudaEmoji', x) + '>' + icDeEmoji(x, 'card') + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>Su icono <span class="hint">· se elige solo por el nombre</span></label><div class="dm-emojis deu-ics" role="radiogroup" aria-label="Su icono">' + DEUDA_ICONOS.map(([x, i, l]) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" role="radio" aria-label="' + l + '" aria-checked="' + (x === emo) + '" ' + act('deudaEmoji', x) + '>' + ic(i) + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>Nombre</label><input id="dNombre" type="text" maxlength="40" placeholder="Coche, préstamo, tarjeta…" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('deudaNombreIn') + '></div>' +
     '<div class="dm-2c"><div class="field"><label>Total que debías</label><input id="dTotal" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.total)) + '"></div>' +
     '<div class="field"><label>Ya pagado <span class="hint">· opcional</span></label><input id="dPrevio" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.previo)) + '"></div></div>' +
-    '<div class="dm-2c"><div class="field"><label>Al mes <span class="hint">· opcional</span></label><input id="dCuota" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.cuotaMes)) + '"></div>' +
-    '<div class="field"><label>Acabar en <span class="hint">· opcional</span></label><input id="dFecha" type="month" value="' + escapeHtml((F.fecha || '').slice(0, 7)) + '"></div></div>' +
+    '<div><div class="field"><label>Al mes <span class="hint">· opcional</span></label><input id="dCuota" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.cuotaMes)) + '"></div>' +
+    '</div>' + mesAnioCampoHtml('Acabar en', 'dFecha', (F.fecha || '').slice(0, 7), 'deudaMes') +
     '<div class="dm-nota">' + ic('alert') + '<span>«Ya pagado» es lo que pagaste antes de usar la app. No contamos intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</span></div>' +
     '<div id="dAviso"></div><button class="btn accent block" ' + act('deudaGuardar') + '>Guardar deuda</button>';
+}
+// Selector de mes y año propio (el del sistema enseña «--------- ----»): 12 meses y el año con − y +. Guarda 'AAAA-MM' en un campo oculto
+function mesAnioCampoHtml(lbl, id, ym, accion) {
+  const hoy = todayISO(), y = /^\d{4}-\d{2}$/.test(ym || '') ? Number(ym.slice(0, 4)) : Number((FORM && FORM._maY) || hoy.slice(0, 4)), m = /^\d{4}-\d{2}$/.test(ym || '') ? Number(ym.slice(5, 7)) : 0;
+  return '<div class="field ma-campo" id="' + id + 'Campo"><label>' + lbl + ' <span class="hint">· opcional</span></label><input type="hidden" id="' + id + '" value="' + escapeHtml(m ? ym : '') + '">' +
+    '<div class="ma-anio"><button type="button" class="rec-mm-b" aria-label="Año anterior" ' + act(accion, 'y|' + (y - 1)) + '>−</button><b class="tnum">' + y + '</b><button type="button" class="rec-mm-b" aria-label="Año siguiente" ' + act(accion, 'y|' + (y + 1)) + '>+</button>' +
+      (m ? '<button type="button" class="link ma-quitar" ' + act(accion, 'm|0') + '>Sin fecha</button>' : '') + '</div>' +
+    '<div class="ma-meses" role="radiogroup" aria-label="' + escapeHtml(lbl) + '">' + MESES_CORTO.map((t, i) => '<button type="button" class="ma-mes' + (m === i + 1 ? ' on' : '') + '" role="radio" aria-checked="' + (m === i + 1) + '" aria-label="' + MESES[i] + ' de ' + y + '" ' + act(accion, 'm|' + (i + 1)) + '>' + t + '</button>').join('') + '</div></div>';
 }
 // lee un importe opcional: vacío → null; texto raro o negativo → NaN
 function importeOpcional(v) { const s = String(v == null ? '' : v).trim(); if (!s) return null; if (!/^[\d.,\s€]+$/.test(s) || !/\d/.test(s)) return NaN; const x = numCampo(s); return isFinite(x) && x >= 0 ? r2(x) : NaN; }
@@ -5529,7 +5540,7 @@ async function deudaGuardar() {
   if (choca) { marcarCampo('#dNombre'); return toast('Ya tienes una deuda con ese nombre: elige otro para no mezclar sus pagos'); }
   const prev = i >= 0 ? lista[i] : {}, antes = (prev.nombresAntes || []).slice();
   if (F.orig && normName(F.orig) !== k && !antes.some((x) => normName(x) === normName(F.orig))) antes.push(F.orig);
-  const nueva = Object.assign({}, prev, { nombre, objetivo: total, previo, cuotaMes: cuota, fechaObjetivo: fecha || null, emoji: F.emoji || emojiSugerido(nombre, '💳') });
+  const nueva = Object.assign({}, prev, { nombre, objetivo: total, previo, cuotaMes: cuota, fechaObjetivo: fecha || null, emoji: DEUDA_ICONOS.some((x) => x[0] === F.emoji) ? F.emoji : deudaEmojiSug(nombre) });
   if (antes.length) nueva.nombresAntes = antes;
   if (!nueva.id) nueva.id = 'd' + Date.now().toString(36);
   if (i >= 0) lista[i] = nueva; else lista.push(nueva);
@@ -9300,9 +9311,17 @@ const H = {
   aportarRGuardar: () => aportarRGuardar(),
   deudaNueva: () => { FORM = { kind: 'deudaForm', orig: null, nombre: '', emoji: '' }; if ($('#sheetBackdrop')) updateSheet(deudaFormHtml()); else openSheet(deudaFormHtml()); },
   deudaEditar: ([n]) => { const d = deudaPorNombre(n); if (!d) return; FORM = { kind: 'deudaForm', orig: d.nombre, nombre: d.nombre, emoji: d.emoji || '', total: d.objetivo, previo: d.previo, cuotaMes: d.cuotaMes, fecha: d.fechaObjetivo || '' }; if ($('#sheetBackdrop')) updateSheet(deudaFormHtml()); else openSheet(deudaFormHtml()); },
-  deudaEmoji: ([e]) => { if (!FORM || FORM.kind !== 'deudaForm') return; FORM.emoji = e; $$('.dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(e); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); },
+  deudaMes: ([v]) => {
+    const F = FORM; if (!F || F.kind !== 'deudaForm') return; const [k, n] = String(v).split('|'), cur = (F.fecha || '').slice(0, 7), y = /^\d{4}-\d{2}$/.test(cur) ? Number(cur.slice(0, 4)) : Number(F._maY || todayISO().slice(0, 4)), m = /^\d{4}-\d{2}$/.test(cur) ? Number(cur.slice(5, 7)) : 0;
+    ['dNombre', 'dTotal', 'dPrevio', 'dCuota'].forEach((id) => { const el = $('#' + id); if (el) F[{ dNombre: 'nombre', dTotal: 'total', dPrevio: 'previo', dCuota: 'cuotaMes' }[id]] = el.value; }); // lo escrito no se pierde
+    if (k === 'y') { const ny = Math.max(2000, Math.min(2100, Number(n))); F._maY = ny; F.fecha = m ? ny + '-' + pad2(m) : ''; }
+    else { const nm = Number(n); F.fecha = nm ? y + '-' + pad2(nm) : ''; F._maY = y; }
+    const c = $('#dFechaCampo'); if (c) c.outerHTML = mesAnioCampoHtml('Acabar en', 'dFecha', F.fecha, 'deudaMes'); sentir('tic');
+  },
+  deudaEmoji: ([e]) => { if (!FORM || FORM.kind !== 'deudaForm') return; FORM.emoji = e; $$('.dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(e); b.classList.toggle('on', on); b.setAttribute(b.hasAttribute('aria-checked') ? 'aria-checked' : 'aria-pressed', String(on)); }); sentir('tic'); },
   deudaNombreIn: (_a, el) => {
     const F = FORM; if (!F || F.kind !== 'deudaForm') return; F.nombre = el.value;
+    if (!DEUDA_ICONOS.some((x) => x[0] === F.emoji)) { const sug = deudaEmojiSug(el.value); $$('.deu-ics .dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(sug); b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }); }
     // al crear una deuda con un nombre que ya tiene pagos, se avisa de que contarán
     const av = $('#dAviso'); if (!av) return; const k = normName(el.value || ''), n = k && !F.orig ? movsPersonales().filter((x) => x.tipo === 'Deuda' && normName(x.categoria || '') === k).length : 0;
     av.innerHTML = n ? '<div class="dm-consejo k-justo">Hay ' + n + (n === 1 ? ' pago' : ' pagos') + ' con este nombre en Movimientos: se contarán en esta deuda.</div>' : '';
@@ -10247,6 +10266,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { VERSIONES, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
