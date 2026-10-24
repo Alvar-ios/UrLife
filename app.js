@@ -1815,6 +1815,7 @@ function openMovForm(id, pre) {
   FORM.metaSels = ex ? metasDeMov(ex.tipo === 'Inversión' ? ex : Object.assign({}, ex, { tipo: 'Inversión', metaIds: ex.metaId ? [ex.metaId] : [] })) : (pre.metaSel ? [pre.metaSel] : []);
   FORM.cuenta = comp ? cuentaDeComp(comp) : ex ? (cuentaPorId(ex.cuentaId) ? ex.cuentaId : cuentaRecordada('')) : (pre.cuentaId && cuentaPorId(pre.cuentaId) ? pre.cuentaId : cuentaRecordada(pre.categoria));
   if (ex && ex.activoId) { FORM.activo = { activo_id: ex.activoId, nombre: ex.categoria, tipo: ex.tipoActivo || '', simbolo: '', moneda: '' }; FORM.partOrig = ex.participaciones == null ? null : Number(ex.participaciones); }
+  else if (!ex && pre.activoId && tipoIni === 'Inversión') FORM.activo = { activo_id: pre.activoId, nombre: pre.categoria || '', tipo: pre.tipoActivo || '', simbolo: '', moneda: '' }; // «Invertir más» desde la hoja del activo
   const metodos = cfg().metodosPago || [];
   const tec = tecladoOn(), impIni = ex ? ex.importe : pre.importe, corta = tec && !ex && !comp && !compDest && (tipoIni === 'Gasto' || tipoIni === 'Ingreso');
   if (tec) FORM.tec = { on: !ex, txt: tecTxtDe(impIni), neg: tecNum(impIni) < 0, reemplazar: !!tecTxtDe(impIni), corta, tecla: corta ? 'guardar' : 'hecho' };
@@ -5282,7 +5283,8 @@ function invResumen() {
 const signoN = (n) => (n >= 0 ? '+' : '−');
 function invIcono(t) { const k = normName(t || ''); return /cripto|bitcoin/.test(k) ? 'coin' : /accion/.test(k) ? 'velas' : /fondo|etf|indice/.test(k) ? 'pie' : 'trendUp'; }
 function invFilaV2(g, vv, completo) {
-  return '<button type="button" class="dm-inv-f tappable" ' + act('verActivo', g.nombre) + '><span class="dm-ic inv">' + ic(invIcono(g.tipoActivo)) + '</span>' +
+  const col = colorActivo(g.activoId);
+  return '<button type="button" class="dm-inv-f tappable" ' + act('verActivo', g.nombre) + '><span class="dm-ic inv"' + (col ? ' style="--ac:' + col + '"' : '') + '>' + ic(invIcono(g.tipoActivo)) + '</span>' +
     '<span class="dm-emp-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + (!vv ? 'Sin precio todavía' : completo ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 4 }) + ' part. · aportaste ' + m0(g.total) : 'Aportaste ' + m0(g.total)) + '</span></span>' +
     '<span class="dm-inv-v"><b class="tnum">' + (vv ? money(vv.valor) : m0(g.total)) + '</b>' + (vv ? '<span class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(vv.gan) + money(Math.abs(vv.gan)) + (completo && vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</span>' : '') + '</span></button>';
 }
@@ -5318,10 +5320,16 @@ function renderInversionesTodo(enPestana) {
 
 /* ---- Inversiones v3 (23/10/2026, docs/15 2.4): «1S», líneas por activo (hasta 4) y rentabilidad e inflación en su hoja ---- */
 const COLORES_ACTIVO = ['#2E9BD6', '#E6B422', '#E86A9A', '#4FB3A9', '#C25BD8'];
+// cada activo tiene siempre el mismo color: por su orden entre todos tus activos con precio
+function colorActivo(id) {
+  if (!id) return null;
+  const ids = [...new Set(S.movimientos.filter((m) => m.tipo === 'Inversión' && m.activoId).map((m) => m.activoId))].sort(), i = ids.indexOf(id);
+  return i < 0 ? null : COLORES_ACTIVO[i % COLORES_ACTIVO.length];
+}
 function invActivosConSerie(movs, series) {
   const ids = [...new Set(movs.map((m) => m.id))].filter((id) => (series[id] || []).length);
   const grupos = inversionesPorActivo(), nom = (id) => ((grupos.find((g) => g.activoId === id) || {}).nombre) || 'Activo';
-  return ids.sort().map((id, i) => ({ id, nombre: nom(id), color: COLORES_ACTIVO[i % COLORES_ACTIVO.length] }));
+  return ids.sort().map((id) => ({ id, nombre: nom(id), color: colorActivo(id) || COLORES_ACTIVO[0] }));
 }
 function invLineasSel() { return Array.isArray(S.invLineas) ? S.invLineas : []; }
 function invLineasExtra(movs, series, serieTot, i0, pts, modoR) {
@@ -5373,6 +5381,47 @@ function invRentaHojaHtml() {
   const R = invResumen();
   return '<div class="handle"></div><h2>Rentabilidad al año e inflación</h2>' + (R.todas ? inflacionV2Html(R.grupos, R.valor).replace('<div class="section-title">¿Le ganas a la inflación?</div>', '') : '<div class="card">Aún no hay precios de todos tus activos.</div>') +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+}
+/* ---- Hoja de cada activo (24/10, docs/15 2.4): valor, gráfica pequeña, 4 cifras, tus aportaciones y botones ---- */
+const TIPO_ACTIVO_TXT = { crypto: 'Criptomoneda', cripto: 'Criptomoneda', accion: 'Acción', acción: 'Acción', etf: 'Fondo cotizado (ETF)', fondo: 'Fondo', indice: 'Índice' };
+function activoGrupo(nombre) { const gs = inversionesPorActivo(); return gs.find((g) => g.nombre === nombre) || gs.find((g) => normName(g.nombre) === normName(nombre)) || null; }
+function activoMovs(g) { return S.movimientos.filter((m) => m.tipo === 'Inversión' && (g.activoId ? m.activoId === g.activoId : !m.activoId && normName(m.categoria) === normName(g.nombre))).sort((a, b) => ((b.fecha || '') < (a.fecha || '') ? -1 : 1)); }
+function activoGraficaHtml(g, col) {
+  const H = S.historico, serieP = H && !H.error && H.series ? H.series[g.activoId] : null;
+  if (!g.activoId || !serieP || !serieP.length) return '';
+  const movs = movsValorables([g]); if (!movs.length) return '';
+  const serie = serieCartera(movs, H.series); if (serie.length < 2) return '';
+  const per = PERIODOS_INV.find((x) => x[0] === S.activoPer) || PERIODOS_INV.find((x) => x[0] === S.invPeriodo) || PERIODOS_INV[PERIODOS_INV.length - 1];
+  const i0 = per[2] ? Math.max(0, serie.length - 1 - per[2]) : 0, tramo = serie.slice(i0).map((q) => q.v);
+  const pts = reducirPuntos(tramo, 60), mn = Math.min(...pts), mx = Math.max(...pts), W = 300, Hh = 80, rg = mx - mn || 1;
+  const xy = pts.map((v, i) => [i / Math.max(1, pts.length - 1) * W, Hh - 6 - (v - mn) / rg * (Hh - 12)]);
+  // lo que has ganado o perdido en el periodo: lo que cambió el valor menos lo que metiste en ese tiempo
+  const t0 = serie[i0], t1 = serie[serie.length - 1], vv = valorDeGrupo(g), dif = per[0] === 'max' && vv ? vv.gan : (t1.v - t0.v) - (t1.inv - t0.inv);
+  return '<div class="act-graf"><div class="act-graf-c"><span>' + (dif >= 0 ? 'Ganas ' : 'Pierdes ') + escapeHtml(per[0] === 'max' ? 'desde que empezaste' : 'en ' + (per[0] === '1s' ? '7 días' : per[0] === '1m' ? 'un mes' : per[0] === '3m' ? '3 meses' : per[0] === '6m' ? '6 meses' : 'un año')) + '</span><b class="tnum" style="color:' + (dif >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + money(Math.abs(dif)) + '</b></div>' +
+    '<svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" class="act-svg" role="img" aria-label="Evolución del valor de ' + escapeHtml(g.nombre) + '"><path d="' + curvaSuave(xy) + '" fill="none" stroke="' + (col || 'var(--savings)') + '" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>' +
+    '<div class="segmented tr-chips">' + PERIODOS_INV.map((x) => '<button type="button" class="' + (x[0] === per[0] ? 'active' : '') + '" aria-pressed="' + (x[0] === per[0]) + '" ' + act('activoPer', x[0]) + '>' + x[1] + '</button>').join('') + '</div></div>';
+}
+function activoVerHtml(nombre) {
+  const g = activoGrupo(nombre);
+  if (!g) return '<div class="handle"></div><h2>' + escapeHtml(nombre || 'Inversión') + '</h2><div class="card">Ya no hay movimientos de este activo.</div><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+  const vv = valorDeGrupo(g), col = colorActivo(g.activoId), a = vv && vv.v && vv.v.activo ? vv.v.activo : null, movs = activoMovs(g);
+  const tipo = TIPO_ACTIVO_TXT[normName(g.tipoActivo || (a && a.tipo) || '')] || g.tipoActivo || (a && a.tipo) || 'Inversión';
+  const cifra = (l, v) => '<div class="act-cifra"><span>' + l + '</span><b class="tnum">' + v + '</b></div>';
+  const enPart = g.activoId && g.conPart === g.n && g.part > 0;
+  const precio = vv && vv.v ? money(vv.v.cierre_eur) + (vv.v.fecha_precio ? '<i>' + fechaDiaCorta(vv.v.fecha_precio) + '</i>' : '') : '—';
+  const sinPrecio = !(g.activoId && g.conPart === g.n), aVincular = sinPrecio ? movs.find((m) => !m.activoId || m.participaciones == null || m.participaciones === '') : null;
+  return '<div class="handle"></div><div class="act-cab"><span class="dm-ic inv"' + (col ? ' style="--ac:' + col + '"' : '') + '>' + ic(invIcono(g.tipoActivo)) + '</span><div><h2>' + escapeHtml(g.nombre) + '</h2><span>' + escapeHtml(tipo) + (a && a.simbolo ? ' · ' + escapeHtml(a.simbolo) : '') + '</span></div></div>' +
+    '<div class="act-valor"><span>' + (vv ? 'Vale hoy' : 'Has metido') + '</span><b class="tnum">' + money(vv ? vv.valor : g.total) + '</b>' +
+      (vv ? '<em class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (vv.gan >= 0 ? 'Ganas ' : 'Pierdes ') + money(Math.abs(vv.gan)) + (vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</em>' : '') + '</div>' +
+    activoGraficaHtml(g, col) +
+    (sinPrecio ? '<div class="dm-aviso">' + ic('info') + '<span>Sin precio: ' + (g.activoId ? 'a alguna aportación le faltan las participaciones.' : 'falta elegir el activo en sus aportaciones.') + '</span>' + (aVincular ? '<button class="link" ' + act('activoArreglar', aVincular.id) + '>Buscar el activo</button>' : '') + '</div>' : '') +
+    '<div class="act-cifras">' + cifra('Aportaste', money(g.total)) + cifra('Tienes', enPart ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.' : '—') +
+      cifra('Te costó de media', enPart ? money(g.total / g.part) : '—') + cifra('Último precio', precio) + '</div>' +
+    '<div class="section-title">Tus aportaciones<span class="dm-cuenta-n">' + movs.length + '</span></div><div class="card act-movs">' +
+      movs.slice(0, 12).map((m) => '<button type="button" class="act-mov tappable" ' + act('activoMov', m.id) + '><span>' + escapeHtml(fmtDateShort(m.fecha || '')) + (m.descripcion ? ' · ' + escapeHtml(m.descripcion) : '') + '</span><b class="tnum">' + money(m.importe) + '</b>' + (m.participaciones != null && m.participaciones !== '' ? '<i class="tnum">' + Number(m.participaciones).toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.</i>' : '') + ic('chevR') + '</button>').join('') +
+      (movs.length > 12 ? '<button type="button" class="dm-inv-mas" ' + act('activoEnMovs', g.nombre) + '>Ver las ' + movs.length + ' en Movimientos ' + ic('chevR') + '</button>' : '') + '</div>' +
+    '<div class="act-botones"><button class="btn accent block" ' + act('activoInvertir', g.nombre) + '>' + ic('plus') + ' Invertir más</button>' +
+      '<div class="act-bot2"><button class="btn ghost block" ' + act('activoEnMovs', g.nombre) + '>' + ic('list') + ' Movimientos</button><button class="btn ghost block" ' + act('dmPrecios') + '>' + ic('info') + ' Precios</button></div></div>';
 }
 function dmPreciosHtml() {
   const R = invResumen();
@@ -9895,7 +9944,12 @@ const H = {
     updateSheet(tabsAnSheetHtml()); render();
   },
   setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; S.tab = 'inicio'; render(); },
-  verActivo: ([nombre]) => { closeSheet(); irMovs({ tipo: 'Inversión', periodo: 'todo', cat: nombre }); }, // la lista de tus compras de ese activo (antes caía en el Resumen)
+  verActivo: ([nombre]) => { FORM = { kind: 'activo', nombre }; if ($('#sheetBackdrop')) updateSheet(activoVerHtml(nombre)); else openSheet(activoVerHtml(nombre)); }, // hoja del activo (24/10)
+  activoEnMovs: ([nombre]) => { closeSheet(); irMovs({ tipo: 'Inversión', periodo: 'todo', cat: nombre }); }, // la lista de tus compras de ese activo
+  activoPer: ([k]) => { if (!FORM || FORM.kind !== 'activo') return; S.activoPer = k; sentir('tic'); updateSheet(activoVerHtml(FORM.nombre)); },
+  activoMov: ([id]) => openMovForm(id),
+  activoArreglar: ([id]) => openMovForm(id),
+  activoInvertir: ([nombre]) => { const g = activoGrupo(nombre); openMovForm(null, { tipo: 'Inversión', categoria: g ? g.nombre : nombre, activoId: g ? g.activoId : null, tipoActivo: g ? g.tipoActivo : '' }); },
   // calendario
   setCalVista: ([v]) => { S.calVista = v; render(); },
   calHoy: () => { S.calFecha = todayISO(); render(); },
@@ -10193,6 +10247,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { VERSIONES, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
