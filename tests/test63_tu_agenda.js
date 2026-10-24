@@ -114,7 +114,7 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   H.setInicioVista(['calendario']); await sleep(10);
   t = txt(e);
   ok(e.doc.querySelector('.cal2-grid') && !/Semanal/.test(t), 'Calendario: solo el mes (sin «Semanal»)');
-  ok(e.doc.querySelectorAll('.cal2-ley-i').length === 4 && /Cobros y pagos/.test(t), 'Calendario: leyenda de 4 colores');
+  ok(e.doc.querySelectorAll('.cal2-ley-i').length === 3 && /Cobros y pagos/.test(t), 'Calendario: leyenda de 3 colores (24/10: «Movimientos» pasa a la capa «Dinero»)');
   const tareasOn = S.calFiltros.tareas; H.calToggle(['tareas']); await sleep(10);
   ok(S.calFiltros.tareas === !tareasOn && e.doc.querySelector('.cal2-ley-i[aria-pressed="' + !tareasOn + '"]'), 'Calendario: la leyenda filtra');
   H.calToggle(['tareas']); await sleep(10);
