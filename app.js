@@ -913,7 +913,7 @@ function renderShell() {
     '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
     '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('goTab', 'inicio') + '>' + ic('chevL') + '</button>' +
     '<div><h1 id="pageTitle"></h1><div class="sub">' + fmtDateLong(todayISO()) + '</div></div></div>' +
-    '<div class="tb-r"><span id="compararHost"></span><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
+    '<div class="tb-r"><span id="compararHost"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda" ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
     '<nav class="tabbar" aria-label="Secciones">' + tabBtn(tabsNav()[0]) + tabBtn(tabsNav()[1]) +
     '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabBtn(tabsNav()[2]) + tabBtn(tabsNav()[3]) + '</nav>' +
@@ -1019,6 +1019,8 @@ function render() {
   $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
   const av = $('#tbAvatar'); if (av) { const v2 = !verAnterior('tu'), pf = perfilCfg(); if (v2) av.innerHTML = miAvatarDentro(pf); else av.textContent = inicialUsuario(); av.classList.toggle('dib', v2 && pf.avatar === 'dibujo'); av.style.background = v2 ? miColor(pf) : ''; av.style.color = v2 ? '#fff' : ''; }
   document.body.classList.toggle('en-tu', S.tab === 'tu');
+  // 24/10 (docs/19, opción A): la Agenda a un toque desde arriba, con lo que hay hoy
+  const tbA = $('#tbAgenda'); if (tbA) { const enAg = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0); tbA.classList.toggle('on', enAg); tbA.setAttribute('aria-current', enAg ? 'page' : 'false'); const n = allLoaded() ? agendaHoyN() : 0, nb = $('#tbAgendaN'); if (nb) { nb.hidden = !n; nb.textContent = n > 9 ? '9+' : String(n); } tbA.setAttribute('aria-label', 'Agenda' + (n ? ', ' + n + (n === 1 ? ' cosa hoy' : ' cosas hoy') : '')); }
   document.body.classList.toggle('en-movlista', S.tab === 'movimientos' && movVistaAct() === 'lista'); // allí ya hay una lupa que busca en la lista
   document.body.classList.toggle('en-tu2', S.tab === 'tu' && !verAnterior('tu'));
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : TITULOS[S.tab];
@@ -1263,7 +1265,7 @@ function movVistaSegHtml() {
 function renderMovTab() {
   const v = movVistaAct(), dir = S._movDir || 0; S._movDir = 0;
   if (v !== 'lista') { const p = movPerNorm(S.movPeriodo); if (!/^m:/.test(p) && !(v === 'resumen' && /^y:/.test(p))) S.movPeriodo = mesHoyClave(); }
-  const cuerpo = v === 'resumen' ? renderMovResumen() : v === 'calendario' ? renderMovCal() : renderMovimientos();
+  const cuerpo = v === 'resumen' ? renderMovResumen() : v === 'calendario' ? (agendaV2() ? calCapasHtml('dinero') : '') + renderMovCal() : renderMovimientos();
   return movVistaSegHtml() + (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
     movCabHtml(dir) + '<div class="mov-marco"><div id="movCuerpo" class="mov-cuerpo-' + v + '">' + cuerpo + '</div></div>';
 }
@@ -3572,7 +3574,12 @@ function renderAgendaSemanaV2() {
   return cab + tira + rapida + vencH + diaH + proxH + sinFH + plegH;
 }
 // Calendario v2: solo el mes; la leyenda de colores de abajo es el filtro
+// Un solo calendario con dos capas: «Planes y tareas» (Agenda) y «Dinero» (Movimientos → Calendario)
+function calCapasHtml(capa) {
+  return '<div class="segmented cal-capas" role="radiogroup" aria-label="Qué ver en el calendario">' + [['planes', 'Planes y tareas'], ['dinero', 'Dinero']].map(([k, l]) => '<button type="button" role="radio" aria-checked="' + (capa === k) + '" class="' + (capa === k ? 'active' : '') + '" ' + act('calCapa', k) + '>' + l + '</button>').join('') + '</div>';
+}
 function renderCalendarioV2() {
+  if (S.calFiltros && S.calFiltros.movs) S.calFiltros = Object.assign({}, S.calFiltros, { movs: false }); // el dinero vive en su capa («Dinero»)
   const anchor = calAnchor(), d = parseISO(anchor), hoy = todayISO();
   const y = d.getFullYear(), m = d.getMonth(), dim = new Date(y, m + 1, 0).getDate();
   const primero = y + '-' + pad2(m + 1) + '-01', ultimo = y + '-' + pad2(m + 1) + '-' + pad2(dim);
@@ -3585,9 +3592,9 @@ function renderCalendarioV2() {
     cells += '<button type="button" class="cal2-dia' + (iso === anchor ? ' sel' : '') + (iso === hoy ? ' hoy' : '') + '" ' + act('calSelDia', iso) + ' aria-label="' + n + ' de ' + MESES[m].toLowerCase() + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' cosa' : ' cosas') : '') + '"' + (iso === anchor ? ' aria-current="date"' : '') + '>' +
       '<span class="n tnum">' + n + '</span><span class="pts">' + colores.slice(0, 4).map((c) => '<i style="background:' + c + '"></i>').join('') + '</span>' + (evs.some((ev) => ev.k === 'plan') ? '<span class="cal2-plan" aria-hidden="true"></span>' : '') + '</button>';
   }
-  const f = S.calFiltros, ley = [['tareas', 'Tareas', 'var(--accent)'], ['facturas', 'Cobros y pagos', 'var(--bill, var(--accent))'], ['hitos', 'Metas y deudas', 'var(--warn, var(--savings))'], ['movs', 'Movimientos', 'var(--text-faint)']];
+  const f = S.calFiltros, ley = [['tareas', 'Tareas y planes', 'var(--accent)'], ['facturas', 'Cobros y pagos', 'var(--bill, var(--accent))'], ['hitos', 'Metas y deudas', 'var(--warn, var(--savings))']];
   const dsel = parseISO(anchor), evsSel = map[anchor] || [];
-  return '<div class="month-nav cal2-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('calMove', -1) + '>' + ic('chevL') + '</button><div class="lbl">' + MESES[m] + ' ' + y + '</div>' +
+  return calCapasHtml('planes') + '<div class="month-nav cal2-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('calMove', -1) + '>' + ic('chevL') + '</button><div class="lbl">' + MESES[m] + ' ' + y + '</div>' +
       (esteMes ? '' : '<button type="button" class="chip cal2-hoy" ' + act('calHoy') + '>Hoy</button>') + '<button class="icon-btn" aria-label="Mes siguiente" ' + act('calMove', 1) + '>' + ic('chevR') + '</button></div>' +
     '<div class="card cal2-card"><div class="cal2-grid">' + cells + '</div>' +
     '<div class="cal2-ley" role="group" aria-label="Qué se ve en el calendario">' + ley.map(([k, l, c]) => '<button type="button" class="cal2-ley-i' + (f[k] ? ' on' : '') + '" aria-pressed="' + !!f[k] + '" ' + act('calToggle', k) + '><i style="' + (f[k] ? 'background:' : 'border-color:') + c + '"></i>' + l + '</button>').join('') + '</div></div>' +
@@ -4781,6 +4788,12 @@ function planCuandoTxt(a) {
   return t + (a.hora ? ' · ' + horaTxt(a.hora) : a.fechaFin ? '' : ' · todo el día');
 }
 // eventos para la Agenda, el calendario y «Estos días»
+// cuántas cosas hay hoy en la Agenda: tus tareas para hoy (sin hacer) y los planes y tareas compartidas de hoy
+function agendaHoyN() {
+  const hoy = todayISO(); let n = (S.tareas || []).filter((t) => t.estado !== 'Completado' && t.fechaLimite === hoy).length;
+  try { if (agendaDisponible()) agendaEventos((iso, ev) => { if (iso === hoy && (ev.k === 'plan' || ev.k === 'tareaC')) n++; }, hoy); } catch (e) { /* sin agenda compartida */ }
+  return n;
+}
 function agendaEventos(add, hoy) {
   agendaItems().forEach((a) => {
     const g = a.grupoId ? grupoDe(a.grupoId) : null, donde = g ? nombreDestino(g) : 'Solo yo';
@@ -9030,6 +9043,13 @@ const H = {
   },
   crearVersion: ([n]) => { S.verAnterior = Object.assign({}, S.verAnterior, { crear: Number(n) || 0 }); sentir('tic'); if (FORM && FORM.kind === 'crear') updateSheet(crearElegido()); },
   agendaSemana: ([d]) => { S.agendaDia = uAdd(S.agendaDia || todayISO(), 7 * Number(d)); render(); },
+  calCapa: ([k]) => {
+    sentir('tic');
+    if (k === 'dinero') { if (S.tab === 'movimientos') return; const a = calAnchor(); S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = 'm:' + mesDe(a); S.movCalDia = ''; S._entrando = true; render(); window.scrollTo(0, 0); return; }
+    if (S.tab === 'agenda') return;
+    const p = movPerNorm(S.movPeriodo), hoy = todayISO(), dia = S.movCalDia || (/^m:/.test(p) && mesDe(hoy) === p.slice(2) ? hoy : /^m:/.test(p) ? rangoMes(+p.slice(2, 6), +p.slice(7, 9)).desde : hoy);
+    S.calFecha = dia; S.agendaSub = 'calendario'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0);
+  },
   irAgenda: ([sub]) => { S.agendaSub = sub === 'calendario' ? 'calendario' : 'tareas'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
   irDinero: ([sub]) => { if (sub === 'compartido') { S._entrando = true; S.tab = 'juntos'; render(); window.scrollTo(0, 0); return; } S.dineroSub = sub; S.dineroVer = ''; if (dineroV2() && sub) S._dmIr = sub; if (dineroV2() && dineroV3() && DM3_TABS.indexOf(sub) >= 0) S.dm3Tab = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; S.tab = 'dinero'; render(); window.scrollTo(0, 0); },
   setDineroSub: ([sub]) => { S.dineroSub = sub; if (badgeActivo(sub)) verBadge(sub); S._entrando = true; render(); },
@@ -10395,6 +10415,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { VERSIONES, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();

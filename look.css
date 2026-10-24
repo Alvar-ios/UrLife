@@ -1866,3 +1866,10 @@ html[data-look="nuevo"] .act-modo { margin: 0 0 10px; }
 html[data-look="nuevo"] .act-valor em.act-anio { color: var(--text); font-weight: 700; }
 html[data-look="nuevo"] .act-valor em.act-anio span { font-weight: 500; color: var(--text-faint); font-size: 12px; }
 html[data-look="nuevo"] .tr-etq.total { color: var(--paper-raised); }
+
+/* ---- Agenda a mano (24/10, docs/19 opción A) ---- */
+html[data-look="nuevo"] .tb-agenda { position: relative; }
+html[data-look="nuevo"] .topbar .tb-agenda.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 0 0 1.5px var(--accent); }
+html[data-look="nuevo"] .tb-n { position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--paper); }
+html[data-look="nuevo"] .tb-n[hidden] { display: none; }
+html[data-look="nuevo"] .cal-capas { margin: 0 0 12px; }
