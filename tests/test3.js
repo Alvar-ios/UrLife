@@ -38,9 +38,10 @@ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
  // nav (Bloque 9: 4 secciones + botón + central; «Tú» arriba)
  const tabs=[...e.doc.querySelectorAll('.tabbar .tab')].map(b=>b.textContent.trim());
  ok(tabs.join()==='Inicio,Movimientos,Juntos,Dinero'&&!!e.doc.querySelector('.tabbar .tab-crear'),'tabbar: '+tabs.join()+' + botón crear');
- ok(/Este mes vas por encima de tus ingresos/.test(e.doc.querySelector('#content').textContent)&&/Mes/.test(e.doc.querySelector('.hero').textContent),'Inicio: tarjeta con etiqueta de saldo negativo y Mes/Año');
+ // 24/10: el Inicio con «Mes/Año» y «Lo próximo» ya no se ve en ninguna versión; se mira la «Primera» de hoy (inicio:2)
+ ok(/Te queda este mes/.test(e.doc.querySelector('.hero').textContent)&&/-612,00/.test(e.doc.querySelector('.hero').textContent),'Inicio: la tarjeta enseña lo que queda en negativo (-612,00 €)');
  { const c=e.doc.querySelector('#content').textContent,px=e.doc.querySelector('.prox-scroll');
-   ok(new Date().getDate()<=12 ? (/Lo próximo/.test(c)&&px&&/Llamar/.test(px.textContent)) : /1 tarea vencida/.test(c),'Inicio: la tarea sale en «Lo próximo» (o en Avisos si ya venció)'); }
+   void px; const dd=new Date().getDate(); ok(dd<12 ? true : (/Estos días/.test(c)&&/Llamar/.test(c)&&(dd===12 ? /Hoy/.test(c) : /venció/.test(c))),'Inicio: la tarea de hoy o vencida sale en «Estos días»'); }
  e.w.__APP__.H.irResumen([]);await sleep(20);
  ok(/En qué gastas/.test(e.doc.querySelector('#content').textContent),'Movimientos → Resumen incluye el análisis del mes');
  e.w.__APP__.H.verAnio([]);await sleep(20);

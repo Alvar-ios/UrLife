@@ -299,7 +299,7 @@ function toast(msg, opts) {
   const aviso = opts.aviso || TOAST_AVISO.test(msg);
   el.innerHTML = '<span class="toast-ic ' + (aviso ? 'aviso' : 'ok') + '">' + ic(aviso ? 'alert' : 'check') + '</span><span class="toast-txt"></span>' + (opts.deshacer ? '<button type="button" class="toast-btn">Deshacer</button>' : '');
   el.querySelector('.toast-txt').textContent = msg;
-  if (opts.deshacer) el.querySelector('.toast-btn').onclick = () => { el.classList.remove('show'); clearTimeout(toast._t); opts.deshacer(); };
+  if (opts.deshacer) el.querySelector('.toast-btn').onclick = (ev) => { if (ev && ev.currentTarget) ev.currentTarget.onclick = null; else el.querySelector('.toast-btn').onclick = null; el.classList.remove('show'); clearTimeout(toast._t); opts.deshacer(); };
   el.classList.toggle('con-accion', !!opts.deshacer);
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   clearTimeout(toast._t);
@@ -1809,9 +1809,9 @@ function openMovForm(id, pre) {
   const compDest = pre && pre.comp, objPre = pre && pre.objetivo;
   pre = (!ex && pre) || {};
   const tipoIni = ex ? ex.tipo : pre.tipo ? pre.tipo : (S.tab === 'movimientos' && TIPOS.indexOf(S.movFiltroTipo) >= 0 ? S.movFiltroTipo : 'Gasto');
-  FORM = { kind: 'mov', id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
+  FORM = { kind: 'mov', id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : (pre && pre.tipoActivo) || '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
   if (compDest) { FORM.comp = { on: true, objetivo: objPre || null }; compPrepararDestino(compDest); }
-  FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) ? 'manual' : 'auto';
+  FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) || (!ex && pre.tipo === 'Inversión' && pre.categoria && !pre.activoId) ? 'manual' : 'auto';
   FORM.metaSel = ex ? metaDeMov(ex) : (pre.metaSel || '');
   FORM.metaSels = ex ? metasDeMov(ex.tipo === 'Inversión' ? ex : Object.assign({}, ex, { tipo: 'Inversión', metaIds: ex.metaId ? [ex.metaId] : [] })) : (pre.metaSel ? [pre.metaSel] : []);
   FORM.cuenta = comp ? cuentaDeComp(comp) : ex ? (cuentaPorId(ex.cuentaId) ? ex.cuentaId : cuentaRecordada('')) : (pre.cuentaId && cuentaPorId(pre.cuentaId) ? pre.cuentaId : cuentaRecordada(pre.categoria));
@@ -5328,7 +5328,9 @@ const COLORES_ACTIVO = ['#2E9BD6', '#E6B422', '#E86A9A', '#4FB3A9', '#C25BD8'];
 // cada activo tiene siempre el mismo color: por su orden entre todos tus activos con precio
 function colorActivo(id) {
   if (!id) return null;
-  const ids = [...new Set(S.movimientos.filter((m) => m.tipo === 'Inversión' && m.activoId).map((m) => m.activoId))].sort(), i = ids.indexOf(id);
+  // por orden de primera compra: un activo nuevo va al final y no cambia el color de los demás
+  const pri = {}; S.movimientos.forEach((m) => { if (m.tipo === 'Inversión' && m.activoId) { const f = m.fecha || '9999'; if (!pri[m.activoId] || f < pri[m.activoId]) pri[m.activoId] = f; } });
+  const ids = Object.keys(pri).sort((a, b) => (pri[a] < pri[b] ? -1 : pri[a] > pri[b] ? 1 : a < b ? -1 : 1)), i = ids.indexOf(id);
   return i < 0 ? null : COLORES_ACTIVO[i % COLORES_ACTIVO.length];
 }
 function invActivosConSerie(movs, series) {
@@ -5503,10 +5505,11 @@ function deudaVerHtml(nombre) {
     (num(d.previo) ? '<div class="rec-hint">Incluye ' + money(num(d.previo)) + ' que pagaste antes de usar la app. Sin intereses.</div>' : '<div class="rec-hint">Sin contar intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</div>');
 }
 function deudaFormHtml() {
-  const F = FORM, conocido = DEUDA_ICONOS.some((x) => x[0] === F.emoji), emo = conocido ? F.emoji : deudaEmojiSug(F.nombre);
+  const F = FORM, antiguo = F.emoji && !DEUDA_ICONOS.some((x) => x[0] === F.emoji) && EMOJI_IC[F.emoji] ? [[F.emoji, EMOJI_IC[F.emoji], EMOJI_NOMBRE[F.emoji] || 'El de antes']] : [];
+  const opciones = antiguo.concat(DEUDA_ICONOS), conocido = opciones.some((x) => x[0] === F.emoji), emo = conocido ? F.emoji : deudaEmojiSug(F.nombre);
   const n = (v) => (v == null || v === '' ? '' : String(v).replace('.', ','));
   return '<div class="handle"></div><h2>' + (F.orig ? 'Editar deuda' : 'Nueva deuda') + '</h2>' +
-    '<div class="field"><label>Su icono <span class="hint">· se elige solo por el nombre</span></label><div class="dm-emojis deu-ics" role="radiogroup" aria-label="Su icono">' + DEUDA_ICONOS.map(([x, i, l]) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" role="radio" aria-label="' + l + '" aria-checked="' + (x === emo) + '" ' + act('deudaEmoji', x) + '>' + ic(i) + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>Su icono <span class="hint">· se elige solo por el nombre</span></label><div class="dm-emojis deu-ics" role="radiogroup" aria-label="Su icono"' + (antiguo.length ? ' style="grid-template-columns:repeat(8,minmax(0,1fr))"' : '') + '>' + opciones.map(([x, i, l]) => '<button type="button" class="dm-emo-b' + (x === emo ? ' on' : '') + '" role="radio" aria-label="' + l + '" aria-checked="' + (x === emo) + '" ' + act('deudaEmoji', x) + '>' + ic(i) + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>Nombre</label><input id="dNombre" type="text" maxlength="40" placeholder="Coche, préstamo, tarjeta…" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('deudaNombreIn') + '></div>' +
     '<div class="dm-2c"><div class="field"><label>Total que debías</label><input id="dTotal" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.total)) + '"></div>' +
     '<div class="field"><label>Ya pagado <span class="hint">· opcional</span></label><input id="dPrevio" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.previo)) + '"></div></div>' +
@@ -5541,7 +5544,7 @@ async function deudaGuardar() {
   if (choca) { marcarCampo('#dNombre'); return toast('Ya tienes una deuda con ese nombre: elige otro para no mezclar sus pagos'); }
   const prev = i >= 0 ? lista[i] : {}, antes = (prev.nombresAntes || []).slice();
   if (F.orig && normName(F.orig) !== k && !antes.some((x) => normName(x) === normName(F.orig))) antes.push(F.orig);
-  const nueva = Object.assign({}, prev, { nombre, objetivo: total, previo, cuotaMes: cuota, fechaObjetivo: fecha || null, emoji: DEUDA_ICONOS.some((x) => x[0] === F.emoji) ? F.emoji : deudaEmojiSug(nombre) });
+  const nueva = Object.assign({}, prev, { nombre, objetivo: total, previo, cuotaMes: cuota, fechaObjetivo: fecha || null, emoji: DEUDA_ICONOS.some((x) => x[0] === F.emoji) || (F.emoji && EMOJI_IC[F.emoji]) ? F.emoji : deudaEmojiSug(nombre) });
   if (antes.length) nueva.nombresAntes = antes;
   if (!nueva.id) nueva.id = 'd' + Date.now().toString(36);
   if (i >= 0) lista[i] = nueva; else lista.push(nueva);
@@ -7971,7 +7974,7 @@ function reglasHtml() {
   const sugs = tipo === 'Ingreso' ? (cfg().ingresos || []) : catsGasto().map((c) => c.nombre);
   return '<div class="handle"></div><h2>Reglas de categorías</h2>' +
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Si la descripción de un movimiento contiene el texto, se le pone la categoría sola (al apuntarlo y al importar).</div>' +
-    (rs.length ? '<div class="list">' + rs.map((r, i) => '<div class="row static"><div class="main"><div class="ttl">«' + escapeHtml(r.texto) + '» → ' + escapeHtml(r.categoria) + '</div><div class="meta">' + escapeHtml(r.tipo || 'Cualquier tipo') + '</div></div><button class="rm" aria-label="Borrar la regla «' + escapeHtml(r.texto) + '»" ' + act('reglaQuitar', i) + '>' + ic('trash') + '</button></div>').join('') + '</div>'
+    (rs.length ? '<div class="list">' + rs.map((r, i) => '<div class="row static"><div class="main"><div class="ttl">«' + escapeHtml(r.texto) + '» → ' + escapeHtml(r.categoria) + '</div><div class="meta">' + escapeHtml(r.tipo === 'Factura' ? 'Pago fijo' : r.tipo || 'Cualquier tipo') + '</div></div><button class="rm" aria-label="Borrar la regla «' + escapeHtml(r.texto) + '»" ' + act('reglaQuitar', i) + '>' + ic('trash') + '</button></div>').join('') + '</div>'
       : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no tienes reglas. Se crean al apuntar un movimiento con descripción («Recordar…») o al importar.</div>') +
     '<div class="section-title">Añadir regla</div><div class="card">' +
     '<div class="field"><label>Si la descripción contiene</label><input id="rgTexto" type="text" placeholder="mercadona"></div>' +
@@ -8419,7 +8422,7 @@ function recGuardar() {
   const nombre = ($('#recNombre').value || '').trim();
   if (!nombre) return toast('Ponle un nombre');
   const impTxt = $('#recImporte').value;
-  const importe = String(impTxt).trim() === '' ? null : numCampo(impTxt);
+  const importe = importeOpcional(impTxt); if (Number.isNaN(importe)) { marcarCampo('#recImporte'); return toast('Revisa el importe'); }
   if (impTxt !== '' && !isFinite(importe)) return toast('Revisa el importe');
   let regla = F.regla && F.regla.t ? Object.assign({}, F.regla) : null;
   if (regla && regla.t === 'dia') { const d = parseInt(regla.dia, 10); if (!(d >= 1 && d <= 31)) return toast('El día tiene que estar entre 1 y 31'); regla.dia = d; }
@@ -9328,7 +9331,7 @@ const H = {
   deudaEmoji: ([e]) => { if (!FORM || FORM.kind !== 'deudaForm') return; FORM.emoji = e; $$('.dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(e); b.classList.toggle('on', on); b.setAttribute(b.hasAttribute('aria-checked') ? 'aria-checked' : 'aria-pressed', String(on)); }); sentir('tic'); },
   deudaNombreIn: (_a, el) => {
     const F = FORM; if (!F || F.kind !== 'deudaForm') return; F.nombre = el.value;
-    if (!DEUDA_ICONOS.some((x) => x[0] === F.emoji)) { const sug = deudaEmojiSug(el.value); $$('.deu-ics .dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(sug); b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }); }
+    if (!DEUDA_ICONOS.some((x) => x[0] === F.emoji) && !(F.emoji && EMOJI_IC[F.emoji])) { const sug = deudaEmojiSug(el.value); $$('.deu-ics .dm-emo-b').forEach((b) => { const on = b.getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent(sug); b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); }); }
     // al crear una deuda con un nombre que ya tiene pagos, se avisa de que contarán
     const av = $('#dAviso'); if (!av) return; const k = normName(el.value || ''), n = k && !F.orig ? movsPersonales().filter((x) => x.tipo === 'Deuda' && normName(x.categoria || '') === k).length : 0;
     av.innerHTML = n ? '<div class="dm-consejo k-justo">Hay ' + n + (n === 1 ? ' pago' : ' pagos') + ' con este nombre en Movimientos: se contarán en esta deuda.</div>' : '';
@@ -9994,7 +9997,7 @@ const H = {
     render();
   },
   // más
-  catPres: ([n], el) => { const v = String(el.value).trim() === '' ? null : numCampo(el.value); if (v != null && !isFinite(v)) return toast('Revisa el presupuesto'); guardarCats(catsGasto().map((c) => (c.nombre === n ? Object.assign({}, c, { presupuesto: v }) : c))); },
+  catPres: ([n], el) => { const v = importeOpcional(el.value); if (Number.isNaN(v)) return toast('Revisa el presupuesto'); if (v != null && !isFinite(v)) return toast('Revisa el presupuesto'); guardarCats(catsGasto().map((c) => (c.nombre === n ? Object.assign({}, c, { presupuesto: v }) : c))); },
   catRenombrar: ([n], el) => {
     const v = el.value.trim(); if (!v || v === n) return;
     if (esCatStd(v) || ALIAS_STD[normName(v)]) { el.value = n; return toast('«' + v + '» ya es una categoría estándar'); }

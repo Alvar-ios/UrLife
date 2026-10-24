@@ -74,5 +74,17 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok((C.cfg().reglasCat || []).some((r) => r.texto === 'repsol' && r.tipo === 'Gasto' && r.categoria === 'Transporte'), '«Añadir regla» la guarda con su tipo');
   C.H.tuMesAbrir([]); C.H.tuMesModo(['cobro']); await sleep(5); C.H.tuMesDiaB([25]); await sleep(5);
   ok(!sh3().querySelector('select') && sh3().querySelector('.rec-dia.on').textContent === '25', 'Tu mes: «Cobro el día» con rejilla de días');
+  /* 4. Arreglos tras Calidad */
+  const inp2 = (C.H.openListEditor(['categoriasGasto']), [...sh3().querySelectorAll('input.amt')][0]); inp2.value = 'abc'; C.H.catPres(['Supermercado'], inp2); await sleep(10);
+  ok((C.cfg().categoriasGasto || []).find((c) => c.nombre === 'Supermercado').presupuesto === 250.5, 'un presupuesto «abc» no se guarda como 0');
+  C.H.openListEditor(['metodosPago']); C.H.listRemove(['metodosPago', 0]); await sleep(10); const tb = e3.doc.querySelector('#toast .toast-btn'); tb.click(); if (tb.onclick) tb.onclick(); await sleep(10);
+  ok((C.cfg().metodosPago || []).join() === 'Efectivo,Bizum', '«Deshacer» dos veces no duplica');
+  const e4 = makeEnv({ cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], deudas: [{ nombre: 'Viaje', objetivo: 900, emoji: '✈️' }] }, meta: { onboarded: true } } });
+  await sleep(200); const D = e4.w.__APP__; D.H.deudaEditar(['Viaje']); await sleep(5);
+  ok(e4.doc.querySelector('.deu-ics .dm-emo-b.on').getAttribute('data-click') === 'deudaEmoji|' + encodeURIComponent('✈️'), 'una deuda con un emoji antiguo lo conserva marcado');
+  D.H.deudaGuardar([]); await sleep(60);
+  ok(D.cfg().deudas[0].emoji === '✈️', 'y al guardar sin tocar nada lo mantiene');
+  A.H.activoInvertir(['Fondo raro']); await sleep(10);
+  ok(A.form().invModo === 'manual', '«Invertir más» en un activo sin precio abre en modo manual');
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.log(String(err && err.stack || err)); process.exit(1); });

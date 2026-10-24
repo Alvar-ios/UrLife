@@ -34,7 +34,7 @@ const dago=n=>{const d=new Date();d.setDate(d.getDate()-n);return d.getFullYear(
  ];
  const movs=[mv('a','viaje ',110,10),mv('b','Viaje',220,40),mv('c','Viaje',999,5,'Gasto'),mv('d','Coche',300,20),mv('e','Casa',240,30),mv('f','Casa',100,200),mv('g','Pasada',100,300)];
  const e=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}],ahorro},meta:{onboarded:true}},movs});await sleep(60);
- e.w.__APP__.H.goTab(['analisis']);e.w.__APP__.H.setAnalisisSub(['metas']);
+ e.w.__APP__.S.verAnterior.dinero=3;e.w.__APP__.H.irDinero(['metas']); // 24/10: las tarjetas de metas de colores solo quedan en Dinero «Antes» (Análisis ya lleva a Dinero)
  const cards=[...e.doc.querySelectorAll('#content .card')];
  const by=n=>cards.find(c=>c.querySelector('.meta-nom')&&c.querySelector('.meta-nom').textContent===n);
  const txt=n=>by(n)?by(n).textContent:'';
@@ -61,6 +61,6 @@ const dago=n=>{const d=new Date();d.setDate(d.getDate()-n);return d.getFullYear(
  // sin metas
  const e2=makeEnv({cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}}});await sleep(60);
  ok(!/Metas de ahorro/.test(e2.doc.querySelector('#content').innerHTML),'Inicio sin metas: no sección');
- e2.w.__APP__.H.goTab(['analisis']);e2.w.__APP__.H.setAnalisisSub(['metas']);ok(/Todavía no tienes metas/.test(e2.doc.querySelector('#content').textContent),'vacío ok');
+ e2.w.__APP__.S.verAnterior.dinero=3;e2.w.__APP__.H.irDinero(['metas']);ok(/Todavía no tienes metas/.test(e2.doc.querySelector('#content').textContent),'vacío ok');
  console.log(fails?'FAILED '+fails:'ALL PASS');
 })().catch(x=>{console.error(x);process.exit(1)});

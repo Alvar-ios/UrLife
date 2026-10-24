@@ -36,7 +36,7 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  const S=e.w.__APP__.S,doc=e.doc,c=()=>doc.querySelector('#content');
  const setv=(sel,v)=>{const el=doc.querySelector(sel);el.value=v;el.dispatchEvent(new e.w.Event('input',{bubbles:true}));el.dispatchEvent(new e.w.Event('change',{bubbles:true}))};
  e.w.__APP__.H.goTab(['movimientos']);e.w.__APP__.H.setMovVista(['lista']);
- ok([...doc.querySelectorAll('.pill')].some(b=>b.textContent==='Inversión'),'filtro Inversión existe');
+ e.w.__APP__.H.movFiltrosAbrir([]);ok([...doc.querySelectorAll('#sheetHost .chip')].some(b=>b.textContent==='Inversión'),'filtro Inversión existe (24/10: en la hoja «Filtros»)');e.w.__APP__.H.closeSheet([]);await sleep(300);
  e.w.__APP__.H.onFabAntiguo([]);
  ok([...doc.querySelectorAll('#tipoToggle button')].some(b=>b.textContent==='Inversión'),'tipo Inversión en formulario');
  ok(!doc.querySelector('#fTipoActivo'),'sin tipo de activo para Gasto');
@@ -60,9 +60,9 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  ok(k.inversion===1000&&k.disponible===1000,'kpis: inversión resta de disponible ('+k.inversion+','+k.disponible+')');
  // view
  e.w.__APP__.H.goTab(['inicio']);e.w.__APP__.H.setInicioSub(['analisis']);e.w.__APP__.H.setAnalisisSub(['inversiones']);
- const t=c().textContent;
+ e.w.__APP__.H.dmVer(['inversiones']);const t=c().textContent; // 24/10: la lista completa está en Dinero → Inversiones → «Ver todo»
  ok(/1000,00 €|1\.000,00 €/.test(t)||/1000/.test(t),'total invertido 1000');
- ok(/VWCE/.test(t)&&/800,00 €/.test(t)&&/2 aportaciones/.test(t),'VWCE agrupa mayúsc/espacios: 800, 2 aportaciones');
+ e.w.__APP__.H.verActivo(['VWCE']);await sleep(10);{const sh=doc.querySelector('#sheetHost').textContent;ok(/VWCE/.test(t)&&/800\s€/.test(t)&&/800,00\s€/.test(sh)&&/Tus aportaciones\s*2/.test(sh)&&/500,00\s€/.test(sh)&&/300,00\s€/.test(sh),'VWCE agrupa mayúsc/espacios: 800, 2 aportaciones (24/10: se ven en la hoja del activo)');}e.w.__APP__.H.closeSheet([]);await sleep(300);
  ok(/Bitcoin/.test(t)&&/Criptomoneda/.test(t)&&/ETF/.test(t),'por tipo de activo');
  // verActivo
  e.w.__APP__.H.goTab(['inicio']);e.w.__APP__.H.setInicioSub(['analisis']);e.w.__APP__.H.setAnalisisSub(['inversiones']);e.w.__APP__.H.activoEnMovs(['VWCE']);
