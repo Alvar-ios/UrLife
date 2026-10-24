@@ -23,8 +23,10 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   P('ok'); await sleep(40);
   const tr = Object.values(e.store.movimientos).find((m) => m.tipo === 'Traspaso');
   ok(tr && tr.importe === 25.5 && tr.cuentaId === 'c1' && tr.cuentaDestinoId === 'c2', 'traspaso: se guardan 25,50 de Banco A a Banco B');
-  // Inversiones: tocar un activo lleva a la lista de sus compras
+  // Inversiones: tocar un activo abre su hoja (24/10); «Movimientos» lleva a la lista de sus compras
   await sleep(300); H.verActivo(['Fondo indexado']); await sleep(10);
+  ok(A.form().kind === 'activo' && /Fondo indexado/.test(e.doc.querySelector('#sheetHost').textContent), 'inversiones: tocar un activo abre su hoja');
+  H.activoEnMovs(['Fondo indexado']); await sleep(10);
   ok(A.S.tab === 'movimientos' && A.S.movVista === 'lista' && A.S.movCat === 'Fondo indexado' && A.S.movFiltroTipo === 'Inversión', 'inversiones: tocar un activo abre la lista de sus compras (no el resumen)');
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.error(err); process.exit(1); });

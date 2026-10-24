@@ -65,8 +65,8 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  ok(/VWCE/.test(t)&&/800,00 €/.test(t)&&/2 aportaciones/.test(t),'VWCE agrupa mayúsc/espacios: 800, 2 aportaciones');
  ok(/Bitcoin/.test(t)&&/Criptomoneda/.test(t)&&/ETF/.test(t),'por tipo de activo');
  // verActivo
- e.w.__APP__.H.goTab(['inicio']);e.w.__APP__.H.setInicioSub(['analisis']);e.w.__APP__.H.setAnalisisSub(['inversiones']);click(e,'verActivo','VWCE');
- ok(S.tab==='movimientos'&&S.movFiltroTipo==='Inversión'&&doc.querySelectorAll('#movList .row').length===2,'verActivo filtra a 2 movimientos');
+ e.w.__APP__.H.goTab(['inicio']);e.w.__APP__.H.setInicioSub(['analisis']);e.w.__APP__.H.setAnalisisSub(['inversiones']);e.w.__APP__.H.activoEnMovs(['VWCE']);
+ ok(S.tab==='movimientos'&&S.movFiltroTipo==='Inversión'&&doc.querySelectorAll('#movList .row').length===2,'«Movimientos» desde la hoja del activo filtra a 2 movimientos');
  // cambiar tipo de inversión a gasto limpia tipoActivo
  const id=Object.keys(e.store.movimientos).find(i=>e.store.movimientos[i].categoria==='Bitcoin');
  S.movQuery='';S.movFiltroTipo='Todos';e.w.__APP__.H.goTab(['movimientos']);e.w.__APP__.H.setMovVista(['lista']);click(e,'openMovForm',id);ok(doc.querySelector('#fTipoActivo').value==='Criptomoneda','editar precarga tipo activo');
