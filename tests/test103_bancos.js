@@ -8,7 +8,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   const A = e.w.__APP__, H = A.H, doc = e.doc, sh = () => doc.querySelector('#sheetHost');
   H.goTab(['tu']); H.openCuentas([]); await sleep(10);
   const filas = [...sh().querySelectorAll('.cuenta-fila')];
-  ok(filas[0].querySelector('.bco-ficha') && /BBVA/.test(filas[0].querySelector('.bco-ficha').textContent), 'cuenta con banco: ficha con su color y letras');
+  ok(filas[0].querySelector('.bco-ficha.icono img[src="logos/bbva-app.png"]'), 'cuenta con banco: ficha con el icono del banco (29/10)');
   ok(!filas[1].querySelector('.bco-ficha') && filas[1].querySelector('.aj-ic'), 'cuenta sin banco: el icono de siempre');
   ok(!filas[2].querySelector('.bco-ficha') && filas[2].querySelector('.aj-ic'), 'una clave de banco desconocida no rompe nada');
   H.cuentaEditar([1]); await sleep(5);
