@@ -19,7 +19,7 @@ const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) =
     await sleep(120);
     const A = e.w.__APP__, H = A.H, doc = e.doc, fab = () => doc.querySelector('.comparar-fab'), t = comparar ? ' (con «Comparar» activado)' : ' (con «Comparar» apagado)';
     real(A); await sleep(10);
-    ok(comparar ? !!fab() : !fab(), 'Inicio: botón de versiones solo con «Comparar» activado (reabierto el 23/10 con la v3)' + t);
+    ok(!fab(), 'Inicio: sin botón de versiones (el dueño eligió «Nueva» el 29/10)' + t);
     H.goTab(['movimientos']); await sleep(20);
     ok(!fab() && !!doc.querySelector('#gcAnillo'), 'En qué gastas: siempre «Anillo» y sin botón' + t);
     H.goTab(['juntos']); await sleep(20); ok(!fab(), 'Juntos: sin botón «Antes»' + t);
@@ -29,17 +29,16 @@ const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) =
     ok(!!doc.querySelector('#sheetHost .crear-4') && !/Ver la versión anterior/.test(sh), 'Botón +: la nueva y sin «Ver la versión anterior»' + t);
     H.closeSheet([]); await sleep(300);
     H.goTab(['dinero']); await sleep(20);
-    ok(comparar ? !!fab() : !fab(), 'Dinero sigue con su botón de versiones solo si «Comparar» está activado' + t);
+    ok(!fab(), 'Dinero: sin botón de versiones (el dueño eligió «Formas» el 29/10)' + t);
     if (comparar) {
       H.goTab(['dinero']); await sleep(10); H.compararCambiar(['dinero']); await sleep(10);
-      ok(!!fab() && /Tarros/.test(fab().textContent), 'Dinero: el botón sigue cambiando de variante (Camino → Tarros)');
       A.S.verAnterior = {};
       H.goTab(['inicio']); await sleep(10);
       A.S.inicioVista = 'tareas'; A.render(); await sleep(10);
-      ok(!!fab(), 'Agenda sigue con su botón «Antes»');
+      ok(!fab(), 'Agenda: sin «Antes» (elegida el 29/10)');
       A.S.inicioVista = ''; A.render(); await sleep(10);
       H.crearIr(['gasto']); await sleep(20);
-      ok(!!doc.querySelector('#sheetHost .tec-antes'), 'Apuntar importe sigue con «Antes»');
+      ok(!doc.querySelector('#sheetHost .tec-antes'), 'Apuntar importe ya elegido (29/10): sin «Antes»');
       H.closeSheet([]); await sleep(300);
     }
   }

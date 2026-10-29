@@ -11,6 +11,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(fms.length === 2, 'cada meta, su forma «de cristal»');
   ok(/--fcd:#9B7BFF/i.test(fms[0].getAttribute('style')) && /--fcd:#F5BE45/i.test(fms[1].getAttribute('style')), 'color por orden (violeta) o el elegido (ámbar)');
   ok(/30 %/.test(fms[0].querySelector('.fm-t').textContent) && /Viaje a Japón/.test(doc.querySelector('.dm-fm-n').textContent), 'dentro solo el %; el nombre debajo');
+  ok(fms[1].querySelector('.fm-t.sobre') && !fms[0].querySelector('.fm-t.sobre') && !doc.querySelector('.fm.cristal .fm-brillo') && !doc.querySelector('.fm.cristal .fm-det'), 'formas depuradas: el % en la parte más grande (sobre el líquido si pasa del 50 %), sin brillo ni rayas');
   H.metaEditar ? H.metaEditar(['h1']) : null; await sleep(10);
   const abrir = H.metaEditar || H.metaEdit; if (!doc.querySelector('.fm-colores')) { const k = Object.keys(H).find((x) => /^metaEd/.test(x)); if (k) H[k](['h1']); await sleep(10); }
   ok(doc.querySelectorAll('.fm-colores .fm-col').length === 5, 'al editar: «Su color» con 5 colores');

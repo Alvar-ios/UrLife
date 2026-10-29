@@ -50,7 +50,7 @@ const cfgBase = { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboa
   // rentabilidad con 4 elegidos: etiquetas no se pisan
   H.invLinea(['total']); ['a0', 'a1', 'a2', 'a3'].forEach((id) => H.invLinea([id])); H.setInvModo(['rentab']); await sleep(10);
   const tops = [...doc.querySelectorAll('#invCard .tr-etq')].map((x) => parseFloat(x.style.top)).sort((a, b) => a - b);
-  ok(tops.length === 1, 'Rentabilidad con 4 activos: solo la etiqueta del Total (con más de 3, las de cada activo taparían las líneas; se leen al tocar)');
+  ok(tops.length === 5, 'Rentabilidad con 4 activos: 5 etiquetas (29/10: hay hueco a la derecha para ellas)');
   ok(tops.every((t, i) => i === 0 || t - tops[i - 1] >= 9.9), 'las etiquetas no se pisan (' + tops.map((t) => t.toFixed(0)).join(',') + ')');
   H.invLinea(['total']); ['a0', 'a3'].forEach((id) => H.invLinea([id])); await sleep(10);
   ok([...doc.querySelectorAll('#invCard .tr-etq, .inv-cu-v b')].some((x) => /−/.test(x.textContent)), 'rentabilidad negativa con signo «−»');

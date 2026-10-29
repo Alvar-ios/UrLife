@@ -1825,7 +1825,7 @@ function openMovForm(id, pre) {
   const tec = tecladoOn(), impIni = ex ? ex.importe : pre.importe, corta = tec && !ex && !comp && !compDest && (tipoIni === 'Gasto' || tipoIni === 'Ingreso');
   if (tec) FORM.tec = { on: !ex, txt: tecTxtDe(impIni), neg: tecNum(impIni) < 0, reemplazar: !!tecTxtDe(impIni), corta, tecla: corta ? 'guardar' : 'hecho' };
   const fechaIni = ex ? ex.fecha : (pre.fecha || todayISO()), catIni = ex ? ex.categoria : (pre.categoria || '');
-  const antesChip = compararOn() && !comp && !compDest ? '<button type="button" class="tec-antes" ' + act('tecVersion', tec ? 1 : 0) + '>' + ic('swap') + (tec ? 'Antes' : 'Teclado nuevo') + '</button>' : '';
+  const antesChip = compararOn() && !VERSIONES.importe.cerrada && !comp && !compDest ? '<button type="button" class="tec-antes" ' + act('tecVersion', tec ? 1 : 0) + '>' + ic('swap') + (tec ? 'Antes' : 'Teclado nuevo') + '</button>' : '';
   openSheet(
     '<div class="handle"></div><div class="tec-cab"><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' + antesChip + '</div>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
@@ -3780,8 +3780,8 @@ function renderTuV2() {
   const nombre = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido());
   const mas = [it('openMoneda', [], 'moneda', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
     lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'arrowUp', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
-    it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar'),
-    it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')];
+    it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar')].concat(Object.keys(VERSIONES).every((k) => VERSIONES[k].cerrada) ? [] : [
+    it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')]);
   return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t"><span class="t-n">' + escapeHtml(nombre) + '</span>' + badge('perfil') + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
       '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar</button></div>' +
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
@@ -3944,14 +3944,14 @@ function insightsHtml() {
 /* ---- Comparar con la versión anterior (fase de pruebas): en cada sección con un cambio grande reciente,
    un botón flotante deja ver cómo era antes y volver. Se registra aquí; se quita de la lista cuando ya no haga falta. ---- */
 const VERSIONES = {
-  inicio: { txt: 'Inicio', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
+  inicio: { txt: 'Inicio', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
-  juntos: { txt: 'Juntos', desde: '2026-10-23', variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: la lista de personas de antes de los círculos
-  dinero: { txt: 'Dinero', desde: '2026-10-23', variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
+  juntos: { txt: 'Juntos', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: la lista de personas de antes de los círculos
+  dinero: { txt: 'Dinero', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
   tu: { txt: 'Tú', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
-  agenda: { txt: 'Agenda', desde: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  agenda: { txt: 'Agenda', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
-  importe: { txt: 'Apuntar importe', desde: '2026-10-22', variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
+  importe: { txt: 'Apuntar importe', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
 };
 function seccionVersion() {
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
@@ -5181,12 +5181,16 @@ function formaHtml(k, pct, texto, tam, o) {
   const cristal = !!o.color;
   const svg = '<svg class="fm-svg" width="' + tam + '" height="' + tam + '" viewBox="-2 -2 104 104" aria-hidden="true"><defs><clipPath id="' + id + '"><path d="' + F.fill + '"/></clipPath></defs>' +
     (cristal ? '<path class="fm-fondo" d="' + F.fill + '"/>' : '') +
-    '<g clip-path="url(#' + id + ')">' + (cristal ? '<path class="fm-brillo" d="M18 ' + (F.top + 14) + ' Q24 ' + (F.top + 4) + ' 38 ' + (F.top + 4) + '" ' + ns + '/>' : '') + (p > 0 ? '<g class="fm-liq"><path class="fm-agua" d="' + ola + ' V104 H-40 Z"/>' + (!hecha ? '<path class="fm-sup" d="' + ola + '" ' + ns + '/>' : '') + '</g>' : '') + '</g>' +
-    (F.d ? '<g class="fm-det" ' + ns + '>' + F.d.replace(/<path /g, '<path ' + ns + ' ') + '</g>' : '') +
+    '<g clip-path="url(#' + id + ')">' + (p > 0 ? '<g class="fm-liq"><path class="fm-agua" d="' + ola + ' V104 H-40 Z"/>' + (!hecha ? '<path class="fm-sup" d="' + ola + '" ' + ns + '/>' : '') + '</g>' : '') + '</g>' +
+    (F.d && !cristal ? '<g class="fm-det" ' + ns + '>' + F.d.replace(/<path /g, '<path ' + ns + ' ') + '</g>' : '') +
     '<g class="fm-con' + (hecha ? ' hecha' : '') + '">' + F.c.replace(/<(path|rect|ellipse|circle) /g, '<$1 ' + ns + ' ') + '</g></svg>';
-  let ly = F.ly; if (p > 0 && p < 100 && Math.abs(y - ly) < 11) ly = y > ly ? Math.max(F.top + 9, y - 13) : Math.min(F.bot - 9, y + 13);
-  const txt = texto ? '<span class="fm-t' + (o.grande ? ' g' : '') + '" style="top:' + ((ly + 2) / 104 * tam).toFixed(0) + 'px">' + texto + '</span>' : '';
-  return '<span class="fm' + (cristal ? ' cristal' : '') + '" style="width:' + tam + 'px;height:' + tam + 'px' + (cristal ? ';' + metaColorStyle(o.color) : '') + '">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
+  let ly = F.ly, sobre = false;
+  if (cristal && texto) { // 29/10 (docs/22): en la parte más grande (llena o vacía) y a 12 como poco de la línea del agua
+    sobre = p >= 50; ly = sobre ? (y + F.bot) / 2 : (F.top + y) / 2;
+    if (p > 0 && p < 100 && Math.abs(y - ly) < 12) ly = sobre ? Math.min(F.bot - 8, y + 12) : Math.max(F.top + 8, y - 12);
+  } else if (p > 0 && p < 100 && Math.abs(y - ly) < 11) ly = y > ly ? Math.max(F.top + 9, y - 13) : Math.min(F.bot - 9, y + 13);
+  const txt = texto ? '<span class="fm-t' + (o.grande ? ' g' : '') + (sobre ? ' sobre' : '') + '" style="top:' + ((ly + 2) / 104 * tam).toFixed(0) + 'px">' + texto + '</span>' : '';
+  return '<span class="fm' + (cristal ? ' cristal' + (o.color === 'ambar' ? ' amb' : o.color === 'turquesa' || o.color === 'cielo' ? ' clara' : '') : '') + '" style="width:' + tam + 'px;height:' + tam + 'px' + (cristal ? ';' + metaColorStyle(o.color) : '') + '">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
 }
 // «Su forma»: las 12 en pequeño; la sugerida por el nombre lleva una marca. Elegida = null → la del nombre
 function formaElegirHtml(elegida, nombre, accion) {
@@ -5413,11 +5417,20 @@ function invCadaUnoHtml(R) {
     conV.concat(sinV).map(fila).join('') + '<div class="rec-hint" style="margin:8px 0 0;">' + (anio ? 'Al año, según cuándo metiste cada euro (como la del total).' + (filas.some((x) => x.v != null && invDiasActivo(x.g) < 365) ? ' Con menos de un año de datos es orientativo.' : '') : 'Lo que ganas o pierdes sobre lo que metiste.') + ' Toca uno para abrir su hoja.</div></div>';
 }
 // nombre corto de un activo: su símbolo (BTC, IWDA) o las primeras letras del nombre
+// nombre corto que se reconoce (29/10, docs/22 §3): el apodo que pongas o el nombre sin palabras de relleno, 16 letras como mucho
+const INV_RELLENO = /^(inc\.?|corp\.?|corporation|plc|s\.?a\.?|ag|nv|se|fund|fondo|index|indice|índice|stock|core|eur|usd|acc|dist|ucits|etf|class|clase|fi|the|de|of|a|b|c)$/i;
 function invCorto(id, nombre) {
-  const v = S.valoracion && S.valoracion.valores && S.valoracion.valores[id], sim = v && v.activo && v.activo.simbolo ? String(v.activo.simbolo).split('.')[0] : '';
-  if (sim && sim.length <= 8) return sim.toUpperCase();
-  const pal = String(nombre || '').trim().split(/\s+/).filter(Boolean);
-  return (pal.length > 1 ? pal.map((w) => w[0]).join('').slice(0, 4) : (pal[0] || '?').slice(0, 6)).toUpperCase();
+  const ap = id && (cfg().apodosActivo || {})[id]; if (ap) return String(ap).slice(0, 18);
+  return invCortoAuto(nombre);
+}
+function invCortoAuto(nombre) {
+  let pal = String(nombre || '').replace(/[()]/g, ' ').trim().split(/\s+/).filter((w) => w && !INV_RELLENO.test(w));
+  if (!pal.length) pal = (String(nombre || '').trim() || '?').split(/\s+/);
+  let t = pal.join(' ');
+  if (t.length > 16) { pal = pal.filter((w) => !/^(msci|ftse|s&p|stoxx|ibex|nasdaq)$/i.test(w)); t = pal.join(' '); }
+  if (t.length > 16) t = pal.slice(0, 2).join(' ');
+  const ch = Array.from(t); // por letras enteras: un emoji no se parte
+  return ch.length > 16 ? ch.slice(0, 15).join('').trim() + '…' : t || '?';
 }
 function invLineasChipsHtml(movs, series, multi, apila) {
   const as = invActivosConSerie(movs, series); if (as.length < 1) return '';
@@ -5525,6 +5538,7 @@ function activoVerHtml(nombre) {
     (sinPrecio ? '<div class="dm-aviso">' + ic('info') + '<span>Sin precio: ' + (g.activoId ? 'a alguna aportación le faltan las participaciones.' : 'falta elegir el activo en sus aportaciones.') + '</span>' + (aVincular ? '<button class="link" ' + act('activoArreglar', aVincular.id) + '>Buscar el activo</button>' : '') + '</div>' : '') +
     '<div class="act-cifras">' + cifra('Aportaste', money(g.total)) + cifra('Tienes', enPart ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.' : '—') +
       cifra('Te costó de media', enPart ? money(g.total / g.part) : '—') + cifra('Último precio', precio) + '</div>' +
+    (g.activoId ? '<div class="field act-apodo"><label for="actApodo">Nombre en las gráficas <span class="hint">· opcional</span></label><input id="actApodo" type="text" maxlength="18" placeholder="' + escapeHtml(invCortoAuto(g.nombre)) + '" value="' + escapeHtml((cfg().apodosActivo || {})[g.activoId] || '') + '" ' + onChange('activoApodo', g.activoId) + '></div>' : '') +
     '<div class="section-title">Tus aportaciones<span class="dm-cuenta-n">' + movs.length + '</span></div><div class="card act-movs">' +
       movs.slice(0, 12).map((m) => '<button type="button" class="act-mov tappable" ' + act('activoMov', m.id) + '><span>' + escapeHtml(fmtDateShort(m.fecha || '')) + (m.descripcion ? ' · ' + escapeHtml(m.descripcion) : '') + '</span><b class="tnum">' + money(m.importe) + '</b>' + (m.participaciones != null && m.participaciones !== '' ? '<i class="tnum">' + Number(m.participaciones).toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.</i>' : '') + ic('chevR') + '</button>').join('') +
       (movs.length > 12 ? '<button type="button" class="dm-inv-mas" ' + act('activoEnMovs', g.nombre) + '>Ver las ' + movs.length + ' en Movimientos ' + ic('chevR') + '</button>' : '') + '</div>' +
@@ -6984,7 +6998,8 @@ function evolucionHtml(grupos, valorActual) {
     const vals = modoR ? pts.map((p) => p.r).concat([0]) : pts.map((p) => p.v).concat(pts.map((p) => p.inv));
     let mn = Math.min(...vals), mx = Math.max(...vals); const pad = (mx - mn) * 0.1 || 1; mn -= pad; mx += pad;
     S._invChart.mn = mn; S._invChart.mx = mx;
-    const X = (i) => (pts.length > 1 ? i / (pts.length - 1) * W : W / 2), Y = (v) => Hh - (v - mn) / (mx - mn) * Hh;
+    const xf = invLineasSel().length && modoR && dineroV3() ? 0.8 : 1; S._invChart.xf = xf; // 29/10: deja sitio a la derecha para los nombres
+    const X = (i) => (pts.length > 1 ? i / (pts.length - 1) * W * xf : W * xf / 2), Y = (v) => Hh - (v - mn) / (mx - mn) * Hh;
     // la línea se dibuja algo suavizada (sin tocar el primer ni el último punto); las cifras siguen siendo las de verdad
     const ys = suavizarSerie(pts.map(val)), ysInv = suavizarSerie(pts.map((p) => p.inv));
     S._invChart.ys = ys;
@@ -7001,17 +7016,22 @@ function evolucionHtml(grupos, valorActual) {
     if (apila) {
       let base = pts.map(() => 0);
       const banda = (abajo, arriba, fill, op) => { const up = arriba.map((v, i) => [X(i), Y(v)]), dn = abajo.map((v, i) => [X(i), Y(v)]).reverse(); return '<path d="' + curvaSuave(up) + ' L' + dn.map((q) => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' L') + ' Z" fill="' + fill + '" fill-opacity="' + op + '" stroke="none"/>'; };
-      extra.forEach((l) => { const sv = suavizarSerie(l.vals), arriba = base.map((b, i) => b + Math.max(0, sv[i])); franjas += banda(base, arriba, l.color, '.78'); base = arriba; });
-      franjas += banda(base, ys.map((v, i) => Math.max(v, base[i])), 'var(--text-faint)', '.28'); // «Otros»: lo que no has elegido
+      const borde = (arr, col) => '<path d="' + curvaSuave(arr.map((v, i) => [X(i), Y(v)])) + '" fill="none" stroke="' + col + '" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>';
+      const nB = pts.length - 1;
+      extra.forEach((l) => { const sv = suavizarSerie(l.vals), arriba = base.map((b, i) => b + Math.max(0, sv[i])); franjas += banda(base, arriba, l.color, 'var(--fr-op)') + borde(arriba, l.color);
+        if (Y(base[nB]) - Y(arriba[nB]) > 16) etiquetas.push({ y: (Y(base[nB]) + Y(arriba[nB])) / 2, txt: invCorto(l.id, l.nombre), color: l.color, banda: true }); base = arriba; });
+      const resto = ys.map((v, i) => Math.max(v, base[i]));
+      franjas += '<defs><pattern id="invRaya" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="var(--text-faint)" stroke-width="1.2" opacity=".55"/></pattern></defs>' + banda(base, resto, 'url(#invRaya)', '1'); // «Otros»: rayas grises
+      if (Y(base[nB]) - Y(resto[nB]) > 16) etiquetas.push({ y: (Y(base[nB]) + Y(resto[nB])) / 2, txt: 'Otros', color: 'var(--text-dim)', banda: true });
       etiquetas.push({ y: Y(ys[ys.length - 1]), txt: 'Total ' + eur0(pts[pts.length - 1].v), color: 'var(--ink)', total: true });
     } else if (multi) {
       etiquetas = [{ y: Y(ys[ys.length - 1]), txt: 'Total ' + pct1(fin.r), color: 'var(--accent)', total: true }]
         .concat(extra.map((l) => ({ y: Y(l.vals[l.vals.length - 1]), txt: invCorto(l.id, l.nombre) + ' ' + pct1(l.vals[l.vals.length - 1]), color: l.color })));
     }
     // etiquetas al final de cada línea; si dos chocan, se separan
-    etiquetas.sort((a, b) => a.y - b.y); for (let k = 1; k < etiquetas.length; k++) if (etiquetas[k].y - etiquetas[k - 1].y < 15) etiquetas[k].y = etiquetas[k - 1].y + 15;
-    if (etiquetas.length > 3) etiquetas = etiquetas.filter((x) => x.total);
-    const etiqHtml = etiquetas.map((e) => '<span class="tr-etq' + (e.total ? ' total' : '') + '" style="top:' + Math.max(0, Math.min(92, e.y / Hh * 100)).toFixed(1) + '%;--lc:' + e.color + '">' + escapeHtml(e.txt) + '</span>').join('');
+    const sueltas = etiquetas.filter((e) => !e.banda); sueltas.sort((a, b) => a.y - b.y); for (let k = 1; k < sueltas.length; k++) if (sueltas[k].y - sueltas[k - 1].y < 15) sueltas[k].y = sueltas[k - 1].y + 15;
+    if (sueltas.length > 5) etiquetas = etiquetas.filter((x) => x.total || x.banda);
+    const etiqHtml = etiquetas.map((e) => '<span class="tr-etq' + (e.total ? ' total' : '') + (e.banda ? ' banda' : '') + '" style="top:' + Math.max(0, Math.min(92, e.y / Hh * 100)).toFixed(1) + '%;--lc:' + e.color + '">' + escapeHtml(e.txt) + '</span>').join('');
     const area = lineaV + ' L' + X(pts.length - 1).toFixed(1) + ' ' + suelo.toFixed(1) + ' L' + X(0).toFixed(1) + ' ' + suelo.toFixed(1) + ' Z';
     cabecera = modoR
       ? '<div class="tr-big tnum' + (Date.now() < (S._trCambiaHasta || 0) ? ' tr-cambia' : '') + '" id="invBig" style="color:' + color + '">' + pct1(fin.r) + '</div>' +
@@ -7023,7 +7043,7 @@ function evolucionHtml(grupos, valorActual) {
       // la línea de referencia (lo metido, o el 0 %) es siempre una curva con los mismos puntos: así puede «moverse» al cambiar de vista
       '<path id="invRef" d="' + curvaV(modoR ? pts.map(() => 0) : ysInv) + '" fill="none" stroke="var(--text-faint)" stroke-width="1.2" stroke-dasharray="2 4" vector-effect="non-scaling-stroke" opacity="' + (apila ? 0 : '.7') + '"/>' +
       '<g clip-path="url(#invClip)">' + franjas + '<path id="invArea" d="' + area + '" fill="url(#invGrad)" stroke="none"' + (apila ? ' opacity="0"' : '') + '/>' +
-      (apila ? '' : extra.map((l) => '<path class="tr-linea-a' + (l.id === S._invLineaNueva ? ' nueva' : '') + '" pathLength="1" d="' + curvaV(suavizarSerie(l.vals)) + '" fill="none" style="stroke:' + l.color + '" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>').join('')) +
+      (apila ? '' : extra.map((l) => '<path class="tr-linea-a' + (l.id === S._invLineaNueva ? ' nueva' : '') + '" d="' + curvaV(suavizarSerie(l.vals)) + '" fill="none" style="stroke:' + l.color + '" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>').join('')) +
       '<path id="invLineV" class="tr-linea' + (multi ? ' total' : '') + '" d="' + lineaV + '" fill="none" style="stroke:' + (apila ? 'var(--ink)' : color) + '" stroke-width="' + (multi ? 3.4 : 2.2) + '" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' +
       '</g></svg>' + etiqHtml +
       (modoR && !multi ? '<div class="tr-cero" style="top:' + (Y(0) / Hh * 100).toFixed(1) + '%">0 %</div>' : '') +
@@ -7087,7 +7107,7 @@ function bindInvChart() {
   let ultI = -1;
   const pintar = (i) => {
     const p = C.pts[i];
-    const x = C.pts.length > 1 ? i / (C.pts.length - 1) * 100 : 50, y = (1 - ((C.ys ? C.ys[i] : C.modoR ? p.r : p.v) - C.mn) / (C.mx - C.mn)) * 100;
+    const x = (C.pts.length > 1 ? i / (C.pts.length - 1) * 100 : 50) * (C.xf || 1), y = (1 - ((C.ys ? C.ys[i] : C.modoR ? p.r : p.v) - C.mn) / (C.mx - C.mn)) * 100;
     cabecera(p, 'metido: ' + eur0(p.inv));
     if (fecha) fecha.textContent = fechaCorta(p.d);
     const vs = document.getElementById('invVals');
@@ -7105,7 +7125,7 @@ function bindInvChart() {
   };
   const mover = (ev) => {
     const r = el.getBoundingClientRect(); if (!r.width) return;
-    const t = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
+    const t = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width / (C.xf || 1)));
     pintar(Math.round(t * (C.pts.length - 1)));
   };
   el.addEventListener('pointerdown', (ev) => { try { el.setPointerCapture(ev.pointerId); } catch (e) { /* */ } mover(ev); });
@@ -10194,6 +10214,7 @@ const H = {
   setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; S.tab = 'inicio'; render(); },
   verActivo: ([nombre]) => { FORM = { kind: 'activo', nombre }; if ($('#sheetBackdrop')) updateSheet(activoVerHtml(nombre)); else openSheet(activoVerHtml(nombre)); }, // hoja del activo (24/10)
   activoEnMovs: ([nombre]) => { closeSheet(); irMovs({ tipo: 'Inversión', periodo: 'todo', cat: nombre }); }, // la lista de tus compras de ese activo
+  activoApodo: ([id], el) => { if (!id) return; const v = Array.from(String(el.value || '').trim()).slice(0, 18).join('').trim(), ap = Object.assign({}, cfg().apodosActivo || {}); if (v) ap[id] = v; else delete ap[id]; saveConfig({ apodosActivo: ap }); toast(v ? 'En las gráficas saldrá «' + v + '»' : 'Vuelve el nombre automático'); render(); }, // solo cambia cómo se ve; los movimientos no se tocan
   activoModo: ([k]) => { if (!FORM || FORM.kind !== 'activo') return; S.activoModo = k === 'rentab' ? 'rentab' : 'valor'; sentir('tic'); updateSheet(activoVerHtml(FORM.nombre)); },
   activoPer: ([k]) => { if (!FORM || FORM.kind !== 'activo') return; S.activoPer = k; sentir('tic'); updateSheet(activoVerHtml(FORM.nombre)); },
   activoMov: ([id]) => openMovForm(id),

@@ -125,7 +125,7 @@ ICONOS.trendUp = ICONOS.piggy; // ICONS.trendUp = ICONS.piggy
   ok(es(op('ahorro'), 'piggy2') && es(op('inversion'), 'trendUp') && es(op('factura'), 'repeat') && es(op('deuda'), 'deuda') && es(op('importar'), 'fileIn') && es(op('traspaso'), 'swap'), 'botón +: hucha, flecha que sube, repetir, deuda, archivo que entra y traspaso');
   A.S.tuMas = true; H.goTab(['tu']); await sleep(20);
   const tu = (accion) => doc.querySelector('.menu-item[data-click^="' + accion + '"]');
-  ok(es(tu('openMoneda'), 'moneda') && es(tu('openLotes'), 'history') && es(tu('compararToggle'), 'comparar') && es(tu('openReglas'), 'autoTag') && es(tu('tuMesAbrir'), 'calRango'), 'Tú: moneda, historial, comparar, etiqueta automática y Tu mes');
+  ok(es(tu('openMoneda'), 'moneda') && es(tu('openLotes'), 'history') && !tu('compararToggle') && es(tu('openReglas'), 'autoTag') && es(tu('tuMesAbrir'), 'calRango'), 'Tú: moneda, historial, etiqueta automática y Tu mes (sin «Antes»)');
   ok(es(tu('impAbrir'), 'fileIn') && es(tu('exportBackup'), 'archive') && es(tu('verNovedades'), 'megafono') && es(tu('startOnboardingManually'), 'replay'), 'Tú: importar, copia, novedades y bienvenida');
   ok(/'Transporte', ic: 'coche2'/.test(SRC) && /'Suscripciones', ic: 'play'/.test(SRC), 'Transporte con el coche nuevo y Suscripciones con «play»');
   ok(/cripto\|bitcoin\/\.test\(k\) \? 'coin' : \/accion\/\.test\(k\) \? 'velas' : \/fondo\|etf\|indice\/\.test\(k\) \? 'pie'/.test(SRC), 'activos: cripto con moneda, acciones con velas y fondos con quesito');
