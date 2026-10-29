@@ -3571,7 +3571,10 @@ function renderAgendaSemanaV2() {
   const hechas = S.tareas.filter((t) => t.estado === 'Completado').sort((x, y) => (y.fechaFin || '').localeCompare(x.fechaFin || '')).slice(0, 20);
   const pleg = (clave, txt, arr) => arr.length ? '<button type="button" class="ag-pleg" aria-expanded="' + (abierto === clave) + '" ' + act('agendaMas', clave) + '><span>' + txt + ' · ' + arr.length + '</span>' + ic(abierto === clave ? 'chevD' : 'chevR') + '</button>' +
     (abierto === clave ? '<div class="list">' + arr.map(filaT).join('') + '</div>' : '') : '';
-  const plegH = (adelante.length || hechas.length) ? '<div class="ag-plegs">' + pleg('adelante', sel > hoy ? 'Otros días' : 'Más adelante', adelante) + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
+  const encargadas = agendaDisponible() ? agendaItems().filter((x) => x.tipo === 'tarea' && !x.hechaEn && x.grupoId && x.asignadoA && !esMio(x.grupoId, x.asignadoA) && x.creadoPor && esMio(x.grupoId, x.creadoPor)).sort((x, y) => String(x.fecha || '9999').localeCompare(String(y.fecha || '9999'))) : [];
+  const plegE = encargadas.length ? '<button type="button" class="ag-pleg" aria-expanded="' + (abierto === 'encargadas') + '" ' + act('agendaMas', 'encargadas') + '><span>Encargadas a otros · ' + encargadas.length + '</span>' + ic(abierto === 'encargadas' ? 'chevD' : 'chevR') + '</button>' + (abierto === 'encargadas' ? '<div class="list">' + encargadas.map(tareaCFilaHtml).join('') + '</div>' : '') : '';
+  const plegH = (adelante.length || hechas.length || encargadas.length) ? '<div class="ag-plegs">' + pleg('adelante', sel > hoy ? 'Otros días' : 'Más adelante', adelante) + plegE + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
+  setTimeout(agendaMarcarVista, 0); // al abrir la Agenda, lo que te encargaron deja de ser «nuevo» en Inicio
   return cab + tira + rapida + vencH + diaH + proxH + sinFH + plegH;
 }
 // Calendario v2: solo el mes; la leyenda de colores de abajo es el filtro
@@ -4302,6 +4305,9 @@ function estosDiasHtml(v2) {
     const ids = [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id)), tot = r2(ids.reduce((a, id) => a + miSaldo(id), 0));
     if (Math.abs(tot) >= 0.005) filas.push({ cls: 'juntos', icono: 'users', t: tot > 0 ? 'Te deben ' + money(tot) : 'Debes ' + money(-tot), d: 'En lo que compartes', a: act('goTab', 'juntos') });
   }
+  try { const en = encargosNuevos(); if (en.length) { const a0 = en[0], g0 = grupoDe(a0.grupoId);
+    filas.unshift(en.length === 1 ? { cls: 'hoy', icono: 'checkCircle', t: escapeHtml(nombreDe(a0.grupoId, a0.creadoPor)) + ' te ha encargado «' + escapeHtml(a0.titulo) + '»', d: escapeHtml(g0 ? nombreDestino(g0) : '') + (a0.fecha ? ' · para el ' + fechaCortaU(a0.fecha) : ''), a: act('planVer', a0.id) }
+      : { cls: 'hoy', icono: 'users', t: en.length + ' cosas nuevas en tus grupos', d: 'Te las han encargado a ti', a: act('setInicioVista', 'tareas') }); } } catch (e) { console.error(e); }
   ra.revisar.forEach((x) => filas.push({ cls: 'rec', icono: 'repeat', t: escapeHtml(x.rc.nombre) + ': revisa la regla', d: 'Tus últimos movimientos encajan mejor con otra', a: act('recEditar', x.rc.kind, x.rc.idx) }));
   // lo de los próximos 7 días (tareas, cobros y pagos fijos, metas)
   const f0 = S.calFiltros; S.calFiltros = { tareas: true, facturas: true, hitos: true, movs: false };
@@ -4311,6 +4317,7 @@ function estosDiasHtml(v2) {
     filas.push({ fecha: iso, t: escapeHtml(ev.titulo), d: (n === 1 ? 'Mañana' : DIAS_LARGO[dowMon(parseISO(iso))]) + ' · ' + escapeHtml(String(ev.detalle || '').replace(/ · (Pendiente|Sin registrar)$/, '')), a: ev.click || act('setInicioVista', 'tareas') }); }));
   const fechaTile = (iso) => { const d = parseISO(iso); return '<span class="dia-fecha"><i>' + MESES_ABR[d.getMonth()].toUpperCase() + '</i><b>' + d.getDate() + '</b></span>'; };
   if (v2 && inicioV3()) { try { filas.unshift(...avisosInicioFilas()); } catch (e) { console.error(e); } }
+  { const vistos = new Set(); for (let i = 0; i < filas.length; i++) { const k = /planVer/.test(filas[i].a || '') ? filas[i].a : null; if (!k) continue; if (vistos.has(k)) { filas.splice(i, 1); i--; } else vistos.add(k); } } // una tarea encargada sale una sola vez
   const filaHtml = (f) => '<div class="dia-fila' + (f.cls ? ' ' + f.cls : '') + '"><button type="button" class="dia-main" ' + (f.a || '') + '>' +
     (f.caras ? '<span class="dia-ic caras">' + f.caras + '</span>' : f.fecha ? fechaTile(f.fecha) : '<span class="dia-ic">' + ic(f.icono) + '</span>') + '<span class="dia-t"><b>' + f.t + '</b><span>' + f.d + '</span></span>' + (f.botones ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' +
     (f.botones ? '<span class="dia-btns">' + f.botones + '</span>' : '') + '</div>';
@@ -5350,6 +5357,19 @@ function planFilaHtml(ev, iso) {
   return '<button type="button" class="row plan-fila tappable" ' + ev.click + '><span class="plan-baldosa"><i>' + arriba + '</i><b class="tnum">' + escapeHtml(abajo) + '</b></span>' +
     '<span class="main"><span class="ttl">' + escapeHtml(ev.titulo) + '</span><span class="meta">' + escapeHtml(ev.detalle) + '</span></span></button>';
 }
+// «Recordárselo» por WhatsApp: el mensaje lo envía la persona desde su móvil; nada sale del servidor
+function tareaRecordarMsg(a) {
+  const n = String(nombreDe(a.grupoId, a.asignadoA) || '').trim().split(/\s+/)[0];
+  let cuando = ''; if (a.fecha) { const d = daysUntil(a.fecha); cuando = d === 0 ? ' (para hoy)' : d === 1 ? ' (para mañana)' : d > 1 && d < 7 ? ' (para el ' + DIAS_LARGO[dowMon(parseISO(a.fecha))].toLowerCase() + ')' : ' (para el ' + fechaCortaU(a.fecha) + ')'; }
+  return 'Hola' + (n ? ' ' + n : '') + ', te recuerdo: ' + a.titulo + cuando + '. Lo tienes en PalomApp.';
+}
+// tareas que otra persona te ha encargado y aún no has visto (desde la última vez que abriste la Agenda)
+function encargosNuevos() {
+  if (!agendaDisponible()) return [];
+  const visto = cfg().agendaVisto || '';
+  return agendaItems().filter((a) => a.tipo === 'tarea' && !a.hechaEn && a.grupoId && a.asignadoA && esMio(a.grupoId, a.asignadoA) && a.creadoPor && !esMio(a.grupoId, a.creadoPor) && (!visto || String(a.createdAt || '') > visto));
+}
+function agendaMarcarVista() { if (encargosNuevos().length) saveConfig({ agendaVisto: new Date().toISOString() }); }
 function tareaCFilaHtml(a) {
   const g = grupoDe(a.grupoId), quien = a.asignadoA ? (esMio(a.grupoId, a.asignadoA) ? 'tú' : nombreDe(a.grupoId, a.asignadoA)) : 'quien pueda';
   const hecha = !!a.hechaEn;
@@ -5438,10 +5458,11 @@ function planVerHtml(id) {
     (a.hechaEn ? '<div class="plan-dato">' + ic('check') + '<span>Hecha por ' + escapeHtml(a.hechaPor && esMio(a.grupoId, a.hechaPor) ? 'ti' : nombreDe(a.grupoId, a.hechaPor)) + ' · ' + escapeHtml(haceTxt(a.hechaEn)) + '</span></div>' : '');
   if (a.lugar) h += '<div class="plan-dato">' + ic('pin') + '<span>' + escapeHtml(a.lugar) + ' · <a class="link" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a.lugar) + '" target="_blank" rel="noopener">Abrir en Mapas</a></span></div>';
   if (a.nota) h += '<div class="plan-nota">' + escapeHtml(a.nota) + '</div>';
-  if (g) h += '<div class="plan-autor">Lo añadió ' + escapeHtml(a.creadoPor && esMio(a.grupoId, a.creadoPor) ? 'tú' : nombreDe(a.grupoId, a.creadoPor)) + (a.createdAt ? ' · ' + escapeHtml(haceTxt(a.createdAt)) : '') + '</div>';
+  if (g) h += '<div class="plan-autor">' + escapeHtml(a.creadoPor && esMio(a.grupoId, a.creadoPor) ? 'Lo añadiste tú' : 'Lo añadió ' + nombreDe(a.grupoId, a.creadoPor)) + (a.createdAt ? ' · ' + escapeHtml(haceTxt(a.createdAt)) : '') + '</div>';
   h += '</div>';
   if (plan) h += '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => '<button type="button" class="chip' + (planAviso(a.id) === k ? ' active' : '') + '" aria-pressed="' + (planAviso(a.id) === k) + '" ' + act('planAvisoVer', a.id, k) + '>' + l + '</button>').join('') + '</div></div>';
-  else h += '<button class="btn ' + (a.hechaEn ? 'ghost' : 'accent') + ' block" ' + act('tareaCHecha', a.id, a.hechaEn ? '' : '1') + '>' + ic('check') + (a.hechaEn ? ' Marcar sin hacer' : ' Marcar hecha') + '</button>';
+  else h += '<button class="btn ' + (a.hechaEn ? 'ghost' : 'accent') + ' block" ' + act('tareaCHecha', a.id, a.hechaEn ? '' : '1') + '>' + ic('check') + (a.hechaEn ? ' Marcar sin hacer' : ' Marcar hecha') + '</button>' +
+    (!a.hechaEn && g && a.asignadoA && !esMio(a.grupoId, a.asignadoA) ? '<a class="btn ghost block plan-recordar" href="https://wa.me/?text=' + encodeURIComponent(tareaRecordarMsg(a)) + '" target="_blank" rel="noopener">' + ic('send') + ' Recordárselo a ' + escapeHtml(nombreDe(a.grupoId, a.asignadoA)) + '</a>' : '');
   h += '<div class="plan-acc">' + (plan ? '<button type="button" class="tema-menu-b" ' + act('planIcs', a.id) + '>' + ic('calendar') + '<span>Añadir a mi calendario</span></button>' : '') +
     (g ? '<button type="button" class="tema-menu-b" ' + act('planOcultar', a.id) + '>' + ic('close') + '<span>Ocultar de mi agenda</span></button>' : '') +
     (puede ? '<button type="button" class="tema-menu-b" ' + act('planEditar', a.id) + '>' + ic('edit') + '<span>Editar</span></button><button type="button" class="tema-menu-b peligro" ' + act('planBorrar', a.id) + '>' + ic('trash') + '<span>Borrar</span></button>' : '') + '</div>' +
