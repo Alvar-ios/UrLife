@@ -35,7 +35,7 @@ const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) =
       A.S.verAnterior = {};
       H.goTab(['inicio']); await sleep(10);
       A.S.inicioVista = 'tareas'; A.render(); await sleep(10);
-      ok(!!fab(), 'Agenda sigue con su botón «Antes»');
+      ok(!fab(), 'Agenda: sin «Antes» (elegida el 29/10)');
       A.S.inicioVista = ''; A.render(); await sleep(10);
       H.crearIr(['gasto']); await sleep(20);
       ok(!!doc.querySelector('#sheetHost .tec-antes'), 'Apuntar importe sigue con «Antes»');

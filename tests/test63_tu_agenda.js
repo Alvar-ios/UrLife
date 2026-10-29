@@ -91,7 +91,7 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   ok(!/Todas tus tareas/.test(t), 'Agenda: ya no está la lista «Todas tus tareas»');
   H.agendaMas(['adelante']); await sleep(10);
   ok(/Revisión del coche/.test(txt(e)), 'Agenda: «Más adelante» se despliega');
-  ok(e.doc.querySelector('.comparar-fab'), 'Agenda: sale el botón «Antes»');
+  ok(!e.doc.querySelector('.comparar-fab'), 'Agenda: sin «Antes» (el dueño eligió la nueva el 29/10)');
   // casilla rápida en otro día
   H.agendaDia([man]); await sleep(10);
   ok(/Apunta una tarea para mañana/.test(e.doc.querySelector('#agRapida').placeholder), 'casilla rápida: el texto cambia con el día («para mañana»)');

@@ -1924,3 +1924,28 @@ html[data-look="nuevo"] .bco-fila:last-child { border-bottom: 0; }
 html[data-look="nuevo"] .bco-fila > span:not(.bco-ficha) { flex: 1; }
 html[data-look="nuevo"] .bco-fila.on { font-weight: 700; }
 html[data-look="nuevo"] .bco-fila > .i { color: var(--accent); width: 18px; height: 18px; }
+
+/* ---- Formas de metas depuradas (29/10, docs/22 §5): un solo trazo, líquido limpio, % sin pastilla ---- */
+html[data-look="nuevo"] .fm.cristal .fm-fondo { fill-opacity: .10; }
+@media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .fm.cristal .fm-fondo { fill-opacity: .16; } html[data-look="nuevo"]:not([data-theme="light"]) .fm.cristal .fm-agua { fill: color-mix(in srgb, var(--fc) 86%, #000); } }
+html[data-look="nuevo"][data-theme="dark"] .fm.cristal .fm-fondo { fill-opacity: .16; }
+html[data-look="nuevo"][data-theme="dark"] .fm.cristal .fm-agua { fill: color-mix(in srgb, var(--fc) 86%, #000); }
+html[data-look="nuevo"] .fm.cristal .fm-agua { opacity: 1; }
+html[data-look="nuevo"] .fm.cristal .fm-sup { stroke: color-mix(in srgb, var(--fc) 45%, #fff); stroke-width: 2; }
+html[data-look="nuevo"] .fm.cristal .fm-con, html[data-look="nuevo"] .fm.cristal .fm-con.hecha { stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+html[data-look="nuevo"] .fm.cristal .fm-t, html[data-look="nuevo"] .fm.cristal .fm-t.g { text-shadow: none; color: var(--fc); }
+html[data-look="nuevo"] .fm.cristal .fm-t.g b { background: none; padding: 0; color: inherit; font-size: 21px; }
+html[data-look="nuevo"] .fm.cristal .fm-t.sobre { color: #fff; }
+html[data-look="nuevo"] .fm.cristal.amb .fm-t.sobre { color: #1A1300; }
+
+/* ---- Inversiones, segunda vuelta (29/10, docs/22) ---- */
+html[data-look="nuevo"] .tr-chart { --fr-op: .22; }
+@media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .tr-chart { --fr-op: .32; } }
+html[data-look="nuevo"][data-theme="dark"] .tr-chart { --fr-op: .32; }
+html[data-look="nuevo"] .tr-etq.banda { background: none; box-shadow: none; right: 6px; font-size: 11.5px; color: var(--lc); text-shadow: 0 0 3px var(--paper-raised), 0 0 6px var(--paper-raised); }
+html[data-look="nuevo"] .tr-linea-a.nueva { stroke-dasharray: none; stroke-dashoffset: 0; animation: trFunde .35s ease both; }
+@keyframes trFunde { from { opacity: 0; } to { opacity: 1; } }
+@media (min-width: 760px) { html[data-look="nuevo"] #invChart.tr-chart { height: 240px; } }
+html[data-look="nuevo"] .inv-cu-f { grid-template-columns: minmax(0, 130px) 1fr auto; }
+html[data-look="nuevo"] .inv-cu-n { white-space: nowrap; text-overflow: ellipsis; }
+html[data-look="nuevo"] .act-apodo { margin-top: 12px; }
