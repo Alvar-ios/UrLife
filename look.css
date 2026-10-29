@@ -2100,3 +2100,30 @@ html[data-look="nuevo"] .iw-s-prox { display: flex; align-items: center; gap: 8p
 html[data-look="nuevo"] .iw-s-prox i { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
 html[data-look="nuevo"] .iw-s-prox span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-look="nuevo"] .iw-semana + .iw-s-prox { margin-top: 0; }
+/* tanda 3: Ingresos y gastos, Inversiones y arrastrar */
+html[data-look="nuevo"] .iw-mbs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; align-items: end; }
+html[data-look="nuevo"] .iw-mbs.doce { grid-template-columns: repeat(12, 1fr); gap: 3px; }
+html[data-look="nuevo"] .iw-mb { display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: var(--text-faint); font: inherit; cursor: pointer; min-width: 0; }
+html[data-look="nuevo"] .iw-mb-b { display: flex; align-items: flex-end; justify-content: center; gap: 2px; height: 72px; width: 100%; }
+html[data-look="nuevo"] .iw-mb-b i { width: 38%; max-width: 12px; min-height: 2px; border-radius: 4px 4px 1px 1px; opacity: .55; }
+html[data-look="nuevo"] .iw-mb.act .iw-mb-b i { opacity: 1; }
+html[data-look="nuevo"] :is(.iw-mb-b, .iw-mb-ley) i.ing { background: var(--income); }
+html[data-look="nuevo"] :is(.iw-mb-b, .iw-mb-ley) i.gas { background: var(--expense); }
+html[data-look="nuevo"] .iw-mb-l { font-size: 11px; font-weight: 600; }
+html[data-look="nuevo"] .iw-mb.act .iw-mb-l { color: var(--text); font-weight: 750; }
+html[data-look="nuevo"] .iw-mb-pie { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; font-size: var(--fs-s); color: var(--text-muted); }
+html[data-look="nuevo"] .iw-mb-ley { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; }
+html[data-look="nuevo"] .iw-mb-ley i { width: 9px; height: 9px; border-radius: 3px; margin-left: 4px; }
+html[data-look="nuevo"] :is(.iw-mb-pie, .iw-invb, .iw-j-l) b.bueno, html[data-look="nuevo"] .iw-inv-c .bueno { color: var(--income); }
+html[data-look="nuevo"] :is(.iw-mb-pie, .iw-invb) b.malo, html[data-look="nuevo"] .iw-inv-c .malo { color: var(--expense); }
+html[data-look="nuevo"] .iw-invb { --lc: var(--income); }
+html[data-look="nuevo"] .iw-invb.baja { --lc: var(--expense); }
+html[data-look="nuevo"] .iw-inv-c { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+html[data-look="nuevo"] .iw-inv-c span { font-size: var(--fs-s); font-weight: 600; }
+html[data-look="nuevo"] .iw-inv-g { display: block; width: 100%; height: 64px; margin: 8px 0 6px; }
+html[data-look="nuevo"] .iw-inv-g .ln { fill: none; stroke: var(--lc); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+html[data-look="nuevo"] .iw-inv-g .ar { fill: var(--lc); opacity: .1; stroke: none; }
+html[data-look="nuevo"] .iw-grip { display: grid; place-items: center; width: 22px; height: 40px; margin-left: -4px; color: var(--text-faint); cursor: grab; touch-action: none; flex: 0 0 auto; }
+html[data-look="nuevo"] .iw-grip svg { width: 16px; height: 16px; }
+html[data-look="nuevo"] .iw-ed-f { transition: transform .18s var(--ease-out); background: var(--paper-raised); position: relative; }
+html[data-look="nuevo"] .iw-ed-f.arrastra { transition: none; z-index: 2; box-shadow: var(--shadow); border-radius: var(--r-m); }

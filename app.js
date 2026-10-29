@@ -88,6 +88,7 @@ const ICONS = {
   palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3Z"/><circle cx="7.6" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.4" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.4" r="1.1" fill="currentColor" stroke="none"/></svg>',
   sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7L19 16Z"/></svg>',
   swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m7 4-4 4 4 4"/><path d="M3 8h14"/><path d="m17 12 4 4-4 4"/><path d="M21 16H7"/></svg>',
+  grip: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>',
   sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>',
   chevD: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.5 13.5"/><path d="m21 3-6.5 18-4-7.5L3 9.5z"/></svg>',
@@ -4335,8 +4336,10 @@ const IW_TIPOS = {
   ultimos: { n: 'Últimos movimientos', ic: 'list', g: 'mov', d: 'Lo último que apuntaste' },
   calgastos: { n: 'Calendario de gastos', ic: 'calRango', g: 'mov', d: 'Qué días gastas más este mes' },
   semana: { n: 'Tu semana', ic: 'calendar', g: 'agenda', d: 'Tareas, planes y fijos de la semana' },
+  meses: { n: 'Ingresos y gastos', ic: 'chart', g: 'mov', d: 'Lo que entra y lo que gastas, mes a mes', opc: 'meses', sinPregunta: true },
+  inv: { n: 'Inversiones', ic: 'trendUp', g: 'dinero', d: 'Cuánto valen y cuánto ganas', opc: 'per', sinPregunta: true, hay: () => S.movimientos.some((m) => m.tipo === 'Inversión') },
 };
-const IW_ORDEN = ['asivas', 'dias', 'gastos', 'presu', 'calgastos', 'ultimos', 'semana', 'fijos', 'juntos', 'meta', 'tienes', 'cuentas', 'deuda'];
+const IW_ORDEN = ['asivas', 'dias', 'gastos', 'meses', 'presu', 'calgastos', 'ultimos', 'semana', 'fijos', 'juntos', 'meta', 'tienes', 'cuentas', 'inv', 'deuda'];
 const IW_GRUPOS = [['todo', 'Todo'], ['mov', 'Movimientos'], ['agenda', 'Agenda'], ['dinero', 'Dinero'], ['juntos', 'Juntos']];
 function iwDefecto() { return [{ t: 'asivas' }, { t: 'dias' }]; }
 function iwLista() { const l = cfg().inicioWidgets; return Array.isArray(l) ? l.filter((x) => x && IW_TIPOS[x.t]).slice(0, IW_MAX).map((x) => ({ t: x.t, o: x.o ? Object.assign({}, x.o) : undefined })) : iwDefecto(); }
@@ -4347,6 +4350,7 @@ function iwNombre(x) {
   if (x.t === 'juntos') { const g = x.o && x.o.gid ? grupoDe(x.o.gid) : null; return g ? 'Juntos · ' + nombreDestino(g) : 'Juntos'; }
   if (x.t === 'cuentas') { const c = x.o && x.o.id && x.o.id !== '*' ? cuentasCfg().find((y) => y.id === x.o.id) : null; return c ? 'Cuenta · ' + c.nombre : 'Cuentas'; }
   if (x.t === 'deuda') return x.o && x.o.nombre ? 'Deuda · ' + x.o.nombre : 'Una deuda';
+
   return IW_TIPOS[x.t].n;
 }
 // la caja de cada pieza: cabecera que abre su pantalla completa y el contenido
@@ -4437,6 +4441,8 @@ function iwPiezaHtml(x, i) {
     if (x.t === 'ultimos') return iwUltimosHtml();
     if (x.t === 'calgastos') return iwCalGastosHtml();
     if (x.t === 'semana') return iwSemanaHtml();
+    if (x.t === 'meses') return iwMesesHtml(x, i);
+    if (x.t === 'inv') return iwInvHtml(x, i);
   } catch (e) { console.error(e); }
   return '';
 }
@@ -4458,8 +4464,8 @@ function iwEdHtml() {
   if (F.vista === 'cat') return iwCatHtml();
   if (F.vista === 'opc') return iwOpcHtml();
   const fila = (x, i) => { const T = IW_TIPOS[x.t];
-    return '<div class="iw-ed-f"><button type="button" class="iw-ed-n' + (T.opc ? ' tappable' : '') + '" ' + (T.opc ? act('iwOpcAbrir', i) : 'tabindex="-1"') + '><span class="iw-ic">' + ic(T.ic) + '</span><span class="iw-ed-t"><b>' + escapeHtml(iwNombre(x)) + '</b><span>' +
-      (T.recom ? 'Recomendada' : iwMedio(x) ? 'Medio ancho' : 'Fila entera') + (T.opc ? ' · Cambiar' : '') + '</span></span></button>' +
+    return '<div class="iw-ed-f" data-i="' + i + '"><span class="iw-grip" aria-hidden="true">' + ic('grip') + '</span><button type="button" class="iw-ed-n' + (T.opc ? ' tappable' : '') + '" ' + (T.opc ? act('iwOpcAbrir', i) : 'tabindex="-1"') + '><span class="iw-ic">' + ic(T.ic) + '</span><span class="iw-ed-t"><b>' + escapeHtml(iwNombre(x)) + '</b><span>' +
+      (T.recom ? 'Recomendada' : x.t === 'meses' ? (x.o && Number(x.o.n) === 12 ? '12' : '6') + ' meses' : x.t === 'inv' ? 'Periodo ' + (IW_INV_PER.find((p) => p[0] === (x.o && x.o.per)) || IW_INV_PER[1])[1] : iwMedio(x) ? 'Medio ancho' : 'Fila entera') + (T.opc ? ' · Cambiar' : '') + '</span></span></button>' +
       '<button type="button" class="icon-btn sm" aria-label="Subir ' + escapeHtml(iwNombre(x)) + '" ' + (i > 0 ? act('iwMover', i, -1) : 'disabled') + '>' + ic('arrowUp') + '</button>' +
       '<button type="button" class="icon-btn sm" aria-label="Bajar ' + escapeHtml(iwNombre(x)) + '" ' + (i < L.length - 1 ? act('iwMover', i, 1) : 'disabled') + '>' + ic('arrowDown') + '</button>' +
       '<button type="button" class="icon-btn sm iw-quitar" aria-label="Quitar ' + escapeHtml(iwNombre(x)) + '" ' + act('iwQuitar', i) + '>' + ic('close') + '</button></div>'; };
@@ -4488,7 +4494,7 @@ function iwEjemplo(t) {
   return { t };
 }
 // opciones de una pieza: qué meta, qué grupo, qué cuenta o qué deuda
-function iwOpcObj(t, k) { return t === 'meta' ? { key: k } : t === 'juntos' ? { gid: k } : t === 'cuentas' ? { id: k } : { nombre: k }; }
+function iwOpcObj(t, k) { return t === 'meta' ? { key: k } : t === 'juntos' ? { gid: k } : t === 'cuentas' ? { id: k } : t === 'meses' ? { n: Number(k) } : t === 'inv' ? { per: k } : { nombre: k }; }
 function iwOpcHtml() {
   const F = FORM, x = F.i >= 0 ? F.lista[F.i] : { t: F.nuevo }, t = x.t, o = x.o || {};
   const op = (k, tt, d, icono, sel) => '<button type="button" class="av-op' + (sel ? ' on' : '') + '" role="radio" aria-checked="' + !!sel + '" ' + act('iwOpcElegir', k) + '><span class="av-op-ic">' + icono + '</span><span class="av-op-t"><b>' + escapeHtml(tt) + '</b><span>' + escapeHtml(d) + '</span></span><span class="av-radio"></span></button>';
@@ -4498,6 +4504,10 @@ function iwOpcHtml() {
     lista = op('', 'Todos tus grupos', 'Lo que debes y te deben con cada persona', ic('users'), F.i >= 0 && !o.gid) + (S.grupos || []).map((g) => op(g.id, nombreDestino(g), g.tipo === 'directo' ? 'Entre los dos' : (g.miembros || []).length + ' personas', ic('users'), o.gid === g.id)).join(''); }
   else if (t === 'cuentas') { tit = '¿Qué cuentas?'; const cs = cuentasCfg();
     lista = cs.length ? op('*', 'Todas tus cuentas', 'Las 3 con más saldo, a lo ancho', ic('bank'), o.id === '*') + cs.map((c) => op(c.id, c.nombre, saldoCuenta(c) == null ? 'Sin saldo' : money(saldoCuenta(c)), bancoFichaHtml(bancoDe(c)) || ic('bank'), o.id === c.id)).join('') : vacio('Aún no tienes cuentas.', act('openCuentas'), 'Añadir una'); }
+  else if (t === 'meses') { tit = '¿Cuántos meses?'; const n = Number(o.n) === 12 ? 12 : 6;
+    lista = op('6', 'Últimos 6 meses', 'Barras más anchas, se leen mejor', ic('chart'), n === 6) + op('12', 'Últimos 12 meses', 'El año entero, más apretado', ic('chart'), n === 12); }
+  else if (t === 'inv') { tit = '¿Qué periodo?'; const pr = o.per || '6m';
+    lista = IW_INV_PER.map((p) => op(p[0], ({ '1m': 'Último mes', '6m': 'Últimos 6 meses', '1a': 'Último año', max: 'Desde el inicio' })[p[0]], 'La línea y lo que has ganado en ese tiempo', ic('trendUp'), pr === p[0])).join(''); }
   else if (t === 'deuda') { tit = '¿Qué deuda?'; const ds = iwDeudasCfg();
     lista = ds.length ? ds.map((d) => { const r = deudaStats(d); return op(d.nombre, d.nombre, r.pend > 0.004 ? 'Quedan ' + money(r.pend) : 'Saldada', d.emoji ? escapeHtml(d.emoji) : ic('deuda'), o.nombre === d.nombre); }).join('') : vacio('Aún no tienes deudas.'); }
   else { tit = '¿Qué meta?'; let rs = []; try { rs = metasStats().concat(objCompartidos('ahorro')); } catch (e) { rs = []; }
@@ -4590,6 +4600,52 @@ function iwSemanaHtml() {
   const cuando = (iso) => { const n = daysUntil(iso); return n === 0 ? 'Hoy' : n === 1 ? 'Mañana' : n < 7 ? DIAS_LARGO[dowMon(parseISO(iso))] : fmtDateShort(iso); };
   const linea = prox ? '<button type="button" class="iw-s-prox tappable" ' + (prox.ev.click || act('iwIrAgendaDia', prox.iso)) + '><i style="background:' + evColor(prox.ev) + '"></i><span><b>' + escapeHtml(cuando(prox.iso)) + ':</b> ' + escapeHtml(prox.ev.titulo) + '</span></button>' : '<div class="iw-vacio"><span>Nada en las próximas dos semanas.</span></div>';
   return iwCaja('semana', 'Tu semana', '', act('setInicioVista', 'calendario'), '<div class="iw-s">' + dias + '</div>' + linea);
+}
+/* ---- tanda 3: Ingresos y gastos (6 o 12 meses) e Inversiones (pide precios solo cuando se ve) ---- */
+function iwMesesHtml(x, i) {
+  const n = x.o && Number(x.o.n) === 12 ? 12 : 6, { y, m } = inicioYM(), meses = [];
+  for (let j = n - 1; j >= 0; j--) { let mm = m - j, yy = y; while (mm < 1) { mm += 12; yy--; } const k = kpisMes(yy, mm); meses.push({ y: yy, m: mm, ing: k.ingresos, gas: k.gastos + k.facturas }); }
+  const max = Math.max(1, ...meses.map((x2) => Math.max(x2.ing, x2.gas))), ult = meses[meses.length - 1], dif = ult.ing - ult.gas;
+  if (!meses.some((x2) => x2.ing > 0.004 || x2.gas > 0.004)) return iwCaja('meses', 'Ingresos y gastos', 'últimos ' + n + ' meses', act('iwIrAnio'), iwVacio('Aún no hay movimientos en estos meses.'));
+  const H0 = 72, barras = meses.map((x2, j) => '<button type="button" class="iw-mb' + (j === meses.length - 1 ? ' act' : '') + '" aria-label="' + escapeHtml(MESES[x2.m - 1] + ': entró ' + money(x2.ing) + ', gastaste ' + money(x2.gas)) + '" ' + act('irMovs', '_gastos', mesClave(x2.y, x2.m)) + '>' +
+    '<span class="iw-mb-b"><i class="ing" style="height:' + (x2.ing / max * H0).toFixed(1) + 'px"></i><i class="gas" style="height:' + (x2.gas / max * H0).toFixed(1) + 'px"></i></span><span class="iw-mb-l">' + (n === 12 ? MESES_ABR[x2.m - 1].charAt(0) : MESES_ABR[x2.m - 1]) + '</span></button>').join('');
+  return iwCaja('meses', 'Ingresos y gastos', 'últimos ' + n + ' meses', act('iwIrAnio'), '<div class="iw-mbs' + (n === 12 ? ' doce' : '') + '">' + barras + '</div>' +
+    '<div class="iw-mb-pie"><span class="iw-mb-ley"><i class="ing"></i>Entra<i class="gas"></i>Gastas</span><span>' + escapeHtml(MESES[ult.m - 1]) + ': <b class="tnum ' + (dif >= 0 ? 'bueno' : 'malo') + '">' + (dif >= 0 ? '+' : '−') + escapeHtml(moneyShort(Math.abs(dif))) + '</b></span></div>');
+}
+const IW_INV_PER = [['1m', '1M', 30], ['6m', '6M', 182], ['1a', '1A', 365], ['max', 'Máx', 0]];
+function iwInvHtml(x, i) {
+  const per = IW_INV_PER.find((p) => p[0] === (x.o && x.o.per)) || IW_INV_PER[1];
+  const tit = 'Inversiones', a = act('iwIrInv');
+  if (!S.movimientos.some((m) => m.tipo === 'Inversión')) return iwCaja('inv', tit, '', a, iwVacio('Aún no tienes inversiones.'));
+  let grupos; try { grupos = inversionesPorActivo(); } catch (e) { grupos = []; }
+  const movs = movsValorables(grupos);
+  if (!movs.length) return iwCaja('inv', tit, '', a, iwVacio('Pon las participaciones de tus compras para ver la gráfica.'));
+  const ids = [...new Set(movs.map((m) => m.id))].sort(), desde = movs[0].fecha, clave = ids.join(',') + '|' + desde, Hs = S.historico;
+  const vigente = Hs && Hs.clave === clave && Date.now() - Hs.ts < (Hs.error ? 60000 : 600000);
+  // los precios se piden solo cuando la pieza se ve en pantalla (y se guardan 10 minutos)
+  if (!vigente && i >= 0 && activosDisponible()) { S._iwInvPend = { ids, desde, clave }; setTimeout(iwInvObservar, 0); }
+  if (!Hs || Hs.clave !== clave || Hs.error || !Object.keys(Hs.series || {}).length) return iwCaja('inv', tit, per[1], a, '<div class="iw-invb" data-iw-inv="1">' + (Hs && Hs.clave === clave && Hs.error ? iwVacio('No hemos podido cargar los precios.') : iwVacio('Cargando precios…')) + '</div>');
+  const serie = serieCartera(movs, Hs.series); conRentab(serie);
+  if (serie.length < 2) return iwCaja('inv', tit, per[1], a, iwVacio('Aún no hay suficientes días para la gráfica.'));
+  const ini = per[2] ? addDiasISO(todayISO(), -per[2]) : desde; let i0 = serie.findIndex((p) => p.d >= ini); if (i0 < 0) i0 = 0;
+  const prev = i0 > 0 ? serie[i0 - 1] : { d: desde, v: 0, inv: 0 }, pts = reducirPuntos(serie.slice(i0), 40), fin = serie[serie.length - 1];
+  const gan = fin.v - fin.inv, pctG = fin.inv > 0 ? gan / fin.inv * 100 : null, ch = cambioPeriodo(prev, fin), sube = ch.delta >= 0;
+  const W = 300, Hh = 64, vs = pts.map((p) => p.v), lo = Math.min(...vs), hi = Math.max(...vs), rg = hi - lo || 1;
+  const xy = pts.map((p, j) => [(j / Math.max(1, pts.length - 1) * W).toFixed(1), (Hh - 4 - (p.v - lo) / rg * (Hh - 8)).toFixed(1)]);
+  const linea = 'M' + xy.map((q) => q.join(' ')).join(' L'), area = linea + ' L' + W + ' ' + Hh + ' L0 ' + Hh + ' Z';
+  const pct1 = (v) => (v >= 0 ? '+' : '−') + fmt2(Math.abs(v)).replace(/,00$/, '') + ' %';
+  return iwCaja('inv', tit, per[1], a, '<div class="iw-invb' + (sube ? ' sube' : ' baja') + '"><div class="iw-inv-c"><b class="iw-ti-v tnum">' + escapeHtml(moneyShort(fin.v)) + '</b><span class="tnum ' + (gan >= 0 ? 'bueno' : 'malo') + '">' + (gan >= 0 ? '+' : '−') + escapeHtml(moneyShort(Math.abs(gan))) + (pctG == null ? '' : ' · ' + pct1(pctG)) + '</span></div>' +
+    '<svg class="iw-inv-g" viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" aria-hidden="true"><path class="ar" d="' + area + '"/><path class="ln" d="' + linea + '" vector-effect="non-scaling-stroke"/></svg>' +
+    '<span class="iw-ti-l">' + (per[0] === 'max' ? 'Desde el inicio' : 'En ' + ({ '1m': '1 mes', '6m': '6 meses', '1a': '1 año' })[per[0]]) + ': <b class="tnum ' + (sube ? 'bueno' : 'malo') + '">' + (sube ? '+' : '−') + escapeHtml(moneyShort(Math.abs(ch.delta))) + '</b></span></div>');
+}
+function iwInvObservar() {
+  const P = S._iwInvPend, el = document.querySelector('#content [data-iw-inv]');
+  if (!P || !el || S._histCarga || S._histProg) return;
+  const cargar = () => { if (S._histCarga) return; S._iwInvPend = null; cargarHistorico(P.ids, P.desde, P.clave); };
+  if (!('IntersectionObserver' in window)) return cargar();
+  if (S._iwInvObs) S._iwInvObs.disconnect();
+  S._iwInvObs = new IntersectionObserver((ents) => { if (ents.some((en) => en.isIntersecting)) { S._iwInvObs.disconnect(); S._iwInvObs = null; cargar(); } });
+  S._iwInvObs.observe(el);
 }
 async function iwGuardar() {
   const F = FORM; if (!F || F.kind !== 'iwEd') return;
@@ -9517,7 +9573,7 @@ const H = {
   iwMover: ([i, d]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; i = Number(i); const j = i + Number(d); if (j < 0 || j >= F.lista.length) return; const t = F.lista[i]; F.lista[i] = F.lista[j]; F.lista[j] = t; F.aviso = ''; sentir('tic'); iwGuardar(); },
   iwQuitar: ([i]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; const x = F.lista.splice(Number(i), 1)[0]; if (!x) return; F.aviso = IW_TIPOS[x.t].recom ? 'Has quitado «' + IW_TIPOS[x.t].n + '». Te recomendamos tenerla: puedes volver a añadirla cuando quieras.' : ''; sentir('tic'); iwGuardar(); },
   iwAnadir: ([t]) => { const F = FORM; if (!F || F.kind !== 'iwEd' || !IW_TIPOS[t] || F.lista.length >= IW_MAX) return; if (!IW_TIPOS[t].varias && F.lista.some((x) => x.t === t)) return;
-    if (IW_TIPOS[t].opc) { F.vista = 'opc'; F.i = -1; F.nuevo = t; updateSheet(iwEdHtml()); return; }
+    if (IW_TIPOS[t].opc && !IW_TIPOS[t].sinPregunta) { F.vista = 'opc'; F.i = -1; F.nuevo = t; updateSheet(iwEdHtml()); return; }
     F.lista.push({ t }); F.vista = 'lista'; F.aviso = ''; sentir('ok'); iwGuardar(); },
   iwOpcAbrir: ([i]) => { i = Number(i); const l = FORM && FORM.kind === 'iwEd' ? FORM.lista : iwLista(); if (!l[i]) return; const ab = FORM && FORM.kind === 'iwEd' && $('#sheetBackdrop');
     FORM = { kind: 'iwEd', vista: 'opc', lista: l, i, filtro: FORM && FORM.filtro }; if (ab) updateSheet(iwEdHtml()); else openSheet(iwEdHtml()); },
@@ -9525,6 +9581,8 @@ const H = {
   iwIrMovLista: () => { S.tab = 'movimientos'; S.movVista = 'lista'; S.movPeriodo = mesHoyClave(); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
   iwIrMovCal: ([iso]) => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = mesClave(im.y, im.m); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S.movCalDia = iso || ''; S._entrando = true; render(); window.scrollTo(0, 0); },
   iwIrAgendaDia: ([iso]) => { S.calFecha = iso || todayISO(); S.agendaSub = 'calendario'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
+  iwIrAnio: () => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = 'y:' + im.y; S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
+  iwIrInv: () => { H.irDinero(['inversiones']); },
   iwReset: () => { const F = FORM; if (!F || F.kind !== 'iwEd') return; F.lista = iwDefecto(); F.aviso = ''; iwGuardar(); },
   asiVasGuardar: async () => { if (!FORM || FORM.kind !== 'asiVas') return; const v = FORM.v.slice(); closeSheet(); await saveConfig({ asiVas: v.every((x) => x === 'auto') ? null : v }); sentir('ok'); render(); toast('Listo: así verás tu «Así vas»'); },
   invAvisoVer: () => { saveConfig({ invAvisoVisto: isoSemana(todayISO()) }); H.irDinero(['inversiones']); },
@@ -10747,6 +10805,40 @@ document.addEventListener('focusin', (e) => { const T = FORM && FORM.tec; if (T 
 (function () { let t = null; const fin = () => { clearTimeout(t); t = null; if (H.tecK._largo) setTimeout(() => { H.tecK._largo = false; }, 350); };
   document.addEventListener('pointerdown', (e) => { H.tecK._largo = false; const b = e.target.closest && e.target.closest('#tec .tec-del'); if (!b) return; fin(); t = setTimeout(() => { H.tecK._largo = true; tecPulsar('clear'); }, 500); });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => document.addEventListener(ev, fin)); })();
+/* ---- arrastrar en «Editar Inicio» (desde los puntos) y mantener pulsada una pieza para editar ---- */
+(function () {
+  let D = null;
+  document.addEventListener('pointerdown', (e) => {
+    const g = e.target.closest && e.target.closest('.iw-grip'); if (!g || !FORM || FORM.kind !== 'iwEd') return;
+    const fila = g.closest('.iw-ed-f'), cont = fila && fila.parentElement; if (!fila) return;
+    e.preventDefault(); const filas = [...cont.querySelectorAll('.iw-ed-f[data-i]')], i = filas.indexOf(fila);
+    D = { fila, filas, i, y0: e.clientY, a: i, alto: fila.getBoundingClientRect().height || 56 };
+    fila.classList.add('arrastra'); try { g.setPointerCapture(e.pointerId); } catch (er) { /* */ } sentir('tic');
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!D) return; const dy = e.clientY - D.y0, n = D.filas.length;
+    D.fila.style.transform = 'translateY(' + dy + 'px)';
+    const a = Math.max(0, Math.min(n - 1, D.i + Math.round(dy / D.alto)));
+    if (a !== D.a) { D.a = a; sentir('tic'); }
+    D.filas.forEach((f, j) => { if (f === D.fila) return; const s = D.i < a && j > D.i && j <= a ? -1 : D.i > a && j < D.i && j >= a ? 1 : 0; f.style.transform = s ? 'translateY(' + (s * D.alto) + 'px)' : ''; });
+  });
+  const fin = () => {
+    if (!D) return; const d = D; D = null;
+    d.filas.forEach((f) => { f.style.transform = ''; }); d.fila.classList.remove('arrastra');
+    const F = FORM; if (!F || F.kind !== 'iwEd' || d.a === d.i) return;
+    const x = F.lista.splice(d.i, 1)[0]; F.lista.splice(d.a, 0, x); sentir('ok'); iwGuardar();
+  };
+  document.addEventListener('pointerup', fin); document.addEventListener('pointercancel', fin);
+  // mantener pulsada una pieza de Inicio abre «Editar Inicio»
+  let t = null, p0 = null;
+  const quita = () => { clearTimeout(t); t = null; };
+  document.addEventListener('pointerdown', (e) => { quita(); const w = e.target.closest && e.target.closest('#content .iw, #content .ins-circ, #content .dias-lista'); if (!w || S.tab !== 'inicio') return;
+    p0 = [e.clientX, e.clientY]; t = setTimeout(() => { t = null; S._iwLargo = Date.now(); sentir('tic', true); H.iwEditar(); }, 600); });
+  document.addEventListener('pointermove', (e) => { if (t && p0 && Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) > 10) quita(); });
+  ['pointerup', 'pointercancel', 'scroll'].forEach((ev) => document.addEventListener(ev, quita, true));
+  // el toque que acaba un «mantener pulsado» no abre la pieza
+  document.addEventListener('click', (e) => { if (S._iwLargo && Date.now() - S._iwLargo < 900) { S._iwLargo = 0; if (!(e.target.closest && e.target.closest('#sheetHost'))) { e.stopPropagation(); e.preventDefault(); } } }, true);
+})();
 document.addEventListener('change', (e) => dispatch('change', e));
 document.addEventListener('keydown', (e) => { if (tecTeclaFisica(e)) return; if (e.key === 'Enter' && e.target && e.target.id === 'agRapida') { e.preventDefault(); agRapidaCrear(); return; } if (e.key === 'Escape') { if ($('#popupBackdrop')) cerrarPopup(); else closeSheet(); } });
 
