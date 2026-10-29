@@ -4313,8 +4313,8 @@ function estosDiasHtml(v2) {
     if (Math.abs(tot) >= 0.005) filas.push({ cls: 'juntos', icono: 'users', t: tot > 0 ? 'Te deben ' + money(tot) : 'Debes ' + money(-tot), d: 'En lo que compartes', a: act('goTab', 'juntos') });
   }
   try { const en = encargosNuevos(); if (en.length) { const a0 = en[0], g0 = grupoDe(a0.grupoId);
-    filas.unshift(en.length === 1 ? { cls: 'hoy', icono: 'checkCircle', t: escapeHtml(nombreDe(a0.grupoId, a0.creadoPor)) + ' te ha encargado «' + escapeHtml(a0.titulo) + '»', d: escapeHtml(g0 ? nombreDestino(g0) : '') + (a0.fecha ? ' · para el ' + fechaCortaU(a0.fecha) : ''), a: act('planVer', a0.id) }
-      : { cls: 'hoy', icono: 'users', t: en.length + ' cosas nuevas en tus grupos', d: 'Te las han encargado a ti', a: act('setInicioVista', 'tareas') }); } } catch (e) { console.error(e); }
+    filas.unshift(en.length === 1 ? { cls: 'hoy', icono: 'checkCircle', t: escapeHtml(a0.titulo), d: 'Te lo encarga ' + escapeHtml(nombreDe(a0.grupoId, a0.creadoPor)) + (g0 && g0.tipo !== 'directo' ? ' · ' + escapeHtml(nombreDestino(g0)) : '') + (a0.fecha ? ' · para el ' + fechaCortaU(a0.fecha) : ''), a: act('planVer', a0.id) }
+      : { cls: 'hoy', icono: 'users', t: en.length + ' tareas nuevas para ti', d: 'Te las han encargado', a: act('setInicioVista', 'tareas') }); } } catch (e) { console.error(e); }
   ra.revisar.forEach((x) => filas.push({ cls: 'rec', icono: 'repeat', t: escapeHtml(x.rc.nombre) + ': revisa la regla', d: 'Tus últimos movimientos encajan mejor con otra', a: act('recEditar', x.rc.kind, x.rc.idx) }));
   // lo de los próximos 7 días (tareas, cobros y pagos fijos, metas)
   const f0 = S.calFiltros; S.calFiltros = { tareas: true, facturas: true, hitos: true, movs: false };
@@ -5378,10 +5378,11 @@ function tareaRecordarMsg(a) {
 // tareas que otra persona te ha encargado y aún no has visto (desde la última vez que abriste la Agenda)
 function encargosNuevos() {
   if (!agendaDisponible()) return [];
-  const visto = cfg().agendaVisto || '';
-  return agendaItems().filter((a) => a.tipo === 'tarea' && !a.hechaEn && a.grupoId && a.asignadoA && esMio(a.grupoId, a.asignadoA) && a.creadoPor && !esMio(a.grupoId, a.creadoPor) && (!visto || String(a.createdAt || '') > visto));
+  const visto = cfg().agendaVisto || new Date(Date.now() - 7 * 864e5).toISOString(); // la primera vez, solo lo de la última semana
+  return agendaItems().filter((a) => a.tipo === 'tarea' && !a.hechaEn && a.grupoId && a.asignadoA && esMio(a.grupoId, a.asignadoA) && a.creadoPor && !esMio(a.grupoId, a.creadoPor) && String(a.createdAt || '') > visto);
 }
-function agendaMarcarVista() { if (encargosNuevos().length) saveConfig({ agendaVisto: new Date().toISOString() }); }
+// se guarda la fecha (del servidor) del último encargo visto, nunca la hora del móvil: así un reloj adelantado no esconde nada
+function agendaMarcarVista() { const en = encargosNuevos(); if (en.length) saveConfig({ agendaVisto: en.map((a) => String(a.createdAt)).sort().pop() }); }
 function tareaCFilaHtml(a) {
   const g = grupoDe(a.grupoId), quien = a.asignadoA ? (esMio(a.grupoId, a.asignadoA) ? 'tú' : nombreDe(a.grupoId, a.asignadoA)) : 'quien pueda';
   const hecha = !!a.hechaEn;
@@ -5414,7 +5415,7 @@ function planFormHtml() {
   if (plan) h += '<div class="field"><label>¿A qué hora?</label><div class="chips">' + chip('planHoraModo', 'dia', F.horaModo === 'dia', 'Todo el día') + chip('planHoraModo', 'hora', F.horaModo === 'hora', 'A una hora', ic('clock')) + chip('planHoraModo', 'varios', F.horaModo === 'varios', 'Varios días') + '</div>' +
     (F.horaModo === 'hora' ? '<input id="pHora" type="time" class="plan-hora" aria-label="Hora" value="' + escapeHtml(F.hora) + '">' : '') +
     (F.horaModo === 'varios' ? '<div class="tema-fechas plan-hasta"><span>Hasta</span><input id="pFin" type="date" aria-label="Hasta" min="' + escapeHtml(F.fecha) + '" value="' + escapeHtml(F.fechaFin) + '"></div>' : '') + '</div>';
-  if (!F.id) h += '<div class="field"><label>Con' + (F.con !== 'yo' ? ' <span class="hint">· lo verán todos</span>' : '') + '</label><div class="chips plan-con">' + chip('planCon', 'yo', F.con === 'yo', 'Solo yo') + gs.map((x) => chip('planCon', 'g:' + x.id, F.con === 'g:' + x.id, nombreDestino(x), x.tipo === 'grupo' ? ic('users') : '')).join('') + personasParaPlanes().map((p) => chip('planCon', 'u:' + p.uid, F.con === 'u:' + p.uid, p.nombre, caraHtml(p.uid, p.nombre, 'mini'))).join('') + '</div>' +
+  if (!F.id) h += '<div class="field"><label>Con' + (F.con !== 'yo' ? ' <span class="hint">· ' + (F.con.indexOf('u:') === 0 || (g && g.tipo === 'directo') ? 'lo veréis los dos' : 'lo verán todos') + '</span>' : '') + '</label><div class="chips plan-con">' + chip('planCon', 'yo', F.con === 'yo', 'Solo yo') + gs.map((x) => chip('planCon', 'g:' + x.id, F.con === 'g:' + x.id, nombreDestino(x), x.tipo === 'grupo' ? ic('users') : '')).join('') + personasParaPlanes().map((p) => chip('planCon', 'u:' + p.uid, F.con === 'u:' + p.uid, p.nombre, caraHtml(p.uid, p.nombre, 'mini'))).join('') + '</div>' +
     (!plan && !gs.length && !personasParaPlanes().length ? '<div class="rec-hint">Las tareas compartidas son de un grupo. Las tuyas, apúntalas como siempre.</div>' : '') + '</div>';
   else if (g) h += '<div class="rec-hint plan-de">' + ic('users') + ' ' + escapeHtml(nombreDestino(g)) + ' · lo ven todos</div>';
   const pu = !F.id && F.con.indexOf('u:') === 0 ? amigos().find((p) => p.uid === F.con.slice(2)) : null;

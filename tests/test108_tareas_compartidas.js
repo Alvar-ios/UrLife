@@ -20,16 +20,16 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
     agenda: { suscribir: () => () => {}, crear: async (o) => o, editar: async (id, o) => o, borrar: async () => [], restaurar: async () => null } });
   H.goTab(['inicio']); S.pendTodos = true; A.render(); await sleep(20);
   const filas = [...c().querySelectorAll('.dia-fila')].filter((f) => /Bajar el cartón/.test(f.textContent));
-  ok(filas.length === 1 && /Ana García te ha encargado «Bajar el cartón»/.test(filas[0].textContent) && /Piso/.test(filas[0].textContent), 'Inicio: «Ana te ha encargado…», una sola vez');
+  ok(filas.length === 1 && /Te lo encarga Ana García/.test(filas[0].textContent) && /Piso/.test(filas[0].textContent), 'Inicio: «Ana te ha encargado…», una sola vez');
   // abrir la Agenda lo da por visto
   H.goTab(['agenda']); A.render(); await sleep(30);
   ok(S.config.agendaVisto, 'abrir la Agenda guarda que ya lo viste');
   H.goTab(['inicio']); A.render(); await sleep(20);
-  ok(!/te ha encargado/.test(c().textContent), 'ya visto: no vuelve a salir como nuevo');
+  ok(!/Te lo encarga/.test(c().textContent), 'ya visto: no vuelve a salir como nuevo');
   // dos nuevas → una sola fila
   S.agenda.push({ id: 'c4', grupoId: 'g1', tipo: 'tarea', titulo: 'Pagar la luz', fecha: null, asignadoA: 'uYo', hechaEn: null, creadoPor: 'uB', createdAt: '2099-01-01T00:00:00Z' },
     { id: 'c5', grupoId: 'g1', tipo: 'tarea', titulo: 'Regar', fecha: null, asignadoA: 'uYo', hechaEn: null, creadoPor: 'uA', createdAt: '2099-01-01T00:00:00Z' }); A.render(); await sleep(20);
-  ok(/2 cosas nuevas en tus grupos/.test(c().textContent), 'varias nuevas: una sola fila «2 cosas nuevas»');
+  ok(/2 tareas nuevas para ti/.test(c().textContent), 'varias nuevas: una sola fila «2 tareas nuevas para ti»');
   // Encargadas a otros
   H.goTab(['agenda']); A.render(); await sleep(20);
   ok(/Encargadas a otros · 1/.test(c().textContent) && !/Comprar bombillas/.test(c().textContent), 'Agenda: «Encargadas a otros · 1», plegado');
