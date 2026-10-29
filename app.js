@@ -4310,7 +4310,7 @@ function estosDiasHtml(v2) {
   const filaHtml = (f) => '<div class="dia-fila' + (f.cls ? ' ' + f.cls : '') + '"><button type="button" class="dia-main" ' + (f.a || '') + '>' +
     (f.caras ? '<span class="dia-ic caras">' + f.caras + '</span>' : f.fecha ? fechaTile(f.fecha) : '<span class="dia-ic">' + ic(f.icono) + '</span>') + '<span class="dia-t"><b>' + f.t + '</b><span>' + f.d + '</span></span>' + (f.botones ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' +
     (f.botones ? '<span class="dia-btns">' + f.botones + '</span>' : '') + '</div>';
-  if (v2) { const ins = S._ins || [], conJuntos = ins.some((x) => x.k === 'juntos'), pasada = (ins.find((x) => x.k === 'pasada' || x.k2 === 'pasada') || {}).cat; // lo que ya sale en «Así vas» no se repite
+  if (v2) { const ins = S._ins || [], conJuntos = ins.some((x) => x.k === 'juntos') || (inicioV3() && iwLista().some((x) => x.t === 'juntos')), pasada = (ins.find((x) => x.k === 'pasada' || x.k2 === 'pasada') || {}).cat; // lo que ya sale en «Así vas» no se repite
     for (let i = filas.length - 1; i >= 0; i--) if ((filas[i].cls === 'juntos' && conJuntos) || (filas[i].cls === 'warn' && pasada != null && filas[i].cat === pasada)) filas.splice(i, 1); }
   const CAP = v2 ? 2 : 3, todas = !!S.pendTodos, ver = todas ? filas : filas.slice(0, CAP);
   return '<div class="section-title dias-tit">Estos días <button class="link" ' + act('setInicioVista', 'tareas') + '>Agenda ' + ic('chevR') + '</button></div>' +
@@ -4329,15 +4329,24 @@ const IW_TIPOS = {
   fijos: { n: 'Próximos fijos', ic: 'repeat', g: 'agenda', d: 'Cobros y pagos fijos hasta fin de mes' },
   meta: { n: 'Una meta', ic: 'flag', g: 'dinero', d: 'Cómo va y un + para aportar', medio: true, varias: true, opc: 'meta' },
   tienes: { n: 'Lo que tienes', ic: 'wallet', g: 'dinero', d: 'Cuentas e inversiones menos deudas', medio: true },
+  juntos: { n: 'Juntos', ic: 'users', g: 'juntos', d: 'Lo que debes y te deben, por persona', varias: true, opc: 'grupo', hay: () => !!(S.grupos || []).length },
+  cuentas: { n: 'Cuentas', ic: 'bank', g: 'dinero', d: 'Tus cuentas con su saldo, o solo una', medio: true, varias: true, opc: 'cuenta', hay: () => !!cuentasCfg().length },
+  deuda: { n: 'Una deuda', ic: 'deuda', g: 'dinero', d: 'Cuánto queda y lo pagado', medio: true, varias: true, opc: 'deuda', hay: () => !!iwDeudasCfg().length },
+  ultimos: { n: 'Últimos movimientos', ic: 'list', g: 'mov', d: 'Lo último que apuntaste' },
+  calgastos: { n: 'Calendario de gastos', ic: 'calRango', g: 'mov', d: 'Qué días gastas más este mes' },
+  semana: { n: 'Tu semana', ic: 'calendar', g: 'agenda', d: 'Tareas, planes y fijos de la semana' },
 };
-const IW_ORDEN = ['asivas', 'dias', 'gastos', 'presu', 'fijos', 'meta', 'tienes'];
-const IW_GRUPOS = [['todo', 'Todo'], ['mov', 'Movimientos'], ['agenda', 'Agenda'], ['dinero', 'Dinero']];
+const IW_ORDEN = ['asivas', 'dias', 'gastos', 'presu', 'calgastos', 'ultimos', 'semana', 'fijos', 'juntos', 'meta', 'tienes', 'cuentas', 'deuda'];
+const IW_GRUPOS = [['todo', 'Todo'], ['mov', 'Movimientos'], ['agenda', 'Agenda'], ['dinero', 'Dinero'], ['juntos', 'Juntos']];
 function iwDefecto() { return [{ t: 'asivas' }, { t: 'dias' }]; }
 function iwLista() { const l = cfg().inicioWidgets; return Array.isArray(l) ? l.filter((x) => x && IW_TIPOS[x.t]).slice(0, IW_MAX).map((x) => ({ t: x.t, o: x.o ? Object.assign({}, x.o) : undefined })) : iwDefecto(); }
-function iwMedio(x) { return !!IW_TIPOS[x.t].medio && !(x.t === 'meta' && x.o && x.o.key === '*'); }
+function iwMedio(x) { return !!IW_TIPOS[x.t].medio && !(x.t === 'meta' && x.o && x.o.key === '*') && !(x.t === 'cuentas' && !(x.o && x.o.id && x.o.id !== '*')); }
 // nombre corto de una pieza en la hoja «Editar Inicio»
 function iwNombre(x) {
   if (x.t === 'meta') { const k = x.o && x.o.key; if (k === '*') return 'Tus metas'; const r = k ? metaPorKey(k) : null; return r ? 'Meta · ' + r.nombre : 'Una meta'; }
+  if (x.t === 'juntos') { const g = x.o && x.o.gid ? grupoDe(x.o.gid) : null; return g ? 'Juntos · ' + nombreDestino(g) : 'Juntos'; }
+  if (x.t === 'cuentas') { const c = x.o && x.o.id && x.o.id !== '*' ? cuentasCfg().find((y) => y.id === x.o.id) : null; return c ? 'Cuenta · ' + c.nombre : 'Cuentas'; }
+  if (x.t === 'deuda') return x.o && x.o.nombre ? 'Deuda · ' + x.o.nombre : 'Una deuda';
   return IW_TIPOS[x.t].n;
 }
 // la caja de cada pieza: cabecera que abre su pantalla completa y el contenido
@@ -4422,6 +4431,12 @@ function iwPiezaHtml(x, i) {
     if (x.t === 'fijos') return iwFijosHtml();
     if (x.t === 'meta') return iwMetaHtml(x, i);
     if (x.t === 'tienes') return iwTienesHtml();
+    if (x.t === 'juntos') return iwJuntosHtml(x, i);
+    if (x.t === 'cuentas') return iwCuentasHtml(x, i);
+    if (x.t === 'deuda') return iwDeudaHtml(x, i);
+    if (x.t === 'ultimos') return iwUltimosHtml();
+    if (x.t === 'calgastos') return iwCalGastosHtml();
+    if (x.t === 'semana') return iwSemanaHtml();
   } catch (e) { console.error(e); }
   return '';
 }
@@ -4457,22 +4472,124 @@ function iwEdHtml() {
 function iwCatHtml() {
   const F = FORM, L = F.lista, f = F.filtro || 'todo', lleno = L.length >= IW_MAX;
   const chips = '<div class="chips iw-cat-chips">' + IW_GRUPOS.map(([k, l]) => '<button type="button" class="chip' + (f === k ? ' active' : '') + '" ' + act('iwFiltro', k) + '>' + l + '</button>').join('') + '</div>';
-  const tiene = (t) => !IW_TIPOS[t].varias && L.some((x) => x.t === t), tarjetas = IW_ORDEN.filter((t) => f === 'todo' || IW_TIPOS[t].g === f).sort((a, b) => tiene(a) - tiene(b)).map((t) => { const T = IW_TIPOS[t], ya = !T.varias && L.some((x) => x.t === t);
-    let prev = ''; if (t !== 'dias' && t !== 'asivas') { const sv = S._ins; prev = iwPiezaHtml(t === 'meta' ? { t, o: { key: ((metasStats()[0] || objCompartidos('ahorro')[0] || {}).key) } } : { t }, -1); S._ins = sv; }
+  const tiene = (t) => !IW_TIPOS[t].varias && L.some((x) => x.t === t), tarjetas = IW_ORDEN.filter((t) => (f === 'todo' || IW_TIPOS[t].g === f) && (!IW_TIPOS[t].hay || IW_TIPOS[t].hay())).sort((a, b) => tiene(a) - tiene(b)).map((t) => { const T = IW_TIPOS[t], ya = !T.varias && L.some((x) => x.t === t);
+    let prev = ''; if (t !== 'dias' && t !== 'asivas') { const sv = S._ins; prev = iwPiezaHtml(iwEjemplo(t), -1); S._ins = sv; }
     return '<div class="iw-cat-t' + (ya || lleno ? ' ya' : ' tappable') + '" role="button" ' + (ya || lleno ? 'aria-disabled="true"' : 'tabindex="0" ' + act('iwAnadir', t)) + '>' +
       '<div class="iw-prev" aria-hidden="true">' + (prev ? '<div class="iw-prev-in">' + prev.replace(/data-click="[^"]*"/g, '').replace(/<button /g, '<span ').replace(/<\/button>/g, '</span>').replace(/<(\/?)section/g, '<$1div') + '</div>' : '<span class="iw-prev-ic">' + ic(T.ic) + '</span>') + '</div>' +
       '<span class="iw-cat-n"><b>' + escapeHtml(T.n) + '</b>' + (ya ? '<span class="iw-ya">' + ic('check') + ' Ya la tienes</span>' : '<span>' + escapeHtml(T.d) + '</span>') + '</span></div>'; }).join('');
   return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('iwVista', 'lista') + '>' + ic('chevL') + ' Volver</button><h2>Añadir a Inicio</h2>' + chips +
     (lleno ? '<div class="rec-hint">Ya tienes ' + IW_MAX + ' piezas: quita una para añadir otra.</div>' : '') + '<div class="iw-cat">' + tarjetas + '</div>';
 }
-// opciones de una pieza (de momento, qué meta)
+// un ejemplo de cada pieza para la vista previa del catálogo
+function iwEjemplo(t) {
+  if (t === 'meta') return { t, o: { key: ((metasStats()[0] || objCompartidos('ahorro')[0] || {}).key) } };
+  if (t === 'cuentas') return { t, o: { id: '*' } };
+  if (t === 'deuda') return { t, o: { nombre: (iwDeudasCfg()[0] || {}).nombre } };
+  return { t };
+}
+// opciones de una pieza: qué meta, qué grupo, qué cuenta o qué deuda
+function iwOpcObj(t, k) { return t === 'meta' ? { key: k } : t === 'juntos' ? { gid: k } : t === 'cuentas' ? { id: k } : { nombre: k }; }
 function iwOpcHtml() {
-  const F = FORM, x = F.i >= 0 ? F.lista[F.i] : { t: F.nuevo }, sel = x && x.o ? x.o.key : null;
-  let rs = []; try { rs = metasStats().concat(objCompartidos('ahorro')); } catch (e) { rs = []; }
-  const op = (k, t, d, icono) => '<button type="button" class="av-op' + (sel === k ? ' on' : '') + '" role="radio" aria-checked="' + (sel === k) + '" ' + act('iwOpcElegir', k) + '><span class="av-op-ic">' + icono + '</span><span class="av-op-t"><b>' + escapeHtml(t) + '</b><span>' + escapeHtml(d) + '</span></span><span class="av-radio"></span></button>';
-  return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('iwVista', F.i >= 0 ? 'lista' : 'cat') + '>' + ic('chevL') + ' Volver</button><h2>¿Qué meta?</h2>' +
-    (rs.length ? op('*', 'Tus metas', 'Hasta 4, a lo ancho', ic('flag')) + rs.map((r) => op(r.key, r.nombre, (r.pct == null ? '' : Math.round(r.pct) + ' %') + (r.compartida ? ' · compartida' : ''), ic(r.compartida ? 'users' : 'flag'))).join('')
-      : '<div class="card empty-mini">Aún no tienes metas. <button type="button" class="link" ' + act('metaNueva') + '>Crear una</button></div>');
+  const F = FORM, x = F.i >= 0 ? F.lista[F.i] : { t: F.nuevo }, t = x.t, o = x.o || {};
+  const op = (k, tt, d, icono, sel) => '<button type="button" class="av-op' + (sel ? ' on' : '') + '" role="radio" aria-checked="' + !!sel + '" ' + act('iwOpcElegir', k) + '><span class="av-op-ic">' + icono + '</span><span class="av-op-t"><b>' + escapeHtml(tt) + '</b><span>' + escapeHtml(d) + '</span></span><span class="av-radio"></span></button>';
+  const vacio = (txt, a, l) => '<div class="card empty-mini">' + txt + (a ? ' <button type="button" class="link" ' + a + '>' + l + '</button>' : '') + '</div>';
+  let tit, lista;
+  if (t === 'juntos') { tit = '¿Qué quieres ver?';
+    lista = op('', 'Todos tus grupos', 'Lo que debes y te deben con cada persona', ic('users'), F.i >= 0 && !o.gid) + (S.grupos || []).map((g) => op(g.id, nombreDestino(g), g.tipo === 'directo' ? 'Entre los dos' : (g.miembros || []).length + ' personas', ic('users'), o.gid === g.id)).join(''); }
+  else if (t === 'cuentas') { tit = '¿Qué cuentas?'; const cs = cuentasCfg();
+    lista = cs.length ? op('*', 'Todas tus cuentas', 'Las 3 con más saldo, a lo ancho', ic('bank'), o.id === '*') + cs.map((c) => op(c.id, c.nombre, saldoCuenta(c) == null ? 'Sin saldo' : money(saldoCuenta(c)), bancoFichaHtml(bancoDe(c)) || ic('bank'), o.id === c.id)).join('') : vacio('Aún no tienes cuentas.', act('openCuentas'), 'Añadir una'); }
+  else if (t === 'deuda') { tit = '¿Qué deuda?'; const ds = iwDeudasCfg();
+    lista = ds.length ? ds.map((d) => { const r = deudaStats(d); return op(d.nombre, d.nombre, r.pend > 0.004 ? 'Quedan ' + money(r.pend) : 'Saldada', d.emoji ? escapeHtml(d.emoji) : ic('deuda'), o.nombre === d.nombre); }).join('') : vacio('Aún no tienes deudas.'); }
+  else { tit = '¿Qué meta?'; let rs = []; try { rs = metasStats().concat(objCompartidos('ahorro')); } catch (e) { rs = []; }
+    lista = rs.length ? op('*', 'Tus metas', 'Hasta 4, a lo ancho', ic('flag'), o.key === '*') + rs.map((r) => op(r.key, r.nombre, (r.pct == null ? '' : Math.round(r.pct) + ' %') + (r.compartida ? ' · compartida' : ''), ic(r.compartida ? 'users' : 'flag'), o.key === r.key)).join('') : vacio('Aún no tienes metas.', act('metaNueva'), 'Crear una'); }
+  return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('iwVista', F.i >= 0 ? 'lista' : 'cat') + '>' + ic('chevL') + ' Volver</button><h2>' + tit + '</h2>' + lista;
+}
+/* ---- tanda 2: Juntos, Cuentas, Una deuda, Últimos movimientos, Calendario de gastos y Tu semana ---- */
+function iwGruposConComp() { return [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id)); }
+// lo que debes y te deben con cada persona (en todos tus grupos o en uno)
+function iwJuntosPersonas(gid) {
+  if (!gid) return juntosPersonas();
+  const yo = miUid(), mapa = {};
+  deudasDe(gid).forEach((d) => { if (d.de !== yo && d.a !== yo) return; const otro = d.de === yo ? d.a : d.de, x = mapa[otro] || (mapa[otro] = { uid: otro, nombre: nombreDe(gid, otro), neto: 0 }); x.neto = r2(x.neto + (d.de === yo ? -d.importe : d.importe)); });
+  return Object.values(mapa).filter((x) => Math.abs(x.neto) >= 0.005).sort((a, b) => Math.abs(b.neto) - Math.abs(a.neto));
+}
+function iwJuntosHtml(x, i) {
+  const gid = x.o && x.o.gid, g = gid ? grupoDe(gid) : null;
+  if (gid && !g) return iwCaja('juntos', 'Juntos', '', act('iwOpcAbrir', i), iwVacio('Este grupo ya no existe.', 'Elegir otro', act('iwOpcAbrir', i)));
+  const tit = g ? nombreDestino(g) : 'Juntos', a = g ? act('grupoVer', g.id) : act('goTab', 'juntos');
+  if (!(S.grupos || []).length) return iwCaja('juntos', tit, '', a, iwVacio('Aún no compartes gastos con nadie.', 'Ir a Juntos', act('goTab', 'juntos')));
+  const ps = iwJuntosPersonas(gid), debes = ps.filter((p) => p.neto < 0).reduce((s, p) => s - p.neto, 0), teDeben = ps.filter((p) => p.neto > 0).reduce((s, p) => s + p.neto, 0);
+  if (!ps.length) return iwCaja('juntos', tit, '', a, '<div class="iw-vacio iw-paz">' + ic('checkCircle') + '<span>Estás en paz' + (g ? ' en este grupo' : ' con todos') + '.</span></div>');
+  const max = Math.max(...ps.map((p) => Math.abs(p.neto)));
+  const circ = ps.slice(0, 4).map((p, j) => juntosCircHtml({ nombre: p.nombre, v: p.neto, cara: caraHtml(p.uid, p.nombre, 'mini'), a: act('personaVer', p.uid) }, max, j)).join('');
+  const linea = [debes > 0.004 ? '<span class="malo">Debes <b class="tnum">' + escapeHtml(moneyShort(debes)) + '</b></span>' : '', teDeben > 0.004 ? '<span class="bueno">Te deben <b class="tnum">' + escapeHtml(moneyShort(teDeben)) + '</b></span>' : ''].filter(Boolean).join('<i>·</i>');
+  return iwCaja('juntos', tit, ps.length > 4 ? ps.length + ' personas' : '', a, '<div class="iw-j-l">' + linea + '</div><div class="ins-circ iw-j-c">' + circ + '</div>');
+}
+function iwCuentasHtml(x, i) {
+  const cs = cuentasCfg(), id = x.o && x.o.id;
+  if (id && id !== '*') {
+    const c = cs.find((y) => y.id === id);
+    if (!c) return iwCaja('cuentas', 'Una cuenta', '', act('iwOpcAbrir', i), iwVacio('Esta cuenta ya no existe.', 'Elegir otra', act('iwOpcAbrir', i)), 'medio');
+    const v = saldoCuenta(c);
+    return '<section class="card iw iw-cuentas medio"><button type="button" class="iw-ti-main tappable" ' + act('cuentaVer', c.id) + '><span class="iw-cab-s">' + (bancoFichaHtml(bancoDe(c), 'iw-bco') || '<span class="iw-ic" style="background:' + colorCuenta(c) + '22;color:' + colorCuenta(c) + '">' + ic('bank') + '</span>') + '<b>' + escapeHtml(c.nombre) + '</b></span>' +
+      '<b class="iw-ti-v tnum' + (v != null && v < 0 ? ' neg' : '') + '">' + (v == null ? '—' : escapeHtml(moneyShort(v))) + '</b><span class="iw-ti-l">' + (v == null ? 'Pon el saldo' : 'Saldo hoy') + '</span></button></section>';
+  }
+  if (!cs.length) return iwCaja('cuentas', 'Cuentas', '', act('openCuentas'), iwVacio('Pon el saldo de tu banco.', 'Añadir cuenta', act('openCuentas')));
+  const conSaldo = cs.filter((c) => num(saldoCuenta(c)) > 0), tot = conSaldo.reduce((a, c) => a + num(saldoCuenta(c)), 0);
+  const barra = tot > 0 && conSaldo.length > 1 ? '<div class="dm3-reparto iw-reparto" aria-hidden="true">' + conSaldo.map((c) => '<i style="width:' + (num(saldoCuenta(c)) / tot * 100).toFixed(1) + '%;background:' + colorCuenta(c) + '"></i>').join('') + '</div>' : '';
+  const orden = cs.slice().sort((a, b) => num(saldoCuenta(b)) - num(saldoCuenta(a)));
+  const filas = orden.slice(0, 3).map((c) => { const v = saldoCuenta(c);
+    return '<button type="button" class="iw-cf tappable" ' + act('cuentaVer', c.id) + '>' + (bancoFichaHtml(bancoDe(c), 'iw-bco') || '<span class="iw-cf-pt" style="background:' + colorCuenta(c) + '"></span>') + '<span>' + escapeHtml(c.nombre) + '</span><b class="tnum' + (v != null && v < 0 ? ' neg' : '') + '">' + (v == null ? '—' : escapeHtml(moneyShort(v))) + '</b></button>'; }).join('');
+  return iwCaja('cuentas', 'Cuentas', cs.length > 1 ? 'Total ' + moneyShort(enTusCuentas()) : '', act('goTab', 'dinero'), barra + '<div class="iw-cfs">' + filas + '</div>' + (cs.length > 3 ? '<button type="button" class="link iw-mas" ' + act('goTab', 'dinero') + '>Ver las ' + cs.length + '</button>' : ''));
+}
+function iwDeudasCfg() { return (cfg().deudas || []).filter((d) => d && d.nombre); }
+function iwDeudaHtml(x, i) {
+  const n = x.o && x.o.nombre, d = n ? iwDeudasCfg().find((y) => y.nombre === n || (y.nombresAntes || []).indexOf(n) >= 0) : null;
+  if (!d) return iwCaja('deuda', 'Una deuda', '', act('iwOpcAbrir', i), iwVacio(n ? 'Esta deuda ya no existe.' : 'Elige qué deuda ver.', 'Elegir otra', act('iwOpcAbrir', i)), 'medio');
+  const r = deudaStats(d), pct = Math.max(0, Math.min(100, r.pct || 0));
+  return '<section class="card iw iw-deuda medio"><button type="button" class="iw-ti-main tappable" ' + act('deudaVer', d.nombre) + '><span class="iw-cab-s"><span class="iw-ic">' + (d.emoji ? '<span class="iw-emo">' + escapeHtml(d.emoji) + '</span>' : ic('deuda')) + '</span><b>' + escapeHtml(d.nombre) + '</b></span>' +
+    (r.pend > 0.004 ? '<span class="iw-ti-l">Quedan</span><b class="iw-ti-v tnum">' + escapeHtml(moneyShort(r.pend)) + '</b>' : '<b class="iw-ti-v tnum bueno">Saldada</b>') +
+    '<span class="iw-pbar deuda" aria-label="' + Math.round(pct) + ' % pagado"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="iw-ti-l">' + Math.round(pct) + ' % pagado</span></button></section>';
+}
+function iwUltimosHtml() {
+  const L = S.movimientos.filter((m) => m.fecha && m.fecha.slice(0, 10) <= todayISO()).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) || String(b.creado || b.id).localeCompare(String(a.creado || a.id))).slice(0, 3);
+  if (!L.length) return iwCaja('ultimos', 'Últimos movimientos', '', act('iwIrMovLista'), iwVacio('Aún no has apuntado nada.'));
+  const filas = L.map((m) => { const cc = m.tipo === 'Ingreso' ? 'var(--income)' : colorCat(m.categoria), v = moneySigned(m.importe, m.tipo);
+    return '<button type="button" class="iw-uf tappable" ' + act('openMovForm', m.id) + '><span class="iw-uf-ic" style="--cc:' + cc + '">' + ic(iconoCat(m.tipo, m.categoria, m.descripcion)) + '</span><span class="iw-ff-t"><b>' + escapeHtml(m.descripcion || m.categoria || m.tipo) + '</b><span>' + escapeHtml((m.descripcion && m.categoria ? m.categoria + ' · ' : '') + fmtDateShort(m.fecha.slice(0, 10)).toLowerCase()) + '</span></span>' +
+      '<b class="tnum' + (m.tipo === 'Ingreso' ? ' ing' : '') + '">' + escapeHtml(v) + '</b></button>'; }).join('');
+  return iwCaja('ultimos', 'Últimos movimientos', '', act('iwIrMovLista'), '<div class="iw-ffs">' + filas + '</div>');
+}
+// Calendario de gastos: el mes en cuadritos, más oscuros cuanto más gastaste
+function iwCalGastosHtml() {
+  const { y, m } = inicioYM(), r = rangoMes(y, m), hoy = todayISO(), dia = {};
+  movCalMovsTodas(y, m).forEach((x) => { if (x.tipo === 'Gasto' || x.tipo === 'Factura') { const f = x.fecha.slice(0, 10); dia[f] = (dia[f] || 0) + num(x.importe); } });
+  const max = Math.max(0, ...Object.values(dia));
+  const lunes = addDaysISO(r.desde, -dowMon(parseISO(r.desde))), fin = addDaysISO(r.hasta, 6 - dowMon(parseISO(r.hasta)));
+  let celdas = DIA_LETRA.map((l) => '<span class="iw-cg-dow">' + l + '</span>').join(''), sin = 0;
+  for (let f = lunes; f <= fin; f = addDaysISO(f, 1)) {
+    const fuera = f < r.desde || f > r.hasta, g = dia[f] || 0, fut = f > hoy;
+    if (!fuera && !fut && g <= 0.004) sin++;
+    const nivel = g > 0.004 && max > 0 ? Math.min(4, 1 + Math.floor(g / max * 3.999)) : 0;
+    celdas += fuera ? '<span class="iw-cg-d fuera"></span>' : '<button type="button" class="iw-cg-d n' + nivel + (f === hoy ? ' hoy' : '') + (fut ? ' fut' : '') + '" aria-label="' + escapeHtml(fmtDateShort(f) + (g > 0.004 ? ': ' + money(g) : ': sin gastos')) + '" ' + act('iwIrMovCal', f) + '></button>';
+  }
+  return iwCaja('calgastos', 'Calendario de gastos', MESES[m - 1], act('iwIrMovCal', ''), '<div class="iw-cg">' + celdas + '</div><div class="iw-cg-pie"><span>' + sin + (sin === 1 ? ' día' : ' días') + ' sin gastos</span><span class="iw-cg-ley">Menos<i class="n1"></i><i class="n2"></i><i class="n3"></i><i class="n4"></i>Más</span></div>');
+}
+function movCalMovsTodas(y, m) { const k = y + '-' + pad2(m); return movsEfectivos().filter((x) => x.fecha && mesDe(x.fecha) === k); }
+// Tu semana: 7 días con puntos de colores y la próxima cosa
+function iwSemanaHtml() {
+  const hoy = todayISO(), lunes = addDaysISO(hoy, -dowMon(parseISO(hoy))), dom = addDaysISO(lunes, 6);
+  const f0 = S.calFiltros; S.calFiltros = { tareas: true, facturas: true, hitos: true, movs: false };
+  let mapa; try { mapa = calEventos(lunes, addDaysISO(hoy, 14)); } finally { S.calFiltros = f0; }
+  let dias = '';
+  for (let f = lunes; f <= dom; f = addDaysISO(f, 1)) {
+    const d = parseISO(f), evs = (mapa[f] || []).filter((ev) => !ev.pagada), col = [];
+    evs.forEach((ev) => { const c = evColor(ev); if (col.indexOf(c) < 0) col.push(c); });
+    dias += '<button type="button" class="iw-sd' + (f === hoy ? ' hoy' : '') + (f < hoy ? ' pasado' : '') + '" aria-label="' + escapeHtml(DIAS_LARGO[dowMon(d)] + ' ' + d.getDate() + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' cosa' : ' cosas') : '')) + '" ' + act('iwIrAgendaDia', f) + '><span class="iw-sd-l">' + DIA_LETRA[dowMon(d)] + '</span><b class="tnum">' + d.getDate() + '</b><span class="pts">' + col.slice(0, 3).map((c) => '<i style="background:' + c + '"></i>').join('') + '</span></button>';
+  }
+  let prox = null; Object.keys(mapa).sort().some((iso) => { if (iso < hoy) return false; const ev = (mapa[iso] || []).find((e) => !e.pagada && !(e.k === 'tarea' && e.venc)); if (ev) prox = { iso, ev }; return !!ev; });
+  const cuando = (iso) => { const n = daysUntil(iso); return n === 0 ? 'Hoy' : n === 1 ? 'Mañana' : n < 7 ? DIAS_LARGO[dowMon(parseISO(iso))] : fmtDateShort(iso); };
+  const linea = prox ? '<button type="button" class="iw-s-prox tappable" ' + (prox.ev.click || act('iwIrAgendaDia', prox.iso)) + '><i style="background:' + evColor(prox.ev) + '"></i><span><b>' + escapeHtml(cuando(prox.iso)) + ':</b> ' + escapeHtml(prox.ev.titulo) + '</span></button>' : '<div class="iw-vacio"><span>Nada en las próximas dos semanas.</span></div>';
+  return iwCaja('semana', 'Tu semana', '', act('setInicioVista', 'calendario'), '<div class="iw-s">' + dias + '</div>' + linea);
 }
 async function iwGuardar() {
   const F = FORM; if (!F || F.kind !== 'iwEd') return;
@@ -9404,7 +9521,10 @@ const H = {
     F.lista.push({ t }); F.vista = 'lista'; F.aviso = ''; sentir('ok'); iwGuardar(); },
   iwOpcAbrir: ([i]) => { i = Number(i); const l = FORM && FORM.kind === 'iwEd' ? FORM.lista : iwLista(); if (!l[i]) return; const ab = FORM && FORM.kind === 'iwEd' && $('#sheetBackdrop');
     FORM = { kind: 'iwEd', vista: 'opc', lista: l, i, filtro: FORM && FORM.filtro }; if (ab) updateSheet(iwEdHtml()); else openSheet(iwEdHtml()); },
-  iwOpcElegir: ([k]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; if (F.i >= 0 && F.lista[F.i]) F.lista[F.i] = { t: F.lista[F.i].t, o: { key: k } }; else if (F.nuevo && F.lista.length < IW_MAX) F.lista.push({ t: F.nuevo, o: { key: k } }); F.vista = 'lista'; F.i = -1; F.nuevo = null; F.aviso = ''; sentir('ok'); iwGuardar(); },
+  iwOpcElegir: ([k]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; if (F.i >= 0 && F.lista[F.i]) F.lista[F.i] = { t: F.lista[F.i].t, o: iwOpcObj(F.lista[F.i].t, k) }; else if (F.nuevo && F.lista.length < IW_MAX) F.lista.push({ t: F.nuevo, o: iwOpcObj(F.nuevo, k) }); F.vista = 'lista'; F.i = -1; F.nuevo = null; F.aviso = ''; sentir('ok'); iwGuardar(); },
+  iwIrMovLista: () => { S.tab = 'movimientos'; S.movVista = 'lista'; S.movPeriodo = mesHoyClave(); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
+  iwIrMovCal: ([iso]) => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = mesClave(im.y, im.m); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S.movCalDia = iso || ''; S._entrando = true; render(); window.scrollTo(0, 0); },
+  iwIrAgendaDia: ([iso]) => { S.calFecha = iso || todayISO(); S.agendaSub = 'calendario'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
   iwReset: () => { const F = FORM; if (!F || F.kind !== 'iwEd') return; F.lista = iwDefecto(); F.aviso = ''; iwGuardar(); },
   asiVasGuardar: async () => { if (!FORM || FORM.kind !== 'asiVas') return; const v = FORM.v.slice(); closeSheet(); await saveConfig({ asiVas: v.every((x) => x === 'auto') ? null : v }); sentir('ok'); render(); toast('Listo: así verás tu «Así vas»'); },
   invAvisoVer: () => { saveConfig({ invAvisoVisto: isoSemana(todayISO()) }); H.irDinero(['inversiones']); },
