@@ -48,6 +48,9 @@ const comps = [{ id: 'k1', grupoId: 'g1', fecha: hace(3), tipo: 'Gasto', categor
   ok(/¿Qué quieres ver\?/.test(doc.body.textContent) && doc.querySelectorAll('.av-op').length === 3, 'Juntos: todos o un grupo');
   H.iwOpcElegir(['g2']); await sleep(10);
   ok(S.config.inicioWidgets[0].o.gid === 'g2' && /Viaje/.test(doc.querySelector('.iw-juntos').textContent) && doc.querySelectorAll('.iw-juntos .jv-c').length === 1, 'Juntos de un grupo: su nombre y sus personas');
+  H.closeSheet([]); await sleep(400); S.pendTodos = true; A.render(); await sleep(20);
+  ok(/Te deben 10/.test((doc.querySelector('.dias-lista') || {}).textContent || ''), 'con Juntos de un solo grupo, «Estos días» sigue diciendo lo de todos');
+  S.pendTodos = false;
   // grupo, cuenta o deuda borrados: aviso y elegir otro
   S.config = Object.assign({}, S.config, { inicioWidgets: [{ t: 'juntos', o: { gid: 'nada' } }, { t: 'cuentas', o: { id: 'nada' } }, { t: 'deuda', o: { nombre: 'Nada' } }] }); A.render(); await sleep(20);
   ok(/Este grupo ya no existe/.test(doc.body.textContent) && /Esta cuenta ya no existe/.test(doc.body.textContent) && /Esta deuda ya no existe/.test(doc.body.textContent), 'piezas de cosas borradas: avisan y no se quitan solas');

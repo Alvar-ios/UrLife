@@ -4311,7 +4311,7 @@ function estosDiasHtml(v2) {
   const filaHtml = (f) => '<div class="dia-fila' + (f.cls ? ' ' + f.cls : '') + '"><button type="button" class="dia-main" ' + (f.a || '') + '>' +
     (f.caras ? '<span class="dia-ic caras">' + f.caras + '</span>' : f.fecha ? fechaTile(f.fecha) : '<span class="dia-ic">' + ic(f.icono) + '</span>') + '<span class="dia-t"><b>' + f.t + '</b><span>' + f.d + '</span></span>' + (f.botones ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' +
     (f.botones ? '<span class="dia-btns">' + f.botones + '</span>' : '') + '</div>';
-  if (v2) { const ins = S._ins || [], conJuntos = ins.some((x) => x.k === 'juntos') || (inicioV3() && iwLista().some((x) => x.t === 'juntos')), pasada = (ins.find((x) => x.k === 'pasada' || x.k2 === 'pasada') || {}).cat; // lo que ya sale en «Así vas» no se repite
+  if (v2) { const ins = S._ins || [], conJuntos = ins.some((x) => x.k === 'juntos') || (inicioV3() && iwLista().some((x) => x.t === 'juntos' && !(x.o && x.o.gid))), pasada = (ins.find((x) => x.k === 'pasada' || x.k2 === 'pasada') || {}).cat; // lo que ya sale en «Así vas» no se repite
     for (let i = filas.length - 1; i >= 0; i--) if ((filas[i].cls === 'juntos' && conJuntos) || (filas[i].cls === 'warn' && pasada != null && filas[i].cat === pasada)) filas.splice(i, 1); }
   const CAP = v2 ? 2 : 3, todas = !!S.pendTodos, ver = todas ? filas : filas.slice(0, CAP);
   return '<div class="section-title dias-tit">Estos días <button class="link" ' + act('setInicioVista', 'tareas') + '>Agenda ' + ic('chevR') + '</button></div>' +
@@ -4477,14 +4477,14 @@ function iwEdHtml() {
 }
 function iwCatHtml() {
   const F = FORM, L = F.lista, f = F.filtro || 'todo', lleno = L.length >= IW_MAX;
-  const chips = '<div class="chips iw-cat-chips">' + IW_GRUPOS.map(([k, l]) => '<button type="button" class="chip' + (f === k ? ' active' : '') + '" ' + act('iwFiltro', k) + '>' + l + '</button>').join('') + '</div>';
+  const chips = '<div class="chips iw-cat-chips">' + IW_GRUPOS.filter(([k]) => k === 'todo' || IW_ORDEN.some((t) => IW_TIPOS[t].g === k && (!IW_TIPOS[t].hay || IW_TIPOS[t].hay()))).map(([k, l]) => '<button type="button" class="chip' + (f === k ? ' active' : '') + '" ' + act('iwFiltro', k) + '>' + l + '</button>').join('') + '</div>';
   const tiene = (t) => !IW_TIPOS[t].varias && L.some((x) => x.t === t), tarjetas = IW_ORDEN.filter((t) => (f === 'todo' || IW_TIPOS[t].g === f) && (!IW_TIPOS[t].hay || IW_TIPOS[t].hay())).sort((a, b) => tiene(a) - tiene(b)).map((t) => { const T = IW_TIPOS[t], ya = !T.varias && L.some((x) => x.t === t);
     let prev = ''; if (t !== 'dias' && t !== 'asivas') { const sv = S._ins; prev = iwPiezaHtml(iwEjemplo(t), -1); S._ins = sv; }
     return '<div class="iw-cat-t' + (ya || lleno ? ' ya' : ' tappable') + '" role="button" ' + (ya || lleno ? 'aria-disabled="true"' : 'tabindex="0" ' + act('iwAnadir', t)) + '>' +
       '<div class="iw-prev" aria-hidden="true">' + (prev ? '<div class="iw-prev-in">' + prev.replace(/data-click="[^"]*"/g, '').replace(/<button /g, '<span ').replace(/<\/button>/g, '</span>').replace(/<(\/?)section/g, '<$1div') + '</div>' : '<span class="iw-prev-ic">' + ic(T.ic) + '</span>') + '</div>' +
       '<span class="iw-cat-n"><b>' + escapeHtml(T.n) + '</b>' + (ya ? '<span class="iw-ya">' + ic('check') + ' Ya la tienes</span>' : '<span>' + escapeHtml(T.d) + '</span>') + '</span></div>'; }).join('');
   return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('iwVista', 'lista') + '>' + ic('chevL') + ' Volver</button><h2>Añadir a Inicio</h2>' + chips +
-    (lleno ? '<div class="rec-hint">Ya tienes ' + IW_MAX + ' piezas: quita una para añadir otra.</div>' : '') + '<div class="iw-cat">' + tarjetas + '</div>';
+    (lleno ? '<div class="rec-hint">Ya tienes ' + IW_MAX + ' piezas: quita una para añadir otra.</div>' : '') + '<div class="iw-cat">' + (tarjetas || '<div class="card empty-mini iw-cat-vacio">' + (f === 'juntos' ? 'Aún no compartes gastos con nadie.' : 'Aún no hay piezas para esto.') + '</div>') + '</div>';
 }
 // un ejemplo de cada pieza para la vista previa del catálogo
 function iwEjemplo(t) {
@@ -4649,8 +4649,9 @@ function iwInvObservar() {
 }
 async function iwGuardar() {
   const F = FORM; if (!F || F.kind !== 'iwEd') return;
-  F.lista = F.lista.slice(0, IW_MAX); render(); updateSheet(iwEdHtml());
-  await saveConfig({ inicioWidgets: F.lista.map((x) => (x.o ? { t: x.t, o: x.o } : { t: x.t })) });
+  F.lista = F.lista.slice(0, IW_MAX);
+  const job = saveConfig({ inicioWidgets: F.lista.map((x) => (x.o ? { t: x.t, o: x.o } : { t: x.t })) }); // primero se guarda (cambia la configuración en memoria) y luego se pinta
+  render(); updateSheet(iwEdHtml()); await job;
 }
 function renderMovResumen() {
   const p = movPerNorm(S.movPeriodo);
@@ -10822,10 +10823,10 @@ document.addEventListener('focusin', (e) => { const T = FORM && FORM.tec; if (T 
     if (a !== D.a) { D.a = a; sentir('tic'); }
     D.filas.forEach((f, j) => { if (f === D.fila) return; const s = D.i < a && j > D.i && j <= a ? -1 : D.i > a && j < D.i && j >= a ? 1 : 0; f.style.transform = s ? 'translateY(' + (s * D.alto) + 'px)' : ''; });
   });
-  const fin = () => {
+  const fin = (e) => {
     if (!D) return; const d = D; D = null;
     d.filas.forEach((f) => { f.style.transform = ''; }); d.fila.classList.remove('arrastra');
-    const F = FORM; if (!F || F.kind !== 'iwEd' || d.a === d.i) return;
+    const F = FORM; if (!F || F.kind !== 'iwEd' || d.a === d.i || (e && e.type === 'pointercancel')) return; // si el sistema corta el gesto, el orden se queda como estaba
     const x = F.lista.splice(d.i, 1)[0]; F.lista.splice(d.a, 0, x); sentir('ok'); iwGuardar();
   };
   document.addEventListener('pointerup', fin); document.addEventListener('pointercancel', fin);
