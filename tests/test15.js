@@ -34,7 +34,7 @@ const movs=[{id:'i1',tipo:'Ingreso',categoria:'Nómina',importe:1500,fecha:hoy},
  // Patrimonio con saldo del banco (ahora en Dinero)
  e.w.__APP__.H.goTab(['dinero']);await sleep(10);e.w.__APP__.H.patToggle([]);await sleep(5);
  ok(/Añadir saldo/.test(txt()),'patrimonio invita a añadir el saldo del banco');
- click(e,'openCuentas');await sleep(5);click(e,'cuentaAnadir');await sleep(5);
+ click(e,'openCuentas');await sleep(5);click(e,'cuentaAnadir');await sleep(5);e.w.__APP__.H.bancoElegir(['']);await sleep(5); // 25/10: primero «¿De qué banco es?» → «Otro, o sin banco»
  const ins=doc.querySelector('#fCuentaNombre');ins.value='Santander';ins.dispatchEvent(new e.w.Event('change',{bubbles:true}));await sleep(5);
  const ins2=doc.querySelector('#sheetHost .cuenta-ed input.amt');ins2.value='2500';ins2.dispatchEvent(new e.w.Event('change',{bubbles:true}));await sleep(5);
  click(e,'cuentasVolver');await sleep(5);click(e,'cuentasListo');await sleep(260);

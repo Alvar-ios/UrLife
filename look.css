@@ -1901,3 +1901,26 @@ html[data-look="nuevo"][data-theme="dark"] .fm.cristal .fm-t { color: #fff; text
 html[data-look="nuevo"] .fm.cristal .fm-t.g b { display: inline-block; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--paper-raised) 78%, transparent); color: color-mix(in srgb, var(--fc) 62%, var(--ink)); text-shadow: none; }
 html[data-look="nuevo"] .fm.cristal .fm-t.g { text-shadow: none; }
 html[data-look="nuevo"] .jv-obj .jv-obj-p { font-size: 13.5px; font-weight: 700; color: var(--text); }
+
+/* ---- Bancos: ficha con logo o con color + letras (25/10, docs/20) ---- */
+html[data-look="nuevo"] .bco-ficha { flex: none; width: 36px; height: 36px; border-radius: 11px; display: inline-grid; place-items: center; background: var(--bc); overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+html[data-look="nuevo"] .bco-ficha img { width: 62%; height: 62%; object-fit: contain; display: block; }
+html[data-look="nuevo"] .bco-ficha b { font: 800 14px/1 var(--font-body, Inter), sans-serif; letter-spacing: -.02em; }
+html[data-look="nuevo"] .bco-ficha.largo b { font-size: 11px; }
+@media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .bco-ficha { box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); } }
+html[data-look="nuevo"][data-theme="dark"] .bco-ficha { box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+html[data-look="nuevo"] .bco-ficha.aj { margin-right: 10px; }
+html[data-look="nuevo"] .bco-ficha.dm3 { width: 30px; height: 30px; border-radius: 9px; }
+html[data-look="nuevo"] .bco-ficha.dm3 b { font-size: 12px; }
+html[data-look="nuevo"] .bco-ficha.dm3.largo b { font-size: 9.5px; }
+html[data-look="nuevo"] .bco-ficha.h { width: 34px; height: 34px; }
+html[data-look="nuevo"] .bco-h2 { display: flex; align-items: center; gap: 10px; }
+html[data-look="nuevo"] .bco-campo { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--paper-raised); color: var(--text); font: inherit; font-weight: 600; text-align: left; }
+html[data-look="nuevo"] .bco-campo > span:not(.bco-ficha):not(.aj-ic) { flex: 1; }
+html[data-look="nuevo"] .bco-campo .aj-ic { margin: 0; }
+html[data-look="nuevo"] .bco-lista { padding: 4px 0; }
+html[data-look="nuevo"] .bco-fila { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text); font: inherit; font-size: 15px; text-align: left; }
+html[data-look="nuevo"] .bco-fila:last-child { border-bottom: 0; }
+html[data-look="nuevo"] .bco-fila > span:not(.bco-ficha) { flex: 1; }
+html[data-look="nuevo"] .bco-fila.on { font-weight: 700; }
+html[data-look="nuevo"] .bco-fila > .i { color: var(--accent); width: 18px; height: 18px; }
