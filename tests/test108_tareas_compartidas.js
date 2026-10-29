@@ -42,5 +42,18 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   ok(/Lo añadiste tú/.test(sh().textContent) && !/Lo añadió tú/.test(sh().textContent), '«Lo añadiste tú»');
   H.planVer(['c1']); await sleep(10);
   ok(!sh().querySelector('a.plan-recordar') && /Lo añadió Ana García/.test(sh().textContent), 'si te toca a ti, no hay «Recordárselo»');
+  // compartir con una persona sin «directo»: se crea al guardar
+  const creados = [], rpcs = [];
+  S.db.rpc = async (fn, p) => { rpcs.push([fn, p]); return fn === 'crear_directo' ? 'gD' : null; };
+  S.db.agenda.crear = async (o) => { creados.push(o); return Object.assign({ id: 'n1', creadoPor: 'uYo', createdAt: new Date().toISOString(), hechaEn: null }, o); };
+  H.closeSheet([]); await sleep(400); H.planNuevo([hoy]); await sleep(10); H.planTipo(['tarea']); await sleep(10);
+  ok(/Con/.test(sh().textContent) && /Solo yo/.test(sh().querySelector('.plan-con').textContent) && /Piso/.test(sh().querySelector('.plan-con').textContent) && /Bea/.test(sh().querySelector('.plan-con').textContent), 'la tarea de siempre tiene «Con»: Solo yo, grupos y personas');
+  sh().querySelector('#tNombre').value = 'Sacar al perro'; H.tfCon(['u:uB']); await sleep(10);
+  ok(/Nueva tarea compartida/.test(sh().textContent) && sh().querySelector('#pTitulo').value === 'Sacar al perro', 'al elegir a Bea pasa a «Nueva tarea compartida» con lo escrito');
+  ok(/Quien pueda/.test(sh().textContent) && /Tú/.test(sh().querySelector('.plan-quien').textContent) && /Bea/.test(sh().querySelector('.plan-quien').textContent), 'con una persona: Quien pueda · Tú · Bea');
+  H.planQuien(['uB']); await sleep(10);
+  ok(/Bea lo verá arriba en su Inicio/.test(sh().textContent), 'aviso de que Bea lo verá en su Inicio');
+  await H.planGuardar([]); await sleep(30);
+  ok(rpcs.some((r) => r[0] === 'crear_directo' && r[1].p_user === 'uB') && creados[0] && creados[0].grupoId === 'gD' && creados[0].asignadoA === 'uB' && creados[0].titulo === 'Sacar al perro', 'al guardar se crea vuestro espacio y la tarea va ahí, encargada a Bea');
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.log(String(err && err.stack || err)); process.exit(1); });
