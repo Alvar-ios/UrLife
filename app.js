@@ -4777,17 +4777,20 @@ function infCambioCats(k, ka) {
 }
 // el informe: piezas de texto, siempre en el mismo orden; las que no tienen nada que decir no salen
 function infDatos(clave) {
-  const P = infPeriodo(clave), k = P.k, A = infPeriodo(P.ant), ka = A.k, hayAnt = ka.movs.length > 0, gas = k.facturas + k.gastos, gasA = ka.facturas + ka.gastos, nombreAnt = A.nombre;
+  const P = infPeriodo(clave), k = P.k; let A = infPeriodo(P.ant);
+  if (P.tipo === 'anio' && P.enCurso) { const h = String(P.y - 1) + todayISO().slice(4), d0 = (P.y - 1) + '-01-01'; // lo que llevas de año: frente a lo mismo del año pasado, a estas alturas
+    A = Object.assign({}, A, { k: kpisDe(movsEfectivos().filter((x) => x.fecha && x.fecha.slice(0, 10) >= d0 && x.fecha.slice(0, 10) <= h)), nombre: 'lo mismo de ' + (P.y - 1) }); }
+  const ka = A.k, hayAnt = ka.movs.length > 0, gas = k.facturas + k.gastos, gasA = ka.facturas + ka.gastos, nombreAnt = A.nombre;
   const out = { P, vacio: !k.movs.length, titular: '', cifras: [], cambios: [], metas: [], previsto: null };
   if (out.vacio) { out.titular = 'En ' + P.nombre + ' no apuntaste nada.'; return out; }
   const bal = k.disponible, balA = ka.disponible, mas = (d) => m0(Math.abs(d)) + (d > 0 ? ' más' : ' menos');
-  if (P.tipo === 'semana' && gas < 0.5) out.titular = P.cerrado ? 'No gastaste nada esta semana.' : 'Esta semana aún no has gastado nada.';
+  if (P.tipo === 'semana' && gas < 0.5) out.titular = P.cerrado ? 'Esa semana no gastaste nada.' : 'Esta semana aún no has gastado nada.';
   else if (P.tipo === 'semana') out.titular = (P.cerrado ? 'Gastaste ' : 'Llevas gastados ') + m0(gas) + (hayAnt && Math.abs(gas - gasA) >= 1 ? ', ' + mas(gas - gasA) + ' que la semana anterior.' : ' esta semana.');
   else if (P.tipo === 'trimestre') out.titular = (P.cerrado ? 'El trimestre cerró con ' : 'El trimestre va con ') + conSigno(bal) + (bal >= 0 ? ' a tu favor' : '') + ': ' + P.meses.map((x) => MESES[x.m - 1].toLowerCase() + ' ' + conSigno(kpisMes(x.y, x.m).disponible)).join(', ') + '.';
   else if (P.tipo === 'anio' && P.enCurso) out.titular = bal >= 0 ? 'En lo que va de ' + P.y + ' te han sobrado ' + m0(bal) + '.' : 'En lo que va de ' + P.y + ' salió más de lo que entró: ' + m0(-bal) + '.';
   else if (P.tipo === 'anio') { const ms = P.meses.map((x) => kpisMes(x.y, x.m)).filter((x) => x.movs.length), fav = ms.filter((x) => x.disponible >= 0.005).length;
     out.titular = P.y + ' cerró con ' + conSigno(bal) + (bal >= 0 ? ' a tu favor' : '') + ': ' + fav + ' de ' + ms.length + (ms.length === 1 ? ' mes' : ' meses') + ' en positivo.'; }
-  else { const t = MESES[P.m - 1] + (P.cerrado ? ' cerró con ' : ' va con ') + conSigno(bal) + (bal >= 0.005 ? ' a tu favor' : bal <= -0.005 ? ' en negativo' : '');
+  else { const t = MESES[P.m - 1] + (P.cerrado ? ' cerró con ' : ' va con ') + conSigno(bal) + (bal >= 0.005 ? ' a tu favor' : '');
     out.titular = t + (hayAnt && P.cerrado ? (balA < 0 && bal >= 0 ? ', después de un ' + nombreAnt + ' en negativo.' : bal - balA >= 1 ? ', ' + m0(bal - balA) + ' más que ' + nombreAnt + '.' : balA - bal >= 1 ? ', ' + m0(balA - bal) + ' menos que ' + nombreAnt + '.' : ', como ' + nombreAnt + '.') : '.'); }
   if (!P.cerrado) out.aviso = (P.tipo === 'semana' ? 'La semana' : P.tipo === 'anio' ? 'El año' : P.tipo === 'trimestre' ? 'El trimestre' : 'El mes') + ' aún no ha terminado: cuenta lo apuntado hasta hoy.';
   const fila = (l, v, va, tipo) => ({ l, v, va: hayAnt ? va : null, tipo });
@@ -4808,7 +4811,7 @@ function infDatos(clave) {
   // metas y deudas: lo aportado o pagado en el periodo
   const dentro = (f) => f && f.slice(0, 10) >= P.desde && f.slice(0, 10) <= P.hasta;
   let rs = []; try { rs = metasStats().concat(objCompartidos('ahorro')); } catch (e) { rs = []; }
-  rs.forEach((r) => { const ap = ((r.b && r.b.piezas) || []).filter((x) => dentro(x.fecha)).reduce((a, x) => a + num(x.importe), 0);
+  const yo = miUid(); rs.forEach((r) => { const ap = ((r.b && r.b.piezas) || []).filter((x) => dentro(x.fecha) && (!r.compartida || x.quien === yo)).reduce((a, x) => a + num(x.importe), 0); // en las compartidas, solo lo tuyo
     if (ap > 0.004) out.metas.push(['flag', r.nombre + ': aportaste ' + m0(ap) + (r.obj > 0 ? ' · llevas ' + m0(Math.max(0, r.valor)) + ' de ' + m0(r.obj) : '') + (r.conseguida ? ' · ¡conseguida!' : r.llegada && !r.conseguida ? ' · a este ritmo, en ' + mesLargo(r.llegada) : '') + '.']); });
   (cfg().deudas || []).filter((d) => d && d.nombre).forEach((d) => { const pg = movsDeuda(d).filter((x) => dentro(x.fecha)).reduce((a, x) => a + num(x.importe), 0);
     if (pg > 0.004) { const r = deudaStats(d); out.metas.push(['deuda', d.nombre + ': pagaste ' + m0(pg) + (r.pend > 0.004 ? ' · quedan ' + m0(r.pend) : ' · ¡saldada!') + '.']); } });
@@ -4824,7 +4827,7 @@ function infHtml(clave) {
   const sec = (t, icono, cuerpo) => '<div class="inf-sec"><div class="inf-sec-t">' + ic(icono) + t + '</div>' + cuerpo + '</div>';
   const lin = (L) => L.map(([i, t]) => '<div class="bal-lin"><span class="bal-lin-ic">' + ic(i) + '</span><span>' + escapeHtml(t) + '</span></div>').join('');
   const cifras = D.cifras.map((c) => '<div class="inf-cif ' + c.tipo + '"><span>' + c.l + '</span><b class="tnum">' + escapeHtml(c.tipo === 'bal' ? conSigno(c.v) : m0(c.v)) + '</b><small>' + (c.va == null ? '' : Math.abs(c.v - c.va) < 0.5 ? 'igual que en ' + escapeHtml(D.antNombre) : 'en ' + escapeHtml(D.antNombre) + ', ' + escapeHtml(c.tipo === 'bal' ? conSigno(c.va) : m0(c.va))) + '</small></div>').join('');
-  const per = P.tipo === 'mes' ? P.clave : P.tipo === 'anio' ? 'y:' + P.y : P.tipo === 'trimestre' ? 'm:' + mesClave(P.y, P.meses[2].m).slice(2) : 'm:' + mesDe(P.hasta > todayISO() ? todayISO() : P.hasta);
+  const per = P.tipo === 'mes' ? P.clave : P.tipo === 'anio' || P.tipo === 'trimestre' ? 'y:' + P.y : 'm:' + mesDe(P.hasta > todayISO() ? todayISO() : P.hasta);
   return '<div class="handle"></div><div class="inf-cab"><h2>Informes</h2><button type="button" class="icon-btn" aria-label="Ajustes de los informes" ' + act('infAjustes') + '>' + ic('sliders') + '</button></div>' + tabs + nav +
     '<div class="card inf-tit"><span class="inf-k">En una frase</span><p>' + escapeHtml(D.titular) + '</p>' + (D.aviso ? '<span class="inf-aviso">' + escapeHtml(D.aviso) + '</span>' : '') + '</div>' +
     (D.vacio ? '' : sec('Las cifras', 'chart', '<div class="inf-cifs">' + cifras + '</div>') + (D.cambios.length ? sec('Lo que cambió', 'comparar', lin(D.cambios)) : '') + (D.metas.length ? sec('Tus metas y deudas', 'flag', lin(D.metas)) : '') +
@@ -4834,7 +4837,7 @@ function infHtml(clave) {
 }
 function infAjustesHtml() {
   const C = infCfg(), pend = infPendientes(), vistos = C.vistos;
-  const tog = ([t, , l]) => '<label class="inf-tog"><span><b>' + l + '</b><small>' + ({ semana: 'Cada lunes, la semana anterior', mes: 'Cuando acaba tu mes', trimestre: 'Cada tres meses', anio: 'Cuando acaba el año' })[t] + '</small></span><input type="checkbox" ' + (C.on[t] ? 'checked ' : '') + onChange('infOn', t) + '></label>';
+  const tog = ([t, , l]) => '<div class="inf-tog"><span><b>' + l + '</b><small>' + ({ semana: 'Cada lunes, la semana anterior', mes: 'Cuando acaba tu mes', trimestre: 'Cada tres meses', anio: 'Cuando acaba el año' })[t] + '</small></span><button type="button" class="switch' + (C.on[t] ? ' on' : '') + '" role="switch" aria-checked="' + !!C.on[t] + '" aria-label="' + l + '" ' + act('infOn', t) + '></button></div>';
   const ahora = [['w:' + lunesDe(todayISO()), 'Esta semana'], ['m:' + mesDe(todayISO()), 'Este mes'], ['a:' + mesActual().y, 'Lo que llevas de año']];
   const ant = INF_TIPOS.filter(([t]) => C.on[t]).map(([t]) => infUltimo(t)).filter((c) => infPeriodo(c).k.movs.length);
   return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('infVer', (FORM && FORM.clave) || infUltimo('mes')) + '>' + ic('chevL') + ' Informes</button><h2>Tus informes</h2>' +
@@ -4845,8 +4848,8 @@ function infAjustesHtml() {
 }
 // informes cerrados y sin ver de los tipos activados (de las últimas 5 semanas)
 function infPendientes() {
-  const C = infCfg(), lim = addDaysISO(todayISO(), -35);
-  return INF_TIPOS.filter(([t]) => C.on[t]).map(([t]) => infUltimo(t)).filter((c) => { const P = infPeriodo(c); return P.cerrado && !C.vistos[c] && P.hasta >= lim && P.k.movs.length; })
+  const C = infCfg(), lim = addDaysISO(todayISO(), -35), limA = addDaysISO(todayISO(), -90); // el anual se avisa durante 3 meses
+  return INF_TIPOS.filter(([t]) => C.on[t]).map(([t]) => infUltimo(t)).filter((c) => { const P = infPeriodo(c); return P.cerrado && !C.vistos[c] && P.hasta >= (P.tipo === 'anio' ? limA : lim) && P.k.movs.length; })
     .sort((a, b) => infPeriodo(b).hasta.localeCompare(infPeriodo(a).hasta) || 'atmw'.indexOf(a[0]) - 'atmw'.indexOf(b[0]));
 }
 // el aviso en Inicio: siempre que haya un informe nuevo (un solo aviso a la vez, después de la invitación de Juntos)
@@ -9794,7 +9797,7 @@ const H = {
   infVer: ([c]) => { if (!c) return; FORM = { kind: 'informe', clave: c }; if ($('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando) updateSheet(infHtml(c)); else openSheet(infHtml(c)); if (infPeriodo(c).cerrado) { infMarcarVisto(c); if (S.tab === 'inicio') render(); } },
   infTipo: ([t]) => H.infVer([infUltimo(t)]),
   infAjustes: () => { if (!FORM) return; FORM.kind = FORM.kind === 'informe' ? 'informe' : FORM.kind; updateSheet(infAjustesHtml()); },
-  infOn: ([t], el) => { const C = cfg().informes || {}; saveConfig({ informes: Object.assign({}, C, { on: Object.assign({}, infCfg().on, { [t]: !!el.checked }) }) }); sentir('tic'); updateSheet(infAjustesHtml()); render(); },
+  infOn: ([t], el) => { const C = cfg().informes || {}, v = el && typeof el.checked === 'boolean' ? el.checked : !infCfg().on[t]; saveConfig({ informes: Object.assign({}, C, { on: Object.assign({}, infCfg().on, { [t]: v }) }) }); sentir('tic'); updateSheet(infAjustesHtml()); render(); },
   infDescartar: ([c]) => { infMarcarVisto(c); sentir('tic'); render(); },
   infMovs: ([per]) => { closeSheet(); S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = per; S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
   iwReset: () => { const F = FORM; if (!F || F.kind !== 'iwEd') return; F.lista = iwDefecto(); F.aviso = ''; iwGuardar(); },
