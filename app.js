@@ -1825,7 +1825,7 @@ function openMovForm(id, pre) {
   const tec = tecladoOn(), impIni = ex ? ex.importe : pre.importe, corta = tec && !ex && !comp && !compDest && (tipoIni === 'Gasto' || tipoIni === 'Ingreso');
   if (tec) FORM.tec = { on: !ex, txt: tecTxtDe(impIni), neg: tecNum(impIni) < 0, reemplazar: !!tecTxtDe(impIni), corta, tecla: corta ? 'guardar' : 'hecho' };
   const fechaIni = ex ? ex.fecha : (pre.fecha || todayISO()), catIni = ex ? ex.categoria : (pre.categoria || '');
-  const antesChip = compararOn() && !comp && !compDest ? '<button type="button" class="tec-antes" ' + act('tecVersion', tec ? 1 : 0) + '>' + ic('swap') + (tec ? 'Antes' : 'Teclado nuevo') + '</button>' : '';
+  const antesChip = compararOn() && !VERSIONES.importe.cerrada && !comp && !compDest ? '<button type="button" class="tec-antes" ' + act('tecVersion', tec ? 1 : 0) + '>' + ic('swap') + (tec ? 'Antes' : 'Teclado nuevo') + '</button>' : '';
   openSheet(
     '<div class="handle"></div><div class="tec-cab"><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' + antesChip + '</div>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
@@ -3780,8 +3780,8 @@ function renderTuV2() {
   const nombre = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido());
   const mas = [it('openMoneda', [], 'moneda', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
     lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'arrowUp', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
-    it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar'),
-    it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')];
+    it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar')].concat(Object.keys(VERSIONES).every((k) => VERSIONES[k].cerrada) ? [] : [
+    it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')]);
   return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t"><span class="t-n">' + escapeHtml(nombre) + '</span>' + badge('perfil') + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
       '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar</button></div>' +
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
@@ -5190,7 +5190,7 @@ function formaHtml(k, pct, texto, tam, o) {
     if (p > 0 && p < 100 && Math.abs(y - ly) < 12) ly = sobre ? Math.min(F.bot - 8, y + 12) : Math.max(F.top + 8, y - 12);
   } else if (p > 0 && p < 100 && Math.abs(y - ly) < 11) ly = y > ly ? Math.max(F.top + 9, y - 13) : Math.min(F.bot - 9, y + 13);
   const txt = texto ? '<span class="fm-t' + (o.grande ? ' g' : '') + (sobre ? ' sobre' : '') + '" style="top:' + ((ly + 2) / 104 * tam).toFixed(0) + 'px">' + texto + '</span>' : '';
-  return '<span class="fm' + (cristal ? ' cristal' + (o.color === 'ambar' ? ' amb' : '') : '') + '" style="width:' + tam + 'px;height:' + tam + 'px' + (cristal ? ';' + metaColorStyle(o.color) : '') + '">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
+  return '<span class="fm' + (cristal ? ' cristal' + (o.color === 'ambar' ? ' amb' : o.color === 'turquesa' || o.color === 'cielo' ? ' clara' : '') : '') + '" style="width:' + tam + 'px;height:' + tam + 'px' + (cristal ? ';' + metaColorStyle(o.color) : '') + '">' + svg + txt + (hecha && o.check !== false ? '<span class="fm-ok">' + ic('check') + '</span>' : '') + (o.users ? '<span class="fm-us">' + ic('users') + '</span>' : '') + '</span>';
 }
 // «Su forma»: las 12 en pequeño; la sugerida por el nombre lleva una marca. Elegida = null → la del nombre
 function formaElegirHtml(elegida, nombre, accion) {
@@ -5425,11 +5425,12 @@ function invCorto(id, nombre) {
 }
 function invCortoAuto(nombre) {
   let pal = String(nombre || '').replace(/[()]/g, ' ').trim().split(/\s+/).filter((w) => w && !INV_RELLENO.test(w));
-  if (!pal.length) pal = String(nombre || '?').trim().split(/\s+/);
+  if (!pal.length) pal = (String(nombre || '').trim() || '?').split(/\s+/);
   let t = pal.join(' ');
   if (t.length > 16) { pal = pal.filter((w) => !/^(msci|ftse|s&p|stoxx|ibex|nasdaq)$/i.test(w)); t = pal.join(' '); }
   if (t.length > 16) t = pal.slice(0, 2).join(' ');
-  return t.length > 16 ? t.slice(0, 15) + '…' : t;
+  const ch = Array.from(t); // por letras enteras: un emoji no se parte
+  return ch.length > 16 ? ch.slice(0, 15).join('').trim() + '…' : t || '?';
 }
 function invLineasChipsHtml(movs, series, multi, apila) {
   const as = invActivosConSerie(movs, series); if (as.length < 1) return '';
@@ -10213,7 +10214,7 @@ const H = {
   setGeneralSub: ([g]) => { S.generalSub = g === 'anual' ? 'anual' : 'mensual'; S.tab = 'inicio'; render(); },
   verActivo: ([nombre]) => { FORM = { kind: 'activo', nombre }; if ($('#sheetBackdrop')) updateSheet(activoVerHtml(nombre)); else openSheet(activoVerHtml(nombre)); }, // hoja del activo (24/10)
   activoEnMovs: ([nombre]) => { closeSheet(); irMovs({ tipo: 'Inversión', periodo: 'todo', cat: nombre }); }, // la lista de tus compras de ese activo
-  activoApodo: ([id], el) => { if (!id) return; const v = String(el.value || '').trim().slice(0, 18), ap = Object.assign({}, cfg().apodosActivo || {}); if (v) ap[id] = v; else delete ap[id]; saveConfig({ apodosActivo: ap }); toast(v ? 'En las gráficas saldrá «' + v + '»' : 'Vuelve el nombre automático'); render(); }, // solo cambia cómo se ve; los movimientos no se tocan
+  activoApodo: ([id], el) => { if (!id) return; const v = Array.from(String(el.value || '').trim()).slice(0, 18).join('').trim(), ap = Object.assign({}, cfg().apodosActivo || {}); if (v) ap[id] = v; else delete ap[id]; saveConfig({ apodosActivo: ap }); toast(v ? 'En las gráficas saldrá «' + v + '»' : 'Vuelve el nombre automático'); render(); }, // solo cambia cómo se ve; los movimientos no se tocan
   activoModo: ([k]) => { if (!FORM || FORM.kind !== 'activo') return; S.activoModo = k === 'rentab' ? 'rentab' : 'valor'; sentir('tic'); updateSheet(activoVerHtml(FORM.nombre)); },
   activoPer: ([k]) => { if (!FORM || FORM.kind !== 'activo') return; S.activoPer = k; sentir('tic'); updateSheet(activoVerHtml(FORM.nombre)); },
   activoMov: ([id]) => openMovForm(id),

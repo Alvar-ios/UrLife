@@ -38,7 +38,7 @@ const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) =
       ok(!fab(), 'Agenda: sin «Antes» (elegida el 29/10)');
       A.S.inicioVista = ''; A.render(); await sleep(10);
       H.crearIr(['gasto']); await sleep(20);
-      ok(!!doc.querySelector('#sheetHost .tec-antes'), 'Apuntar importe sigue con «Antes»');
+      ok(!doc.querySelector('#sheetHost .tec-antes'), 'Apuntar importe ya elegido (29/10): sin «Antes»');
       H.closeSheet([]); await sleep(300);
     }
   }

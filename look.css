@@ -1937,6 +1937,9 @@ html[data-look="nuevo"] .fm.cristal .fm-t, html[data-look="nuevo"] .fm.cristal .
 html[data-look="nuevo"] .fm.cristal .fm-t.g b { background: none; padding: 0; color: inherit; font-size: 21px; }
 html[data-look="nuevo"] .fm.cristal .fm-t.sobre { color: #fff; }
 html[data-look="nuevo"] .fm.cristal.amb .fm-t.sobre { color: #1A1300; }
+/* turquesa y cielo en oscuro: el líquido es claro, el % va en oscuro (contraste, Calidad 29/10) */
+@media (prefers-color-scheme: dark) { html[data-look="nuevo"]:not([data-theme="light"]) .fm.cristal.clara .fm-t.sobre { color: #04201D; text-shadow: none; } }
+html[data-look="nuevo"][data-theme="dark"] .fm.cristal.clara .fm-t.sobre { color: #04201D; text-shadow: none; }
 
 /* ---- Inversiones, segunda vuelta (29/10, docs/22) ---- */
 html[data-look="nuevo"] .tr-chart { --fr-op: .22; }
