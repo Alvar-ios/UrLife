@@ -6327,8 +6327,8 @@ function compGastoChip(y, m) {
 /* ---- Bancos (25/10, docs/20): elegir el banco de la cuenta; ficha con su logo (guardado en la app, en logos/) o con su color y letras.
    Solo se guarda la clave (cfg().cuentas[i].banco); nunca se pide nada a un servicio de fuera. Los logos son marcas de cada banco. ---- */
 const BANCOS = [
-  ['bbva', 'BBVA', '#00278E', 'BBVA', 'banco', 1], ['santander', 'Santander', '#EC0000', 'S', 'banco', 1, 'banco santander'], ['caixabank', 'CaixaBank', '#007EAE', 'CX', 'banco', 1, 'la caixa caixa', 'caixabank.svg'],
-  ['ing', 'ING', '#FF6200', 'ING', 'banco', 1, 'ing direct cuenta naranja'], ['sabadell', 'Banco Sabadell', '#016DFF', 'BS', 'banco', 1], ['bankinter', 'Bankinter', '#F25E00', 'bk', 'banco', 1],
+  ['bbva', 'BBVA', '#00278E', 'BBVA', 'banco', 1], ['santander', 'Santander', '#EC0000', 'S', 'banco', 1, 'banco santander,santander'], ['caixabank', 'CaixaBank', '#007EAE', 'CX', 'banco', 1, 'la caixa', 'caixabank.svg'],
+  ['ing', 'ING', '#FF6200', 'ING', 'banco', 1, 'ing direct,cuenta naranja'], ['sabadell', 'Banco Sabadell', '#016DFF', 'BS', 'banco', 1], ['bankinter', 'Bankinter', '#F25E00', 'bk', 'banco', 1],
   ['unicaja', 'Unicaja', '#2BD124', 'U', 'banco', 1, 'liberbank'], ['openbank', 'Openbank', '#FF014A', 'OB', 'banco', 1], ['imagin', 'imagin', '#09F3CF', 'im', 'banco', 0],
   ['abanca', 'Abanca', '#5984D6', 'A', 'banco', 0], ['kutxabank', 'Kutxabank', '#E2001A', 'K', 'banco', 0], ['ibercaja', 'Ibercaja', '#003C7E', 'IC', 'banco', 0],
   ['cajamar', 'Cajamar', '#007A3D', 'CM', 'banco', 0], ['evo', 'EVO Banco', '#1A1A1A', 'EVO', 'banco', 0], ['laboral', 'Laboral Kutxa', '#E30613', 'LK', 'banco', 0],
@@ -6341,9 +6341,15 @@ const BANCOS = [
   ['coinbase', 'Coinbase', '#0052FF', 'C', 'broker', 0], ['binance', 'Binance', '#1E2026', 'BN', 'broker', 0, '', 'binance.svg'],
 ].map(([k, n, color, letras, tipo, top, alias, logo]) => ({ k, n, color, letras, tipo, top: !!top, alias: alias || '', logo: logo || '' }));
 function bancoDe(c) { return c && c.banco ? BANCOS.find((b) => b.k === c.banco) || null : null; }
-function bancoSugerido(nombre) { const t = normDesc(nombre || ''); if (!t) return null; return BANCOS.find((b) => { const ks = [b.n, b.k].concat(b.alias ? b.alias.split(' ') : []).map((x) => normDesc(x)).filter((x) => x.length >= 2); return ks.some((x) => (' ' + t + ' ').indexOf(' ' + x + ' ') >= 0); }) || null; }
+// sugerencia por el nombre de la cuenta: frases enteras (el nombre del banco o un alias), gana la más larga; nunca por palabras sueltas como «cuenta» o «banco»
+function bancoSugerido(nombre) {
+  const t = ' ' + normDesc(nombre || '') + ' '; if (!t.trim()) return null;
+  let mejor = null, largo = 0;
+  BANCOS.forEach((b) => { [b.n, b.k].concat(b.alias ? b.alias.split(',') : []).map((x) => normDesc(x).trim()).filter((x) => x.length >= 3 || x === b.k).forEach((x) => { if (x && t.indexOf(' ' + x + ' ') >= 0 && x.length > largo) { mejor = b; largo = x.length; } }); });
+  return mejor;
+}
 // contraste: letras blancas o casi negras según el color de fondo
-function bancoTinta(hex) { const h = hex.replace('#', ''), r = parseInt(h.slice(0, 2), 16) / 255, g = parseInt(h.slice(2, 4), 16) / 255, b = parseInt(h.slice(4, 6), 16) / 255, f = (x) => (x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)), L = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); return L > 0.4 ? '#14141A' : '#FFFFFF'; }
+function bancoTinta(hex) { const h = hex.replace('#', ''), r = parseInt(h.slice(0, 2), 16) / 255, g = parseInt(h.slice(2, 4), 16) / 255, b = parseInt(h.slice(4, 6), 16) / 255, f = (x) => (x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)), L = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); return L > 0.18 ? '#14141A' : '#FFFFFF'; } // con el que más contraste
 // la ficha del banco (o null si la cuenta no tiene banco): logo guardado en la app o color + letras
 function bancoFichaHtml(b, cls) {
   if (!b) return null;
@@ -6356,7 +6362,7 @@ function bancoElegirHtml() {
   const fila = (b) => '<button type="button" class="bco-fila tappable' + (c.banco === b.k ? ' on' : '') + '" ' + act('bancoElegir', b.k) + '>' + bancoFichaHtml(b) + '<span>' + escapeHtml(b.n) + '</span>' + (c.banco === b.k ? ic('check') : '') + '</button>';
   const grupo = (t, arr) => (arr.length ? '<div class="section-title">' + t + '</div><div class="card bco-lista">' + arr.map(fila).join('') + '</div>' : '');
   const vis = BANCOS.filter(coincide);
-  return '<div class="handle"></div><h2>¿De qué banco es?</h2>' +
+  return '<div class="handle"></div><button class="link volver" ' + act('bancoVolver') + '>' + ic('chevL') + (F.nueva ? ' Cuentas y saldos' : ' Volver') + '</button><h2>¿De qué banco es?</h2>' +
     '<div class="field"><input type="search" id="bcoQ" placeholder="Busca tu banco o bróker" autocomplete="off" value="' + escapeHtml(F.q || '') + '" ' + onInput('bancoBuscar') + '></div><div id="bcoRes">' +
     (q ? grupo('Resultados', vis) || '<div class="rec-hint">No lo tenemos. Elige «Otro, o sin banco» y ponle tú el nombre.</div>' : grupo('Los más usados', vis.filter((b) => b.tipo === 'banco' && b.top)) + grupo('Brókers e inversión', vis.filter((b) => b.tipo === 'broker')) + grupo('Otros bancos', vis.filter((b) => b.tipo === 'banco' && !b.top))) + '</div>' +
     '<button type="button" class="btn ghost block" style="margin-top:12px;" ' + act('bancoElegir', '') + '>' + ic('wallet') + ' Otro, o sin banco</button>' +
@@ -9969,13 +9975,17 @@ const H = {
   presTodas: () => { S.presTodas = !S.presTodas; render(); },
   setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = 120; render(); },
   openCuentas: () => { verBadge('patrimonio'); verBadge('cuentas'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
-  cuentaAnadir: () => { const cs = (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]); saveConfig({ cuentas: cs }); FORM = { kind: 'banco', i: cs.length - 1, nueva: true, q: '' }; updateSheet(bancoElegirHtml()); },
+  cuentaAnadir: () => { FORM = { kind: 'banco', i: -1, nueva: true, q: '' }; updateSheet(bancoElegirHtml()); }, // la cuenta se crea al elegir (cerrar aquí no deja una cuenta vacía)
+  bancoVolver: () => { const F = FORM; if (F && F.kind === 'banco' && !F.nueva && F.i >= 0) { FORM = { kind: 'cuentaEd', i: F.i }; updateSheet(cuentaEdHtml(F.i)); } else { FORM = { kind: 'cuentas' }; updateSheet(cuentasHtml()); } },
   bancoAbrir: ([i]) => { FORM = { kind: 'banco', i: Number(i), q: '' }; updateSheet(bancoElegirHtml()); },
   bancoBuscar: (_a, el) => { if (!FORM || FORM.kind !== 'banco') return; FORM.q = el.value; const t = document.createElement('div'); t.innerHTML = bancoElegirHtml(); const r = $('#bcoRes'), n = t.querySelector('#bcoRes'); if (r && n) r.innerHTML = n.innerHTML; },
   bancoSugerir: ([i, k]) => H.bancoElegir([k], null, Number(i)),
   bancoElegir: ([k], _el, iFijo) => {
-    const i = iFijo != null ? iFijo : FORM && FORM.kind === 'banco' ? FORM.i : -1, nueva = !!(FORM && FORM.nueva); if (i < 0) return;
-    const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[i] || {}), b = BANCOS.find((x) => x.k === k);
+    const nueva = iFijo == null && !!(FORM && FORM.kind === 'banco' && FORM.nueva), cs = (cfg().cuentas || []).slice();
+    let i = iFijo != null ? iFijo : FORM && FORM.kind === 'banco' ? FORM.i : -1;
+    if (nueva) { cs.push({ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }); i = cs.length - 1; }
+    if (i < 0) return;
+    const c = Object.assign({}, cs[i] || {}), b = BANCOS.find((x) => x.k === k);
     if (b) { c.banco = b.k; if (!c.nombre) c.nombre = b.n; if (nueva && b.tipo === 'broker') c.tipo = 'broker'; } else delete c.banco;
     cs[i] = c; saveConfig({ cuentas: cs }); sentir('tic');
     FORM = { kind: 'cuentaEd', i }; updateSheet(cuentaEdHtml(i)); render();
