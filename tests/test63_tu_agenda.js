@@ -42,7 +42,7 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   bus.value = ''; H.tuFiltrar([], bus);
   ok(e.doc.querySelector('.tu-mas').style.display === 'none', 'buscador vacío: «Más ajustes» vuelve a plegarse');
   H.tuMasToggle([]); await sleep(10);
-  ok(e.doc.querySelector('.tu-mas').style.display === '' && /Importaciones/.test(txt(e)) && !/Botón «Antes» \(pruebas\)/.test(txt(e)), '«Más ajustes» se despliega (sin «Antes»: todas las versiones elegidas, 29/10)');
+  ok(e.doc.querySelector('.tu-mas').style.display === '' && /Importaciones/.test(txt(e)) && /Botón «Antes» \(pruebas\)/.test(txt(e)) === Object.values(e.w.__APP__.VERSIONES).some((v) => !v.cerrada), '«Más ajustes» se despliega («Antes» solo si queda alguna versión por elegir)');
   // lecturas de tickets
   ok(A.ticketsUso().quedan === 8 && /quedan 8 de 60/.test(txt(e)), 'tickets: «quedan 8 de 60»');
   ok(e.doc.querySelector('.tk-uso.pocos'), 'tickets: con 10 o menos, en color de aviso');
