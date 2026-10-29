@@ -88,6 +88,7 @@ const ICONS = {
   palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3Z"/><circle cx="7.6" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.4" cy="7" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="7.4" r="1.1" fill="currentColor" stroke="none"/></svg>',
   sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3Z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7L19 16Z"/></svg>',
   swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m7 4-4 4 4 4"/><path d="M3 8h14"/><path d="m17 12 4 4-4 4"/><path d="M21 16H7"/></svg>',
+  grip: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>',
   sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>',
   chevD: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.5 13.5"/><path d="m21 3-6.5 18-4-7.5L3 9.5z"/></svg>',
@@ -3869,7 +3870,7 @@ function renderInicioNuevo() {
   }
   // los primeros pasos solo para quien empieza: a quien ya usa la app no le quitan sitio en Inicio
   if (versionDe('inicio') === 'antes') return heroMesHtml() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtml() + estosDiasHtml();
-  return heroMesHtmlV2() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + (inicioV3() ? insightsHtmlV3() : insightsHtmlV2()) + estosDiasHtml(true);
+  return heroMesHtmlV2() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + (inicioV3() ? inicioPiezasHtml() : insightsHtmlV2() + estosDiasHtml(true));
 }
 // la cifra grande, con los céntimos más pequeños
 function cifraHtml(v) { const t = money(v), i = t.lastIndexOf(','); return i < 0 ? escapeHtml(t) : escapeHtml(t.slice(0, i)) + '<small>' + escapeHtml(t.slice(i)) + '</small>'; }
@@ -4310,13 +4311,347 @@ function estosDiasHtml(v2) {
   const filaHtml = (f) => '<div class="dia-fila' + (f.cls ? ' ' + f.cls : '') + '"><button type="button" class="dia-main" ' + (f.a || '') + '>' +
     (f.caras ? '<span class="dia-ic caras">' + f.caras + '</span>' : f.fecha ? fechaTile(f.fecha) : '<span class="dia-ic">' + ic(f.icono) + '</span>') + '<span class="dia-t"><b>' + f.t + '</b><span>' + f.d + '</span></span>' + (f.botones ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' +
     (f.botones ? '<span class="dia-btns">' + f.botones + '</span>' : '') + '</div>';
-  if (v2) { const ins = S._ins || [], conJuntos = ins.some((x) => x.k === 'juntos'), pasada = (ins.find((x) => x.k === 'pasada' || x.k2 === 'pasada') || {}).cat; // lo que ya sale en «Así vas» no se repite
+  if (v2) { const ins = S._ins || [], conJuntos = ins.some((x) => x.k === 'juntos') || (inicioV3() && iwLista().some((x) => x.t === 'juntos' && !(x.o && x.o.gid))), pasada = (ins.find((x) => x.k === 'pasada' || x.k2 === 'pasada') || {}).cat; // lo que ya sale en «Así vas» no se repite
     for (let i = filas.length - 1; i >= 0; i--) if ((filas[i].cls === 'juntos' && conJuntos) || (filas[i].cls === 'warn' && pasada != null && filas[i].cat === pasada)) filas.splice(i, 1); }
   const CAP = v2 ? 2 : 3, todas = !!S.pendTodos, ver = todas ? filas : filas.slice(0, CAP);
   return '<div class="section-title dias-tit">Estos días <button class="link" ' + act('setInicioVista', 'tareas') + '>Agenda ' + ic('chevR') + '</button></div>' +
     (filas.length ? '<div class="card dias-lista">' + ver.map(filaHtml).join('') +
       (filas.length > CAP ? '<button type="button" class="dias-mas" ' + act('verPendiente') + '>' + (todas ? 'Ver menos' : 'Ver los ' + filas.length) + '</button>' : '') + '</div>'
       : '<div class="card dias-vacio">' + ic('checkCircle') + '<span>Nada pendiente para estos días.</span></div>');
+}
+/* ===== INICIO A TU GUSTO (29/10, docs/21-inicio-widgets.md): piezas de otras pantallas debajo de la tarjeta del mes =====
+   cfg().inicioWidgets = [{ t, o }] en orden (privado, sin migración). Sin lista = lo de siempre: «Así vas» y «Estos días». */
+const IW_MAX = 8;
+const IW_TIPOS = {
+  asivas: { n: 'Así vas', ic: 'sparkle', g: 'mov', d: 'Tus círculos del mes', recom: true },
+  dias: { n: 'Estos días', ic: 'calendar', g: 'agenda', d: 'Lo que tienes que hacer o pagar', recom: true },
+  gastos: { n: 'En qué gastas', ic: 'pie', g: 'mov', d: 'Tus categorías del mes en un anillo' },
+  presu: { n: 'Presupuestos', ic: 'checkCircle', g: 'mov', d: 'Los que van más justos este mes' },
+  fijos: { n: 'Próximos fijos', ic: 'repeat', g: 'agenda', d: 'Cobros y pagos fijos hasta fin de mes' },
+  meta: { n: 'Una meta', ic: 'flag', g: 'dinero', d: 'Cómo va y un + para aportar', medio: true, varias: true, opc: 'meta' },
+  tienes: { n: 'Lo que tienes', ic: 'wallet', g: 'dinero', d: 'Cuentas e inversiones menos deudas', medio: true },
+  juntos: { n: 'Juntos', ic: 'users', g: 'juntos', d: 'Lo que debes y te deben, por persona', varias: true, opc: 'grupo', hay: () => !!(S.grupos || []).length },
+  cuentas: { n: 'Cuentas', ic: 'bank', g: 'dinero', d: 'Tus cuentas con su saldo, o solo una', medio: true, varias: true, opc: 'cuenta', hay: () => !!cuentasCfg().length },
+  deuda: { n: 'Una deuda', ic: 'deuda', g: 'dinero', d: 'Cuánto queda y lo pagado', medio: true, varias: true, opc: 'deuda', hay: () => !!iwDeudasCfg().length },
+  ultimos: { n: 'Últimos movimientos', ic: 'list', g: 'mov', d: 'Lo último que apuntaste' },
+  calgastos: { n: 'Calendario de gastos', ic: 'calRango', g: 'mov', d: 'Qué días gastas más este mes' },
+  semana: { n: 'Tu semana', ic: 'calendar', g: 'agenda', d: 'Tareas, planes y fijos de la semana' },
+  meses: { n: 'Ingresos y gastos', ic: 'chart', g: 'mov', d: 'Lo que entra y lo que gastas, mes a mes', opc: 'meses', sinPregunta: true },
+  inv: { n: 'Inversiones', ic: 'trendUp', g: 'dinero', d: 'Cuánto valen y cuánto ganas', opc: 'per', sinPregunta: true, hay: () => S.movimientos.some((m) => m.tipo === 'Inversión') },
+};
+const IW_ORDEN = ['asivas', 'dias', 'gastos', 'meses', 'presu', 'calgastos', 'ultimos', 'semana', 'fijos', 'juntos', 'meta', 'tienes', 'cuentas', 'inv', 'deuda'];
+const IW_GRUPOS = [['todo', 'Todo'], ['mov', 'Movimientos'], ['agenda', 'Agenda'], ['dinero', 'Dinero'], ['juntos', 'Juntos']];
+function iwDefecto() { return [{ t: 'asivas' }, { t: 'dias' }]; }
+function iwLista() { const l = cfg().inicioWidgets; return Array.isArray(l) ? l.filter((x) => x && IW_TIPOS[x.t]).slice(0, IW_MAX).map((x) => ({ t: x.t, o: x.o ? Object.assign({}, x.o) : undefined })) : iwDefecto(); }
+function iwMedio(x) { return !!IW_TIPOS[x.t].medio && !(x.t === 'meta' && x.o && x.o.key === '*') && !(x.t === 'cuentas' && !(x.o && x.o.id && x.o.id !== '*')); }
+// nombre corto de una pieza en la hoja «Editar Inicio»
+function iwNombre(x) {
+  if (x.t === 'meta') { const k = x.o && x.o.key; if (k === '*') return 'Tus metas'; const r = k ? metaPorKey(k) : null; return r ? 'Meta · ' + r.nombre : 'Una meta'; }
+  if (x.t === 'juntos') { const g = x.o && x.o.gid ? grupoDe(x.o.gid) : null; return g ? 'Juntos · ' + nombreDestino(g) : 'Juntos'; }
+  if (x.t === 'cuentas') { const c = x.o && x.o.id && x.o.id !== '*' ? cuentasCfg().find((y) => y.id === x.o.id) : null; return c ? 'Cuenta · ' + c.nombre : 'Cuentas'; }
+  if (x.t === 'deuda') return x.o && x.o.nombre ? 'Deuda · ' + x.o.nombre : 'Una deuda';
+
+  return IW_TIPOS[x.t].n;
+}
+// la caja de cada pieza: cabecera que abre su pantalla completa y el contenido
+function iwCaja(t, tit, sub, a, cuerpo, cls) {
+  return '<section class="card iw iw-' + t + (cls ? ' ' + cls : '') + '"><button type="button" class="iw-cab tappable" ' + a + '><span class="iw-ic">' + ic(IW_TIPOS[t].ic) + '</span><b>' + escapeHtml(tit) + '</b>' +
+    (sub ? '<span class="iw-sub">' + escapeHtml(sub) + '</span>' : '') + '<span class="chev-s">' + ic('chevR') + '</span></button>' + cuerpo + '</section>';
+}
+function iwVacio(txt, boton, a) { return '<div class="iw-vacio"><span>' + escapeHtml(txt) + '</span>' + (boton ? '<button type="button" class="link" ' + a + '>' + escapeHtml(boton) + '</button>' : '') + '</div>'; }
+// 1 · En qué gastas: anillo con el total y las 4 categorías más altas + «Otras»
+function iwGastosHtml() {
+  const { y, m } = inicioYM(), d = gcDatos(y, m), mk = mesClave(y, m), mes = MESES[m - 1];
+  if (!(d.total > 0.004)) return iwCaja('gastos', 'En qué gastas', mes, act('heroResumen'), iwVacio('Aún no hay gastos en ' + mes.toLowerCase() + '.'));
+  const todas = []; d.filas.forEach((f) => { if (f.otras) f.hijos.forEach((h) => todas.push(h)); else todas.push(f); });
+  let top = todas.slice(0, 4); const resto = todas.slice(4);
+  if (resto.length) top = top.concat([{ n: '__otras', l: 'Otras', v: resto.reduce((a, x) => a + x.v, 0), color: COLOR_OTRAS, otras: true }]);
+  let acc = 0;
+  const arcos = top.map((f) => { const p = f.v / d.total * 100, s = '<circle cx="21" cy="21" r="15.915" fill="none" stroke="' + f.color + '" stroke-width="5.2" stroke-dasharray="' + Math.max(0, p - 0.6).toFixed(2) + ' ' + (100 - Math.max(0, p - 0.6)).toFixed(2) + '" stroke-dashoffset="' + (25 - acc).toFixed(2) + '"/>'; acc += p; return s; }).join('');
+  const anillo = '<button type="button" class="iw-anillo tappable" aria-label="' + escapeHtml('Gastado en ' + mes + ': ' + money(d.total)) + '" ' + act('heroResumen') + '><svg viewBox="0 0 42 42" aria-hidden="true"><circle cx="21" cy="21" r="15.915" fill="none" stroke="var(--paper-sunken)" stroke-width="5.2"/>' + arcos + '</svg><span><b class="tnum">' + escapeHtml(moneyShort(d.total)) + '</b><i>gastado</i></span></button>';
+  const filas = top.map((f) => '<button type="button" class="iw-gf tappable" ' + (f.otras ? act('heroResumen') : act('irMovs', '_gastos', mk, gcCat(f))) + '><i style="background:' + f.color + '"></i><span>' + escapeHtml(f.l) + '</span><b class="tnum">' + escapeHtml(moneyShort(f.v)) + '</b></button>').join('');
+  return iwCaja('gastos', 'En qué gastas', mes, act('heroResumen'), '<div class="iw-gastos-c">' + anillo + '<div class="iw-gfs">' + filas + '</div></div>');
+}
+// 2 · Presupuestos: hasta 3 barras, primero las más justas
+function iwPresuHtml() {
+  const { y, m } = inicioYM(), mk = mesClave(y, m), catMap = gastoPorCategoria(kpisMes(y, m).movs), mes = MESES[m - 1];
+  const pres = catsGasto().filter((c) => num(c.presupuesto) > 0).map((c) => ({ c: c.nombre, p: num(c.presupuesto), r: Math.max(0, catMap[c.nombre] || 0) })).sort((a, b) => b.r / b.p - a.r / a.p || b.r - a.r);
+  if (!pres.length) return iwCaja('presu', 'Presupuestos', mes, act('openListEditor', 'categoriasGasto'), iwVacio('Aún no tienes presupuestos.', 'Ponerlos', act('openListEditor', 'categoriasGasto')));
+  const filas = pres.slice(0, 3).map((x) => { const q = x.r / x.p, cls = q > 1 ? 'mal' : q >= 0.85 ? 'justo' : 'bien';
+    return '<button type="button" class="iw-pf tappable ' + cls + '" ' + act('irMovs', '_gastos', mk, x.c) + '><span class="iw-pf-t"><span>' + escapeHtml(x.c) + '</span><b class="tnum">' + escapeHtml(moneyShort(x.r)) + ' <i>/ ' + escapeHtml(moneyShort(x.p)) + '</i></b></span>' +
+      '<span class="iw-pbar"><i style="width:' + Math.min(100, q * 100).toFixed(1) + '%"></i></span></button>'; }).join('');
+  return iwCaja('presu', 'Presupuestos', mes + (pres.length > 3 ? ' · ' + pres.length : ''), act('heroResumen'), '<div class="iw-pfs">' + filas + '</div>');
+}
+// 3 · Próximos fijos: los 3 próximos cobros y pagos fijos (sin apuntar) hasta fin de tu mes
+function iwFijosDatos() {
+  const hoy = todayISO(), ma = mesActual(), hasta = rangoMes(ma.y, ma.m).hasta, out = [];
+  if (hasta < hoy) return out;
+  recurrentes().forEach((rc) => { if (!rc.regla) return; let occs = [];
+    try { occs = estadoOcurrencias(rc, ocurrencias(rc.regla, uAdd(hoy, -40), hasta)); } catch (e) { occs = []; }
+    occs.forEach((o) => { if (o.iso >= hoy && o.iso <= hasta && o.estado === 'pend') out.push({ rc, iso: o.iso, importe: importePrevisto(rc, o.iso) }); }); });
+  return out.sort((a, b) => a.iso.localeCompare(b.iso) || String(a.rc.nombre).localeCompare(String(b.rc.nombre)));
+}
+function iwFijosHtml() {
+  const L = iwFijosDatos(), hay = recurrentes().length;
+  if (!L.length) return iwCaja('fijos', 'Próximos fijos', 'hasta fin de mes', act('openRecurrentes'), hay ? iwVacio('Nada más hasta fin de mes.') : iwVacio('Aún no tienes cobros ni pagos fijos.', 'Añadir', act('openRecurrentes')));
+  const filas = L.slice(0, 3).map((x) => { const d = parseISO(x.iso), n = daysUntil(x.iso), cobro = x.rc.kind === 'cobro';
+    return '<button type="button" class="iw-ff tappable" ' + act('openRecurrentes') + '><span class="dia-fecha"><i>' + MESES_ABR[d.getMonth()].toUpperCase() + '</i><b>' + d.getDate() + '</b></span>' +
+      '<span class="iw-ff-t"><b>' + escapeHtml(x.rc.nombre) + '</b><span>' + (n === 0 ? 'Hoy' : n === 1 ? 'Mañana' : DIAS_LARGO[dowMon(d)]) + ' · ' + (cobro ? 'cobro' : 'pago') + '</span></span>' +
+      (x.importe == null ? '' : '<b class="tnum' + (cobro ? ' ing' : '') + '">' + (cobro ? '+' : '') + escapeHtml(moneyShort(x.importe)) + '</b>') + '</button>'; }).join('');
+  return iwCaja('fijos', 'Próximos fijos', L.length > 3 ? L.length + ' hasta fin de mes' : 'hasta fin de mes', act('openRecurrentes'), '<div class="iw-ffs">' + filas + '</div>');
+}
+// 4 · Una meta (o «Tus metas»: hasta 4 formas pequeñas)
+function iwMetaHtml(x, i) {
+  const k = x.o && x.o.key;
+  if (k === '*') {
+    let rs = []; try { rs = metasStats().concat(objCompartidos('ahorro')).filter((r) => !r.conseguida).slice(0, 4); } catch (e) { rs = []; }
+    if (!rs.length) return iwCaja('meta', 'Tus metas', '', act('goTab', 'dinero'), iwVacio('Aún no tienes metas.', 'Crear una', act('metaNueva')));
+    return iwCaja('meta', 'Tus metas', '', act('goTab', 'dinero'), '<div class="iw-metas">' + rs.map((r) => { const p = Math.max(0, Math.min(100, r.pct || 0));
+      return '<button type="button" class="iw-mt tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(p) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' + formaHtml(metaForma(r), p, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(p) + ' %') + '</b>', 58, { users: r.compartida, color: metaColor(r) }) + '<span>' + escapeHtml(r.nombre) + '</span></button>'; }).join('') + '</div>');
+  }
+  const r = k ? metaPorKey(k) : null;
+  if (!r) return iwCaja('meta', 'Una meta', '', act('iwOpcAbrir', i), iwVacio(k ? 'Esta meta ya no existe.' : 'Elige qué meta ver.', 'Elegir otra', act('iwOpcAbrir', i)), 'medio');
+  const p = Math.max(0, Math.min(100, r.pct || 0));
+  return '<section class="card iw iw-meta medio"><button type="button" class="iw-mt-main tappable" aria-label="' + escapeHtml(r.nombre + ': ' + Math.round(p) + ' por ciento') + '" ' + act('metaVer', r.key) + '>' +
+    formaHtml(metaForma(r), p, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(p) + ' %') + '</b>', 64, { users: r.compartida, color: metaColor(r) }) +
+    '<span class="iw-mt-n">' + escapeHtml(r.nombre) + '</span><span class="iw-mt-c tnum">' + m0(Math.max(0, r.valor)) + (r.obj > 0 ? ' / ' + m0(r.obj) : '') + '</span></button>' +
+    (r.conseguida ? '' : '<button type="button" class="iw-mt-mas" aria-label="Aportar a ' + escapeHtml(r.nombre) + '" ' + act('metaAportarR', r.key) + '>' + ic('plus') + '</button>') + '</section>';
+}
+// 5 · Lo que tienes: el total y la barra cuentas + invertido frente a deudas
+function iwTienesHtml() {
+  if (S.movimientos.some((x) => x.tipo === 'Inversión')) asegurarValoracion();
+  const p = patrimonio();
+  if (!p.inv && !p.ahorro && !p.deudas && !p.nCuentas) return iwCaja('tienes', 'Lo que tienes', '', act('goTab', 'dinero'), iwVacio('Pon el saldo de tu banco.', 'Ir a Dinero', act('goTab', 'dinero')), 'medio');
+  return '<section class="card iw iw-tienes medio"><button type="button" class="iw-ti-main tappable" ' + act('goTab', 'dinero') + '><span class="iw-cab-s"><span class="iw-ic">' + ic('wallet') + '</span><b>Lo que tienes</b></span>' +
+    '<b class="iw-ti-v tnum' + (p.total < 0 ? ' neg' : '') + '">' + escapeHtml(moneyShort(p.total)) + '</b>' + patBarraHtml(p) +
+    '<span class="iw-ti-l">' + (p.deudas > 0.004 ? 'Debes ' + escapeHtml(moneyShort(p.deudas)) : p.inv > 0.004 ? 'Invertido ' + escapeHtml(moneyShort(p.inv)) : p.nCuentas === 1 ? 'En tu cuenta' : 'En tus cuentas') + '</span></button></section>';
+}
+function iwPiezaHtml(x, i) {
+  try {
+    if (x.t === 'asivas') return insightsHtmlV3();
+    if (x.t === 'dias') return estosDiasHtml(true);
+    if (x.t === 'gastos') return iwGastosHtml();
+    if (x.t === 'presu') return iwPresuHtml();
+    if (x.t === 'fijos') return iwFijosHtml();
+    if (x.t === 'meta') return iwMetaHtml(x, i);
+    if (x.t === 'tienes') return iwTienesHtml();
+    if (x.t === 'juntos') return iwJuntosHtml(x, i);
+    if (x.t === 'cuentas') return iwCuentasHtml(x, i);
+    if (x.t === 'deuda') return iwDeudaHtml(x, i);
+    if (x.t === 'ultimos') return iwUltimosHtml();
+    if (x.t === 'calgastos') return iwCalGastosHtml();
+    if (x.t === 'semana') return iwSemanaHtml();
+    if (x.t === 'meses') return iwMesesHtml(x, i);
+    if (x.t === 'inv') return iwInvHtml(x, i);
+  } catch (e) { console.error(e); }
+  return '';
+}
+// todas las piezas en su orden; dos de medio ancho seguidas comparten fila (una sola se estira)
+function inicioPiezasHtml() {
+  const l = iwLista(), h = new Array(l.length); S._ins = [];
+  const ia = l.findIndex((x) => x.t === 'asivas'); if (ia >= 0) h[ia] = iwPiezaHtml(l[ia], ia); // «Estos días» mira lo que ya sale en «Así vas»
+  l.forEach((x, i) => { if (h[i] == null) h[i] = iwPiezaHtml(x, i); });
+  let out = '';
+  for (let i = 0; i < l.length; i++) {
+    if (h[i] && iwMedio(l[i]) && i + 1 < l.length && h[i + 1] && iwMedio(l[i + 1])) { out += '<div class="iw-par">' + h[i] + h[i + 1] + '</div>'; i++; continue; }
+    out += h[i] || '';
+  }
+  return out + '<button type="button" class="iw-editar" ' + act('iwEditar') + '>' + ic('sliders') + ' Editar Inicio' + badge('inicioEd') + '</button>';
+}
+/* ---- Hoja «Editar Inicio»: flechas, quitar, opciones y «Añadir a Inicio» ---- */
+function iwEdHtml() {
+  const F = FORM, L = F.lista;
+  if (F.vista === 'cat') return iwCatHtml();
+  if (F.vista === 'opc') return iwOpcHtml();
+  const fila = (x, i) => { const T = IW_TIPOS[x.t];
+    return '<div class="iw-ed-f" data-i="' + i + '"><span class="iw-grip" aria-hidden="true">' + ic('grip') + '</span><button type="button" class="iw-ed-n' + (T.opc ? ' tappable' : '') + '" ' + (T.opc ? act('iwOpcAbrir', i) : 'tabindex="-1"') + '><span class="iw-ic">' + ic(T.ic) + '</span><span class="iw-ed-t"><b>' + escapeHtml(iwNombre(x)) + '</b><span>' +
+      (T.recom ? 'Recomendada' : x.t === 'meses' ? (x.o && Number(x.o.n) === 12 ? '12' : '6') + ' meses' : x.t === 'inv' ? 'Periodo ' + (IW_INV_PER.find((p) => p[0] === (x.o && x.o.per)) || IW_INV_PER[1])[1] : iwMedio(x) ? 'Medio ancho' : 'Fila entera') + (T.opc ? ' · Cambiar' : '') + '</span></span></button>' +
+      '<button type="button" class="icon-btn sm" aria-label="Subir ' + escapeHtml(iwNombre(x)) + '" ' + (i > 0 ? act('iwMover', i, -1) : 'disabled') + '>' + ic('arrowUp') + '</button>' +
+      '<button type="button" class="icon-btn sm" aria-label="Bajar ' + escapeHtml(iwNombre(x)) + '" ' + (i < L.length - 1 ? act('iwMover', i, 1) : 'disabled') + '>' + ic('arrowDown') + '</button>' +
+      '<button type="button" class="icon-btn sm iw-quitar" aria-label="Quitar ' + escapeHtml(iwNombre(x)) + '" ' + act('iwQuitar', i) + '>' + ic('close') + '</button></div>'; };
+  return '<div class="handle"></div><h2>Editar Inicio</h2><p class="sheet-sub">Elige qué ves debajo de la tarjeta del mes y en qué orden.</p>' +
+    '<div class="card iw-ed"><div class="iw-ed-f fija"><span class="iw-ed-n"><span class="iw-ic">' + ic('candado') + '</span><span class="iw-ed-t"><b>Tarjeta del mes</b><span>Siempre arriba</span></span></span></div>' + L.map(fila).join('') + '</div>' +
+    (F.aviso ? '<div class="rec-hint">' + escapeHtml(F.aviso) + '</div>' : '') +
+    '<div class="iw-ed-pie"><span class="tnum">' + L.length + ' de ' + IW_MAX + '</span><button type="button" class="link" ' + act('iwReset') + '>Como al principio</button></div>' +
+    '<div class="actions"><button class="btn ghost block" ' + (L.length < IW_MAX ? act('iwCat') : 'disabled') + '>' + ic('plus') + ' Añadir</button><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+function iwCatHtml() {
+  const F = FORM, L = F.lista, f = F.filtro || 'todo', lleno = L.length >= IW_MAX;
+  const chips = '<div class="chips iw-cat-chips">' + IW_GRUPOS.filter(([k]) => k === 'todo' || IW_ORDEN.some((t) => IW_TIPOS[t].g === k && (!IW_TIPOS[t].hay || IW_TIPOS[t].hay()))).map(([k, l]) => '<button type="button" class="chip' + (f === k ? ' active' : '') + '" ' + act('iwFiltro', k) + '>' + l + '</button>').join('') + '</div>';
+  const tiene = (t) => !IW_TIPOS[t].varias && L.some((x) => x.t === t), tarjetas = IW_ORDEN.filter((t) => (f === 'todo' || IW_TIPOS[t].g === f) && (!IW_TIPOS[t].hay || IW_TIPOS[t].hay())).sort((a, b) => tiene(a) - tiene(b)).map((t) => { const T = IW_TIPOS[t], ya = !T.varias && L.some((x) => x.t === t);
+    let prev = ''; if (t !== 'dias' && t !== 'asivas') { const sv = S._ins; prev = iwPiezaHtml(iwEjemplo(t), -1); S._ins = sv; }
+    return '<div class="iw-cat-t' + (ya || lleno ? ' ya' : ' tappable') + '" role="button" ' + (ya || lleno ? 'aria-disabled="true"' : 'tabindex="0" ' + act('iwAnadir', t)) + '>' +
+      '<div class="iw-prev" aria-hidden="true">' + (prev ? '<div class="iw-prev-in">' + prev.replace(/data-click="[^"]*"/g, '').replace(/<button /g, '<span ').replace(/<\/button>/g, '</span>').replace(/<(\/?)section/g, '<$1div') + '</div>' : '<span class="iw-prev-ic">' + ic(T.ic) + '</span>') + '</div>' +
+      '<span class="iw-cat-n"><b>' + escapeHtml(T.n) + '</b>' + (ya ? '<span class="iw-ya">' + ic('check') + ' Ya la tienes</span>' : '<span>' + escapeHtml(T.d) + '</span>') + '</span></div>'; }).join('');
+  return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('iwVista', 'lista') + '>' + ic('chevL') + ' Volver</button><h2>Añadir a Inicio</h2>' + chips +
+    (lleno ? '<div class="rec-hint">Ya tienes ' + IW_MAX + ' piezas: quita una para añadir otra.</div>' : '') + '<div class="iw-cat">' + (tarjetas || '<div class="card empty-mini iw-cat-vacio">' + (f === 'juntos' ? 'Aún no compartes gastos con nadie.' : 'Aún no hay piezas para esto.') + '</div>') + '</div>';
+}
+// un ejemplo de cada pieza para la vista previa del catálogo
+function iwEjemplo(t) {
+  if (t === 'meta') return { t, o: { key: ((metasStats()[0] || objCompartidos('ahorro')[0] || {}).key) } };
+  if (t === 'cuentas') return { t, o: { id: '*' } };
+  if (t === 'deuda') return { t, o: { nombre: (iwDeudasCfg()[0] || {}).nombre } };
+  return { t };
+}
+// opciones de una pieza: qué meta, qué grupo, qué cuenta o qué deuda
+function iwOpcObj(t, k) { return t === 'meta' ? { key: k } : t === 'juntos' ? { gid: k } : t === 'cuentas' ? { id: k } : t === 'meses' ? { n: Number(k) } : t === 'inv' ? { per: k } : { nombre: k }; }
+function iwOpcHtml() {
+  const F = FORM, x = F.i >= 0 ? F.lista[F.i] : { t: F.nuevo }, t = x.t, o = x.o || {};
+  const op = (k, tt, d, icono, sel) => '<button type="button" class="av-op' + (sel ? ' on' : '') + '" role="radio" aria-checked="' + !!sel + '" ' + act('iwOpcElegir', k) + '><span class="av-op-ic">' + icono + '</span><span class="av-op-t"><b>' + escapeHtml(tt) + '</b><span>' + escapeHtml(d) + '</span></span><span class="av-radio"></span></button>';
+  const vacio = (txt, a, l) => '<div class="card empty-mini">' + txt + (a ? ' <button type="button" class="link" ' + a + '>' + l + '</button>' : '') + '</div>';
+  let tit, lista;
+  if (t === 'juntos') { tit = '¿Qué quieres ver?';
+    lista = op('', 'Todos tus grupos', 'Lo que debes y te deben con cada persona', ic('users'), F.i >= 0 && !o.gid) + (S.grupos || []).map((g) => op(g.id, nombreDestino(g), g.tipo === 'directo' ? 'Entre los dos' : (g.miembros || []).length + ' personas', ic('users'), o.gid === g.id)).join(''); }
+  else if (t === 'cuentas') { tit = '¿Qué cuentas?'; const cs = cuentasCfg();
+    lista = cs.length ? op('*', 'Todas tus cuentas', 'Las 3 con más saldo, a lo ancho', ic('bank'), o.id === '*') + cs.map((c) => op(c.id, c.nombre, saldoCuenta(c) == null ? 'Sin saldo' : money(saldoCuenta(c)), bancoFichaHtml(bancoDe(c)) || ic('bank'), o.id === c.id)).join('') : vacio('Aún no tienes cuentas.', act('openCuentas'), 'Añadir una'); }
+  else if (t === 'meses') { tit = '¿Cuántos meses?'; const n = Number(o.n) === 12 ? 12 : 6;
+    lista = op('6', 'Últimos 6 meses', 'Barras más anchas, se leen mejor', ic('chart'), n === 6) + op('12', 'Últimos 12 meses', 'El año entero, más apretado', ic('chart'), n === 12); }
+  else if (t === 'inv') { tit = '¿Qué periodo?'; const pr = o.per || '6m';
+    lista = IW_INV_PER.map((p) => op(p[0], ({ '1m': 'Último mes', '6m': 'Últimos 6 meses', '1a': 'Último año', max: 'Desde el inicio' })[p[0]], 'La línea y lo que has ganado en ese tiempo', ic('trendUp'), pr === p[0])).join(''); }
+  else if (t === 'deuda') { tit = '¿Qué deuda?'; const ds = iwDeudasCfg();
+    lista = ds.length ? ds.map((d) => { const r = deudaStats(d); return op(d.nombre, d.nombre, r.pend > 0.004 ? 'Quedan ' + money(r.pend) : 'Saldada', d.emoji ? escapeHtml(d.emoji) : ic('deuda'), o.nombre === d.nombre); }).join('') : vacio('Aún no tienes deudas.'); }
+  else { tit = '¿Qué meta?'; let rs = []; try { rs = metasStats().concat(objCompartidos('ahorro')); } catch (e) { rs = []; }
+    lista = rs.length ? op('*', 'Tus metas', 'Hasta 4, a lo ancho', ic('flag'), o.key === '*') + rs.map((r) => op(r.key, r.nombre, (r.pct == null ? '' : Math.round(r.pct) + ' %') + (r.compartida ? ' · compartida' : ''), ic(r.compartida ? 'users' : 'flag'), o.key === r.key)).join('') : vacio('Aún no tienes metas.', act('metaNueva'), 'Crear una'); }
+  return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('iwVista', F.i >= 0 ? 'lista' : 'cat') + '>' + ic('chevL') + ' Volver</button><h2>' + tit + '</h2>' + lista;
+}
+/* ---- tanda 2: Juntos, Cuentas, Una deuda, Últimos movimientos, Calendario de gastos y Tu semana ---- */
+function iwGruposConComp() { return [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id)); }
+// lo que debes y te deben con cada persona (en todos tus grupos o en uno)
+function iwJuntosPersonas(gid) {
+  if (!gid) return juntosPersonas();
+  const yo = miUid(), mapa = {};
+  deudasDe(gid).forEach((d) => { if (d.de !== yo && d.a !== yo) return; const otro = d.de === yo ? d.a : d.de, x = mapa[otro] || (mapa[otro] = { uid: otro, nombre: nombreDe(gid, otro), neto: 0 }); x.neto = r2(x.neto + (d.de === yo ? -d.importe : d.importe)); });
+  return Object.values(mapa).filter((x) => Math.abs(x.neto) >= 0.005).sort((a, b) => Math.abs(b.neto) - Math.abs(a.neto));
+}
+function iwJuntosHtml(x, i) {
+  const gid = x.o && x.o.gid, g = gid ? grupoDe(gid) : null;
+  if (gid && !g) return iwCaja('juntos', 'Juntos', '', act('iwOpcAbrir', i), iwVacio('Este grupo ya no existe.', 'Elegir otro', act('iwOpcAbrir', i)));
+  const tit = g ? nombreDestino(g) : 'Juntos', a = g ? act('grupoVer', g.id) : act('goTab', 'juntos');
+  if (!(S.grupos || []).length) return iwCaja('juntos', tit, '', a, iwVacio('Aún no compartes gastos con nadie.', 'Ir a Juntos', act('goTab', 'juntos')));
+  const ps = iwJuntosPersonas(gid), debes = ps.filter((p) => p.neto < 0).reduce((s, p) => s - p.neto, 0), teDeben = ps.filter((p) => p.neto > 0).reduce((s, p) => s + p.neto, 0);
+  if (!ps.length) return iwCaja('juntos', tit, '', a, '<div class="iw-vacio iw-paz">' + ic('checkCircle') + '<span>Estás en paz' + (g ? ' en este grupo' : ' con todos') + '.</span></div>');
+  const max = Math.max(...ps.map((p) => Math.abs(p.neto)));
+  const circ = ps.slice(0, 4).map((p, j) => juntosCircHtml({ nombre: p.nombre, v: p.neto, cara: caraHtml(p.uid, p.nombre, 'mini'), a: act('personaVer', p.uid) }, max, j)).join('');
+  const linea = [debes > 0.004 ? '<span class="malo">Debes <b class="tnum">' + escapeHtml(moneyShort(debes)) + '</b></span>' : '', teDeben > 0.004 ? '<span class="bueno">Te deben <b class="tnum">' + escapeHtml(moneyShort(teDeben)) + '</b></span>' : ''].filter(Boolean).join('<i>·</i>');
+  return iwCaja('juntos', tit, ps.length > 4 ? ps.length + ' personas' : '', a, '<div class="iw-j-l">' + linea + '</div><div class="ins-circ iw-j-c">' + circ + '</div>');
+}
+function iwCuentasHtml(x, i) {
+  const cs = cuentasCfg(), id = x.o && x.o.id;
+  if (id && id !== '*') {
+    const c = cs.find((y) => y.id === id);
+    if (!c) return iwCaja('cuentas', 'Una cuenta', '', act('iwOpcAbrir', i), iwVacio('Esta cuenta ya no existe.', 'Elegir otra', act('iwOpcAbrir', i)), 'medio');
+    const v = saldoCuenta(c);
+    return '<section class="card iw iw-cuentas medio"><button type="button" class="iw-ti-main tappable" ' + act('cuentaVer', c.id) + '><span class="iw-cab-s">' + (bancoFichaHtml(bancoDe(c), 'iw-bco') || '<span class="iw-ic" style="background:' + colorCuenta(c) + '22;color:' + colorCuenta(c) + '">' + ic('bank') + '</span>') + '<b>' + escapeHtml(c.nombre) + '</b></span>' +
+      '<b class="iw-ti-v tnum' + (v != null && v < 0 ? ' neg' : '') + '">' + (v == null ? '—' : escapeHtml(moneyShort(v))) + '</b><span class="iw-ti-l">' + (v == null ? 'Pon el saldo' : 'Saldo hoy') + '</span></button></section>';
+  }
+  if (!cs.length) return iwCaja('cuentas', 'Cuentas', '', act('openCuentas'), iwVacio('Pon el saldo de tu banco.', 'Añadir cuenta', act('openCuentas')));
+  const conSaldo = cs.filter((c) => num(saldoCuenta(c)) > 0), tot = conSaldo.reduce((a, c) => a + num(saldoCuenta(c)), 0);
+  const barra = tot > 0 && conSaldo.length > 1 ? '<div class="dm3-reparto iw-reparto" aria-hidden="true">' + conSaldo.map((c) => '<i style="width:' + (num(saldoCuenta(c)) / tot * 100).toFixed(1) + '%;background:' + colorCuenta(c) + '"></i>').join('') + '</div>' : '';
+  const orden = cs.slice().sort((a, b) => num(saldoCuenta(b)) - num(saldoCuenta(a)));
+  const filas = orden.slice(0, 3).map((c) => { const v = saldoCuenta(c);
+    return '<button type="button" class="iw-cf tappable" ' + act('cuentaVer', c.id) + '>' + (bancoFichaHtml(bancoDe(c), 'iw-bco') || '<span class="iw-cf-pt" style="background:' + colorCuenta(c) + '"></span>') + '<span>' + escapeHtml(c.nombre) + '</span><b class="tnum' + (v != null && v < 0 ? ' neg' : '') + '">' + (v == null ? '—' : escapeHtml(moneyShort(v))) + '</b></button>'; }).join('');
+  return iwCaja('cuentas', 'Cuentas', cs.length > 1 ? 'Total ' + moneyShort(enTusCuentas()) : '', act('goTab', 'dinero'), barra + '<div class="iw-cfs">' + filas + '</div>' + (cs.length > 3 ? '<button type="button" class="link iw-mas" ' + act('goTab', 'dinero') + '>Ver las ' + cs.length + '</button>' : ''));
+}
+function iwDeudasCfg() { return (cfg().deudas || []).filter((d) => d && d.nombre); }
+function iwDeudaHtml(x, i) {
+  const n = x.o && x.o.nombre, d = n ? iwDeudasCfg().find((y) => y.nombre === n || (y.nombresAntes || []).indexOf(n) >= 0) : null;
+  if (!d) return iwCaja('deuda', 'Una deuda', '', act('iwOpcAbrir', i), iwVacio(n ? 'Esta deuda ya no existe.' : 'Elige qué deuda ver.', 'Elegir otra', act('iwOpcAbrir', i)), 'medio');
+  const r = deudaStats(d), pct = Math.max(0, Math.min(100, r.pct || 0));
+  return '<section class="card iw iw-deuda medio"><button type="button" class="iw-ti-main tappable" ' + act('deudaVer', d.nombre) + '><span class="iw-cab-s"><span class="iw-ic">' + (d.emoji ? '<span class="iw-emo">' + escapeHtml(d.emoji) + '</span>' : ic('deuda')) + '</span><b>' + escapeHtml(d.nombre) + '</b></span>' +
+    (r.pend > 0.004 ? '<span class="iw-ti-l">Quedan</span><b class="iw-ti-v tnum">' + escapeHtml(moneyShort(r.pend)) + '</b>' : '<b class="iw-ti-v tnum bueno">Saldada</b>') +
+    '<span class="iw-pbar deuda" aria-label="' + Math.round(pct) + ' % pagado"><i style="width:' + pct.toFixed(1) + '%"></i></span><span class="iw-ti-l">' + Math.round(pct) + ' % pagado</span></button></section>';
+}
+function iwUltimosHtml() {
+  const L = S.movimientos.filter((m) => m.fecha && m.fecha.slice(0, 10) <= todayISO()).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) || String(b.creado || b.id).localeCompare(String(a.creado || a.id))).slice(0, 3);
+  if (!L.length) return iwCaja('ultimos', 'Últimos movimientos', '', act('iwIrMovLista'), iwVacio('Aún no has apuntado nada.'));
+  const filas = L.map((m) => { const cc = m.tipo === 'Ingreso' ? 'var(--income)' : colorCat(m.categoria), v = moneySigned(m.importe, m.tipo);
+    return '<button type="button" class="iw-uf tappable" ' + act('openMovForm', m.id) + '><span class="iw-uf-ic" style="--cc:' + cc + '">' + ic(iconoCat(m.tipo, m.categoria, m.descripcion)) + '</span><span class="iw-ff-t"><b>' + escapeHtml(m.descripcion || m.categoria || m.tipo) + '</b><span>' + escapeHtml((m.descripcion && m.categoria ? m.categoria + ' · ' : '') + fmtDateShort(m.fecha.slice(0, 10)).toLowerCase()) + '</span></span>' +
+      '<b class="tnum' + (m.tipo === 'Ingreso' ? ' ing' : '') + '">' + escapeHtml(v) + '</b></button>'; }).join('');
+  return iwCaja('ultimos', 'Últimos movimientos', '', act('iwIrMovLista'), '<div class="iw-ffs">' + filas + '</div>');
+}
+// Calendario de gastos: el mes en cuadritos, más oscuros cuanto más gastaste
+function iwCalGastosHtml() {
+  const { y, m } = inicioYM(), r = rangoMes(y, m), hoy = todayISO(), dia = {};
+  movCalMovsTodas(y, m).forEach((x) => { if (x.tipo === 'Gasto' || x.tipo === 'Factura') { const f = x.fecha.slice(0, 10); dia[f] = (dia[f] || 0) + num(x.importe); } });
+  const max = Math.max(0, ...Object.values(dia));
+  const lunes = addDaysISO(r.desde, -dowMon(parseISO(r.desde))), fin = addDaysISO(r.hasta, 6 - dowMon(parseISO(r.hasta)));
+  let celdas = DIA_LETRA.map((l) => '<span class="iw-cg-dow">' + l + '</span>').join(''), sin = 0;
+  for (let f = lunes; f <= fin; f = addDaysISO(f, 1)) {
+    const fuera = f < r.desde || f > r.hasta, g = dia[f] || 0, fut = f > hoy;
+    if (!fuera && !fut && g <= 0.004) sin++;
+    const nivel = g > 0.004 && max > 0 ? Math.min(4, 1 + Math.floor(g / max * 3.999)) : 0;
+    celdas += fuera ? '<span class="iw-cg-d fuera"></span>' : '<button type="button" class="iw-cg-d n' + nivel + (f === hoy ? ' hoy' : '') + (fut ? ' fut' : '') + '" aria-label="' + escapeHtml(fmtDateShort(f) + (g > 0.004 ? ': ' + money(g) : ': sin gastos')) + '" ' + act('iwIrMovCal', f) + '></button>';
+  }
+  return iwCaja('calgastos', 'Calendario de gastos', MESES[m - 1], act('iwIrMovCal', ''), '<div class="iw-cg">' + celdas + '</div><div class="iw-cg-pie"><span>' + sin + (sin === 1 ? ' día' : ' días') + ' sin gastos</span><span class="iw-cg-ley">Menos<i class="n1"></i><i class="n2"></i><i class="n3"></i><i class="n4"></i>Más</span></div>');
+}
+function movCalMovsTodas(y, m) { const k = y + '-' + pad2(m); return movsEfectivos().filter((x) => x.fecha && mesDe(x.fecha) === k); }
+// Tu semana: 7 días con puntos de colores y la próxima cosa
+function iwSemanaHtml() {
+  const hoy = todayISO(), lunes = addDaysISO(hoy, -dowMon(parseISO(hoy))), dom = addDaysISO(lunes, 6);
+  const f0 = S.calFiltros; S.calFiltros = { tareas: true, facturas: true, hitos: true, movs: false };
+  let mapa; try { mapa = calEventos(lunes, addDaysISO(hoy, 14)); } finally { S.calFiltros = f0; }
+  let dias = '';
+  for (let f = lunes; f <= dom; f = addDaysISO(f, 1)) {
+    const d = parseISO(f), evs = (mapa[f] || []).filter((ev) => !ev.pagada), col = [];
+    evs.forEach((ev) => { const c = evColor(ev); if (col.indexOf(c) < 0) col.push(c); });
+    dias += '<button type="button" class="iw-sd' + (f === hoy ? ' hoy' : '') + (f < hoy ? ' pasado' : '') + '" aria-label="' + escapeHtml(DIAS_LARGO[dowMon(d)] + ' ' + d.getDate() + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' cosa' : ' cosas') : '')) + '" ' + act('iwIrAgendaDia', f) + '><span class="iw-sd-l">' + DIA_LETRA[dowMon(d)] + '</span><b class="tnum">' + d.getDate() + '</b><span class="pts">' + col.slice(0, 3).map((c) => '<i style="background:' + c + '"></i>').join('') + '</span></button>';
+  }
+  let prox = null; Object.keys(mapa).sort().some((iso) => { if (iso < hoy) return false; const ev = (mapa[iso] || []).find((e) => !e.pagada && !(e.k === 'tarea' && e.venc)); if (ev) prox = { iso, ev }; return !!ev; });
+  const cuando = (iso) => { const n = daysUntil(iso); return n === 0 ? 'Hoy' : n === 1 ? 'Mañana' : n < 7 ? DIAS_LARGO[dowMon(parseISO(iso))] : fmtDateShort(iso); };
+  const linea = prox ? '<button type="button" class="iw-s-prox tappable" ' + (prox.ev.click || act('iwIrAgendaDia', prox.iso)) + '><i style="background:' + evColor(prox.ev) + '"></i><span><b>' + escapeHtml(cuando(prox.iso)) + ':</b> ' + escapeHtml(prox.ev.titulo) + '</span></button>' : '<div class="iw-vacio"><span>Nada en las próximas dos semanas.</span></div>';
+  return iwCaja('semana', 'Tu semana', '', act('setInicioVista', 'calendario'), '<div class="iw-s">' + dias + '</div>' + linea);
+}
+/* ---- tanda 3: Ingresos y gastos (6 o 12 meses) e Inversiones (pide precios solo cuando se ve) ---- */
+function iwMesesHtml(x, i) {
+  const n = x.o && Number(x.o.n) === 12 ? 12 : 6, { y, m } = inicioYM(), meses = [];
+  for (let j = n - 1; j >= 0; j--) { let mm = m - j, yy = y; while (mm < 1) { mm += 12; yy--; } const k = kpisMes(yy, mm); meses.push({ y: yy, m: mm, ing: k.ingresos, gas: k.gastos + k.facturas }); }
+  const max = Math.max(1, ...meses.map((x2) => Math.max(x2.ing, x2.gas))), ult = meses[meses.length - 1], dif = ult.ing - ult.gas;
+  if (!meses.some((x2) => x2.ing > 0.004 || x2.gas > 0.004)) return iwCaja('meses', 'Ingresos y gastos', 'últimos ' + n + ' meses', act('iwIrAnio'), iwVacio('Aún no hay movimientos en estos meses.'));
+  const H0 = 72, barras = meses.map((x2, j) => '<button type="button" class="iw-mb' + (j === meses.length - 1 ? ' act' : '') + '" aria-label="' + escapeHtml(MESES[x2.m - 1] + ': entró ' + money(x2.ing) + ', gastaste ' + money(x2.gas)) + '" ' + act('irMovs', '_gastos', mesClave(x2.y, x2.m)) + '>' +
+    '<span class="iw-mb-b"><i class="ing" style="height:' + (x2.ing / max * H0).toFixed(1) + 'px"></i><i class="gas" style="height:' + (x2.gas / max * H0).toFixed(1) + 'px"></i></span><span class="iw-mb-l">' + (n === 12 ? MESES_ABR[x2.m - 1].charAt(0) : MESES_ABR[x2.m - 1]) + '</span></button>').join('');
+  return iwCaja('meses', 'Ingresos y gastos', 'últimos ' + n + ' meses', act('iwIrAnio'), '<div class="iw-mbs' + (n === 12 ? ' doce' : '') + '">' + barras + '</div>' +
+    '<div class="iw-mb-pie"><span class="iw-mb-ley"><i class="ing"></i>Entra<i class="gas"></i>Gastas</span><span>' + escapeHtml(MESES[ult.m - 1]) + ': <b class="tnum ' + (dif >= 0 ? 'bueno' : 'malo') + '">' + (dif >= 0 ? '+' : '−') + escapeHtml(moneyShort(Math.abs(dif))) + '</b></span></div>');
+}
+const IW_INV_PER = [['1m', '1M', 30], ['6m', '6M', 182], ['1a', '1A', 365], ['max', 'Máx', 0]];
+function iwInvHtml(x, i) {
+  const per = IW_INV_PER.find((p) => p[0] === (x.o && x.o.per)) || IW_INV_PER[1];
+  const tit = 'Inversiones', a = act('iwIrInv');
+  if (!S.movimientos.some((m) => m.tipo === 'Inversión')) return iwCaja('inv', tit, '', a, iwVacio('Aún no tienes inversiones.'));
+  let grupos; try { grupos = inversionesPorActivo(); } catch (e) { grupos = []; }
+  const movs = movsValorables(grupos);
+  if (!movs.length) return iwCaja('inv', tit, '', a, iwVacio('Pon las participaciones de tus compras para ver la gráfica.'));
+  const ids = [...new Set(movs.map((m) => m.id))].sort(), desde = movs[0].fecha, clave = ids.join(',') + '|' + desde, Hs = S.historico;
+  const vigente = Hs && Hs.clave === clave && Date.now() - Hs.ts < (Hs.error ? 60000 : 600000);
+  // los precios se piden solo cuando la pieza se ve en pantalla (y se guardan 10 minutos)
+  if (!vigente && i >= 0 && activosDisponible()) { S._iwInvPend = { ids, desde, clave }; setTimeout(iwInvObservar, 0); }
+  if (!Hs || Hs.clave !== clave || Hs.error || !Object.keys(Hs.series || {}).length) return iwCaja('inv', tit, per[1], a, '<div class="iw-invb" data-iw-inv="1">' + (Hs && Hs.clave === clave && Hs.error ? iwVacio('No hemos podido cargar los precios.') : iwVacio('Cargando precios…')) + '</div>');
+  const serie = serieCartera(movs, Hs.series); conRentab(serie);
+  if (serie.length < 2) return iwCaja('inv', tit, per[1], a, iwVacio('Aún no hay suficientes días para la gráfica.'));
+  const ini = per[2] ? addDiasISO(todayISO(), -per[2]) : desde; let i0 = serie.findIndex((p) => p.d >= ini); if (i0 < 0) i0 = 0;
+  const prev = i0 > 0 ? serie[i0 - 1] : { d: desde, v: 0, inv: 0 }, pts = reducirPuntos(serie.slice(i0), 40), fin = serie[serie.length - 1];
+  const gan = fin.v - fin.inv, pctG = fin.inv > 0 ? gan / fin.inv * 100 : null, ch = cambioPeriodo(prev, fin), sube = ch.delta >= 0;
+  const W = 300, Hh = 64, vs = pts.map((p) => p.v), lo = Math.min(...vs), hi = Math.max(...vs), rg = hi - lo || 1;
+  const xy = pts.map((p, j) => [(j / Math.max(1, pts.length - 1) * W).toFixed(1), (Hh - 4 - (p.v - lo) / rg * (Hh - 8)).toFixed(1)]);
+  const linea = 'M' + xy.map((q) => q.join(' ')).join(' L'), area = linea + ' L' + W + ' ' + Hh + ' L0 ' + Hh + ' Z';
+  const pct1 = (v) => (v >= 0 ? '+' : '−') + fmt2(Math.abs(v)).replace(/,00$/, '') + ' %';
+  return iwCaja('inv', tit, per[1], a, '<div class="iw-invb' + (sube ? ' sube' : ' baja') + '"><div class="iw-inv-c"><b class="iw-ti-v tnum">' + escapeHtml(moneyShort(fin.v)) + '</b><span class="tnum ' + (gan >= 0 ? 'bueno' : 'malo') + '">' + (gan >= 0 ? '+' : '−') + escapeHtml(moneyShort(Math.abs(gan))) + (pctG == null ? '' : ' · ' + pct1(pctG)) + '</span></div>' +
+    '<svg class="iw-inv-g" viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" aria-hidden="true"><path class="ar" d="' + area + '"/><path class="ln" d="' + linea + '" vector-effect="non-scaling-stroke"/></svg>' +
+    '<span class="iw-ti-l">' + (per[0] === 'max' ? 'Desde el inicio' : 'En ' + ({ '1m': '1 mes', '6m': '6 meses', '1a': '1 año' })[per[0]]) + ': <b class="tnum ' + (sube ? 'bueno' : 'malo') + '">' + (sube ? '+' : '−') + escapeHtml(moneyShort(Math.abs(ch.delta))) + '</b></span></div>');
+}
+function iwInvObservar() {
+  const P = S._iwInvPend, el = document.querySelector('#content [data-iw-inv]');
+  if (!P || !el || S._histCarga || S._histProg) return;
+  const cargar = () => { if (S._histCarga) return; S._iwInvPend = null; cargarHistorico(P.ids, P.desde, P.clave); };
+  if (!('IntersectionObserver' in window)) return cargar();
+  if (S._iwInvObs) S._iwInvObs.disconnect();
+  S._iwInvObs = new IntersectionObserver((ents) => { if (ents.some((en) => en.isIntersecting)) { S._iwInvObs.disconnect(); S._iwInvObs = null; cargar(); } });
+  S._iwInvObs.observe(el);
+}
+async function iwGuardar() {
+  const F = FORM; if (!F || F.kind !== 'iwEd') return;
+  F.lista = F.lista.slice(0, IW_MAX);
+  const job = saveConfig({ inicioWidgets: F.lista.map((x) => (x.o ? { t: x.t, o: x.o } : { t: x.t })) }); // primero se guarda (cambia la configuración en memoria) y luego se pinta
+  render(); updateSheet(iwEdHtml()); await job;
 }
 function renderMovResumen() {
   const p = movPerNorm(S.movPeriodo);
@@ -7680,12 +8015,14 @@ const BADGES = {
   papelera: ['NUEVO', '2026-10-14'], juntos: ['NUEVO', '2026-10-14'], aspecto: ['NUEVO', '2026-10-14'], metasH: ['NUEVO', '2026-10-13'], amigos: ['NUEVO', '2026-10-14'], hitos: ['NUEVO', '2026-10-13'],
   rentab: ['NUEVO', '2026-10-10'], mesames: ['NUEVO', '2026-10-10'], presup: ['MEJORADO', '2026-10-10'], anual: ['MEJORADO', '2026-10-10'],
   cuentas: ['NUEVO', '2026-10-17'], sincuenta: ['NUEVO', '2026-10-17'],
+  inicioEd: ['NUEVO', '2026-10-29'],
   tumes: ['MEJORADO', '2026-10-23'], asivas: ['MEJORADO', '2026-10-23'], cobros: ['MEJORADO', '2026-10-23'], temas: ['NUEVO', '2026-10-23'], planes: ['NUEVO', '2026-10-23'], perfil: ['NUEVO', '2026-10-23'],
 };
 // Una clave que vuelve con fecha nueva (p. ej. NUEVO → MEJORADO) sale otra vez aunque ya la vieras antes de esa fecha.
 function badgeActivo(k) {
   const b = BADGES[k]; if (!b) return false;
   if (uAdd(b[1], 21) < todayISO()) return false;
+  if (b[1] > todayISO()) return false; // una etiqueta con fecha futura aún no sale
   const visto = (cfg().badgesVistos || {})[k];
   return !visto || String(visto) < b[1];
 }
@@ -9229,6 +9566,25 @@ const H = {
   asiVasSub: ([k]) => { if (!FORM || FORM.kind !== 'asiVas') return; FORM.sub = k || ''; sentir('tic'); updateSheet(asiVasHtml()); },
   asiVasElegir: ([k]) => { if (!FORM || FORM.kind !== 'asiVas') return; const F = FORM, otro = k !== 'auto' ? F.v.findIndex((x, i) => i !== F.sel && x === k) : -1; if (otro >= 0) F.v[otro] = F.v[F.sel]; F.v[F.sel] = k; F.sub = ''; if (F.sel < 4) F.sel++; sentir('tic'); updateSheet(asiVasHtml()); },
   asiVasReset: () => { if (!FORM || FORM.kind !== 'asiVas') return; FORM.v = ['auto', 'auto', 'auto', 'auto', 'auto']; FORM.sub = ''; sentir('tic'); updateSheet(asiVasHtml()); },
+  // «Editar Inicio» (docs/21)
+  iwEditar: () => { verBadge('inicioEd'); FORM = { kind: 'iwEd', vista: 'lista', lista: iwLista() }; openSheet(iwEdHtml()); },
+  iwVista: ([v]) => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.vista = v; FORM.aviso = ''; updateSheet(iwEdHtml()); },
+  iwCat: () => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.vista = 'cat'; FORM.aviso = ''; updateSheet(iwEdHtml()); },
+  iwFiltro: ([k]) => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.filtro = k; updateSheet(iwEdHtml()); },
+  iwMover: ([i, d]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; i = Number(i); const j = i + Number(d); if (j < 0 || j >= F.lista.length) return; const t = F.lista[i]; F.lista[i] = F.lista[j]; F.lista[j] = t; F.aviso = ''; sentir('tic'); iwGuardar(); },
+  iwQuitar: ([i]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; const x = F.lista.splice(Number(i), 1)[0]; if (!x) return; F.aviso = IW_TIPOS[x.t].recom ? 'Has quitado «' + IW_TIPOS[x.t].n + '». Te recomendamos tenerla: puedes volver a añadirla cuando quieras.' : ''; sentir('tic'); iwGuardar(); },
+  iwAnadir: ([t]) => { const F = FORM; if (!F || F.kind !== 'iwEd' || !IW_TIPOS[t] || F.lista.length >= IW_MAX) return; if (!IW_TIPOS[t].varias && F.lista.some((x) => x.t === t)) return;
+    if (IW_TIPOS[t].opc && !IW_TIPOS[t].sinPregunta) { F.vista = 'opc'; F.i = -1; F.nuevo = t; updateSheet(iwEdHtml()); return; }
+    F.lista.push({ t }); F.vista = 'lista'; F.aviso = ''; sentir('ok'); iwGuardar(); },
+  iwOpcAbrir: ([i]) => { i = Number(i); const l = FORM && FORM.kind === 'iwEd' ? FORM.lista : iwLista(); if (!l[i]) return; const ab = FORM && FORM.kind === 'iwEd' && $('#sheetBackdrop');
+    FORM = { kind: 'iwEd', vista: 'opc', lista: l, i, filtro: FORM && FORM.filtro }; if (ab) updateSheet(iwEdHtml()); else openSheet(iwEdHtml()); },
+  iwOpcElegir: ([k]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; if (F.i >= 0 && F.lista[F.i]) F.lista[F.i] = { t: F.lista[F.i].t, o: iwOpcObj(F.lista[F.i].t, k) }; else if (F.nuevo && F.lista.length < IW_MAX) F.lista.push({ t: F.nuevo, o: iwOpcObj(F.nuevo, k) }); F.vista = 'lista'; F.i = -1; F.nuevo = null; F.aviso = ''; sentir('ok'); iwGuardar(); },
+  iwIrMovLista: () => { S.tab = 'movimientos'; S.movVista = 'lista'; S.movPeriodo = mesHoyClave(); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
+  iwIrMovCal: ([iso]) => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = mesClave(im.y, im.m); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S.movCalDia = iso || ''; S._entrando = true; render(); window.scrollTo(0, 0); },
+  iwIrAgendaDia: ([iso]) => { S.calFecha = iso || todayISO(); S.agendaSub = 'calendario'; S._entrando = true; S.tab = 'agenda'; render(); window.scrollTo(0, 0); },
+  iwIrAnio: () => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = 'y:' + im.y; S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
+  iwIrInv: () => { H.irDinero(['inversiones']); },
+  iwReset: () => { const F = FORM; if (!F || F.kind !== 'iwEd') return; F.lista = iwDefecto(); F.aviso = ''; iwGuardar(); },
   asiVasGuardar: async () => { if (!FORM || FORM.kind !== 'asiVas') return; const v = FORM.v.slice(); closeSheet(); await saveConfig({ asiVas: v.every((x) => x === 'auto') ? null : v }); sentir('ok'); render(); toast('Listo: así verás tu «Así vas»'); },
   invAvisoVer: () => { saveConfig({ invAvisoVisto: isoSemana(todayISO()) }); H.irDinero(['inversiones']); },
   insVer: ([i]) => { const x = (S._ins || [])[Number(i)]; if (!x) return; verBadge('asivas'); sentir('tic'); abrirPopup('<div class="ins-pop ' + (x.tono || '') + '"' + (x.color ? ' style="--ic:' + x.color + '"' : '') + '>' + (x.ic ? '<span class="ins-pop-ic">' + ic(x.ic) + '</span>' : '') + '<b class="ins-pop-v tnum">' + escapeHtml(x.valor) + '</b><span class="ins-pop-l">' + escapeHtml(x.l1 + ' · ' + x.l2) + '</span><p>' + escapeHtml(x.frase) + '</p>' + (x.hueco != null ? '<button type="button" class="link ins-cambiar" ' + act('asiVasAbrir', x.hueco) + '>' + ic('sliders') + ' Cambiar este círculo</button>' : '') + '</div><div class="actions"><button class="btn ghost block" ' + act('popupCerrar') + '>Cerrar</button><button class="btn accent block" ' + x.a.replace('data-click="', 'data-click="insVerIr|') + '>Ver</button></div>'); },
@@ -10450,6 +10806,40 @@ document.addEventListener('focusin', (e) => { const T = FORM && FORM.tec; if (T 
 (function () { let t = null; const fin = () => { clearTimeout(t); t = null; if (H.tecK._largo) setTimeout(() => { H.tecK._largo = false; }, 350); };
   document.addEventListener('pointerdown', (e) => { H.tecK._largo = false; const b = e.target.closest && e.target.closest('#tec .tec-del'); if (!b) return; fin(); t = setTimeout(() => { H.tecK._largo = true; tecPulsar('clear'); }, 500); });
   ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => document.addEventListener(ev, fin)); })();
+/* ---- arrastrar en «Editar Inicio» (desde los puntos) y mantener pulsada una pieza para editar ---- */
+(function () {
+  let D = null;
+  document.addEventListener('pointerdown', (e) => {
+    const g = e.target.closest && e.target.closest('.iw-grip'); if (!g || !FORM || FORM.kind !== 'iwEd') return;
+    const fila = g.closest('.iw-ed-f'), cont = fila && fila.parentElement; if (!fila) return;
+    e.preventDefault(); const filas = [...cont.querySelectorAll('.iw-ed-f[data-i]')], i = filas.indexOf(fila);
+    D = { fila, filas, i, y0: e.clientY, a: i, alto: fila.getBoundingClientRect().height || 56 };
+    fila.classList.add('arrastra'); try { g.setPointerCapture(e.pointerId); } catch (er) { /* */ } sentir('tic');
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!D) return; const dy = e.clientY - D.y0, n = D.filas.length;
+    D.fila.style.transform = 'translateY(' + dy + 'px)';
+    const a = Math.max(0, Math.min(n - 1, D.i + Math.round(dy / D.alto)));
+    if (a !== D.a) { D.a = a; sentir('tic'); }
+    D.filas.forEach((f, j) => { if (f === D.fila) return; const s = D.i < a && j > D.i && j <= a ? -1 : D.i > a && j < D.i && j >= a ? 1 : 0; f.style.transform = s ? 'translateY(' + (s * D.alto) + 'px)' : ''; });
+  });
+  const fin = (e) => {
+    if (!D) return; const d = D; D = null;
+    d.filas.forEach((f) => { f.style.transform = ''; }); d.fila.classList.remove('arrastra');
+    const F = FORM; if (!F || F.kind !== 'iwEd' || d.a === d.i || (e && e.type === 'pointercancel')) return; // si el sistema corta el gesto, el orden se queda como estaba
+    const x = F.lista.splice(d.i, 1)[0]; F.lista.splice(d.a, 0, x); sentir('ok'); iwGuardar();
+  };
+  document.addEventListener('pointerup', fin); document.addEventListener('pointercancel', fin);
+  // mantener pulsada una pieza de Inicio abre «Editar Inicio»
+  let t = null, p0 = null;
+  const quita = () => { clearTimeout(t); t = null; };
+  document.addEventListener('pointerdown', (e) => { quita(); const w = e.target.closest && e.target.closest('#content .iw, #content .ins-circ, #content .dias-lista'); if (!w || S.tab !== 'inicio') return;
+    p0 = [e.clientX, e.clientY]; t = setTimeout(() => { t = null; S._iwLargo = Date.now(); sentir('tic', true); H.iwEditar(); }, 600); });
+  document.addEventListener('pointermove', (e) => { if (t && p0 && Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) > 10) quita(); });
+  ['pointerup', 'pointercancel', 'scroll'].forEach((ev) => document.addEventListener(ev, quita, true));
+  // el toque que acaba un «mantener pulsado» no abre la pieza
+  document.addEventListener('click', (e) => { if (S._iwLargo && Date.now() - S._iwLargo < 900) { S._iwLargo = 0; if (!(e.target.closest && e.target.closest('#sheetHost'))) { e.stopPropagation(); e.preventDefault(); } } }, true);
+})();
 document.addEventListener('change', (e) => dispatch('change', e));
 document.addEventListener('keydown', (e) => { if (tecTeclaFisica(e)) return; if (e.key === 'Enter' && e.target && e.target.id === 'agRapida') { e.preventDefault(); agRapidaCrear(); return; } if (e.key === 'Escape') { if ($('#popupBackdrop')) cerrarPopup(); else closeSheet(); } });
 
