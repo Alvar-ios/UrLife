@@ -1026,6 +1026,7 @@ function render() {
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : TITULOS[S.tab];
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
   const _agEl = document.activeElement && document.activeElement.id === 'agRapida' ? document.activeElement : null, _agV = _agEl ? _agEl.value : null;
+  if (GOLF_APP) { document.body.classList.add('golf-app'); const t0 = $('#pageTitle'); if (t0) t0.textContent = 'Golf Reventa'; c.innerHTML = renderProyectos(); return; }
   if (S.tab === 'inicio') c.innerHTML = renderInicioNuevo();
   else if (S.tab === 'movimientos') c.innerHTML = renderMovTab();
   else if (S.tab === 'dinero') c.innerHTML = dineroV2() ? renderDineroV2() : renderDinero();
@@ -1957,6 +1958,8 @@ async function doDeleteMov() {
 /* Pestañas de Análisis (Bloque 1). 'general' siempre visible; las demás son elegibles y se guardan en la cuenta.
    Proyectos queda oculto (no borrado): ponlo a true para reactivarlo. */
 const PROYECTOS_VISIBLE = false;
+// Rama «golf»: la app solo enseña Golf Reventa (app aparte, solo para el dueño; los datos ya son privados por usuario)
+const GOLF_APP = true;
 const TABS_AN_OPC = [['metas', 'Metas de ahorro'], ['inversiones', 'Inversiones'], ['deudas', 'Deudas']].concat(PROYECTOS_VISIBLE ? [['proyectos', 'Proyectos']] : []);
 function tabsAnElegidas() {
   const g = cfg().tabsAnalisis;
@@ -9168,7 +9171,7 @@ const H = {
     else if (k === 'importar') H.impAbrir([]);
   },
   setInicioSub: () => { S.tab = 'inicio'; render(); },
-  onFab: () => openCrear(),
+  onFab: () => (GOLF_APP ? openGolfForm() : openCrear()),
   onFabAntiguo: () => {
     if (S.tab === 'tareas' || (S.tab === 'agenda' && S.agendaSub !== 'calendario')) return openTareaForm();
     if (enAnalisis() && PROYECTOS_VISIBLE && subAnalisis() === 'proyectos') return openGolfForm();

@@ -1924,3 +1924,7 @@ html[data-look="nuevo"] .bco-fila:last-child { border-bottom: 0; }
 html[data-look="nuevo"] .bco-fila > span:not(.bco-ficha) { flex: 1; }
 html[data-look="nuevo"] .bco-fila.on { font-weight: 700; }
 html[data-look="nuevo"] .bco-fila > .i { color: var(--accent); width: 18px; height: 18px; }
+
+/* Rama «golf»: app aparte, solo Golf Reventa */
+body.golf-app .tabbar, body.golf-app .rail, body.golf-app #tbAgenda, body.golf-app [aria-label="Buscar"], body.golf-app #compararHost, body.golf-app #tbVolver, body.golf-app #tbAvatar { display: none !important; }
+body.golf-app .page { margin-left: 0 !important; }
