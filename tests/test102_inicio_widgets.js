@@ -20,7 +20,7 @@ const movs = [{ id: 'g1', tipo: 'Gasto', categoria: 'Comida', importe: 90, fecha
   ok(doc.querySelectorAll('.iw-ed-f').length === 3 && /Tarjeta del mes/.test(doc.querySelector('.iw-ed-f.fija').textContent), 'la hoja: tarjeta fija + 2 piezas');
   ok(/Recomendada/.test(doc.querySelectorAll('.iw-ed-f')[1].textContent), 'Así vas sale como recomendada');
   H.iwCat([]); await sleep(10);
-  ok(doc.querySelectorAll('.iw-cat-t').length === 11 && doc.querySelectorAll('.iw-cat-t.ya').length === 2, 'catálogo: 11 piezas (sin Juntos ni deudas: no hay), 2 ya puestas');
+  ok(doc.querySelectorAll('.iw-cat-t').length === 12 && doc.querySelectorAll('.iw-cat-t.ya').length === 2, 'catálogo: 12 piezas (sin Juntos, deudas ni inversiones: no hay), 2 ya puestas');
   ok(doc.querySelector('.iw-cat-t .iw-prev-in .iw-anillo') && !doc.querySelector('.iw-prev-in [data-click]'), 'vista previa con tus datos y sin botones vivos');
   H.iwFiltro(['dinero']); await sleep(5);
   ok(doc.querySelectorAll('.iw-cat-t').length === 3, 'filtro Dinero: meta, lo que tienes y cuentas');
