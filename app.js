@@ -5042,7 +5042,7 @@ function dm3CuentasHtml(p) {
     '<div class="dm3-rep-ley">' + conSaldo.map((c) => '<span><i style="background:' + colorCuenta(c) + '"></i>' + escapeHtml(c.nombre) + ' ' + Math.round(num(saldoCuenta(c)) / tot * 100) + ' %</span>').join('') + '</div>' : '';
   const tile = (c) => { const v = saldoCuenta(c), ap = pc && pc.id === c.id && p.ahorroDentro && p.ahorro > 0.005 && p.ahorro <= p.banco + 0.005 ? m0(p.ahorro) + ' apartados' : '';
     const linea = v == null ? '<span class="pon">Pon el saldo</span>' : !cuentaEnTengo(c) ? 'no suma' : ap || (tipoCuentaTxt(c) + (pc && pc.id === c.id ? ' · principal' : ''));
-    return '<button type="button" class="dm3-cta tappable" style="--cc:' + colorCuenta(c) + '" ' + act('cuentaVer', c.id) + '><span class="dm3-cta-ic">' + ic(ICONO_CUENTA[tipoCuenta(c)] || 'wallet') + '</span>' +
+    return '<button type="button" class="dm3-cta tappable" style="--cc:' + colorCuenta(c) + '" ' + act('cuentaVer', c.id) + '>' + (bancoFichaHtml(bancoDe(c), 'dm3') || '<span class="dm3-cta-ic">' + ic(ICONO_CUENTA[tipoCuenta(c)] || 'wallet') + '</span>') + '' +
       '<span class="dm3-cta-n">' + escapeHtml(c.nombre) + '</span><b class="tnum">' + (v == null ? '—' : money(v)) + '</b><span class="dm3-cta-l">' + linea + '</span></button>'; };
   return '<div class="card dm3-cuentas">' + barra + '<div class="dm3-mosaico">' + cs.map(tile).join('') +
     '<button type="button" class="dm3-cta nueva tappable" ' + act('openCuentas') + '>' + ic('plus') + '<span>Añadir cuenta</span></button></div>' + sinSaldoAvisoHtml() + (p.ahorroDentro && p.ahorro > p.banco + 0.005 ? '<div class="dm-lqt-nota">Tus metas suman <b class="tnum">' + m0(p.ahorro) + '</b>, más de lo que hay en tus cuentas. ¿Lo tienes en otra cuenta? <button type="button" class="link" ' + act('openCuentas') + '>Añádela</button></div>' : '') +
@@ -6324,6 +6324,44 @@ function compGastoChip(y, m) {
 }
 /* ---- cuentas y saldos (dinero en el banco, a mano hasta conectar el banco) ---- */
 // Varias cuentas (fase 1, ver docs/PLAN_CUENTAS.md): tipo, color, principal y si suma en «En tus cuentas».
+/* ---- Bancos (25/10, docs/20): elegir el banco de la cuenta; ficha con su logo (guardado en la app, en logos/) o con su color y letras.
+   Solo se guarda la clave (cfg().cuentas[i].banco); nunca se pide nada a un servicio de fuera. Los logos son marcas de cada banco. ---- */
+const BANCOS = [
+  ['bbva', 'BBVA', '#00278E', 'BBVA', 'banco', 1], ['santander', 'Santander', '#EC0000', 'S', 'banco', 1, 'banco santander'], ['caixabank', 'CaixaBank', '#007EAE', 'CX', 'banco', 1, 'la caixa caixa', 'caixabank.svg'],
+  ['ing', 'ING', '#FF6200', 'ING', 'banco', 1, 'ing direct cuenta naranja'], ['sabadell', 'Banco Sabadell', '#016DFF', 'BS', 'banco', 1], ['bankinter', 'Bankinter', '#F25E00', 'bk', 'banco', 1],
+  ['unicaja', 'Unicaja', '#2BD124', 'U', 'banco', 1, 'liberbank'], ['openbank', 'Openbank', '#FF014A', 'OB', 'banco', 1], ['imagin', 'imagin', '#09F3CF', 'im', 'banco', 0],
+  ['abanca', 'Abanca', '#5984D6', 'A', 'banco', 0], ['kutxabank', 'Kutxabank', '#E2001A', 'K', 'banco', 0], ['ibercaja', 'Ibercaja', '#003C7E', 'IC', 'banco', 0],
+  ['cajamar', 'Cajamar', '#007A3D', 'CM', 'banco', 0], ['evo', 'EVO Banco', '#1A1A1A', 'EVO', 'banco', 0], ['laboral', 'Laboral Kutxa', '#E30613', 'LK', 'banco', 0],
+  ['cajarural', 'Caja Rural', '#00843D', 'CR', 'banco', 0, 'ruralvia'], ['selfbank', 'Self Bank', '#5A2D82', 'SB', 'banco', 0], ['deutschebank', 'Deutsche Bank', '#0018A8', 'DB', 'banco', 0, '', 'deutschebank.svg'],
+  ['revolut', 'Revolut', '#191C1F', 'R', 'banco', 1, '', 'revolut.svg'], ['n26', 'N26', '#48AC98', 'N26', 'banco', 0, '', 'n26.svg'], ['wise', 'Wise', '#9FE870', 'W', 'banco', 0, 'transferwise', 'wise.svg'],
+  ['bunq', 'bunq', '#3394D7', 'bq', 'banco', 0, '', 'bunq.svg'], ['paypal', 'PayPal', '#FFFFFF', 'PP', 'banco', 0, '', 'paypal.svg'],
+  ['myinvestor', 'MyInvestor', '#C42CA5', 'my', 'broker', 1], ['traderepublic', 'Trade Republic', '#000000', 'TR', 'broker', 1], ['indexa', 'Indexa Capital', '#2A66AB', 'IX', 'broker', 1],
+  ['etoro', 'eToro', '#6CFE89', 'e', 'broker', 0], ['degiro', 'DEGIRO', '#009FDF', 'DG', 'broker', 0, 'flatexdegiro'], ['ibkr', 'Interactive Brokers', '#D92027', 'IB', 'broker', 0, 'ibkr'],
+  ['scalable', 'Scalable Capital', '#1E1E3C', 'SC', 'broker', 0], ['xtb', 'XTB', '#0A1F44', 'XTB', 'broker', 0],
+  ['coinbase', 'Coinbase', '#0052FF', 'C', 'broker', 0], ['binance', 'Binance', '#1E2026', 'BN', 'broker', 0, '', 'binance.svg'],
+].map(([k, n, color, letras, tipo, top, alias, logo]) => ({ k, n, color, letras, tipo, top: !!top, alias: alias || '', logo: logo || '' }));
+function bancoDe(c) { return c && c.banco ? BANCOS.find((b) => b.k === c.banco) || null : null; }
+function bancoSugerido(nombre) { const t = normDesc(nombre || ''); if (!t) return null; return BANCOS.find((b) => { const ks = [b.n, b.k].concat(b.alias ? b.alias.split(' ') : []).map((x) => normDesc(x)).filter((x) => x.length >= 2); return ks.some((x) => (' ' + t + ' ').indexOf(' ' + x + ' ') >= 0); }) || null; }
+// contraste: letras blancas o casi negras según el color de fondo
+function bancoTinta(hex) { const h = hex.replace('#', ''), r = parseInt(h.slice(0, 2), 16) / 255, g = parseInt(h.slice(2, 4), 16) / 255, b = parseInt(h.slice(4, 6), 16) / 255, f = (x) => (x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)), L = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); return L > 0.4 ? '#14141A' : '#FFFFFF'; }
+// la ficha del banco (o null si la cuenta no tiene banco): logo guardado en la app o color + letras
+function bancoFichaHtml(b, cls) {
+  if (!b) return null;
+  const inner = b.logo ? '<img src="logos/' + b.logo + '" alt="" loading="lazy" decoding="async">' : '<b style="color:' + bancoTinta(b.color) + '">' + escapeHtml(b.letras) + '</b>';
+  return '<span class="bco-ficha' + (cls ? ' ' + cls : '') + (b.letras.length >= 3 ? ' largo' : '') + '" style="--bc:' + b.color + '" aria-hidden="true">' + inner + '</span>';
+}
+function bancoElegirHtml() {
+  const F = FORM, q = normDesc(F.q || ''), c = (cfg().cuentas || [])[F.i] || {};
+  const coincide = (b) => !q || [b.n, b.k, b.alias].some((x) => normDesc(x).indexOf(q) >= 0);
+  const fila = (b) => '<button type="button" class="bco-fila tappable' + (c.banco === b.k ? ' on' : '') + '" ' + act('bancoElegir', b.k) + '>' + bancoFichaHtml(b) + '<span>' + escapeHtml(b.n) + '</span>' + (c.banco === b.k ? ic('check') : '') + '</button>';
+  const grupo = (t, arr) => (arr.length ? '<div class="section-title">' + t + '</div><div class="card bco-lista">' + arr.map(fila).join('') + '</div>' : '');
+  const vis = BANCOS.filter(coincide);
+  return '<div class="handle"></div><h2>¿De qué banco es?</h2>' +
+    '<div class="field"><input type="search" id="bcoQ" placeholder="Busca tu banco o bróker" autocomplete="off" value="' + escapeHtml(F.q || '') + '" ' + onInput('bancoBuscar') + '></div><div id="bcoRes">' +
+    (q ? grupo('Resultados', vis) || '<div class="rec-hint">No lo tenemos. Elige «Otro, o sin banco» y ponle tú el nombre.</div>' : grupo('Los más usados', vis.filter((b) => b.tipo === 'banco' && b.top)) + grupo('Brókers e inversión', vis.filter((b) => b.tipo === 'broker')) + grupo('Otros bancos', vis.filter((b) => b.tipo === 'banco' && !b.top))) + '</div>' +
+    '<button type="button" class="btn ghost block" style="margin-top:12px;" ' + act('bancoElegir', '') + '>' + ic('wallet') + ' Otro, o sin banco</button>' +
+    '<div class="rec-hint" style="margin-top:10px;">Los nombres y logos son de cada banco; solo sirven para que reconozcas tu cuenta.</div>';
+}
 const TIPOS_CUENTA = [['corriente', 'Corriente'], ['ahorro', 'Ahorro'], ['efectivo', 'Efectivo'], ['broker', 'Bróker'], ['otra', 'Otra']];
 const COLORES_CUENTA = ['#64748B', '#0F8A87', '#B83FB8', '#C2416C', '#5B5BD6', '#0891B2']; // 22/10: sin el azul de fijos, el verde de ingresos ni el color de deudas
 function tipoCuenta(c) { return c && TIPOS_CUENTA.some((t) => t[0] === c.tipo) ? c.tipo : 'corriente'; }
@@ -6465,7 +6503,7 @@ function filasDeCuentaHtml(lista, id) { const prev = S.movCuenta; S.movCuenta = 
 function cuentaVerHtml(id) {
   const c = cuentaPorId(id); if (!c) return '';
   const i = (cfg().cuentas || []).findIndex((x) => x && x.id === id), v = saldoCuenta(c), ult = movsDeCuenta(id).slice(0, 5), sin = movsSinCuenta().length;
-  return '<div class="handle"></div><h2><span class="dot" style="background:' + colorCuenta(c) + ';width:12px;height:12px;margin-right:8px;"></span>' + escapeHtml(c.nombre) + '</h2>' +
+  return '<div class="handle"></div><h2 class="bco-h2">' + (bancoFichaHtml(bancoDe(c), 'h') || '<span class="dot" style="background:' + colorCuenta(c) + ';width:12px;height:12px;margin-right:8px;"></span>') + escapeHtml(c.nombre) + '</h2>' +
     (v == null ? '' : '<div class="sv-real-l">Saldo real · lo que dice tu banco</div>') + '<div class="cuentas-total tnum">' + (v == null ? '—' : money(v)) + '</div>' +
     '<div class="rec-hint" style="margin:-4px 0 12px;">' + escapeHtml(tipoCuentaTxt(c)) + (v == null ? ' · aún no has puesto su saldo' : ' · ' + cuentaFechaTxt(c)) + '</div>' +
     (v != null && compartidosCuenta(c).n ? cuentaDosSaldosHtml(c, v) : '') +
@@ -6600,7 +6638,7 @@ function cuentasHtml() {
     '<div class="rec-hint" style="margin:-8px 0 12px;">Toca una cuenta para cambiar su saldo, su tipo o su color.</div>' +
     (cs.length ? '<div class="card cuentas-lista">' + cs.map((c, i) => {
       const v = saldoCuenta(c), pc = cuentaPrincipal();
-      return '<button class="row cuenta-fila tappable" ' + act('cuentaEditar', i) + '><span class="aj-ic" style="--cc:' + colorCuenta(c) + '">' + ic(ICONO_CUENTA[tipoCuenta(c)] || 'wallet') + '</span>' +
+      return '<button class="row cuenta-fila tappable" ' + act('cuentaEditar', i) + '>' + (bancoFichaHtml(bancoDe(c), 'aj') || '<span class="aj-ic" style="--cc:' + colorCuenta(c) + '">' + ic(ICONO_CUENTA[tipoCuenta(c)] || 'wallet') + '</span>') +
         '<div class="main"><div class="ttl">' + escapeHtml(c.nombre || 'Cuenta sin nombre') + '</div><div class="meta">' + escapeHtml([tipoCuentaTxt(c), pc && pc.id === c.id && cuentasCfg().length >= 2 ? 'principal' : '', cuentaEnTengo(c) ? '' : 'no suma'].filter(Boolean).join(' · ')) + '</div></div>' +
         '<div class="amt tnum">' + (v == null ? '<span style="color:var(--accent)">Pon el saldo</span>' : money(v)) + '</div><span class="chev-s">' + ic('chevR') + '</span></button>';
     }).join('') + '</div>'
@@ -6612,13 +6650,15 @@ function cuentasHtml() {
 function cuentaEdHtml(i) {
   const c = (cfg().cuentas || [])[i] || {}, v = saldoCuenta(c), pc = cuentaPrincipal(), varias = cuentasCfg().length >= 2, esP = !!pc && pc.id === c.id;
   return '<div class="handle"></div><button class="link volver" ' + act('cuentasVolver') + '>' + ic('chevL') + ' Cuentas y saldos</button>' +
-    '<h2 style="display:flex;align-items:center;gap:8px;"><span class="dot" style="background:' + colorCuenta(c) + ';width:12px;height:12px;"></span>' + escapeHtml(c.nombre || 'Cuenta nueva') + '</h2>' +
+    '<h2 class="bco-h2">' + (bancoFichaHtml(bancoDe(c), 'h') || '<span class="dot" style="background:' + colorCuenta(c) + ';width:12px;height:12px;"></span>') + escapeHtml(c.nombre || 'Cuenta nueva') + '</h2>' +
     '<div class="cuenta-ed">' +
+    '<div class="field"><label>Banco</label><button type="button" class="bco-campo tappable" ' + act('bancoAbrir', i) + '>' + (bancoFichaHtml(bancoDe(c)) || '<span class="aj-ic">' + ic('bank') + '</span>') + '<span>' + escapeHtml(bancoDe(c) ? bancoDe(c).n : 'Elegir banco') + '</span>' + ic('chevR') + '</button>' +
+      (!bancoDe(c) && bancoSugerido(c.nombre) ? '<div class="rec-hint" style="margin-top:6px;">¿Es de ' + escapeHtml(bancoSugerido(c.nombre).n) + '? <button type="button" class="link" ' + act('bancoSugerir', i, bancoSugerido(c.nombre).k) + '>Ponle su logo</button></div>' : '') + '</div>' +
     '<div class="field"><label>Nombre</label><input id="fCuentaNombre" value="' + escapeHtml(c.nombre || '') + '" placeholder="p. ej. Santander" ' + onChange('cuentaCampo', i, 'nombre') + '></div>' +
     '<div class="field"><label>Saldo de hoy</label><input class="amt importe-grande" type="number" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Saldo de hoy" value="' + (v == null ? '' : v) + '" ' + onChange('cuentaCampo', i, 'saldo') + '>' +
       '<div class="rec-hint" style="margin-top:6px;">' + (v == null ? 'Escribe lo que tienes hoy en esta cuenta. Desde ahí la app suma y resta sus movimientos.' : escapeHtml(cuentaFechaTxt(c)) + ' · <button type="button" class="link" ' + act('cuadrarAbrir', i, '', 'ed') + '>Cuadrar con el banco</button>') + '</div></div>' +
     '<div class="field"><label>Tipo</label><select aria-label="Tipo de cuenta" ' + onChange('cuentaCampo', i, 'tipo') + '>' + TIPOS_CUENTA.map(([k, l]) => '<option value="' + k + '"' + (tipoCuenta(c) === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div>' +
-    '<div class="field"><label>Color</label><span class="cuenta-colores">' + COLORES_CUENTA.map((col) => '<button type="button" class="cuenta-color' + (colorCuenta(c) === col ? ' on' : '') + '" style="background:' + col + '" aria-label="Color" ' + act('cuentaColor', i, col) + '></button>').join('') + '</span></div>' +
+    '<div class="field"><label>' + (bancoDe(c) ? 'Color en gráficos' : 'Color') + '</label><span class="cuenta-colores">' + COLORES_CUENTA.map((col) => '<button type="button" class="cuenta-color' + (colorCuenta(c) === col ? ' on' : '') + '" style="background:' + col + '" aria-label="Color" ' + act('cuentaColor', i, col) + '></button>').join('') + '</span></div>' +
     '<div class="card cuenta-ajustes">' +
       '<div class="cuenta-ajuste"><div><b>Sumar en «En tus cuentas»</b><div class="rec-hint" style="margin:2px 0 0;">Para las cuentas del día a día. El ahorro y el bróker, mejor fuera.</div></div><button type="button" class="switch' + (cuentaEnTengo(c) ? ' on' : '') + '" role="switch" aria-checked="' + cuentaEnTengo(c) + '" aria-label="Sumar en En tus cuentas" ' + act('cuentaTengo', i) + '></button></div>' +
       (varias && c.nombre ? '<div class="cuenta-ajuste"><div><b>Cuenta principal</b><div class="rec-hint" style="margin:2px 0 0;">' + (esP ? 'Es tu cuenta principal: aquí van los movimientos sin cuenta y los compartidos en los que no elegiste otra.' : 'Aquí irían los movimientos sin cuenta y los compartidos en los que no elijas otra.') + '</div></div>' +
@@ -9929,7 +9969,18 @@ const H = {
   presTodas: () => { S.presTodas = !S.presTodas; render(); },
   setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = 120; render(); },
   openCuentas: () => { verBadge('patrimonio'); verBadge('cuentas'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
-  cuentaAnadir: () => { const cs = (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]); saveConfig({ cuentas: cs }); H.cuentaEditar([cs.length - 1]); setTimeout(() => { const el = $('#fCuentaNombre'); if (el) el.focus(); }, 60); },
+  cuentaAnadir: () => { const cs = (cfg().cuentas || []).concat([{ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }]); saveConfig({ cuentas: cs }); FORM = { kind: 'banco', i: cs.length - 1, nueva: true, q: '' }; updateSheet(bancoElegirHtml()); },
+  bancoAbrir: ([i]) => { FORM = { kind: 'banco', i: Number(i), q: '' }; updateSheet(bancoElegirHtml()); },
+  bancoBuscar: (_a, el) => { if (!FORM || FORM.kind !== 'banco') return; FORM.q = el.value; const t = document.createElement('div'); t.innerHTML = bancoElegirHtml(); const r = $('#bcoRes'), n = t.querySelector('#bcoRes'); if (r && n) r.innerHTML = n.innerHTML; },
+  bancoSugerir: ([i, k]) => H.bancoElegir([k], null, Number(i)),
+  bancoElegir: ([k], _el, iFijo) => {
+    const i = iFijo != null ? iFijo : FORM && FORM.kind === 'banco' ? FORM.i : -1, nueva = !!(FORM && FORM.nueva); if (i < 0) return;
+    const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[i] || {}), b = BANCOS.find((x) => x.k === k);
+    if (b) { c.banco = b.k; if (!c.nombre) c.nombre = b.n; if (nueva && b.tipo === 'broker') c.tipo = 'broker'; } else delete c.banco;
+    cs[i] = c; saveConfig({ cuentas: cs }); sentir('tic');
+    FORM = { kind: 'cuentaEd', i }; updateSheet(cuentaEdHtml(i)); render();
+    if (nueva && !b) setTimeout(() => { const el = $('#fCuentaNombre'); if (el) el.focus(); }, 60);
+  },
   cuentaQuitar: ([i], el) => {
     const cs = (cfg().cuentas || []).slice(), c = cs[Number(i)] || {};
     const n = c.id ? S.movimientos.filter((m) => m.cuentaId === c.id).length + (S.traspasos || []).filter((t) => t.cuentaId === c.id || t.cuentaDestinoId === c.id).length +
@@ -10437,6 +10488,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
