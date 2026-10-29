@@ -2077,17 +2077,17 @@ function gcCajonHtml(f, per) {
     '<button type="button" class="link gc-pres" ' + act('presEditar', gcCat(f)) + '>' + (f.pres > 0 ? 'Presupuesto ' + money(f.pres) + ' · Cambiar' : 'Ponerle presupuesto') + '</button></div>';
   return h;
 }
-function gcResumenHtml(variante) {
-  const y = S.anioSel, m = S.mesSel, d = gcDatos(y, m), per = mesClave(y, m);
-  if (!d.total && !d.presCero.length) return '<div class="section-title"><span>En qué gastas</span></div><div class="card dn-vacio">Sin gastos registrados en ' + MESES[m - 1].toLowerCase() + '.</div>' + articulosTopHtml(d.gastos);
+function gcResumenHtml(variante, cerrado) {
+  const y = S.anioSel, m = S.mesSel, d = gcDatos(y, m), per = mesClave(y, m), titG = cerrado ? 'En qué gastaste' : 'En qué gastas';
+  if (!d.total && !d.presCero.length) return '<div class="section-title"><span>' + titG + '</span></div><div class="card dn-vacio">' + (cerrado ? 'Sin gastos apuntados en ' : 'Sin gastos registrados en ') + MESES[m - 1].toLowerCase() + '.</div>' + articulosTopHtml(d.gastos);
   if (S._gcAbierta && !d.filas.concat(d.presCero).some((f) => f.n === S._gcAbierta)) S._gcAbierta = '';
   const esc = gcEscala(d), pasado = d.gastoConPres > d.totPres;
-  const resumen = d.totPres ? '<div class="summary-line pres-sum">Llevas <b class="tnum">' + money(d.gastoConPres) + '</b> de ' + money(d.totPres) + ' presupuestados · ' + (pasado ? '<span class="neg">te has pasado ' + money(d.gastoConPres - d.totPres) + '</span>' : 'quedan ' + money(d.totPres - d.gastoConPres)) + '</div>' : '';
+  const resumen = d.totPres ? '<div class="summary-line pres-sum">' + (cerrado ? 'Gastaste' : 'Llevas') + ' <b class="tnum">' + money(d.gastoConPres) + '</b> de ' + money(d.totPres) + ' presupuestados · ' + (pasado ? '<span class="neg">te ' + (cerrado ? 'pasaste ' : 'has pasado ') + money(d.gastoConPres - d.totPres) + '</span>' : (cerrado ? 'te sobraron ' : 'quedan ') + money(d.totPres - d.gastoConPres)) + '</div>' : '';
   const cab = '<div class="gc-total"><b class="tnum">' + money(d.neto) + '</b><span>gastado</span>' + compGastoChip(y, m).replace('kpi-chip', 'kpi-chip gc-chip') + '</div>' + (d.devol < -0.004 ? '<div class="summary-line gc-devol">Ya resta ' + money(-d.devol) + ' de devoluciones (' + escapeHtml(d.devolCats.join(', ')) + ')</div>' : '') + resumen;
   const lista = d.filas.concat(d.presCero).concat(S.presTodas ? d.vacias : []), filas = lista.map((f) => gcFilaHtml(f, esc, per, d)).join('');
   const subW = Math.max(0, ...lista.map((f) => gcSubHtml(f, d).replace(/<[^>]+>/g, '').length)); // todas las barras del mismo largo
   const pie = d.vacias.length ? '<button class="link pres-mas" ' + act('presTodas') + '>' + (S.presTodas ? 'Ocultar las que están a 0' : 'Ver ' + d.vacias.length + ' categorías sin gasto') + '</button>' : '';
-  const tit = '<div class="section-title"><span>En qué gastas</span><button class="link" ' + act('openListEditor', 'categoriasGasto') + '>Editar presupuestos</button></div>';
+  const tit = '<div class="section-title"><span>' + titG + '</span><button class="link" ' + act('openListEditor', 'categoriasGasto') + '>Editar presupuestos</button></div>';
   if (variante === 'mosaico') {
     const sel = d.filas.find((f) => f.n === S._gcAbierta);
     return tit + '<div class="card gc-card">' + cab + '<div class="gc-mosaico">' + gcMosaicoHtml(d) + '</div><div class="gc-det" id="gcDet">' + (sel ? gcDetHtml(sel, per, d) : '<div class="gc-det-vacio">Toca una ficha para ver en qué se va</div>') + '</div></div>' +
@@ -2187,10 +2187,10 @@ function renderAnalisisAnual(enInicio) {
   return (enInicio ? '<div class="summary-line" style="margin-top:12px;">Has apartado e invertido el <b>' + tasa.toFixed(0) + ' %</b> de lo que te ha entrado este año' + (tasa > 100 ? ' (más de lo que ha entrado: parte venía de antes)' : '') + '.</div>' : (S._anualSinNav ? '' : '<div class="month-nav"><button class="icon-btn" aria-label="Año anterior" ' + act('moveAnio', -1) + '>' + ic('chevL') + '</button>' +
     '<div class="lbl" style="min-width:90px;">' + S.anioSel + '</div>' +
     '<button class="icon-btn" aria-label="Año siguiente" ' + act('moveAnio', 1) + '>' + ic('chevR') + '</button></div>') +
-    '<div class="kpi-row">' +
+    (S._anualSinNav && balanceOn() && S.anioSel < mesActual().y ? balanceAnioHtml(S.anioSel) : '<div class="kpi-row">' +
     '<div class="kpi income tappable" ' + act('irMovs', 'Ingreso', 'y:' + S.anioSel) + '><div class="v tnum">' + moneyShort(totIng) + '</div><div class="l">Ingresos</div></div>' +
     '<div class="kpi expense tappable" ' + act('irMovs', '_gastos', 'y:' + S.anioSel) + '><div class="v tnum">' + moneyShort(totGas) + '</div><div class="l">Gastos</div></div>' +
-    '<div class="kpi avail tappable" ' + act('irMovs', '_ahorro', 'y:' + S.anioSel) + '><div class="v tnum">' + tasa.toFixed(0) + ' %</div><div class="l">Apartado / ingresos</div></div></div>') +
+    '<div class="kpi avail tappable" ' + act('irMovs', '_ahorro', 'y:' + S.anioSel) + '><div class="v tnum">' + tasa.toFixed(0) + ' %</div><div class="l">Apartado / ingresos</div></div></div>')) +
     '<div class="section-title"><span>Ingresos y gastos por mes' + badge('anual') + '</span></div><div class="card"><div class="chart-wrap" id="trendWrap"></div>' +
     '<div class="legend"><span><i style="background:var(--income)"></i>Ingresos</span><span><i style="background:var(--expense)"></i>Gastos</span></div></div>' +
     '<div class="section-title">Detalle</div><div class="list">' +
@@ -3952,11 +3952,12 @@ const VERSIONES = {
   tu: { txt: 'Tú', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   agenda: { txt: 'Agenda', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  balance: { txt: 'Mes cerrado', desde: '2026-10-29', variantes: [['nueva', 'Balance'], ['antes', 'Antes']] },
   importe: { txt: 'Apuntar importe', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
 };
 function seccionVersion() {
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
-  if (S.tab === 'movimientos' && movVistaAct() === 'resumen' && /^m:/.test(movPerNorm(S.movPeriodo))) return 'movResumen';
+  if (S.tab === 'movimientos' && movVistaAct() === 'resumen') { const p = movPerNorm(S.movPeriodo); if (/^m:/.test(p) ? mesCerrado(+p.slice(2, 6), +p.slice(7, 9)) : /^y:/.test(p) && +p.slice(2) < mesActual().y) return 'balance'; if (/^m:/.test(p)) return 'movResumen'; }
   if (S.tab === 'juntos' && gruposDisponible() && (S.grupos || []).length) return 'juntos';
   if (S.tab === 'dinero' && !S.dineroVer) return 'dinero';
   if (S.tab === 'tu') return 'tu';
@@ -4653,10 +4654,90 @@ async function iwGuardar() {
   const job = saveConfig({ inicioWidgets: F.lista.map((x) => (x.o ? { t: x.t, o: x.o } : { t: x.t })) }); // primero se guarda (cambia la configuración en memoria) y luego se pinta
   render(); updateSheet(iwEdHtml()); await job;
 }
+/* ===== Mes cerrado como informe (29/10, docs/23 §4): «Balance de septiembre» en vez de «Te queda» ===== */
+function balanceOn() { return versionDe('balance') === 'nueva'; }
+function mesCerrado(y, m) { const r = rangoMes(y, m); return !r.previsto && todayISO() > r.hasta; }
+function mesAnt(y, m) { return m > 1 ? { y, m: m - 1 } : { y: y - 1, m: 12 }; }
+function conSigno(v) { return Math.abs(v) < 0.005 ? '0 ' + sym() : (v > 0 ? '+' : '−') + moneyShort(Math.abs(v)); }
+function balBarraHtml(k) {
+  const gas = k.facturas + k.gastos, aho = k.ahorro + k.inversion, deu = k.deuda, ing = k.ingresos;
+  const base = Math.max(ing, gas + aho + deu); if (!(base > 0)) return '';
+  const sobra = Math.max(0, ing - gas - aho - deu), pc = (v) => Math.max(0, v / base * 100);
+  const trozos = [['g', 'Gastos', gas], ['a', 'Apartado', aho], ['d', 'Deudas', deu], ['q', 'Sobró', sobra]].filter((t) => t[2] > 0.004);
+  return '<div class="hero-barra bal-barra"><div class="hero-bar" aria-hidden="true">' + trozos.map(([c, , v]) => '<i class="' + c + '" style="width:' + pc(v).toFixed(1) + '%"></i>').join('') + '</div>' +
+    '<div class="hero-ley">' + trozos.map(([c, l, v]) => '<span><i class="' + c + '"></i>' + l + ' <b class="tnum">' + (ing > 0 ? Math.round(v / ing * 100) + ' %' : moneyShort(v)) + '</b></span>').join('') + '</div></div>';
+}
+// la tarjeta de balance (mes o año): cifra con signo, una frase, la barra y las cifras en pasado con su cambio
+function balanceTarjetaHtml(o) {
+  const k = o.k, ka = o.ka, gas = k.facturas + k.gastos, disp = k.disponible, nada = !o.n;
+  let frase;
+  if (nada) frase = 'En ' + o.nombre + ' no apuntaste nada.';
+  else if (k.ingresos < 0.005 && gas > 0.004) frase = 'No apuntaste ingresos en ' + o.nombre + '.';
+  else if (disp >= 0.005) frase = 'Te sobraron después de gastar, apartar y pagar deudas.';
+  else if (disp <= -0.005) frase = (gas + k.deuda > k.ingresos ? 'Gastaste más de lo que entró: ' : 'Apartaste más de lo que te sobraba: ') + money(-disp) + ' salieron de lo que ya tenías.';
+  else frase = 'Entró justo lo que salió.';
+  const chip = (a, b, verdeSiSube) => { if (!ka || !(b > 0.004) || !(a > 0.004)) return ''; const p = Math.round((a - b) / b * 100);
+    if (Math.abs(p) < 1) return '<span class="kpi-chip igual">= ' + o.antCorto + '</span>';
+    const tono = verdeSiSube == null ? 'gris' : (p > 0) === verdeSiSube ? 'bien' : 'mal';
+    return '<span class="kpi-chip bal-' + tono + '">' + (p > 0 ? '↑ ' : '↓ ') + Math.min(999, Math.abs(p)) + ' %</span>'; };
+  const cel = (cls, l, v, va, verde, accion) => '<button type="button" class="bal-cel tappable ' + cls + '" ' + accion + '><span class="bal-cel-l">' + l + '</span><b class="tnum">' + escapeHtml(moneyShort(v)) + '</b>' + chip(v, va, verde) + '</button>';
+  const celdas = nada ? '' : '<div class="bal-cels">' + cel('ing', 'Entró', k.ingresos, ka && ka.ingresos, true, act('irMovs', 'Ingreso', o.per)) + cel('gas', 'Gastaste', gas, ka && ka.facturas + ka.gastos, false, act('irMovs', '_gastos', o.per)) +
+    cel('aho', 'Apartaste e invertiste', k.ahorro + k.inversion, ka && ka.ahorro + ka.inversion, null, act('irMovs', '_ahorro', o.per)) +
+    (k.deuda > 0.004 || (ka && ka.deuda > 0.004) ? cel('deu', 'Pagaste de deudas', k.deuda, ka && ka.deuda, null, act('irMovs', 'Deuda', o.per)) : '') + '</div>';
+  return '<section class="card bal-card" aria-label="' + escapeHtml(o.titulo) + '"><div class="bal-cab"><span class="bal-ic">' + ic('checkCircle') + '</span><span>' + escapeHtml(o.titulo) + '</span><span class="bal-tag">' + o.tag + '</span></div>' +
+    (nada ? '' : '<div class="bal-v tnum' + (disp >= 0.005 ? ' pos' : disp <= -0.005 ? ' neg' : '') + '">' + escapeHtml(conSigno(disp)) + '</div>') + '<p class="bal-frase">' + escapeHtml(frase) + '</p>' +
+    (nada ? '' : balBarraHtml(k)) + celdas + '</section>';
+}
+// «Frente a agosto»: como mucho 3 líneas; una categoría solo cuenta si cambia 10 € y 10 % o más
+function balFrenteHtml(k, ka, antNombre, nAnt) {
+  if (!ka || !nAnt) return '';
+  const lineas = [], d = k.disponible - ka.disponible;
+  lineas.push(['comparar', Math.abs(d) < 0.5 ? 'Te sobró lo mismo que en ' + antNombre + '.' : (k.disponible >= 0 ? 'Te sobraron ' : 'Tu balance fue ') + money(Math.abs(d)) + (d > 0 ? ' más' : ' menos') + ' que en ' + antNombre + ', que cerró en ' + conSigno(ka.disponible) + '.']);
+  const cat = (movs) => { const o = {}; movs.forEach((x) => { if (x.tipo === 'Gasto' || x.tipo === 'Factura') { const c = x.categoria || 'Sin categoría'; o[c] = (o[c] || 0) + num(x.importe); } }); return o; };
+  const a = cat(k.movs), b = cat(ka.movs), dif = [...new Set(Object.keys(a).concat(Object.keys(b)))].map((c) => ({ c, a: a[c] || 0, b: b[c] || 0, d: (a[c] || 0) - (b[c] || 0) }))
+    .filter((x) => Math.abs(x.d) >= 10 && (x.b > 0 ? Math.abs(x.d) / x.b >= 0.1 : true));
+  const baja = dif.filter((x) => x.d < 0).sort((p, q) => p.d - q.d)[0], sube = dif.filter((x) => x.d > 0).sort((p, q) => q.d - p.d)[0];
+  const dg = (k.facturas + k.gastos) - (ka.facturas + ka.gastos);
+  if (baja || sube) {
+    lineas.push([dg > 0.5 ? 'arrowUp' : 'arrowDown', (Math.abs(dg) < 0.5 ? 'Gastaste lo mismo.' : 'Gastaste ' + money(Math.abs(dg)) + (dg > 0 ? ' más' : ' menos') + '.') + (baja ? ' Lo que más bajó: ' + baja.c + ' (−' + moneyShort(-baja.d) + ').' : '')]);
+    if (sube) lineas.push(['arrowUp', 'Lo que más subió: ' + sube.c + ', ' + moneyShort(sube.a) + (sube.b > 0.004 ? ' (en ' + antNombre + ', ' + moneyShort(sube.b) + ').' : ' (en ' + antNombre + ' no gastaste nada).')]);
+  }
+  return '<section class="card bal-frente"><div class="bal-cab"><span class="bal-ic">' + ic('comparar') + '</span><span>Frente a ' + escapeHtml(antNombre) + '</span></div>' +
+    lineas.slice(0, 3).map(([i, t]) => '<div class="bal-lin"><span class="bal-lin-ic">' + ic(i) + '</span><span>' + escapeHtml(t) + '</span></div>').join('') + '</section>';
+}
+function balanceMesHtml(y, m) {
+  const k = kpisMes(y, m), A = mesAnt(y, m), ka = kpisMes(A.y, A.m), nom = MESES[m - 1].toLowerCase(), antNom = MESES[A.m - 1].toLowerCase();
+  return balanceTarjetaHtml({ k, ka: ka.movs.length ? ka : null, n: k.movs.length, nombre: nom, titulo: 'Balance de ' + nom + (y !== mesActual().y ? ' ' + y : ''), tag: 'Mes cerrado', antCorto: MESES_ABR[A.m - 1].toLowerCase(), per: mesClave(y, m) }) +
+    (k.movs.length ? balFrenteHtml(k, ka, antNom, ka.movs.length) : '');
+}
+// año cerrado: la misma tarjeta y «Lo destacado de 2025»
+function kpisAnio(y) {
+  const t = { ingresos: 0, gastos: 0, facturas: 0, ahorro: 0, inversion: 0, deuda: 0, disponible: 0, movs: [] }, meses = [];
+  for (let m = 1; m <= 12; m++) { const k = kpisMes(y, m); meses.push(Object.assign({ m }, k)); ['ingresos', 'gastos', 'facturas', 'ahorro', 'inversion', 'deuda', 'disponible'].forEach((c) => { t[c] += num(k[c]); }); t.movs = t.movs.concat(k.movs); }
+  return { t, meses };
+}
+function balanceAnioHtml(y) {
+  const { t, meses } = kpisAnio(y), ant = kpisAnio(y - 1), con = meses.filter((x) => x.movs.length), conAnt = ant.meses.filter((x) => x.movs.length);
+  let html = balanceTarjetaHtml({ k: t, ka: conAnt.length === 12 ? ant.t : null, n: t.movs.length, nombre: String(y), titulo: 'Balance de ' + y, tag: 'Año cerrado', antCorto: String(y - 1), per: 'y:' + y });
+  if (!con.length) return html;
+  const L = [], favor = con.filter((x) => x.disponible >= 0.005).length;
+  L.push(['checkCircle', 'Cerraste a tu favor ' + favor + ' de ' + con.length + (con.length === 1 ? ' mes' : ' meses') + (con.length < 12 ? ' con apuntes' : '') + '.']);
+  if (t.ingresos > 0.004) L.push(['piggy2', 'Apartaste e invertiste el ' + Math.round((t.ahorro + t.inversion) / t.ingresos * 100) + ' % de lo que entró.']);
+  const mejor = con.slice().sort((a, b) => b.disponible - a.disponible)[0], peor = con.slice().sort((a, b) => a.disponible - b.disponible)[0];
+  if (mejor && mejor.disponible > 0.004) L.push(['arrowUp', 'Tu mejor mes fue ' + MESES[mejor.m - 1].toLowerCase() + ': te sobraron ' + money(mejor.disponible) + '.']);
+  if (peor && peor !== mejor) { let txt = 'El más justo, ' + MESES[peor.m - 1].toLowerCase() + ': ' + conSigno(peor.disponible) + '.';
+    if (peor.disponible < 0) { const c = Object.entries(gastoPorCategoria(peor.movs)).sort((a, b) => b[1] - a[1])[0]; if (c && c[1] > 0) txt += ' Lo que más pesó: ' + c[0] + ' (' + moneyShort(c[1]) + ').'; }
+    L.push(['arrowDown', txt]); }
+  if (conAnt.length === 12) { const d = t.disponible - ant.t.disponible; L.push(['comparar', 'Frente a ' + (y - 1) + ': ' + (Math.abs(d) < 0.5 ? 'el mismo balance.' : money(Math.abs(d)) + (d > 0 ? ' más' : ' menos') + ' a tu favor.')]); }
+  else if (conAnt.length) L.push(['info', 'De ' + (y - 1) + ' solo tienes apuntes desde ' + MESES[conAnt[0].m - 1].toLowerCase() + ', así que no comparamos los dos años.']);
+  return html + '<section class="card bal-frente"><div class="bal-cab"><span class="bal-ic">' + ic('sparkle') + '</span><span>Lo destacado de ' + y + '</span></div>' +
+    L.slice(0, 5).map(([i, tx]) => '<div class="bal-lin"><span class="bal-lin-ic">' + ic(i) + '</span><span>' + escapeHtml(tx) + '</span></div>').join('') + '</section>';
+}
 function renderMovResumen() {
   const p = movPerNorm(S.movPeriodo);
   if (/^m:/.test(p)) { const [y, m] = p.slice(2).split('-').map(Number); S.anioSel = y; S.mesSel = m; S.generalSub = 'mensual';
     const info = S._infoTeQueda ? '<div class="info-card"><span class="info-ic">' + ic('sparkle') + '</span><div><b>Así sale «Te queda este mes»</b>Lo que has ingresado menos lo que has gastado, apartado, invertido y pagado de deudas en tu mes (' + rangoTxt(y, m) + '). Toca cada cifra para ver sus movimientos.</div><button type="button" class="link" ' + act('infoTeQuedaCerrar') + '>Entendido</button></div>' : '';
+    if (balanceOn() && mesCerrado(y, m)) { S._infoTeQueda = false; return balanceMesHtml(y, m) + gcResumenHtml(versionDe('movResumen'), true); }
     return info + kpiMesHtml(kpisMes(y, m), y, m, true) + gcResumenHtml(versionDe('movResumen')); }
   S.anioSel = Number(p.slice(2)); S.generalSub = 'anual'; return renderAnalisisAnual('sinNav');
 }
