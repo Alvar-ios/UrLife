@@ -6676,17 +6676,17 @@ function compGastoChip(y, m) {
 /* ---- Bancos (25/10, docs/20): elegir el banco de la cuenta; ficha con su logo (guardado en la app, en logos/) o con su color y letras.
    Solo se guarda la clave (cfg().cuentas[i].banco); nunca se pide nada a un servicio de fuera. Los logos son marcas de cada banco. ---- */
 const BANCOS = [
-  ['bbva', 'BBVA', '#00278E', 'BBVA', 'banco', 1], ['santander', 'Santander', '#EC0000', 'S', 'banco', 1, 'banco santander,santander'], ['caixabank', 'CaixaBank', '#007EAE', 'CX', 'banco', 1, 'la caixa', 'caixabank.svg'],
-  ['ing', 'ING', '#FF6200', 'ING', 'banco', 1, 'ing direct,cuenta naranja'], ['sabadell', 'Banco Sabadell', '#016DFF', 'BS', 'banco', 1], ['bankinter', 'Bankinter', '#F25E00', 'bk', 'banco', 1],
-  ['unicaja', 'Unicaja', '#2BD124', 'U', 'banco', 1, 'liberbank'], ['openbank', 'Openbank', '#FF014A', 'OB', 'banco', 1], ['imagin', 'imagin', '#09F3CF', 'im', 'banco', 0],
-  ['abanca', 'Abanca', '#5984D6', 'A', 'banco', 0], ['kutxabank', 'Kutxabank', '#E2001A', 'K', 'banco', 0], ['ibercaja', 'Ibercaja', '#003C7E', 'IC', 'banco', 0],
+  ['bbva', 'BBVA', '#00278E', 'BBVA', 'banco', 1, '', 'bbva-app.png'], ['santander', 'Santander', '#EC0000', 'S', 'banco', 1, 'banco santander,santander', 'santander-app.png'], ['caixabank', 'CaixaBank', '#007EAE', 'CX', 'banco', 1, 'la caixa', 'caixabank.svg'],
+  ['ing', 'ING', '#FF6200', 'ING', 'banco', 1, 'ing direct,cuenta naranja', 'ing-app.png'], ['sabadell', 'Banco Sabadell', '#016DFF', 'BS', 'banco', 1, '', 'sabadell-app.png'], ['bankinter', 'Bankinter', '#F25E00', 'bk', 'banco', 1],
+  ['unicaja', 'Unicaja', '#2BD124', 'U', 'banco', 1, 'liberbank', 'unicaja-app.png'], ['openbank', 'Openbank', '#FF014A', 'OB', 'banco', 1], ['imagin', 'imagin', '#09F3CF', 'im', 'banco', 0, '', 'imagin-app.png'],
+  ['abanca', 'Abanca', '#5984D6', 'A', 'banco', 0, '', 'abanca-app.png'], ['kutxabank', 'Kutxabank', '#E2001A', 'K', 'banco', 0], ['ibercaja', 'Ibercaja', '#003C7E', 'IC', 'banco', 0, '', 'ibercaja-app.png'],
   ['cajamar', 'Cajamar', '#007A3D', 'CM', 'banco', 0], ['evo', 'EVO Banco', '#1A1A1A', 'EVO', 'banco', 0], ['laboral', 'Laboral Kutxa', '#E30613', 'LK', 'banco', 0],
-  ['cajarural', 'Caja Rural', '#00843D', 'CR', 'banco', 0, 'ruralvia'], ['selfbank', 'Self Bank', '#5A2D82', 'SB', 'banco', 0], ['deutschebank', 'Deutsche Bank', '#0018A8', 'DB', 'banco', 0, '', 'deutschebank.svg'],
+  ['cajarural', 'Caja Rural', '#00843D', 'CR', 'banco', 0, 'ruralvia'], ['selfbank', 'Self Bank', '#5A2D82', 'SB', 'banco', 0, '', 'selfbank-app.png'], ['deutschebank', 'Deutsche Bank', '#0018A8', 'DB', 'banco', 0, '', 'deutschebank.svg'],
   ['revolut', 'Revolut', '#191C1F', 'R', 'banco', 1, '', 'revolut.svg'], ['n26', 'N26', '#48AC98', 'N26', 'banco', 0, '', 'n26.svg'], ['wise', 'Wise', '#9FE870', 'W', 'banco', 0, 'transferwise', 'wise.svg'],
   ['bunq', 'bunq', '#3394D7', 'bq', 'banco', 0, '', 'bunq.svg'], ['paypal', 'PayPal', '#FFFFFF', 'PP', 'banco', 0, '', 'paypal.svg'],
-  ['myinvestor', 'MyInvestor', '#C42CA5', 'my', 'broker', 1], ['traderepublic', 'Trade Republic', '#000000', 'TR', 'broker', 1], ['indexa', 'Indexa Capital', '#2A66AB', 'IX', 'broker', 1],
-  ['etoro', 'eToro', '#6CFE89', 'e', 'broker', 0], ['degiro', 'DEGIRO', '#009FDF', 'DG', 'broker', 0, 'flatexdegiro'], ['ibkr', 'Interactive Brokers', '#D92027', 'IB', 'broker', 0, 'ibkr'],
-  ['scalable', 'Scalable Capital', '#1E1E3C', 'SC', 'broker', 0], ['xtb', 'XTB', '#0A1F44', 'XTB', 'broker', 0],
+  ['myinvestor', 'MyInvestor', '#C42CA5', 'my', 'broker', 1, '', 'myinvestor-app.png'], ['traderepublic', 'Trade Republic', '#000000', 'TR', 'broker', 1, '', 'traderepublic-app.png'], ['indexa', 'Indexa Capital', '#2A66AB', 'IX', 'broker', 1, '', 'indexa-app.png'],
+  ['etoro', 'eToro', '#6CFE89', 'e', 'broker', 0, '', 'etoro-app.svg'], ['degiro', 'DEGIRO', '#009FDF', 'DG', 'broker', 0, 'flatexdegiro', 'degiro-app.png'], ['ibkr', 'Interactive Brokers', '#D92027', 'IB', 'broker', 0, 'ibkr', 'ibkr-app.png'],
+  ['scalable', 'Scalable Capital', '#1E1E3C', 'SC', 'broker', 0, '', 'scalable-app.png'], ['xtb', 'XTB', '#0A1F44', 'XTB', 'broker', 0, '', 'xtb-app.png'],
   ['coinbase', 'Coinbase', '#0052FF', 'C', 'broker', 0], ['binance', 'Binance', '#1E2026', 'BN', 'broker', 0, '', 'binance.svg'],
 ].map(([k, n, color, letras, tipo, top, alias, logo]) => ({ k, n, color, letras, tipo, top: !!top, alias: alias || '', logo: logo || '' }));
 function bancoDe(c) { return c && c.banco ? BANCOS.find((b) => b.k === c.banco) || null : null; }
@@ -6703,7 +6703,7 @@ function bancoTinta(hex) { const h = hex.replace('#', ''), r = parseInt(h.slice(
 function bancoFichaHtml(b, cls) {
   if (!b) return null;
   const inner = b.logo ? '<img src="logos/' + b.logo + '" alt="" loading="lazy" decoding="async">' : '<b style="color:' + bancoTinta(b.color) + '">' + escapeHtml(b.letras) + '</b>';
-  return '<span class="bco-ficha' + (cls ? ' ' + cls : '') + (b.letras.length >= 3 ? ' largo' : '') + '" style="--bc:' + b.color + '" aria-hidden="true">' + inner + '</span>';
+  return '<span class="bco-ficha' + (cls ? ' ' + cls : '') + (b.letras.length >= 3 ? ' largo' : '') + (b.logo && /-app\./.test(b.logo) ? ' icono' : '') + '" style="--bc:' + b.color + '" aria-hidden="true">' + inner + '</span>';
 }
 function bancoElegirHtml() {
   const F = FORM, q = normDesc(F.q || ''), c = (cfg().cuentas || [])[F.i] || {};

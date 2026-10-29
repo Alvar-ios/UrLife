@@ -79,5 +79,124 @@
   "fuente": "https://github.com/gilbarbara/logos/blob/main/logos/paypal.svg",
   "licencia": "gilbarbara/logos (SVG Porn, vía @iconify-json/logos 1.2.17): paquete CC0-1.0; el logo es marca registrada de su dueño",
   "tipo": "simbolo"
+ },
+ "bbva": {
+  "svg": "bbva-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.bbva.es/favicon.ico",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "santander": {
+  "svg": "santander-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.bancosantander.es/ (apple-touch-icon)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "ing": {
+  "svg": "ing-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.ing.es/ (apple-touch-icon)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "sabadell": {
+  "svg": "sabadell-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.bancsabadell.com/ (apple-icon-180x180)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "unicaja": {
+  "svg": "unicaja-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.unicajabanco.es/ (favicon)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "imagin": {
+  "svg": "imagin-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.imagin.com/ (icono vía servicio de favicons de Google)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "abanca": {
+  "svg": "abanca-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.abanca.com/ (apple-touch-icon)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "ibercaja": {
+  "svg": "ibercaja-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.ibercaja.es/ (icono vía servicio de favicons de Google)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "selfbank": {
+  "svg": "selfbank-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.selfbank.es/favicon.ico",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "myinvestor": {
+  "svg": "myinvestor-app.png",
+  "fondo": "propio",
+  "fuente": "https://myinvestor.es/ (apple-touch-icon)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "traderepublic": {
+  "svg": "traderepublic-app.png",
+  "fondo": "propio",
+  "fuente": "https://traderepublic.com/favicon.ico",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "indexa": {
+  "svg": "indexa-app.png",
+  "fondo": "propio",
+  "fuente": "https://indexacapital.com/ (apple-touch-icon)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "etoro": {
+  "svg": "etoro-app.svg",
+  "fondo": "propio",
+  "fuente": "https://www.etoro.com/ (favicon.svg)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "degiro": {
+  "svg": "degiro-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.degiro.es/ (apple-touch-icon)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "ibkr": {
+  "svg": "ibkr-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.interactivebrokers.com/ (home-screen-icon)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "scalable": {
+  "svg": "scalable-app.png",
+  "fondo": "propio",
+  "fuente": "https://scalable.capital/ (apple-touch-icon)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
+ },
+ "xtb": {
+  "svg": "xtb-app.png",
+  "fondo": "propio",
+  "fuente": "https://www.xtb.com/es (apple-icon)",
+  "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
+  "tipo": "icono-app"
  }
 }
