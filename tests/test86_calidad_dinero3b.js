@@ -53,7 +53,7 @@ const escribir = (e, el, v) => { el.value = v; el.dispatchEvent(new e.w.Event('i
     H.goTab(['tu']); await sleep(20); // Tú no tiene botón «Antes»: se llega a Dinero con la cabecera baja
     H.goTab(['dinero']); await sleep(20);
     const conAntes = !!(doc.querySelector('.topbar #compararHost') || { innerHTML: '' }).innerHTML.trim();
-    ok(conAntes, 'en Dinero sale el botón «Antes» en la cabecera (compararVersiones)');
+    ok(!conAntes, 'en Dinero ya no sale «Antes»: el dueño eligió «Formas» el 29/10');
     const v = doc.documentElement.style.getPropertyValue('--cab-alto');
     ok(v === (conAntes ? '83px' : '66px'), '[medio] las fichas se fijan justo debajo de la cabecera ya completa. --cab-alto=' + v);
     // sin bucles: un «resize» mide una vez y no provoca más
