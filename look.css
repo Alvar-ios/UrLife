@@ -1949,3 +1949,97 @@ html[data-look="nuevo"] .tr-linea-a.nueva { stroke-dasharray: none; stroke-dasho
 html[data-look="nuevo"] .inv-cu-f { grid-template-columns: minmax(0, 130px) 1fr auto; }
 html[data-look="nuevo"] .inv-cu-n { white-space: nowrap; text-overflow: ellipsis; }
 html[data-look="nuevo"] .act-apodo { margin-top: 12px; }
+
+/* ===== Inicio a tu gusto (29/10, docs/21): piezas, «Editar Inicio» y «Añadir a Inicio» ===== */
+html[data-look="nuevo"] .iw { padding: 12px 14px 14px; margin: var(--sp-4) 0 0; border-radius: var(--r-l); }
+html[data-look="nuevo"] .iw-cab { display: flex; align-items: center; gap: 8px; width: 100%; border: none; background: none; padding: 0 0 10px; color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+html[data-look="nuevo"] .iw-cab > b, html[data-look="nuevo"] .iw-cab-s > b { font-family: var(--font-display); font-size: var(--fs-m); font-weight: 650; }
+html[data-look="nuevo"] .iw-sub { color: var(--text-faint); font-size: var(--fs-s); margin-left: auto; white-space: nowrap; }
+html[data-look="nuevo"] .iw-cab .chev-s { margin-left: 2px; color: var(--text-faint); }
+html[data-look="nuevo"] .iw-cab > b + .chev-s { margin-left: auto; }
+html[data-look="nuevo"] .iw-ic { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); flex: 0 0 auto; }
+html[data-look="nuevo"] .iw-ic svg { width: 15px; height: 15px; }
+html[data-look="nuevo"] .iw-cab-s { display: flex; align-items: center; gap: 8px; }
+html[data-look="nuevo"] .iw-vacio { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-muted); font-size: var(--fs-s); flex-wrap: wrap; }
+html[data-look="nuevo"] .iw-par { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: var(--sp-4); }
+html[data-look="nuevo"] .iw-par > .iw { margin: 0; min-width: 0; }
+/* En qué gastas */
+html[data-look="nuevo"] .iw-gastos-c { display: flex; align-items: center; gap: 14px; }
+html[data-look="nuevo"] .iw-anillo { position: relative; width: 104px; height: 104px; flex: 0 0 auto; border: none; background: none; padding: 0; color: var(--text); cursor: pointer; }
+html[data-look="nuevo"] .iw-anillo svg { width: 100%; height: 100%; display: block; }
+html[data-look="nuevo"] .iw-anillo > span { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+html[data-look="nuevo"] .iw-anillo b { font-family: var(--font-display); font-size: 15px; font-weight: var(--num-peso); }
+html[data-look="nuevo"] .iw-anillo i { font-style: normal; font-size: 11px; color: var(--text-faint); }
+html[data-look="nuevo"] .iw-gfs { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html[data-look="nuevo"] .iw-gf { display: flex; align-items: center; gap: 8px; border: none; background: none; padding: 5px 0; color: var(--text); font: inherit; font-size: var(--fs-s); cursor: pointer; text-align: left; min-height: 30px; }
+html[data-look="nuevo"] .iw-gf i { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+html[data-look="nuevo"] .iw-gf span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .iw-gf b { font-weight: 600; }
+/* Presupuestos */
+html[data-look="nuevo"] .iw-pfs { display: flex; flex-direction: column; gap: 10px; }
+html[data-look="nuevo"] .iw-pf { --pc: var(--income); display: flex; flex-direction: column; gap: 5px; border: none; background: none; padding: 0; color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+html[data-look="nuevo"] .iw-pf.justo { --pc: var(--warn); }
+html[data-look="nuevo"] .iw-pf.mal { --pc: var(--expense); }
+html[data-look="nuevo"] .iw-pf-t { display: flex; justify-content: space-between; gap: 8px; font-size: var(--fs-s); }
+html[data-look="nuevo"] .iw-pf-t b { font-weight: 600; }
+html[data-look="nuevo"] .iw-pf-t i { font-style: normal; color: var(--text-faint); font-weight: 500; }
+html[data-look="nuevo"] .iw-pbar { height: 7px; border-radius: 99px; background: var(--paper-sunken); overflow: hidden; }
+html[data-look="nuevo"] .iw-pbar i { display: block; height: 100%; border-radius: 99px; background: var(--pc); }
+/* Próximos fijos */
+html[data-look="nuevo"] .iw-ffs { display: flex; flex-direction: column; gap: 8px; }
+html[data-look="nuevo"] .iw-ff { display: flex; align-items: center; gap: 10px; border: none; background: none; padding: 0; color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+html[data-look="nuevo"] .iw-ff .dia-fecha { flex: 0 0 auto; }
+html[data-look="nuevo"] .iw-ff-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html[data-look="nuevo"] .iw-ff-t b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .iw-ff-t span { font-size: var(--fs-s); color: var(--text-muted); }
+html[data-look="nuevo"] .iw-ff > b { font-weight: 600; }
+html[data-look="nuevo"] .iw-ff > b.ing { color: var(--income); }
+/* Una meta / Tus metas */
+html[data-look="nuevo"] .iw-meta.medio, html[data-look="nuevo"] .iw-tienes.medio { position: relative; }
+html[data-look="nuevo"] .iw-mt-main { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; border: none; background: none; padding: 0; color: var(--text); font: inherit; cursor: pointer; }
+html[data-look="nuevo"] .iw-mt-n { font-weight: 650; margin-top: 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .iw-mt-c { font-size: var(--fs-s); color: var(--text-muted); }
+html[data-look="nuevo"] .iw-mt-mas { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; cursor: pointer; transition: transform .2s var(--ease-spring); }
+html[data-look="nuevo"] .iw-mt-mas:active { transform: scale(.9); }
+html[data-look="nuevo"] .iw-mt-mas svg { width: 16px; height: 16px; }
+html[data-look="nuevo"] .iw-metas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+html[data-look="nuevo"] .iw-mt { display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: var(--text); font: inherit; font-size: var(--fs-xs); cursor: pointer; min-width: 0; }
+html[data-look="nuevo"] .iw-mt > span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Lo que tienes */
+html[data-look="nuevo"] .iw-ti-main { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; height: 100%; border: none; background: none; padding: 0; color: var(--text); font: inherit; cursor: pointer; text-align: left; }
+html[data-look="nuevo"] .iw-ti-v { font-family: var(--font-display); font-size: 22px; font-weight: var(--num-peso); margin-top: 4px; }
+html[data-look="nuevo"] .iw-ti-v.neg { color: var(--expense); }
+html[data-look="nuevo"] .iw-ti-main .pat-barra { width: 100%; margin: 0; }
+html[data-look="nuevo"] .iw-ti-l { font-size: var(--fs-s); color: var(--text-muted); }
+/* botón «Editar Inicio» */
+html[data-look="nuevo"] .iw-editar { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin: var(--sp-5) 0 var(--sp-3); padding: 12px; border: 1.5px dashed var(--line); border-radius: var(--r-l); background: none; color: var(--text-muted); font: inherit; font-weight: 600; cursor: pointer; }
+html[data-look="nuevo"] .iw-editar svg { width: 16px; height: 16px; }
+/* hoja «Editar Inicio» */
+html[data-look="nuevo"] .iw-ed { padding: 4px 10px; }
+html[data-look="nuevo"] .iw-ed-f { display: flex; align-items: center; gap: 4px; padding: 8px 0; border-top: 1px solid var(--line); }
+html[data-look="nuevo"] .iw-ed-f:first-child { border-top: none; }
+html[data-look="nuevo"] .iw-ed-f.fija { opacity: .75; }
+html[data-look="nuevo"] .iw-ed-n { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; border: none; background: none; padding: 0; color: var(--text); font: inherit; text-align: left; }
+html[data-look="nuevo"] button.iw-ed-n.tappable { cursor: pointer; }
+html[data-look="nuevo"] .iw-ed-t { display: flex; flex-direction: column; min-width: 0; }
+html[data-look="nuevo"] .iw-ed-t b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .iw-ed-t span { font-size: var(--fs-s); color: var(--text-muted); }
+html[data-look="nuevo"] .iw-ed-f .icon-btn.sm { width: 34px; height: 34px; flex: 0 0 auto; }
+html[data-look="nuevo"] .iw-ed-f .icon-btn.sm:disabled { opacity: .3; }
+html[data-look="nuevo"] .iw-ed-f .iw-quitar { color: var(--expense); }
+html[data-look="nuevo"] .iw-ed-pie { display: flex; justify-content: space-between; align-items: center; margin: 10px 2px 0; color: var(--text-faint); font-size: var(--fs-s); }
+/* hoja «Añadir a Inicio» */
+html[data-look="nuevo"] .iw-cat-chips { margin: 4px 0 12px; }
+html[data-look="nuevo"] .iw-cat { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+html[data-look="nuevo"] .iw-cat-t { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: var(--r-l); background: var(--paper-raised); border: 1px solid var(--line); color: var(--text); cursor: pointer; text-align: left; min-width: 0; }
+html[data-look="nuevo"] .iw-cat-t.ya { cursor: default; opacity: .7; }
+html[data-look="nuevo"] .iw-prev { height: 96px; overflow: hidden; border-radius: var(--r-m); background: var(--paper-sunken); position: relative; pointer-events: none; }
+html[data-look="nuevo"] .iw-prev-in { position: absolute; left: 0; top: 0; width: 200%; transform: scale(.5); transform-origin: 0 0; }
+html[data-look="nuevo"] .iw-prev-in > .iw, html[data-look="nuevo"] .iw-prev-in > div > .iw { margin: 0; box-shadow: none; }
+html[data-look="nuevo"] .iw-prev-ic { position: absolute; inset: 0; display: grid; place-items: center; color: var(--accent); }
+html[data-look="nuevo"] .iw-prev-ic svg { width: 30px; height: 30px; }
+html[data-look="nuevo"] .iw-cat-n { display: flex; flex-direction: column; gap: 2px; }
+html[data-look="nuevo"] .iw-cat-n b { font-weight: 650; font-size: var(--fs-s); }
+html[data-look="nuevo"] .iw-cat-n span { font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.3; }
+html[data-look="nuevo"] .iw-ya { display: inline-flex; align-items: center; gap: 3px; color: var(--income) !important; font-weight: 600; }
+html[data-look="nuevo"] .iw-ya svg { width: 12px; height: 12px; }
