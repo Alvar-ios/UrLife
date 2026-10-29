@@ -2214,3 +2214,4 @@ html[data-look="nuevo"] .bal-inf { margin-top: var(--sp-3); }
 html[data-look="nuevo"] .iw-inf { margin: 0; font-size: var(--fs-m); line-height: 1.4; }
 html[data-look="nuevo"] .inf-cab { padding-right: 46px; }
 html[data-look="nuevo"] .bal-tag { white-space: nowrap; }
+html[data-look="nuevo"] .plan-recordar { margin-top: 8px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; }

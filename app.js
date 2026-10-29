@@ -3571,7 +3571,10 @@ function renderAgendaSemanaV2() {
   const hechas = S.tareas.filter((t) => t.estado === 'Completado').sort((x, y) => (y.fechaFin || '').localeCompare(x.fechaFin || '')).slice(0, 20);
   const pleg = (clave, txt, arr) => arr.length ? '<button type="button" class="ag-pleg" aria-expanded="' + (abierto === clave) + '" ' + act('agendaMas', clave) + '><span>' + txt + ' · ' + arr.length + '</span>' + ic(abierto === clave ? 'chevD' : 'chevR') + '</button>' +
     (abierto === clave ? '<div class="list">' + arr.map(filaT).join('') + '</div>' : '') : '';
-  const plegH = (adelante.length || hechas.length) ? '<div class="ag-plegs">' + pleg('adelante', sel > hoy ? 'Otros días' : 'Más adelante', adelante) + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
+  const encargadas = agendaDisponible() ? agendaItems().filter((x) => x.tipo === 'tarea' && !x.hechaEn && x.grupoId && x.asignadoA && !esMio(x.grupoId, x.asignadoA) && x.creadoPor && esMio(x.grupoId, x.creadoPor)).sort((x, y) => String(x.fecha || '9999').localeCompare(String(y.fecha || '9999'))) : [];
+  const plegE = encargadas.length ? '<button type="button" class="ag-pleg" aria-expanded="' + (abierto === 'encargadas') + '" ' + act('agendaMas', 'encargadas') + '><span>Encargadas a otros · ' + encargadas.length + '</span>' + ic(abierto === 'encargadas' ? 'chevD' : 'chevR') + '</button>' + (abierto === 'encargadas' ? '<div class="list">' + encargadas.map(tareaCFilaHtml).join('') + '</div>' : '') : '';
+  const plegH = (adelante.length || hechas.length || encargadas.length) ? '<div class="ag-plegs">' + pleg('adelante', sel > hoy ? 'Otros días' : 'Más adelante', adelante) + plegE + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
+  setTimeout(agendaMarcarVista, 0); // al abrir la Agenda, lo que te encargaron deja de ser «nuevo» en Inicio
   return cab + tira + rapida + vencH + diaH + proxH + sinFH + plegH;
 }
 // Calendario v2: solo el mes; la leyenda de colores de abajo es el filtro
@@ -3621,7 +3624,7 @@ function openTareaFormV2(id, op) {
   openSheet(
     '<div class="handle"></div><h2>' + (ex ? 'Editar tarea' : 'Nueva tarea') + '</h2>' + (!ex && agendaDisponible() ? '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="true" class="active">Tarea</button><button type="button" role="tab" aria-selected="false" ' + act('tfAPlan') + '>Plan</button></div>' : '') +
     '<div class="field tf-que"><input id="tNombre" type="text" maxlength="120" aria-label="¿Qué hay que hacer?" placeholder="¿Qué hay que hacer?" value="' + escapeHtml(ex ? ex.nombre : '') + '" ' + onInput('tNombreInput') + '>' + (ex ? '' : '<div class="rec-hint">Por ejemplo: llamar al casero, renovar el DNI…</div>') + '</div>' +
-    '<div class="field"><label>¿Para cuándo?</label><input type="hidden" id="tFecha" value="' + escapeHtml(fecha) + '"><div class="chips tf-fechas" id="tFechaChips">' + tFechaChips(fecha) + '</div></div>' +
+    '<div class="field"><label>¿Para cuándo?</label><input type="hidden" id="tFecha" value="' + escapeHtml(fecha) + '"><div class="chips tf-fechas" id="tFechaChips">' + tFechaChips(fecha) + '</div></div>' + (ex ? '' : tfConHtml()) +
     '<div class="field"><label>Categoría <span class="hint">· opcional</span></label><input type="hidden" id="tCategoria" value="' + escapeHtml(ex ? (ex.categoria || '') : '') + '"><div id="tCatChips"></div></div>' +
     (ex ? '<div class="field"><label>Estado</label>' + tg('est', [['Pendiente', 'Pendiente'], ['Iniciado', 'En curso'], ['Completado', 'Hecha']], FORM.estado, 'pickEstado') + '</div>' : '') +
     '<details class="tf-mas"' + (masAbierto ? ' open' : '') + '><summary>Más opciones' + ic('chevD') + '</summary>' +
@@ -3634,6 +3637,13 @@ function openTareaFormV2(id, op) {
   );
   tCatPintar();
   if (!ex) setTimeout(() => { const el = $('#tNombre'); if (el) el.focus(); }, 80);
+}
+// «Con»: una tarea puede ser solo tuya o de un grupo o una persona (docs/24 §3); al elegir con quién, pasa al formulario de tarea compartida
+function tfConHtml() {
+  if (!agendaDisponible()) return ''; const gs = gruposParaPlanes(), ps = personasParaPlanes(); if (!gs.length && !ps.length) return '';
+  const chip = (k, txt, extra, on) => '<button type="button" class="chip' + (on ? ' active' : '') + '" aria-pressed="' + !!on + '" ' + act('tfCon', k) + '>' + (extra || '') + escapeHtml(txt) + '</button>';
+  return '<div class="field"><label>Con</label><div class="chips plan-con">' + chip('yo', 'Solo yo', '', true) + gs.map((g) => chip('g:' + g.id, nombreDestino(g), g.tipo === 'directo' ? (otroDe(g) ? caraHtml(otroDe(g).user_id, otroDe(g).nombre, 'mini') : '') : ic('users'))).join('') +
+    ps.map((p) => chip('u:' + p.uid, p.nombre, caraHtml(p.uid, p.nombre, 'mini'))).join('') + '</div></div>';
 }
 function tFechaPoner(v) { const h = $('#tFecha'); if (h) h.value = v || ''; const c = $('#tFechaChips'); if (c) c.innerHTML = tFechaChips(v || ''); sentir('tic'); }
 async function agRapidaCrear() {
@@ -4302,6 +4312,9 @@ function estosDiasHtml(v2) {
     const ids = [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id)), tot = r2(ids.reduce((a, id) => a + miSaldo(id), 0));
     if (Math.abs(tot) >= 0.005) filas.push({ cls: 'juntos', icono: 'users', t: tot > 0 ? 'Te deben ' + money(tot) : 'Debes ' + money(-tot), d: 'En lo que compartes', a: act('goTab', 'juntos') });
   }
+  try { const en = encargosNuevos(); if (en.length) { const a0 = en[0], g0 = grupoDe(a0.grupoId);
+    filas.unshift(en.length === 1 ? { cls: 'hoy', icono: 'checkCircle', t: escapeHtml(a0.titulo), d: 'Te lo encarga ' + escapeHtml(nombreDe(a0.grupoId, a0.creadoPor)) + (g0 && g0.tipo !== 'directo' ? ' · ' + escapeHtml(nombreDestino(g0)) : '') + (a0.fecha ? ' · para el ' + fechaCortaU(a0.fecha) : ''), a: act('planVer', a0.id) }
+      : { cls: 'hoy', icono: 'users', t: en.length + ' tareas nuevas para ti', d: 'Te las han encargado', a: act('setInicioVista', 'tareas') }); } } catch (e) { console.error(e); }
   ra.revisar.forEach((x) => filas.push({ cls: 'rec', icono: 'repeat', t: escapeHtml(x.rc.nombre) + ': revisa la regla', d: 'Tus últimos movimientos encajan mejor con otra', a: act('recEditar', x.rc.kind, x.rc.idx) }));
   // lo de los próximos 7 días (tareas, cobros y pagos fijos, metas)
   const f0 = S.calFiltros; S.calFiltros = { tareas: true, facturas: true, hitos: true, movs: false };
@@ -4311,6 +4324,7 @@ function estosDiasHtml(v2) {
     filas.push({ fecha: iso, t: escapeHtml(ev.titulo), d: (n === 1 ? 'Mañana' : DIAS_LARGO[dowMon(parseISO(iso))]) + ' · ' + escapeHtml(String(ev.detalle || '').replace(/ · (Pendiente|Sin registrar)$/, '')), a: ev.click || act('setInicioVista', 'tareas') }); }));
   const fechaTile = (iso) => { const d = parseISO(iso); return '<span class="dia-fecha"><i>' + MESES_ABR[d.getMonth()].toUpperCase() + '</i><b>' + d.getDate() + '</b></span>'; };
   if (v2 && inicioV3()) { try { filas.unshift(...avisosInicioFilas()); } catch (e) { console.error(e); } }
+  { const vistos = new Set(); for (let i = 0; i < filas.length; i++) { const k = /planVer/.test(filas[i].a || '') ? filas[i].a : null; if (!k) continue; if (vistos.has(k)) { filas.splice(i, 1); i--; } else vistos.add(k); } } // una tarea encargada sale una sola vez
   const filaHtml = (f) => '<div class="dia-fila' + (f.cls ? ' ' + f.cls : '') + '"><button type="button" class="dia-main" ' + (f.a || '') + '>' +
     (f.caras ? '<span class="dia-ic caras">' + f.caras + '</span>' : f.fecha ? fechaTile(f.fecha) : '<span class="dia-ic">' + ic(f.icono) + '</span>') + '<span class="dia-t"><b>' + f.t + '</b><span>' + f.d + '</span></span>' + (f.botones ? '' : '<span class="chev-s">' + ic('chevR') + '</span>') + '</button>' +
     (f.botones ? '<span class="dia-btns">' + f.botones + '</span>' : '') + '</div>';
@@ -5317,6 +5331,8 @@ function temaRefrescarGrupo() { if (FORM && FORM.kind === 'grupo' && FORM.id) up
    ============================================================ */
 const AVISOS_PLAN = [['no', 'No'], ['dia', 'Ese día'], ['antes', 'El día antes'], ['semana', '1 semana antes']];
 function agendaDisponible() { return !!(S.db && S.db.agenda); }
+// personas de tus grupos con las que aún no tienes un «directo»: se crea al guardar (docs/24 §3)
+function personasParaPlanes() { return amigos().filter((p) => { const d = directoCon(p.uid); return !d || d.cerrado; }); }
 function gruposParaPlanes() { return (S.grupos || []).filter((g) => !g.cerrado && (g.tipo === 'grupo' || (g.tipo === 'directo' && g.miembros.length >= 2))); }
 function agendaItems() { const oc = cfg().agendaOcultos || {}; return (S.agenda || []).filter((a) => !oc[a.id] && (!a.grupoId || grupoDe(a.grupoId))); }
 function agendaPorId(id) { return (S.agenda || []).find((a) => a.id === id) || null; }
@@ -5353,6 +5369,20 @@ function planFilaHtml(ev, iso) {
   return '<button type="button" class="row plan-fila tappable" ' + ev.click + '><span class="plan-baldosa"><i>' + arriba + '</i><b class="tnum">' + escapeHtml(abajo) + '</b></span>' +
     '<span class="main"><span class="ttl">' + escapeHtml(ev.titulo) + '</span><span class="meta">' + escapeHtml(ev.detalle) + '</span></span></button>';
 }
+// «Recordárselo» por WhatsApp: el mensaje lo envía la persona desde su móvil; nada sale del servidor
+function tareaRecordarMsg(a) {
+  const n = String(nombreDe(a.grupoId, a.asignadoA) || '').trim().split(/\s+/)[0];
+  let cuando = ''; if (a.fecha) { const d = daysUntil(a.fecha); cuando = d === 0 ? ' (para hoy)' : d === 1 ? ' (para mañana)' : d > 1 && d < 7 ? ' (para el ' + DIAS_LARGO[dowMon(parseISO(a.fecha))].toLowerCase() + ')' : ' (para el ' + fechaCortaU(a.fecha) + ')'; }
+  return 'Hola' + (n ? ' ' + n : '') + ', te recuerdo: ' + a.titulo + cuando + '. Lo tienes en PalomApp.';
+}
+// tareas que otra persona te ha encargado y aún no has visto (desde la última vez que abriste la Agenda)
+function encargosNuevos() {
+  if (!agendaDisponible()) return [];
+  const visto = cfg().agendaVisto || new Date(Date.now() - 7 * 864e5).toISOString(); // la primera vez, solo lo de la última semana
+  return agendaItems().filter((a) => a.tipo === 'tarea' && !a.hechaEn && a.grupoId && a.asignadoA && esMio(a.grupoId, a.asignadoA) && a.creadoPor && !esMio(a.grupoId, a.creadoPor) && String(a.createdAt || '') > visto);
+}
+// se guarda la fecha (del servidor) del último encargo visto, nunca la hora del móvil: así un reloj adelantado no esconde nada
+function agendaMarcarVista() { const en = encargosNuevos(); if (en.length) saveConfig({ agendaVisto: en.map((a) => String(a.createdAt)).sort().pop() }); }
 function tareaCFilaHtml(a) {
   const g = grupoDe(a.grupoId), quien = a.asignadoA ? (esMio(a.grupoId, a.asignadoA) ? 'tú' : nombreDe(a.grupoId, a.asignadoA)) : 'quien pueda';
   const hecha = !!a.hechaEn;
@@ -5385,9 +5415,13 @@ function planFormHtml() {
   if (plan) h += '<div class="field"><label>¿A qué hora?</label><div class="chips">' + chip('planHoraModo', 'dia', F.horaModo === 'dia', 'Todo el día') + chip('planHoraModo', 'hora', F.horaModo === 'hora', 'A una hora', ic('clock')) + chip('planHoraModo', 'varios', F.horaModo === 'varios', 'Varios días') + '</div>' +
     (F.horaModo === 'hora' ? '<input id="pHora" type="time" class="plan-hora" aria-label="Hora" value="' + escapeHtml(F.hora) + '">' : '') +
     (F.horaModo === 'varios' ? '<div class="tema-fechas plan-hasta"><span>Hasta</span><input id="pFin" type="date" aria-label="Hasta" min="' + escapeHtml(F.fecha) + '" value="' + escapeHtml(F.fechaFin) + '"></div>' : '') + '</div>';
-  if (!F.id) h += '<div class="field"><label>Con' + (F.con !== 'yo' ? ' <span class="hint">· lo verán todos</span>' : '') + '</label><div class="chips plan-con">' + (plan ? chip('planCon', 'yo', F.con === 'yo', 'Solo yo') : '') + gs.map((x) => chip('planCon', 'g:' + x.id, F.con === 'g:' + x.id, nombreDestino(x), x.tipo === 'grupo' ? ic('users') : '')).join('') + '</div>' +
-    (!plan && !gs.length ? '<div class="rec-hint">Las tareas compartidas son de un grupo. Las tuyas, apúntalas como siempre.</div>' : '') + '</div>';
+  if (!F.id) h += '<div class="field"><label>Con' + (F.con !== 'yo' ? ' <span class="hint">· ' + (F.con.indexOf('u:') === 0 || (g && g.tipo === 'directo') ? 'lo veréis los dos' : 'lo verán todos') + '</span>' : '') + '</label><div class="chips plan-con">' + chip('planCon', 'yo', F.con === 'yo', 'Solo yo') + gs.map((x) => chip('planCon', 'g:' + x.id, F.con === 'g:' + x.id, nombreDestino(x), x.tipo === 'grupo' ? ic('users') : '')).join('') + personasParaPlanes().map((p) => chip('planCon', 'u:' + p.uid, F.con === 'u:' + p.uid, p.nombre, caraHtml(p.uid, p.nombre, 'mini'))).join('') + '</div>' +
+    (!plan && !gs.length && !personasParaPlanes().length ? '<div class="rec-hint">Las tareas compartidas son de un grupo. Las tuyas, apúntalas como siempre.</div>' : '') + '</div>';
   else if (g) h += '<div class="rec-hint plan-de">' + ic('users') + ' ' + escapeHtml(nombreDestino(g)) + ' · lo ven todos</div>';
+  const pu = !F.id && F.con.indexOf('u:') === 0 ? amigos().find((p) => p.uid === F.con.slice(2)) : null;
+  if (!plan && pu) h += '<div class="field"><label>¿Quién se encarga?</label><div class="cr-caras plan-quien">' +
+    [['', '<span class="avatar cara plan-cualquiera">' + ic('users') + '</span>', 'Quien pueda'], [miUid(), caraHtml(miUid(), miNombreAlguno()), 'Tú'], [pu.uid, caraHtml(pu.uid, pu.nombre), pu.nombre]].map(([u, cara, l]) => '<button type="button" class="cr-cara' + ((F.asignado || '') === u ? ' on' : '') + '" ' + act('planQuien', u) + '>' + cara + '<span>' + escapeHtml(l) + '</span></button>').join('') +
+    '</div>' + (F.asignado === pu.uid ? '<div class="rec-hint">' + ic('bell') + ' ' + escapeHtml(pu.nombre) + ' lo verá arriba en su Inicio.</div>' : '') + '<div class="rec-hint">Se creará vuestro espacio para compartir (como en Juntos).</div></div>';
   if (!plan && g) { const ms = g.miembros.filter((m) => !m.baja); h += '<div class="field"><label>¿Quién se encarga?</label><div class="cr-caras plan-quien">' +
     '<button type="button" class="cr-cara' + (!F.asignado ? ' on' : '') + '" ' + act('planQuien', '') + '><span class="avatar cara plan-cualquiera">' + ic('users') + '</span><span>Quien pueda</span></button>' +
     ms.map((m) => { const u = aliasDe(g.id, m.user_id); return '<button type="button" class="cr-cara' + (F.asignado && aliasDe(g.id, F.asignado) === aliasDe(g.id, m.user_id) ? ' on' : '') + '" ' + act('planQuien', m.user_id) + '>' + caraHtml(u, m.nombre) + '<span>' + escapeHtml(esMio(g.id, m.user_id) ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>'; }).join('') + '</div></div>'; }
@@ -5418,7 +5452,9 @@ async function planGuardar() {
   if (F.guardando) return; F.guardando = true;
   try {
     let a;
-    try { a = F.id ? await S.db.agenda.editar(F.id, datos) : await S.db.agenda.crear(Object.assign({ grupoId: F.con.indexOf('g:') === 0 ? F.con.slice(2) : null, tipo: F.tipo }, datos)); }
+    let gid = F.con.indexOf('g:') === 0 ? F.con.slice(2) : null;
+    if (!F.id && F.con.indexOf('u:') === 0) { const g = await accionGrupo(() => S.db.rpc('crear_directo', { p_user: F.con.slice(2) })); if (!g || g === true) return toast('No se ha podido compartir con esa persona'); gid = g; }
+    try { a = F.id ? await S.db.agenda.editar(F.id, datos) : await S.db.agenda.crear(Object.assign({ grupoId: gid, tipo: F.tipo }, datos)); }
     catch (e) { console.error(e); return toast(errGrupo(e)); }
     agendaAplicarLocal(a);
     if (plan) { const av = Object.assign({}, cfg().agendaAvisos || {}); if (F.aviso === 'antes') { if (av[a.id]) { delete av[a.id]; saveConfig({ agendaAvisos: av }); } } else if (av[a.id] !== F.aviso) { av[a.id] = F.aviso; saveConfig({ agendaAvisos: av }); } }
@@ -5441,10 +5477,11 @@ function planVerHtml(id) {
     (a.hechaEn ? '<div class="plan-dato">' + ic('check') + '<span>Hecha por ' + escapeHtml(a.hechaPor && esMio(a.grupoId, a.hechaPor) ? 'ti' : nombreDe(a.grupoId, a.hechaPor)) + ' · ' + escapeHtml(haceTxt(a.hechaEn)) + '</span></div>' : '');
   if (a.lugar) h += '<div class="plan-dato">' + ic('pin') + '<span>' + escapeHtml(a.lugar) + ' · <a class="link" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(a.lugar) + '" target="_blank" rel="noopener">Abrir en Mapas</a></span></div>';
   if (a.nota) h += '<div class="plan-nota">' + escapeHtml(a.nota) + '</div>';
-  if (g) h += '<div class="plan-autor">Lo añadió ' + escapeHtml(a.creadoPor && esMio(a.grupoId, a.creadoPor) ? 'tú' : nombreDe(a.grupoId, a.creadoPor)) + (a.createdAt ? ' · ' + escapeHtml(haceTxt(a.createdAt)) : '') + '</div>';
+  if (g) h += '<div class="plan-autor">' + escapeHtml(a.creadoPor && esMio(a.grupoId, a.creadoPor) ? 'Lo añadiste tú' : 'Lo añadió ' + nombreDe(a.grupoId, a.creadoPor)) + (a.createdAt ? ' · ' + escapeHtml(haceTxt(a.createdAt)) : '') + '</div>';
   h += '</div>';
   if (plan) h += '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => '<button type="button" class="chip' + (planAviso(a.id) === k ? ' active' : '') + '" aria-pressed="' + (planAviso(a.id) === k) + '" ' + act('planAvisoVer', a.id, k) + '>' + l + '</button>').join('') + '</div></div>';
-  else h += '<button class="btn ' + (a.hechaEn ? 'ghost' : 'accent') + ' block" ' + act('tareaCHecha', a.id, a.hechaEn ? '' : '1') + '>' + ic('check') + (a.hechaEn ? ' Marcar sin hacer' : ' Marcar hecha') + '</button>';
+  else h += '<button class="btn ' + (a.hechaEn ? 'ghost' : 'accent') + ' block" ' + act('tareaCHecha', a.id, a.hechaEn ? '' : '1') + '>' + ic('check') + (a.hechaEn ? ' Marcar sin hacer' : ' Marcar hecha') + '</button>' +
+    (!a.hechaEn && g && a.asignadoA && !esMio(a.grupoId, a.asignadoA) ? '<a class="btn ghost block plan-recordar" href="https://wa.me/?text=' + encodeURIComponent(tareaRecordarMsg(a)) + '" target="_blank" rel="noopener">' + ic('send') + ' Recordárselo a ' + escapeHtml(nombreDe(a.grupoId, a.asignadoA)) + '</a>' : '');
   h += '<div class="plan-acc">' + (plan ? '<button type="button" class="tema-menu-b" ' + act('planIcs', a.id) + '>' + ic('calendar') + '<span>Añadir a mi calendario</span></button>' : '') +
     (g ? '<button type="button" class="tema-menu-b" ' + act('planOcultar', a.id) + '>' + ic('close') + '<span>Ocultar de mi agenda</span></button>' : '') +
     (puede ? '<button type="button" class="tema-menu-b" ' + act('planEditar', a.id) + '>' + ic('edit') + '<span>Editar</span></button><button type="button" class="tema-menu-b peligro" ' + act('planBorrar', a.id) + '>' + ic('trash') + '<span>Borrar</span></button>' : '') + '</div>' +
@@ -10160,13 +10197,14 @@ const H = {
   planNuevo: ([fecha]) => planAbrirForm({ tipo: 'plan', fecha: fecha || todayISO() }),
   planGrupoNuevo: ([gid, tipo]) => { planAbrirForm({ volver: gid, tipo: tipo === 'tarea' ? 'tarea' : 'plan', con: 'g:' + gid, fecha: tipo === 'tarea' ? '' : todayISO() }); },
   tfAPlan: () => { const n = $('#tNombre'), f = $('#tFecha'); planAbrirForm({ tipo: 'plan', titulo: n ? n.value : '', fecha: (f && f.value) || todayISO() }); },
+  tfCon: ([k]) => { if (!k || k === 'yo') return; const n = $('#tNombre'), f = $('#tFecha'); sentir('tic'); planAbrirForm({ tipo: 'tarea', con: k, titulo: n ? n.value : '', fecha: f ? f.value : '' }); },
   planTipo: ([t]) => { planLeerForm(); const F = FORM; if (!F || F.kind !== 'plan') return;
     if (t === 'tarea' && F.con === 'yo') { const tit = F.titulo, fe = F.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; }
     F.tipo = t === 'tarea' ? 'tarea' : 'plan'; if (F.tipo === 'plan' && !F.fecha) F.fecha = todayISO(); updateSheet(planFormHtml()); },
   planFecha: ([v]) => { planLeerForm(); FORM.fecha = v || ''; if (FORM.fechaFin && FORM.fechaFin < FORM.fecha) FORM.fechaFin = ''; sentir('tic'); updateSheet(planFormHtml()); },
   planFechaOtro: (_a, el) => { planLeerForm(); FORM.fecha = el.value || FORM.fecha; updateSheet(planFormHtml()); },
   planHoraModo: ([k]) => { planLeerForm(); FORM.horaModo = k; sentir('tic'); updateSheet(planFormHtml()); },
-  planCon: ([k]) => { planLeerForm(); FORM.con = k; FORM.asignado = ''; sentir('tic'); updateSheet(planFormHtml()); },
+  planCon: ([k]) => { planLeerForm(); if (k === 'yo' && FORM.tipo === 'tarea' && !FORM.id) { const tit = FORM.titulo, fe = FORM.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; } FORM.con = k; FORM.asignado = ''; sentir('tic'); updateSheet(planFormHtml()); },
   planQuien: ([u]) => { planLeerForm(); FORM.asignado = u || ''; sentir('tic'); updateSheet(planFormHtml()); },
   planAviso: ([k]) => { planLeerForm(); FORM.aviso = k; sentir('tic'); updateSheet(planFormHtml()); },
   planGuardar: () => planGuardar(),
