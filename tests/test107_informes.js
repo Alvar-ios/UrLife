@@ -35,7 +35,7 @@ const movs = [mv('j1', 'Ingreso', 'Nómina', 1000, '2026-07-01'), mv('j2', 'Gast
   ok(/En junio no apuntaste nada/.test(sh()), 'periodo sin apuntes');
   // ajustes: activar el semanal → nuevo aviso en Inicio
   H.infAjustes([]); await sleep(10);
-  ok(doc.querySelectorAll('.inf-tog input').length === 4 && doc.querySelectorAll('.inf-tog input:checked').length === 2, 'por defecto: mensual y anual');
+  ok(doc.querySelectorAll('.inf-tog .switch').length === 4 && doc.querySelectorAll('.inf-tog .switch.on').length === 2, 'por defecto: mensual y anual');
   H.infOn(['semana'], { checked: true }); await sleep(10); H.closeSheet([]); await sleep(400); H.goTab(['inicio']); await sleep(20);
   ok(S.config.informes.on.semana === true && /Tu informe de la semana/.test((doc.querySelector('.inf-ini') || {}).textContent || ''), 'activar el semanal: aviso del informe de la semana');
   H.infDescartar(['w:2026-10-05']); await sleep(20);
