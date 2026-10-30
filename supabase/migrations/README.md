@@ -131,3 +131,10 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - SQL en `2026-10-23_agenda_planes.sql` (migración 2 de `docs/17`; retoque: al crear en un grupo, el autor tiene que ser quien tiene la sesión).
 - Aditiva: tabla `agenda` (planes con fecha, hora y lugar; tareas del grupo con encargado y «hecha»). RLS: lo «Solo yo» solo lo ve quien lo crea; lo de un grupo, sus miembros activos. Sin DELETE; `anon` sin permisos. Disparador `validar_agenda` y función `agenda_hecha` (marcar una tarea del grupo, cualquier miembro). En Realtime.
 - No toca la tabla `tareas` (44 tareas personales sin cambios). Comprobado después: RLS, 3 reglas, permisos y funciones como se esperaba; 0 filas.
+
+## Compartir mi agenda (30/10): agenda_compartir — APLICADA
+- SQL en `2026-10-30_agenda_compartir.sql` (revisión de Datos y Seguridad en `docs/24b`; aprobada por el dueño el 30/10, también que los planes de grupo salgan como «Ocupada» a quien no es del grupo). Único cambio frente a `docs/24b`: `tareas.fecha_limite` es `date`, así que se usa directamente.
+- Aditiva: columnas `tareas.privada` y `agenda.privada` (sí/no, por defecto no; en la agenda solo en planes «Solo yo»), tablas `agenda_permisos` (solo las ve y toca quien comparte) y `agenda_ocultas`, disparador `validar_agenda_permiso` y funciones `agenda_nivel_para` (interna), `agenda_de` y `agendas_conmigo` (solo con sesión). Sin Realtime.
+- Antes de aplicarla se probó entera dentro de una transacción que se deshizo, con 4 cuentas inventadas: sin permiso no se ve nada; «ocupado» no manda títulos ni tareas; «títulos» sin lugar ni nota; lo privado, sin fecha y hecho nunca llega; planes de grupos ajenos solo como «ocupado»; nunca ids reales; al salir del grupo o dejar de compartir se deja de ver al momento; sin sesión, nada; rango máximo 92 días.
+- Comprobado después: 45 tareas y 5 planes sin cambios, 0 privados, RLS activo en las dos tablas nuevas. Los avisos de Supabase solo muestran `agenda_de` y `agendas_conmigo` ejecutables con sesión, que es lo buscado.
+- Pendiente en la app (antes de enseñar «Privada»): copiar `privada` al repetir una tarea (`crearSiguienteTarea`) y mandarlo solo en planes «Solo yo».
