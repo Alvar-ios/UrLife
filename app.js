@@ -6469,13 +6469,16 @@ function histFila(r) {
     antes: r.antes || {}, despues: r.despues || {}, desc: r.descripcion || '', tipo: r.tipo || '', importe: num(r.importe), pagadoPor: r.pagado_por, reparto: r.reparto || {}, borrado: r.borrado || null, nombres: r.nombres || {} };
 }
 async function histCargar(gid, mas) {
-  const st = histEstado(gid); if (st.cargando) return; st.cargando = true; st.error = false;
+  const st = histEstado(gid); if (st.cargando && mas) return; // cada petición nueva gana a la que se quedó colgada
+  const yo = st.req = (st.req || 0) + 1; st.cargando = true; st.error = false; st.desde = Date.now();
   const ult = mas && st.filas.length ? st.filas[st.filas.length - 1] : null;
   try {
-    const rs = await S.db.rpc('historial_grupo', { p_grupo: gid || null, p_antes_de: ult ? ult.en : null, p_limite: HIST_PAG, p_antes_id: ult ? ult.id : null });
+    const rs = await Promise.race([S.db.rpc('historial_grupo', { p_grupo: gid || null, p_antes_de: ult ? ult.en : null, p_limite: HIST_PAG, p_antes_id: ult ? ult.id : null }),
+      new Promise((_, no) => setTimeout(() => no(new Error('tarda demasiado')), 15000))]);
     const nuevas = (Array.isArray(rs) ? rs : []).map(histFila);
-    st.filas = (mas ? st.filas : []).concat(nuevas); st.mas = nuevas.length === HIST_PAG; st.t = Date.now();
-  } catch (e) { console.error(e); st.error = true; }
+    if (yo !== st.req) return;
+    st.filas = (mas ? st.filas : []).concat(nuevas); histEstados(st.filas); st.mas = nuevas.length === HIST_PAG; st.t = Date.now();
+  } catch (e) { if (yo !== st.req) return; console.error(e); st.error = true; }
   st.cargando = false;
   if (FORM && FORM.kind === 'hist' && FORM.gid === gid && $('#sheetBackdrop')) updateSheet(histHtml(gid));
   else if (FORM && FORM.kind === 'grupo' && FORM.id === gid && !FORM.ajustes && $('#sheetBackdrop')) { const el = $('#histEnlace'); if (el) el.outerHTML = histEnlaceHtml(gid); }
@@ -6490,16 +6493,25 @@ function histEnlaceHtml(gid) {
   const n = histNuevos(gid);
   return '<button type="button" id="histEnlace" class="link jv-origen hist-enlace" ' + act('histVer', gid) + '>' + ic('history') + ' Historial' + (n ? '<span class="jv-nuevas">' + (n === 1 ? '1 nuevo' : n + ' nuevos') + '</span>' : '') + '</button>';
 }
-// el gasto tal y como era antes (o después) de un cambio: lo que no cambió se toma de cómo está hoy
+// cómo era el dinero del gasto justo después (_est) y justo antes (_ant) de cada fila: se parte de cómo está hoy y se van
+// deshaciendo los cambios, de la fila más nueva a la más vieja (las páginas llegan en ese orden)
+function histEstados(filas) {
+  const hoy = {};
+  filas.forEach((f) => {
+    let e = hoy[f.cid] || { importe: f.importe, pagado_por: f.pagadoPor, reparto: f.reparto || {} };
+    if (f.accion === 'creado') e = { importe: 'importe' in f.despues ? f.despues.importe : e.importe, pagado_por: 'pagado_por' in f.despues ? f.despues.pagado_por : e.pagado_por, reparto: 'reparto' in f.despues ? f.despues.reparto : e.reparto };
+    f._est = e;
+    const ant = Object.assign({}, e); ['importe', 'pagado_por', 'reparto'].forEach((k) => { if (f.accion === 'editado' && k in f.antes) ant[k] = f.antes[k]; });
+    f._ant = ant; hoy[f.cid] = ant;
+  });
+}
 function histGasto(f, cual) {
-  const v = cual === 'antes' ? f.antes : f.despues, d = f.despues;
-  const val = (k, hoy) => (k in v ? v[k] : cual === 'antes' && k in d ? hoy : hoy);
-  return { grupoId: f.gid, importe: num(val('importe', f.importe)), pagadoPor: val('pagado_por', f.pagadoPor), reparto: val('reparto', f.reparto) || {} };
+  const e = (cual === 'antes' ? f._ant : f._est) || { importe: f.importe, pagado_por: f.pagadoPor, reparto: f.reparto };
+  return { grupoId: f.gid, importe: num(e.importe), pagadoPor: e.pagado_por, reparto: e.reparto || {} };
 }
 function histEfecto(f) {
-  if (f.tipo === 'Liquidación' && f.accion === 'editado') return 0;
-  if (f.accion === 'creado' || f.accion === 'recuperado') return efectoMio(f.accion === 'creado' ? histGasto(f, 'despues') : histGasto(f, 'hoy'));
-  if (f.accion === 'borrado') return -efectoMio(histGasto(f, 'hoy'));
+  if (f.accion === 'creado' || f.accion === 'recuperado') return efectoMio(histGasto(f, 'despues'));
+  if (f.accion === 'borrado') return -efectoMio(histGasto(f, 'despues'));
   if (!('importe' in f.despues || 'reparto' in f.despues || 'pagado_por' in f.despues)) return null;
   return r2(efectoMio(histGasto(f, 'despues')) - efectoMio(histGasto(f, 'antes')));
 }
@@ -6532,14 +6544,15 @@ function histJuntar(filas) {
 function histFraseHtml(f) {
   const q = histQuien(f), yo = q === 'Tú', nom = '«' + escapeHtml(histNombreGasto(f)) + '»', liq = f.tipo === 'Liquidación', a = Object.keys(f.reparto || {})[0];
   if (f.lote) { const t = temaPorId(f.despues.carpeta_id), n = f.lote.length, que = n === 1 ? nom : n + ' gastos';
-    return escapeHtml(yo ? 'Pusiste ' : q + ' puso ') + que + (f.despues.carpeta_id ? ' en «' + escapeHtml(t ? t.nombre : 'un tema') + '»' : ' sin tema'); }
+    if (!f.despues.carpeta_id) { const t0 = temaPorId(f.antes.carpeta_id); return escapeHtml(yo ? 'Quitaste ' : q + ' quitó ') + que + ' del tema' + (t0 ? ' «' + escapeHtml(t0.nombre) + '»' : ''); }
+    return escapeHtml(yo ? 'Pusiste ' : q + ' puso ') + que + ' en «' + escapeHtml(t ? t.nombre : 'un tema') + '»'; }
   if (liq && f.accion === 'creado') { const p = histPersona(f, f.pagadoPor), r = histPersona(f, a); return escapeHtml(p === 'Tú' ? 'Pagaste ' + money(f.importe) + ' a ' + r : r === 'Tú' ? p + ' te pagó ' + money(f.importe) : p + ' pagó ' + money(f.importe) + ' a ' + r); }
   const verbo = { creado: ['Apuntaste', 'apuntó'], editado: ['Cambiaste', 'cambió'], borrado: ['Borraste', 'borró'], recuperado: ['Recuperaste', 'recuperó'] }[f.accion] || ['Cambiaste', 'cambió'];
   return escapeHtml(yo ? verbo[0] : q + ' ' + verbo[1]) + ' ' + (liq ? 'un pago' : nom);
 }
 function histLineaHtml(f) {
   const hora = new Date(f.en), hh = isFinite(hora) ? pad2(hora.getHours()) + ':' + pad2(hora.getMinutes()) : '';
-  const g = histGasto(f, f.accion === 'creado' ? 'despues' : 'hoy');
+  const g = histGasto(f, 'despues');
   if (f.lote) return escapeHtml(f.lote.length > 1 ? f.lote.map(histNombreGasto).slice(0, 3).join(', ') + (f.lote.length > 3 ? '…' : '') + ' · ' + hh : hh);
   if (f.accion === 'editado') {
     const cs = histCambios(f); if (!cs.length) return escapeHtml(hh);
@@ -6570,13 +6583,13 @@ function histHtml(gid) {
   h += '<div class="chips hist-chips">' + chip('histTipo', 'todo', st.tipo === 'todo', 'Todo') + chip('histTipo', 'cambios', st.tipo === 'cambios', 'Cambios', ic('edit')) + chip('histTipo', 'borrados', st.tipo === 'borrados', 'Borrados', ic('trash')) + '</div>';
   const vis = todas.filter((f) => (!st.persona || f.por === st.persona) && (st.tipo === 'todo' || (st.tipo === 'cambios' ? f.accion === 'editado' : f.accion === 'borrado' || f.accion === 'recuperado')));
   if (st.error && !st.filas.length) return h + '<div class="card empty-mini">No se ha podido cargar el historial. Comprueba la conexión.</div><div class="actions"><button class="btn ghost block" ' + act('histVolver', gid) + '>Volver</button><button class="btn accent block" ' + act('histReintentar', gid) + '>Reintentar</button></div>';
-  if (!st.t && st.cargando) return h + '<div class="card empty-mini">Cargando…</div>';
-  if (!vis.length) h += '<div class="card empty-mini">' + (st.filas.length ? 'Nada con este filtro.' : 'Aún no hay cambios guardados. A partir de hoy se apunta aquí quién apunta, cambia o borra cada gasto.') + '</div>';
+  if (!st.t) return h + '<div class="card empty-mini">Cargando…</div><div class="actions"><button class="btn ghost block" ' + act('histVolver', gid) + '>Volver</button></div>';
+  if (!vis.length) h += '<div class="card empty-mini">' + (st.filas.length ? 'Nada con este filtro.' : 'Aún no hay cambios. Aquí verás quién apunta, cambia o borra cada gasto.') + '</div>';
   let dia = '';
   vis.forEach((f) => {
     const d = histDiaTxt(f.en); if (d !== dia) { h += (dia ? '</div>' : '') + '<div class="hist-dia">' + escapeHtml(d) + '</div><div class="card hist-card">'; dia = d; }
-    const ef = f.lote ? null : histEfecto(f), [ico, cls] = f.lote ? ['tag', 'ed'] : HIST_ICONO[f.accion] || ['edit', 'ed'], q = histQuien(f);
-    const cara = f.por ? caraHtml(aliasDe(f.gid, f.por), q === 'Tú' ? (String(cfg().nombre || '').trim() || 'Tú') : q) : '<span class="avatar cara">?</span>';
+    const ef = f.lote ? null : histEfecto(f), [ico, cls] = f.lote ? ['tag', 'ed'] : f.tipo === 'Liquidación' && f.accion === 'creado' ? ['swap', 'cr'] : HIST_ICONO[f.accion] || ['edit', 'ed'], q = histQuien(f);
+    const cara = f.por ? caraHtml(aliasDe(f.gid, f.por), q === 'Tú' ? (String(cfg().nombre || '').trim() || 'Tú') : q) : '<span class="avatar cara" style="background:var(--text-faint)" aria-hidden="true">?</span>';
     h += '<button type="button" class="hist-f tappable" ' + act('histDetalle', gid, f.id) + '><span class="hist-cara">' + cara + '<i class="hist-ins ' + cls + '">' + ic(ico) + '</i></span>' +
       '<span class="hist-x"><b>' + histFraseHtml(f) + '</b><span>' + histLineaHtml(f) + '</span></span>' +
       '<span class="hist-v">' + (ef == null ? (f.lote ? '' : '<span>sin cambio</span>') : '<b class="tnum" style="color:' + saldoColor(ef) + '">' + (ef > 0.004 ? '+' : ef < -0.004 ? '−' : '') + money(Math.abs(ef)) + '</b><span>tu saldo</span>') + '</span></button>';
