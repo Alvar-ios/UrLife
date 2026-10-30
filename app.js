@@ -2758,8 +2758,14 @@ function compFieldHtml() {
     '<div id="compReparto">' + compRepartoHtml() + '</div>' + compAutorHtml(c) + '</div>';
 }
 // docs/27 tanda 0: quién lo apuntó y quién lo cambió por última vez (sin tocar la base de datos)
+// ¿guardar cambiaría algo del gasto para el grupo? (la cuenta de tu banco es privada y no cuenta)
+function compSinCambios(previo, datos) {
+  const est = (v) => (v == null || v === '' ? null : typeof v === 'object' ? JSON.stringify(Array.isArray(v) ? v : Object.keys(v).sort().reduce((o, k) => (o[k] = v[k], o), {})) : String(v));
+  return Object.keys(datos).every((k) => (k === 'importe' ? Math.abs((+previo[k] || 0) - (+datos[k] || 0)) < 0.005 : k === 'reparto' ? Object.keys(Object.assign({}, previo.reparto, datos.reparto)).every((u) => Math.abs(((previo.reparto || {})[u] || 0) - ((datos.reparto || {})[u] || 0)) < 0.005) : est(previo[k]) === est(datos[k])));
+}
 function compCambiado(c) {
-  if (!c || !c.editadoPor || !c.updatedAt || !c.createdAt) return false;
+  if (!c || c.tipo === 'Liquidación') return false;
+  if (!c.editadoPor || !c.updatedAt || !c.createdAt) return false;
   const a = Date.parse(c.createdAt), b = Date.parse(c.updatedAt);
   return isFinite(a) && isFinite(b) && b - a > 60000;
 }
@@ -2861,7 +2867,7 @@ async function saveCompartido(d) {
     const temaG = temaParaGuardar(previo, grupoId); if (temaG !== undefined) datos.carpetaId = temaG;
     let c;
     try {
-      if (previo && previo.grupoId === grupoId) c = await S.db.compartidos.editar(previo.id, datos);
+      if (previo && previo.grupoId === grupoId) c = compSinCambios(previo, datos) ? previo : await S.db.compartidos.editar(previo.id, datos); // sin cambios: no se guarda, así nadie ve «cambió» de más
       else {
         c = await S.db.compartidos.crear(Object.assign({ grupoId }, datos));
         // se mueve a otro grupo: si no se puede retirar el anterior, se deshace el nuevo para no contar dos veces
@@ -5123,7 +5129,8 @@ function juntosObjHtml() {
 function juntosActividadHtml() {
   // lo nuevo es lo de otros después de tu visita anterior (aunque al entrar ya se marque como visto)
   const vc = cfg().vistoJuntos || null, visto = S._vjPaso && (S._vjPaso.nuevo === vc || !vc) ? S._vjPaso.antes : vc;
-  const todo = (S.compartidos || []).filter((c) => grupoDe(c.grupoId)).slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const cuando = (c) => (compCambiado(c) ? c.updatedAt : c.createdAt) || '';
+  const todo = (S.compartidos || []).filter((c) => grupoDe(c.grupoId)).slice().sort((a, b) => cuando(b).localeCompare(cuando(a)));
   const esNueva = (c) => !!visto && (c.createdAt || '') > visto && !esMio(c.grupoId, c.creadoPor || c.pagadoPor);
   const nuevas = todo.filter(esNueva).length, act3 = todo.filter((c, i) => i < 3 || esNueva(c)).slice(0, 6); // las 3 últimas y además lo nuevo, aunque lo tuyo sea más reciente
   if (!act3.length) return '';

@@ -66,7 +66,7 @@ const hace = (min) => new Date(Date.now() - min * 60000).toISOString();
   DB = nuevoDB();
   // k1: lo apuntó Bea hace 2 días y lo cambió Ana hace 3 h; k2: lo apuntó Ana y nadie lo cambió (updatedAt casi igual)
   const k1 = gasto('k1', 'g1', 36, 'uB', { uA: 18, uB: 18 }, 'Cena', 'uB'); k1.createdAt = hace(2 * 1440); k1.updatedAt = hace(180); k1.editadoPor = 'uA';
-  const k2 = gasto('k2', 'g1', 20, 'uA', { uA: 10, uB: 10 }, 'Taxi', 'uA'); k2.createdAt = hace(4 * 1440); k2.updatedAt = hace(4 * 1440 - 0.2); k2.editadoPor = 'uA';
+  const k2 = gasto('k2', 'g1', 20, 'uA', { uA: 10, uB: 10 }, 'Taxi', 'uA'); k2.createdAt = hace(4 * 1440); k2.updatedAt = hace(4 * 1440 - 0.2); k2.editadoPor = 'uA'; k2.categoria = 'Restaurantes y bares';
   const k3 = gasto('k3', 'g1', 12, 'uA', { uA: 6, uB: 6 }, 'Pan', 'uA'); k3.createdAt = hace(5 * 1440); k3.updatedAt = hace(60); k3.editadoPor = 'uB';
   DB.comp.push(k1, k2, k3);
   const a = env('uA'); await sleep(250); const A = a.w.__APP__;
@@ -86,5 +86,13 @@ const hace = (min) => new Date(Date.now() - min * 60000).toISOString();
   A.H.openMovForm(['c:k3']); await sleep(40);
   const au3 = (a.doc.querySelector('#sheetHost .comp-autor') || {}).textContent || '';
   ok(/cambiado por Bea hace 1 h/.test(au3), 'cambiado por otra persona: «cambiado por Bea hace 1 h» [' + au3 + ']');
+  A.H.closeSheet([]); await sleep(260);
+  // Guardar sin tocar nada no debe llamar a «editar» (si no, todo el grupo vería «cambió»)
+  let ed = 0; const edOrig = A.S.db.compartidos.editar; A.S.db.compartidos.editar = async (id, d) => { ed++; const pv = DB.comp.find((x) => x.id === id); return Object.assign({}, DB.comp.find((x) => x.id === id), d); };
+  A.H.openMovForm(['c:k2']); await sleep(40); await A.H.saveMov([]); await sleep(60);
+  ok(ed === 0, 'guardar sin cambios no toca la base de datos (editar llamado ' + ed + ' veces)');
+  A.H.openMovForm(['c:k2']); await sleep(40); a.doc.querySelector('#fDesc').value = 'Taxi aeropuerto'; await A.H.saveMov([]); await sleep(60);
+  ok(ed === 1, 'con un cambio de verdad sí se guarda (editar llamado ' + ed + ' veces)');
+  A.S.db.compartidos.editar = edOrig;
   console.log(fails ? fails + ' FALLOS' : 'TODO OK'); process.exit(fails ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
