@@ -9264,6 +9264,7 @@ async function crearSiguienteTarea(t) {
   const sig = siguienteFechaTarea(t);
   const nueva = { nombre: t.nombre, categoria: t.categoria || '', prioridad: t.prioridad || 'Media', estado: 'Pendiente', fechaLimite: sig, comentario: t.comentario || '',
     fechaCreacion: todayISO(), fechaInicio: null, fechaFin: null, repetir: t.repetir };
+  if (t.privada) nueva.privada = true; // una tarea privada que se repite sigue privada (docs/24b, riesgo 1)
   const ok = await write(() => S.db.collection('tareas').add(nueva));
   return ok ? sig : null;
 }
