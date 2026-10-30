@@ -5519,8 +5519,9 @@ function planFormHtml() {
   const fechas = [['Hoy', hoy], ['Mañana', uAdd(hoy, 1)], ['Este finde', finde(hoy)]].concat(plan ? [] : [['Sin fecha', '']]);
   const marcada = fechas.some((x) => x[1] === F.fecha), dO = F.fecha && !marcada ? parseISO(F.fecha) : null;
   const g = F.con.indexOf('g:') === 0 ? grupoDe(F.con.slice(2)) : null;
-  let h = '<div class="handle"></div><h2>' + (F.id ? (plan ? 'Editar plan' : 'Editar tarea') : (plan ? 'Nuevo plan' : 'Nueva tarea compartida')) + '</h2>';
-  if (!F.id) h += '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="' + !plan + '" class="' + (plan ? '' : 'active') + '" ' + act('planTipo', 'tarea') + '>Tarea</button><button type="button" role="tab" aria-selected="' + plan + '" class="' + (plan ? 'active' : '') + '" ' + act('planTipo', 'plan') + '>Plan</button></div>';
+  let h = '<div class="handle"></div><h2>' + (F.id ? (plan ? 'Editar plan' : 'Editar tarea') : (F.deTarea ? 'Compartir tarea' : plan ? 'Nuevo plan' : 'Nueva tarea compartida')) + '</h2>';
+  if (F.deTarea) h += '<div class="rec-hint" style="margin:-4px 0 12px;">Tu tarea pasa a ser compartida. La prioridad, la categoría y «Repetir» no se pasan.</div>';
+  if (!F.id && !F.deTarea) h += '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="' + !plan + '" class="' + (plan ? '' : 'active') + '" ' + act('planTipo', 'tarea') + '>Tarea</button><button type="button" role="tab" aria-selected="' + plan + '" class="' + (plan ? 'active' : '') + '" ' + act('planTipo', 'plan') + '>Plan</button></div>';
   h += '<div class="field tf-que"><input id="pTitulo" type="text" maxlength="120" aria-label="' + (plan ? '¿Qué plan es?' : '¿Qué hay que hacer?') + '" placeholder="' + (plan ? '¿Qué plan es?' : '¿Qué hay que hacer?') + '" value="' + escapeHtml(F.titulo) + '"></div>' +
     (plan && !F.id ? '<div class="rec-hint" style="margin:-6px 0 12px;">Por ejemplo: cena de cumple de Ana, vuelo a Roma…</div>' : '');
   h += '<div class="field"><label>' + (plan ? '¿Cuándo?' : '¿Para cuándo? <span class="hint">· opcional</span>') + '</label><div class="chips">' + fechas.map(([l, v]) => chip('planFecha', v, F.fecha === v, l)).join('') +
@@ -5588,8 +5589,10 @@ async function tareaPasarACompartida(id, a) {
   if (!ok) { toast('Compartida con ' + donde + '. No se pudo quitar tu tarea: bórrala tú', { aviso: true }); return; }
   papeleraAnadir('tarea', id, copia);
   toast('Compartida con ' + donde, { deshacer: async () => {
-    const vuelta = await write(() => S.db.collection('tareas').doc(id).set(copia)); if (vuelta) papeleraQuitar('tarea', id);
-    try { await S.db.agenda.borrar(a.id); agendaAplicarLocal(Object.assign({}, a, { borrado: true })); } catch (e) { console.error(e); }
+    const vuelta = await write(() => S.db.collection('tareas').doc(id).set(copia));
+    if (!vuelta) { toast('No se pudo recuperar tu tarea. Sigue compartida y la tuya está en la papelera', { aviso: true }); return; }
+    papeleraQuitar('tarea', id);
+    try { await S.db.agenda.borrar(a.id); agendaAplicarLocal(Object.assign({}, a, { borrado: true })); } catch (e) { console.error(e); toast('Tu tarea ha vuelto, pero no se pudo quitar la compartida: bórrala tú', { aviso: true }); }
     render(); } });
 }
 function agendaAplicarLocal(a) { if (!a) return; S.agenda = (S.agenda || []).filter((x) => x.id !== a.id).concat(a.borrado ? [] : [a]); }
@@ -10355,12 +10358,13 @@ const H = {
   tfCon: ([k, desde]) => { if (!k || k === 'yo') return; const n = $('#tNombre'), f = $('#tFecha'), pv = $('#tPrivada'), co = $('#tComentario'); if (pv && pv.value === '1') toast('En un grupo lo ven todos los del grupo'); sentir('tic');
     planAbrirForm({ tipo: 'tarea', con: k, titulo: n ? n.value : '', fecha: f ? f.value : '', deTarea: desde || null, nota: desde && co ? co.value : '' }); },
   planTipo: ([t]) => { planLeerForm(); const F = FORM; if (!F || F.kind !== 'plan') return;
+    if (t === 'tarea' && F.con === 'yo' && F.deTarea) { openTareaFormV2(F.deTarea); return; }
     if (t === 'tarea' && F.con === 'yo') { const tit = F.titulo, fe = F.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; }
     F.tipo = t === 'tarea' ? 'tarea' : 'plan'; if (F.tipo === 'plan' && !F.fecha) F.fecha = todayISO(); updateSheet(planFormHtml()); },
   planFecha: ([v]) => { planLeerForm(); FORM.fecha = v || ''; if (FORM.fechaFin && FORM.fechaFin < FORM.fecha) FORM.fechaFin = ''; sentir('tic'); updateSheet(planFormHtml()); },
   planFechaOtro: (_a, el) => { planLeerForm(); FORM.fecha = el.value || FORM.fecha; updateSheet(planFormHtml()); },
   planHoraModo: ([k]) => { planLeerForm(); FORM.horaModo = k; sentir('tic'); updateSheet(planFormHtml()); },
-  planCon: ([k]) => { planLeerForm(); if (k === 'yo' && FORM.tipo === 'tarea' && !FORM.id) { const tit = FORM.titulo, fe = FORM.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; } FORM.con = k; FORM.asignado = ''; sentir('tic'); updateSheet(planFormHtml()); },
+  planCon: ([k]) => { planLeerForm(); if (k === 'yo' && FORM.deTarea) { openTareaFormV2(FORM.deTarea); return; } if (k === 'yo' && FORM.tipo === 'tarea' && !FORM.id) { const tit = FORM.titulo, fe = FORM.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; } FORM.con = k; FORM.asignado = ''; sentir('tic'); updateSheet(planFormHtml()); },
   planQuien: ([u]) => { planLeerForm(); FORM.asignado = u || ''; sentir('tic'); updateSheet(planFormHtml()); },
   planAviso: ([k]) => { planLeerForm(); FORM.aviso = k; sentir('tic'); updateSheet(planFormHtml()); },
   planGuardar: () => planGuardar(),
