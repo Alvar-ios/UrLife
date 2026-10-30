@@ -76,5 +76,10 @@ const movs = [{ id: 'g1', tipo: 'Gasto', categoria: 'Comida', importe: 90, fecha
     e = makeEnv({ movs: [], version: { inicio: 0 }, cfg: { app: Object.assign(base(), { facturas: [{ nombre: 'Gimnasio', importe: 35, diaDelMes: fin }], inicioWidgets: [{ t: 'fijos' }] }), meta: { onboarded: true } } }); await sleep(200);
     ok(/Gimnasio/.test(e.doc.querySelector('.iw-fijos').textContent) && /35/.test(e.doc.querySelector('.iw-ff').textContent), 'Próximos fijos: el pago que falta este mes');
   } else ok(true, 'Próximos fijos: hoy es fin de mes (sin comprobar)');
+  // «Así vas» automático no repite lo que ya enseña una pieza (docs/21 §3)
+  { const e3 = makeEnv({ movs, version: { inicio: 0 }, cfg: { app: Object.assign(base(), { inicioWidgets: [{ t: 'asivas' }] }), meta: { onboarded: true } } }); await sleep(200);
+    const conPresu = (e3.w.__APP__.S._ins || []).some((x) => x.k === 'presu');
+    const e4 = makeEnv({ movs, version: { inicio: 0 }, cfg: { app: Object.assign(base(), { inicioWidgets: [{ t: 'asivas' }, { t: 'presu' }] }), meta: { onboarded: true } } }); await sleep(200);
+    ok(conPresu && !(e4.w.__APP__.S._ins || []).some((x) => x.k === 'presu'), 'con la pieza Presupuestos, «Así vas» no repite el círculo de presupuestos'); }
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.log(String(err && err.stack || err)); process.exit(1); });

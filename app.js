@@ -4130,7 +4130,8 @@ function insightsDatosV3() {
   const { y, m, actual } = inicioYM(), cat = insightsCatalogo(y, m, actual), elegidos = asiVasCfg();
   const recomendados = ['gastoMes', 'sube', 'presu', 'juntos', 'sinGastos', 'dia', 'ahorro', 'inv'];
   const usados = new Set(elegidos.filter((x) => x !== 'auto'));
-  const libres = recomendados.filter((x) => cat[x] && !usados.has(x));
+  let enPiezas = new Set(); try { if (inicioV3()) enPiezas = new Set(iwLista().map((x) => x.t === 'juntos' && !(x.o && x.o.gid) ? 'juntos' : x.t === 'presu' ? 'presu' : x.t === 'inv' ? 'inv' : '').filter(Boolean)); } catch (e) { /* */ }
+  const libres = recomendados.filter((x) => cat[x] && !usados.has(x) && !enPiezas.has(x)); // los círculos automáticos no repiten lo que ya enseña una pieza de Inicio
   const out = elegidos.map((key, i) => {
     if (key === 'auto') { const x = libres.shift(); return x ? Object.assign({ k: x, hueco: i }, cat[x]) : null; }
     const d = asiVasFijo(key, y, m, cat), t = ASIVAS_TIPOS.find((z) => z[0] === key.split(':')[0]) || [];
