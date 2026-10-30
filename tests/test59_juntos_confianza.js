@@ -43,6 +43,8 @@ function server(uid, sinMigracion) {
     aportes: { suscribir: (next) => { setTimeout(() => next([]), 0); return () => {}; } },
     rpc: async (fn, p) => {
       if (sinMigracion) err('Could not find the function public.' + fn + ' in the schema cache');
+      if (fn === 'historial_grupo' || fn === 'historial_nuevos') return [];
+      if (fn === 'recuperar_compartido') { const c = DB.comp.find((x) => x.id === p.p_id); if (!c || !activo(c.grupoId, uid)) err('no_autorizado'); if (!c.borrado) err('no_borrado'); c.borrado = false; setTimeout(notifyComp, 5); return null; }
       if (fn === 'crear_directo') { const g = DB.grupos.find((x) => x.tipo === 'directo' && activo(x.id, uid) && activo(x.id, p.p_user)); if (!g) err('no_es_amigo'); return g.id; }
       if (fn === 'enlace_sin_cuenta') { const t = 'SOY' + (++seq) + 'abcdefghijklmnopq'; DB.enl.push({ token: t, invitado_id: p.p_id }); return t; }
       if (fn === 'ver_enlace_sin_cuenta') { const e = DB.enl.find((x) => x.token === p.p_token), i = DB.sc.find((x) => x.id === e.invitado_id); return { valida: true, grupo: i.grupo_id, nombre_grupo: 'Piso', nombre: i.nombre, gastos: 1 }; }
@@ -93,7 +95,7 @@ const clicks = (e, pre) => [...e.doc.querySelectorAll('[data-click^="' + pre + '
   // borrar algo que pagó otra persona: sin «Deshacer» (romperia su copia y su permiso)
   A.H.compAbrir(['cSuper', 'g1']); await sleep(30);
   let bt = a.doc.querySelector('[data-click^="deleteComp"]'); bt.click(); bt.click(); await sleep(80);
-  ok(DB.comp.find((c) => c.id === 'cSuper').borrado && !a.doc.querySelector('#toast .toast-btn') && /no se puede deshacer/.test(toastTxt(a)), 'borrar el súper (lo pagó Bea): se borra, sin «Deshacer» y con aviso');
+  ok(DB.comp.find((c) => c.id === 'cSuper').borrado && !!a.doc.querySelector('#toast .toast-btn'), 'borrar el súper (lo pagó Bea): se borra y, desde el 30/10, también con «Deshacer» (recupera el mismo gasto)');
   // borrar la luz (la pagaste y apuntaste tú) y deshacer
   A.S.config = Object.assign({}, A.cfg(), { cuentaJuntos: { cLuz: 'k9' } });
   const s0 = A.miSaldo('g1');
@@ -103,9 +105,9 @@ const clicks = (e, pre) => [...e.doc.querySelectorAll('[data-click^="' + pre + '
   ok(/eliminado/.test(toastTxt(a)) && /Deshacer/.test(toastTxt(a)), 'aviso con «Deshacer»');
   a.doc.querySelector('#toast .toast-btn').click(); await sleep(120);
   const re = DB.comp.find((c) => !c.borrado && c.descripcion === 'Luz');
-  ok(re && re.importe === 30 && re.pagadoPor === 'uA' && re.reparto.uB === 15 && Math.abs(A.miSaldo('g1') - s0) < 0.001, '«Deshacer» la vuelve a crear igual y el saldo vuelve');
+  ok(re && re.importe === 30 && re.pagadoPor === 'uA' && re.reparto.uB === 15 && Math.abs(A.miSaldo('g1') - s0) < 0.001, '«Deshacer» la recupera igual y el saldo vuelve');
   ok(DB.comp.filter((c) => !c.borrado && c.descripcion === 'Luz').length === 1, 'sin duplicados');
-  ok((A.cfg().cuentaJuntos || {})[re.id] === 'k9' && !(A.cfg().cuentaJuntos || {}).cLuz, 'y recupera la cuenta desde la que se pagó');
+  ok(re.id === 'cLuz' && (A.cfg().cuentaJuntos || {}).cLuz === 'k9', 'vuelve el mismo gasto (mismo id) y recupera la cuenta desde la que se pagó');
   // borrar un pago y deshacer
   A.H.compAbrir(['cPago', 'g1']); await sleep(30);
   const bl = a.doc.querySelector('[data-click^="liqEliminar"]');
