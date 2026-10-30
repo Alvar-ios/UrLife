@@ -3645,10 +3645,10 @@ function openTareaFormV2(id, op) {
 // «Con»: una tarea puede ser solo tuya o de un grupo o una persona (docs/24 §3); al elegir con quién, pasa al formulario de tarea compartida
 // «¿Quién lo ve?»: solo sale si compartes tu agenda con alguien (docs/24 §4.2)
 function privadaCampoHtml(priv, id, accion) {
-  if (!agcOn() || (!agcCompartoAlgo() && !priv)) return '';
+  if (!agcOn() || (!agcCompartoAlgo() && !priv && !S.agcError)) return '';
   const b = (v, l, icono) => '<button type="button" class="chip' + (!!priv === v ? ' active' : '') + '" aria-pressed="' + (!!priv === v) + '" ' + act(accion || 'privadaPoner', id, v ? '1' : '') + '>' + ic(icono) + ' ' + l + '</button>';
   return '<div class="field" id="' + id + 'Campo"><label>¿Quién lo ve?</label>' + (accion ? '' : '<input type="hidden" id="' + id + '" value="' + (priv ? '1' : '') + '">') + '<div class="chips">' + b(false, 'Visible', 'users') + b(true, 'Privada', 'candado') + '</div>' +
-    '<div class="rec-hint">' + (priv ? 'Privada: no sale de tu móvil. Quien ve tu agenda no verá ni que tienes algo.' : 'Lo verá quien ve tu agenda, según lo que le dejes ver.') + '</div></div>';
+    '<div class="rec-hint">' + (priv ? 'Privada: solo la ves tú. Quien ve tu agenda no verá ni que tienes algo.' : 'Lo verá quien ve tu agenda, según lo que le dejes ver.') + '</div></div>';
 }
 function tfConHtml() {
   if (!agendaDisponible()) return ''; const gs = gruposParaPlanes(), ps = personasParaPlanes(); if (!gs.length && !ps.length) return '';
@@ -4902,8 +4902,8 @@ async function agcCargar(forzar) {
   try {
     const db = S.db.agendaPermisos; const [ps, oc, cm] = await Promise.all([db.listar(), db.ocultas(), db.conmigo()]);
     S.agcPermisos = ps || []; S.agcOcultas = new Set(oc || []); S.agcConmigo = (cm || []).map((r) => ({ uid: r.persona, nivelPlanes: r.nivel_planes, nivelTareas: r.nivel_tareas }));
-    S._agcTs = ahora; S.agcOtros = {};
-  } catch (e) { console.error(e); S._agcTs = ahora; } finally { S._agcCargando = false; }
+    S._agcTs = ahora; S.agcOtros = {}; S.agcError = false;
+  } catch (e) { console.error(e); S._agcTs = ahora; S.agcError = true; } finally { S._agcCargando = false; }
   await agcCargarOtros(true); render();
 }
 function agcRango() { const a = S.tab === 'inicio' && S.inicioVista === 'calendario' || S.agendaSub === 'calendario' ? calAnchor() : (S.agendaDia || todayISO()); return { desde: addDaysISO(a, -30), hasta: addDaysISO(a, 60), a }; }
@@ -4962,15 +4962,15 @@ function agcHtml() {
     const k = F.con || '', esG = k.indexOf('g:') === 0, nom = esG ? (grupoDe(k.slice(2)) || {}).nombre : agcPersonaNombre(k.slice(2)), cuenta = agcCuentaVisible(F.nivel || 'ocupado');
     return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('agcVista', 'elegir') + '>' + ic('chevL') + ' Volver</button><h2>Compartir con ' + escapeHtml(nom || '') + '</h2>' +
       '<div class="field"><label>¿Qué verá?</label><div class="agc-niveles">' + AGC_NIVELES.map(([v, l, d]) => '<button type="button" class="av-op' + ((F.nivel || 'ocupado') === v ? ' on' : '') + '" role="radio" aria-checked="' + ((F.nivel || 'ocupado') === v) + '" ' + act('agcNivelNuevo', v) + '><span class="av-op-t"><b>' + l + '</b><span>' + d + '</span></span><span class="av-radio"></span></button>').join('') + '</div></div>' +
-      '<div class="card agc-revisar">' + ic('info') + '<span>' + escapeHtml(nom || '') + ' verá <b>' + cuenta + (cuenta === 1 ? ' cosa' : ' cosas') + '</b> de los próximos 60 días. Lo que marques como <b>Privada</b> no sale de tu móvil, ni como hueco ocupado.' + (esG ? ' Quien entre después en el grupo también la verá.' : '') + '</span></div>' +
+      '<div class="card agc-revisar">' + ic('info') + '<span>' + escapeHtml(nom || '') + ' verá <b>' + cuenta + (cuenta === 1 ? ' cosa' : ' cosas') + '</b> de los próximos 60 días. Lo que marques como <b>Privada</b> solo lo ves tú: ni siquiera sale como hueco ocupado.' + (esG ? ' Quien entre después en el grupo también la verá.' : '') + '</span></div>' +
       '<div class="actions"><button class="btn ghost block" ' + act('agcVista', '') + '>Cancelar</button><button class="btn accent block" ' + act('agcCrear') + '>Compartir</button></div>';
   }
   const fila = (p) => { const esG = !!p.aGrupo, g = esG ? grupoDe(p.aGrupo) : null, nom = esG ? (g ? g.nombre : 'Grupo') : agcPersonaNombre(p.aUsuario);
     return '<div class="card agc-perm"><div class="agc-perm-cab">' + (esG ? '<span class="agc-gr">' + ic('users') + '</span>' : caraHtml(p.aUsuario, nom, 'mini')) + '<b>' + escapeHtml(nom) + '</b></div>' +
       '<div class="chips">' + AGC_NIVELES.map(([v, l]) => '<button type="button" class="chip' + (p.nivel === v ? ' active' : '') + '" aria-pressed="' + (p.nivel === v) + '" ' + act('agcNivel', p.id, v) + '>' + l + '</button>').join('') + '</div>' +
       '<button type="button" class="link agc-quitar" ' + act('agcQuitar', p.id) + '>' + ic('close') + ' Dejar de compartir con ' + escapeHtml(nom) + '</button></div>'; };
-  return '<div class="handle"></div><h2>Compartir mi agenda</h2><p class="sheet-sub">Deja que quien tú elijas vea tu agenda. Nadie la ve si no la compartes, y lo que marques como Privada no sale de tu móvil.</p>' +
-    '<div class="section-title">La ven</div>' + (ps.length ? ps.map(fila).join('') : '<div class="card empty-mini">Nadie. Tu agenda es solo tuya.</div>') +
+  return '<div class="handle"></div><h2>Compartir mi agenda</h2><p class="sheet-sub">Deja que quien tú elijas vea tu agenda. Nadie la ve si no la compartes, y lo que marques como Privada solo lo ves tú.</p>' +
+    '<div class="section-title">La ven</div>' + (S.agcError && !ps.length ? '<div class="card empty-mini">No se ha podido cargar con quién la compartes. <button type="button" class="link" ' + act('agcAbrir') + '>Probar otra vez</button></div>' : ps.length ? ps.map(fila).join('') : '<div class="card empty-mini">Nadie. Tu agenda es solo tuya.</div>') +
     '<button class="btn ghost block" ' + act('agcVista', 'elegir') + '>' + ic('plus') + ' Compartir con alguien</button>' +
     (cm.length ? '<div class="section-title">Te enseñan la suya</div><div class="card agc-lista">' + cm.map((p) => { const n = agcPersonaNombre(p.uid), on = agcCapaOn(p.uid);
       return '<div class="agc-li">' + caraHtml(p.uid, n, 'mini') + '<span>' + escapeHtml(n) + '<small>' + escapeHtml(agcNivelTxt(p.nivelPlanes || p.nivelTareas)) + ' · sale en tu Agenda</small></span><button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="Ver la agenda de ' + escapeHtml(n) + '" ' + act('agcCapa', p.uid) + '></button></div>'; }).join('') + '</div>' : '');
@@ -4979,7 +4979,7 @@ function agcHtml() {
 function agcCuentaVisible(nivel) {
   const hoy = todayISO(), fin = addDaysISO(hoy, 60);
   const planes = (S.agenda || []).filter((a) => a.tipo === 'plan' && !a.grupoId && !a.privada && a.fecha && a.fecha <= fin && (a.fechaFin || a.fecha) >= hoy).length;
-  const grupo = (S.agenda || []).filter((a) => a.tipo === 'plan' && a.grupoId && a.fecha && a.fecha <= fin && (a.fechaFin || a.fecha) >= hoy).length;
+  const oc = S.agcOcultas || new Set(), grupo = (S.agenda || []).filter((a) => a.tipo === 'plan' && a.grupoId && !oc.has(a.id) && a.fecha && a.fecha <= fin && (a.fechaFin || a.fecha) >= hoy).length;
   const tareas = nivel === 'ocupado' ? 0 : (S.tareas || []).filter((t) => !t.privada && t.estado !== 'Completado' && t.fechaLimite && t.fechaLimite >= hoy && t.fechaLimite <= fin).length;
   return planes + grupo + tareas;
 }
@@ -9961,7 +9961,9 @@ const H = {
   agcCrear: async () => { const F = FORM; if (!F || F.kind !== 'agc' || !F.con || F.guardando) return; F.guardando = true;
     try { const k = F.con, p = await S.db.agendaPermisos.crear(k.indexOf('g:') === 0 ? { aGrupo: k.slice(2), nivel: F.nivel || 'ocupado' } : { aUsuario: k.slice(2), nivel: F.nivel || 'ocupado' });
       S.agcPermisos = (S.agcPermisos || []).concat([p]); F.vista = ''; F.con = ''; sentir('ok'); toast('Listo: ya ve tu agenda'); updateSheet(agcHtml()); render(); }
-    catch (e) { console.error(e); toast(/no_es_amigo|no_autorizado/.test(String(e && e.message)) ? 'Solo puedes compartirla con quien está contigo en un grupo' : errGrupo(e)); } finally { F.guardando = false; } },
+    catch (e) { console.error(e); const msg = String((e && (e.message || e.code)) || '') + ' ' + String(e && e.code || '');
+      if (/23505|duplicate|agenda_permisos_un/.test(msg)) { toast('Ya la compartes con esa persona o grupo'); F.vista = ''; F.con = ''; await agcCargar(true); if (FORM === F) updateSheet(agcHtml()); }
+      else toast(/no_es_amigo|no_autorizado/.test(msg) ? 'Solo puedes compartirla con quien está contigo en un grupo' : errGrupo(e)); } finally { F.guardando = false; } },
   agcNivel: async ([id, v]) => { const p = (S.agcPermisos || []).find((x) => x.id === id); if (!p || p.nivel === v) return; const antes = p.nivel; p.nivel = v; updateSheet(agcHtml());
     try { await S.db.agendaPermisos.editar(id, { nivel: v }); sentir('tic'); } catch (e) { console.error(e); p.nivel = antes; toast(errGrupo(e)); updateSheet(agcHtml()); } },
   agcQuitar: async ([id]) => { const ps = S.agcPermisos || [], p = ps.find((x) => x.id === id); if (!p) return;
@@ -9970,7 +9972,7 @@ const H = {
   agcVer: ([uid, clave]) => { FORM = { kind: 'agcVer' }; openSheet(agcVerHtml(uid, clave)); },
   agcOcultarPlan: async ([id]) => { const oc = S.agcOcultas || (S.agcOcultas = new Set()), estaba = oc.has(id);
     try { if (estaba) { await S.db.agendaPermisos.mostrar(id); oc.delete(id); toast('Quien ve tu agenda lo verá como hueco ocupado'); } else { await S.db.agendaPermisos.ocultar(id); oc.add(id); toast('Escondido a quien ve tu agenda'); }
-      sentir('tic'); if (FORM && FORM.kind === 'planVer') updateSheet(planVerHtml(id)); } catch (e) { console.error(e); toast(errGrupo(e)); } },
+      sentir('tic'); if (FORM && FORM.kind === 'planVer') updateSheet(planVerHtml(id)); } catch (e) { console.error(e); if (/23505|duplicate/.test(String((e && (e.message || e.code)) || '') + String(e && e.code || ''))) { oc.add(id); if (FORM && FORM.kind === 'planVer') updateSheet(planVerHtml(id)); } else toast(errGrupo(e)); } },
   privadaPoner: ([id, v]) => { const el = $('#' + id); if (el) el.value = v ? '1' : ''; const c = $('#' + id + 'Campo'); if (c) c.outerHTML = privadaCampoHtml(!!v, id); sentir('tic'); },
   planPrivada: ([, v]) => { planLeerForm(); if (!FORM || FORM.kind !== 'plan') return; FORM.privada = !!v; sentir('tic'); updateSheet(planFormHtml()); },
   iwReset: () => { const F = FORM; if (!F || F.kind !== 'iwEd') return; F.lista = iwDefecto(); F.aviso = ''; iwGuardar(); },
@@ -10333,7 +10335,7 @@ const H = {
   planNuevo: ([fecha]) => planAbrirForm({ tipo: 'plan', fecha: fecha || todayISO() }),
   planGrupoNuevo: ([gid, tipo]) => { planAbrirForm({ volver: gid, tipo: tipo === 'tarea' ? 'tarea' : 'plan', con: 'g:' + gid, fecha: tipo === 'tarea' ? '' : todayISO() }); },
   tfAPlan: () => { const n = $('#tNombre'), f = $('#tFecha'); planAbrirForm({ tipo: 'plan', titulo: n ? n.value : '', fecha: (f && f.value) || todayISO() }); },
-  tfCon: ([k]) => { if (!k || k === 'yo') return; const n = $('#tNombre'), f = $('#tFecha'); sentir('tic'); planAbrirForm({ tipo: 'tarea', con: k, titulo: n ? n.value : '', fecha: f ? f.value : '' }); },
+  tfCon: ([k]) => { if (!k || k === 'yo') return; const n = $('#tNombre'), f = $('#tFecha'), pv = $('#tPrivada'); if (pv && pv.value === '1') toast('En un grupo lo ven todos los del grupo'); sentir('tic'); planAbrirForm({ tipo: 'tarea', con: k, titulo: n ? n.value : '', fecha: f ? f.value : '' }); },
   planTipo: ([t]) => { planLeerForm(); const F = FORM; if (!F || F.kind !== 'plan') return;
     if (t === 'tarea' && F.con === 'yo') { const tit = F.titulo, fe = F.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; }
     F.tipo = t === 'tarea' ? 'tarea' : 'plan'; if (F.tipo === 'plan' && !F.fecha) F.fecha = todayISO(); updateSheet(planFormHtml()); },

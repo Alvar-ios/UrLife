@@ -41,7 +41,7 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   A.openTareaForm(null, {}); await sleep(10);
   ok(/¿Quién lo ve\?/.test(sh().textContent) && /Visible/.test(sh().textContent), 'la tarea tiene «¿Quién lo ve?» porque compartes');
   sh().querySelector('#tNombre').value = 'Revisión médica'; H.privadaPoner(['tPrivada', '1']); await sleep(5);
-  ok(/no sale de tu móvil/.test(sh().textContent), 'Privada explica que no sale del móvil');
+  ok(/solo la ves tú/.test(sh().textContent), 'Privada explica que solo la ves tú');
   await H.saveTarea([]); await sleep(30);
   const t = Object.values(e.store.tareas || {}).find((x) => x.nombre === 'Revisión médica');
   ok(t && t.privada === true, 'la tarea se guarda privada');
@@ -63,5 +63,16 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   // dejar de compartir
   await H.agcAbrir([]); await sleep(20); await H.agcQuitar(['perm1']); await sleep(10);
   ok(llamadas.borrar[0] === 'perm1' && /Nadie\. Tu agenda es solo tuya/.test(sh().textContent), 'dejar de compartir');
+  // si falla la carga: aviso y reintentar, nunca «Nadie»; y «Privada» sigue disponible
+  H.closeSheet([]); await sleep(400);
+  S.db.agendaPermisos.listar = async () => { throw new Error('sin conexión (prueba)'); };
+  await H.agcAbrir([]); await sleep(20);
+  ok(/No se ha podido cargar/.test(sh().textContent) && !/Nadie\. Tu agenda es solo tuya/.test(sh().textContent), 'si falla la carga, lo dice y deja reintentar');
+  H.closeSheet([]); await sleep(400); A.openTareaForm(null, {}); await sleep(10);
+  ok(/¿Quién lo ve\?/.test(sh().textContent), 'con error de carga, «Privada» sigue a mano');
+  // compartir dos veces con la misma persona
+  S.db.agendaPermisos.listar = async () => perms.slice(); S.db.agendaPermisos.crear = async () => { const er = new Error('duplicate key value violates unique constraint "agenda_permisos_una_persona"'); er.code = '23505'; throw er; };
+  H.closeSheet([]); await sleep(400); await H.agcAbrir([]); await sleep(10); H.agcVista(['elegir']); H.agcElegir(['u:uB']); await H.agcCrear([]); await sleep(20);
+  ok(/Ya la compartes/.test(doc.querySelector('#toast').textContent), 'compartir dos veces: «Ya la compartes…»');
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.log(String(err && err.stack || err)); process.exit(1); });
