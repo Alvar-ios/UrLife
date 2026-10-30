@@ -3560,7 +3560,8 @@ function renderAgendaSemanaV2() {
   const dSel = parseISO(sel), nom = DIAS_LARGO[dowMon(dSel)].toLowerCase() + ' ' + dSel.getDate();
   const tituloDia = sel === hoy ? 'Hoy, ' + nom : sel === uAdd(hoy, 1) ? 'Mañana, ' + nom : sel === uAdd(hoy, -1) ? 'Ayer, ' + nom : nom.charAt(0).toUpperCase() + nom.slice(1) + ' de ' + MESES[dSel.getMonth()].toLowerCase();
   const filasDia = pend.filter((t) => t.fechaLimite === sel).sort(cmpTarea).map((t) => renderTareaRow(t, { v2: true, dia: true })).join('') + (mapW[sel] || []).filter((ev) => ev.k !== 'tarea').map(calEventRow).join('');
-  const diaH = '<div class="section-title">' + escapeHtml(tituloDia) + (agendaDisponible() ? '<button class="link" ' + act('planNuevo', sel) + '>' + ic('plus') + ' Plan</button>' : '') + '</div>' + (filasDia ? '<div class="list">' + filasDia + '</div>' : '<div class="card ag-despejado">' + ic('checkCircle') + '<span>Día despejado.</span></div>');
+  agcAsegurar(); const otrosDia = agcOn() ? agcDelDia(sel) : [];
+  const diaH = '<div class="section-title">' + escapeHtml(tituloDia) + (agendaDisponible() ? '<button class="link" ' + act('planNuevo', sel) + '>' + ic('plus') + ' Plan</button>' : '') + '</div>' + (filasDia ? '<div class="list">' + filasDia + '</div>' : otrosDia.length ? '' : '<div class="card ag-despejado">' + ic('checkCircle') + '<span>Día despejado.</span></div>');
   const mapN = eventosAgenda(uAdd(sel, 1), uAdd(sel, 7)), prox = [];
   const planesVistos = new Set((mapW[sel] || []).filter((ev) => ev.k === 'plan').map((ev) => ev.id)); // un plan de varios días sale una sola vez
   Object.keys(mapN).sort().forEach((iso) => { if (iso < hoy) return; mapN[iso].forEach((ev) => { if (ev.k === 'plan') { if (planesVistos.has(ev.id)) return; planesVistos.add(ev.id); } const t = ev.k === 'tarea' && ev.id ? S.tareas.find((x) => x.id === ev.id) : null; prox.push(t ? renderTareaRow(t, { v2: true }) : agFilaProx(iso, ev)); }); });
@@ -3575,7 +3576,6 @@ function renderAgendaSemanaV2() {
   const plegE = encargadas.length ? '<button type="button" class="ag-pleg" aria-expanded="' + (abierto === 'encargadas') + '" ' + act('agendaMas', 'encargadas') + '><span>Encargadas a otros · ' + encargadas.length + '</span>' + ic(abierto === 'encargadas' ? 'chevD' : 'chevR') + '</button>' + (abierto === 'encargadas' ? '<div class="list">' + encargadas.map(tareaCFilaHtml).join('') + '</div>' : '') : '';
   const plegH = (adelante.length || hechas.length || encargadas.length) ? '<div class="ag-plegs">' + pleg('adelante', sel > hoy ? 'Otros días' : 'Más adelante', adelante) + plegE + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
   setTimeout(agendaMarcarVista, 0); // al abrir la Agenda, lo que te encargaron deja de ser «nuevo» en Inicio
-  agcAsegurar(); const otrosDia = agcOn() ? agcDelDia(sel) : [];
   const otrosH = otrosDia.length ? '<div class="list agc-list">' + otrosDia.map(agcFilaHtml).join('') + '</div>' : '';
   return cab + tira + agcCarasHtml() + rapida + vencH + diaH + otrosH + proxH + sinFH + plegH;
 }
@@ -3644,8 +3644,8 @@ function openTareaFormV2(id, op) {
 }
 // «Con»: una tarea puede ser solo tuya o de un grupo o una persona (docs/24 §3); al elegir con quién, pasa al formulario de tarea compartida
 // «¿Quién lo ve?»: solo sale si compartes tu agenda con alguien (docs/24 §4.2)
-function privadaCampoHtml(priv, id, accion) {
-  if (!agcOn() || (!agcCompartoAlgo() && !priv && !S.agcError)) return '';
+function privadaCampoHtml(priv, id, accion, forzar) {
+  if (!agcOn() || (!forzar && !agcCompartoAlgo() && !priv && !S.agcError)) return '';
   const b = (v, l, icono) => '<button type="button" class="chip' + (!!priv === v ? ' active' : '') + '" aria-pressed="' + (!!priv === v) + '" ' + act(accion || 'privadaPoner', id, v ? '1' : '') + '>' + ic(icono) + ' ' + l + '</button>';
   return '<div class="field" id="' + id + 'Campo"><label>¿Quién lo ve?</label>' + (accion ? '' : '<input type="hidden" id="' + id + '" value="' + (priv ? '1' : '') + '">') + '<div class="chips">' + b(false, 'Visible', 'users') + b(true, 'Privada', 'candado') + '</div>' +
     '<div class="rec-hint">' + (priv ? 'Privada: solo la ves tú. Quien ve tu agenda no verá ni que tienes algo.' : 'Lo verá quien ve tu agenda, según lo que le dejes ver.') + '</div></div>';
@@ -3894,6 +3894,7 @@ function renderInicioNuevo() {
   // los primeros pasos solo para quien empieza: a quien ya usa la app no le quitan sitio en Inicio
   if (versionDe('inicio') === 'antes') return heroMesHtml() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtml() + estosDiasHtml();
   const inv = invitacionInicioHtml();
+  if (agcOn() && !S._agcTs && !S._agcCargando && S.grupos) setTimeout(() => agcCargar(), 0); // para que «Privada» esté a mano desde el +
   return heroMesHtmlV2() + (inv || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + (inicioV3() ? inicioPiezasHtml() : insightsHtmlV2() + estosDiasHtml(true));
 }
 // la cifra grande, con los céntimos más pequeños
@@ -4911,7 +4912,8 @@ async function agcCargarOtros(forzar) {
   if (!agcOn()) return; const R = agcRango(), O = S.agcOtros || (S.agcOtros = {});
   const pend = (S.agcConmigo || []).filter((p) => agcCapaOn(p.uid)).filter((p) => { const o = O[p.uid]; return forzar || !o || R.a < addDaysISO(o.desde, 7) || R.a > addDaysISO(o.hasta, -7); });
   if (!pend.length) return;
-  await Promise.all(pend.map(async (p) => { try { const rs = await S.db.agendaPermisos.deOtro(p.uid, R.desde, R.hasta); O[p.uid] = { desde: R.desde, hasta: R.hasta, items: (rs || []).map((r) => Object.assign({ uid: p.uid }, r)) }; } catch (e) { console.error(e); } }));
+  await Promise.all(pend.map(async (p) => { try { const rs = await S.db.agendaPermisos.deOtro(p.uid, R.desde, R.hasta); O[p.uid] = { desde: R.desde, hasta: R.hasta, items: (rs || []).map((r) => Object.assign({ uid: p.uid }, r)) }; }
+    catch (e) { console.error(e); O[p.uid] = { desde: R.desde, hasta: R.hasta, items: [], fallo: Date.now() }; } })); // si falla, no se reintenta hasta la próxima recarga (3 min)
 }
 function agcAsegurar() { if (!agcOn()) return; const R = agcRango(), O = S.agcOtros || {};
   const falta = (S.agcConmigo || []).some((p) => agcCapaOn(p.uid) && (!O[p.uid] || R.a < addDaysISO(O[p.uid].desde, 7) || R.a > addDaysISO(O[p.uid].hasta, -7)));
@@ -5534,7 +5536,7 @@ function planFormHtml() {
   if (!plan && g) { const ms = g.miembros.filter((m) => !m.baja); h += '<div class="field"><label>¿Quién se encarga?</label><div class="cr-caras plan-quien">' +
     '<button type="button" class="cr-cara' + (!F.asignado ? ' on' : '') + '" ' + act('planQuien', '') + '><span class="avatar cara plan-cualquiera">' + ic('users') + '</span><span>Quien pueda</span></button>' +
     ms.map((m) => { const u = aliasDe(g.id, m.user_id); return '<button type="button" class="cr-cara' + (F.asignado && aliasDe(g.id, F.asignado) === aliasDe(g.id, m.user_id) ? ' on' : '') + '" ' + act('planQuien', m.user_id) + '>' + caraHtml(u, m.nombre) + '<span>' + escapeHtml(esMio(g.id, m.user_id) ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>'; }).join('') + '</div></div>'; }
-  if (plan && F.con === 'yo') h += privadaCampoHtml(F.privada, 'pPrivada', 'planPrivada');
+  if (plan && F.con === 'yo') h += privadaCampoHtml(F.privada, 'pPrivada', 'planPrivada', F.id && agendaPorId(F.id) && agendaPorId(F.id).privada);
   if (plan) h += '<div class="field"><label for="pLugar">¿Dónde? <span class="hint">· opcional</span></label><div class="plan-lugar">' + ic('pin') + '<input id="pLugar" type="text" maxlength="120" placeholder="Restaurante, dirección…" value="' + escapeHtml(F.lugar) + '"></div></div>' +
     '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => chip('planAviso', k, F.aviso === k, l, k === 'antes' ? ic('bell') : '')).join('') + '</div><div class="rec-hint" style="margin:6px 0 0;">Te lo recordamos en Inicio al abrir la app.</div></div>';
   h += '<details class="tf-mas"' + (F.notaAbierta ? ' open' : '') + '><summary>Nota' + ic('chevD') + '</summary><div class="field"><textarea id="pNota" rows="3" maxlength="1000" aria-label="Nota">' + escapeHtml(F.nota) + '</textarea></div></details>';
@@ -9960,20 +9962,20 @@ const H = {
   agcNivelNuevo: ([v]) => { if (!FORM || FORM.kind !== 'agc') return; FORM.nivel = v; sentir('tic'); updateSheet(agcHtml()); },
   agcCrear: async () => { const F = FORM; if (!F || F.kind !== 'agc' || !F.con || F.guardando) return; F.guardando = true;
     try { const k = F.con, p = await S.db.agendaPermisos.crear(k.indexOf('g:') === 0 ? { aGrupo: k.slice(2), nivel: F.nivel || 'ocupado' } : { aUsuario: k.slice(2), nivel: F.nivel || 'ocupado' });
-      S.agcPermisos = (S.agcPermisos || []).concat([p]); F.vista = ''; F.con = ''; sentir('ok'); toast('Listo: ya ve tu agenda'); updateSheet(agcHtml()); render(); }
+      S.agcPermisos = (S.agcPermisos || []).concat([p]); F.vista = ''; F.con = ''; sentir('ok'); toast(k.indexOf('g:') === 0 ? 'Listo: ya ven tu agenda' : 'Listo: ya ve tu agenda'); updateSheet(agcHtml()); render(); }
     catch (e) { console.error(e); const msg = String((e && (e.message || e.code)) || '') + ' ' + String(e && e.code || '');
       if (/23505|duplicate|agenda_permisos_un/.test(msg)) { toast('Ya la compartes con esa persona o grupo'); F.vista = ''; F.con = ''; await agcCargar(true); if (FORM === F) updateSheet(agcHtml()); }
       else toast(/no_es_amigo|no_autorizado/.test(msg) ? 'Solo puedes compartirla con quien está contigo en un grupo' : errGrupo(e)); } finally { F.guardando = false; } },
   agcNivel: async ([id, v]) => { const p = (S.agcPermisos || []).find((x) => x.id === id); if (!p || p.nivel === v) return; const antes = p.nivel; p.nivel = v; updateSheet(agcHtml());
     try { await S.db.agendaPermisos.editar(id, { nivel: v }); sentir('tic'); } catch (e) { console.error(e); p.nivel = antes; toast(errGrupo(e)); updateSheet(agcHtml()); } },
   agcQuitar: async ([id]) => { const ps = S.agcPermisos || [], p = ps.find((x) => x.id === id); if (!p) return;
-    try { await S.db.agendaPermisos.borrar(id); S.agcPermisos = ps.filter((x) => x.id !== id); sentir('ok'); toast('Ya no la ve'); updateSheet(agcHtml()); render(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
+    try { await S.db.agendaPermisos.borrar(id); S.agcPermisos = ps.filter((x) => x.id !== id); sentir('ok'); toast(p.aGrupo ? 'Ya no la ven' : 'Ya no la ve'); updateSheet(agcHtml()); render(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
   agcCapa: ([uid]) => { const c = Object.assign({}, cfg().agendaCapas || {}); if (c[uid] === false) delete c[uid]; else c[uid] = false; saveConfig({ agendaCapas: c }); sentir('tic'); if (FORM && FORM.kind === 'agc' && $('#sheetBackdrop')) updateSheet(agcHtml()); agcCargarOtros().then(render); render(); },
   agcVer: ([uid, clave]) => { FORM = { kind: 'agcVer' }; openSheet(agcVerHtml(uid, clave)); },
   agcOcultarPlan: async ([id]) => { const oc = S.agcOcultas || (S.agcOcultas = new Set()), estaba = oc.has(id);
     try { if (estaba) { await S.db.agendaPermisos.mostrar(id); oc.delete(id); toast('Quien ve tu agenda lo verá como hueco ocupado'); } else { await S.db.agendaPermisos.ocultar(id); oc.add(id); toast('Escondido a quien ve tu agenda'); }
       sentir('tic'); if (FORM && FORM.kind === 'planVer') updateSheet(planVerHtml(id)); } catch (e) { console.error(e); if (/23505|duplicate/.test(String((e && (e.message || e.code)) || '') + String(e && e.code || ''))) { oc.add(id); if (FORM && FORM.kind === 'planVer') updateSheet(planVerHtml(id)); } else toast(errGrupo(e)); } },
-  privadaPoner: ([id, v]) => { const el = $('#' + id); if (el) el.value = v ? '1' : ''; const c = $('#' + id + 'Campo'); if (c) c.outerHTML = privadaCampoHtml(!!v, id); sentir('tic'); },
+  privadaPoner: ([id, v]) => { const el = $('#' + id); if (el) el.value = v ? '1' : ''; const c = $('#' + id + 'Campo'); if (c) c.outerHTML = privadaCampoHtml(!!v, id, null, true); sentir('tic'); },
   planPrivada: ([, v]) => { planLeerForm(); if (!FORM || FORM.kind !== 'plan') return; FORM.privada = !!v; sentir('tic'); updateSheet(planFormHtml()); },
   iwReset: () => { const F = FORM; if (!F || F.kind !== 'iwEd') return; F.lista = iwDefecto(); F.aviso = ''; iwGuardar(); },
   asiVasGuardar: async () => { if (!FORM || FORM.kind !== 'asiVas') return; const v = FORM.v.slice(); closeSheet(); await saveConfig({ asiVas: v.every((x) => x === 'auto') ? null : v }); sentir('ok'); render(); toast('Listo: así verás tu «Así vas»'); },
