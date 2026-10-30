@@ -2755,8 +2755,29 @@ function compFieldHtml() {
   }
   return h + '<div class="comp-lbl">' + (FORM.tipo === 'Ahorro' ? 'Aporta' : 'Pagó') + '</div><div class="chips">' + ms.map((m) => '<button type="button" class="chip ' + (cp.pagador === m.uid ? 'active' : '') + '" ' + act('compPagador', m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>' +
     '<div class="comp-lbl">Cómo se reparte</div><div class="segmented sm">' + [['igual', 'Iguales'], ['porcentaje', 'Por %'], ['importe', 'Por importe']].map(([id, l]) => '<button type="button" class="' + (cp.modo === id ? 'active' : '') + '" ' + act('compModo', id) + '>' + l + '</button>').join('') + '</div>' +
-    '<div id="compReparto">' + compRepartoHtml() + '</div></div>';
+    '<div id="compReparto">' + compRepartoHtml() + '</div>' + compAutorHtml(c) + '</div>';
 }
+// docs/27 tanda 0: quién lo apuntó y quién lo cambió por última vez (sin tocar la base de datos)
+// ¿guardar cambiaría algo del gasto para el grupo? (la cuenta de tu banco es privada y no cuenta)
+function compSinCambios(previo, datos) {
+  const est = (v) => (v == null || v === '' ? null : typeof v === 'object' ? JSON.stringify(Array.isArray(v) ? v : Object.keys(v).sort().reduce((o, k) => (o[k] = v[k], o), {})) : String(v));
+  return Object.keys(datos).every((k) => (k === 'importe' ? Math.abs((+previo[k] || 0) - (+datos[k] || 0)) < 0.005 : k === 'reparto' ? Object.keys(Object.assign({}, previo.reparto, datos.reparto)).every((u) => Math.abs(((previo.reparto || {})[u] || 0) - ((datos.reparto || {})[u] || 0)) < 0.005) : est(previo[k]) === est(datos[k])));
+}
+function compCambiado(c) {
+  if (!c || c.tipo === 'Liquidación') return false;
+  if (!c.editadoPor || !c.updatedAt || !c.createdAt) return false;
+  const a = Date.parse(c.createdAt), b = Date.parse(c.updatedAt);
+  return isFinite(a) && isFinite(b) && b - a > 60000;
+}
+function compAutorTxt(c) {
+  if (!c) return '';
+  const g = c.grupoId, n = (u) => nombreDe(g, u), p = [];
+  if (c.creadoPor) p.push((esMio(g, c.creadoPor) ? 'Lo apuntaste tú' : 'Apuntado por ' + n(c.creadoPor)) + (c.createdAt ? ' ' + haceTxt(c.createdAt) : ''));
+  if (compCambiado(c)) p.push((esMio(g, c.editadoPor) ? 'cambiado por ti' : 'cambiado por ' + n(c.editadoPor)) + ' ' + haceTxt(c.updatedAt));
+  const t = p.join(' · ');
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+}
+function compAutorHtml(c) { const t = compAutorTxt(c); return t ? '<div class="comp-autor">' + ic('history') + '<span>' + escapeHtml(t) + '</span></div>' : ''; }
 function compRepartoHtml() {
   const cp = FORM.comp, ms = miembrosComp(), yo = miUid(), nom = (m) => (m.uid === yo ? 'Yo' : escapeHtml(m.nombre));
   let h;
@@ -2810,7 +2831,7 @@ function compInfoHtml(c) {
     '<div class="card" style="font-size:14px;line-height:1.6;">' +
     (liq ? '<b>' + n(c.pagadoPor) + '</b> pagó <b class="tnum">' + money(c.importe) + '</b> a <b>' + n(a) + '</b>'
       : 'Total <b class="tnum">' + money(c.importe) + '</b> · ' + escapeHtml(compQuienTxt(c)) + '<br>Tu parte: <b class="tnum">' + money(miParte(c)) + '</b>' + (c.descripcion ? '<br>' + escapeHtml(c.descripcion) : '')) +
-    '<br><span style="color:var(--text-faint);">' + fmtDateLong(c.fecha) + ' · ' + escapeHtml(nombreDestino(g)) + '</span></div>' +
+    '<br><span style="color:var(--text-faint);">' + fmtDateLong(c.fecha) + ' · ' + escapeHtml(nombreDestino(g)) + '</span></div>' + compAutorHtml(c) +
     (liq ? '<div class="rec-hint" style="margin-top:8px;">No cuenta como gasto ni como ingreso: solo deja las cuentas a cero.</div>' : '') +
     (!g ? '<div class="rec-hint" style="margin-top:8px;">Ya no estás en este grupo, así que no puedes cambiarlo.</div>' : '') +
     '<div class="actions">' + (g ? '<button class="btn ghost block" ' + act('grupoVer', g.id) + '>Ver cuentas</button>' : '') + '<button class="btn accent block" ' + act('closeSheet') + '>Cerrar</button></div>' +
@@ -2846,7 +2867,7 @@ async function saveCompartido(d) {
     const temaG = temaParaGuardar(previo, grupoId); if (temaG !== undefined) datos.carpetaId = temaG;
     let c;
     try {
-      if (previo && previo.grupoId === grupoId) c = await S.db.compartidos.editar(previo.id, datos);
+      if (previo && previo.grupoId === grupoId) c = compSinCambios(previo, datos) ? previo : await S.db.compartidos.editar(previo.id, datos); // sin cambios: no se guarda, así nadie ve «cambió» de más
       else {
         c = await S.db.compartidos.crear(Object.assign({ grupoId }, datos));
         // se mueve a otro grupo: si no se puede retirar el anterior, se deshace el nuevo para no contar dos veces
@@ -5109,18 +5130,19 @@ function juntosObjHtml() {
 function juntosActividadHtml() {
   // lo nuevo es lo de otros después de tu visita anterior (aunque al entrar ya se marque como visto)
   const vc = cfg().vistoJuntos || null, visto = S._vjPaso && (S._vjPaso.nuevo === vc || !vc) ? S._vjPaso.antes : vc;
-  const todo = (S.compartidos || []).filter((c) => grupoDe(c.grupoId)).slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+  const cuando = (c) => (compCambiado(c) ? c.updatedAt : c.createdAt) || '';
+  const todo = (S.compartidos || []).filter((c) => grupoDe(c.grupoId)).slice().sort((a, b) => cuando(b).localeCompare(cuando(a)));
   const esNueva = (c) => !!visto && (c.createdAt || '') > visto && !esMio(c.grupoId, c.creadoPor || c.pagadoPor);
   const nuevas = todo.filter(esNueva).length, act3 = todo.filter((c, i) => i < 3 || esNueva(c)).slice(0, 6); // las 3 últimas y además lo nuevo, aunque lo tuyo sea más reciente
   if (!act3.length) return '';
   const miNombre = String(cfg().nombre || '').trim() || 'Tú';
   return '<div class="section-title">Actividad' + (nuevas ? '<span class="jv-nuevas">' + (nuevas === 1 ? '1 nueva' : nuevas + ' nuevas') + '</span>' : '') + '<button class="link" ' + act('irMovs', '_comp', 'todo') + '>Ver todo</button></div><div class="card jv-act">' + act3.map((c) => {
     const quien = c.creadoPor || c.pagadoPor, yoQ = esMio(c.grupoId, quien), liq = c.tipo === 'Liquidación', parte = miParte(c), g = grupoDe(c.grupoId);
-    const n = (u) => nombreDe(c.grupoId, u), mio = (u) => esMio(c.grupoId, u), a = Object.keys(c.reparto || {})[0], caraDe = liq ? c.pagadoPor : quien;
+    const n = (u) => nombreDe(c.grupoId, u), mio = (u) => esMio(c.grupoId, u), a = Object.keys(c.reparto || {})[0], caraDe = liq ? c.pagadoPor : quien, camb = !liq && compCambiado(c);
     const que = liq ? (mio(c.pagadoPor) ? 'Pagaste a ' + n(a) : mio(a) ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a))
-      : (yoQ ? 'Apuntaste' : n(quien) + ' apuntó') + ' «' + (c.descripcion || c.categoria || 'un gasto') + '»';
-    return '<button type="button" class="jv-a tappable' + (esNueva(c) ? ' nueva' : '') + '" ' + act('openMovForm', 'c:' + c.id) + '>' + caraHtml(aliasDe(c.grupoId, caraDe), mio(caraDe) ? miNombre : n(caraDe)) +
-      '<span class="jv-p-n"><b>' + (esNueva(c) ? '<i class="jv-punto" aria-hidden="true"></i><span class="sr-only">Nueva: </span>' : '') + escapeHtml(que) + '</b><span>' + escapeHtml((g ? nombreDestino(g) + ' · ' : '') + haceTxt(c.createdAt)) + '</span></span>' +
+      : (camb ? (mio(c.editadoPor) ? 'Cambiaste' : n(c.editadoPor) + ' cambió') : yoQ ? 'Apuntaste' : n(quien) + ' apuntó') + ' «' + (c.descripcion || c.categoria || 'un gasto') + '»';
+    return '<button type="button" class="jv-a tappable' + (esNueva(c) ? ' nueva' : '') + '" ' + act('openMovForm', 'c:' + c.id) + '>' + caraHtml(aliasDe(c.grupoId, camb ? c.editadoPor : caraDe), mio(camb ? c.editadoPor : caraDe) ? miNombre : n(camb ? c.editadoPor : caraDe)) +
+      '<span class="jv-p-n"><b>' + (esNueva(c) ? '<i class="jv-punto" aria-hidden="true"></i><span class="sr-only">Nueva: </span>' : '') + escapeHtml(que) + '</b><span>' + escapeHtml((g ? nombreDestino(g) + ' · ' : '') + haceTxt(camb ? c.updatedAt : c.createdAt)) + '</span></span>' +
       '<span class="jv-p-v"><b class="tnum">' + money(c.importe) + '</b><span>' + (liq ? '' : 'tu parte ' + money(parte)) + '</span></span></button>';
   }).join('') + '</div>';
 }
