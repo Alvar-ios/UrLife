@@ -55,5 +55,18 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   ok(/Bea lo verá arriba en su Inicio/.test(sh().textContent), 'aviso de que Bea lo verá en su Inicio');
   await H.planGuardar([]); await sleep(30);
   ok(rpcs.some((r) => r[0] === 'crear_directo' && r[1].p_user === 'uB') && creados[0] && creados[0].grupoId === 'gD' && creados[0].asignadoA === 'uB' && creados[0].titulo === 'Sacar al perro', 'al guardar se crea vuestro espacio y la tarea va ahí, encargada a Bea');
+  // compartir una tarea que ya tenías: se crea la compartida, la tuya va a la papelera y «Deshacer» la recupera
+  const borrados = []; S.db.agenda.borrar = async (id) => { borrados.push(id); return [{ id }]; };
+  e.store.tareas = e.store.tareas || {}; e.store.tareas.tp = { nombre: 'Pintar la puerta', categoria: 'Casa', prioridad: 'Media', estado: 'Pendiente', fechaLimite: mas(4), comentario: 'Blanco', fechaCreacion: hoy };
+  S.tareas = (S.tareas || []).concat([Object.assign({ id: 'tp' }, e.store.tareas.tp)]); await sleep(10);
+  H.closeSheet([]); await sleep(400); A.openTareaForm('tp'); await sleep(10);
+  ok(/compartirla/.test(sh().textContent) && sh().querySelector('.plan-con'), 'al editar una tarea tuya, «Con · compartirla»');
+  H.tfCon(['g:g1', 'tp']); await sleep(10);
+  ok(sh().querySelector('#pTitulo').value === 'Pintar la puerta', 'pasa a tarea compartida con su nombre');
+  const nAntes = creados.length; await H.planGuardar([]); await sleep(40);
+  ok(creados.length === nAntes + 1 && creados[creados.length - 1].grupoId === 'g1' && creados[creados.length - 1].nota === 'Blanco' && !e.store.tareas.tp && (S.config.papelera || []).some((x) => x.id === 'tp'), 'se crea la compartida (con su nota) y la tuya va a la papelera');
+  const bt = doc.querySelector('#toast .toast-btn'); ok(bt && /Compartida con Piso/.test(doc.querySelector('#toast').textContent), 'aviso «Compartida con Piso · Deshacer»');
+  bt.onclick({}); await sleep(40);
+  ok(e.store.tareas.tp && e.store.tareas.tp.nombre === 'Pintar la puerta' && borrados.length === 1, 'Deshacer: vuelve tu tarea y se quita la compartida');
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.log(String(err && err.stack || err)); process.exit(1); });

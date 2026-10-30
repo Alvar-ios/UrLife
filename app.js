@@ -3628,7 +3628,7 @@ function openTareaFormV2(id, op) {
   openSheet(
     '<div class="handle"></div><h2>' + (ex ? 'Editar tarea' : 'Nueva tarea') + '</h2>' + (!ex && agendaDisponible() ? '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="true" class="active">Tarea</button><button type="button" role="tab" aria-selected="false" ' + act('tfAPlan') + '>Plan</button></div>' : '') +
     '<div class="field tf-que"><input id="tNombre" type="text" maxlength="120" aria-label="¿Qué hay que hacer?" placeholder="¿Qué hay que hacer?" value="' + escapeHtml(ex ? ex.nombre : '') + '" ' + onInput('tNombreInput') + '>' + (ex ? '' : '<div class="rec-hint">Por ejemplo: llamar al casero, renovar el DNI…</div>') + '</div>' +
-    '<div class="field"><label>¿Para cuándo?</label><input type="hidden" id="tFecha" value="' + escapeHtml(fecha) + '"><div class="chips tf-fechas" id="tFechaChips">' + tFechaChips(fecha) + '</div></div>' + (ex ? '' : tfConHtml()) + privadaCampoHtml(ex ? !!ex.privada : false, 'tPrivada') +
+    '<div class="field"><label>¿Para cuándo?</label><input type="hidden" id="tFecha" value="' + escapeHtml(fecha) + '"><div class="chips tf-fechas" id="tFechaChips">' + tFechaChips(fecha) + '</div></div>' + (ex ? (ex.estado !== 'Completado' ? tfConHtml(ex.id) : '') : tfConHtml()) + privadaCampoHtml(ex ? !!ex.privada : false, 'tPrivada') +
     '<div class="field"><label>Categoría <span class="hint">· opcional</span></label><input type="hidden" id="tCategoria" value="' + escapeHtml(ex ? (ex.categoria || '') : '') + '"><div id="tCatChips"></div></div>' +
     (ex ? '<div class="field"><label>Estado</label>' + tg('est', [['Pendiente', 'Pendiente'], ['Iniciado', 'En curso'], ['Completado', 'Hecha']], FORM.estado, 'pickEstado') + '</div>' : '') +
     '<details class="tf-mas"' + (masAbierto ? ' open' : '') + '><summary>Más opciones' + ic('chevD') + '</summary>' +
@@ -3650,10 +3650,10 @@ function privadaCampoHtml(priv, id, accion, forzar) {
   return '<div class="field" id="' + id + 'Campo"><label>¿Quién lo ve?</label>' + (accion ? '' : '<input type="hidden" id="' + id + '" value="' + (priv ? '1' : '') + '">') + '<div class="chips">' + b(false, 'Visible', 'users') + b(true, 'Privada', 'candado') + '</div>' +
     '<div class="rec-hint">' + (priv ? 'Privada: solo la ves tú. Quien ve tu agenda no verá ni que tienes algo.' : 'Lo verá quien ve tu agenda, según lo que le dejes ver.') + '</div></div>';
 }
-function tfConHtml() {
+function tfConHtml(desde) {
   if (!agendaDisponible()) return ''; const gs = gruposParaPlanes(), ps = personasParaPlanes(); if (!gs.length && !ps.length) return '';
-  const chip = (k, txt, extra, on) => '<button type="button" class="chip' + (on ? ' active' : '') + '" aria-pressed="' + !!on + '" ' + act('tfCon', k) + '>' + (extra || '') + escapeHtml(txt) + '</button>';
-  return '<div class="field"><label>Con</label><div class="chips plan-con">' + chip('yo', 'Solo yo', '', true) + gs.map((g) => chip('g:' + g.id, nombreDestino(g), g.tipo === 'directo' ? (otroDe(g) ? caraHtml(otroDe(g).user_id, otroDe(g).nombre, 'mini') : '') : ic('users'))).join('') +
+  const chip = (k, txt, extra, on) => '<button type="button" class="chip' + (on ? ' active' : '') + '" aria-pressed="' + !!on + '" ' + act('tfCon', k, desde || '') + '>' + (extra || '') + escapeHtml(txt) + '</button>';
+  return '<div class="field"><label>Con' + (desde ? ' <span class="hint">· compartirla</span>' : '') + '</label><div class="chips plan-con">' + chip('yo', 'Solo yo', '', true) + gs.map((g) => chip('g:' + g.id, nombreDestino(g), g.tipo === 'directo' ? (otroDe(g) ? caraHtml(otroDe(g).user_id, otroDe(g).nombre, 'mini') : '') : ic('users'))).join('') +
     ps.map((p) => chip('u:' + p.uid, p.nombre, caraHtml(p.uid, p.nombre, 'mini'))).join('') + '</div></div>';
 }
 function tFechaPoner(v) { const h = $('#tFecha'); if (h) h.value = v || ''; const c = $('#tFechaChips'); if (c) c.innerHTML = tFechaChips(v || ''); sentir('tic'); }
@@ -4130,7 +4130,8 @@ function insightsDatosV3() {
   const { y, m, actual } = inicioYM(), cat = insightsCatalogo(y, m, actual), elegidos = asiVasCfg();
   const recomendados = ['gastoMes', 'sube', 'presu', 'juntos', 'sinGastos', 'dia', 'ahorro', 'inv'];
   const usados = new Set(elegidos.filter((x) => x !== 'auto'));
-  const libres = recomendados.filter((x) => cat[x] && !usados.has(x));
+  let enPiezas = new Set(); try { if (inicioV3()) enPiezas = new Set(iwLista().map((x) => x.t === 'juntos' && !(x.o && x.o.gid) ? 'juntos' : x.t === 'presu' ? 'presu' : x.t === 'inv' ? 'inv' : '').filter(Boolean)); } catch (e) { /* */ }
+  const libres = recomendados.filter((x) => cat[x] && !usados.has(x) && !enPiezas.has(x)); // los círculos automáticos no repiten lo que ya enseña una pieza de Inicio
   const out = elegidos.map((key, i) => {
     if (key === 'auto') { const x = libres.shift(); return x ? Object.assign({ k: x, hueco: i }, cat[x]) : null; }
     const d = asiVasFijo(key, y, m, cat), t = ASIVAS_TIPOS.find((z) => z[0] === key.split(':')[0]) || [];
@@ -5506,7 +5507,7 @@ function planAbrirForm(op) {
   op = op || {}; const a = op.id ? agendaPorId(op.id) : null; S._planVolver = op.volver || null;
   FORM = { kind: 'plan', id: a ? a.id : null, tipo: a ? a.tipo : (op.tipo || 'plan'), titulo: a ? a.titulo : (op.titulo || ''), fecha: a ? (a.fecha || '') : (op.fecha != null ? op.fecha : todayISO()),
     horaModo: a ? (a.hora ? 'hora' : a.fechaFin ? 'varios' : 'dia') : 'dia', hora: a ? horaTxt(a.hora) : '', fechaFin: a ? (a.fechaFin || '') : '', con: a ? (a.grupoId ? 'g:' + a.grupoId : 'yo') : (op.con || 'yo'),
-    lugar: a ? (a.lugar || '') : '', nota: a ? (a.nota || '') : '', aviso: a ? planAviso(a.id) : 'antes', asignado: a ? (a.asignadoA || '') : '', notaAbierta: !!(a && a.nota), privada: !!(a && a.privada) };
+    lugar: a ? (a.lugar || '') : '', nota: a ? (a.nota || '') : (op.nota || ''), aviso: a ? planAviso(a.id) : 'antes', asignado: a ? (a.asignadoA || '') : '', notaAbierta: !!(a ? a.nota : op.nota), privada: !!(a && a.privada), deTarea: a ? null : (op.deTarea || null) };
   if (FORM.tipo === 'tarea' && FORM.con === 'yo') { const g = gruposParaPlanes()[0]; FORM.con = g ? 'g:' + g.id : 'yo'; }
   if (FORM.tipo === 'tarea' && !a && op.fecha === undefined) FORM.fecha = '';
   if ($('#sheetBackdrop')) updateSheet(planFormHtml()); else openSheet(planFormHtml());
@@ -5518,8 +5519,9 @@ function planFormHtml() {
   const fechas = [['Hoy', hoy], ['Mañana', uAdd(hoy, 1)], ['Este finde', finde(hoy)]].concat(plan ? [] : [['Sin fecha', '']]);
   const marcada = fechas.some((x) => x[1] === F.fecha), dO = F.fecha && !marcada ? parseISO(F.fecha) : null;
   const g = F.con.indexOf('g:') === 0 ? grupoDe(F.con.slice(2)) : null;
-  let h = '<div class="handle"></div><h2>' + (F.id ? (plan ? 'Editar plan' : 'Editar tarea') : (plan ? 'Nuevo plan' : 'Nueva tarea compartida')) + '</h2>';
-  if (!F.id) h += '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="' + !plan + '" class="' + (plan ? '' : 'active') + '" ' + act('planTipo', 'tarea') + '>Tarea</button><button type="button" role="tab" aria-selected="' + plan + '" class="' + (plan ? 'active' : '') + '" ' + act('planTipo', 'plan') + '>Plan</button></div>';
+  let h = '<div class="handle"></div><h2>' + (F.id ? (plan ? 'Editar plan' : 'Editar tarea') : (F.deTarea ? 'Compartir tarea' : plan ? 'Nuevo plan' : 'Nueva tarea compartida')) + '</h2>';
+  if (F.deTarea) h += '<div class="rec-hint" style="margin:-4px 0 12px;">Tu tarea pasa a ser compartida. La prioridad, la categoría y «Repetir» no se pasan.</div>';
+  if (!F.id && !F.deTarea) h += '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="' + !plan + '" class="' + (plan ? '' : 'active') + '" ' + act('planTipo', 'tarea') + '>Tarea</button><button type="button" role="tab" aria-selected="' + plan + '" class="' + (plan ? 'active' : '') + '" ' + act('planTipo', 'plan') + '>Plan</button></div>';
   h += '<div class="field tf-que"><input id="pTitulo" type="text" maxlength="120" aria-label="' + (plan ? '¿Qué plan es?' : '¿Qué hay que hacer?') + '" placeholder="' + (plan ? '¿Qué plan es?' : '¿Qué hay que hacer?') + '" value="' + escapeHtml(F.titulo) + '"></div>' +
     (plan && !F.id ? '<div class="rec-hint" style="margin:-6px 0 12px;">Por ejemplo: cena de cumple de Ana, vuelo a Roma…</div>' : '');
   h += '<div class="field"><label>' + (plan ? '¿Cuándo?' : '¿Para cuándo? <span class="hint">· opcional</span>') + '</label><div class="chips">' + fechas.map(([l, v]) => chip('planFecha', v, F.fecha === v, l)).join('') +
@@ -5571,12 +5573,27 @@ async function planGuardar() {
     try { a = F.id ? await S.db.agenda.editar(F.id, datos) : await S.db.agenda.crear(Object.assign({ grupoId: gid, tipo: F.tipo }, datos)); }
     catch (e) { console.error(e); return toast(errGrupo(e)); }
     agendaAplicarLocal(a);
+    if (!F.id && F.deTarea) { await tareaPasarACompartida(F.deTarea, a); const volver0 = S._planVolver; S._planVolver = null; if (volver0 && grupoDe(volver0)) { S._grupoTabVolver = 'planes'; abrirGrupo(volver0); } else closeSheet(); render(); return; }
     if (plan) { const av = Object.assign({}, cfg().agendaAvisos || {}); if (F.aviso === 'antes') { if (av[a.id]) { delete av[a.id]; saveConfig({ agendaAvisos: av }); } } else if (av[a.id] !== F.aviso) { av[a.id] = F.aviso; saveConfig({ agendaAvisos: av }); } }
     toast(F.id ? 'Guardado' : plan ? 'Plan apuntado' : 'Tarea apuntada');
     const volver = S._planVolver; S._planVolver = null;
     if (volver && grupoDe(volver)) { S._grupoTabVolver = 'planes'; abrirGrupo(volver); } else closeSheet();
     render();
   } finally { F.guardando = false; }
+}
+// «Compartir una tarea que ya tenías»: primero se crea la compartida (ya hecho) y solo después se borra la tuya, que va a la papelera; «Deshacer» la recupera
+async function tareaPasarACompartida(id, a) {
+  const t = S.tareas.find((x) => x.id === id), g = a && a.grupoId ? grupoDe(a.grupoId) : null, donde = g ? nombreDestino(g) : 'el grupo';
+  if (!t) { toast('Compartida con ' + donde); return; }
+  const copia = stripId(t), ok = await write(() => S.db.collection('tareas').doc(id).delete());
+  if (!ok) { toast('Compartida con ' + donde + '. No se pudo quitar tu tarea: bórrala tú', { aviso: true }); return; }
+  papeleraAnadir('tarea', id, copia);
+  toast('Compartida con ' + donde, { deshacer: async () => {
+    const vuelta = await write(() => S.db.collection('tareas').doc(id).set(copia));
+    if (!vuelta) { toast('No se pudo recuperar tu tarea. Sigue compartida y la tuya está en la papelera', { aviso: true }); return; }
+    papeleraQuitar('tarea', id);
+    try { await S.db.agenda.borrar(a.id); agendaAplicarLocal(Object.assign({}, a, { borrado: true })); } catch (e) { console.error(e); toast('Tu tarea ha vuelto, pero no se pudo quitar la compartida: bórrala tú', { aviso: true }); }
+    render(); } });
 }
 function agendaAplicarLocal(a) { if (!a) return; S.agenda = (S.agenda || []).filter((x) => x.id !== a.id).concat(a.borrado ? [] : [a]); }
 /* ---- hoja de un plan o una tarea compartida ---- */
@@ -10338,14 +10355,16 @@ const H = {
   planNuevo: ([fecha]) => planAbrirForm({ tipo: 'plan', fecha: fecha || todayISO() }),
   planGrupoNuevo: ([gid, tipo]) => { planAbrirForm({ volver: gid, tipo: tipo === 'tarea' ? 'tarea' : 'plan', con: 'g:' + gid, fecha: tipo === 'tarea' ? '' : todayISO() }); },
   tfAPlan: () => { const n = $('#tNombre'), f = $('#tFecha'); planAbrirForm({ tipo: 'plan', titulo: n ? n.value : '', fecha: (f && f.value) || todayISO() }); },
-  tfCon: ([k]) => { if (!k || k === 'yo') return; const n = $('#tNombre'), f = $('#tFecha'), pv = $('#tPrivada'); if (pv && pv.value === '1') toast('En un grupo lo ven todos los del grupo'); sentir('tic'); planAbrirForm({ tipo: 'tarea', con: k, titulo: n ? n.value : '', fecha: f ? f.value : '' }); },
+  tfCon: ([k, desde]) => { if (!k || k === 'yo') return; const n = $('#tNombre'), f = $('#tFecha'), pv = $('#tPrivada'), co = $('#tComentario'); if (pv && pv.value === '1') toast('En un grupo lo ven todos los del grupo'); sentir('tic');
+    planAbrirForm({ tipo: 'tarea', con: k, titulo: n ? n.value : '', fecha: f ? f.value : '', deTarea: desde || null, nota: desde && co ? co.value : '' }); },
   planTipo: ([t]) => { planLeerForm(); const F = FORM; if (!F || F.kind !== 'plan') return;
+    if (t === 'tarea' && F.con === 'yo' && F.deTarea) { openTareaFormV2(F.deTarea); return; }
     if (t === 'tarea' && F.con === 'yo') { const tit = F.titulo, fe = F.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; }
     F.tipo = t === 'tarea' ? 'tarea' : 'plan'; if (F.tipo === 'plan' && !F.fecha) F.fecha = todayISO(); updateSheet(planFormHtml()); },
   planFecha: ([v]) => { planLeerForm(); FORM.fecha = v || ''; if (FORM.fechaFin && FORM.fechaFin < FORM.fecha) FORM.fechaFin = ''; sentir('tic'); updateSheet(planFormHtml()); },
   planFechaOtro: (_a, el) => { planLeerForm(); FORM.fecha = el.value || FORM.fecha; updateSheet(planFormHtml()); },
   planHoraModo: ([k]) => { planLeerForm(); FORM.horaModo = k; sentir('tic'); updateSheet(planFormHtml()); },
-  planCon: ([k]) => { planLeerForm(); if (k === 'yo' && FORM.tipo === 'tarea' && !FORM.id) { const tit = FORM.titulo, fe = FORM.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; } FORM.con = k; FORM.asignado = ''; sentir('tic'); updateSheet(planFormHtml()); },
+  planCon: ([k]) => { planLeerForm(); if (k === 'yo' && FORM.deTarea) { openTareaFormV2(FORM.deTarea); return; } if (k === 'yo' && FORM.tipo === 'tarea' && !FORM.id) { const tit = FORM.titulo, fe = FORM.fecha; openTareaFormV2(null, { fecha: fe }); const el = $('#tNombre'); if (el) el.value = tit || ''; return; } FORM.con = k; FORM.asignado = ''; sentir('tic'); updateSheet(planFormHtml()); },
   planQuien: ([u]) => { planLeerForm(); FORM.asignado = u || ''; sentir('tic'); updateSheet(planFormHtml()); },
   planAviso: ([k]) => { planLeerForm(); FORM.aviso = k; sentir('tic'); updateSheet(planFormHtml()); },
   planGuardar: () => planGuardar(),
