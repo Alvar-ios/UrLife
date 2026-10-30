@@ -2245,3 +2245,4 @@ html[data-look="nuevo"] .agc-gr svg { width: 15px; height: 15px; }
 html[data-look="nuevo"] .agc-niveles { display: flex; flex-direction: column; gap: 6px; }
 html[data-look="nuevo"] .agc-revisar { display: flex; gap: 10px; align-items: flex-start; font-size: var(--fs-s); line-height: 1.4; color: var(--text-muted); margin: 12px 0; }
 html[data-look="nuevo"] .agc-revisar svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--accent); }
+html[data-look="nuevo"] .cal2-card ~ .agc-laven, html[data-look="nuevo"] .empty-mini + .agc-laven, html[data-look="nuevo"] .list + .agc-laven { margin-top: 12px; }
