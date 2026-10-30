@@ -104,7 +104,7 @@ Dos filas de chips de 40 px: **personas** (Todos, Ana, Bea, Carlos, Tú; se desl
 
 ## 8. Preguntas para el dueño
 
-1. **(Bloquea la tanda 2)** ¿Quién puede recuperar lo que borró otro? Recomendamos: **cualquiera que pueda cambiar gastos en ese grupo** (con «Solo quien lo apuntó o un administrador», solo ellos).
+1. ✅ **Decidido por el dueño (30/10):** sí, cualquiera que pueda cambiar gastos en ese grupo. **(Bloqueaba la tanda 2)** ¿Quién puede recuperar lo que borró otro? Recomendamos: **cualquiera que pueda cambiar gastos en ese grupo** (con «Solo quien lo apuntó o un administrador», solo ellos).
 2. **(Bloquea la tanda 1)** ¿Cuánto tiempo se guarda el historial y se puede recuperar? Recomendamos **un año para las dos cosas** (una sola cifra, fácil de explicar).
 3. ¿Inicio avisa solo de borrados y cambios que mueven tu saldo (recomendado), o de cualquier cambio en tus grupos?
 4. ¿Empezamos ya por la tanda 0 (no toca la base de datos) mientras Datos y Seguridad revisa el resto?
