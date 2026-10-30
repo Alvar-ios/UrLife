@@ -3575,7 +3575,9 @@ function renderAgendaSemanaV2() {
   const plegE = encargadas.length ? '<button type="button" class="ag-pleg" aria-expanded="' + (abierto === 'encargadas') + '" ' + act('agendaMas', 'encargadas') + '><span>Encargadas a otros · ' + encargadas.length + '</span>' + ic(abierto === 'encargadas' ? 'chevD' : 'chevR') + '</button>' + (abierto === 'encargadas' ? '<div class="list">' + encargadas.map(tareaCFilaHtml).join('') + '</div>' : '') : '';
   const plegH = (adelante.length || hechas.length || encargadas.length) ? '<div class="ag-plegs">' + pleg('adelante', sel > hoy ? 'Otros días' : 'Más adelante', adelante) + plegE + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
   setTimeout(agendaMarcarVista, 0); // al abrir la Agenda, lo que te encargaron deja de ser «nuevo» en Inicio
-  return cab + tira + rapida + vencH + diaH + proxH + sinFH + plegH;
+  agcAsegurar(); const otrosDia = agcOn() ? agcDelDia(sel) : [];
+  const otrosH = otrosDia.length ? '<div class="list agc-list">' + otrosDia.map(agcFilaHtml).join('') + '</div>' : '';
+  return cab + tira + agcCarasHtml() + rapida + vencH + diaH + otrosH + proxH + sinFH + plegH;
 }
 // Calendario v2: solo el mes; la leyenda de colores de abajo es el filtro
 // Un solo calendario con dos capas: «Planes y tareas» (Agenda) y «Dinero» (Movimientos → Calendario)
@@ -3593,6 +3595,7 @@ function renderCalendarioV2() {
   for (let n = 1; n <= dim; n++) {
     const iso = y + '-' + pad2(m + 1) + '-' + pad2(n), evs = map[iso] || [], colores = [];
     evs.forEach((ev) => { const c = evColor(ev); if (colores.indexOf(c) < 0) colores.push(c); });
+    if (agcOn()) agcDelDia(iso).forEach((it) => { const c = colorPersona(it.uid); if (colores.indexOf(c) < 0) colores.push(c); });
     cells += '<button type="button" class="cal2-dia' + (iso === anchor ? ' sel' : '') + (iso === hoy ? ' hoy' : '') + '" ' + act('calSelDia', iso) + ' aria-label="' + n + ' de ' + MESES[m].toLowerCase() + (evs.length ? ', ' + evs.length + (evs.length === 1 ? ' cosa' : ' cosas') : '') + '"' + (iso === anchor ? ' aria-current="date"' : '') + '>' +
       '<span class="n tnum">' + n + '</span><span class="pts">' + colores.slice(0, 4).map((c) => '<i style="background:' + c + '"></i>').join('') + '</span>' + (evs.some((ev) => ev.k === 'plan') ? '<span class="cal2-plan" aria-hidden="true"></span>' : '') + '</button>';
   }
@@ -3603,7 +3606,8 @@ function renderCalendarioV2() {
     '<div class="card cal2-card"><div class="cal2-grid">' + cells + '</div>' +
     '<div class="cal2-ley" role="group" aria-label="Qué se ve en el calendario">' + ley.map(([k, l, c]) => '<button type="button" class="cal2-ley-i' + (f[k] ? ' on' : '') + '" aria-pressed="' + !!f[k] + '" ' + act('calToggle', k) + '><i style="' + (f[k] ? 'background:' : 'border-color:') + c + '"></i>' + l + '</button>').join('') + '</div></div>' +
     '<div class="section-title">' + DIAS_LARGO[dowMon(dsel)] + ' ' + dsel.getDate() + ' de ' + MESES[dsel.getMonth()].toLowerCase() + '<button class="link" ' + act('tareaEnDia', anchor) + '>' + ic('plus') + ' Tarea</button></div>' +
-    (evsSel.length ? '<div class="list">' + evsSel.map(calEventRow).join('') + '</div>' : '<div class="card empty-mini">Nada este día.</div>');
+    (evsSel.length ? '<div class="list">' + evsSel.map(calEventRow).join('') + '</div>' : (agcOn() && agcDelDia(anchor).length ? '' : '<div class="card empty-mini">Nada este día.</div>')) +
+    (agcOn() && agcDelDia(anchor).length ? '<div class="list agc-list">' + agcDelDia(anchor).map(agcFilaHtml).join('') + '</div>' : '') + (agcOn() ? (agcAsegurar(), agcCarasHtml()) : '');
 }
 /* Formulario de tarea v2: qué, para cuándo y categoría; lo demás en «Más opciones» */
 function finde(hoy) { const d = dowMon(parseISO(hoy)); return d >= 5 ? hoy : uAdd(hoy, 5 - d); }
@@ -3624,7 +3628,7 @@ function openTareaFormV2(id, op) {
   openSheet(
     '<div class="handle"></div><h2>' + (ex ? 'Editar tarea' : 'Nueva tarea') + '</h2>' + (!ex && agendaDisponible() ? '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="true" class="active">Tarea</button><button type="button" role="tab" aria-selected="false" ' + act('tfAPlan') + '>Plan</button></div>' : '') +
     '<div class="field tf-que"><input id="tNombre" type="text" maxlength="120" aria-label="¿Qué hay que hacer?" placeholder="¿Qué hay que hacer?" value="' + escapeHtml(ex ? ex.nombre : '') + '" ' + onInput('tNombreInput') + '>' + (ex ? '' : '<div class="rec-hint">Por ejemplo: llamar al casero, renovar el DNI…</div>') + '</div>' +
-    '<div class="field"><label>¿Para cuándo?</label><input type="hidden" id="tFecha" value="' + escapeHtml(fecha) + '"><div class="chips tf-fechas" id="tFechaChips">' + tFechaChips(fecha) + '</div></div>' + (ex ? '' : tfConHtml()) +
+    '<div class="field"><label>¿Para cuándo?</label><input type="hidden" id="tFecha" value="' + escapeHtml(fecha) + '"><div class="chips tf-fechas" id="tFechaChips">' + tFechaChips(fecha) + '</div></div>' + (ex ? '' : tfConHtml()) + privadaCampoHtml(ex ? !!ex.privada : false, 'tPrivada') +
     '<div class="field"><label>Categoría <span class="hint">· opcional</span></label><input type="hidden" id="tCategoria" value="' + escapeHtml(ex ? (ex.categoria || '') : '') + '"><div id="tCatChips"></div></div>' +
     (ex ? '<div class="field"><label>Estado</label>' + tg('est', [['Pendiente', 'Pendiente'], ['Iniciado', 'En curso'], ['Completado', 'Hecha']], FORM.estado, 'pickEstado') + '</div>' : '') +
     '<details class="tf-mas"' + (masAbierto ? ' open' : '') + '><summary>Más opciones' + ic('chevD') + '</summary>' +
@@ -3639,6 +3643,13 @@ function openTareaFormV2(id, op) {
   if (!ex) setTimeout(() => { const el = $('#tNombre'); if (el) el.focus(); }, 80);
 }
 // «Con»: una tarea puede ser solo tuya o de un grupo o una persona (docs/24 §3); al elegir con quién, pasa al formulario de tarea compartida
+// «¿Quién lo ve?»: solo sale si compartes tu agenda con alguien (docs/24 §4.2)
+function privadaCampoHtml(priv, id, accion) {
+  if (!agcOn() || (!agcCompartoAlgo() && !priv)) return '';
+  const b = (v, l, icono) => '<button type="button" class="chip' + (!!priv === v ? ' active' : '') + '" aria-pressed="' + (!!priv === v) + '" ' + act(accion || 'privadaPoner', id, v ? '1' : '') + '>' + ic(icono) + ' ' + l + '</button>';
+  return '<div class="field" id="' + id + 'Campo"><label>¿Quién lo ve?</label>' + (accion ? '' : '<input type="hidden" id="' + id + '" value="' + (priv ? '1' : '') + '">') + '<div class="chips">' + b(false, 'Visible', 'users') + b(true, 'Privada', 'candado') + '</div>' +
+    '<div class="rec-hint">' + (priv ? 'Privada: no sale de tu móvil. Quien ve tu agenda no verá ni que tienes algo.' : 'Lo verá quien ve tu agenda, según lo que le dejes ver.') + '</div></div>';
+}
 function tfConHtml() {
   if (!agendaDisponible()) return ''; const gs = gruposParaPlanes(), ps = personasParaPlanes(); if (!gs.length && !ps.length) return '';
   const chip = (k, txt, extra, on) => '<button type="button" class="chip' + (on ? ' active' : '') + '" aria-pressed="' + !!on + '" ' + act('tfCon', k) + '>' + (extra || '') + escapeHtml(txt) + '</button>';
@@ -3802,6 +3813,7 @@ function renderTuV2() {
       it('infAbrir', [], 'sparkle', 'Informes', badge('informes'), 'informe resumen semanal mensual trimestral anual asistente'),
       it('openRecurrentes', [], 'repeat', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recibos suscripciones'),
       it('tuMesAbrir', [], 'calRango', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().nomina && cortesNomina() ? 'desde tu nómina' : mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
+      ...(agcOn() ? [it('agcAbrir', [], 'calendar', 'Compartir mi agenda', badge('agendaComp') + (agcCompartoAlgo() ? '<span class="menu-extra">' + S.agcPermisos.length + (S.agcPermisos.length === 1 ? ' persona o grupo' : ' personas o grupos') + '</span>' : ''), 'compartir agenda ver calendario pareja familia privada')] : []),
       it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir invitar whatsapp juntos')]) +
     grupo('Traer y guardar', [it('impAbrir', [], 'fileIn', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
       ticketsDisponible() ? it('ticketsInfo', [], 'receipt', 'Fotos de tickets', ticketsFilaExtra(), 'tickets lecturas foto camara recibo quedan') : '',
@@ -4874,6 +4886,103 @@ function infAvisoHtml() {
     '<button type="button" class="icon-btn sm" aria-label="Cerrar el aviso" ' + act('infDescartar', c) + '>' + ic('close') + '</button></div>';
 }
 function infMarcarVisto(c) { const C = cfg().informes || {}; if ((C.vistos || {})[c]) return; const vistos = Object.assign({}, C.vistos || {}, { [c]: todayISO() }); Object.keys(vistos).sort((a, b) => String(vistos[a]).localeCompare(String(vistos[b]))).slice(0, -60).forEach((x) => delete vistos[x]); saveConfig({ informes: Object.assign({}, C, { vistos }) }); }
+/* ===== COMPARTIR MI AGENDA (30/10, docs/24 §4 y docs/24b). Quién ve tu agenda (agenda_permisos) y la agenda de quien te enseña la suya.
+   Lo que ven los demás lo recorta el servidor (agenda_de): lo privado nunca sale de tu móvil. ===== */
+const AGC_NIVELES = [['todo', 'Todo', 'Título, hora, lugar y nota'], ['titulos', 'Solo los títulos', 'Qué y cuándo'], ['ocupado', 'Solo los huecos ocupados', 'Cuándo tienes algo, sin decir qué']];
+function agcOn() { return !!(S.db && S.db.agendaPermisos && agendaDisponible()); }
+function agcNivelTxt(n) { return (AGC_NIVELES.find((x) => x[0] === n) || AGC_NIVELES[2])[1]; }
+function agcCompartoAlgo() { return (S.agcPermisos || []).length > 0; }
+function agcPersonaNombre(uid) { const p = amigos().find((x) => x.uid === uid); return p ? p.nombre : 'Alguien'; }
+function agcCapaOn(uid) { return (cfg().agendaCapas || {})[uid] !== false; }
+// carga (sin bloquear) mis permisos, lo que oculto y quién me enseña la suya; y la agenda de cada persona encendida alrededor del día que miras
+async function agcCargar(forzar) {
+  if (!agcOn() || S._agcCargando) return; const ahora = Date.now();
+  if (!forzar && S._agcTs && ahora - S._agcTs < 180000) return;
+  S._agcCargando = true;
+  try {
+    const db = S.db.agendaPermisos; const [ps, oc, cm] = await Promise.all([db.listar(), db.ocultas(), db.conmigo()]);
+    S.agcPermisos = ps || []; S.agcOcultas = new Set(oc || []); S.agcConmigo = (cm || []).map((r) => ({ uid: r.persona, nivelPlanes: r.nivel_planes, nivelTareas: r.nivel_tareas }));
+    S._agcTs = ahora; S.agcOtros = {};
+  } catch (e) { console.error(e); S._agcTs = ahora; } finally { S._agcCargando = false; }
+  await agcCargarOtros(true); render();
+}
+function agcRango() { const a = S.tab === 'inicio' && S.inicioVista === 'calendario' || S.agendaSub === 'calendario' ? calAnchor() : (S.agendaDia || todayISO()); return { desde: addDaysISO(a, -30), hasta: addDaysISO(a, 60), a }; }
+async function agcCargarOtros(forzar) {
+  if (!agcOn()) return; const R = agcRango(), O = S.agcOtros || (S.agcOtros = {});
+  const pend = (S.agcConmigo || []).filter((p) => agcCapaOn(p.uid)).filter((p) => { const o = O[p.uid]; return forzar || !o || R.a < addDaysISO(o.desde, 7) || R.a > addDaysISO(o.hasta, -7); });
+  if (!pend.length) return;
+  await Promise.all(pend.map(async (p) => { try { const rs = await S.db.agendaPermisos.deOtro(p.uid, R.desde, R.hasta); O[p.uid] = { desde: R.desde, hasta: R.hasta, items: (rs || []).map((r) => Object.assign({ uid: p.uid }, r)) }; } catch (e) { console.error(e); } }));
+}
+function agcAsegurar() { if (!agcOn()) return; const R = agcRango(), O = S.agcOtros || {};
+  const falta = (S.agcConmigo || []).some((p) => agcCapaOn(p.uid) && (!O[p.uid] || R.a < addDaysISO(O[p.uid].desde, 7) || R.a > addDaysISO(O[p.uid].hasta, -7)));
+  if (!S._agcTs || Date.now() - S._agcTs > 180000) setTimeout(() => agcCargar(), 0);
+  else if (falta && !S._agcOtrosCarga) { S._agcOtrosCarga = true; setTimeout(async () => { await agcCargarOtros(); S._agcOtrosCarga = false; render(); }, 0); } }
+// lo de otros en un día (planes de varios días incluidos)
+function agcDelDia(iso) {
+  const out = [], O = S.agcOtros || {};
+  (S.agcConmigo || []).filter((p) => agcCapaOn(p.uid)).forEach((p) => ((O[p.uid] || {}).items || []).forEach((it) => { if (it.fecha && it.fecha <= iso && (it.fecha_fin || it.fecha) >= iso) out.push(it); }));
+  return out.sort((a, b) => String(a.hora || '99').localeCompare(String(b.hora || '99')));
+}
+function agcFilaHtml(it) {
+  const n = agcPersonaNombre(it.uid), ocup = !it.titulo, hora = it.hora ? horaTxt(it.hora) : it.tipo === 'tarea' ? 'Tarea' : 'Todo el día';
+  return '<button type="button" class="row agc-fila' + (ocup ? ' ocupada' : '') + '" style="--pc:' + colorPersona(it.uid) + '" ' + act('agcVer', it.uid, it.clave) + '>' + caraHtml(it.uid, n, 'mini') +
+    '<span class="main"><span class="ttl">' + (ocup ? 'Hueco ocupado' : escapeHtml(it.titulo)) + '</span><span class="meta">' + escapeHtml([n, hora, it.lugar].filter(Boolean).join(' · ')) + '</span></span></button>';
+}
+function agcVerHtml(uid, clave) {
+  const it = (((S.agcOtros || {})[uid] || {}).items || []).find((x) => x.clave === clave), n = agcPersonaNombre(uid);
+  if (!it) return '<div class="handle"></div><h2>Ya no está</h2><div class="card">' + escapeHtml(n) + ' ya no te enseña esto.</div><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+  const cuando = (it.fecha ? fmtDateLong(it.fecha) : '') + (it.fecha_fin && it.fecha_fin !== it.fecha ? ' – ' + fmtDateLong(it.fecha_fin) : '') + (it.hora ? ' · ' + horaTxt(it.hora) : '');
+  return '<div class="handle"></div><div class="plan-cab"><span class="plan-cab-ic">' + caraHtml(uid, n) + '</span><div><h2>' + (it.titulo ? escapeHtml(it.titulo) : 'Hueco ocupado') + '</h2><span>De la agenda de ' + escapeHtml(n) + '</span></div></div>' +
+    '<div class="card plan-datos"><div class="plan-dato">' + ic('clock') + '<span>' + escapeHtml(cuando) + '</span></div>' + (it.lugar ? '<div class="plan-dato">' + ic('pin') + '<span>' + escapeHtml(it.lugar) + '</span></div>' : '') +
+    (it.nota ? '<div class="plan-nota">' + escapeHtml(it.nota) + '</div>' : '') + '</div>' +
+    '<p class="rec-hint">' + escapeHtml(n) + ' comparte su agenda contigo' + (it.nivel === 'ocupado' ? ' solo con los huecos ocupados' : it.nivel === 'titulos' ? ' con los títulos' : '') + '. Solo puedes mirarla.</p>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+}
+// la fila de caras de la Agenda: Yo + quien me enseña la suya (tocar enciende o apaga)
+function agcCarasHtml() {
+  if (!agcOn()) return ''; const cm = S.agcConmigo || [], la = (S.agcPermisos || []);
+  const ven = la.map((p) => p.aUsuario ? agcPersonaNombre(p.aUsuario) : (grupoDe(p.aGrupo) ? nombreDestino(grupoDe(p.aGrupo)) : 'un grupo'));
+  const caras = cm.length ? '<div class="agc-caras" role="group" aria-label="Agendas que ves">' + '<span class="agc-cara on yo">' + caraHtml(miUid(), miNombreAlguno(), 'mini') + '<span>Yo</span></span>' +
+    cm.map((p) => { const on = agcCapaOn(p.uid), n = agcPersonaNombre(p.uid); return '<button type="button" class="agc-cara' + (on ? ' on' : '') + '" aria-pressed="' + on + '" style="--pc:' + colorPersona(p.uid) + '" ' + act('agcCapa', p.uid) + '>' + caraHtml(p.uid, n, 'mini') + '<span>' + escapeHtml(n.split(' ')[0]) + '</span></button>'; }).join('') + '</div>' : '';
+  const laVen = ven.length ? '<button type="button" class="agc-laven" ' + act('agcAbrir') + '>' + ic('users') + '<span>La ven ' + escapeHtml(ven.length > 2 ? ven.slice(0, 2).join(', ') + ' y ' + (ven.length - 2) + ' más' : ven.join(' y ')) + '</span>' + ic('chevR') + '</button>' : '';
+  return caras + laVen;
+}
+/* ---- hoja «Compartir mi agenda» ---- */
+function agcHtml() {
+  const F = FORM || {}, ps = S.agcPermisos || [], cm = S.agcConmigo || [];
+  if (S._agcCargando && !S._agcTs) return '<div class="handle"></div><h2>Compartir mi agenda</h2><div class="card empty-mini">Cargando…</div>';
+  if (F.vista === 'elegir') {
+    const ya = new Set(ps.map((p) => p.aUsuario || p.aGrupo)), per = amigos().filter((p) => !ya.has(p.uid)), grs = (S.grupos || []).filter((g) => g.tipo === 'grupo' && !g.cerrado && !ya.has(g.id));
+    return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('agcVista', '') + '>' + ic('chevL') + ' Volver</button><h2>¿Con quién?</h2>' +
+      (per.length ? '<div class="section-title">Personas</div><div class="card agc-lista">' + per.map((p) => '<button type="button" class="agc-li tappable" ' + act('agcElegir', 'u:' + p.uid) + '>' + caraHtml(p.uid, p.nombre, 'mini') + '<span>' + escapeHtml(p.nombre) + '</span>' + ic('chevR') + '</button>').join('') + '</div>' : '') +
+      (grs.length ? '<div class="section-title">Grupos</div><div class="card agc-lista">' + grs.map((g) => '<button type="button" class="agc-li tappable" ' + act('agcElegir', 'g:' + g.id) + '><span class="agc-gr">' + ic('users') + '</span><span>' + escapeHtml(g.nombre) + '<small>Todos los de ahora y quien entre después</small></span>' + ic('chevR') + '</button>').join('') + '</div>' : '') +
+      (!per.length && !grs.length ? '<div class="card empty-mini">Solo puedes compartirla con personas que ya están contigo en un grupo de Juntos.</div>' : '');
+  }
+  if (F.vista === 'nuevo') {
+    const k = F.con || '', esG = k.indexOf('g:') === 0, nom = esG ? (grupoDe(k.slice(2)) || {}).nombre : agcPersonaNombre(k.slice(2)), cuenta = agcCuentaVisible(F.nivel || 'ocupado');
+    return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('agcVista', 'elegir') + '>' + ic('chevL') + ' Volver</button><h2>Compartir con ' + escapeHtml(nom || '') + '</h2>' +
+      '<div class="field"><label>¿Qué verá?</label><div class="agc-niveles">' + AGC_NIVELES.map(([v, l, d]) => '<button type="button" class="av-op' + ((F.nivel || 'ocupado') === v ? ' on' : '') + '" role="radio" aria-checked="' + ((F.nivel || 'ocupado') === v) + '" ' + act('agcNivelNuevo', v) + '><span class="av-op-t"><b>' + l + '</b><span>' + d + '</span></span><span class="av-radio"></span></button>').join('') + '</div></div>' +
+      '<div class="card agc-revisar">' + ic('info') + '<span>' + escapeHtml(nom || '') + ' verá <b>' + cuenta + (cuenta === 1 ? ' cosa' : ' cosas') + '</b> de los próximos 60 días. Lo que marques como <b>Privada</b> no sale de tu móvil, ni como hueco ocupado.' + (esG ? ' Quien entre después en el grupo también la verá.' : '') + '</span></div>' +
+      '<div class="actions"><button class="btn ghost block" ' + act('agcVista', '') + '>Cancelar</button><button class="btn accent block" ' + act('agcCrear') + '>Compartir</button></div>';
+  }
+  const fila = (p) => { const esG = !!p.aGrupo, g = esG ? grupoDe(p.aGrupo) : null, nom = esG ? (g ? g.nombre : 'Grupo') : agcPersonaNombre(p.aUsuario);
+    return '<div class="card agc-perm"><div class="agc-perm-cab">' + (esG ? '<span class="agc-gr">' + ic('users') + '</span>' : caraHtml(p.aUsuario, nom, 'mini')) + '<b>' + escapeHtml(nom) + '</b></div>' +
+      '<div class="chips">' + AGC_NIVELES.map(([v, l]) => '<button type="button" class="chip' + (p.nivel === v ? ' active' : '') + '" aria-pressed="' + (p.nivel === v) + '" ' + act('agcNivel', p.id, v) + '>' + l + '</button>').join('') + '</div>' +
+      '<button type="button" class="link agc-quitar" ' + act('agcQuitar', p.id) + '>' + ic('close') + ' Dejar de compartir con ' + escapeHtml(nom) + '</button></div>'; };
+  return '<div class="handle"></div><h2>Compartir mi agenda</h2><p class="sheet-sub">Deja que quien tú elijas vea tu agenda. Nadie la ve si no la compartes, y lo que marques como Privada no sale de tu móvil.</p>' +
+    '<div class="section-title">La ven</div>' + (ps.length ? ps.map(fila).join('') : '<div class="card empty-mini">Nadie. Tu agenda es solo tuya.</div>') +
+    '<button class="btn ghost block" ' + act('agcVista', 'elegir') + '>' + ic('plus') + ' Compartir con alguien</button>' +
+    (cm.length ? '<div class="section-title">Te enseñan la suya</div><div class="card agc-lista">' + cm.map((p) => { const n = agcPersonaNombre(p.uid), on = agcCapaOn(p.uid);
+      return '<div class="agc-li">' + caraHtml(p.uid, n, 'mini') + '<span>' + escapeHtml(n) + '<small>' + escapeHtml(agcNivelTxt(p.nivelPlanes || p.nivelTareas)) + ' · sale en tu Agenda</small></span><button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="Ver la agenda de ' + escapeHtml(n) + '" ' + act('agcCapa', p.uid) + '></button></div>'; }).join('') + '</div>' : '');
+}
+// cuántas cosas de los próximos 60 días verá alguien con ese nivel (lo mismo que recorta el servidor)
+function agcCuentaVisible(nivel) {
+  const hoy = todayISO(), fin = addDaysISO(hoy, 60);
+  const planes = (S.agenda || []).filter((a) => a.tipo === 'plan' && !a.grupoId && !a.privada && a.fecha && a.fecha <= fin && (a.fechaFin || a.fecha) >= hoy).length;
+  const grupo = (S.agenda || []).filter((a) => a.tipo === 'plan' && a.grupoId && a.fecha && a.fecha <= fin && (a.fechaFin || a.fecha) >= hoy).length;
+  const tareas = nivel === 'ocupado' ? 0 : (S.tareas || []).filter((t) => !t.privada && t.estado !== 'Completado' && t.fechaLimite && t.fechaLimite >= hoy && t.fechaLimite <= fin).length;
+  return planes + grupo + tareas;
+}
 function renderMovResumen() {
   const p = movPerNorm(S.movPeriodo);
   if (/^m:/.test(p)) { const [y, m] = p.slice(2).split('-').map(Number); S.anioSel = y; S.mesSel = m; S.generalSub = 'mensual';
@@ -5394,7 +5503,7 @@ function planAbrirForm(op) {
   op = op || {}; const a = op.id ? agendaPorId(op.id) : null; S._planVolver = op.volver || null;
   FORM = { kind: 'plan', id: a ? a.id : null, tipo: a ? a.tipo : (op.tipo || 'plan'), titulo: a ? a.titulo : (op.titulo || ''), fecha: a ? (a.fecha || '') : (op.fecha != null ? op.fecha : todayISO()),
     horaModo: a ? (a.hora ? 'hora' : a.fechaFin ? 'varios' : 'dia') : 'dia', hora: a ? horaTxt(a.hora) : '', fechaFin: a ? (a.fechaFin || '') : '', con: a ? (a.grupoId ? 'g:' + a.grupoId : 'yo') : (op.con || 'yo'),
-    lugar: a ? (a.lugar || '') : '', nota: a ? (a.nota || '') : '', aviso: a ? planAviso(a.id) : 'antes', asignado: a ? (a.asignadoA || '') : '', notaAbierta: !!(a && a.nota) };
+    lugar: a ? (a.lugar || '') : '', nota: a ? (a.nota || '') : '', aviso: a ? planAviso(a.id) : 'antes', asignado: a ? (a.asignadoA || '') : '', notaAbierta: !!(a && a.nota), privada: !!(a && a.privada) };
   if (FORM.tipo === 'tarea' && FORM.con === 'yo') { const g = gruposParaPlanes()[0]; FORM.con = g ? 'g:' + g.id : 'yo'; }
   if (FORM.tipo === 'tarea' && !a && op.fecha === undefined) FORM.fecha = '';
   if ($('#sheetBackdrop')) updateSheet(planFormHtml()); else openSheet(planFormHtml());
@@ -5425,6 +5534,7 @@ function planFormHtml() {
   if (!plan && g) { const ms = g.miembros.filter((m) => !m.baja); h += '<div class="field"><label>¿Quién se encarga?</label><div class="cr-caras plan-quien">' +
     '<button type="button" class="cr-cara' + (!F.asignado ? ' on' : '') + '" ' + act('planQuien', '') + '><span class="avatar cara plan-cualquiera">' + ic('users') + '</span><span>Quien pueda</span></button>' +
     ms.map((m) => { const u = aliasDe(g.id, m.user_id); return '<button type="button" class="cr-cara' + (F.asignado && aliasDe(g.id, F.asignado) === aliasDe(g.id, m.user_id) ? ' on' : '') + '" ' + act('planQuien', m.user_id) + '>' + caraHtml(u, m.nombre) + '<span>' + escapeHtml(esMio(g.id, m.user_id) ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>'; }).join('') + '</div></div>'; }
+  if (plan && F.con === 'yo') h += privadaCampoHtml(F.privada, 'pPrivada', 'planPrivada');
   if (plan) h += '<div class="field"><label for="pLugar">¿Dónde? <span class="hint">· opcional</span></label><div class="plan-lugar">' + ic('pin') + '<input id="pLugar" type="text" maxlength="120" placeholder="Restaurante, dirección…" value="' + escapeHtml(F.lugar) + '"></div></div>' +
     '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => chip('planAviso', k, F.aviso === k, l, k === 'antes' ? ic('bell') : '')).join('') + '</div><div class="rec-hint" style="margin:6px 0 0;">Te lo recordamos en Inicio al abrir la app.</div></div>';
   h += '<details class="tf-mas"' + (F.notaAbierta ? ' open' : '') + '><summary>Nota' + ic('chevD') + '</summary><div class="field"><textarea id="pNota" rows="3" maxlength="1000" aria-label="Nota">' + escapeHtml(F.nota) + '</textarea></div></details>';
@@ -5449,6 +5559,7 @@ async function planGuardar() {
   const datos = { titulo, fecha: F.fecha || null, fechaFin: plan && F.horaModo === 'varios' ? F.fechaFin : null, hora: plan && F.horaModo === 'hora' ? F.hora : null,
     lugar: plan ? (String(F.lugar || '').trim() || null) : null, nota: String(F.nota || '').trim() || null };
   if (!plan) datos.asignadoA = F.asignado || null;
+  if (plan && F.con === 'yo' && (F.privada || (F.id && agendaPorId(F.id) && agendaPorId(F.id).privada))) datos.privada = !!F.privada; // solo en planes «Solo yo»
   if (F.guardando) return; F.guardando = true;
   try {
     let a;
@@ -5484,6 +5595,8 @@ function planVerHtml(id) {
     (!a.hechaEn && g && a.asignadoA && !esMio(a.grupoId, a.asignadoA) ? '<a class="btn ghost block plan-recordar" href="https://wa.me/?text=' + encodeURIComponent(tareaRecordarMsg(a)) + '" target="_blank" rel="noopener">' + ic('send') + ' Recordárselo a ' + escapeHtml(nombreDe(a.grupoId, a.asignadoA)) + '</a>' : '');
   h += '<div class="plan-acc">' + (plan ? '<button type="button" class="tema-menu-b" ' + act('planIcs', a.id) + '>' + ic('calendar') + '<span>Añadir a mi calendario</span></button>' : '') +
     (g ? '<button type="button" class="tema-menu-b" ' + act('planOcultar', a.id) + '>' + ic('close') + '<span>Ocultar de mi agenda</span></button>' : '') +
+    (g && plan && agcOn() && agcCompartoAlgo() ? '<button type="button" class="tema-menu-b" ' + act('agcOcultarPlan', a.id) + '>' + ic('candado') + '<span>' + ((S.agcOcultas || new Set()).has(a.id) ? 'Enseñar a quien ve mi agenda' : 'Esconder a quien ve mi agenda') + '</span></button>' : '') +
+    (!g && a.privada ? '<div class="rec-hint">' + ic('candado') + ' Privada · solo tú</div>' : '') +
     (puede ? '<button type="button" class="tema-menu-b" ' + act('planEditar', a.id) + '>' + ic('edit') + '<span>Editar</span></button><button type="button" class="tema-menu-b peligro" ' + act('planBorrar', a.id) + '>' + ic('trash') + '<span>Borrar</span></button>' : '') + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
   return h;
@@ -8012,6 +8125,7 @@ function renderTareaRow(t, o) {
   const partes = [];
   if (!done && t.estado === 'Iniciado') partes.push('En curso');
   if (t.categoria) partes.push(t.categoria);
+  if (t.privada) partes.push('Privada');
   if (!done && t.repetir) partes.push('↻ ' + repTexto(t.repetir).toLowerCase());
   if (done && t.fechaFin) partes.push('Hecha el ' + fmtDateShort(t.fechaFin));
   else if (t.fechaLimite && !(o.dia && !vencida)) partes.push(vencida ? 'Vencida el ' + fmtDateShort(t.fechaLimite) : 'Para el ' + fmtDateShort(t.fechaLimite));
@@ -8110,6 +8224,7 @@ async function saveTarea() {
   const base = ex ? stripId(ex) : { fechaCreacion: todayISO(), fechaInicio: null, fechaFin: null };
   const repetir = leerRepetir();
   if (repetir === undefined) return toast('Pon cada cuánto se repite (1 a 365)');
+  const pv = $('#tPrivada'); if (pv) { if (pv.value === '1') base.privada = true; else if (base.privada) base.privada = false; }
   const data = aplicaEstado(Object.assign(base, {
     nombre, categoria: $('#tCategoria').value, prioridad: FORM.prioridad,
     fechaLimite: $('#tFecha').value || null, comentario: $('#tComentario').value.trim(), repetir,
@@ -8260,7 +8375,7 @@ const BADGES = {
   papelera: ['NUEVO', '2026-10-14'], juntos: ['NUEVO', '2026-10-14'], aspecto: ['NUEVO', '2026-10-14'], metasH: ['NUEVO', '2026-10-13'], amigos: ['NUEVO', '2026-10-14'], hitos: ['NUEVO', '2026-10-13'],
   rentab: ['NUEVO', '2026-10-10'], mesames: ['NUEVO', '2026-10-10'], presup: ['MEJORADO', '2026-10-10'], anual: ['MEJORADO', '2026-10-10'],
   cuentas: ['NUEVO', '2026-10-17'], sincuenta: ['NUEVO', '2026-10-17'],
-  inicioEd: ['NUEVO', '2026-10-29'], informes: ['NUEVO', '2026-10-29'],
+  inicioEd: ['NUEVO', '2026-10-29'], informes: ['NUEVO', '2026-10-29'], agendaComp: ['NUEVO', '2026-10-30'],
   tumes: ['MEJORADO', '2026-10-23'], asivas: ['MEJORADO', '2026-10-23'], cobros: ['MEJORADO', '2026-10-23'], temas: ['NUEVO', '2026-10-23'], planes: ['NUEVO', '2026-10-23'], perfil: ['NUEVO', '2026-10-23'],
 };
 // Una clave que vuelve con fecha nueva (p. ej. NUEVO → MEJORADO) sale otra vez aunque ya la vieras antes de esa fecha.
@@ -9838,6 +9953,26 @@ const H = {
   infOn: ([t], el) => { const C = cfg().informes || {}, v = el && typeof el.checked === 'boolean' ? el.checked : !infCfg().on[t]; saveConfig({ informes: Object.assign({}, C, { on: Object.assign({}, infCfg().on, { [t]: v }) }) }); sentir('tic'); updateSheet(infAjustesHtml()); render(); },
   infDescartar: ([c]) => { infMarcarVisto(c); sentir('tic'); render(); },
   infMovs: ([per]) => { closeSheet(); S.tab = 'movimientos'; S.movVista = 'resumen'; S.movPeriodo = per; S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
+  // Compartir mi agenda (docs/24 §4)
+  agcAbrir: async () => { verBadge('agendaComp'); FORM = { kind: 'agc', vista: '' }; if ($('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando) updateSheet(agcHtml()); else openSheet(agcHtml()); await agcCargar(true); if (FORM && FORM.kind === 'agc') updateSheet(agcHtml()); },
+  agcVista: ([v]) => { if (!FORM || FORM.kind !== 'agc') return; FORM.vista = v || ''; if (!v) { FORM.con = ''; FORM.nivel = ''; } updateSheet(agcHtml()); },
+  agcElegir: ([k]) => { if (!FORM || FORM.kind !== 'agc') return; FORM.con = k; FORM.nivel = 'ocupado'; FORM.vista = 'nuevo'; sentir('tic'); updateSheet(agcHtml()); },
+  agcNivelNuevo: ([v]) => { if (!FORM || FORM.kind !== 'agc') return; FORM.nivel = v; sentir('tic'); updateSheet(agcHtml()); },
+  agcCrear: async () => { const F = FORM; if (!F || F.kind !== 'agc' || !F.con || F.guardando) return; F.guardando = true;
+    try { const k = F.con, p = await S.db.agendaPermisos.crear(k.indexOf('g:') === 0 ? { aGrupo: k.slice(2), nivel: F.nivel || 'ocupado' } : { aUsuario: k.slice(2), nivel: F.nivel || 'ocupado' });
+      S.agcPermisos = (S.agcPermisos || []).concat([p]); F.vista = ''; F.con = ''; sentir('ok'); toast('Listo: ya ve tu agenda'); updateSheet(agcHtml()); render(); }
+    catch (e) { console.error(e); toast(/no_es_amigo|no_autorizado/.test(String(e && e.message)) ? 'Solo puedes compartirla con quien está contigo en un grupo' : errGrupo(e)); } finally { F.guardando = false; } },
+  agcNivel: async ([id, v]) => { const p = (S.agcPermisos || []).find((x) => x.id === id); if (!p || p.nivel === v) return; const antes = p.nivel; p.nivel = v; updateSheet(agcHtml());
+    try { await S.db.agendaPermisos.editar(id, { nivel: v }); sentir('tic'); } catch (e) { console.error(e); p.nivel = antes; toast(errGrupo(e)); updateSheet(agcHtml()); } },
+  agcQuitar: async ([id]) => { const ps = S.agcPermisos || [], p = ps.find((x) => x.id === id); if (!p) return;
+    try { await S.db.agendaPermisos.borrar(id); S.agcPermisos = ps.filter((x) => x.id !== id); sentir('ok'); toast('Ya no la ve'); updateSheet(agcHtml()); render(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
+  agcCapa: ([uid]) => { const c = Object.assign({}, cfg().agendaCapas || {}); if (c[uid] === false) delete c[uid]; else c[uid] = false; saveConfig({ agendaCapas: c }); sentir('tic'); if (FORM && FORM.kind === 'agc' && $('#sheetBackdrop')) updateSheet(agcHtml()); agcCargarOtros().then(render); render(); },
+  agcVer: ([uid, clave]) => { FORM = { kind: 'agcVer' }; openSheet(agcVerHtml(uid, clave)); },
+  agcOcultarPlan: async ([id]) => { const oc = S.agcOcultas || (S.agcOcultas = new Set()), estaba = oc.has(id);
+    try { if (estaba) { await S.db.agendaPermisos.mostrar(id); oc.delete(id); toast('Quien ve tu agenda lo verá como hueco ocupado'); } else { await S.db.agendaPermisos.ocultar(id); oc.add(id); toast('Escondido a quien ve tu agenda'); }
+      sentir('tic'); if (FORM && FORM.kind === 'planVer') updateSheet(planVerHtml(id)); } catch (e) { console.error(e); toast(errGrupo(e)); } },
+  privadaPoner: ([id, v]) => { const el = $('#' + id); if (el) el.value = v ? '1' : ''; const c = $('#' + id + 'Campo'); if (c) c.outerHTML = privadaCampoHtml(!!v, id); sentir('tic'); },
+  planPrivada: ([, v]) => { planLeerForm(); if (!FORM || FORM.kind !== 'plan') return; FORM.privada = !!v; sentir('tic'); updateSheet(planFormHtml()); },
   iwReset: () => { const F = FORM; if (!F || F.kind !== 'iwEd') return; F.lista = iwDefecto(); F.aviso = ''; iwGuardar(); },
   asiVasGuardar: async () => { if (!FORM || FORM.kind !== 'asiVas') return; const v = FORM.v.slice(); closeSheet(); await saveConfig({ asiVas: v.every((x) => x === 'auto') ? null : v }); sentir('ok'); render(); toast('Listo: así verás tu «Así vas»'); },
   invAvisoVer: () => { saveConfig({ invAvisoVisto: isoSemana(todayISO()) }); H.irDinero(['inversiones']); },
