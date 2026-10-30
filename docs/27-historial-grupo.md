@@ -35,7 +35,7 @@
 - Cara de la persona con su color fijo (`colorPersona`) y una insignia pequeña con el icono de la app: `plus` (apuntó, verde), `edit` (cambió, azul), `trash` (borró, rojo), `history` (recuperó, morado), `swap` (pago). Sin emojis.
 - Si un cambio toca varias cosas, la línea pequeña enseña la que más importa (importe → reparto → quién pagó → fecha → nombre) y «+2 cosas más».
 - Días: «Hoy», «Ayer», «Miércoles, 28 de octubre». Horas con la del móvil.
-- Pie: «Se guarda un año» (pendiente de decisión, §6).
+- Pie: «Se guarda 6 meses» (decidido el 30/10).
 
 ### 2.2 Al tocar una fila (`27-cambio-oscuro.png`)
 
@@ -105,9 +105,9 @@ Dos filas de chips de 40 px: **personas** (Todos, Ana, Bea, Carlos, Tú; se desl
 ## 8. Preguntas para el dueño
 
 1. ✅ **Decidido por el dueño (30/10):** sí, cualquiera que pueda cambiar gastos en ese grupo. **(Bloqueaba la tanda 2)** ¿Quién puede recuperar lo que borró otro? Recomendamos: **cualquiera que pueda cambiar gastos en ese grupo** (con «Solo quien lo apuntó o un administrador», solo ellos).
-2. **(Bloquea la tanda 1)** ¿Cuánto tiempo se guarda el historial y se puede recuperar? Recomendamos **un año para las dos cosas** (una sola cifra, fácil de explicar).
-3. ¿Inicio avisa solo de borrados y cambios que mueven tu saldo (recomendado), o de cualquier cambio en tus grupos?
-4. ¿Empezamos ya por la tanda 0 (no toca la base de datos) mientras Datos y Seguridad revisa el resto?
+2. ✅ **Decidido (30/10): 6 meses** para el historial y para recuperar. **(Bloqueaba la tanda 1)** ¿Cuánto tiempo se guarda el historial y se puede recuperar? Recomendamos **un año para las dos cosas** (una sola cifra, fácil de explicar).
+3. ✅ **Decidido (30/10): solo borrados y cambios** que hagan otros y que te toquen (lo nuevo apuntado ya se avisa hoy). ¿Inicio avisa solo de borrados y cambios que mueven tu saldo (recomendado), o de cualquier cambio en tus grupos?
+4. ✅ Tanda 0 hecha por delegación (30/10). ¿Empezamos ya por la tanda 0 (no toca la base de datos) mientras Datos y Seguridad revisa el resto?
 
 ## 9. Lo que no hemos podido averiguar o confirmar
 
