@@ -2246,3 +2246,7 @@ html[data-look="nuevo"] .agc-niveles { display: flex; flex-direction: column; ga
 html[data-look="nuevo"] .agc-revisar { display: flex; gap: 10px; align-items: flex-start; font-size: var(--fs-s); line-height: 1.4; color: var(--text-muted); margin: 12px 0; }
 html[data-look="nuevo"] .agc-revisar svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--accent); }
 html[data-look="nuevo"] .cal2-card ~ .agc-laven, html[data-look="nuevo"] .empty-mini + .agc-laven, html[data-look="nuevo"] .list + .agc-laven { margin-top: 12px; }
+
+/* docs/27 tanda 0: quién lo apuntó y quién lo cambió */
+html[data-look="nuevo"] .comp-autor { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 12.5px; color: var(--text-faint); line-height: 1.4; }
+html[data-look="nuevo"] .comp-autor svg { width: 14px; height: 14px; flex: none; }
