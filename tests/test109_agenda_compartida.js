@@ -23,6 +23,10 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
       borrar: async (id) => { llamadas.borrar.push(id); perms = perms.filter((x) => x.id !== id); return null; },
       deOtro: async (p, desde, hasta) => { llamadas.deOtro.push([p, desde, hasta]); return [{ clave: 'k1', tipo: 'plan', fecha: hoy, fecha_fin: null, hora: '19:00:00', titulo: 'Pádel', lugar: null, nota: null, nivel: 'titulos' }, { clave: 'k2', tipo: 'plan', fecha: hoy, fecha_fin: null, hora: '21:00:00', titulo: null, lugar: null, nota: null, nivel: 'ocupado' }]; },
       ocultar: async () => null, mostrar: async () => null } });
+  // desde la propia Agenda, si aún no la compartes
+  H.goTab(['agenda']); A.S.agendaDia = hoy; A.render(); await sleep(60); A.render(); await sleep(20);
+  const bt = c().querySelector('.agc-compartir');
+  ok(bt && /Compartir mi agenda/.test(bt.textContent) && /agcAbrir/.test(bt.getAttribute('data-click')), 'la Agenda tiene «Compartir mi agenda» si aún no la compartes');
   // Tú → Compartir mi agenda
   H.goTab(['tu']); await sleep(20);
   ok(doc.querySelector('[data-click^="agcAbrir"]'), 'Tú tiene «Compartir mi agenda»');
