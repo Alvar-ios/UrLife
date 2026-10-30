@@ -104,6 +104,13 @@ const hoy=loc(new Date()), dHoy=Number(hoy.slice(8));
  const nueva=ts.find(([id,x])=>id!=='t1'&&x.nombre==='Regar plantas');
  ok(nueva&&nueva[1].fechaLimite===add(hoy,5)&&nueva[1].estado==='Pendiente'&&nueva[1].repetir.unidad==='semana','se crea la siguiente para dentro de 5 días ('+(nueva&&nueva[1].fechaLimite)+')');
  ok(e.store.tareas.t1.estado==='Completado'&&e.store.tareas.t1.repetir===null,'la completada deja de repetirse');
+ ok(!('privada' in nueva[1]),'una tarea normal que se repite no manda «privada»');
+ // 30/10 (docs/24b): una tarea privada que se repite sigue privada
+ e.store.tareas.t9={nombre:'Médico',categoria:'',prioridad:'Media',estado:'Pendiente',fechaLimite:add(hoy,-2),comentario:'',fechaCreacion:hoy,repetir:{cada:1,unidad:'semana'},privada:true};
+ notify('tareas');await sleep(20);
+ click(e,'toggleTarea','t9');await sleep(60);
+ const nuevaP=Object.entries(e.store.tareas).find(([id,x])=>id!=='t9'&&x.nombre==='Médico');
+ ok(nuevaP&&nuevaP[1].privada===true,'la siguiente de una tarea privada sigue privada');
  // reabrir y volver a completar no duplica
  e.w.__APP__.H.goTab(['tareas']);click(e,'setTareasSub','completadas');await sleep(10);click(e,'toggleTarea','t1');await sleep(40);click(e,'setTareasSub','completadas');click(e,'setTareasSub','activas');await sleep(10);click(e,'toggleTarea','t1');await sleep(40);
  ok(Object.values(e.store.tareas).filter(x=>x.nombre==='Regar plantas').length===2,'reabrir y completar otra vez no duplica');

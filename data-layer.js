@@ -298,10 +298,25 @@
   /* ---- planes y tareas compartidas (23/10, tabla «agenda»). Nunca se borran de verdad: «borrado» y se pueden recuperar ---- */
   function deAgenda(r) {
     return { id: r.id, grupoId: r.grupo_id || null, tipo: r.tipo, titulo: r.titulo, fecha: r.fecha || null, fechaFin: r.fecha_fin || null, hora: r.hora || null, lugar: r.lugar || null, nota: r.nota || null,
-      asignadoA: r.asignado_a || null, hechaEn: r.hecha_en || null, hechaPor: r.hecha_por || null, creadoPor: r.creado_por, createdAt: r.created_at, updatedAt: r.updated_at, editadoPor: r.editado_por };
+      asignadoA: r.asignado_a || null, hechaEn: r.hecha_en || null, hechaPor: r.hecha_por || null, creadoPor: r.creado_por, createdAt: r.created_at, updatedAt: r.updated_at, editadoPor: r.editado_por, privada: !!r.privada };
   }
-  var agenda = tablaCompartida('agenda', ['id', 'grupoId', 'tipo', 'titulo', 'fecha', 'fechaFin', 'hora', 'lugar', 'nota', 'asignadoA'], deAgenda, ['grupo_id', 'tipo']);
+  var agenda = tablaCompartida('agenda', ['id', 'grupoId', 'tipo', 'titulo', 'fecha', 'fechaFin', 'hora', 'lugar', 'nota', 'asignadoA', 'privada'], deAgenda, ['grupo_id', 'tipo']);
   agenda.restaurar = function (id) { return q(sb.from('agenda').update({ borrado: null }).eq('id', id).select().single()).then(function (r) { return r ? deAgenda(r) : null; }); };
+  /* ---- compartir mi agenda (30/10, docs/24 y 24b): con quién la compartes; lo que ven lo recorta el servidor (agenda_de) ---- */
+  function dePermiso(r) { return { id: r.id, aUsuario: r.a_usuario || null, aGrupo: r.a_grupo || null, nivel: r.nivel, planes: r.planes !== false, tareas: r.tareas !== false, createdAt: r.created_at }; }
+  var agendaPermisos = {
+    listar: function () { return q(sb.from('agenda_permisos').select('*').order('created_at')).then(function (rs) { return (rs || []).map(dePermiso); }); },
+    crear: function (o) { var row = { nivel: o.nivel || 'ocupado', planes: o.planes !== false, tareas: o.tareas !== false }; if (o.aUsuario) row.a_usuario = o.aUsuario; else row.a_grupo = o.aGrupo;
+      return q(sb.from('agenda_permisos').insert(row).select().single()).then(dePermiso); },
+    editar: function (id, o) { var row = {}; ['nivel', 'planes', 'tareas'].forEach(function (k) { if (o[k] !== undefined) row[k] = o[k]; });
+      return q(sb.from('agenda_permisos').update(row).eq('id', id).select().single()).then(dePermiso); },
+    borrar: function (id) { return q(sb.from('agenda_permisos').delete().eq('id', id)); },
+    ocultas: function () { return q(sb.from('agenda_ocultas').select('agenda_id')).then(function (rs) { return (rs || []).map(function (r) { return r.agenda_id; }); }); },
+    ocultar: function (agendaId) { return q(sb.from('agenda_ocultas').insert({ agenda_id: agendaId })); },
+    mostrar: function (agendaId) { return q(sb.from('agenda_ocultas').delete().eq('agenda_id', agendaId)); },
+    deOtro: function (persona, desde, hasta) { return q(sb.rpc('agenda_de', { p_persona: persona, p_desde: desde, p_hasta: hasta })); },
+    conmigo: function () { return q(sb.rpc('agendas_conmigo', {})); }
+  };
   /* ---- temas de un grupo (23/10; en la base de datos, «carpetas»). Nunca se borran de verdad: «borrado» y se pueden recuperar ---- */
   var carpetas = tablaCompartida('grupo_carpetas', ['id', 'grupoId', 'nombre', 'icono', 'desde', 'hasta', 'cerrada'], function (r) {
     return { id: r.id, grupoId: r.grupo_id, nombre: r.nombre, icono: r.icono || 'tag', desde: r.desde || null, hasta: r.hasta || null, cerrada: r.cerrada || null,
@@ -325,5 +340,5 @@
     return q(sb.from('objetivo_aportes').update({ borrado: new Date().toISOString() }).eq('user_id', currentUid).eq('mov_id', movId).is('borrado', null).select('id'));
   };
 
-  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
+  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, agendaPermisos: agendaPermisos, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
 })();
