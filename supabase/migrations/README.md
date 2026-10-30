@@ -138,3 +138,12 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - Antes de aplicarla se probó entera dentro de una transacción que se deshizo, con 4 cuentas inventadas: sin permiso no se ve nada; «ocupado» no manda títulos ni tareas; «títulos» sin lugar ni nota; lo privado, sin fecha y hecho nunca llega; planes de grupos ajenos solo como «ocupado»; nunca ids reales; al salir del grupo o dejar de compartir se deja de ver al momento; sin sesión, nada; rango máximo 92 días.
 - Comprobado después: 45 tareas y 5 planes sin cambios, 0 privados, RLS activo en las dos tablas nuevas. Los avisos de Supabase solo muestran `agenda_de` y `agendas_conmigo` ejecutables con sesión, que es lo buscado.
 - Pendiente en la app (antes de enseñar «Privada»): copiar `privada` al repetir una tarea (`crearSiguienteTarea`) y mandarlo solo en planes «Solo yo».
+
+## Historial del grupo (30/10): historial_compartidos — PARTES A, C y D APLICADAS; B PENDIENTE
+- SQL en `2026-10-30_historial_compartidos.sql` (propuesta en `docs/27` §5; decisiones del dueño del 30/10: recupera quien pueda cambiar gastos, 6 meses, Inicio solo borrados y cambios; «sí» a A, B, C y D).
+- A (aditiva): tabla `compartidos_historial` (RLS: solo SELECT para miembros activos y solo lo de 6 meses; nadie con sesión escribe; `anon` nada; sin Realtime), disparador `historial_compartido` (after insert/update; solo los campos que cambian), funciones `historial_grupo`, `historial_nuevos` (con sesión) y `limpiar_historial_compartidos` (solo el sistema).
+- C: lo borrado de los últimos 6 meses entró como filas «borrado» (8 filas). No toca ningún gasto (33 vivos, 41 en total, igual que antes).
+- D: pg_cron `limpiar-historial-compartidos`, lunes 03:15 UTC; borra solo filas del historial de más de 6 meses.
+- Antes de aplicarla se probó A+B entera en la base real dentro de una transacción que se deshizo (5 cuentas inventadas): 50 de 50 bien.
+- B (no aditiva: reemplaza `validar_compartido`, copia en `copias/validar_compartido_2026-10-30.sql`) se aplicará el día que la app tenga «Recuperar», repitiendo la prueba antes.
+- Avisos de Supabase después: solo `historial_grupo` e `historial_nuevos` ejecutables con sesión, que es lo buscado.
