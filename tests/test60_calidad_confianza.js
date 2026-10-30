@@ -48,7 +48,7 @@ function server(uid) {
     },
     objetivos: { suscribir: (next) => { setTimeout(() => next([]), 0); return () => {}; } },
     aportes: { suscribir: (next) => { setTimeout(() => next([]), 0); return () => {}; } },
-    rpc: async (fn) => err('?' + fn),
+    rpc: async (fn, p) => { if (fn === 'historial_grupo' || fn === 'historial_nuevos') return []; if (fn === 'recuperar_compartido') { const c = DB.comp.find((x) => x.id === p.p_id); if (!c || !activo(c.grupoId, uid)) err('no_autorizado'); if (!c.borrado) err('no_borrado'); c.borrado = false; setTimeout(notifyComp, 5); return null; } err('?' + fn); },
   };
 }
 function env(uid, opts) {
@@ -127,7 +127,8 @@ const vivos = (f) => DB.comp.filter((c) => !c.borrado && f(c));
   ok(await borrarComp(a, 'cSuper', 'g1'), 'Ana puede borrar el súper (grupo «todos»)');
   // (decisión de Desarrollo, 18/10/2026) «Deshacer» solo se ofrece con lo que pagaste y apuntaste tú: recuperar lo de otra persona
   // le rompería su copia personal y su permiso. Aquí se avisa y no hay botón.
-  ok(!a.doc.querySelector('#toast .toast-btn') && /no se puede deshacer/.test(toastTxt(a)), 'borrar lo que pagó Bea: sin «Deshacer» y con un aviso claro');
+  // (30/10/2026, docs/27) «Deshacer» ahora recupera el MISMO gasto (mismo id y mismo autor), así que ya se ofrece siempre
+  ok(!!a.doc.querySelector('#toast .toast-btn'), 'borrar lo que pagó Bea: con «Deshacer» (recupera el mismo gasto)');
   const b1 = env('uB'); await sleep(250); const B1 = b1.w.__APP__;
   ok(!vivos((c) => c.descripcion === 'Súper').length && Math.abs(superDeBea(B1) - 60) < 0.001, 'el súper deja de ser compartido; a Bea le queda su cargo del banco (60 €), como siempre que se borra un compartido que pagó');
 
@@ -142,11 +143,13 @@ const vivos = (f) => DB.comp.filter((c) => !c.borrado && f(c));
   ok(reLuz && copias.length === 1 && DB.movs.uA.mA1 && DB.movs.uA.mA1.compartidoId === reLuz.id && DB.movs.uA.mA1.cuentaId === 'k1', 'vuelve una sola copia, con el mismo id, su cuenta y enlazada al nuevo gasto');
   const luzEf = A.movsEfectivos().filter((m) => m.descripcion === 'Luz').reduce((s, m) => s + Number(m.importe), 0);
   ok(Math.abs(luzEf - 15) < 0.001, 'en los números de Ana la luz cuenta 15 € (su parte), sin sumar la copia');
-  ok(reLuz && (A.cfg().cuentaJuntos || {})[reLuz.id] === 'k9' && !(A.cfg().cuentaJuntos || {}).cLuz, 'y recupera la cuenta desde la que la pagó');
+  ok(reLuz && reLuz.id === 'cLuz' && (A.cfg().cuentaJuntos || {}).cLuz === 'k9', 'vuelve el mismo gasto (mismo id) y recupera la cuenta desde la que la pagó');
 
   /* ---------- 4. «Solo quien lo apuntó»: si la administradora borra y deshace, Bea debe poder seguir cambiando su gasto ---------- */
   ok(await borrarComp(a, 'cCena', 'g3'), 'la administradora puede borrar la cena de Bea');
-  ok(!a.doc.querySelector('#toast .toast-btn'), 'y no se ofrece «Deshacer» (así la cena nunca pasa a ser de Ana)');
+  a.doc.querySelector('#toast .toast-btn').click(); await sleep(150);
+  const cena = DB.comp.find((c) => c.id === 'cCena');
+  ok(cena && !cena.borrado && cena.creadoPor === 'uB', 'al deshacer vuelve la misma cena y sigue siendo de Bea (así Bea puede seguir cambiándola)');
 
   /* ---------- 5. «Deshacer» cuando ya no estás en el grupo ---------- */
   DB.comp.push({ id: 'cAgua', grupoId: 'g1', fecha: HOY, tipo: 'Gasto', categoria: 'Restaurantes', descripcion: 'Agua', importe: 8, pagadoPor: 'uA', reparto: { uA: 4, uB: 4 }, modo: 'igual', creadoPor: 'uA', createdAt: '2026-10-17T13:00:00Z' });
