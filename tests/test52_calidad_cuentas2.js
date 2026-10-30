@@ -164,7 +164,7 @@ const DOS = () => [{ id: 'c1', nombre: 'Banco', saldo: 1000, fecha: hace(40), pr
   H.openMovForm(['c:' + kt]); await sleep(20);
   H.deleteComp([], { getAttribute: () => '1' }); await sleep(60);
   ok(!DB.comp.some((c) => c.id === kt) && !Object.values(DB.movs).some((m) => m.compartidoId === kt), 'eliminar el ticket compartido borra el compartido y tu copia');
-  ok(!(kt in mapa()), 'al eliminarlo también debería borrarse su entrada en cuentaJuntos (se queda guardada sin uso)');
+  ok(kt in mapa(), 'al eliminarlo se guarda su cuenta en cuentaJuntos (desde el 30/10, por si alguien lo recupera: vuelve a su cuenta)');
   ok(saldo('c2') === 60, 'quitado el ticket de prueba, Efectivo vuelve a 60');
 
   /* 9. «No compartir» un gasto que salió de Efectivo */

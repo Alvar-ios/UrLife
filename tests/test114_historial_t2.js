@@ -85,12 +85,12 @@ const hace = (min) => new Date(Date.now() - min * 60000).toISOString();
   // Inicio: avisa del borrado y del cambio de Bea que te tocan (no del tuyo, ni de lo que no mueve tu saldo)
   A.S.tab = 'inicio'; A.render(); await sleep(120);
   const ini = appTxt(a);
-  ok(/Bea cambió «Cena»/.test(ini) && /a tu saldo −3,00 €/.test(ini) && /y 1 cambio más/.test(ini), 'Inicio: «Bea cambió «Cena»» · a tu saldo −3,00 € · y 1 cambio más [' + (ini.match(/Bea[^€]*€[^·]*·?[^·]*/) || [''])[0] + ']');
+  ok(/Bea cambió «Cena»/.test(ini) && /a tu saldo −3,00 €/.test(ini) && /Y 1 cambio más/.test(ini), 'Inicio: «Bea cambió «Cena»» · Y 1 cambio más [' + (ini.match(/Bea[^€]*€[^·]*·?[^·]*/) || [''])[0] + ']');
   ok(!/Cambiaste/.test(ini), 'Inicio no avisa de lo que cambiaste tú');
   // abrir el historial desde Inicio marca lo visto y el aviso desaparece
   A.H.histVer(['g1']); await sleep(80);
   const t = sh(a);
-  ok(/Recuperar/.test(t) && /Bea verá que lo has recuperado tú/.test(t), 'en el historial: «Recuperar» en lo borrado y la nota de que Bea lo verá');
+  ok(/Recuperar/.test(t) && /Todo el grupo verá que lo has recuperado tú/.test(t), 'en el historial: «Recuperar» en lo borrado y la nota de que todo el grupo lo verá');
   ok(a.doc.querySelectorAll('.hist-rec').length === 1, 'un solo botón «Recuperar» (solo en lo borrado que puedes recuperar)');
   fallo = 'plazo_pasado'; await A.H.histRecuperar(['g1', 8]); await sleep(40);
   ok(rec === 0 && /más de 6 meses/.test(toastTxt(a)), 'si ha pasado el plazo: aviso claro');

@@ -2899,7 +2899,7 @@ async function quitarCompartido() {
   if (!c) { FORM.compId = null; return true; }
   if (c.pagadoPor !== miUid()) { toast('Solo quien lo pagó puede dejar de compartirlo. Si no se hizo, elimínalo.'); return false; }
   try { await S.db.compartidos.borrar(c.id); } catch (e) { console.error(e); toast(errGrupo(e)); return false; }
-  compQuitarLocal(c.id); olvidarCuentaComp(c.id); FORM.compId = null; FORM.compQuitado = true;
+  compQuitarLocal(c.id); FORM.compId = null; FORM.compQuitado = true;
   return true;
 }
 async function doDeleteComp() {
@@ -2908,7 +2908,7 @@ async function doDeleteComp() {
   // lo que hace falta para «Deshacer»: el gasto tal cual, la cuenta desde la que lo pagaste y tu copia personal
   const copia = c0 ? copiaComp(c0) : null, cuenta = c0 ? (cfg().cuentaJuntos || {})[id] || null : null, m0 = mio ? S.movimientos.find((m) => m.id === mio) : null, miaCopia = m0 ? { id: mio, data: stripId(m0) } : null;
   try { await S.db.compartidos.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
-  compQuitarLocal(id); olvidarCuentaComp(id);
+  compQuitarLocal(id); // la cuenta (cfg().cuentaJuntos) se guarda: si alguien lo recupera, vuelve a su cuenta (decisión del dueño, 30/10)
   if (mio) await write(() => S.db.collection('movimientos').doc(mio).delete());
   toast('Gasto compartido eliminado', copia ? { deshacer: () => deshacerBorradoComp(id, copia, cuenta, miaCopia) } : {}); render(); terminarForm();
 }
@@ -4200,7 +4200,7 @@ function nombreEnGrupo(gid, uid) { const g = grupoDe(gid), mm = g && g.miembros.
 function histAvisos() {
   const st = (S.hist || {})._; if (!st || !st.filas.length) return [];
   const vistos = cfg().historialVisto || {}, desde = cfg().historialAvisoDesde || '';
-  return st.filas.filter((f) => (f.accion === 'borrado' || f.accion === 'editado') && f.por && !esMio(f.gid, f.por) && grupoDe(f.gid) &&
+  return st.filas.filter((f) => (f.accion === 'borrado' || f.accion === 'editado' || f.accion === 'recuperado') && f.por && !esMio(f.gid, f.por) && grupoDe(f.gid) &&
     f.en > (vistos[f.gid] || '') && f.en > desde && Math.abs(histEfecto(f) || 0) >= 0.005);
 }
 function histAvisosCargar() {
@@ -4215,7 +4215,7 @@ function avisosInicioFilas() {
   const ha = histAvisos();
   if (ha.length) { const f = ha[0], ef = histEfecto(f), g = grupoDe(f.gid);
     filas.push({ cls: 'juntos-nov', caras: caraHtml(aliasDe(f.gid, f.por), histQuien(f), 'mini'), t: histFraseHtml(f),
-      d: escapeHtml(nombreDestino(g) + ' · a tu saldo ' + (ef > 0 ? '+' : '−') + money(Math.abs(ef)) + (ha.length > 1 ? ' · y ' + (ha.length - 1) + (ha.length === 2 ? ' cambio más' : ' cambios más') : '')), a: act('histVer', f.gid) }); }
+      d: escapeHtml((ha.length > 1 ? 'Y ' + (ha.length - 1) + (ha.length === 2 ? ' cambio más' : ' cambios más') + ' · ' : '') + 'a tu saldo ' + (ef > 0 ? '+' : '−') + money(Math.abs(ef)) + ' · ' + nombreDestino(g)), a: act('histVer', f.gid) }); }
   if (nov.length) {
     const c = nov[0], quien = nombreEnGrupo(c.grupoId, c.creadoPor), liq = c.tipo === 'Liquidación', rec = Object.keys(c.reparto || {})[0];
     const que = liq ? (esMio(c.grupoId, c.pagadoPor) ? 'Pagaste ' + money(c.importe) + ' a ' + nombreEnGrupo(c.grupoId, rec) : nombreEnGrupo(c.grupoId, c.pagadoPor) + (esMio(c.grupoId, rec) ? ' te pagó ' + money(c.importe) : ' pagó a ' + nombreEnGrupo(c.grupoId, rec))) : quien + ' apuntó «' + (c.descripcion || c.categoria || 'un gasto') + '»', parteTxt = liq || miParte(c) < 0.005 ? '' : ' · tu parte ' + money(miParte(c));
@@ -6610,12 +6610,12 @@ function histHtml(gid) {
     const cara = f.por ? caraHtml(aliasDe(f.gid, f.por), q === 'Tú' ? (String(cfg().nombre || '').trim() || 'Tú') : q) : '<span class="avatar cara" style="background:var(--text-faint)" aria-hidden="true">?</span>';
     const rec = histPuedeRecuperar(f);
     h += '<div class="hist-f' + (rec ? ' con-rec' : '') + '"><button type="button" class="hist-main tappable" ' + act('histDetalle', gid, f.id) + '><span class="hist-cara">' + cara + '<i class="hist-ins ' + cls + '">' + ic(ico) + '</i></span>' +
-      '<span class="hist-x"><b>' + histFraseHtml(f) + '</b><span>' + histLineaHtml(f) + '</span></span>' +
+      '<span class="hist-x"><b>' + histFraseHtml(f) + '</b><span>' + histLineaHtml(f) + (rec && ef != null && Math.abs(ef) >= 0.005 ? escapeHtml(' · ' + (ef > 0 ? '+' : '−') + money(Math.abs(ef)) + ' a tu saldo') : '') + '</span></span>' +
       (rec ? '' : '<span class="hist-v">' + (ef == null ? (f.lote ? '' : '<span>sin cambio</span>') : '<b class="tnum" style="color:' + saldoColor(ef) + '">' + (ef > 0.004 ? '+' : ef < -0.004 ? '−' : '') + money(Math.abs(ef)) + '</b><span>tu saldo</span>') + '</span>') + '</button>' +
       (rec ? '<button type="button" class="hist-rec" ' + act('histRecuperar', gid, f.id) + ' aria-label="Recuperar «' + escapeHtml(histNombreGasto(f)) + '»">' + ic('history') + ' Recuperar</button>' : '') + '</div>';
   });
   if (dia) h += '</div>';
-  if (vis.some(histPuedeRecuperar)) { const b = vis.find(histPuedeRecuperar); h += '<div class="rec-hint">Recuperar devuelve el gasto tal cual estaba, para todo el grupo. ' + escapeHtml(histQuien(b) === 'Tú' || histQuien(b) === 'Alguien' ? 'El grupo verá que lo has recuperado tú.' : histQuien(b) + ' verá que lo has recuperado tú.') + '</div>'; }
+  if (vis.some(histPuedeRecuperar)) h += '<div class="rec-hint">Recuperar devuelve el gasto tal cual estaba, para todo el grupo. Todo el grupo verá que lo has recuperado tú.</div>';
   if (st.mas && st.filas.length) h += '<button type="button" class="btn ghost block hist-mas" ' + act('histMas', gid) + (st.cargando ? ' disabled' : '') + '>' + (st.cargando ? 'Cargando…' : 'Ver más') + '</button>';
   h += '<div class="rec-hint hist-pie">Se guarda 6 meses. Lo ven todos los del grupo.</div>';
   return h + '<div class="actions"><button class="btn ghost block" ' + act('histVolver', gid) + '>Volver</button></div>';
@@ -6633,16 +6633,17 @@ function histDetalleHtml(gid, id) {
       return '<div class="hist-tf"><span>' + escapeHtml(l) + '</span><s>' + escapeHtml(histValor(f, k, f.antes[k])) + '</s><b>' + escapeHtml(histValor(f, k, f.despues[k])) + '</b></div>'; }).join('') + '</div>' +
       '<div class="rec-hint">Lo que no sale aquí no cambió.</div>'; }
   else h += '<div class="card hist-tabla"><div class="hist-tf"><span>Importe</span><b>' + money(f.accion === 'creado' ? num(f.despues.importe) : f.importe) + '</b></div><div class="hist-tf"><span>Pagó</span><b>' + escapeHtml(histPersona(f, f.accion === 'creado' ? f.despues.pagado_por : f.pagadoPor)) + '</b></div></div>' +
-    (f.accion === 'borrado' ? '<div class="rec-hint">' + (!f.borrado ? 'Ya se ha recuperado.' : histPuedeRecuperar(f) ? 'Sigue borrado. Al recuperarlo, tu saldo en el grupo cambia ' + (function () { const v = efectoMio(histGasto(f, 'despues')); return (v > 0.004 ? '+' : v < -0.004 ? '−' : '') + money(Math.abs(v)); })() + '.' : 'Sigue borrado.') + '</div>' : '');
-  if (ef != null) h += '<div class="hist-saldo ' + (ef < -0.004 ? 'de' : ef > 0.004 ? 'te' : 'paz') + '"><span>A tu saldo en el grupo</span><b class="tnum">' + (ef > 0.004 ? '+' : ef < -0.004 ? '−' : '') + money(Math.abs(ef)) + '</b></div>';
+    (f.accion === 'borrado' ? '<div class="rec-hint">' + (!f.borrado ? 'Ya se ha recuperado.' : histPuedeRecuperar(f) ? (function () { const v = efectoMio(histGasto(f, 'despues')); return 'Sigue borrado.' + (Math.abs(v) < 0.005 ? '' : ' Al recuperarlo, tu saldo en el grupo ' + (v > 0 ? 'sube ' : 'baja ') + money(Math.abs(v)) + '.'); })() : 'Sigue borrado.') + '</div>' : '');
+  if (ef != null) h += '<div class="hist-saldo ' + (ef < -0.004 ? 'de' : ef > 0.004 ? 'te' : 'paz') + '"><span>' + (f.accion === 'borrado' ? 'Al borrarlo, a tu saldo' : 'A tu saldo en el grupo') + '</span><b class="tnum">' + (ef > 0.004 ? '+' : ef < -0.004 ? '−' : '') + money(Math.abs(ef)) + '</b></div>';
   const vivo = compPorId(f.cid);
   return h + '<div class="actions">' + (vivo && !f.lote ? '<button class="btn ghost block" ' + act('histGasto', f.cid) + '>Ver el gasto</button>' : '') + (histPuedeRecuperar(f) ? '<button class="btn ghost block" ' + act('histRecuperar', gid, f.id) + '>' + ic('history') + ' Recuperar</button>' : '') + '<button class="btn accent block" ' + act('histVer', gid) + '>' + ic('check') + ' Entendido</button></div>';
 }
 // Recuperar un gasto borrado (docs/27 tanda 2): vuelve tal cual estaba, para todo el grupo. Devuelve true si se pudo.
-async function recuperarComp(id) {
+async function recuperarComp(id, op) {
   try { await S.db.rpc('recuperar_compartido', { p_id: id }); return true; }
   catch (e) {
     console.error(e); const m = String((e && (e.message || e.code)) || e);
+    if (op && op.yaVale && /no_borrado/.test(m)) return true; // otra persona lo recuperó antes: para «Deshacer» vale igual
     toast(/plazo_pasado/.test(m) ? 'Han pasado más de 6 meses: ya no se puede recuperar' : /grupo_cerrado/.test(m) ? 'El grupo está cerrado: no se puede recuperar' : /no_borrado/.test(m) ? 'Ya estaba recuperado' : /no_autorizado/.test(m) ? AVISO_PERMISO : errGrupo(e));
     return false;
   }
@@ -6666,25 +6667,13 @@ function histMarcarVisto(gid) {
 }
 /* ---- «Deshacer» al borrar un gasto compartido o un pago: se vuelve a crear igual (y tu copia y su cuenta) ---- */
 function copiaComp(c) { const o = {}; ['grupoId', 'fecha', 'tipo', 'categoria', 'subcategoria', 'descripcion', 'importe', 'pagadoPor', 'reparto', 'modo', 'objetivoId', 'articulos'].forEach((k) => { if (c[k] != null) o[k] = JSON.parse(JSON.stringify(c[k])); }); return o; }
-// Solo se ofrece «Deshacer» con lo que pagaste y apuntaste tú: al recuperarlo se crea de nuevo, y así no se rompe la copia
-// personal ni el permiso de otra persona (el autor pasa a ser quien recupera).
-function puedeDeshacerComp(c) { const g = c && c.grupoId; return !!c && esMio(g, c.pagadoPor) && (!c.creadoPor || esMio(g, c.creadoPor)); }
 // «Deshacer» un borrado: se recupera el mismo gasto (mismo id, mismo autor) y se vuelven a poner tu cuenta y tu copia personal
 async function deshacerBorradoComp(id, copia, cuenta, mio) {
   if (copia._hecho) return; copia._hecho = true; // un solo «Deshacer», aunque se toque dos veces
   if (!grupoDe(copia.grupoId)) return toast('Ya no estás en ese grupo: no se puede recuperar');
-  if (!(await recuperarComp(id))) return;
+  if (!(await recuperarComp(id, { yaVale: true }))) return;
   if (cuenta) guardarCuentaComp(id, cuenta);
   if (mio) await write(() => S.db.collection('movimientos').doc(mio.id).set(Object.assign({}, mio.data, { compartidoId: id })));
-  render(); toast('Recuperado');
-}
-async function rehacerComp(copia, cuenta, mio) {
-  if (copia._hecho) return; copia._hecho = true; // un solo «Deshacer», aunque se toque dos veces
-  if (!grupoDe(copia.grupoId)) return toast('Ya no estás en ese grupo: no se puede recuperar');
-  let c;
-  try { c = await S.db.compartidos.crear(copia); } catch (e) { console.error(e); return toast(errGrupo(e)); }
-  compAplicarLocal(c); if (cuenta) guardarCuentaComp(c.id, cuenta);
-  if (mio) await write(() => S.db.collection('movimientos').doc(mio.id).set(Object.assign({}, mio.data, { compartidoId: c.id })));
   render(); toast('Recuperado');
 }
 /* ---- botón + : todo lo que se puede crear ---- */
@@ -10727,7 +10716,7 @@ const H = {
     if (c && !puedeEditarComp(c)) return toast(AVISO_PERMISO);
     const copia = c ? copiaComp(c) : null, cuenta = c ? (cfg().cuentaJuntos || {})[id] || null : null;
     try { await S.db.compartidos.borrar(id); } catch (e) { console.error(e); return toast(errGrupo(e)); }
-    compQuitarLocal(id); olvidarCuentaComp(id); toast('Pago eliminado', copia ? { deshacer: () => deshacerBorradoComp(id, copia, cuenta, null) } : {}); render();
+    compQuitarLocal(id); toast('Pago eliminado', copia ? { deshacer: () => deshacerBorradoComp(id, copia, cuenta, null) } : {}); render();
     if (c && grupoDe(c.grupoId)) abrirGrupo(c.grupoId); else closeSheet();
   }),
   personaNueva: () => { FORM = { kind: 'personaNueva' }; updateSheet(personaNuevaHtml()); },
