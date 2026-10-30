@@ -1,4 +1,4 @@
--- 30/10/2026 · historial_compartidos. APLICADAS el 30/10: parte A + C (migración historial_compartidos_a) y D (pg_cron, lunes 03:15 UTC). PARTE B PENDIENTE (con la pantalla «Recuperar»). Ver docs/27 §5 y §6.
+-- 30/10/2026 · historial_compartidos. TODO APLICADO el 30/10: A + C (historial_compartidos_a), D (pg_cron, lunes 03:15 UTC) y B (historial_compartidos_b). Ver docs/27 §5 y §6.
 -- Decisiones del dueño (30/10): recupera quien pueda cambiar gastos del grupo; el historial dura 6 meses;
 -- Inicio solo avisa de borrados y cambios de otros que te toquen (eso se filtra en la app).
 --

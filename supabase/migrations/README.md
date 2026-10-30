@@ -139,11 +139,11 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - Comprobado después: 45 tareas y 5 planes sin cambios, 0 privados, RLS activo en las dos tablas nuevas. Los avisos de Supabase solo muestran `agenda_de` y `agendas_conmigo` ejecutables con sesión, que es lo buscado.
 - Pendiente en la app (antes de enseñar «Privada»): copiar `privada` al repetir una tarea (`crearSiguienteTarea`) y mandarlo solo en planes «Solo yo».
 
-## Historial del grupo (30/10): historial_compartidos — PARTES A, C y D APLICADAS; B PENDIENTE
+## Historial del grupo (30/10): historial_compartidos — APLICADA (A, B, C y D)
 - SQL en `2026-10-30_historial_compartidos.sql` (propuesta en `docs/27` §5; decisiones del dueño del 30/10: recupera quien pueda cambiar gastos, 6 meses, Inicio solo borrados y cambios; «sí» a A, B, C y D).
 - A (aditiva): tabla `compartidos_historial` (RLS: solo SELECT para miembros activos y solo lo de 6 meses; nadie con sesión escribe; `anon` nada; sin Realtime), disparador `historial_compartido` (after insert/update; solo los campos que cambian), funciones `historial_grupo`, `historial_nuevos` (con sesión) y `limpiar_historial_compartidos` (solo el sistema).
 - C: lo borrado de los últimos 6 meses entró como filas «borrado» (8 filas). No toca ningún gasto (33 vivos, 41 en total, igual que antes).
 - D: pg_cron `limpiar-historial-compartidos`, lunes 03:15 UTC; borra solo filas del historial de más de 6 meses.
 - Antes de aplicarla se probó A+B entera en la base real dentro de una transacción que se deshizo (5 cuentas inventadas): 50 de 50 bien.
-- B (no aditiva: reemplaza `validar_compartido`, copia en `copias/validar_compartido_2026-10-30.sql`) se aplicará el día que la app tenga «Recuperar», repitiendo la prueba antes.
+- B (no aditiva: reemplaza `validar_compartido`, copia en `copias/validar_compartido_2026-10-30.sql`) APLICADA el 30/10 por la tarde, con la app de «Recuperar» (migración `historial_compartidos_b`). Antes se comprobó que la función real seguía igual que la copia (mismo md5); después, comprobación en una transacción deshecha: crear, cambiar, borrar (fecha del servidor), recuperar (vuelve igual, mismo autor), doble recuperar = `no_borrado`, historial creado → editado → borrado → recuperado. Para deshacer B: ejecutar la copia y `drop function public.recuperar_compartido(uuid)`.
 - Avisos de Supabase después: solo `historial_grupo` e `historial_nuevos` ejecutables con sesión, que es lo buscado.
