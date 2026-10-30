@@ -4946,7 +4946,8 @@ function agcCarasHtml() {
   const ven = la.map((p) => p.aUsuario ? agcPersonaNombre(p.aUsuario) : (grupoDe(p.aGrupo) ? nombreDestino(grupoDe(p.aGrupo)) : 'un grupo'));
   const caras = cm.length ? '<div class="agc-caras" role="group" aria-label="Agendas que ves">' + '<span class="agc-cara on yo">' + caraHtml(miUid(), miNombreAlguno(), 'mini') + '<span>Yo</span></span>' +
     cm.map((p) => { const on = agcCapaOn(p.uid), n = agcPersonaNombre(p.uid); return '<button type="button" class="agc-cara' + (on ? ' on' : '') + '" aria-pressed="' + on + '" style="--pc:' + colorPersona(p.uid) + '" ' + act('agcCapa', p.uid) + '>' + caraHtml(p.uid, n, 'mini') + '<span>' + escapeHtml(n.split(' ')[0]) + '</span></button>'; }).join('') + '</div>' : '';
-  const laVen = ven.length ? '<button type="button" class="agc-laven" ' + act('agcAbrir') + '>' + ic('users') + '<span>La ven ' + escapeHtml(ven.length > 2 ? ven.slice(0, 2).join(', ') + ' y ' + (ven.length - 2) + ' más' : ven.join(' y ')) + '</span>' + ic('chevR') + '</button>' : '';
+  const laVen = ven.length ? '<button type="button" class="agc-laven" ' + act('agcAbrir') + '>' + ic('users') + '<span>La ven ' + escapeHtml(ven.length > 2 ? ven.slice(0, 2).join(', ') + ' y ' + (ven.length - 2) + ' más' : ven.join(' y ')) + '</span>' + ic('chevR') + '</button>'
+    : S._agcTs && !S.agcError && amigos().length ? '<button type="button" class="agc-laven agc-compartir" ' + act('agcAbrir') + '>' + ic('users') + '<span>Compartir mi agenda' + badge('agendaComp') + '</span>' + ic('chevR') + '</button>' : ''; // también desde la propia Agenda
   return caras + laVen;
 }
 /* ---- hoja «Compartir mi agenda» ---- */
