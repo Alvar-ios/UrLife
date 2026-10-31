@@ -7,7 +7,7 @@
   add({ tipo: 'Ingreso', categoria: 'Nómina', importe: 1850, fecha: dia(-25), descripcion: 'Nómina de la empresa con un nombre bastante largo' });
   [['Supermercado', 84.35, -2, 'Compra semanal en el súper del barrio'], ['Restaurantes', 36, -3, 'Cena'], ['Transporte', 42.5, -5, 'Gasolina'], ['Ocio', 18.9, -6, 'Cine y palomitas'],
    ['Hogar', 620, -20, 'Alquiler'], ['Suscripciones', 12.99, -8, 'Música'], ['Salud', 23.4, -9, 'Farmacia'], ['Ropa', 59.95, -11, 'Zapatillas de correr muy cómodas'], ['Supermercado', 47.1, -12, 'Mercado'], ['Restaurantes', 22, -1, 'Desayuno']]
-    .forEach(function (x) { add({ tipo: 'Gasto', categoria: x[0], importe: x[1], fecha: dia(x[2]), descripcion: x[3] }); });
+    .forEach(function (x) { add({ tipo: 'Gasto', categoria: x[0], importe: x[1], fecha: dia(x[2]), descripcion: x[3], articulos: x[2] === -2 ? [{ n: 'Pan', i: 1.2 }] : undefined }); });
   add({ tipo: 'Factura', categoria: 'Luz', importe: 61.2, fecha: dia(-14), descripcion: 'Luz' });
   add({ tipo: 'Ahorro', categoria: 'Viaje a Japón', importe: 150, fecha: dia(-15), descripcion: '' });
   add({ tipo: 'Inversión', categoria: 'Fondo indexado', importe: 200, fecha: dia(-16), descripcion: '' });

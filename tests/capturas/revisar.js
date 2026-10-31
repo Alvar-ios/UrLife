@@ -7,14 +7,14 @@ const RAIZ = path.join(__dirname, '..', '..'), SALIDA = path.resolve(process.arg
 const PANTALLAS = [
   ['inicio', 'A.S.tab="inicio";A.render()'],
   ['movimientos', 'A.S.tab="movimientos";A.render()'],
-  ['mov-lista', 'A.S.tab="movimientos";A.H.movVista&&A.H.movVista(["lista"]);A.render()'],
+  ['mov-lista', 'A.S.tab="movimientos";A.render();A.H.setMovVista(["lista"])'],
   ['juntos', 'A.S.tab="juntos";A.render()'],
   ['grupo', 'A.S.tab="juntos";A.render();A.H.grupoVer([C.G1])'],
   ['historial', 'A.S.tab="juntos";A.render();A.H.histVer([C.G1])'],
   ['dinero', 'A.S.tab="dinero";A.render()'],
   ['agenda', 'A.S.tab="agenda";A.render()'],
   ['tu', 'A.S.tab="tu";A.render()'],
-  ['mas', 'A.S.tab="inicio";A.render();A.openCrear&&A.openCrear()'],
+  ['mas', 'A.S.tab="inicio";A.S.inicioSub="";A.S.inicioVista="";A.render();A.openCrear()'],
 ];
 // en la página: busca textos cortados (sin «…» a propósito) y cosas que se salen por la derecha
 function revisarPagina() {
@@ -22,7 +22,8 @@ function revisarPagina() {
   const enScroll = (el) => { for (let p = el.parentElement; p; p = p.parentElement) { const s = getComputedStyle(p); if (/(auto|scroll)/.test(s.overflowX) && p.scrollWidth > p.clientWidth + 1) return true; } return false; };
   const nombre = (el) => el.tagName.toLowerCase() + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : '');
   if (document.documentElement.scrollWidth > W + 1) out.push({ tipo: 'scroll lateral', donde: 'página', txt: 'la página se puede mover a los lados (' + document.documentElement.scrollWidth + ' px)' });
-  document.querySelectorAll('#app *, #sheetHost *').forEach((el) => {
+  const SEL = document.querySelector('#sheetBackdrop') ? '#sheetHost *' : '#app *';
+  document.querySelectorAll(SEL).forEach((el) => {
     if (!vis(el) || enScroll(el)) return;
     const s = getComputedStyle(el), txt = (el.textContent || '').trim().replace(/\s+/g, ' ');
     if (!txt) return;
@@ -33,12 +34,13 @@ function revisarPagina() {
     else if (propio && puntos && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1 && el.clientWidth < 0.5 * el.scrollWidth && txt.length <= 24)
       out.push({ tipo: 'texto muy recortado (sale menos de la mitad)', donde: nombre(el), txt: txt.slice(0, 60) });
     const r = el.getBoundingClientRect();
-    if (propio && r.right > W + 1 && s.position !== 'fixed') out.push({ tipo: 'se sale por la derecha', donde: nombre(el), txt: txt.slice(0, 60) });
+    const recorta = () => { for (let q = el.parentElement; q && q !== document.body; q = q.parentElement) if (getComputedStyle(q).overflowX !== 'visible' && q.getBoundingClientRect().right <= W + 1) return true; return false; };
+    if (propio && r.right > W + 1 && s.position !== 'fixed' && !recorta()) out.push({ tipo: 'se sale por la derecha', donde: nombre(el), txt: txt.slice(0, 60) });
   });
   // textos que se pisan entre sí (dos textos distintos, ninguno dentro del otro)
   const arriba = (el, r) => { const x = r.left + r.width / 2, y = r.top + r.height / 2; if (x < 0 || y < 0 || x > W || y > window.innerHeight) return false; const t = document.elementFromPoint(x, y); return !!t && (t === el || el.contains(t)); };
   const T = [];
-  document.querySelectorAll('#app *, #sheetHost *').forEach((el) => { if (!vis(el) || enScroll(el)) return; el.childNodes.forEach((n) => { if (n.nodeType !== 3 || !n.textContent.trim()) return;
+  document.querySelectorAll(SEL).forEach((el) => { if (!vis(el) || enScroll(el)) return; el.childNodes.forEach((n) => { if (n.nodeType !== 3 || !n.textContent.trim()) return;
     const rg = document.createRange(); rg.selectNodeContents(n); let r = rg.getBoundingClientRect();
     for (let q = el; q && q !== document.body; q = q.parentElement) { if (getComputedStyle(q).overflowX !== 'visible') { const c = q.getBoundingClientRect(), l = Math.max(r.left, c.left), rt = Math.min(r.right, c.right); r = { left: l, right: rt, top: r.top, bottom: r.bottom, width: rt - l, height: r.height }; } } if (r.width > 2 && r.height > 2 && arriba(el, r)) T.push({ el, r }); }); });
   for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++) {

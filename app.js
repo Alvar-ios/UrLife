@@ -1515,7 +1515,7 @@ function renderMovRowBase(m) {
   const cu = !c && hayVariasCuentas() && tocaCuenta(m) ? cuentaPorId(cuentaIdDe(m)) : null;
   return '<div class="row' + (tx.meta ? '' : ' solo') + (S._aterriza && S._aterriza === m.id ? ' aterriza' : '') + '" ' + abrir + '>' +
     movIcHtml(m, cu) +
-    '<div class="main"><div class="ttl">' + escapeHtml(tx.ttl) + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
+    '<div class="main"><div class="ttl' + (c || m.articulos ? ' con-ic' : '') + '"><span class="ttl-t">' + escapeHtml(tx.ttl) + '</span>' + (c ? '<span class="comp-tag" title="Compartido">' + ic('users') + '</span>' : '') + ((m.articulos || (c && c.articulos)) ? '<span class="comp-tag" title="Con ticket">' + ic('receipt') + '</span>' : '') + '</div>' +
     (tx.meta ? '<div class="meta">' + escapeHtml(tx.meta) + '</div>' : '') + '</div>' +
     (c && c.tipo === 'Liquidación' && m.flujo
       ? (() => { const sale = c.pagadoPor === miUid(), v = sale ? num(c.importe) : num((c.reparto || {})[miUid()]);

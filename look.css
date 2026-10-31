@@ -2294,3 +2294,7 @@ html[data-look="nuevo"] .hist-tf > :not(:first-child) { text-align: right; }
 html[data-look="nuevo"] .hist-saldo { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 14px; margin: 10px 0; background: var(--surface-2, rgba(127,127,127,.1)); font-size: 14px; }
 html[data-look="nuevo"] .hist-saldo.de b { color: var(--expense); }
 html[data-look="nuevo"] .hist-saldo.te b { color: var(--income); }
+/* 31/10: en Movimientos, los iconos «Compartido» y «Con ticket» quedan siempre a la vista; el texto se corta con «…» */
+html[data-look="nuevo"] .row .ttl.con-ic { display: flex; align-items: center; }
+html[data-look="nuevo"] .row .ttl.con-ic .ttl-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .row .ttl.con-ic .comp-tag { flex: none; }
