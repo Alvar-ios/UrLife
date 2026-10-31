@@ -58,6 +58,7 @@ npm test        # ejecuta todas; node run.js 31 ejecuta solo las que contienen �
 - Simulan la app en un navegador falso (jsdom) con datos de ejemplo. Deben pasar todas antes de publicar.
 - Cada cambio nuevo lleva su prueba (añádela a un `testN.js` existente o crea uno nuevo con `require('./harness.js')`).
 - Si cambias un texto que una prueba comprueba, actualiza la prueba y dilo.
+- Capturas (31/10, C4 de `docs/11`): `node tests/capturas/revisar.js` hace capturas de las pantallas principales a 390 y 375 px, en claro y oscuro, con datos inventados (`tests/capturas/datos-falsos.js`), y avisa de textos cortados, que se pisan o que se salen. Pásalo tras tocar el aspecto; no va en `npm test` (usa Chromium).
 - No uses datos reales de usuarios en las pruebas (ni correos, ni importes, ni nombres completos).
 
 ## Trabajo en curso

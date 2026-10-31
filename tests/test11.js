@@ -33,7 +33,8 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
    ok(!/Tu mes <span class="badge-new/.test(t),'«Tu mes» ya no lleva etiqueta: se entró desde las novedades'); }
  e.w.__APP__.H.goTab(['dinero']);await sleep(20);
  const btn=n=>[...e.doc.querySelectorAll('#content .chips-nav button')].find(b=>b.textContent.startsWith(n));
- ok(/badge-dot/.test(btn('Inversiones').innerHTML)&&/badge-dot/.test(btn('Metas').innerHTML),'puntos en las pestañas Inversiones y Metas');
+ { const A=e.w.__APP__,vivos=A.badgeActivo('inversiones')&&A.badgeActivo('metas'); // 31/10: las etiquetas caducan a los 21 días; la prueba no puede depender del día
+  ok(vivos?(/badge-dot/.test(btn('Inversiones').innerHTML)&&/badge-dot/.test(btn('Metas').innerHTML)):(!/badge-dot/.test(btn('Inversiones').innerHTML)),'puntos en las pestañas Inversiones y Metas (o ninguno si sus etiquetas ya caducaron)'); }
  e.w.__APP__.H.setAnalisisSub(['inversiones']);await sleep(20);
  ok(!/badge-dot/.test(btn('Inversiones').innerHTML),'al entrar desaparece');
  // quien ya la vio no la vuelve a ver

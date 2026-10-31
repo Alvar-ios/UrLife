@@ -470,7 +470,7 @@ html[data-look="nuevo"] .mov-buscar input::-webkit-search-cancel-button { displa
 html[data-look="nuevo"] .mov-pres { font-size: var(--fs-s); color: var(--text-muted); margin: -2px 2px var(--sp-3); }
 html[data-look="nuevo"] .mov-pres .link { margin-left: 6px; }
 /* filas: lo que distingue arriba; sin texto, la categoría sola y en grande */
-html[data-look="nuevo"] .row .ttl { font-size: 15px; display: flex; align-items: center; gap: 4px; }
+html[data-look="nuevo"] .row .ttl { font-size: 15px; } /* 31/10: sin display:flex, que impedía los «…» y cortaba el título a mitad de letra (C4) */
 html[data-look="nuevo"] .row.solo .ttl { font-size: 15.5px; }
 html[data-look="nuevo"] .mov-ic { position: relative; }
 html[data-look="nuevo"] .mov-ic.t-cat { color: var(--cc); background: var(--paper-sunken); background: color-mix(in srgb, var(--cc) 17%, transparent); }
@@ -1816,8 +1816,8 @@ html[data-look="nuevo"] .aj-vacio b { font-size: 15.5px; }
 html[data-look="nuevo"] .aj-vacio span:not(.aj-vacio-ic) { font-size: 13.5px; color: var(--text-dim); line-height: 1.45; }
 
 /* ---- Restos de Calidad (24/10) ---- */
-html[data-look="nuevo"] .tu2-quien .t { display: flex; align-items: center; gap: 6px; min-width: 0; }
-html[data-look="nuevo"] .tu2-quien .t-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .tu2-quien .t { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; min-width: 0; } /* 31/10: si no cabe, «NUEVO» baja de línea en vez de cortar el nombre */
+html[data-look="nuevo"] .tu2-quien .t-n { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-look="nuevo"] .tu2-quien .t .badge-new { flex: none; }
 html[data-look="nuevo"] .tema-fila-x b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 html[data-look="nuevo"] .tema-cab h2 { overflow-wrap: anywhere; min-width: 0; }
