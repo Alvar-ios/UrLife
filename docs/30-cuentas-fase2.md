@@ -187,3 +187,8 @@ La tanda 6 no depende de las demás y puede ir antes si el dueño la quiere prim
 - `docs/PLAN_CUENTAS.md` y `docs/ROADMAP.md`, 31/10/2026.
 
 Para el PDF: un dibujo con dos extractos (Santander y ING) y una flecha que los une en un solo traspaso, y debajo la vista previa con los grupos «Ya lo tenías», «¿Es el mismo?» y «Traspaso».
+
+
+## Decisiones del dueño (31/10/2026)
+- Sí: «Convertir en traspaso» conserva el lote, así que «Deshacer importación» también borra ese traspaso.
+- Publicados los arreglos de importar (miles, «Marcar las nuevas», contador) antes de la tanda 1.
