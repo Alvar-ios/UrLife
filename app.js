@@ -8900,6 +8900,7 @@ function adivinarColumnas(I) {
   if (map.fecha == null) { let b = -1; cab.forEach((_, k) => { if (usadas.has(k)) return; const n = cuenta(k, (v) => parseFechaImp(v, 'dmy')); if (n > b && n >= 2) { b = n; map.fecha = k; } }); if (map.fecha != null) usadas.add(map.fecha); }
   if (map.importe == null && map.cargo == null) { let b = -1; cab.forEach((c, k) => { if (usadas.has(k) || /saldo|balance/.test(c)) return; const n = cuenta(k, (v) => parseNum(v) != null && parseFechaImp(v, 'dmy') == null); if (n > b && n >= 2) { b = n; map.importe = k; } }); if (map.importe != null) usadas.add(map.importe); }
   if (map.desc == null) { let b = -1; cab.forEach((_, k) => { if (usadas.has(k)) return; const n = cuenta(k, (v) => typeof v === 'string' && /[a-z]{3}/i.test(v) && parseNum(v) == null); if (n > b && n >= 2) { b = n; map.desc = k; } }); }
+  { const ks = cab.findIndex((c, k) => !usadas.has(k) && /saldo|balance/.test(c)); if (ks >= 0) map.saldo = ks; } // docs/30 tanda 2
   I.map = map;
   I.modoImporte = map.importe == null && (map.cargo != null || map.abono != null) ? 'dos' : 'uno';
   // formato de fecha: si algún primer número pasa de 12, es día/mes
@@ -8979,7 +8980,7 @@ function impHtml() {
       (I.modoImporte === 'uno' ? fila('importe', 'Importe') +
         '<div class="imp-map"><label>Los importes…</label><select ' + onChange('impSigno') + '>' + [['signo', 'Llevan signo: − gasto, + ingreso'], ['gastos', 'Son todos gastos'], ['ingresos', 'Son todos ingresos']].map(([v, l]) => '<option value="' + v + '"' + (I.signo === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div>'
         : fila('cargo', 'Cargos (gastos)', true) + fila('abono', 'Abonos (ingresos)', true)) +
-      fila('desc', 'Descripción', true) + fila('desc2', 'Más detalle', true) + fila('cat', 'Categoría', true) + fila('tipo', 'Tipo (gasto, ingreso…)', true) +
+      fila('desc', 'Descripción', true) + fila('desc2', 'Más detalle', true) + fila('cat', 'Categoría', true) + fila('tipo', 'Tipo (gasto, ingreso…)', true) + fila('saldo', 'Saldo (opcional)', true) +
       '<div class="imp-map"><label>Formato de fecha</label><select ' + onChange('impFmt') + '><option value="dmy"' + (I.fmtFecha === 'dmy' ? ' selected' : '') + '>día/mes/año</option><option value="mdy"' + (I.fmtFecha === 'mdy' ? ' selected' : '') + '>mes/día/año</option></select></div>' +
       '<div class="rec-prev">Primera fila: <b>' + [muestra('fecha'), I.modoImporte === 'uno' ? muestra('importe') : (muestra('cargo') || muestra('abono')), muestra('desc')].filter(Boolean).join(' · ') + '</b></div>' +
       '<div class="actions"><button class="btn ghost block" ' + act('impVolver', 'archivo') + '>Atrás</button><button class="btn accent block" ' + act('impRevisar') + (hayVariasCuentas() && !I.cuenta ? ' disabled' : '') + '>' + (hayVariasCuentas() && !I.cuenta ? 'Elige la cuenta' : 'Ver vista previa') + '</button></div>';
@@ -9019,6 +9020,8 @@ function impHtml() {
       '<div class="kpi-row" style="margin-bottom:10px;"><div class="kpi"><div class="v tnum">' + sel.length + '</div><div class="l">A importar</div></div>' +
       '<div class="kpi income"><div class="v tnum">' + moneyShort(tot('in')) + '</div><div class="l">Ingresos</div></div>' +
       '<div class="kpi expense"><div class="v tnum">' + moneyShort(tot('out')) + '</div><div class="l">Gastos</div></div></div>' +
+      (I.saldoChk ? (impSaldoOk(I) ? '<div class="imp-note ok"><span class="ic-ok">' + ic('checkCircle') + '</span> Los importes cuadran con la columna Saldo del banco.</div>'
+        : '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> Los importes no cuadran con la columna Saldo (' + I.saldoChk.ok + ' de ' + I.saldoChk.total + '). Puede que el signo o la columna de importe no sean los correctos. <button type="button" class="link" ' + act('impVolver', 'columnas') + '>Revisar columnas</button></div>') : '') +
       (nImp ? '<div class="imp-note">✓ ' + nImp + (nImp === 1 ? ' fila ya estaba importada' : ' filas ya estaban importadas') + ': se omiten.</div>' : '') +
       (nDup ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nDup + (nDup === 1 ? ' fila ya la tenías' : ' filas ya las tenías') + ' (mismo importe y fecha' + (cuenta0 ? ' en ' + escapeHtml(nombreCuenta(cuenta0)) : '') + ', o ya está en Juntos). Van desmarcadas; márcalas si son distintas.</div>' : '') +
       (nQ ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nQ + (nQ === 1 ? ' fila se parece' : ' filas se parecen') + ' a algo que apuntaste unos días antes o después. Dinos si es lo mismo.</div>' : '') +
@@ -9031,12 +9034,13 @@ function impHtml() {
       '<div class="imp-bulk"><button type="button" class="link" ' + act('impTodas', '1') + '>Marcar las nuevas</button> · <button type="button" class="link" ' + act('impTodas', '0') + '>Desmarcar todas</button></div>' +
       '<div class="imp-list">' + visibles.slice(0, LIM).map(filaHtml).join('') + '</div>' +
       (visibles.length > LIM ? '<button class="btn ghost block" style="margin-top:8px;" ' + act('impVerTodo') + '>Ver las ' + visibles.length + ' filas</button>' : '') +
-      '<div class="actions"><button class="btn ghost block" ' + act('impVolver', 'columnas') + '>Atrás</button>' + (sel.length ? '<button class="btn accent block" ' + act('impEjecutar') + '>Importar ' + sel.length + '</button>' : '<button class="btn accent block" ' + act('closeSheet') + '>Cerrar: no hay nada nuevo</button>') + '</div>';
+      '<div class="actions"><button class="btn ghost block" ' + act('impVolver', 'columnas') + '>Atrás</button>' + (sel.length ? '<button class="btn accent block" ' + act('impEjecutar') + '>' + (I.saldoChk && !impSaldoOk(I) ? 'Importar igualmente (' + sel.length + ')' : 'Importar ' + sel.length) + '</button>' : '<button class="btn accent block" ' + act('closeSheet') + '>Cerrar: no hay nada nuevo</button>') + '</div>';
   }
   if (I.paso === 'importando') return h2('Importando…') + '<div style="color:var(--text-muted);font-size:14px;">Guardando ' + I.total + ' movimientos. No cierres la app.</div>';
   if (I.paso === 'hecho') {
     return h2(I.fallo ? 'Importación incompleta' : '¡Importado!') +
       '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '<span class="ic-warn">' + ic('alert') + '</span> ' + 'No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '<span class="ic-ok">' + ic('checkCircle') + '</span> ' + (I.hechos ? 'Se han guardado <b>' + I.hechos + '</b> ' + (I.hechos === 1 ? 'movimiento' : 'movimientos') + (hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? ' en <b>' + escapeHtml(nombreCuenta(I.cuenta)) + '</b>.' : '.') : 'No había nada nuevo: ya tenías todo lo de este archivo.') + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.' : '')) + '</div>' +
+      impSaldoTarjetaHtml(I) +
       (I.hechos ? '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Tú → Importaciones.</div>' : '') +
       '<div class="actions">' + (I.hechos ? '<button class="btn ghost block" ' + act('impDeshacer', I.lote) + '>Deshacer</button>' : '') + '<button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
   }
@@ -9050,6 +9054,7 @@ function impPrepararHoja(i) {
   const perfil = (cfg().importPerfiles || {})[firmaArchivo(I)];
   if (perfil) { Object.assign(I, { map: Object.assign({}, perfil.map), modoImporte: perfil.modoImporte, signo: perfil.signo, fmtFecha: perfil.fmtFecha }); I.perfil = true; }
   else { adivinarColumnas(I); I.perfil = false; }
+  if (perfil && !('saldo' in (perfil.map || {}))) { const ks = cabecerasDe(I).map(normDesc).findIndex((c) => /saldo|balance/.test(c)); if (ks >= 0) I.map.saldo = ks; } // formatos guardados antes de la columna Saldo
   impCuentaInicial(I, perfil);
 }
 
@@ -9086,6 +9091,56 @@ function impCandidatos(cuenta) {
   return out;
 }
 function impDias(a, b) { const x = parseISO(a), y = parseISO(b); return x && y ? Math.round(Math.abs(x - y) / 864e5) : 99; }
+
+/* ---- docs/30 tanda 2: la columna Saldo del extracto comprueba que los importes se han leído bien y sirve para cuadrar ---- */
+function impSaldoComprobar(I, filas) {
+  I.saldoChk = null; I.saldoFin = null;
+  const F = filas.filter((o) => o.fecha && o.sig != null && o.saldo != null && isFinite(o.saldo));
+  if (F.length < 2) return;
+  let okAsc = 0, okDesc = 0; const pares = F.length - 1, cerca = (a, b) => Math.abs(a - b) < 0.005;
+  for (let k = 0; k < pares; k++) { const a = F[k], b = F[k + 1];
+    if (cerca(a.saldo + b.sig, b.saldo)) okAsc++; // del más viejo al más nuevo
+    if (cerca(b.saldo + a.sig, a.saldo)) okDesc++; } // del más nuevo al más viejo
+  const asc = okAsc >= okDesc || (okAsc === okDesc && F[0].fecha <= F[F.length - 1].fecha);
+  I.saldoChk = { ok: asc ? okAsc : okDesc, total: pares };
+  const ult = asc ? F[F.length - 1] : F[0];
+  I.saldoFin = { fecha: ult.fecha, valor: Math.round(ult.saldo * 100) / 100 };
+}
+function impSaldoOk(I) { return !!I.saldoChk && I.saldoChk.ok >= Math.max(1, Math.ceil(I.saldoChk.total * 0.9)); }
+// el saldo que calcula la app para una cuenta al final de un día
+function saldoCuentaEn(c, dia, extra) {
+  if (!c || c.saldo == null || !c.fecha || dia < c.fecha) return null;
+  const vivos = new Set((S.compartidos || []).map((x) => x.id)), en = (x) => posteriorA(x, c) && (x.fecha || '') <= dia;
+  let s = num(c.saldo);
+  const ids = new Set(S.movimientos.map((m) => m.id)), todos = S.movimientos.concat((extra || []).filter((m) => !ids.has(m.id))); // lo recién importado aún no ha llegado del servidor
+  todos.forEach((m) => { if (m.compartidoId && vivos.has(m.compartidoId)) return; if (cuentaIdDe(m) === c.id && en(m)) s += num(m.importe) * (SIGNO_CUENTA[m.tipo] || 0); });
+  flujosCompartidos().forEach((f) => { if (f.cuentaId === c.id && en(f)) s += f.v; });
+  (S.traspasos || []).forEach((t) => { if (!en(t)) return; if (t.cuentaId === c.id) s -= num(t.importe); if (t.cuentaDestinoId === c.id) s += num(t.importe); });
+  return Math.round(s * 100) / 100;
+}
+function impSaldoCuenta(I) { const cs = cuentasCfg(); return hayVariasCuentas() ? cuentaPorId(I.cuenta) : cs[0] || null; }
+function impSaldoTarjetaHtml(I) {
+  const fin = I.saldoFin, c = impSaldoCuenta(I);
+  if (!fin || !c || !impSaldoOk(I) || I.saldoHecho) return I.saldoHecho ? '<div class="card imp-saldo"><span class="ic-ok">' + ic('checkCircle') + '</span> ' + escapeHtml(I.saldoHecho) + '</div>' : '';
+  if (c.fecha && c.fecha > fin.fecha) return ''; // ya está cuadrada con un dato más reciente: no se va hacia atrás
+  const f = fmtDateShort(fin.fecha), nom = escapeHtml(c.nombre);
+  if (c.saldo == null || !c.fecha) return '<div class="card imp-saldo"><b>El extracto dice que el ' + f + ' tenías <span class="tnum">' + money(fin.valor) + '</span> en ' + nom + '.</b><span>¿Usamos ese saldo como punto de partida? Desde ahí la app suma y resta lo que apuntes.</span>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('impSaldoNo') + '>Ahora no</button><button class="btn accent block" ' + act('impSaldoUsar') + '>Usar este saldo</button></div></div>';
+  const app = saldoCuentaEn(c, fin.fecha, I.recien); if (app == null) return '';
+  const dif = Math.round((fin.valor - app) * 100) / 100;
+  if (Math.abs(dif) < 0.005) return '<div class="card imp-saldo"><span class="ic-ok">' + ic('checkCircle') + '</span> Cuadra: la app y el banco dicen lo mismo el ' + f + ' (' + money(fin.valor) + ').</div>';
+  return '<div class="card imp-saldo"><b>El banco dice <span class="tnum">' + money(fin.valor) + '</span> el ' + f + '. La app calcula <span class="tnum">' + money(app) + '</span>.</b><span>Diferencia <b class="tnum">' + (dif > 0 ? '+' : '−') + money(Math.abs(dif)) + '</b>. Si cuadras, la app usará el saldo del banco desde ese día.</span>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('impSaldoNo') + '>Ahora no</button><button class="btn accent block" ' + act('impSaldoUsar') + '>Cuadrar con el banco</button></div></div>';
+}
+function impSaldoUsar() {
+  const I = IMP, fin = I && I.saldoFin, c0 = I && impSaldoCuenta(I); if (!fin || !c0) return;
+  const cs = (cfg().cuentas || []).slice(), i = cs.findIndex((x) => x && x.id === c0.id); if (i < 0) return;
+  const c = Object.assign({}, cs[i]), app = c.saldo != null && c.fecha ? saldoCuentaEn(c, fin.fecha, I.recien) : null, dif = app == null ? 0 : Math.round((fin.valor - app) * 100) / 100;
+  Object.assign(c, { saldo: fin.valor, fecha: fin.fecha, ts: Date.now(), cuadre: { fecha: fin.fecha, dif } });
+  cs[i] = c; saveConfig({ cuentas: cs }); sentir('ok');
+  I.saldoHecho = app == null ? 'Saldo de ' + c.nombre + ' puesto: ' + money(fin.valor) + ' el ' + fmtDateShort(fin.fecha) + '.' : dif ? 'Cuadrado con el banco. Ajuste de ' + (dif > 0 ? '+' : '−') + money(Math.abs(dif)) + '.' : 'Cuadrado: todo coincide.';
+  updateSheet(impHtml()); render();
+}
 function impProcesar() {
   const I = IMP, m = I.map, filas = I.hoja.filas.slice(I.cab + 1);
   const uid = (S.user && S.user.id) || '';
@@ -9125,7 +9180,8 @@ function impProcesar() {
     const base = uid + '|' + fecha + '|' + imp.toFixed(2) + '|' + normDesc(desc);
     ocurr[base] = (ocurr[base] || 0) + 1;
     const id = 'imp-' + hash53(base + '|' + ocurr[base]);
-    out.push({ n: i, id, base, oc: ocurr[base], fecha, importe: valor, tipo, categoria, origenCat, desc, esTras, abs: Math.abs(imp) });
+    const sal = m.saldo != null && m.saldo !== '' ? parseNum(col(f, m.saldo)) : null;
+    out.push({ n: i, id, base, oc: ocurr[base], fecha, importe: valor, tipo, categoria, origenCat, desc, esTras, abs: Math.abs(imp), sig: imp, saldo: sal });
   });
   // 1.ª pasada: lo que ya estaba importado se queda con su pareja antes de buscar parecidos (si no, un gasto nuevo podría «robársela»)
   out.forEach((o) => {
@@ -9153,6 +9209,7 @@ function impProcesar() {
     if (esTras && estado === 'nuevo') estado = 'traspaso';
     Object.assign(o, { id: idF, estado, con, incluir: estado === 'nuevo' }); delete o.base; delete o.oc; delete o.esTras; delete o.abs;
   });
+  impSaldoComprobar(I, out);
   I.filas = out;
 }
 // Lo que trae el archivo y aún no existe en tu configuración (categorías, fuentes de ingreso, facturas, metas, deudas)
@@ -9223,7 +9280,7 @@ async function impEjecutar() {
   const perfiles = Object.assign({}, c.importPerfiles || {}, { [firmaArchivo(I)]: Object.assign({ map: I.map, modoImporte: I.modoImporte, signo: I.signo, fmtFecha: I.fmtFecha, usado: todayISO() }, cuentaImp ? { cuenta: cuentaImp } : {}) });
   const extra = hechos && I.anadirConfig !== false ? impPatchConfig(sel).patch : {};
   saveConfig(Object.assign({ importLotes: lotes, importPerfiles: perfiles }, extra));
-  Object.assign(I, { paso: 'hecho', hechos, fallo, configNuevos: Object.keys(extra).length });
+  Object.assign(I, { paso: 'hecho', hechos, fallo, configNuevos: Object.keys(extra).length, recien: items.map((it) => Object.assign({ id: it.id }, it.data)) });
   updateSheet(impHtml());
   if (!fallo) toast(hechos ? hechos + (hechos === 1 ? ' movimiento importado' : ' movimientos importados') : 'No había nada nuevo: ya lo tenías todo');
 }
@@ -10965,6 +11022,8 @@ const H = {
     IMP.paso = 'revisar'; IMP.verTodo = false; updateSheet(impHtml());
   },
   impIncluir: ([k], el) => { const r = IMP.filas[Number(k)]; if (r) { r.incluir = el.checked; updateSheet(impHtml()); } },
+  impSaldoUsar: () => impSaldoUsar(),
+  impSaldoNo: () => { if (!IMP) return; IMP.saldoFin = null; updateSheet(impHtml()); },
   impCuenta: ([id]) => { if (!IMP) return; IMP.cuenta = id; IMP.cuentaRecordada = false; sentir('tic'); updateSheet(impHtml()); },
   impCuentaSel: (_a, el) => { if (!IMP) return; IMP.cuenta = el.value || null; IMP.cuentaRecordada = false; updateSheet(impHtml()); },
   impMismo: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.incluir = v !== '1'; r.respondido = true; sentir('tic'); updateSheet(impHtml()); },

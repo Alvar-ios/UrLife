@@ -2335,3 +2335,7 @@ html[data-look="nuevo"] .imp-mismo { display: flex; gap: 8px; margin-top: 6px; }
 html[data-look="nuevo"] .imp-mismo .chip { min-height: 36px; }
 html[data-look="nuevo"] .cuenta-imp { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin: 6px 0 4px; }
 html[data-look="nuevo"] .cuenta-imp svg { width: 16px; height: 16px; }
+html[data-look="nuevo"] .imp-saldo { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.45; }
+html[data-look="nuevo"] .imp-saldo > span { color: var(--text-dim); }
+html[data-look="nuevo"] .imp-saldo .actions { margin-top: 4px; }
+html[data-look="nuevo"] .imp-note.ok { color: var(--income); }
