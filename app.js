@@ -5372,6 +5372,14 @@ function temaFechasTxt(t) {
   if (t.desde && t.hasta) { const a = parseISO(t.desde), b = parseISO(t.hasta); return a && b && a.getMonth() === b.getMonth() ? a.getDate() + '–' + f(t.hasta) : f(t.desde) + ' – ' + f(t.hasta); }
   return t.desde ? 'desde el ' + f(t.desde) : 'hasta el ' + f(t.hasta);
 }
+// docs/29 tanda 0: un tema con el avión es un viaje (gasto por día y «Cerrar el viaje»)
+function temaEsViaje(t) { return !!t && temaIcono(t) === 'plane'; }
+function temaDias(t) {
+  if (!t || !t.desde || !t.hasta) return 0;
+  const a = parseISO(t.desde), b = parseISO(t.hasta); if (!a || !b || b < a) return 0;
+  const hoy = parseISO(todayISO()), fin = hoy && hoy < b && hoy >= a ? hoy : b; // si el viaje aún dura, se cuenta hasta hoy
+  return Math.round((fin - a) / 864e5) + 1;
+}
 function gastosDeTema(gid, tid) { return (S.compartidos || []).filter((c) => c.grupoId === gid && (c.tipo === 'Gasto' || c.tipo === 'Factura') && (tid === '_sin' ? !temaPorId(c.carpetaId) : c.carpetaId === tid)); }
 // El tema que viene elegido solo: el que cubre la fecha; si no, el último que usaste en ese grupo en las últimas 12 horas
 function temaSugerido(gid, fecha) {
@@ -5441,11 +5449,19 @@ function temaResumenHtml(g, t) {
   const cats = {}; gs.forEach((c) => { const k = c.categoria || 'Otros'; cats[k] = (cats[k] || 0) + num(c.importe); });
   let cs = Object.entries(cats).sort((a, b) => b[1] - a[1]); if (cs.length > 5) cs = cs.slice(0, 4).concat([['Otros', cs.slice(4).reduce((a, x) => a + x[1], 0)]]);
   const entre = g.miembros.length <= 2 ? 'entre los dos' : 'entre todos';
+  const dias = temaDias(t);
   let h = '<div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('temaVer', '') + '>' + ic('chevL') + '</button><span class="tema-fila-ic">' + ic(temaIcono(t)) + '</span>' +
     '<div class="tema-cab-t"><b>' + escapeHtml(t.nombre) + '</b><span>' + escapeHtml([nombreDestino(g), temaFechasTxt(t), gs.length + (gs.length === 1 ? ' gasto' : ' gastos'), t.cerrada ? 'cerrado' : ''].filter(Boolean).join(' · ')) + '</span></div>' +
     '<button type="button" class="icon-btn" aria-label="Opciones del tema" ' + act('temaMenu', t.id) + '>' + ic('more') + '</button></div>';
   if (F_temaMenu(t.id)) h += temaMenuHtml(g, t);
+  if (FORM && FORM.temaCerrarPre === t.id) { const pend = deudasDe(g.id).length;
+    h += '<div class="card tema-cierre"><b>' + (temaEsViaje(t) ? 'Cómo quedó el viaje' : 'Cerrar «' + escapeHtml(t.nombre) + '»') + '</b>' +
+      '<span>' + escapeHtml(money(tot) + ' ' + entre + ' · tu parte ' + money(mia) + (dias > 1 ? ' · unos ' + money(Math.round(tot / dias)) + ' al día' : '')) + '</span>' +
+      (pend ? '<span class="tema-cierre-av">' + ic('alert') + ' Aún ' + (pend === 1 ? 'hay 1 pago' : 'hay ' + pend + ' pagos') + ' para quedar en paz en el grupo. <button type="button" class="link" ' + act('grupoTab', 'saldos') + '>Ver saldos</button></span>' : '<span class="tema-cierre-ok">' + ic('checkCircle') + ' Estáis en paz en el grupo.</span>') +
+      '<span class="tema-cierre-n">Al cerrarlo ya no sale al apuntar gastos. Se puede volver a abrir.</span>' +
+      '<div class="actions"><button class="btn ghost block" ' + act('temaCerrarNo') + '>Ahora no</button><button class="btn accent block" ' + act('temaCerrar', t.id) + '>' + (temaEsViaje(t) ? 'Cerrar el viaje' : 'Cerrar tema') + '</button></div></div>'; }
   h += '<div class="tema-cifras"><div><span>Gastado ' + entre + '</span><b class="tnum">' + money(tot) + '</b></div><div><span>Tu parte</span><b class="tnum">' + money(mia) + '</b></div></div>';
+  if (dias > 1 && tot > 0) h += '<div class="rec-hint tema-dia">' + ic('calendar') + ' Unos <b class="tnum">' + money(Math.round(tot / dias)) + '</b> al día · ' + dias + ' días' + (Math.abs(mia) > 0.004 ? ' · tu parte, ' + money(Math.round(mia / dias)) + ' al día' : '') + '</div>';
   if (quien.length && tot > 0) h += '<div class="tema-sec">Quién pagó qué</div><div class="tema-quien">' + quien.map((u) => '<div class="tema-q"><span>' + escapeHtml(esMio(g.id, u) ? 'Tú' : nombreDe(g.id, u)) + '</span><span class="tema-q-bar"><i style="width:' + (pagos[u] / tot * 100).toFixed(1) + '%;background:' + colorPersona(u) + '"></i></span><b class="tnum">' + money(pagos[u]) + '</b></div>').join('') + '</div>';
   if (cs.length && tot > 0) h += '<div class="tema-sec">En qué se fue</div><div class="tema-cats" aria-hidden="true">' + cs.map(([k, v]) => '<i style="flex:' + (v / tot).toFixed(4) + ';background:' + colorCat(k) + '"></i>').join('') + '</div>' +
     '<div class="tema-cats-l">' + cs.map(([k, v]) => '<span><i style="background:' + colorCat(k) + '"></i>' + escapeHtml(k) + ' ' + Math.round(v / tot * 100) + ' %</span>').join('') + '</div>';
@@ -5457,7 +5473,7 @@ function temaResumenHtml(g, t) {
 function F_temaMenu(id) { return FORM && FORM.temaMenu === id; }
 function temaMenuHtml(g, t) {
   const b = (accion, icono, txt, cls) => '<button type="button" class="tema-menu-b' + (cls ? ' ' + cls : '') + '" ' + act(accion, t.id) + '>' + ic(icono) + '<span>' + txt + '</span></button>';
-  return '<div class="card tema-menu">' + b('temaEditar', 'edit', 'Cambiar nombre, icono o fechas') + (t.cerrada ? b('temaAbrirDeNuevo', 'repeat', 'Volver a abrir') : b('temaCerrar', 'checkCircle', 'Cerrar tema')) + b('temaBorrar', 'trash', 'Borrar tema', 'peligro') + '</div>';
+  return '<div class="card tema-menu">' + b('temaEditar', 'edit', 'Cambiar nombre, icono o fechas') + (t.cerrada ? b('temaAbrirDeNuevo', 'repeat', 'Volver a abrir') : b('temaCerrarPre', 'checkCircle', temaEsViaje(t) ? 'Cerrar el viaje' : 'Cerrar tema')) + b('temaBorrar', 'trash', 'Borrar tema', 'peligro') + '</div>';
 }
 // hoja «Nuevo tema» / «Cambiar tema» dentro del grupo
 function temaFormHtml(g) {
@@ -10658,7 +10674,10 @@ const H = {
       if (FORM !== F) return; F.temaForm = null; F.temaVer = t.id; toast(T.id ? 'Tema guardado' : 'Tema creado'); temaRefrescarGrupo(); render();
     } catch (e) { console.error(e); toast(errGrupo(e)); } finally { T.guardando = false; }
   },
-  temaCerrar: async ([id]) => { try { const t = await S.db.carpetas.editar(id, { cerrada: new Date().toISOString() }); temaAplicarLocal(t); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; } toast('Tema cerrado: ya no sale al apuntar gastos'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
+  temaCerrarPre: ([id]) => { if (!FORM) return; FORM.temaMenu = null; FORM.temaCerrarPre = id; temaRefrescarGrupo(); },
+  temaCerrarNo: () => { if (!FORM) return; FORM.temaCerrarPre = null; temaRefrescarGrupo(); },
+  temaCerrar: async ([id]) => { const t0 = temaPorId(id), viaje = temaEsViaje(t0), paz = t0 && !deudasDe(t0.grupoId).length;
+    try { const t = await S.db.carpetas.editar(id, { cerrada: new Date().toISOString() }); temaAplicarLocal(t); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; FORM.temaCerrarPre = null; } if (viaje && paz) sentir('ok'); toast(viaje ? 'Viaje cerrado: ya no sale al apuntar gastos' : 'Tema cerrado: ya no sale al apuntar gastos'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
   temaAbrirDeNuevo: async ([id]) => { try { const t = await S.db.carpetas.editar(id, { cerrada: null }); temaAplicarLocal(t); if (FORM) FORM.temaMenu = null; toast('Tema abierto otra vez'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
   temaBorrar: async ([id]) => {
     const t = temaPorId(id); if (!t) return;

@@ -2298,3 +2298,14 @@ html[data-look="nuevo"] .hist-saldo.te b { color: var(--income); }
 html[data-look="nuevo"] .row .ttl.con-ic { display: flex; align-items: center; }
 html[data-look="nuevo"] .row .ttl.con-ic .ttl-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html[data-look="nuevo"] .row .ttl.con-ic .comp-tag { flex: none; }
+
+/* docs/29 tanda 0: viaje (gasto por día y «Cerrar el viaje») */
+html[data-look="nuevo"] .tema-dia { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: -2px 0 10px; }
+html[data-look="nuevo"] .tema-dia svg { width: 15px; height: 15px; flex: none; }
+html[data-look="nuevo"] .tema-cierre { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
+html[data-look="nuevo"] .tema-cierre b { font-size: 15.5px; }
+html[data-look="nuevo"] .tema-cierre > span { color: var(--text-dim); line-height: 1.45; }
+html[data-look="nuevo"] .tema-cierre svg { width: 15px; height: 15px; vertical-align: -3px; }
+html[data-look="nuevo"] .tema-cierre .tema-cierre-av { color: var(--warn); }
+html[data-look="nuevo"] .tema-cierre .tema-cierre-ok { color: var(--income); }
+html[data-look="nuevo"] .tema-cierre .actions { margin-top: 6px; }
