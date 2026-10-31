@@ -56,7 +56,7 @@ const ab=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);
  ok(nom.length===2&&nom[0].tipo==='Ingreso'&&nom[0].categoria==='Nómina'&&nom[0].id!==nom[1].id,'dos nóminas idénticas: ambas, con id distinto');
  ok(by('BIZUM').estado==='dup'&&!by('BIZUM').incluir,'posible duplicado desmarcado (misma fecha e importe)');
  ok(by('CAFET').categoria===''&&by('CAFET').incluir,'sin categoría pero incluida');
- ok(/A importar/.test(sh())&&/se parece/.test(sh())&&/no se ha podido leer/.test(sh()),'vista previa con resumen y avisos');
+ ok(/A importar/.test(sh())&&/se parece|ya la tenías|ya las tenías/.test(sh())&&/no se ha podido leer/.test(sh()),'vista previa con resumen y avisos');
  // cambiar categoría de la cafetería → ofrece regla
  const kc=I.filas.indexOf(by('CAFET'));
  H.impCat([String(kc)],{value:'Restaurantes'});await sleep(5);

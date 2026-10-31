@@ -60,7 +60,7 @@ const ts = (n) => new Date(Date.now() - n * 864e5).toISOString();
   const fila = Object.assign({}, orig, env1); // lo que quedaría en la fila real
   ok(fila.tipo === 'Traspaso' && fila.subcategoria == null && fila.metodoPago == null && fila.articulos == null && fila.cuentaDestinoId === 'c2', 'en la fila real se borran subcategoría, forma de pago y ticket, y queda como traspaso');
   ok(!('compartidoId' in env1) && !('metaId' in env1), 'no envía columnas de compartir ni de metas (no hacen falta: esos movimientos no se pueden convertir)');
-  ok(env1.lote === null, 'al convertir se quita el lote de importación («Deshacer importación» ya no borra el traspaso)');
+  ok(env1.lote !== null && env1.lote !== undefined, 'al convertir se CONSERVA el lote: «Deshacer importación» también borra el traspaso (decisión del dueño, 31/10)');
   info('columnas que siguen en la fila real tras convertir: ' + Object.keys(orig).filter((x) => !(x in env1) && x !== 'id').join(', '));
   e = await env(DOS, [fila]); A = e.w.__APP__;
   ok(Math.round((gAntes - A.kpisMes(Y, M).gastos) * 100) / 100 === 60 && A.S.traspasos.length === 1 && !A.S.movimientos.some((m) => m.id === 'imp-1'), 'con la fila real, deja de contar como gasto y solo está en traspasos');
