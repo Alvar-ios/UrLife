@@ -31,7 +31,7 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   // Roma: del día -2 al +3 → hoy van 3 días; la cena (60 €, el día -1) es del viaje
   S.compartidos[0].carpetaId = 't1';
   H.grupoVer(['g1']); await sleep(40); H.temaVer(['t1']); await sleep(20);
-  ok(/Unos\s*20,00 €\s*al día · 3 días/.test(sh().textContent) && /tu parte, 10,00 € al día/.test(sh().textContent), 'viaje en curso: «Unos 20 € al día · 3 días» (contados hasta hoy) y tu parte al día');
+  ok(/Unos\s*20 €\s*al día · 3 días/.test(sh().textContent) && /tu parte, 10 € al día/.test(sh().textContent), 'viaje en curso: «Unos 20 € al día · 3 días» (contados hasta hoy) y tu parte al día');
   H.temaMenu(['t1']); await sleep(10);
   ok(/Cerrar el viaje/.test(sh().textContent) && !/Cerrar tema/.test(sh().textContent), 'con avión, el menú dice «Cerrar el viaje»');
   H.temaCerrarPre(['t1']); await sleep(10);

@@ -5351,7 +5351,7 @@ function crParaHtml(ms, rep) {
 }
 
 /* ---- docs/29 tanda 0: «¿Pagaste en otra moneda?» Se convierte al euro y se guarda en euros ---- */
-const MON_LISTA = [['USD', '$', 'Dólar'], ['GBP', '£', 'Libra'], ['CHF', 'CHF', 'Franco suizo'], ['JPY', '¥', 'Yen'], ['MXN', 'MX$', 'Peso mexicano'], ['CAD', 'CA$', 'Dólar canadiense'], ['AUD', 'AU$', 'Dólar australiano'], ['SEK', 'kr', 'Corona sueca'], ['NOK', 'kr', 'Corona noruega'], ['DKK', 'kr', 'Corona danesa'], ['PLN', 'zł', 'Esloti'], ['CZK', 'Kč', 'Corona checa'], ['HUF', 'Ft', 'Forinto'], ['TRY', '₺', 'Lira turca'], ['BRL', 'R$', 'Real'], ['CNY', '¥', 'Yuan'], ['HKD', 'HK$', 'Dólar de Hong Kong'], ['INR', '₹', 'Rupia'], ['KRW', '₩', 'Won'], ['SGD', 'S$', 'Dólar de Singapur'], ['NZD', 'NZ$', 'Dólar neozelandés'], ['ZAR', 'R', 'Rand'], ['OTRA', '', 'Otra (a mano)']];
+const MON_LISTA = [['USD', '$', 'Dólar'], ['GBP', '£', 'Libra'], ['CHF', 'CHF', 'Franco suizo'], ['JPY', '¥', 'Yen'], ['MXN', 'MX$', 'Peso mexicano'], ['CAD', 'CA$', 'Dólar canadiense'], ['AUD', 'AU$', 'Dólar australiano'], ['SEK', 'SEK', 'Corona sueca'], ['NOK', 'NOK', 'Corona noruega'], ['DKK', 'DKK', 'Corona danesa'], ['PLN', 'zł', 'Esloti'], ['CZK', 'Kč', 'Corona checa'], ['HUF', 'Ft', 'Forinto'], ['TRY', '₺', 'Lira turca'], ['BRL', 'R$', 'Real'], ['CNY', 'CNY', 'Yuan'], ['HKD', 'HK$', 'Dólar de Hong Kong'], ['INR', '₹', 'Rupia'], ['KRW', '₩', 'Won'], ['SGD', 'S$', 'Dólar de Singapur'], ['NZD', 'NZ$', 'Dólar neozelandés'], ['ZAR', 'R', 'Rand'], ['OTRA', '', 'Otra (a mano)']];
 const MON_SIN_DEC = ['JPY', 'KRW', 'HUF'];
 function monInfo(k) { return MON_LISTA.find((x) => x[0] === k) || [k, k, k]; }
 function monFmt(v, k) { const d = MON_SIN_DEC.indexOf(k) >= 0 ? 0 : 2; return Number(v || 0).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d }) + ' ' + (k === 'OTRA' ? '' : monInfo(k)[1]); }
@@ -5372,7 +5372,7 @@ async function monCargarCambio() {
   if (!FORM || FORM.mon !== M || M.moneda !== k) return;
   M.cargando = false;
   if (r && r.porEur > 0) { M.cambio = r.porEur; M.fecha = r.fecha; monRecordar(k, r.porEur, r.fecha); }
-  else { const g = monGuardado()[k]; if (g && g.v > 0) { M.cambio = g.v; M.fecha = g.f; M.aviso = 'Sin conexión: es el último cambio que usaste.'; } else if (M.origen === 'bce') M.origen = 'mano'; }
+  else { const g = monGuardado()[k]; if (g && g.v > 0) { M.cambio = g.v; M.fecha = g.f; M.aviso = 'Sin conexión: es el último cambio que usaste.'; } else { if (M.origen === 'bce') M.origen = 'mano'; M.aviso = 'Sin conexión: escribe el cambio o lo que te cobraron.'; } }
   monPintar();
 }
 function monHtml() {
@@ -5389,9 +5389,9 @@ function monHtml() {
   if (M.origen === 'mano') h += '<div class="mon-fila mon-mano"><span>1 € =</span><input id="monMano" class="tnum" type="text" inputmode="decimal" placeholder="1,08" aria-label="Cambio: cuántas unidades por 1 euro" value="' + escapeHtml(M.mano || '') + '" ' + onInput('monMano') + '><span>' + escapeHtml(inf[1] || 'de esa moneda') + '</span></div>' +
     (sinBce ? '<div class="rec-hint">El Banco Central Europeo no publica esa moneda. Escribe el cambio que te den o lo que te cobraron en euros.</div>' : '');
   if (M.origen === 'cobro') h += '<div class="mon-fila mon-mano"><span>Me cobraron</span><input id="monCobro" class="tnum" type="text" inputmode="decimal" placeholder="0,00" aria-label="Lo que te cobraron en euros" value="' + escapeHtml(M.cobro || '') + '" ' + onInput('monCobro') + '><span>€</span></div><div class="rec-hint">Lo que dice tu banco o la tarjeta, con la comisión.</div>';
-  if (M.origen !== 'bce') h += '<div class="mon-res" id="monRes">' + (eur != null ? '= <b class="tnum">' + money(eur) + '</b>' : '') + '</div>';
+  if (M.origen !== 'bce') h += '<div class="mon-res" id="monRes">' + (eur != null ? '= <b class="tnum">' + money(eur) + '</b>' : '') + '</div>' + (M.aviso && !M.cambio ? '<span class="mon-aviso">' + escapeHtml(M.aviso) + '</span>' : '');
   h += '<button type="button" class="btn accent block mon-usar" id="monUsar" ' + act('monUsar') + (eur == null ? ' disabled' : '') + '>' + (eur == null ? 'Escribe el importe' : 'Usar ' + money(eur)) + '</button>' +
-    '<div class="rec-hint">Se guarda en euros, y la cifra en ' + escapeHtml(inf[2] === 'Otra (a mano)' ? 'esa moneda' : inf[2].toLowerCase()) + ' se apunta en la descripción.</div></div>';
+    '<div class="rec-hint">Se guarda en euros, y la cifra en esa moneda se apunta en la descripción.</div></div>';
   return h;
 }
 function monBoxMov(ex, comp, tipo) { return !ex && !comp && (tipo === 'Gasto' || tipo === 'Factura') ? '<div id="monBox" class="mon-box">' + monHtml() + '</div>' : ''; }
@@ -5408,11 +5408,12 @@ function monUsar() {
   if (F.tec) { F.tec.txt = txt; F.tec.neg = false; F.tec.reemplazar = true; tecSync(true); }
   const cr = $('#crImporte'); if (cr) { cr.value = txt; F.importe = txt; cr.size = Math.max(1, txt.length); }
   const fi = $('#fImporte'); if (fi && !F.tec) fi.value = txt;
+  { const mm = $('#mfMas'); if (mm && mm.hidden && M.moneda !== 'OTRA' && H.tecMas) { try { H.tecMas([]); } catch (e) { /* */ } } } // que se vea la nota en la descripción
   const d = $('#crDesc') || $('#fDesc'); if (d && M.moneda !== 'OTRA' && d.value.indexOf(nota) < 0) { d.value = (d.value.trim() ? d.value.trim() + ' · ' : '') + nota; if (d.id === 'crDesc') F.desc = d.value; }
   if (M.moneda !== 'OTRA' && M.origen === 'mano') monRecordar(M.moneda, numCampo(M.mano), todayISO());
   M.on = false; monPintar(); sentir('ok');
   if (cr) crRefrescar(); else if (H.onImporteInput) { try { H.onImporteInput([]); } catch (e) { /* */ } }
-  toast('Puesto en euros: ' + money(eur));
+  toast('Puesto en euros: ' + money(eur) + (M.moneda !== 'OTRA' ? ' · «' + nota + '» en la descripción' : ''));
 }
 function crRefrescar() {
   const F = FORM; if (!F || F.kind !== 'compRapido') return;
@@ -5522,12 +5523,12 @@ function temaResumenHtml(g, t) {
   if (F_temaMenu(t.id)) h += temaMenuHtml(g, t);
   if (FORM && FORM.temaCerrarPre === t.id) { const pend = deudasDe(g.id).length;
     h += '<div class="card tema-cierre"><b>' + (temaEsViaje(t) ? 'Cómo quedó el viaje' : 'Cerrar «' + escapeHtml(t.nombre) + '»') + '</b>' +
-      '<span>' + escapeHtml(money(tot) + ' ' + entre + ' · tu parte ' + money(mia) + (dias > 1 ? ' · unos ' + money(Math.round(tot / dias)) + ' al día' : '')) + '</span>' +
+      '<span>' + escapeHtml(money(tot) + ' ' + entre + ' · tu parte ' + money(mia) + (dias > 1 ? ' · unos ' + Math.round(tot / dias).toLocaleString('es-ES') + ' € al día' : '')) + '</span>' +
       (pend ? '<span class="tema-cierre-av">' + ic('alert') + ' Aún ' + (pend === 1 ? 'hay 1 pago' : 'hay ' + pend + ' pagos') + ' para quedar en paz en el grupo. <button type="button" class="link" ' + act('grupoTab', 'saldos') + '>Ver saldos</button></span>' : '<span class="tema-cierre-ok">' + ic('checkCircle') + ' Estáis en paz en el grupo.</span>') +
       '<span class="tema-cierre-n">Al cerrarlo ya no sale al apuntar gastos. Se puede volver a abrir.</span>' +
       '<div class="actions"><button class="btn ghost block" ' + act('temaCerrarNo') + '>Ahora no</button><button class="btn accent block" ' + act('temaCerrar', t.id) + '>' + (temaEsViaje(t) ? 'Cerrar el viaje' : 'Cerrar tema') + '</button></div></div>'; }
   h += '<div class="tema-cifras"><div><span>Gastado ' + entre + '</span><b class="tnum">' + money(tot) + '</b></div><div><span>Tu parte</span><b class="tnum">' + money(mia) + '</b></div></div>';
-  if (dias > 1 && tot > 0) h += '<div class="rec-hint tema-dia">' + ic('calendar') + ' Unos <b class="tnum">' + money(Math.round(tot / dias)) + '</b> al día · ' + dias + ' días' + (Math.abs(mia) > 0.004 ? ' · tu parte, ' + money(Math.round(mia / dias)) + ' al día' : '') + '</div>';
+  if (dias > 1 && tot > 0) h += '<div class="rec-hint tema-dia">' + ic('calendar') + ' Unos <b class="tnum">' + Math.round(tot / dias).toLocaleString('es-ES') + ' €</b> al día · ' + dias + ' días' + (Math.abs(mia) > 0.004 ? ' · tu parte, ' + Math.round(mia / dias).toLocaleString('es-ES') + ' € al día' : '') + '</div>';
   if (quien.length && tot > 0) h += '<div class="tema-sec">Quién pagó qué</div><div class="tema-quien">' + quien.map((u) => '<div class="tema-q"><span>' + escapeHtml(esMio(g.id, u) ? 'Tú' : nombreDe(g.id, u)) + '</span><span class="tema-q-bar"><i style="width:' + (pagos[u] / tot * 100).toFixed(1) + '%;background:' + colorPersona(u) + '"></i></span><b class="tnum">' + money(pagos[u]) + '</b></div>').join('') + '</div>';
   if (cs.length && tot > 0) h += '<div class="tema-sec">En qué se fue</div><div class="tema-cats" aria-hidden="true">' + cs.map(([k, v]) => '<i style="flex:' + (v / tot).toFixed(4) + ';background:' + colorCat(k) + '"></i>').join('') + '</div>' +
     '<div class="tema-cats-l">' + cs.map(([k, v]) => '<span><i style="background:' + colorCat(k) + '"></i>' + escapeHtml(k) + ' ' + Math.round(v / tot * 100) + ' %</span>').join('') + '</div>';
@@ -10404,7 +10405,7 @@ const H = {
   pickSub: ([s]) => { const i = $('#fSub'); if (i) i.value = s; $$('#subChips .chip').forEach((b) => b.classList.toggle('active', normName(b.textContent) === normName(s))); },
   onSubInput: (_a, el) => { $$('#subChips .chip').forEach((b) => b.classList.toggle('active', normName(b.textContent) === normName(el.value))); },
   catMas: () => { FORM.catTodas = !FORM.catTodas; const chips = $('#catChips'); if (chips) chips.innerHTML = chipsHtml(FORM.tipo, ($('#fCategoria') || {}).value || ''); },
-  pickTipo: ([t], el) => {
+  pickTipo: ([t], el) => { { const mb = $('#monBox'); if (mb) mb.hidden = !(t === 'Gasto' || t === 'Factura'); }
     if (t === 'Gasto' && FORM.tipo === 'Factura') return; // ya es un gasto (fijo)
     FORM.tipo = t;
     if (FORM.tec) setTimeout(() => tecSync(), 0);
@@ -10438,7 +10439,7 @@ const H = {
     box.innerHTML = h;
   },
   pickResultado: ([i]) => { const a = (FORM.resultados || [])[Number(i)]; if (a) elegirActivo(Object.assign({}, a)); },
-  onFechaChange: () => { if (FORM.activo) cargarPreview(); },
+  onFechaChange: () => { if (FORM.activo) cargarPreview(); if (FORM.mon && FORM.mon.on) monCargarCambio(); },
   onImporteInput: () => { updatePreview(); if (FORM.comp && FORM.comp.on) { if (FORM.comp.modo === 'igual') { const r = $('#compReparto'); if (r) r.innerHTML = compRepartoHtml(); } else refrescarComp(true); } },
   pickCat: ([c]) => {
     const inp = $('#fCategoria'); if (inp) inp.value = c; if (FORM) FORM.catAuto = false; setTimeout(refrescarReglaBox, 0); refrescarSub(); refrescarCatAviso(); proponerCuenta(c);
@@ -10740,7 +10741,7 @@ const H = {
       if (FORM !== F) return; F.temaForm = null; F.temaVer = t.id; toast(T.id ? 'Tema guardado' : 'Tema creado'); temaRefrescarGrupo(); render();
     } catch (e) { console.error(e); toast(errGrupo(e)); } finally { T.guardando = false; }
   },
-  temaCerrarPre: ([id]) => { if (!FORM) return; FORM.temaMenu = null; FORM.temaCerrarPre = id; temaRefrescarGrupo(); },
+  temaCerrarPre: ([id]) => { if (!FORM) return; FORM.temaMenu = null; FORM.temaCerrarPre = id; temaRefrescarGrupo(); setTimeout(() => { const c = $('#sheetHost .tema-cierre'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
   temaCerrarNo: () => { if (!FORM) return; FORM.temaCerrarPre = null; temaRefrescarGrupo(); },
   temaCerrar: async ([id]) => { const t0 = temaPorId(id), viaje = temaEsViaje(t0), paz = t0 && !deudasDe(t0.grupoId).length;
     try { const t = await S.db.carpetas.editar(id, { cerrada: new Date().toISOString() }); temaAplicarLocal(t); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; FORM.temaCerrarPre = null; } if (viaje && paz) sentir('ok'); toast(viaje ? 'Viaje cerrado: ya no sale al apuntar gastos' : 'Tema cerrado: ya no sale al apuntar gastos'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
@@ -10765,7 +10766,7 @@ const H = {
   sFechaVer: () => { const i = $('#sFecha'), c = $('#sFechaChip'); if (!i) return; i.hidden = false; if (c) c.hidden = true; i.focus(); try { if (i.showPicker) i.showPicker(); } catch (e) { /* sin selector */ } },
   crDesc: (_a, el) => { const F = FORM; if (!F) return; F.desc = el.value; if (!F.catTocada) { const c = sugerirCategoria(el.value.trim(), 'Gasto'); if (c && esCatGasto(c)) { F.cat = c; const sel = $('#crCat'); if (sel && [...sel.options].some((o) => o.value === c)) sel.value = c; } } },
   crCat: (_a, el) => { if (!FORM) return; FORM.cat = el.value; FORM.catTocada = true; },
-  crFecha: (_a, el) => { if (!FORM) return; FORM.fecha = el.value; if (FORM.kind === 'compRapido' && !FORM.temaTocado) { temaAutoAplicar(); const c = $('.tema-caja'); if (c) c.outerHTML = temaCajaHtml(); } },
+  crFecha: (_a, el) => { if (!FORM) return; FORM.fecha = el.value; if (FORM.mon && FORM.mon.on) monCargarCambio(); if (FORM.kind === 'compRapido' && !FORM.temaTocado) { temaAutoAplicar(); const c = $('.tema-caja'); if (c) c.outerHTML = temaCajaHtml(); } },
   crPagador: ([u]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; F.comp.pagador = u; updateSheet(compRapidoHtml()); },
   crIncl: ([u]) => {
     const F = FORM; if (!F || F.kind !== 'compRapido') return; const cp = F.comp, ms = miembrosComp();
