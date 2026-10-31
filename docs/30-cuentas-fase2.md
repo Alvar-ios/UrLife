@@ -192,3 +192,4 @@ Para el PDF: un dibujo con dos extractos (Santander y ING) y una flecha que los 
 ## Decisiones del dueño (31/10/2026)
 - Sí: «Convertir en traspaso» conserva el lote, así que «Deshacer importación» también borra ese traspaso.
 - Publicados los arreglos de importar (miles, «Marcar las nuevas», contador) antes de la tanda 1.
+- 31/10 (Desarrollo): en `importPerfiles[firma]` e `importLotes[]` la cuenta se guarda como `cuenta` (no `cuentaId`). El aviso «N filas ya estaban importadas, pero sin cuenta» con «Asignar movimientos» queda para la tanda 5.

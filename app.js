@@ -8999,17 +8999,17 @@ function impHtml() {
       const opts = '<option value="">Sin categoría</option>' + [...new Set(cats.concat(r.categoria ? [r.categoria] : []))].map((c) => '<option' + (c === r.categoria ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('');
       return '<div class="imp-row' + (r.incluir ? '' : ' off') + '">' +
         '<input type="checkbox" ' + (r.incluir ? 'checked' : '') + ' ' + onChange('impIncluir', k) + '>' +
-        '<div class="imp-main"><div class="imp-top"><span class="imp-desc">' + escapeHtml(r.desc || '(sin descripción)') + '</span><span class="imp-amt tnum" style="color:' + ((r.tipo === 'Ingreso') === (r.importe >= 0) ? (r.tipo === 'Ingreso' ? 'var(--income)' : 'var(--expense)') : 'var(--text-muted)') + '">' + ((r.tipo === 'Ingreso') === (r.importe >= 0) ? (r.tipo === 'Ingreso' ? '+' : '−') : (r.tipo === 'Ingreso' ? '−' : '+')) + fmt2(Math.abs(r.importe)) + (r.tipo !== 'Ingreso' && r.importe < 0 ? ' <small>devolución</small>' : '') + '</span></div>' +
+        '<div class="imp-main"><div class="imp-top"><span class="imp-desc">' + escapeHtml(r.desc || '(sin descripción)') + '</span><span class="imp-amt tnum" style="color:' + ((r.importe >= 0) ? (r.tipo === 'Ingreso' ? 'var(--income)' : 'var(--expense)') : 'var(--text-muted)') + '">' + ((r.importe >= 0) ? (r.tipo === 'Ingreso' ? '+' : '−') : (r.tipo === 'Ingreso' ? '−' : '+')) + fmt2(Math.abs(r.importe)) + (r.tipo !== 'Ingreso' && r.importe < 0 ? ' <small>devolución</small>' : '') + '</span></div>' +
         '<div class="imp-sub">' + fechaCortaU(r.fecha) + ' ' + r.fecha.slice(0, 4) +
         (r.estado === 'dup' ? ' · <b style="color:var(--accent)">ya lo tenías' + (r.con ? ': ' + escapeHtml(r.con.que) : '') + '</b>' : '') +
         (r.estado === 'quizas' ? ' · <b style="color:var(--accent)">¿es el mismo que apuntaste el ' + escapeHtml(fmtDateShort(r.con.fecha)) + ' (' + escapeHtml(r.con.que) + ')?</b>' : '') +
         (r.estado === 'juntos' ? ' · <b style="color:var(--accent)">ya está en Juntos: ' + escapeHtml(r.con.que) + '</b>' : '') +
-        (r.estado === 'otraCuenta' ? ' · <b style="color:var(--accent)">ya importado en ' + escapeHtml(r.con.que) + ': márcalo si es otro distinto</b>' : '') +
+        (r.estado === 'otraCuenta' ? ' · <b style="color:var(--accent)">ya importado en ' + escapeHtml(r.con.que) + ': márcalo si es otro</b>' : '') +
         (r.estado === 'traspaso' ? ' · <b style="color:var(--accent)">traspaso entre cuentas: apúntalo con «Traspaso»</b>' : '') +
         (r.origenCat === 'regla' ? ' · por tu regla' : r.origenCat === 'historial' ? ' · sugerida' : r.origenCat === 'factura' ? ' · pago fijo' : '') + '</div>' +
         '<div class="imp-sels"><select ' + onChange('impTipo', k) + '>' + tipos.map((t) => '<option' + (t === r.tipo ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
         '<select ' + onChange('impCat', k) + '>' + opts + '</select></div>' +
-        (r.estado === 'quizas' ? '<div class="imp-mismo"><button type="button" class="chip' + (!r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '1') + '>Es el mismo</button><button type="button" class="chip' + (r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '0') + '>Son distintos</button></div>' : '') +
+        (r.estado === 'quizas' ? '<div class="imp-mismo"><button type="button" class="chip' + (r.respondido && !r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '1') + '>Es el mismo</button><button type="button" class="chip' + (r.respondido && r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '0') + '>Son distintos</button></div>' : '') +
         (r.ofrecerRegla ? '<button type="button" class="link" style="font-size:12px;" ' + act('impRegla', k) + '>Recordar: «' + escapeHtml(r.ofrecerRegla) + '» → ' + escapeHtml(r.categoria) + '</button>' : '') +
         '</div></div>';
     };
@@ -9020,7 +9020,7 @@ function impHtml() {
       '<div class="kpi income"><div class="v tnum">' + moneyShort(tot('in')) + '</div><div class="l">Ingresos</div></div>' +
       '<div class="kpi expense"><div class="v tnum">' + moneyShort(tot('out')) + '</div><div class="l">Gastos</div></div></div>' +
       (nImp ? '<div class="imp-note">✓ ' + nImp + (nImp === 1 ? ' fila ya estaba importada' : ' filas ya estaban importadas') + ': se omiten.</div>' : '') +
-      (nDup ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nDup + (nDup === 1 ? ' fila ya la tenías' : ' filas ya las tenías') + ' (mismo importe y fecha' + (cuenta0 ? ' en ' + escapeHtml(nombreCuenta(cuenta0)) : '') + ', o en Juntos). Van desmarcadas; márcalas si son distintas.</div>' : '') +
+      (nDup ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nDup + (nDup === 1 ? ' fila ya la tenías' : ' filas ya las tenías') + ' (mismo importe y fecha' + (cuenta0 ? ' en ' + escapeHtml(nombreCuenta(cuenta0)) : '') + ', o ya está en Juntos). Van desmarcadas; márcalas si son distintas.</div>' : '') +
       (nQ ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nQ + (nQ === 1 ? ' fila se parece' : ' filas se parecen') + ' a algo que apuntaste unos días antes o después. Dinos si es lo mismo.</div>' : '') +
       (err.length ? '<div class="imp-note">' + err.length + (err.length === 1 ? ' fila no se ha podido leer' : ' filas no se han podido leer') + ' (sin fecha o importe válidos) y se omiten.</div>' : '') +
       (sinCat ? '<div class="imp-note">' + sinCat + ' sin categoría: se guardarán como «Sin categoría» y podrás cambiarlas luego.</div>' : '') +
@@ -9060,7 +9060,8 @@ function impCuentaInicial(I, perfil) {
   const rec = perfil && perfil.cuenta && cuentaPorId(perfil.cuenta) ? perfil.cuenta : null;
   if (rec) { I.cuenta = rec; I.cuentaRecordada = true; return; }
   const nom = normDesc(I.archivo || ''), cs = cuentasCfg();
-  const porNombre = cs.find((c) => { const b = bancoDe(c); return (b && nom.indexOf(normDesc(b.k)) >= 0) || (normDesc(c.nombre).length >= 3 && nom.indexOf(normDesc(c.nombre)) >= 0); });
+  const pal = ' ' + nom.replace(/[^a-z0-9]+/g, ' ') + ' ', esta = (t) => { const w = normDesc(t).replace(/[^a-z0-9]+/g, ' ').trim(); return w.length >= 3 && pal.indexOf(' ' + w + ' ') >= 0; }; // palabras enteras: «ingresos» no es ING
+  const porNombre = cs.find((c) => { const b = bancoDe(c); return (b && esta(b.k)) || esta(c.nombre); });
   I.cuenta = porNombre ? porNombre.id : null; I.cuentaRecordada = false; // sin pista: hay que elegirla
 }
 function impCuentaHtml(I) {
@@ -9124,12 +9125,23 @@ function impProcesar() {
     const base = uid + '|' + fecha + '|' + imp.toFixed(2) + '|' + normDesc(desc);
     ocurr[base] = (ocurr[base] || 0) + 1;
     const id = 'imp-' + hash53(base + '|' + ocurr[base]);
+    out.push({ n: i, id, base, oc: ocurr[base], fecha, importe: valor, tipo, categoria, origenCat, desc, esTras, abs: Math.abs(imp) });
+  });
+  // 1.ª pasada: lo que ya estaba importado se queda con su pareja antes de buscar parecidos (si no, un gasto nuevo podría «robársela»)
+  out.forEach((o) => {
+    if (!o.id) return; const previo = porId[o.id];
+    if (previo && !(cuenta && previo.cuentaId && cuentaPorId(previo.cuentaId) && previo.cuentaId !== cuenta)) usadosC.add((previo.tipo === 'Traspaso' ? 't:' : 'm:') + previo.id);
+  });
+  // 2.ª pasada: el estado de cada fila
+  out.forEach((o) => {
+    if (!o.id) return;
+    const { id, base, fecha, esTras } = o, imp = o.abs;
     let estado = 'nuevo', idF = id, con = null;
     const previo = porId[id];
     if (previo) {
       // el mismo id ya importado en OTRA cuenta: no se da por hecho (podría ser otro café igual el mismo día en otro banco)
       const otra = cuenta && previo.cuentaId && cuentaPorId(previo.cuentaId) && previo.cuentaId !== cuenta;
-      if (otra) { idF = 'imp-' + hash53(base + '|' + ocurr[base] + '|' + cuenta); if (existentes.has(idF)) estado = 'importado'; else { estado = 'otraCuenta'; con = { que: nombreCuenta(previo.cuentaId) }; } }
+      if (otra) { idF = 'imp-' + hash53(base + '|' + o.oc + '|' + cuenta); if (existentes.has(idF)) estado = 'importado'; else { estado = 'otraCuenta'; con = { que: nombreCuenta(previo.cuentaId) }; } }
       else estado = 'importado';
       if (estado === 'importado') { const k = (previo.tipo === 'Traspaso' ? 't:' : 'm:') + previo.id; usadosC.add(k); }
     }
@@ -9139,7 +9151,7 @@ function impProcesar() {
       else { const cerca = buscar(fecha, Math.abs(imp), 3); if (cerca) { estado = cerca.donde === 'juntos' ? 'juntos' : 'quizas'; con = cerca; usadosC.add(cerca.k); } }
     }
     if (esTras && estado === 'nuevo') estado = 'traspaso';
-    out.push({ n: i, id: idF, fecha, importe: valor, tipo, categoria, origenCat, desc, estado, con, incluir: estado === 'nuevo' });
+    Object.assign(o, { id: idF, estado, con, incluir: estado === 'nuevo' }); delete o.base; delete o.oc; delete o.esTras; delete o.abs;
   });
   I.filas = out;
 }
@@ -9198,6 +9210,7 @@ async function impEjecutar() {
   const ahora = Date.now();
   const items = sel.map((r, i) => { const cn = catNorm(r.tipo, r.categoria || (r.tipo === 'Gasto' || r.tipo === 'Factura' ? 'Otros' : 'Sin categoría')); const d = { creadoEn: ahora + i, tipo: r.tipo, importe: Math.round(r.importe * 100) / 100, categoria: cn.categoria, fecha: r.fecha, descripcion: r.desc, metodoPago: '', lote }; if (cn.subcategoria) d.subcategoria = cn.subcategoria; return { id: r.id, data: d }; });
   let hechos = 0, fallo = '';
+  if (hayVariasCuentas() && I.cuenta && !cuentaPorId(I.cuenta)) { I.cuenta = null; I.paso = 'columnas'; updateSheet(impHtml()); return toast('Esa cuenta ya no existe: elige otra'); }
   const cuentaImp = hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? I.cuenta : null;
   if (cuentaImp) items.forEach((it) => { it.data.cuentaId = cuentaImp; });
   try {
@@ -10954,7 +10967,7 @@ const H = {
   impIncluir: ([k], el) => { const r = IMP.filas[Number(k)]; if (r) { r.incluir = el.checked; updateSheet(impHtml()); } },
   impCuenta: ([id]) => { if (!IMP) return; IMP.cuenta = id; IMP.cuentaRecordada = false; sentir('tic'); updateSheet(impHtml()); },
   impCuentaSel: (_a, el) => { if (!IMP) return; IMP.cuenta = el.value || null; IMP.cuentaRecordada = false; updateSheet(impHtml()); },
-  impMismo: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.incluir = v !== '1'; sentir('tic'); updateSheet(impHtml()); },
+  impMismo: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.incluir = v !== '1'; r.respondido = true; sentir('tic'); updateSheet(impHtml()); },
   impEnCuenta: ([id]) => { verBadge('importar'); IMP = { paso: 'archivo', cuentaFija: id }; if ($('#sheetBackdrop')) updateSheet(impHtml()); else openSheet(impHtml()); },
   impTodas: ([v]) => { IMP.filas.forEach((r) => { if (r.id && r.estado !== 'importado' && (v !== '1' || r.estado === 'nuevo' || !r.estado)) r.incluir = v === '1'; }); updateSheet(impHtml()); }, // «Marcar todas» no marca lo dudoso (riesgo 2)
   impVerTodo: () => { IMP.verTodo = true; updateSheet(impHtml()); },
