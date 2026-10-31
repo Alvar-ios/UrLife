@@ -118,16 +118,16 @@
           },
         };
       },
-      // Inserta muchas filas de una vez sin pisar las que ya existan (mismo id). Devuelve cuántas se enviaron.
+      // Inserta muchas filas de una vez sin pisar las que ya existan (mismo id). Devuelve cuántas eran nuevas.
       bulkInsert: function (items) {
         var rows = items.map(function (it) { return objToRow(it.data, it.id, currentUid); });
         var chunks = [];
         for (var i = 0; i < rows.length; i += 200) chunks.push(rows.slice(i, i + 200));
         return chunks.reduce(function (p, chunk) {
           return p.then(function (n) {
-            return sb.from(table).upsert(chunk, { onConflict: 'id', ignoreDuplicates: true }).then(function (res) {
+            return sb.from(table).upsert(chunk, { onConflict: 'id', ignoreDuplicates: true }).select('id').then(function (res) {
               if (res.error) throw pgError(res.error);
-              return n + chunk.length;
+              return n + (Array.isArray(res.data) ? res.data.length : chunk.length); // solo las nuevas (las repetidas se ignoran)
             });
           });
         }, Promise.resolve(0));

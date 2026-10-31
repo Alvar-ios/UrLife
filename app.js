@@ -8825,7 +8825,9 @@ function parseNum(v) {
   if (/-$/.test(t)) { neg = true; t = t.slice(0, -1); }
   if (/^\+/.test(t)) t = t.slice(1);
   const lc = t.lastIndexOf(','), ld = t.lastIndexOf('.');
-  if (lc > ld) t = t.replace(/\./g, '').replace(',', '.');
+  // 31/10: «2.500» o «1,234» (solo separador de miles, grupos de 3) son miles, no 2,5 ni 1,234 (Datos y Seguridad, riesgo 1)
+  if (/^-?[1-9]\d{0,2}([.,])\d{3}(\1\d{3})*$/.test(t)) t = t.replace(/[.,]/g, '');
+  else if (lc > ld) t = t.replace(/\./g, '').replace(',', '.');
   else if (lc >= 0 && ld > lc) t = t.replace(/,/g, '');
   else if (lc < 0 && (t.match(/\./g) || []).length > 1) t = t.replace(/\./g, '');
   if (!/^-?\d+(\.\d+)?$/.test(t)) return null;
@@ -10895,7 +10897,7 @@ const H = {
     IMP.paso = 'revisar'; IMP.verTodo = false; updateSheet(impHtml());
   },
   impIncluir: ([k], el) => { const r = IMP.filas[Number(k)]; if (r) { r.incluir = el.checked; updateSheet(impHtml()); } },
-  impTodas: ([v]) => { IMP.filas.forEach((r) => { if (r.id && r.estado !== 'importado') r.incluir = v === '1'; }); updateSheet(impHtml()); },
+  impTodas: ([v]) => { IMP.filas.forEach((r) => { if (r.id && r.estado !== 'importado' && (v !== '1' || r.estado === 'nuevo' || !r.estado)) r.incluir = v === '1'; }); updateSheet(impHtml()); }, // «Marcar todas» no marca lo dudoso (riesgo 2)
   impVerTodo: () => { IMP.verTodo = true; updateSheet(impHtml()); },
   impTipo: ([k], el) => { const r = IMP.filas[Number(k)]; if (!r) return; r.tipo = el.value; if (r.origenCat !== 'archivo') { const rg = reglaPara(r.desc, r.tipo); r.categoria = rg ? rg.categoria : sugerirCategoria(r.desc, r.tipo); r.origenCat = rg ? 'regla' : r.categoria ? 'historial' : ''; } updateSheet(impHtml()); },
   impCat: ([k], el) => {
