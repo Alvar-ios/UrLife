@@ -340,5 +340,13 @@
     return q(sb.from('objetivo_aportes').update({ borrado: new Date().toISOString() }).eq('user_id', currentUid).eq('mov_id', movId).is('borrado', null).select('id'));
   };
 
-  window.Data = { collection: collection, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, agendaPermisos: agendaPermisos, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
+  // Cambio del euro del Banco Central Europeo (tabla pública «divisas», solo lectura): el último publicado hasta esa fecha (10 días como mucho)
+  var divisas = {
+    cambio: function (moneda, fecha) {
+      var d = new Date(fecha + 'T12:00:00'); d.setDate(d.getDate() - 10);
+      var desde = d.toISOString().slice(0, 10);
+      return q(sb.from('divisas').select('fecha,por_eur').eq('moneda', moneda).lte('fecha', fecha).gte('fecha', desde).order('fecha', { ascending: false }).limit(1)).then(function (r) { return r && r[0] ? { fecha: r[0].fecha, porEur: Number(r[0].por_eur) } : null; });
+    }
+  };
+  window.Data = { collection: collection, divisas: divisas, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, agendaPermisos: agendaPermisos, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
 })();

@@ -1831,8 +1831,8 @@ function openMovForm(id, pre) {
     '<div class="handle"></div><div class="tec-cab"><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' + antesChip + '</div>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
     (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
-    (tec ? tecCampoHtml(FORM.tec) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni) : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
-      : '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div><div>') +
+    (tec ? tecCampoHtml(FORM.tec) + monBoxMov(ex, comp, tipoIni) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni) : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
+      : '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div>' + monBoxMov(ex, comp, tipoIni) + '<div>') +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
     TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + tipoTxt(t) + '</button>').join('') + '</div>' +
     '<div id="fijoBox">' + fijoHtml() + '</div></div>' +
@@ -5326,6 +5326,7 @@ function compRapidoHtml() {
     '<div class="cr-lbl">Con</div><div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>' +
     temaCajaHtml() +
     '<label class="cr-imp"><input id="crImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe total" value="' + escapeHtml(F.importe || '') + '" ' + onInput('crImporte') + '><span>' + sym() + '</span></label>' +
+    '<div id="monBox" class="mon-box">' + monHtml() + '</div>' +
     '<div class="field cr-que"><input id="crDesc" type="text" maxlength="80" placeholder="¿Qué fue? (cena, súper, gasolina…)" value="' + escapeHtml(F.desc || '') + '" ' + onInput('crDesc') + '>' +
       '<select id="crCat" aria-label="Categoría" ' + onChange('crCat') + '>' + cats.map((c) => '<option' + (c === F.cat ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select></div>' +
     (cp.dest ? '<div class="cr-lbl">Pagó</div><div class="cr-caras">' + ms.map((m) => '<button type="button" class="cr-cara' + (cp.pagador === m.uid ? ' on' : '') + '" ' + act('crPagador', m.uid) + '>' + caraHtml(m.uid, m.nombre) + '<span>' + escapeHtml(m.uid === yo ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>').join('') + '</div>' +
@@ -5347,6 +5348,71 @@ function crParaHtml(ms, rep) {
   const cp = FORM.comp, yo = miUid();
   return ms.map((m) => { const on = cp.modo === 'igual' ? !!(cp.incl || {})[m.uid] : num(rep[m.uid]) > 0;
     return '<button type="button" class="cr-cara' + (on ? ' on' : ' fuera') + '" ' + act('crIncl', m.uid) + '>' + caraHtml(m.uid, m.nombre) + '<span>' + escapeHtml(m.uid === yo ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span><b class="tnum">' + (on && rep[m.uid] ? money(rep[m.uid]) : '—') + '</b></button>'; }).join('');
+}
+
+/* ---- docs/29 tanda 0: «¿Pagaste en otra moneda?» Se convierte al euro y se guarda en euros ---- */
+const MON_LISTA = [['USD', '$', 'Dólar'], ['GBP', '£', 'Libra'], ['CHF', 'CHF', 'Franco suizo'], ['JPY', '¥', 'Yen'], ['MXN', 'MX$', 'Peso mexicano'], ['CAD', 'CA$', 'Dólar canadiense'], ['AUD', 'AU$', 'Dólar australiano'], ['SEK', 'kr', 'Corona sueca'], ['NOK', 'kr', 'Corona noruega'], ['DKK', 'kr', 'Corona danesa'], ['PLN', 'zł', 'Esloti'], ['CZK', 'Kč', 'Corona checa'], ['HUF', 'Ft', 'Forinto'], ['TRY', '₺', 'Lira turca'], ['BRL', 'R$', 'Real'], ['CNY', '¥', 'Yuan'], ['HKD', 'HK$', 'Dólar de Hong Kong'], ['INR', '₹', 'Rupia'], ['KRW', '₩', 'Won'], ['SGD', 'S$', 'Dólar de Singapur'], ['NZD', 'NZ$', 'Dólar neozelandés'], ['ZAR', 'R', 'Rand'], ['OTRA', '', 'Otra (a mano)']];
+const MON_SIN_DEC = ['JPY', 'KRW', 'HUF'];
+function monInfo(k) { return MON_LISTA.find((x) => x[0] === k) || [k, k, k]; }
+function monFmt(v, k) { const d = MON_SIN_DEC.indexOf(k) >= 0 ? 0 : 2; return Number(v || 0).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d }) + ' ' + (k === 'OTRA' ? '' : monInfo(k)[1]); }
+function monGuardado() { try { return JSON.parse(localStorage.getItem('monCambios') || '{}') || {}; } catch (e) { return {}; } }
+function monRecordar(k, v, f) { try { const o = monGuardado(); o[k] = { v, f }; localStorage.setItem('monCambios', JSON.stringify(o)); localStorage.setItem('monUlt', k); } catch (e) { /* sin almacenamiento */ } }
+function monUlt() { try { return localStorage.getItem('monUlt') || 'USD'; } catch (e) { return 'USD'; } }
+// importe en euros con el cambio elegido (null si falta algo)
+function monEuros(M) {
+  const o = numCampo(M.txt || ''); if (!(o > 0)) return null;
+  if (M.origen === 'cobro') { const c = numCampo(M.cobro || ''); return c > 0 ? r2(c) : null; }
+  const c = M.origen === 'mano' ? numCampo(M.mano || '') : M.cambio; return c > 0 ? r2(o / c) : null;
+}
+function monFechaGasto() { const el = $('#crFecha') || $('#tecFecha') || $('#fFecha'); const v = el && el.value; return v && v <= todayISO() ? v : todayISO(); }
+async function monCargarCambio() {
+  const M = FORM && FORM.mon; if (!M || M.moneda === 'OTRA') return;
+  const k = M.moneda, f = monFechaGasto(); M.cargando = true; M.cambio = null; M.fecha = ''; M.aviso = '';
+  let r = null; try { r = S.db && S.db.divisas ? await S.db.divisas.cambio(k, f) : null; } catch (e) { console.error(e); r = null; }
+  if (!FORM || FORM.mon !== M || M.moneda !== k) return;
+  M.cargando = false;
+  if (r && r.porEur > 0) { M.cambio = r.porEur; M.fecha = r.fecha; monRecordar(k, r.porEur, r.fecha); }
+  else { const g = monGuardado()[k]; if (g && g.v > 0) { M.cambio = g.v; M.fecha = g.f; M.aviso = 'Sin conexión: es el último cambio que usaste.'; } else if (M.origen === 'bce') M.origen = 'mano'; }
+  monPintar();
+}
+function monHtml() {
+  const M = FORM && FORM.mon;
+  if (!M || !M.on) return '<button type="button" class="link mon-abrir" ' + act('monAbrir') + '>' + ic('moneda') + ' ¿Pagaste en otra moneda?</button>';
+  const inf = monInfo(M.moneda), eur = monEuros(M), sinBce = M.moneda === 'OTRA';
+  let h = '<div class="mon-caja"><div class="mon-cab"><b>' + ic('moneda') + ' Otra moneda</b><button type="button" class="link" ' + act('monCerrar') + '>Quitar</button></div>' +
+    '<div class="mon-fila"><select id="monMoneda" aria-label="Moneda" ' + onChange('monMoneda') + '>' + MON_LISTA.map(([k, sy, n]) => '<option value="' + k + '"' + (k === M.moneda ? ' selected' : '') + '>' + escapeHtml(n + (sy ? ' (' + sy + ')' : '')) + '</option>').join('') + '</select>' +
+    '<input id="monImporte" class="tnum" type="text" inputmode="decimal" placeholder="0,00" aria-label="Importe en ' + escapeHtml(inf[2]) + '" value="' + escapeHtml(M.txt || '') + '" ' + onInput('monImporte') + '></div>';
+  const cam = M.origen === 'mano' ? numCampo(M.mano || '') : M.cambio;
+  if (M.origen === 'bce' && !sinBce) h += '<div class="mon-res" id="monRes">' + (M.cargando ? 'Buscando el cambio del día…' : eur != null ? '= <b class="tnum">' + money(eur) + '</b> · 1 € = ' + escapeHtml(String(cam).replace('.', ',')) + ' ' + escapeHtml(inf[1]) + ' · BCE ' + escapeHtml(M.fecha ? fmtDateShort(M.fecha) : '') : cam ? '1 € = ' + escapeHtml(String(cam).replace('.', ',')) + ' ' + escapeHtml(inf[1]) + ' · BCE ' + escapeHtml(M.fecha ? fmtDateShort(M.fecha) : '') : '') +
+    (M.aviso ? '<span class="mon-aviso">' + escapeHtml(M.aviso) + '</span>' : '') + '</div>';
+  h += '<div class="segmented sm mon-modo">' + (sinBce ? [] : [['bce', 'Cambio del día']]).concat([['mano', 'Poner el cambio'], ['cobro', 'Lo que me cobraron']]).map(([k, l]) => '<button type="button" class="' + (M.origen === k ? 'active' : '') + '" ' + act('monOrigen', k) + '>' + l + '</button>').join('') + '</div>';
+  if (M.origen === 'mano') h += '<div class="mon-fila mon-mano"><span>1 € =</span><input id="monMano" class="tnum" type="text" inputmode="decimal" placeholder="1,08" aria-label="Cambio: cuántas unidades por 1 euro" value="' + escapeHtml(M.mano || '') + '" ' + onInput('monMano') + '><span>' + escapeHtml(inf[1] || 'de esa moneda') + '</span></div>' +
+    (sinBce ? '<div class="rec-hint">El Banco Central Europeo no publica esa moneda. Escribe el cambio que te den o lo que te cobraron en euros.</div>' : '');
+  if (M.origen === 'cobro') h += '<div class="mon-fila mon-mano"><span>Me cobraron</span><input id="monCobro" class="tnum" type="text" inputmode="decimal" placeholder="0,00" aria-label="Lo que te cobraron en euros" value="' + escapeHtml(M.cobro || '') + '" ' + onInput('monCobro') + '><span>€</span></div><div class="rec-hint">Lo que dice tu banco o la tarjeta, con la comisión.</div>';
+  if (M.origen !== 'bce') h += '<div class="mon-res" id="monRes">' + (eur != null ? '= <b class="tnum">' + money(eur) + '</b>' : '') + '</div>';
+  h += '<button type="button" class="btn accent block mon-usar" id="monUsar" ' + act('monUsar') + (eur == null ? ' disabled' : '') + '>' + (eur == null ? 'Escribe el importe' : 'Usar ' + money(eur)) + '</button>' +
+    '<div class="rec-hint">Se guarda en euros, y la cifra en ' + escapeHtml(inf[2] === 'Otra (a mano)' ? 'esa moneda' : inf[2].toLowerCase()) + ' se apunta en la descripción.</div></div>';
+  return h;
+}
+function monBoxMov(ex, comp, tipo) { return !ex && !comp && (tipo === 'Gasto' || tipo === 'Factura') ? '<div id="monBox" class="mon-box">' + monHtml() + '</div>' : ''; }
+function monPintar() { const b = $('#monBox'); if (b) b.innerHTML = monHtml(); }
+function monRes() { // al escribir: solo la línea del resultado y el botón, sin perder el foco
+  const M = FORM && FORM.mon; if (!M) return; const eur = monEuros(M), r = $('#monRes'), u = $('#monUsar');
+  if (M.origen === 'bce' && r && M.cambio) { const inf = monInfo(M.moneda); r.innerHTML = (eur != null ? '= <b class="tnum">' + money(eur) + '</b> · ' : '') + '1 € = ' + escapeHtml(String(M.cambio).replace('.', ',')) + ' ' + escapeHtml(inf[1]) + ' · BCE ' + escapeHtml(M.fecha ? fmtDateShort(M.fecha) : '') + (M.aviso ? '<span class="mon-aviso">' + escapeHtml(M.aviso) + '</span>' : ''); }
+  else if (r && M.origen !== 'bce') r.innerHTML = eur != null ? '= <b class="tnum">' + money(eur) + '</b>' : '';
+  if (u) { u.disabled = eur == null; u.textContent = eur == null ? 'Escribe el importe' : 'Usar ' + money(eur); }
+}
+function monUsar() {
+  const F = FORM, M = F && F.mon, eur = M ? monEuros(M) : null; if (eur == null) return;
+  const txt = String(eur).replace('.', ','), nota = monFmt(numCampo(M.txt), M.moneda).trim();
+  if (F.tec) { F.tec.txt = txt; F.tec.neg = false; F.tec.reemplazar = true; tecSync(true); }
+  const cr = $('#crImporte'); if (cr) { cr.value = txt; F.importe = txt; cr.size = Math.max(1, txt.length); }
+  const fi = $('#fImporte'); if (fi && !F.tec) fi.value = txt;
+  const d = $('#crDesc') || $('#fDesc'); if (d && M.moneda !== 'OTRA' && d.value.indexOf(nota) < 0) { d.value = (d.value.trim() ? d.value.trim() + ' · ' : '') + nota; if (d.id === 'crDesc') F.desc = d.value; }
+  if (M.moneda !== 'OTRA' && M.origen === 'mano') monRecordar(M.moneda, numCampo(M.mano), todayISO());
+  M.on = false; monPintar(); sentir('ok');
+  if (cr) crRefrescar(); else if (H.onImporteInput) { try { H.onImporteInput([]); } catch (e) { /* */ } }
+  toast('Puesto en euros: ' + money(eur));
 }
 function crRefrescar() {
   const F = FORM; if (!F || F.kind !== 'compRapido') return;
@@ -10687,6 +10753,14 @@ const H = {
   },
   compRapido: ([dest]) => { S._volverGrupo = FORM && FORM.kind === 'grupo' ? FORM.id : null; abrirCompRapido(dest || ''); },
   crDest: ([k]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; compPrepararDestino(k); F.comp.pagador = F.comp.pagador || miUid(); F.temaTocado = false; F.temaNuevo = false; temaAutoAplicar(); updateSheet(compRapidoHtml()); },
+  monAbrir: () => { const F = FORM; if (!F) return; F.mon = { on: true, moneda: monUlt(), txt: '', origen: 'bce', mano: '', cobro: '', cambio: null, fecha: '' }; monPintar(); monCargarCambio(); const el = $('#monImporte'); if (el) el.focus(); },
+  monCerrar: () => { if (!FORM || !FORM.mon) return; FORM.mon.on = false; monPintar(); },
+  monMoneda: (_a, el) => { const M = FORM && FORM.mon; if (!M) return; M.moneda = el.value; M.mano = ''; if (M.moneda === 'OTRA') { M.origen = M.origen === 'bce' ? 'mano' : M.origen; M.cambio = null; } else { M.origen = 'bce'; try { localStorage.setItem('monUlt', M.moneda); } catch (e) { /* */ } } monPintar(); monCargarCambio(); },
+  monImporte: (_a, el) => { const M = FORM && FORM.mon; if (!M) return; M.txt = el.value; monRes(); },
+  monMano: (_a, el) => { const M = FORM && FORM.mon; if (!M) return; M.mano = el.value; monRes(); },
+  monCobro: (_a, el) => { const M = FORM && FORM.mon; if (!M) return; M.cobro = el.value; monRes(); },
+  monOrigen: ([k]) => { const M = FORM && FORM.mon; if (!M) return; M.origen = k; if (k === 'mano' && !M.mano && M.cambio) M.mano = String(M.cambio).replace('.', ','); monPintar(); },
+  monUsar: () => monUsar(),
   crImporte: (_a, el) => { if (!FORM) return; FORM.importe = el.value; el.size = Math.max(1, el.value.length); crRefrescar(); },
   sFechaVer: () => { const i = $('#sFecha'), c = $('#sFechaChip'); if (!i) return; i.hidden = false; if (c) c.hidden = true; i.focus(); try { if (i.showPicker) i.showPicker(); } catch (e) { /* sin selector */ } },
   crDesc: (_a, el) => { const F = FORM; if (!F) return; F.desc = el.value; if (!F.catTocada) { const c = sugerirCategoria(el.value.trim(), 'Gasto'); if (c && esCatGasto(c)) { F.cat = c; const sel = $('#crCat'); if (sel && [...sel.options].some((o) => o.value === c)) sel.value = c; } } },

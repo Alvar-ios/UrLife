@@ -2309,3 +2309,19 @@ html[data-look="nuevo"] .tema-cierre svg { width: 15px; height: 15px; vertical-a
 html[data-look="nuevo"] .tema-cierre .tema-cierre-av { color: var(--warn); }
 html[data-look="nuevo"] .tema-cierre .tema-cierre-ok { color: var(--income); }
 html[data-look="nuevo"] .tema-cierre .actions { margin-top: 6px; }
+
+/* docs/29 tanda 0: «¿Pagaste en otra moneda?» */
+html[data-look="nuevo"] .mon-box { margin: 2px 0 12px; }
+html[data-look="nuevo"] .mon-abrir { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; }
+html[data-look="nuevo"] .mon-abrir svg, html[data-look="nuevo"] .mon-cab svg { width: 17px; height: 17px; }
+html[data-look="nuevo"] .mon-caja { border: 1px solid var(--line); background: var(--paper-raised); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+html[data-look="nuevo"] .mon-cab { display: flex; justify-content: space-between; align-items: center; }
+html[data-look="nuevo"] .mon-cab b { display: inline-flex; align-items: center; gap: 6px; }
+html[data-look="nuevo"] .mon-fila { display: flex; gap: 8px; align-items: center; }
+html[data-look="nuevo"] .mon-fila select { flex: 1 1 55%; min-width: 0; min-height: 44px; }
+html[data-look="nuevo"] .mon-fila input { flex: 1 1 45%; min-width: 0; min-height: 44px; font-size: 18px; font-weight: 700; text-align: right; }
+html[data-look="nuevo"] .mon-mano span { flex: none; color: var(--text-dim); font-size: 14px; }
+html[data-look="nuevo"] .mon-res { font-size: 14px; color: var(--text-dim); min-height: 20px; }
+html[data-look="nuevo"] .mon-res b { color: var(--text); font-size: 16px; }
+html[data-look="nuevo"] .mon-aviso { display: block; color: var(--warn); font-size: 12.5px; margin-top: 2px; }
+html[data-look="nuevo"] .mon-modo button { font-size: 12.5px; }
