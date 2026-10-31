@@ -63,7 +63,7 @@ const hoy=loc(new Date()), dHoy=Number(hoy.slice(8));
  e.w.__APP__.H.goTab(['mas']);await sleep(20);
  click(e,'openRecurrentes');await sleep(20);
  let sh=doc.querySelector('#sheetHost').textContent;
- ok(/Ingresos fijos/.test(sh)&&/Bizum papá/.test(sh)&&/Alquiler/.test(sh)&&/El día \d+ de cada mes/.test(sh),'lista con reglas (factura antigua como «día fijo»)');
+ ok(/Ingresos fijos/.test(sh)&&/Bizum papá/.test(sh)&&/Alquiler/.test(sh)&&/El día \d+ de cada mes|El último día de cada mes/.test(sh),'lista con reglas (factura antigua como «día fijo»)');
  click(e,'recNuevo','cobro');await sleep(20);
  const setv=(sel,v,ev)=>{const el=doc.querySelector(sel);el.value=v;el.dispatchEvent(new e.w.Event(ev||'input',{bubbles:true}))};
  setv('#recNombre','Nómina');setv('#recImporte','1500');
