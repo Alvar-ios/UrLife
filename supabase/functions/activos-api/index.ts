@@ -1,9 +1,10 @@
 // API de activos para la app: buscar, registrar, precio en una fecha, valoración actual e histórico.
 // Solo responde a usuarios con sesión iniciada. Protege el límite diario de EODHD.
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { MONEDAS_EXTRA, leerPeticionCambio, necesitaBce, respuestaCambio, puedeDescargar } from './cambio.ts';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json; charset=utf-8' };
-const MONEDAS = ['USD', 'JPY', 'GBP', 'CHF', 'CAD', 'AUD', 'HKD', 'MXN', 'CNY', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'BRL', 'INR', 'KRW', 'SGD', 'NZD', 'TRY', 'ZAR'];
+const MONEDAS = ['USD', 'JPY', 'GBP', 'CHF', 'CAD', 'AUD', 'HKD', 'MXN', 'CNY', 'SEK', 'NOK', 'DKK', 'PLN', 'CZK', 'HUF', 'BRL', 'INR', 'KRW', 'SGD', 'NZD', 'TRY', 'ZAR', ...MONEDAS_EXTRA];
 const LIMITE_DIARIO = 20;
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const eKey = () => Deno.env.get('EODHD_KEY') || '';
@@ -38,8 +39,9 @@ async function gastar(n: number): Promise<boolean> {
   return true;
 }
 
-async function ecbRango(desde: string): Promise<number> {
-  const r = await getJson('https://data-api.ecb.europa.eu/service/data/EXR/D.' + MONEDAS.join('+') + '.EUR.SP00.A?startPeriod=' + desde + '&format=jsondata');
+// hasta (opcional, 31/10): para no bajar años de cambios cuando se pide un día viejo. Sin él, igual que antes.
+async function ecbRango(desde: string, hasta?: string): Promise<number> {
+  const r = await getJson('https://data-api.ecb.europa.eu/service/data/EXR/D.' + MONEDAS.join('+') + '.EUR.SP00.A?startPeriod=' + desde + (hasta ? '&endPeriod=' + hasta : '') + '&format=jsondata');
   if (!r.ok || !r.data) return 0;
   const monedas = r.data.structure.dimensions.series[1].values.map((v: any) => v.id);
   const dias = r.data.structure.dimensions.observation[0].values.map((v: any) => v.id);
@@ -230,6 +232,22 @@ Deno.serve(async (req) => {
       series[a.id] = out;
     }
     return json({ desde, series, limite, incompletos });
+  }
+
+  // 31/10 (docs/29): cambio del BCE de un día para una moneda (unidades por 1 €). Solo lee la tabla «divisas»;
+  // si falta, la completa desde el BCE (gratis, sin clave), como mucho 10 días y con freno. No guarda nada del usuario.
+  if (accion === 'cambio') {
+    const p = leerPeticionCambio(b, hoy(), MONEDAS);
+    if ('error' in p) return json(p, 400);
+    if (p.moneda === 'EUR') return json(respuestaCambio('EUR', p.fecha, null));
+    const buscar = async () => ((await sb.from('divisas').select('fecha,por_eur').eq('moneda', p.moneda).lte('fecha', p.fecha)
+      .gte('fecha', restaDias(p.fecha, 10)).order('fecha', { ascending: false }).limit(1)).data || [])[0] || null;
+    let fila = await buscar();
+    if (necesitaBce(fila ? fila.fecha : null, p.fecha) && puedeDescargar(p.fecha)) {
+      await ecbRango(restaDias(p.fecha, 10), p.fecha);
+      fila = await buscar();
+    }
+    return json(respuestaCambio(p.moneda, p.fecha, fila));
   }
 
   return json({ error: 'accion_desconocida' }, 400);
