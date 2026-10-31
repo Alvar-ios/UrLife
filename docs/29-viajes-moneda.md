@@ -154,9 +154,9 @@ La 1 y la 2 pueden ir en la misma migración, pero el ROADMAP pide una semana de
 
 ## 8. Preguntas para el dueño
 
-1. **(Bloquea la tanda 1)** ¿La moneda del viaje va **en el tema** (y en el grupo si es solo para el viaje)? Recomendamos que sí: el viaje con tu pareja o tus amigos de siempre suele ser un tema dentro del grupo de siempre.
-2. Si quien pagó pone «Te cobraron 112,40 €», ¿la diferencia con el BCE **se reparte entre todos**? Recomendamos que sí: es lo que costó de verdad. La alternativa es que la pague solo quien pagó.
-3. ¿Empezamos por la **tanda 0** (sin tocar la base de datos) mientras Datos y Seguridad revisa el resto? ¿Hay algún viaje con fecha a la vista? Si lo hay, la tanda 0 llega a tiempo seguro.
+1. ✅ **Decidido (31/10): sí**, en el tema y en el grupo si es solo para el viaje. **(Bloqueaba la tanda 1)** ¿La moneda del viaje va **en el tema** (y en el grupo si es solo para el viaje)? Recomendamos que sí: el viaje con tu pareja o tus amigos de siempre suele ser un tema dentro del grupo de siempre.
+2. ✅ **Decidido (31/10): sí, se reparte entre todos.** Si quien pagó pone «Te cobraron 112,40 €», ¿la diferencia con el BCE **se reparte entre todos**? Recomendamos que sí: es lo que costó de verdad. La alternativa es que la pague solo quien pagó.
+3. ✅ **Decidido (31/10): empezar por la tanda 0.** No hay viaje con fecha. ¿Empezamos por la **tanda 0** (sin tocar la base de datos) mientras Datos y Seguridad revisa el resto? ¿Hay algún viaje con fecha a la vista? Si lo hay, la tanda 0 llega a tiempo seguro.
 
 ## 9. Lo que no hemos podido averiguar o confirmar
 
