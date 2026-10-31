@@ -9,7 +9,7 @@ function builder(table){
   const b={
     select(){st.ops.push('select');return b},eq(k,v){st.ops.push('eq:'+k+'='+v);return b},order(k){st.ops.push('order:'+k);return b},
     range(a,z){st.range=[a,z];return b},
-    upsert(chunk,opts){calls.push({op:'upsert',n:Array.isArray(chunk)?chunk.length:1,opts,chunk});return Promise.resolve({error:null})},
+    upsert(chunk,opts){calls.push({op:'upsert',n:Array.isArray(chunk)?chunk.length:1,opts,chunk});const res={error:null};const pr=Promise.resolve(res);pr.select=()=>Promise.resolve({error:null,data:(Array.isArray(chunk)?chunk:[chunk]).filter(r=>!/^imp-(0|1|2)$/.test(r.id)).map(r=>({id:r.id}))});return pr},
     delete(){st.del=true;return b},
     then(res,rej){
       if(st.del){calls.push({op:'delete',ops:st.ops.slice()});return Promise.resolve({error:null}).then(res,rej)}
@@ -39,7 +39,7 @@ w.eval(fs.readFileSync(require('path').join(__dirname,'..','data-layer.js'),'utf
  const items=Array.from({length:450},(_,i)=>({id:'imp-'+i,data:{tipo:'Gasto',importe:1,fecha:'2026-01-01',creadoEn:1,lote:'L1'}}));
  const n=await w.Data.collection('movimientos').bulkInsert(items);
  const ups=calls.filter(c=>c.op==='upsert');
- ok(n===450&&ups.map(u=>u.n).join()==='200,200,50','450 filas en 3 bloques');
+ ok(n===447&&ups.map(u=>u.n).join()==='200,200,50','450 filas en 3 bloques; cuenta solo las 447 nuevas (3 ya existían)');
  ok(ups[0].opts.ignoreDuplicates===true&&ups[0].opts.onConflict==='id','no pisa filas existentes');
  ok(ups[0].chunk[0].user_id==='u1'&&ups[0].chunk[0].creado_en===1&&ups[0].chunk[0].lote==='L1','columnas en snake_case con usuario');
  // borrado por lote

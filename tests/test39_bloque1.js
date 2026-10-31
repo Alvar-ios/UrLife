@@ -88,6 +88,9 @@ const txt = (e) => e.doc.querySelector('#content').textContent.replace(/\s+/g, '
   const fT = A.imp().filas.find((r) => /HUCHA/.test(r.desc || '')), fG = A.imp().filas.find((r) => /MERCADONA/.test(r.desc || ''));
   ok(fT && fT.estado === 'traspaso' && !fT.incluir, 'la fila «Traspaso» sale desmarcada y avisada, no como gasto');
   ok(fG && fG.estado === 'nuevo' && fG.incluir, 'las demás filas se importan como siempre');
+  A.H.impTodas(['0']); A.H.impTodas(['1']); await sleep(10);
+  { const t2 = A.imp().filas.find((r) => /HUCHA/.test(r.desc || '')), g2 = A.imp().filas.find((r) => /MERCADONA/.test(r.desc || ''));
+    ok(t2 && !t2.incluir && g2 && g2.incluir, '31/10: «Marcar todas» marca lo nuevo pero no el traspaso (ni los «¿duplicado?»)'); }
 
   console.log(fails ? 'FAILED ' + fails : 'ALL PASS');
   process.exit(fails ? 1 : 0);
