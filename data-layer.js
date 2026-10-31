@@ -125,8 +125,14 @@
         for (var i = 0; i < rows.length; i += 200) chunks.push(rows.slice(i, i + 200));
         return chunks.reduce(function (p, chunk) {
           return p.then(function (n) {
-            return sb.from(table).upsert(chunk, { onConflict: 'id', ignoreDuplicates: true }).select('id').then(function (res) {
-              if (res.error) throw pgError(res.error);
+            // cada bloque se reintenta por su cuenta (hasta 3 veces): así un fallo a mitad no hace repetir los bloques ya guardados
+            function intento(k) {
+              return sb.from(table).upsert(chunk, { onConflict: 'id', ignoreDuplicates: true }).select('id').then(function (res) {
+                if (res.error) throw pgError(res.error);
+                return res;
+              }).catch(function (e) { if (k >= 2) throw e; return new Promise(function (ok) { setTimeout(ok, 600 * (k + 1)); }).then(function () { return intento(k + 1); }); });
+            }
+            return intento(0).then(function (res) {
               return n + (Array.isArray(res.data) ? res.data.length : chunk.length); // solo las nuevas (las repetidas se ignoran)
             });
           });

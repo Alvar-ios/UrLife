@@ -9022,7 +9022,7 @@ function impHtml() {
         const nv = impNuevosConfig(sel), partes = Object.keys(nv).filter((k) => nv[k].length).map((k) => '<b>' + IMP_NUEVOS_TXT[k] + ':</b> ' + nv[k].map(escapeHtml).join(', '));
         return partes.length ? '<label class="imp-note imp-cfg"><input type="checkbox" ' + (I.anadirConfig !== false ? 'checked' : '') + ' ' + onChange('impAnadirCfg') + '> <span>Añadir a tu configuración lo nuevo del archivo:<br>' + partes.join('<br>') + '</span></label>' : '';
       })() +
-      '<div class="imp-bulk"><button type="button" class="link" ' + act('impTodas', '1') + '>Marcar todas</button> · <button type="button" class="link" ' + act('impTodas', '0') + '>Desmarcar todas</button></div>' +
+      '<div class="imp-bulk"><button type="button" class="link" ' + act('impTodas', '1') + '>Marcar las nuevas</button> · <button type="button" class="link" ' + act('impTodas', '0') + '>Desmarcar todas</button></div>' +
       '<div class="imp-list">' + visibles.slice(0, LIM).map(filaHtml).join('') + '</div>' +
       (visibles.length > LIM ? '<button class="btn ghost block" style="margin-top:8px;" ' + act('impVerTodo') + '>Ver las ' + visibles.length + ' filas</button>' : '') +
       '<div class="actions"><button class="btn ghost block" ' + act('impVolver', 'columnas') + '>Atrás</button>' + (sel.length ? '<button class="btn accent block" ' + act('impEjecutar') + '>Importar ' + sel.length + '</button>' : '<button class="btn accent block" ' + act('closeSheet') + '>Cerrar: no hay nada nuevo</button>') + '</div>';
@@ -9030,9 +9030,9 @@ function impHtml() {
   if (I.paso === 'importando') return h2('Importando…') + '<div style="color:var(--text-muted);font-size:14px;">Guardando ' + I.total + ' movimientos. No cierres la app.</div>';
   if (I.paso === 'hecho') {
     return h2(I.fallo ? 'Importación incompleta' : '¡Importado!') +
-      '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '<span class="ic-warn">' + ic('alert') + '</span> ' + 'No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '<span class="ic-ok">' + ic('checkCircle') + '</span> ' + 'Se han guardado <b>' + I.hechos + '</b> movimientos.' + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.' : '')) + '</div>' +
-      '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Tú → Importaciones.</div>' +
-      '<div class="actions"><button class="btn ghost block" ' + act('impDeshacer', I.lote) + '>Deshacer</button><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+      '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '<span class="ic-warn">' + ic('alert') + '</span> ' + 'No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '<span class="ic-ok">' + ic('checkCircle') + '</span> ' + (I.hechos ? 'Se han guardado <b>' + I.hechos + '</b> ' + (I.hechos === 1 ? 'movimiento.' : 'movimientos.') : 'No había nada nuevo: ya tenías todo lo de este archivo.') + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.' : '')) + '</div>' +
+      (I.hechos ? '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Tú → Importaciones.</div>' : '') +
+      '<div class="actions">' + (I.hechos ? '<button class="btn ghost block" ' + act('impDeshacer', I.lote) + '>Deshacer</button>' : '') + '<button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
   }
   return '';
 }
@@ -9147,17 +9147,17 @@ async function impEjecutar() {
   let hechos = 0, fallo = '';
   try {
     const col = S.db.collection('movimientos');
-    if (typeof col.bulkInsert === 'function') hechos = await withRetry(() => col.bulkInsert(items));
+    if (typeof col.bulkInsert === 'function') hechos = await col.bulkInsert(items); // reintenta cada bloque por dentro
     else { for (const it of items) { await withRetry(() => col.doc(it.id).set(it.data)); hechos++; } }
   } catch (e) { console.error(e); fallo = errMsg(e); }
   const c = cfg();
-  const lotes = (c.importLotes || []).concat([{ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: hechos || 0 }]).slice(-50);
+  const lotes = hechos ? (c.importLotes || []).concat([{ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: hechos }]).slice(-50) : (c.importLotes || []); // sin nada nuevo, no se apunta un lote vacío
   const perfiles = Object.assign({}, c.importPerfiles || {}, { [firmaArchivo(I)]: { map: I.map, modoImporte: I.modoImporte, signo: I.signo, fmtFecha: I.fmtFecha, usado: todayISO() } });
   const extra = hechos && I.anadirConfig !== false ? impPatchConfig(sel).patch : {};
   saveConfig(Object.assign({ importLotes: lotes, importPerfiles: perfiles }, extra));
   Object.assign(I, { paso: 'hecho', hechos, fallo, configNuevos: Object.keys(extra).length });
   updateSheet(impHtml());
-  if (!fallo) toast(hechos + ' movimientos importados');
+  if (!fallo) toast(hechos ? hechos + (hechos === 1 ? ' movimiento importado' : ' movimientos importados') : 'No había nada nuevo: ya lo tenías todo');
 }
 async function deshacerLote(lote) {
   const col = S.db.collection('movimientos');
