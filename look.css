@@ -2325,3 +2325,13 @@ html[data-look="nuevo"] .mon-res { font-size: 14px; color: var(--text-dim); min-
 html[data-look="nuevo"] .mon-res b { color: var(--text); font-size: 16px; }
 html[data-look="nuevo"] .mon-aviso { display: block; color: var(--warn); font-size: 12.5px; margin-top: 2px; }
 html[data-look="nuevo"] .mon-modo button { font-size: 12.5px; }
+
+/* docs/30 tanda 1: importar en una cuenta */
+html[data-look="nuevo"] .imp-cuenta { margin: 0 0 12px; display: flex; flex-direction: column; gap: 6px; }
+html[data-look="nuevo"] .imp-cuenta > label { font-weight: 600; font-size: 14px; }
+html[data-look="nuevo"] .imp-cuentas .chip { min-height: 40px; display: inline-flex; align-items: center; gap: 6px; }
+html[data-look="nuevo"] .imp-cuenta .dot, html[data-look="nuevo"] .imp-file .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 2px; }
+html[data-look="nuevo"] .imp-mismo { display: flex; gap: 8px; margin-top: 6px; }
+html[data-look="nuevo"] .imp-mismo .chip { min-height: 36px; }
+html[data-look="nuevo"] .cuenta-imp { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin: 6px 0 4px; }
+html[data-look="nuevo"] .cuenta-imp svg { width: 16px; height: 16px; }
