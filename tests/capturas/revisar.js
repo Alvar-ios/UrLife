@@ -14,6 +14,8 @@ const PANTALLAS = [
   ['dinero', 'A.S.tab="dinero";A.render()'],
   ['agenda', 'A.S.tab="agenda";A.render()'],
   ['tu', 'A.S.tab="tu";A.render()'],
+  ['moneda', 'A.S.tab="juntos";A.render();A.H.compRapido(["g:"+C.G1]);setTimeout(()=>{A.H.monAbrir([]);setTimeout(()=>{const el=document.querySelector("#monImporte");el.value="120";A.H.monImporte([],el);},150);},150)'],
+  ['viaje', 'A.S.tab="juntos";A.render();A.H.grupoVer([C.G1]);setTimeout(()=>{A.H.temaVer(["tv1"]);A.H.temaCerrarPre(["tv1"]);},150)'],
   ['mas', 'A.S.tab="inicio";A.S.inicioSub="";A.S.inicioVista="";A.render();A.openCrear()'],
 ];
 // en la página: busca textos cortados (sin «…» a propósito) y cosas que se salen por la derecha

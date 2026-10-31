@@ -1831,8 +1831,8 @@ function openMovForm(id, pre) {
     '<div class="handle"></div><div class="tec-cab"><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' + antesChip + '</div>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
     (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
-    (tec ? tecCampoHtml(FORM.tec) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni) : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
-      : '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div><div>') +
+    (tec ? tecCampoHtml(FORM.tec) + monBoxMov(ex, comp, tipoIni) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni) : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
+      : '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div>' + monBoxMov(ex, comp, tipoIni) + '<div>') +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
     TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + tipoTxt(t) + '</button>').join('') + '</div>' +
     '<div id="fijoBox">' + fijoHtml() + '</div></div>' +
@@ -5326,6 +5326,7 @@ function compRapidoHtml() {
     '<div class="cr-lbl">Con</div><div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>' +
     temaCajaHtml() +
     '<label class="cr-imp"><input id="crImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe total" value="' + escapeHtml(F.importe || '') + '" ' + onInput('crImporte') + '><span>' + sym() + '</span></label>' +
+    '<div id="monBox" class="mon-box">' + monHtml() + '</div>' +
     '<div class="field cr-que"><input id="crDesc" type="text" maxlength="80" placeholder="¿Qué fue? (cena, súper, gasolina…)" value="' + escapeHtml(F.desc || '') + '" ' + onInput('crDesc') + '>' +
       '<select id="crCat" aria-label="Categoría" ' + onChange('crCat') + '>' + cats.map((c) => '<option' + (c === F.cat ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select></div>' +
     (cp.dest ? '<div class="cr-lbl">Pagó</div><div class="cr-caras">' + ms.map((m) => '<button type="button" class="cr-cara' + (cp.pagador === m.uid ? ' on' : '') + '" ' + act('crPagador', m.uid) + '>' + caraHtml(m.uid, m.nombre) + '<span>' + escapeHtml(m.uid === yo ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>').join('') + '</div>' +
@@ -5347,6 +5348,72 @@ function crParaHtml(ms, rep) {
   const cp = FORM.comp, yo = miUid();
   return ms.map((m) => { const on = cp.modo === 'igual' ? !!(cp.incl || {})[m.uid] : num(rep[m.uid]) > 0;
     return '<button type="button" class="cr-cara' + (on ? ' on' : ' fuera') + '" ' + act('crIncl', m.uid) + '>' + caraHtml(m.uid, m.nombre) + '<span>' + escapeHtml(m.uid === yo ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span><b class="tnum">' + (on && rep[m.uid] ? money(rep[m.uid]) : '—') + '</b></button>'; }).join('');
+}
+
+/* ---- docs/29 tanda 0: «¿Pagaste en otra moneda?» Se convierte al euro y se guarda en euros ---- */
+const MON_LISTA = [['USD', '$', 'Dólar'], ['GBP', '£', 'Libra'], ['CHF', 'CHF', 'Franco suizo'], ['JPY', '¥', 'Yen'], ['MXN', 'MX$', 'Peso mexicano'], ['CAD', 'CA$', 'Dólar canadiense'], ['AUD', 'AU$', 'Dólar australiano'], ['SEK', 'SEK', 'Corona sueca'], ['NOK', 'NOK', 'Corona noruega'], ['DKK', 'DKK', 'Corona danesa'], ['PLN', 'zł', 'Esloti'], ['CZK', 'Kč', 'Corona checa'], ['HUF', 'Ft', 'Forinto'], ['TRY', '₺', 'Lira turca'], ['BRL', 'R$', 'Real'], ['CNY', 'CNY', 'Yuan'], ['HKD', 'HK$', 'Dólar de Hong Kong'], ['INR', '₹', 'Rupia'], ['KRW', '₩', 'Won'], ['SGD', 'S$', 'Dólar de Singapur'], ['NZD', 'NZ$', 'Dólar neozelandés'], ['ZAR', 'R', 'Rand'], ['OTRA', '', 'Otra (a mano)']];
+const MON_SIN_DEC = ['JPY', 'KRW', 'HUF'];
+function monInfo(k) { return MON_LISTA.find((x) => x[0] === k) || [k, k, k]; }
+function monFmt(v, k) { const d = MON_SIN_DEC.indexOf(k) >= 0 ? 0 : 2; return Number(v || 0).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d }) + ' ' + (k === 'OTRA' ? '' : monInfo(k)[1]); }
+function monGuardado() { try { return JSON.parse(localStorage.getItem('monCambios') || '{}') || {}; } catch (e) { return {}; } }
+function monRecordar(k, v, f) { try { const o = monGuardado(); o[k] = { v, f }; localStorage.setItem('monCambios', JSON.stringify(o)); localStorage.setItem('monUlt', k); } catch (e) { /* sin almacenamiento */ } }
+function monUlt() { try { return localStorage.getItem('monUlt') || 'USD'; } catch (e) { return 'USD'; } }
+// importe en euros con el cambio elegido (null si falta algo)
+function monEuros(M) {
+  const o = numCampo(M.txt || ''); if (!(o > 0)) return null;
+  if (M.origen === 'cobro') { const c = numCampo(M.cobro || ''); return c > 0 ? r2(c) : null; }
+  const c = M.origen === 'mano' ? numCampo(M.mano || '') : M.cambio; return c > 0 ? r2(o / c) : null;
+}
+function monFechaGasto() { const el = $('#crFecha') || $('#tecFecha') || $('#fFecha'); const v = el && el.value; return v && v <= todayISO() ? v : todayISO(); }
+async function monCargarCambio() {
+  const M = FORM && FORM.mon; if (!M || M.moneda === 'OTRA') return;
+  const k = M.moneda, f = monFechaGasto(); M.cargando = true; M.cambio = null; M.fecha = ''; M.aviso = '';
+  let r = null; try { r = S.db && S.db.divisas ? await S.db.divisas.cambio(k, f) : null; } catch (e) { console.error(e); r = null; }
+  if (!FORM || FORM.mon !== M || M.moneda !== k) return;
+  M.cargando = false;
+  if (r && r.porEur > 0) { M.cambio = r.porEur; M.fecha = r.fecha; monRecordar(k, r.porEur, r.fecha); }
+  else { const g = monGuardado()[k]; if (g && g.v > 0) { M.cambio = g.v; M.fecha = g.f; M.aviso = 'Sin conexión: es el último cambio que usaste.'; } else { if (M.origen === 'bce') M.origen = 'mano'; M.aviso = 'Sin conexión: escribe el cambio o lo que te cobraron.'; } }
+  monPintar();
+}
+function monHtml() {
+  const M = FORM && FORM.mon;
+  if (!M || !M.on) return '<button type="button" class="link mon-abrir" ' + act('monAbrir') + '>' + ic('moneda') + ' ¿Pagaste en otra moneda?</button>';
+  const inf = monInfo(M.moneda), eur = monEuros(M), sinBce = M.moneda === 'OTRA';
+  let h = '<div class="mon-caja"><div class="mon-cab"><b>' + ic('moneda') + ' Otra moneda</b><button type="button" class="link" ' + act('monCerrar') + '>Quitar</button></div>' +
+    '<div class="mon-fila"><select id="monMoneda" aria-label="Moneda" ' + onChange('monMoneda') + '>' + MON_LISTA.map(([k, sy, n]) => '<option value="' + k + '"' + (k === M.moneda ? ' selected' : '') + '>' + escapeHtml(n + (sy ? ' (' + sy + ')' : '')) + '</option>').join('') + '</select>' +
+    '<input id="monImporte" class="tnum" type="text" inputmode="decimal" placeholder="0,00" aria-label="Importe en ' + escapeHtml(inf[2]) + '" value="' + escapeHtml(M.txt || '') + '" ' + onInput('monImporte') + '></div>';
+  const cam = M.origen === 'mano' ? numCampo(M.mano || '') : M.cambio;
+  if (M.origen === 'bce' && !sinBce) h += '<div class="mon-res" id="monRes">' + (M.cargando ? 'Buscando el cambio del día…' : eur != null ? '= <b class="tnum">' + money(eur) + '</b> · 1 € = ' + escapeHtml(String(cam).replace('.', ',')) + ' ' + escapeHtml(inf[1]) + ' · BCE ' + escapeHtml(M.fecha ? fmtDateShort(M.fecha) : '') : cam ? '1 € = ' + escapeHtml(String(cam).replace('.', ',')) + ' ' + escapeHtml(inf[1]) + ' · BCE ' + escapeHtml(M.fecha ? fmtDateShort(M.fecha) : '') : '') +
+    (M.aviso ? '<span class="mon-aviso">' + escapeHtml(M.aviso) + '</span>' : '') + '</div>';
+  h += '<div class="segmented sm mon-modo">' + (sinBce ? [] : [['bce', 'Cambio del día']]).concat([['mano', 'Poner el cambio'], ['cobro', 'Lo que me cobraron']]).map(([k, l]) => '<button type="button" class="' + (M.origen === k ? 'active' : '') + '" ' + act('monOrigen', k) + '>' + l + '</button>').join('') + '</div>';
+  if (M.origen === 'mano') h += '<div class="mon-fila mon-mano"><span>1 € =</span><input id="monMano" class="tnum" type="text" inputmode="decimal" placeholder="1,08" aria-label="Cambio: cuántas unidades por 1 euro" value="' + escapeHtml(M.mano || '') + '" ' + onInput('monMano') + '><span>' + escapeHtml(inf[1] || 'de esa moneda') + '</span></div>' +
+    (sinBce ? '<div class="rec-hint">El Banco Central Europeo no publica esa moneda. Escribe el cambio que te den o lo que te cobraron en euros.</div>' : '');
+  if (M.origen === 'cobro') h += '<div class="mon-fila mon-mano"><span>Me cobraron</span><input id="monCobro" class="tnum" type="text" inputmode="decimal" placeholder="0,00" aria-label="Lo que te cobraron en euros" value="' + escapeHtml(M.cobro || '') + '" ' + onInput('monCobro') + '><span>€</span></div><div class="rec-hint">Lo que dice tu banco o la tarjeta, con la comisión.</div>';
+  if (M.origen !== 'bce') h += '<div class="mon-res" id="monRes">' + (eur != null ? '= <b class="tnum">' + money(eur) + '</b>' : '') + '</div>' + (M.aviso && !M.cambio ? '<span class="mon-aviso">' + escapeHtml(M.aviso) + '</span>' : '');
+  h += '<button type="button" class="btn accent block mon-usar" id="monUsar" ' + act('monUsar') + (eur == null ? ' disabled' : '') + '>' + (eur == null ? 'Escribe el importe' : 'Usar ' + money(eur)) + '</button>' +
+    '<div class="rec-hint">Se guarda en euros, y la cifra en esa moneda se apunta en la descripción.</div></div>';
+  return h;
+}
+function monBoxMov(ex, comp, tipo) { return !ex && !comp && (tipo === 'Gasto' || tipo === 'Factura') ? '<div id="monBox" class="mon-box">' + monHtml() + '</div>' : ''; }
+function monPintar() { const b = $('#monBox'); if (b) b.innerHTML = monHtml(); }
+function monRes() { // al escribir: solo la línea del resultado y el botón, sin perder el foco
+  const M = FORM && FORM.mon; if (!M) return; const eur = monEuros(M), r = $('#monRes'), u = $('#monUsar');
+  if (M.origen === 'bce' && r && M.cambio) { const inf = monInfo(M.moneda); r.innerHTML = (eur != null ? '= <b class="tnum">' + money(eur) + '</b> · ' : '') + '1 € = ' + escapeHtml(String(M.cambio).replace('.', ',')) + ' ' + escapeHtml(inf[1]) + ' · BCE ' + escapeHtml(M.fecha ? fmtDateShort(M.fecha) : '') + (M.aviso ? '<span class="mon-aviso">' + escapeHtml(M.aviso) + '</span>' : ''); }
+  else if (r && M.origen !== 'bce') r.innerHTML = eur != null ? '= <b class="tnum">' + money(eur) + '</b>' : '';
+  if (u) { u.disabled = eur == null; u.textContent = eur == null ? 'Escribe el importe' : 'Usar ' + money(eur); }
+}
+function monUsar() {
+  const F = FORM, M = F && F.mon, eur = M ? monEuros(M) : null; if (eur == null) return;
+  const txt = String(eur).replace('.', ','), nota = monFmt(numCampo(M.txt), M.moneda).trim();
+  if (F.tec) { F.tec.txt = txt; F.tec.neg = false; F.tec.reemplazar = true; tecSync(true); }
+  const cr = $('#crImporte'); if (cr) { cr.value = txt; F.importe = txt; cr.size = Math.max(1, txt.length); }
+  const fi = $('#fImporte'); if (fi && !F.tec) fi.value = txt;
+  { const mm = $('#mfMas'); if (mm && mm.hidden && M.moneda !== 'OTRA' && H.tecMas) { try { H.tecMas([]); } catch (e) { /* */ } } } // que se vea la nota en la descripción
+  const d = $('#crDesc') || $('#fDesc'); if (d && M.moneda !== 'OTRA' && d.value.indexOf(nota) < 0) { d.value = (d.value.trim() ? d.value.trim() + ' · ' : '') + nota; if (d.id === 'crDesc') F.desc = d.value; }
+  if (M.moneda !== 'OTRA' && M.origen === 'mano') monRecordar(M.moneda, numCampo(M.mano), todayISO());
+  M.on = false; monPintar(); sentir('ok');
+  if (cr) crRefrescar(); else if (H.onImporteInput) { try { H.onImporteInput([]); } catch (e) { /* */ } }
+  toast('Puesto en euros: ' + money(eur) + (M.moneda !== 'OTRA' ? ' · «' + nota + '» en la descripción' : ''));
 }
 function crRefrescar() {
   const F = FORM; if (!F || F.kind !== 'compRapido') return;
@@ -5371,6 +5438,14 @@ function temaFechasTxt(t) {
   const f = (iso) => { const d = parseISO(iso); return d ? d.getDate() + ' ' + MESES_ABR[d.getMonth()].toLowerCase() : ''; };
   if (t.desde && t.hasta) { const a = parseISO(t.desde), b = parseISO(t.hasta); return a && b && a.getMonth() === b.getMonth() ? a.getDate() + '–' + f(t.hasta) : f(t.desde) + ' – ' + f(t.hasta); }
   return t.desde ? 'desde el ' + f(t.desde) : 'hasta el ' + f(t.hasta);
+}
+// docs/29 tanda 0: un tema con el avión es un viaje (gasto por día y «Cerrar el viaje»)
+function temaEsViaje(t) { return !!t && temaIcono(t) === 'plane'; }
+function temaDias(t) {
+  if (!t || !t.desde || !t.hasta) return 0;
+  const a = parseISO(t.desde), b = parseISO(t.hasta); if (!a || !b || b < a) return 0;
+  const hoy = parseISO(todayISO()), fin = hoy && hoy < b && hoy >= a ? hoy : b; // si el viaje aún dura, se cuenta hasta hoy
+  return Math.round((fin - a) / 864e5) + 1;
 }
 function gastosDeTema(gid, tid) { return (S.compartidos || []).filter((c) => c.grupoId === gid && (c.tipo === 'Gasto' || c.tipo === 'Factura') && (tid === '_sin' ? !temaPorId(c.carpetaId) : c.carpetaId === tid)); }
 // El tema que viene elegido solo: el que cubre la fecha; si no, el último que usaste en ese grupo en las últimas 12 horas
@@ -5441,11 +5516,19 @@ function temaResumenHtml(g, t) {
   const cats = {}; gs.forEach((c) => { const k = c.categoria || 'Otros'; cats[k] = (cats[k] || 0) + num(c.importe); });
   let cs = Object.entries(cats).sort((a, b) => b[1] - a[1]); if (cs.length > 5) cs = cs.slice(0, 4).concat([['Otros', cs.slice(4).reduce((a, x) => a + x[1], 0)]]);
   const entre = g.miembros.length <= 2 ? 'entre los dos' : 'entre todos';
+  const dias = temaDias(t);
   let h = '<div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('temaVer', '') + '>' + ic('chevL') + '</button><span class="tema-fila-ic">' + ic(temaIcono(t)) + '</span>' +
     '<div class="tema-cab-t"><b>' + escapeHtml(t.nombre) + '</b><span>' + escapeHtml([nombreDestino(g), temaFechasTxt(t), gs.length + (gs.length === 1 ? ' gasto' : ' gastos'), t.cerrada ? 'cerrado' : ''].filter(Boolean).join(' · ')) + '</span></div>' +
     '<button type="button" class="icon-btn" aria-label="Opciones del tema" ' + act('temaMenu', t.id) + '>' + ic('more') + '</button></div>';
   if (F_temaMenu(t.id)) h += temaMenuHtml(g, t);
+  if (FORM && FORM.temaCerrarPre === t.id) { const pend = deudasDe(g.id).length;
+    h += '<div class="card tema-cierre"><b>' + (temaEsViaje(t) ? 'Cómo quedó el viaje' : 'Cerrar «' + escapeHtml(t.nombre) + '»') + '</b>' +
+      '<span>' + escapeHtml(money(tot) + ' ' + entre + ' · tu parte ' + money(mia) + (dias > 1 ? ' · unos ' + Math.round(tot / dias).toLocaleString('es-ES') + ' € al día' : '')) + '</span>' +
+      (pend ? '<span class="tema-cierre-av">' + ic('alert') + ' Aún ' + (pend === 1 ? 'hay 1 pago' : 'hay ' + pend + ' pagos') + ' para quedar en paz en el grupo. <button type="button" class="link" ' + act('grupoTab', 'saldos') + '>Ver saldos</button></span>' : '<span class="tema-cierre-ok">' + ic('checkCircle') + ' Estáis en paz en el grupo.</span>') +
+      '<span class="tema-cierre-n">Al cerrarlo ya no sale al apuntar gastos. Se puede volver a abrir.</span>' +
+      '<div class="actions"><button class="btn ghost block" ' + act('temaCerrarNo') + '>Ahora no</button><button class="btn accent block" ' + act('temaCerrar', t.id) + '>' + (temaEsViaje(t) ? 'Cerrar el viaje' : 'Cerrar tema') + '</button></div></div>'; }
   h += '<div class="tema-cifras"><div><span>Gastado ' + entre + '</span><b class="tnum">' + money(tot) + '</b></div><div><span>Tu parte</span><b class="tnum">' + money(mia) + '</b></div></div>';
+  if (dias > 1 && tot > 0) h += '<div class="rec-hint tema-dia">' + ic('calendar') + ' Unos <b class="tnum">' + Math.round(tot / dias).toLocaleString('es-ES') + ' €</b> al día · ' + dias + ' días' + (Math.abs(mia) > 0.004 ? ' · tu parte, ' + Math.round(mia / dias).toLocaleString('es-ES') + ' € al día' : '') + '</div>';
   if (quien.length && tot > 0) h += '<div class="tema-sec">Quién pagó qué</div><div class="tema-quien">' + quien.map((u) => '<div class="tema-q"><span>' + escapeHtml(esMio(g.id, u) ? 'Tú' : nombreDe(g.id, u)) + '</span><span class="tema-q-bar"><i style="width:' + (pagos[u] / tot * 100).toFixed(1) + '%;background:' + colorPersona(u) + '"></i></span><b class="tnum">' + money(pagos[u]) + '</b></div>').join('') + '</div>';
   if (cs.length && tot > 0) h += '<div class="tema-sec">En qué se fue</div><div class="tema-cats" aria-hidden="true">' + cs.map(([k, v]) => '<i style="flex:' + (v / tot).toFixed(4) + ';background:' + colorCat(k) + '"></i>').join('') + '</div>' +
     '<div class="tema-cats-l">' + cs.map(([k, v]) => '<span><i style="background:' + colorCat(k) + '"></i>' + escapeHtml(k) + ' ' + Math.round(v / tot * 100) + ' %</span>').join('') + '</div>';
@@ -5457,7 +5540,7 @@ function temaResumenHtml(g, t) {
 function F_temaMenu(id) { return FORM && FORM.temaMenu === id; }
 function temaMenuHtml(g, t) {
   const b = (accion, icono, txt, cls) => '<button type="button" class="tema-menu-b' + (cls ? ' ' + cls : '') + '" ' + act(accion, t.id) + '>' + ic(icono) + '<span>' + txt + '</span></button>';
-  return '<div class="card tema-menu">' + b('temaEditar', 'edit', 'Cambiar nombre, icono o fechas') + (t.cerrada ? b('temaAbrirDeNuevo', 'repeat', 'Volver a abrir') : b('temaCerrar', 'checkCircle', 'Cerrar tema')) + b('temaBorrar', 'trash', 'Borrar tema', 'peligro') + '</div>';
+  return '<div class="card tema-menu">' + b('temaEditar', 'edit', 'Cambiar nombre, icono o fechas') + (t.cerrada ? b('temaAbrirDeNuevo', 'repeat', 'Volver a abrir') : b('temaCerrarPre', 'checkCircle', temaEsViaje(t) ? 'Cerrar el viaje' : 'Cerrar tema')) + b('temaBorrar', 'trash', 'Borrar tema', 'peligro') + '</div>';
 }
 // hoja «Nuevo tema» / «Cambiar tema» dentro del grupo
 function temaFormHtml(g) {
@@ -10322,7 +10405,7 @@ const H = {
   pickSub: ([s]) => { const i = $('#fSub'); if (i) i.value = s; $$('#subChips .chip').forEach((b) => b.classList.toggle('active', normName(b.textContent) === normName(s))); },
   onSubInput: (_a, el) => { $$('#subChips .chip').forEach((b) => b.classList.toggle('active', normName(b.textContent) === normName(el.value))); },
   catMas: () => { FORM.catTodas = !FORM.catTodas; const chips = $('#catChips'); if (chips) chips.innerHTML = chipsHtml(FORM.tipo, ($('#fCategoria') || {}).value || ''); },
-  pickTipo: ([t], el) => {
+  pickTipo: ([t], el) => { { const mb = $('#monBox'); if (mb) mb.hidden = !(t === 'Gasto' || t === 'Factura'); }
     if (t === 'Gasto' && FORM.tipo === 'Factura') return; // ya es un gasto (fijo)
     FORM.tipo = t;
     if (FORM.tec) setTimeout(() => tecSync(), 0);
@@ -10356,7 +10439,7 @@ const H = {
     box.innerHTML = h;
   },
   pickResultado: ([i]) => { const a = (FORM.resultados || [])[Number(i)]; if (a) elegirActivo(Object.assign({}, a)); },
-  onFechaChange: () => { if (FORM.activo) cargarPreview(); },
+  onFechaChange: () => { if (FORM.activo) cargarPreview(); if (FORM.mon && FORM.mon.on) monCargarCambio(); },
   onImporteInput: () => { updatePreview(); if (FORM.comp && FORM.comp.on) { if (FORM.comp.modo === 'igual') { const r = $('#compReparto'); if (r) r.innerHTML = compRepartoHtml(); } else refrescarComp(true); } },
   pickCat: ([c]) => {
     const inp = $('#fCategoria'); if (inp) inp.value = c; if (FORM) FORM.catAuto = false; setTimeout(refrescarReglaBox, 0); refrescarSub(); refrescarCatAviso(); proponerCuenta(c);
@@ -10658,7 +10741,10 @@ const H = {
       if (FORM !== F) return; F.temaForm = null; F.temaVer = t.id; toast(T.id ? 'Tema guardado' : 'Tema creado'); temaRefrescarGrupo(); render();
     } catch (e) { console.error(e); toast(errGrupo(e)); } finally { T.guardando = false; }
   },
-  temaCerrar: async ([id]) => { try { const t = await S.db.carpetas.editar(id, { cerrada: new Date().toISOString() }); temaAplicarLocal(t); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; } toast('Tema cerrado: ya no sale al apuntar gastos'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
+  temaCerrarPre: ([id]) => { if (!FORM) return; FORM.temaMenu = null; FORM.temaCerrarPre = id; temaRefrescarGrupo(); setTimeout(() => { const c = $('#sheetHost .tema-cierre'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
+  temaCerrarNo: () => { if (!FORM) return; FORM.temaCerrarPre = null; temaRefrescarGrupo(); },
+  temaCerrar: async ([id]) => { const t0 = temaPorId(id), viaje = temaEsViaje(t0), paz = t0 && !deudasDe(t0.grupoId).length;
+    try { const t = await S.db.carpetas.editar(id, { cerrada: new Date().toISOString() }); temaAplicarLocal(t); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; FORM.temaCerrarPre = null; } if (viaje && paz) sentir('ok'); toast(viaje ? 'Viaje cerrado: ya no sale al apuntar gastos' : 'Tema cerrado: ya no sale al apuntar gastos'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
   temaAbrirDeNuevo: async ([id]) => { try { const t = await S.db.carpetas.editar(id, { cerrada: null }); temaAplicarLocal(t); if (FORM) FORM.temaMenu = null; toast('Tema abierto otra vez'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
   temaBorrar: async ([id]) => {
     const t = temaPorId(id); if (!t) return;
@@ -10668,11 +10754,19 @@ const H = {
   },
   compRapido: ([dest]) => { S._volverGrupo = FORM && FORM.kind === 'grupo' ? FORM.id : null; abrirCompRapido(dest || ''); },
   crDest: ([k]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; compPrepararDestino(k); F.comp.pagador = F.comp.pagador || miUid(); F.temaTocado = false; F.temaNuevo = false; temaAutoAplicar(); updateSheet(compRapidoHtml()); },
+  monAbrir: () => { const F = FORM; if (!F) return; F.mon = { on: true, moneda: monUlt(), txt: '', origen: 'bce', mano: '', cobro: '', cambio: null, fecha: '' }; monPintar(); monCargarCambio(); const el = $('#monImporte'); if (el) el.focus(); },
+  monCerrar: () => { if (!FORM || !FORM.mon) return; FORM.mon.on = false; monPintar(); },
+  monMoneda: (_a, el) => { const M = FORM && FORM.mon; if (!M) return; M.moneda = el.value; M.mano = ''; if (M.moneda === 'OTRA') { M.origen = M.origen === 'bce' ? 'mano' : M.origen; M.cambio = null; } else { M.origen = 'bce'; try { localStorage.setItem('monUlt', M.moneda); } catch (e) { /* */ } } monPintar(); monCargarCambio(); },
+  monImporte: (_a, el) => { const M = FORM && FORM.mon; if (!M) return; M.txt = el.value; monRes(); },
+  monMano: (_a, el) => { const M = FORM && FORM.mon; if (!M) return; M.mano = el.value; monRes(); },
+  monCobro: (_a, el) => { const M = FORM && FORM.mon; if (!M) return; M.cobro = el.value; monRes(); },
+  monOrigen: ([k]) => { const M = FORM && FORM.mon; if (!M) return; M.origen = k; if (k === 'mano' && !M.mano && M.cambio) M.mano = String(M.cambio).replace('.', ','); monPintar(); },
+  monUsar: () => monUsar(),
   crImporte: (_a, el) => { if (!FORM) return; FORM.importe = el.value; el.size = Math.max(1, el.value.length); crRefrescar(); },
   sFechaVer: () => { const i = $('#sFecha'), c = $('#sFechaChip'); if (!i) return; i.hidden = false; if (c) c.hidden = true; i.focus(); try { if (i.showPicker) i.showPicker(); } catch (e) { /* sin selector */ } },
   crDesc: (_a, el) => { const F = FORM; if (!F) return; F.desc = el.value; if (!F.catTocada) { const c = sugerirCategoria(el.value.trim(), 'Gasto'); if (c && esCatGasto(c)) { F.cat = c; const sel = $('#crCat'); if (sel && [...sel.options].some((o) => o.value === c)) sel.value = c; } } },
   crCat: (_a, el) => { if (!FORM) return; FORM.cat = el.value; FORM.catTocada = true; },
-  crFecha: (_a, el) => { if (!FORM) return; FORM.fecha = el.value; if (FORM.kind === 'compRapido' && !FORM.temaTocado) { temaAutoAplicar(); const c = $('.tema-caja'); if (c) c.outerHTML = temaCajaHtml(); } },
+  crFecha: (_a, el) => { if (!FORM) return; FORM.fecha = el.value; if (FORM.mon && FORM.mon.on) monCargarCambio(); if (FORM.kind === 'compRapido' && !FORM.temaTocado) { temaAutoAplicar(); const c = $('.tema-caja'); if (c) c.outerHTML = temaCajaHtml(); } },
   crPagador: ([u]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; F.comp.pagador = u; updateSheet(compRapidoHtml()); },
   crIncl: ([u]) => {
     const F = FORM; if (!F || F.kind !== 'compRapido') return; const cp = F.comp, ms = miembrosComp();

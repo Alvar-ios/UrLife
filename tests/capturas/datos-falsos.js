@@ -28,7 +28,7 @@
     { grupo_id: G2, user_id: YO, nombre: 'Álex', rol: 'admin' }, { grupo_id: G2, user_id: ANA, nombre: 'Ana', rol: 'miembro' }];
   var ts = function (n) { return new Date(Date.now() - n * 864e5).toISOString(); };
   var comp = [
-    { id: 'k1', grupoId: G1, fecha: dia(-2), tipo: 'Gasto', categoria: 'Supermercado', descripcion: 'Compra grande del mes para la casa', importe: 96, pagadoPor: ANA, reparto: { [YO]: 32, [ANA]: 32, [BEA]: 32 }, modo: 'igual', creadoPor: ANA, createdAt: ts(2), updatedAt: ts(1), editadoPor: BEA },
+    { id: 'k1', carpetaId: 'tv1', grupoId: G1, fecha: dia(-2), tipo: 'Gasto', categoria: 'Supermercado', descripcion: 'Compra grande del mes para la casa', importe: 96, pagadoPor: ANA, reparto: { [YO]: 32, [ANA]: 32, [BEA]: 32 }, modo: 'igual', creadoPor: ANA, createdAt: ts(2), updatedAt: ts(1), editadoPor: BEA },
     { id: 'k2', grupoId: G1, fecha: dia(-6), tipo: 'Factura', categoria: 'Luz', descripcion: 'Luz', importe: 75, pagadoPor: YO, reparto: { [YO]: 25, [ANA]: 25, [BEA]: 25 }, modo: 'igual', creadoPor: YO, createdAt: ts(6) },
     { id: 'k3', grupoId: G2, fecha: dia(-4), tipo: 'Gasto', categoria: 'Restaurantes', descripcion: 'Cena', importe: 48, pagadoPor: YO, reparto: { [YO]: 24, [ANA]: 24 }, modo: 'igual', creadoPor: YO, createdAt: ts(4) },
   ];
@@ -48,8 +48,9 @@
       add: async function (d) { var id = 'n' + Date.now(); o[id] = d; return { id: id }; }, doc: function (id) { return { id: id, set: async function (d) { o[id] = d; }, update: async function (d) { o[id] = Object.assign({}, o[id], d); }, delete: async function () { delete o[id]; } }; } }; },
     grupos: { listar: async function () { return { grupos: grupos, miembros: miembros, sinCuenta: [] }; }, invitaciones: async function () { return []; } },
     compartidos: { suscribir: function (next) { setTimeout(function () { next(comp); }, 0); return function () {}; }, crear: async function (o) { return o; }, editar: async function (id, o) { return o; }, borrar: async function () { return true; } },
-    objetivos: { suscribir: vacio }, aportes: { suscribir: vacio }, carpetas: { suscribir: vacio },
+    objetivos: { suscribir: vacio }, aportes: { suscribir: vacio }, carpetas: { suscribir: function (next) { setTimeout(function () { next([{ id: 'tv1', grupoId: G1, nombre: 'Viaje a Lisboa con todo el piso', icono: 'plane', desde: dia(-6), hasta: dia(-1), cerrada: null, createdAt: ts(7) }]); }, 0); return function () {}; } },
     agenda: { suscribir: vacio }, agendaPermisos: { listar: async function () { return []; }, ocultas: async function () { return []; }, conmigo: async function () { return []; }, deOtro: async function () { return []; } },
+    divisas: { cambio: async function (m) { return m === 'USD' ? { fecha: dia(-1), porEur: 1.0811 } : null; } },
     rpc: async function (fn) { if (fn === 'historial_grupo') return hist; return []; },
   };
   window.Auth = { onChange: function (f) { setTimeout(function () { f({ user: { email: 'prueba@example.invalid', id: YO } }); }, 0); }, getSession: async function () { return { user: { id: YO } }; }, signIn: function () {}, signOut: function () {}, resetPassword: function () {} };
