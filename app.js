@@ -9021,7 +9021,7 @@ function impHtml() {
       '<div class="kpi income"><div class="v tnum">' + moneyShort(tot('in')) + '</div><div class="l">Ingresos</div></div>' +
       '<div class="kpi expense"><div class="v tnum">' + moneyShort(tot('out')) + '</div><div class="l">Gastos</div></div></div>' +
       (I.saldoChk ? (impSaldoOk(I) ? '<div class="imp-note ok"><span class="ic-ok">' + ic('checkCircle') + '</span> Los importes cuadran con la columna Saldo del banco.</div>'
-        : '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> Los importes no cuadran con la columna Saldo (' + I.saldoChk.ok + ' de ' + I.saldoChk.total + '). Puede que el signo o la columna de importe no sean los correctos. <button type="button" class="link" ' + act('impVolver', 'columnas') + '>Revisar columnas</button></div>') : '') +
+        : '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> Los importes no cuadran con la columna Saldo (cuadran ' + I.saldoChk.ok + ' de ' + I.saldoChk.total + ' filas). Puede que el signo o la columna de importe no sean los correctos. <button type="button" class="link" ' + act('impVolver', 'columnas') + '>Revisar columnas</button></div>') : '') +
       (nImp ? '<div class="imp-note">✓ ' + nImp + (nImp === 1 ? ' fila ya estaba importada' : ' filas ya estaban importadas') + ': se omiten.</div>' : '') +
       (nDup ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nDup + (nDup === 1 ? ' fila ya la tenías' : ' filas ya las tenías') + ' (mismo importe y fecha' + (cuenta0 ? ' en ' + escapeHtml(nombreCuenta(cuenta0)) : '') + ', o ya está en Juntos). Van desmarcadas; márcalas si son distintas.</div>' : '') +
       (nQ ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nQ + (nQ === 1 ? ' fila se parece' : ' filas se parecen') + ' a algo que apuntaste unos días antes o después. Dinos si es lo mismo.</div>' : '') +
@@ -9095,15 +9095,19 @@ function impDias(a, b) { const x = parseISO(a), y = parseISO(b); return x && y ?
 /* ---- docs/30 tanda 2: la columna Saldo del extracto comprueba que los importes se han leído bien y sirve para cuadrar ---- */
 function impSaldoComprobar(I, filas) {
   I.saldoChk = null; I.saldoFin = null;
-  const F = filas.filter((o) => o.fecha && o.sig != null && o.saldo != null && isFinite(o.saldo));
-  if (F.length < 2) return;
-  let okAsc = 0, okDesc = 0; const pares = F.length - 1, cerca = (a, b) => Math.abs(a - b) < 0.005;
-  for (let k = 0; k < pares; k++) { const a = F[k], b = F[k + 1];
-    if (cerca(a.saldo + b.sig, b.saldo)) okAsc++; // del más viejo al más nuevo
-    if (cerca(b.saldo + a.sig, a.saldo)) okDesc++; } // del más nuevo al más viejo
-  const asc = okAsc >= okDesc || (okAsc === okDesc && F[0].fecha <= F[F.length - 1].fecha);
-  I.saldoChk = { ok: asc ? okAsc : okDesc, total: pares };
-  const ult = asc ? F[F.length - 1] : F[0];
+  const T = filas.filter((o) => o.fecha && o.sig != null); // todas las filas con importe, tengan saldo o no
+  const conS = T.filter((o) => o.saldo != null && isFinite(o.saldo));
+  if (conS.length < 2) return;
+  const cerca = (a, b) => Math.abs(a - b) < 0.005;
+  // en cada orden: entre dos filas con saldo, se suman los importes de las que hay en medio (bancos que solo dan el saldo al final del día)
+  const contar = (L) => { let ok = 0, tot = 0, prev = null, acum = 0;
+    L.forEach((o) => { const tiene = o.saldo != null && isFinite(o.saldo); if (prev == null) { if (tiene) prev = o.saldo; return; } acum += o.sig;
+      if (tiene) { tot++; if (cerca(prev + acum, o.saldo)) ok++; prev = o.saldo; acum = 0; } });
+    return { ok, tot }; };
+  const a = contar(T), d = contar(T.slice().reverse()), asc = a.ok >= d.ok;
+  const g = asc ? a : d;
+  I.saldoChk = { ok: g.ok, total: g.tot };
+  const ult = asc ? conS[conS.length - 1] : conS[0];
   I.saldoFin = { fecha: ult.fecha, valor: Math.round(ult.saldo * 100) / 100 };
 }
 function impSaldoOk(I) { return !!I.saldoChk && I.saldoChk.ok >= Math.max(1, Math.ceil(I.saldoChk.total * 0.9)); }
@@ -9133,7 +9137,7 @@ function impSaldoTarjetaHtml(I) {
     '<div class="actions"><button class="btn ghost block" ' + act('impSaldoNo') + '>Ahora no</button><button class="btn accent block" ' + act('impSaldoUsar') + '>Cuadrar con el banco</button></div></div>';
 }
 function impSaldoUsar() {
-  const I = IMP, fin = I && I.saldoFin, c0 = I && impSaldoCuenta(I); if (!fin || !c0) return;
+  const I = IMP, fin = I && I.saldoFin, c0 = I && impSaldoCuenta(I); if (!fin || !c0 || !impSaldoOk(I) || (c0.fecha && c0.fecha > fin.fecha)) return;
   const cs = (cfg().cuentas || []).slice(), i = cs.findIndex((x) => x && x.id === c0.id); if (i < 0) return;
   const c = Object.assign({}, cs[i]), app = c.saldo != null && c.fecha ? saldoCuentaEn(c, fin.fecha, I.recien) : null, dif = app == null ? 0 : Math.round((fin.valor - app) * 100) / 100;
   Object.assign(c, { saldo: fin.valor, fecha: fin.fecha, ts: Date.now(), cuadre: { fecha: fin.fecha, dif } });
@@ -9277,7 +9281,7 @@ async function impEjecutar() {
   } catch (e) { console.error(e); fallo = errMsg(e); }
   const c = cfg();
   const lotes = hechos ? (c.importLotes || []).concat([Object.assign({ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: hechos }, cuentaImp ? { cuenta: cuentaImp } : {})]).slice(-50) : (c.importLotes || []); // sin nada nuevo, no se apunta un lote vacío
-  const perfiles = Object.assign({}, c.importPerfiles || {}, { [firmaArchivo(I)]: Object.assign({ map: I.map, modoImporte: I.modoImporte, signo: I.signo, fmtFecha: I.fmtFecha, usado: todayISO() }, cuentaImp ? { cuenta: cuentaImp } : {}) });
+  const perfiles = Object.assign({}, c.importPerfiles || {}, { [firmaArchivo(I)]: Object.assign({ map: Object.assign({ saldo: null }, I.map), modoImporte: I.modoImporte, signo: I.signo, fmtFecha: I.fmtFecha, usado: todayISO() }, cuentaImp ? { cuenta: cuentaImp } : {}) });
   const extra = hechos && I.anadirConfig !== false ? impPatchConfig(sel).patch : {};
   saveConfig(Object.assign({ importLotes: lotes, importPerfiles: perfiles }, extra));
   Object.assign(I, { paso: 'hecho', hechos, fallo, configNuevos: Object.keys(extra).length, recien: items.map((it) => Object.assign({ id: it.id }, it.data)) });
