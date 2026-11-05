@@ -8989,7 +8989,7 @@ function impHtml() {
     const F = I.filas, ok = F.filter((r) => r.id), err = F.filter((r) => !r.id);
     const nImp = ok.filter((r) => r.estado === 'importado').length, nDup = ok.filter((r) => r.estado === 'dup' || r.estado === 'juntos').length, nQ = ok.filter((r) => r.estado === 'quizas').length;
     const sel = ok.filter((r) => r.incluir && r.estado !== 'importado'), cuenta0 = hayVariasCuentas() ? I.cuenta : null;
-    const tot = (t) => sel.filter((r) => (t === 'in' ? r.tipo === 'Ingreso' : r.tipo !== 'Ingreso')).reduce((a, r) => a + r.importe, 0);
+    const tot = (t) => sel.filter((r) => !r.comoTras && (t === 'in' ? r.tipo === 'Ingreso' : r.tipo !== 'Ingreso')).reduce((a, r) => a + r.importe, 0), nTras = sel.filter((r) => r.comoTras).length;
     const sinCat = sel.filter((r) => !r.categoria).length;
     const LIM = I.verTodo ? 2000 : 150;
     const tipos = TIPOS.filter((t) => t !== 'Inversión');
@@ -9006,10 +9006,16 @@ function impHtml() {
         (r.estado === 'quizas' ? ' · <b style="color:var(--accent)">¿es el mismo que apuntaste el ' + escapeHtml(fmtDateShort(r.con.fecha)) + ' (' + escapeHtml(r.con.que) + ')?</b>' : '') +
         (r.estado === 'juntos' ? ' · <b style="color:var(--accent)">ya está en Juntos: ' + escapeHtml(r.con.que) + '</b>' : '') +
         (r.estado === 'otraCuenta' ? ' · <b style="color:var(--accent)">ya importado en ' + escapeHtml(r.con.que) + ': márcalo si es otro</b>' : '') +
-        (r.estado === 'traspaso' ? ' · <b style="color:var(--accent)">traspaso entre cuentas: apúntalo con «Traspaso»</b>' : '') +
+        (r.estado === 'traspaso' && !r.comoTras ? ' · <b style="color:var(--accent)">traspaso entre cuentas: apúntalo con «Traspaso»</b>' : '') +
+        (r.estado === 'traspaso' && r.comoTras ? ' · <b style="color:var(--accent)">' + (r.otra ? 'parece un traspaso ' + (r.sig < 0 ? 'a ' : 'desde ') + escapeHtml(nombreCuenta(r.otra)) : 'traspaso: ¿con qué cuenta?') + '</b>' : '') +
+        (r.estado === 'traspaso' && !r.comoTras && r.otra !== undefined ? ' · <b style="color:var(--accent)">lo guardas como ' + escapeHtml(r.tipo === 'Ingreso' ? 'ingreso' : 'gasto') + '</b>' : '') +
+        (r.estado === 'otraMitad' ? ' · <b style="color:var(--accent)">ya está como traspaso ' + escapeHtml(r.con.que) + ' (' + escapeHtml(fmtDateShort(r.con.fecha)) + '): no se importa</b>' : '') +
         (r.origenCat === 'regla' ? ' · por tu regla' : r.origenCat === 'historial' ? ' · sugerida' : r.origenCat === 'factura' ? ' · pago fijo' : '') + '</div>' +
-        '<div class="imp-sels"><select ' + onChange('impTipo', k) + '>' + tipos.map((t) => '<option' + (t === r.tipo ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
+        (r.comoTras ? '<div class="imp-sels"><select aria-label="Con qué cuenta" ' + onChange('impTrasCon', k) + '><option value="">' + (r.sig < 0 ? 'A…' : 'Desde…') + '</option>' + cuentasCfg().filter((c) => c.id !== IMP.cuenta).map((c) => '<option value="' + escapeHtml(c.id) + '"' + (r.otra === c.id ? ' selected' : '') + '>' + (r.sig < 0 ? 'A ' : 'Desde ') + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>' +
+          '<div class="imp-mismo"><button type="button" class="chip active" ' + act('impTras', k, '1') + '>Es un traspaso</button><button type="button" class="chip" ' + act('impTras', k, '0') + '>No, es un ' + (r.sig < 0 ? 'gasto' : 'ingreso') + '</button></div>'
+        : '<div class="imp-sels"><select ' + onChange('impTipo', k) + '>' + tipos.map((t) => '<option' + (t === r.tipo ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
         '<select ' + onChange('impCat', k) + '>' + opts + '</select></div>' +
+        (r.otra !== undefined && hayVariasCuentas() && IMP.cuenta ? '<button type="button" class="link imp-volver-tras" ' + act('impTras', k, '1') + '>Es un traspaso</button>' : '')) +
         (r.estado === 'quizas' ? '<div class="imp-mismo"><button type="button" class="chip' + (r.respondido && !r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '1') + '>Es el mismo</button><button type="button" class="chip' + (r.respondido && r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '0') + '>Son distintos</button></div>' : '') +
         (r.ofrecerRegla ? '<button type="button" class="link" style="font-size:12px;" ' + act('impRegla', k) + '>Recordar: «' + escapeHtml(r.ofrecerRegla) + '» → ' + escapeHtml(r.categoria) + '</button>' : '') +
         '</div></div>';
@@ -9022,6 +9028,8 @@ function impHtml() {
       '<div class="kpi expense"><div class="v tnum">' + moneyShort(tot('out')) + '</div><div class="l">Gastos</div></div></div>' +
       (I.saldoChk ? (impSaldoOk(I) ? '<div class="imp-note ok"><span class="ic-ok">' + ic('checkCircle') + '</span> Los importes cuadran con la columna Saldo del banco.</div>'
         : '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> Los importes no cuadran con la columna Saldo (cuadran ' + I.saldoChk.ok + ' de ' + I.saldoChk.total + ' filas). Puede que el signo o la columna de importe no sean los correctos. <button type="button" class="link" ' + act('impVolver', 'columnas') + '>Revisar columnas</button></div>') : '') +
+      (nTras ? '<div class="imp-note">' + ic('swap') + ' ' + nTras + (nTras === 1 ? ' traspaso entre tus cuentas: no cuenta como gasto ni ingreso.' : ' traspasos entre tus cuentas: no cuentan como gasto ni ingreso.') + '</div>' : '') +
+      (ok.some((r) => r.estado === 'otraMitad') ? '<div class="imp-note">✓ ' + ok.filter((r) => r.estado === 'otraMitad').length + ' ya estaban como traspaso desde tu otra cuenta: se omiten.</div>' : '') +
       (nImp ? '<div class="imp-note">✓ ' + nImp + (nImp === 1 ? ' fila ya estaba importada' : ' filas ya estaban importadas') + ': se omiten.</div>' : '') +
       (nDup ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nDup + (nDup === 1 ? ' fila ya la tenías' : ' filas ya las tenías') + ' (mismo importe y fecha' + (cuenta0 ? ' en ' + escapeHtml(nombreCuenta(cuenta0)) : '') + ', o ya está en Juntos). Van desmarcadas; márcalas si son distintas.</div>' : '') +
       (nQ ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nQ + (nQ === 1 ? ' fila se parece' : ' filas se parecen') + ' a algo que apuntaste unos días antes o después. Dinos si es lo mismo.</div>' : '') +
@@ -9119,7 +9127,8 @@ function saldoCuentaEn(c, dia, extra) {
   const ids = new Set(S.movimientos.map((m) => m.id)), todos = S.movimientos.concat((extra || []).filter((m) => !ids.has(m.id))); // lo recién importado aún no ha llegado del servidor
   todos.forEach((m) => { if (m.compartidoId && vivos.has(m.compartidoId)) return; if (cuentaIdDe(m) === c.id && en(m)) s += num(m.importe) * (SIGNO_CUENTA[m.tipo] || 0); });
   flujosCompartidos().forEach((f) => { if (f.cuentaId === c.id && en(f)) s += f.v; });
-  (S.traspasos || []).forEach((t) => { if (!en(t)) return; if (t.cuentaId === c.id) s -= num(t.importe); if (t.cuentaDestinoId === c.id) s += num(t.importe); });
+  const idsT = new Set((S.traspasos || []).map((t) => t.id)), tras = (S.traspasos || []).concat((extra || []).filter((m) => m.tipo === 'Traspaso' && !idsT.has(m.id)));
+  tras.forEach((t) => { if (!en(t)) return; if (t.cuentaId === c.id) s -= num(t.importe); if (t.cuentaDestinoId === c.id) s += num(t.importe); });
   return Math.round(s * 100) / 100;
 }
 function impSaldoCuenta(I) { const cs = cuentasCfg(); return hayVariasCuentas() ? cuentaPorId(I.cuenta) : cs[0] || null; }
@@ -9145,6 +9154,19 @@ function impSaldoUsar() {
   I.saldoHecho = app == null ? 'Saldo de ' + c.nombre + ' puesto: ' + money(fin.valor) + ' el ' + fmtDateShort(fin.fecha) + '.' : dif ? 'Cuadrado con el banco. Ajuste de ' + (dif > 0 ? '+' : '−') + money(Math.abs(dif)) + '.' : 'Cuadrado: todo coincide.';
   updateSheet(impHtml()); render();
 }
+
+/* ---- docs/30 tanda 3: traspasos entre tus cuentas al importar ---- */
+// ¿con qué otra cuenta tuya va esta fila? (por su texto: «TRANSFERENCIA A ING…», «REINTEGRO CAJERO» → Efectivo)
+function impTrasOtra(desc, cuenta, sig, porTipo) {
+  const t = ' ' + normDesc(desc).replace(/[^a-z0-9]+/g, ' ') + ' ', otras = cuentasCfg().filter((c) => c.id !== cuenta);
+  const esta = (w) => { w = normDesc(w).replace(/[^a-z0-9]+/g, ' ').trim(); return w.length >= 2 && t.indexOf(' ' + w + ' ') >= 0; };
+  const nombrada = otras.find((c) => { const b = bancoDe(c); return esta(c.nombre) || (b && (esta(b.k) || esta(b.n || ''))); });
+  const habla = / (transf|transferencia|transferencias|traspaso|trf|trasp) /.test(t);
+  if ((habla || porTipo) && nombrada) return nombrada.id;
+  if (sig < 0 && / (reintegro|cajero|retirada|atm) /.test(t)) { const ef = otras.find((c) => tipoCuenta(c) === 'efectivo'); if (ef) return ef.id; }
+  return porTipo ? '' : null; // '' = es traspaso pero no sabemos con cuál
+}
+function impTrasDir(r, cuenta) { return r.sig < 0 ? { de: cuenta, a: r.otra } : { de: r.otra, a: cuenta }; }
 function impProcesar() {
   const I = IMP, m = I.map, filas = I.hoja.filas.slice(I.cab + 1);
   const uid = (S.user && S.user.id) || '';
@@ -9205,13 +9227,23 @@ function impProcesar() {
       else estado = 'importado';
       if (estado === 'importado') { const k = (previo.tipo === 'Traspaso' ? 't:' : 'm:') + previo.id; usadosC.add(k); }
     }
+    let otraT = null;
+    if (estado === 'nuevo' && cuenta) otraT = impTrasOtra(o.desc, cuenta, o.sig, esTras);
+    if (estado === 'nuevo' && otraT != null) {
+      // ¿ya está ese traspaso (la otra mitad, apuntada desde la otra cuenta o a mano)? mismo importe, 0-3 días
+      const dir = o.sig < 0 ? { de: cuenta, a: otraT } : { de: otraT, a: cuenta };
+      const mitad = (S.traspasos || []).find((t) => !usadosC.has('t:' + t.id) && Math.abs(Math.abs(num(t.importe)) - imp) < 0.005 && impDias(t.fecha, fecha) <= 3 &&
+        (otraT ? t.cuentaId === dir.de && t.cuentaDestinoId === dir.a : (t.cuentaId === cuenta || t.cuentaDestinoId === cuenta)));
+      if (mitad) { usadosC.add('t:' + mitad.id); estado = 'otraMitad'; con = { que: nombreCuenta(mitad.cuentaId) + ' → ' + nombreCuenta(mitad.cuentaDestinoId), fecha: mitad.fecha }; }
+      else { estado = 'traspaso'; o.comoTras = true; o.otra = otraT || ''; }
+    }
     if (estado === 'nuevo') {
       const igual = buscar(fecha, Math.abs(imp), 0);
       if (igual) { estado = igual.donde === 'juntos' ? 'juntos' : 'dup'; con = igual; usadosC.add(igual.k); }
       else { const cerca = buscar(fecha, Math.abs(imp), 3); if (cerca) { estado = cerca.donde === 'juntos' ? 'juntos' : 'quizas'; con = cerca; usadosC.add(cerca.k); } }
     }
     if (esTras && estado === 'nuevo') estado = 'traspaso';
-    Object.assign(o, { id: idF, estado, con, incluir: estado === 'nuevo' }); delete o.base; delete o.oc; delete o.esTras; delete o.abs;
+    Object.assign(o, { id: idF, estado, con, incluir: estado === 'nuevo' || (estado === 'traspaso' && !!o.comoTras && !!o.otra) }); delete o.base; delete o.oc; delete o.esTras; delete o.abs;
   });
   impSaldoComprobar(I, out);
   I.filas = out;
@@ -9274,6 +9306,8 @@ async function impEjecutar() {
   if (hayVariasCuentas() && I.cuenta && !cuentaPorId(I.cuenta)) { I.cuenta = null; I.paso = 'columnas'; updateSheet(impHtml()); return toast('Esa cuenta ya no existe: elige otra'); }
   const cuentaImp = hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? I.cuenta : null;
   if (cuentaImp) items.forEach((it) => { it.data.cuentaId = cuentaImp; });
+  if (cuentaImp) sel.forEach((r, i) => { if (!r.comoTras || !r.otra || !cuentaPorId(r.otra)) return; const d = impTrasDir(r, cuentaImp);
+    items[i].data = { creadoEn: items[i].data.creadoEn, tipo: 'Traspaso', categoria: 'Traspaso', importe: Math.round(Math.abs(r.importe) * 100) / 100, fecha: r.fecha, descripcion: r.desc, lote, cuentaId: d.de, cuentaDestinoId: d.a }; });
   try {
     const col = S.db.collection('movimientos');
     if (typeof col.bulkInsert === 'function') hechos = await col.bulkInsert(items); // reintenta cada bloque por dentro
@@ -9282,7 +9316,7 @@ async function impEjecutar() {
   const c = cfg();
   const lotes = hechos ? (c.importLotes || []).concat([Object.assign({ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: hechos }, cuentaImp ? { cuenta: cuentaImp } : {})]).slice(-50) : (c.importLotes || []); // sin nada nuevo, no se apunta un lote vacío
   const perfiles = Object.assign({}, c.importPerfiles || {}, { [firmaArchivo(I)]: Object.assign({ map: Object.assign({ saldo: null }, I.map), modoImporte: I.modoImporte, signo: I.signo, fmtFecha: I.fmtFecha, usado: todayISO() }, cuentaImp ? { cuenta: cuentaImp } : {}) });
-  const extra = hechos && I.anadirConfig !== false ? impPatchConfig(sel).patch : {};
+  const extra = hechos && I.anadirConfig !== false ? impPatchConfig(sel.filter((r) => !r.comoTras)).patch : {};
   saveConfig(Object.assign({ importLotes: lotes, importPerfiles: perfiles }, extra));
   Object.assign(I, { paso: 'hecho', hechos, fallo, configNuevos: Object.keys(extra).length, recien: items.map((it) => Object.assign({ id: it.id }, it.data)) });
   updateSheet(impHtml());
@@ -11026,6 +11060,8 @@ const H = {
     IMP.paso = 'revisar'; IMP.verTodo = false; updateSheet(impHtml());
   },
   impIncluir: ([k], el) => { const r = IMP.filas[Number(k)]; if (r) { r.incluir = el.checked; updateSheet(impHtml()); } },
+  impTras: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; if (v === '1') { r.comoTras = true; r.estado = 'traspaso'; if (r.otra === undefined) r.otra = ''; r.incluir = !!r.otra; } else { r.comoTras = false; r.estado = 'nuevo'; r.incluir = true; } sentir('tic'); updateSheet(impHtml()); },
+  impTrasCon: ([k], el) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.otra = el.value || ''; r.incluir = !!r.otra; updateSheet(impHtml()); },
   impSaldoUsar: () => impSaldoUsar(),
   impSaldoNo: () => { if (!IMP) return; IMP.saldoFin = null; updateSheet(impHtml()); },
   impCuenta: ([id]) => { if (!IMP) return; IMP.cuenta = id; IMP.cuentaRecordada = false; sentir('tic'); updateSheet(impHtml()); },
