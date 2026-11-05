@@ -8913,16 +8913,20 @@ function adivinarColumnas(I) {
 }
 function firmaArchivo(I) { return normDesc(cabecerasDe(I).join('|')); }
 /* ---- reglas y sugerencias de categoría ---- */
-function reglaPara(desc, tipo) {
+// docs/30 tanda 4: una regla puede valer «solo en» una cuenta y puede decir «es un traspaso a/desde» otra cuenta
+function reglaMejor(desc, cuenta, fn) {
   const d = normDesc(desc); if (!d) return null;
   let best = null;
+  const mejor = (r, t) => { if (!best) return true; const bc = !!best.cuenta, rc = !!r.cuenta; if (rc !== bc) return rc; return t.length > normDesc(best.texto).length; }; // la de una cuenta concreta gana a «cualquier cuenta»
   (cfg().reglasCat || []).forEach((r) => {
-    const t = normDesc(r && r.texto); if (!t || !r.categoria) return;
-    if (r.tipo && r.tipo !== tipo) return;
-    if (d.indexOf(t) >= 0 && (!best || t.length > normDesc(best.texto).length)) best = r;
+    const t = normDesc(r && r.texto); if (!t || !fn(r)) return;
+    if (r.cuenta && (!cuenta || r.cuenta !== cuenta || !cuentaPorId(r.cuenta))) return;
+    if (d.indexOf(t) >= 0 && mejor(r, t)) best = r;
   });
   return best;
 }
+function reglaPara(desc, tipo, cuenta) { return reglaMejor(desc, cuenta, (r) => !r.tras && !!r.categoria && (!r.tipo || r.tipo === tipo)); }
+function reglaTras(desc, cuenta) { const r = reglaMejor(desc, cuenta, (r) => !!r.tras && !!cuentaPorId(r.tras) && r.tras !== cuenta); return r ? r.tras : null; }
 const PALABRAS_VACIAS = new Set(['compra', 'compras', 'tarjeta', 'tarj', 'pago', 'pagos', 'recibo', 'transferencia', 'transf', 'bizum', 'adeudo', 'cargo', 'abono', 'sepa', 'con', 'del', 'las', 'los', 'para', 'por', 'una', 'favor', 'operacion', 'movil', 'contactless', 'internet', 'www', 'com', 'cuenta', 'concepto', 'devolucion', 'ref', 'num']);
 function tokensDesc(desc) { return normDesc(desc).split(' ').filter((w) => w.length >= 4 && !/^\d+$/.test(w) && !PALABRAS_VACIAS.has(w)); }
 function indiceCategorias() {
@@ -9012,6 +9016,7 @@ function impHtml() {
         (r.estado === 'otraMitad' ? ' · <b style="color:var(--accent)">ya está como traspaso ' + escapeHtml(r.con.que) + ' (' + escapeHtml(fmtDateShort(r.con.fecha)) + '): no se importa</b>' : '') +
         (r.origenCat === 'regla' ? ' · por tu regla' : r.origenCat === 'historial' ? ' · sugerida' : r.origenCat === 'factura' ? ' · pago fijo' : '') + '</div>' +
         (r.comoTras ? '<div class="imp-sels"><select aria-label="Con qué cuenta" ' + onChange('impTrasCon', k) + '><option value="">' + (r.sig < 0 ? 'A…' : 'Desde…') + '</option>' + cuentasCfg().filter((c) => c.id !== IMP.cuenta).map((c) => '<option value="' + escapeHtml(c.id) + '"' + (r.otra === c.id ? ' selected' : '') + '>' + (r.sig < 0 ? 'A ' : 'Desde ') + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>' +
+          (r.ofrecerTras && r.otra ? '<button type="button" class="link" style="font-size:12px;" ' + act('impReglaTras', k) + '>Recordar: «' + escapeHtml(r.ofrecerTras) + '» en ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ' → traspaso con ' + escapeHtml(nombreCuenta(r.otra)) + '</button>' : '') +
           '<div class="imp-mismo"><button type="button" class="chip active" ' + act('impTras', k, '1') + '>Es un traspaso</button><button type="button" class="chip" ' + act('impTras', k, '0') + '>No, es un ' + (r.sig < 0 ? 'gasto' : 'ingreso') + '</button></div>'
         : '<div class="imp-sels"><select ' + onChange('impTipo', k) + '>' + tipos.map((t) => '<option' + (t === r.tipo ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
         '<select ' + onChange('impCat', k) + '>' + opts + '</select></div>' +
@@ -9158,6 +9163,7 @@ function impSaldoUsar() {
 /* ---- docs/30 tanda 3: traspasos entre tus cuentas al importar ---- */
 // ¿con qué otra cuenta tuya va esta fila? (por su texto: «TRANSFERENCIA A ING…», «REINTEGRO CAJERO» → Efectivo)
 function impTrasOtra(desc, cuenta, sig, porTipo) {
+  { const rt = reglaTras(desc, cuenta); if (rt) return rt; } // tu regla manda
   const t = ' ' + normDesc(desc).replace(/[^a-z0-9]+/g, ' ') + ' ', otras = cuentasCfg().filter((c) => c.id !== cuenta);
   const lim = (w) => normDesc(w || '').replace(/[^a-z0-9]+/g, ' ').trim();
   const esta = (w) => { w = lim(w); return w.length >= 2 && t.indexOf(' ' + w + ' ') >= 0; };
@@ -9209,7 +9215,7 @@ function impProcesar() {
     if (!tipo) tipo = imp < 0 ? 'Gasto' : 'Ingreso';
     let categoria = m.cat != null && m.cat !== '' ? String(f[m.cat] == null ? '' : f[m.cat]).trim() : '', origenCat = categoria ? 'archivo' : '';
     if (!categoria && tipo === 'Gasto') { const fa = (cfg().facturas || []).find((x) => x && x.nombre && normDesc(x.nombre).length >= 3 && normDesc(desc).indexOf(normDesc(x.nombre)) >= 0); if (fa) { tipo = 'Factura'; categoria = fa.nombre; origenCat = 'factura'; } }
-    if (!categoria) { const r = reglaPara(desc, tipo); if (r) { categoria = r.categoria; origenCat = 'regla'; } }
+    if (!categoria) { const r = reglaPara(desc, tipo, hayVariasCuentas() ? I.cuenta : null); if (r) { categoria = r.categoria; origenCat = 'regla'; } }
     if (!categoria) { const sg = sugerirCategoria(desc, tipo); if (sg) { categoria = sg; origenCat = 'historial'; } }
     const base = uid + '|' + fecha + '|' + imp.toFixed(2) + '|' + normDesc(desc);
     ocurr[base] = (ocurr[base] || 0) + 1;
@@ -9359,19 +9365,28 @@ function reglasHtml() {
   const sugs = tipo === 'Ingreso' ? (cfg().ingresos || []) : catsGasto().map((c) => c.nombre);
   return '<div class="handle"></div><h2>Reglas de categorías</h2>' +
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Si la descripción de un movimiento contiene el texto, se le pone la categoría sola (al apuntarlo y al importar).</div>' +
-    (rs.length ? '<div class="list">' + rs.map((r, i) => '<div class="row static"><div class="main"><div class="ttl">«' + escapeHtml(r.texto) + '» → ' + escapeHtml(r.categoria) + '</div><div class="meta">' + escapeHtml(r.tipo === 'Factura' ? 'Pago fijo' : r.tipo || 'Cualquier tipo') + '</div></div><button class="rm" aria-label="Borrar la regla «' + escapeHtml(r.texto) + '»" ' + act('reglaQuitar', i) + '>' + ic('trash') + '</button></div>').join('') + '</div>'
+    (rs.length ? '<div class="list">' + rs.map((r, i) => '<div class="row static"><div class="main"><div class="ttl">«' + escapeHtml(r.texto) + '» → ' + escapeHtml(r.tras ? 'traspaso con ' + nombreCuenta(r.tras) : r.categoria) + '</div><div class="meta">' + escapeHtml((r.tras ? 'Traspaso' : r.tipo === 'Factura' ? 'Pago fijo' : r.tipo || 'Cualquier tipo') + (r.cuenta ? ' · solo en ' + nombreCuenta(r.cuenta) : '')) + '</div></div><button class="rm" aria-label="Borrar la regla «' + escapeHtml(r.texto) + '»" ' + act('reglaQuitar', i) + '>' + ic('trash') + '</button></div>').join('') + '</div>'
       : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no tienes reglas. Se crean al apuntar un movimiento con descripción («Recordar…») o al importar.</div>') +
     '<div class="section-title">Añadir regla</div><div class="card">' +
     '<div class="field"><label>Si la descripción contiene</label><input id="rgTexto" type="text" placeholder="mercadona"></div>' +
-    '<div class="field"><label>Tipo</label><input type="hidden" id="rgTipo" value="' + escapeHtml(tipo) + '"><div class="chips" role="radiogroup" aria-label="Tipo">' + tipos.map(([v, l]) => '<button type="button" class="chip' + (v === tipo ? ' active' : '') + '" role="radio" aria-checked="' + (v === tipo) + '" ' + act('reglaTipo', v) + '>' + escapeHtml(l) + '</button>').join('') + '</div></div>' +
-    '<div class="field"><label>Categoría</label><input id="rgCat" type="text" placeholder="Supermercado" list="rgCatLista" autocomplete="off"><datalist id="rgCatLista">' + sugs.map((n) => '<option value="' + escapeHtml(n) + '">').join('') + '</datalist></div>' +
+ (FORM && FORM.rgEs === 'tras' ? '<input type="hidden" id="rgTipo" value="">' : '') + (FORM && FORM.rgEs === 'tras' ? '' : '<div class="field"><label>Tipo</label><input type="hidden" id="rgTipo" value="' + escapeHtml(tipo) + '"><div class="chips" role="radiogroup" aria-label="Tipo">' + tipos.map(([v, l]) => '<button type="button" class="chip' + (v === tipo ? ' active' : '') + '" role="radio" aria-checked="' + (v === tipo) + '" ' + act('reglaTipo', v) + '>' + escapeHtml(l) + '</button>').join('') + '</div></div>') +
+    (FORM && FORM.rgEs === 'tras' ? '' : '<div class="field"><label>Categoría</label><input id="rgCat" type="text" placeholder="Supermercado" list="rgCatLista" autocomplete="off"><datalist id="rgCatLista">' + sugs.map((n) => '<option value="' + escapeHtml(n) + '">').join('') + '</datalist></div>') +
+    reglaCuentaHtml() +
     '<button class="btn ghost block" ' + act('reglaAnadir') + '>' + ic('plus') + ' Añadir regla</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
-function guardarRegla(texto, categoria, tipo) {
+function reglaCuentaHtml() {
+  if (!hayVariasCuentas()) return '';
+  const F = FORM || {}, cs = cuentasCfg(), ch = (accion, v, on, txt) => '<button type="button" class="chip' + (on ? ' active' : '') + '" aria-pressed="' + !!on + '" ' + act(accion, v) + '>' + escapeHtml(txt) + '</button>';
+  return '<div class="field"><label>Solo en</label><div class="chips">' + ch('reglaCuenta', '', !F.rgCuenta, 'Cualquier cuenta') + cs.map((c) => ch('reglaCuenta', c.id, F.rgCuenta === c.id, c.nombre)).join('') + '</div></div>' +
+    '<div class="field"><label>Entonces es</label><div class="chips">' + ch('reglaEs', '', F.rgEs !== 'tras', 'Una categoría') + ch('reglaEs', 'tras', F.rgEs === 'tras', 'Un traspaso') + '</div>' +
+    (F.rgEs === 'tras' ? '<select id="rgTras" aria-label="Con qué cuenta" style="margin-top:8px;"><option value="">Con qué cuenta…</option>' + cs.filter((c) => c.id !== F.rgCuenta).map((c) => '<option value="' + escapeHtml(c.id) + '">Con ' + escapeHtml(c.nombre) + '</option>').join('') + '</select><div class="rec-hint">Al importar, lo que contenga ese texto se guarda como traspaso entre tus cuentas (la dirección sale del signo).</div>' : '') + '</div>';
+}
+function guardarRegla(texto, categoria, tipo, extra) {
   const t = normDesc(texto); if (!t || !categoria) return false;
-  const rs = (cfg().reglasCat || []).filter((r) => !(normDesc(r.texto) === t && (r.tipo || '') === (tipo || '')));
-  rs.push({ texto: t, categoria, tipo: tipo || '' });
+  const ex = extra || {}, cu = ex.cuenta || '';
+  const rs = (cfg().reglasCat || []).filter((r) => !(normDesc(r.texto) === t && (r.tipo || '') === (tipo || '') && (r.cuenta || '') === cu && !!r.tras === !!ex.tras));
+  rs.push(Object.assign({ texto: t, categoria, tipo: tipo || '' }, cu ? { cuenta: cu } : {}, ex.tras ? { tras: ex.tras } : {}));
   saveConfig({ reglasCat: rs });
   return true;
 }
@@ -11069,8 +11084,11 @@ const H = {
     IMP.paso = 'revisar'; IMP.verTodo = false; updateSheet(impHtml());
   },
   impIncluir: ([k], el) => { const r = IMP.filas[Number(k)]; if (r) { r.incluir = el.checked; updateSheet(impHtml()); } },
-  impTras: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; if (v === '1') { r.comoTras = true; r.estado = 'traspaso'; if (r.otra === undefined) r.otra = ''; r.incluir = !!r.otra; } else { r.comoTras = false; r.estado = 'nuevo'; r.incluir = true; } sentir('tic'); updateSheet(impHtml()); },
-  impTrasCon: ([k], el) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.otra = el.value || ''; r.incluir = !!r.otra; updateSheet(impHtml()); },
+  impTras: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; if (v === '1') { r.comoTras = true; r.estado = 'traspaso'; if (r.otra === undefined) r.otra = ''; r.incluir = !!r.otra; if (r.otra) r.ofrecerTras = (tokensDesc(r.desc).slice(0, 2).join(' ') || normDesc(r.desc).slice(0, 24)).trim(); } else { r.comoTras = false; r.estado = 'nuevo'; r.incluir = true; } sentir('tic'); updateSheet(impHtml()); },
+  impTrasCon: ([k], el) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.otra = el.value || ''; r.incluir = !!r.otra; if (r.otra) r.ofrecerTras = (tokensDesc(r.desc).slice(0, 2).join(' ') || normDesc(r.desc).slice(0, 24)).trim(); updateSheet(impHtml()); },
+  impReglaTras: ([k]) => { const r = IMP && IMP.filas[Number(k)]; if (!r || !r.ofrecerTras || !r.otra || !IMP.cuenta) return;
+    if (guardarRegla(r.ofrecerTras, 'Traspaso', '', { cuenta: IMP.cuenta, tras: r.otra })) toast('Regla creada: «' + normDesc(r.ofrecerTras) + '» en ' + nombreCuenta(IMP.cuenta) + ' → traspaso con ' + nombreCuenta(r.otra));
+    r.ofrecerTras = ''; updateSheet(impHtml()); },
   impSaldoUsar: () => impSaldoUsar(),
   impSaldoNo: () => { if (!IMP) return; IMP.saldoFin = null; updateSheet(impHtml()); },
   impCuenta: ([id]) => { if (!IMP) return; IMP.cuenta = id; IMP.cuentaRecordada = false; sentir('tic'); updateSheet(impHtml()); },
@@ -11079,7 +11097,7 @@ const H = {
   impEnCuenta: ([id]) => { verBadge('importar'); IMP = { paso: 'archivo', cuentaFija: id }; if ($('#sheetBackdrop')) updateSheet(impHtml()); else openSheet(impHtml()); },
   impTodas: ([v]) => { IMP.filas.forEach((r) => { if (r.id && r.estado !== 'importado' && (v !== '1' || r.estado === 'nuevo' || !r.estado)) r.incluir = v === '1'; }); updateSheet(impHtml()); }, // «Marcar todas» no marca lo dudoso (riesgo 2)
   impVerTodo: () => { IMP.verTodo = true; updateSheet(impHtml()); },
-  impTipo: ([k], el) => { const r = IMP.filas[Number(k)]; if (!r) return; r.tipo = el.value; if (r.origenCat !== 'archivo') { const rg = reglaPara(r.desc, r.tipo); r.categoria = rg ? rg.categoria : sugerirCategoria(r.desc, r.tipo); r.origenCat = rg ? 'regla' : r.categoria ? 'historial' : ''; } updateSheet(impHtml()); },
+  impTipo: ([k], el) => { const r = IMP.filas[Number(k)]; if (!r) return; r.tipo = el.value; if (r.origenCat !== 'archivo') { const rg = reglaPara(r.desc, r.tipo, hayVariasCuentas() ? IMP.cuenta : null); r.categoria = rg ? rg.categoria : sugerirCategoria(r.desc, r.tipo); r.origenCat = rg ? 'regla' : r.categoria ? 'historial' : ''; } updateSheet(impHtml()); },
   impCat: ([k], el) => {
     const r = IMP.filas[Number(k)]; if (!r) return;
     r.categoria = el.value; r.origenCat = 'manual';
@@ -11107,7 +11125,12 @@ const H = {
   openReglas: () => { verBadge('reglas'); FORM = { kind: 'reglas' }; openSheet(reglasHtml()); },
   reglaQuitar: ([i]) => { const rs = (cfg().reglasCat || []).slice(); rs.splice(Number(i), 1); saveConfig({ reglasCat: rs }); updateSheet(reglasHtml()); },
   reglaTipo: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || '', c = ($('#rgCat') || {}).value || ''; FORM.rgTipo = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c; sentir('tic'); },
-  reglaAnadir: () => { const t = $('#rgTexto').value, c = $('#rgCat').value.trim(); if (!normDesc(t) || !c) return toast('Pon el texto y la categoría'); guardarRegla(t, c, $('#rgTipo').value); updateSheet(reglasHtml()); toast('Regla añadida'); },
+  reglaAnadir: () => { const t = $('#rgTexto').value, F = FORM || {};
+    if (F.rgEs === 'tras') { const o = ($('#rgTras') || {}).value || ''; if (!normDesc(t) || !o) return toast('Pon el texto y la otra cuenta'); guardarRegla(t, 'Traspaso', '', { cuenta: F.rgCuenta || '', tras: o }); }
+    else { const c = $('#rgCat').value.trim(); if (!normDesc(t) || !c) return toast('Pon el texto y la categoría'); guardarRegla(t, c, $('#rgTipo').value, { cuenta: F.rgCuenta || '' }); }
+    updateSheet(reglasHtml()); toast('Regla añadida'); },
+  reglaCuenta: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; FORM.rgCuenta = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; sentir('tic'); },
+  reglaEs: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; FORM.rgEs = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; sentir('tic'); },
   onDescInput: () => { autoCategoriaDesc(); refrescarReglaBox(); },
   reglaCheck: (_, el) => { FORM.recordar = el.checked; },
   reglaTexto: (_, el) => { FORM.reglaTexto = el.value; },
