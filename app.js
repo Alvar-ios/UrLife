@@ -9159,11 +9159,19 @@ function impSaldoUsar() {
 // ¿con qué otra cuenta tuya va esta fila? (por su texto: «TRANSFERENCIA A ING…», «REINTEGRO CAJERO» → Efectivo)
 function impTrasOtra(desc, cuenta, sig, porTipo) {
   const t = ' ' + normDesc(desc).replace(/[^a-z0-9]+/g, ' ') + ' ', otras = cuentasCfg().filter((c) => c.id !== cuenta);
-  const esta = (w) => { w = normDesc(w).replace(/[^a-z0-9]+/g, ' ').trim(); return w.length >= 2 && t.indexOf(' ' + w + ' ') >= 0; };
-  const nombrada = otras.find((c) => { const b = bancoDe(c); return esta(c.nombre) || (b && (esta(b.k) || esta(b.n || ''))); });
+  const lim = (w) => normDesc(w || '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const esta = (w) => { w = lim(w); return w.length >= 2 && t.indexOf(' ' + w + ' ') >= 0; };
+  // tras «a / desde / de / para / hacia» (así «ALQUILER CASA RURAL» no es la cuenta «Casa»)
+  const trasPrep = (w) => { w = lim(w); return w.length >= 2 && / (a|al|desde|de|para|hacia) /.test(t) && new RegExp(' (a|al|desde|de|para|hacia) ' + w.replace(/ /g, ' ') + ' ').test(t); };
+  const porBanco = otras.filter((c) => { const b = bancoDe(c); return b && (esta(b.k) || esta(b.n) || String(b.alias || '').split(',').some((al) => al && esta(al))); });
+  const porNombre = otras.filter((c) => trasPrep(c.nombre));
   const habla = / (transf|transferencia|transferencias|traspaso|trf|trasp) /.test(t);
-  if ((habla || porTipo) && nombrada) return nombrada.id;
-  if (sig < 0 && / (reintegro|cajero|retirada|atm) /.test(t)) { const ef = otras.find((c) => tipoCuenta(c) === 'efectivo'); if (ef) return ef.id; }
+  if (habla || porTipo) {
+    if (porBanco.length === 1) return porBanco[0].id;
+    if (!porBanco.length && porNombre.length === 1) return porNombre[0].id;
+    if (porBanco.length > 1 || porNombre.length > 1) return ''; // dudoso: se pregunta con qué cuenta (un nombre suelto como «Casa» no basta)
+  }
+  if (sig < 0 && / (reintegro|cajero|retirada|atm) /.test(t) && !/ (comision|comisiones|cuota|gastos) /.test(t)) { const ef = otras.filter((c) => tipoCuenta(c) === 'efectivo'); if (ef.length === 1) return ef[0].id; }
   return porTipo ? '' : null; // '' = es traspaso pero no sabemos con cuál
 }
 function impTrasDir(r, cuenta) { return r.sig < 0 ? { de: cuenta, a: r.otra } : { de: r.otra, a: cuenta }; }
@@ -9230,18 +9238,19 @@ function impProcesar() {
     let otraT = null;
     if (estado === 'nuevo' && cuenta) otraT = impTrasOtra(o.desc, cuenta, o.sig, esTras);
     if (estado === 'nuevo' && otraT != null) {
-      // ¿ya está ese traspaso (la otra mitad, apuntada desde la otra cuenta o a mano)? mismo importe, 0-3 días
+      // ¿ya está ese traspaso (la otra mitad, apuntada desde la otra cuenta o a mano)? mismo importe, misma dirección, 0-3 días
       const dir = o.sig < 0 ? { de: cuenta, a: otraT } : { de: otraT, a: cuenta };
       const mitad = (S.traspasos || []).find((t) => !usadosC.has('t:' + t.id) && Math.abs(Math.abs(num(t.importe)) - imp) < 0.005 && impDias(t.fecha, fecha) <= 3 &&
-        (otraT ? t.cuentaId === dir.de && t.cuentaDestinoId === dir.a : (t.cuentaId === cuenta || t.cuentaDestinoId === cuenta)));
+        (otraT ? t.cuentaId === dir.de && t.cuentaDestinoId === dir.a : (o.sig < 0 ? t.cuentaId === cuenta : t.cuentaDestinoId === cuenta)));
       if (mitad) { usadosC.add('t:' + mitad.id); estado = 'otraMitad'; con = { que: nombreCuenta(mitad.cuentaId) + ' → ' + nombreCuenta(mitad.cuentaDestinoId), fecha: mitad.fecha }; }
-      else { estado = 'traspaso'; o.comoTras = true; o.otra = otraT || ''; }
     }
     if (estado === 'nuevo') {
+      // lo ya apuntado a mano (también si lo apuntaste como gasto) se mira antes de proponer un traspaso: si no, se restaría dos veces
       const igual = buscar(fecha, Math.abs(imp), 0);
       if (igual) { estado = igual.donde === 'juntos' ? 'juntos' : 'dup'; con = igual; usadosC.add(igual.k); }
       else { const cerca = buscar(fecha, Math.abs(imp), 3); if (cerca) { estado = cerca.donde === 'juntos' ? 'juntos' : 'quizas'; con = cerca; usadosC.add(cerca.k); } }
     }
+    if (estado === 'nuevo' && otraT != null) { estado = 'traspaso'; o.comoTras = true; o.otra = otraT || ''; }
     if (esTras && estado === 'nuevo') estado = 'traspaso';
     Object.assign(o, { id: idF, estado, con, incluir: estado === 'nuevo' || (estado === 'traspaso' && !!o.comoTras && !!o.otra) }); delete o.base; delete o.oc; delete o.esTras; delete o.abs;
   });
