@@ -1,4 +1,5 @@
 // 29/10 (docs/24 §3, tanda 1): «te ha encargado» en Inicio, «Recordárselo» por WhatsApp, «Encargadas a otros» y «Lo añadiste tú». Datos inventados.
+const AYER = new Date(Date.now() - 864e5).toISOString(); // 05/11: fechas relativas (el aviso solo mira los últimos 7 días)
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 console.error = () => {};
@@ -13,9 +14,9 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   S.grupos = [{ id: 'g1', nombre: 'Piso', tipo: 'grupo', alias: {}, miembros: [m('uYo', 'Lucía'), m('uA', 'Ana García'), m('uB', 'Bea')], todos: [m('uYo', 'Lucía'), m('uA', 'Ana García'), m('uB', 'Bea')] }];
   S.compartidos = []; S.objetivos = []; S.aportes = []; S.carpetas = [];
   S.agenda = [
-    { id: 'c1', grupoId: 'g1', tipo: 'tarea', titulo: 'Bajar el cartón', fecha: mas(2), asignadoA: 'uYo', hechaEn: null, creadoPor: 'uA', createdAt: '2026-10-29T10:00:00Z' },
-    { id: 'c2', grupoId: 'g1', tipo: 'tarea', titulo: 'Comprar bombillas', fecha: mas(3), asignadoA: 'uB', hechaEn: null, creadoPor: 'uYo', createdAt: '2026-10-29T10:00:00Z' },
-    { id: 'c3', grupoId: 'g1', tipo: 'tarea', titulo: 'Llamar al casero', fecha: mas(9), asignadoA: 'uA', hechaEn: null, creadoPor: 'uB', createdAt: '2026-10-29T10:00:00Z' }];
+    { id: 'c1', grupoId: 'g1', tipo: 'tarea', titulo: 'Bajar el cartón', fecha: mas(2), asignadoA: 'uYo', hechaEn: null, creadoPor: 'uA', createdAt: AYER },
+    { id: 'c2', grupoId: 'g1', tipo: 'tarea', titulo: 'Comprar bombillas', fecha: mas(3), asignadoA: 'uB', hechaEn: null, creadoPor: 'uYo', createdAt: AYER },
+    { id: 'c3', grupoId: 'g1', tipo: 'tarea', titulo: 'Llamar al casero', fecha: mas(9), asignadoA: 'uA', hechaEn: null, creadoPor: 'uB', createdAt: AYER }];
   S.db = Object.assign(S.db || {}, { grupos: { listar: async () => { throw new Error('sin conexión (prueba)'); }, invitaciones: async () => [] }, rpc: async () => null,
     agenda: { suscribir: () => () => {}, crear: async (o) => o, editar: async (id, o) => o, borrar: async () => [], restaurar: async () => null } });
   H.goTab(['inicio']); S.pendTodos = true; A.render(); await sleep(20);

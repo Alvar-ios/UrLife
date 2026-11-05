@@ -1,4 +1,5 @@
 // Calidad (29/10): casos límite de «Con» y «te ha encargado». Datos inventados.
+const AYER = new Date(Date.now() - 864e5).toISOString(); // 05/11: fechas relativas (el aviso solo mira los últimos 7 días)
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0, avisos = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const aviso = (c, m) => { console.log((c ? 'PASS ' : 'AVISO ') + m); if (!c) avisos++; };
@@ -47,14 +48,14 @@ async function base(grupos, agenda) {
     t.H.planCon(['yo']); await sleep(5); ok(t.sh().querySelector('#tNombre') && t.sh().querySelector('#tNombre').value === 'Pintar', '«Solo yo» vuelve a la tarea personal con lo escrito'); }
   // 6) alias: tarea encargada a una persona sin cuenta que ya soy yo (reclamada)
   { const g = piso(); g.alias = { pX: 'uYo' };
-    const t = await base([g], [{ id: 'a1', grupoId: 'g1', tipo: 'tarea', titulo: 'Bajar la basura', fecha: null, asignadoA: 'pX', hechaEn: null, creadoPor: 'uB', createdAt: '2026-10-29T10:00:00Z' }]);
+    const t = await base([g], [{ id: 'a1', grupoId: 'g1', tipo: 'tarea', titulo: 'Bajar la basura', fecha: null, asignadoA: 'pX', hechaEn: null, creadoPor: 'uB', createdAt: AYER }]);
     t.H.goTab(['inicio']); t.S.pendTodos = true; t.A.render(); await sleep(20);
     ok(/Bajar la basura/.test(t.c().textContent) && /Te lo encarga Bea/.test(t.c().textContent), 'alias: lo encargado a mi «persona sin cuenta» reclamada me sale a mí'); }
   // 7) yo me lo encargo a mí mismo: no sale como «te ha encargado»
-  { const t = await base([piso()], [{ id: 'a2', grupoId: 'g1', tipo: 'tarea', titulo: 'Mío', fecha: null, asignadoA: 'uYo', hechaEn: null, creadoPor: 'uYo', createdAt: '2026-10-29T10:00:00Z' }]);
+  { const t = await base([piso()], [{ id: 'a2', grupoId: 'g1', tipo: 'tarea', titulo: 'Mío', fecha: null, asignadoA: 'uYo', hechaEn: null, creadoPor: 'uYo', createdAt: AYER }]);
     t.H.goTab(['inicio']); t.A.render(); await sleep(20); ok(!/Te lo encarga/.test(t.c().textContent), 'lo que me apunto yo no sale como encargo'); }
   // 8) título con < > no rompe la fila
-  { const t = await base([piso()], [{ id: 'a3', grupoId: 'g1', tipo: 'tarea', titulo: '<b>x</b> & co', fecha: null, asignadoA: 'uYo', hechaEn: null, creadoPor: 'uB', createdAt: '2026-10-29T10:00:00Z' }]);
+  { const t = await base([piso()], [{ id: 'a3', grupoId: 'g1', tipo: 'tarea', titulo: '<b>x</b> & co', fecha: null, asignadoA: 'uYo', hechaEn: null, creadoPor: 'uB', createdAt: AYER }]);
     t.H.goTab(['inicio']); t.A.render(); await sleep(20); ok(/<b>x<\/b> & co/.test(t.c().textContent) && !t.c().querySelector('.dia-t b b'), 'título con símbolos se escapa bien'); }
   // 9) reloj del móvil adelantado 1 hora: ¿se pierde lo que llega después?
   { const t = await base([piso()], [{ id: 'a4', grupoId: 'g1', tipo: 'tarea', titulo: 'Uno', fecha: null, asignadoA: 'uYo', hechaEn: null, creadoPor: 'uB', createdAt: new Date(Date.now() - 60000).toISOString() }]);

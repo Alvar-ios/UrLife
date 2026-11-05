@@ -63,7 +63,8 @@ const toastTxt=e=>(e.doc.querySelector('#toast')||{}).textContent||'';
  // --- 1. Álvaro apunta una cena de 60 € y la comparte a medias con Paloma
  A.H.openMovForm([]);await sleep(20);
  da.querySelector('#fImporte').value='60';da.querySelector('#fCategoria').value='Restaurantes';da.querySelector('#fDesc').value='Cena';
- ok(/Compartir este gasto/.test(sha())&&/NUEVO/.test(da.querySelector('#compField').innerHTML),'el formulario ofrece «Compartir este gasto» (con etiqueta NUEVO)');
+ ok(/Compartir este gasto/.test(sha())&&(!a.w.__APP__.badgeActivo('compartir')||/NUEVO/.test(da.querySelector('#compField').innerHTML)), // 05/11: la etiqueta caduca a los 21 días
+ 'el formulario ofrece «Compartir este gasto» (con etiqueta NUEVO)');
  click(a,'compOn');await sleep(10);
  ok(/Casa/.test(sha())&&/Paloma/.test(sha())&&da.querySelector('#compField .chip.active'),'con un solo grupo, se elige solo; también aparece Paloma como persona');
  ok(/Tu parte: 30,00/.test(sha())&&/te deben 30,00/.test(sha()),'reparto a medias: tu parte 30 y te deben 30');

@@ -71,13 +71,13 @@ const LECTURA={ticket:{es_ticket:true,comercio:'Pizzería Luigi',fecha:'2026-10-
 (async()=>{
  const a=env('uA','alvaro@ejemplo.com'),p=env('uP','paloma@ejemplo.com');await sleep(200);
  const A=a.w.__APP__,P=p.w.__APP__,da=a.doc,sha=()=>da.querySelector('#sheetHost').textContent;
- const k=(X)=>{const d=new Date();return X.kpisMes(d.getFullYear(),d.getMonth()+1)};
+ const k=(X)=>X.kpisMes(2026,10); // 05/11: el ticket es del 9/10/2026; se mira ese mes, no el de hoy
  const pedidas=[];let respuesta=LECTURA;
  a.w.__reducirFoto=async()=>({b64:'QUJD',tipo:'image/jpeg'});
  a.w.__ticketsApi=async(b)=>{pedidas.push(b);return JSON.parse(JSON.stringify(typeof respuesta==='function'?respuesta(b):respuesta))};
  // --- accesos
  A.H.openMovForm([]);await sleep(20);
- ok(/Leer un ticket con una foto/.test(sha())&&/NUEVO/.test(da.querySelector('.tk-btn').innerHTML),'el formulario nuevo ofrece leer un ticket (NUEVO)');
+ ok(/Leer un ticket con una foto/.test(sha())&&(!A.badgeActivo('ticket')||/NUEVO/.test(da.querySelector('.tk-btn').innerHTML)),'el formulario nuevo ofrece leer un ticket (NUEVO)');
  A.H.closeSheet([]);await sleep(250);
  a.w.__APP__.H.goTab(['movimientos']);a.w.__APP__.H.setMovVista(['lista']);await sleep(20);
  ok(/Foto de ticket/.test(da.querySelector('#content').textContent),'acceso «Foto de ticket» en Movimientos');
