@@ -9180,6 +9180,12 @@ function impTrasOtra(desc, cuenta, sig, porTipo) {
   if (sig < 0 && / (reintegro|cajero|retirada|atm) /.test(t) && !/ (comision|comisiones|cuota|gastos) /.test(t)) { const ef = otras.filter((c) => tipoCuenta(c) === 'efectivo'); if (ef.length === 1) return ef[0].id; }
   return porTipo ? '' : null; // '' = es traspaso pero no sabemos con cuál
 }
+// texto para «Recordar»: dos palabras útiles solo si van seguidas; si no, una; nunca si ya hay una regla igual
+function impPropTras(r) {
+  const d = normDesc(r.desc), tk = tokensDesc(r.desc); if (!tk.length || reglaTras(r.desc, IMP && IMP.cuenta) === r.otra) return '';
+  const dos = tk.slice(0, 2).join(' ');
+  return tk.length > 1 && d.indexOf(dos) >= 0 ? dos : (d.indexOf(tk[0]) >= 0 ? tk[0] : '');
+}
 function impTrasDir(r, cuenta) { return r.sig < 0 ? { de: cuenta, a: r.otra } : { de: r.otra, a: cuenta }; }
 function impProcesar() {
   const I = IMP, m = I.map, filas = I.hoja.filas.slice(I.cab + 1);
@@ -11084,10 +11090,10 @@ const H = {
     IMP.paso = 'revisar'; IMP.verTodo = false; updateSheet(impHtml());
   },
   impIncluir: ([k], el) => { const r = IMP.filas[Number(k)]; if (r) { r.incluir = el.checked; updateSheet(impHtml()); } },
-  impTras: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; if (v === '1') { r.comoTras = true; r.estado = 'traspaso'; if (r.otra === undefined) r.otra = ''; r.incluir = !!r.otra; if (r.otra) r.ofrecerTras = (tokensDesc(r.desc).slice(0, 2).join(' ') || normDesc(r.desc).slice(0, 24)).trim(); } else { r.comoTras = false; r.estado = 'nuevo'; r.incluir = true; } sentir('tic'); updateSheet(impHtml()); },
-  impTrasCon: ([k], el) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.otra = el.value || ''; r.incluir = !!r.otra; if (r.otra) r.ofrecerTras = (tokensDesc(r.desc).slice(0, 2).join(' ') || normDesc(r.desc).slice(0, 24)).trim(); updateSheet(impHtml()); },
+  impTras: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; if (v === '1') { r.comoTras = true; r.estado = 'traspaso'; if (r.otra === undefined) r.otra = ''; r.incluir = !!r.otra; if (r.otra) r.ofrecerTras = impPropTras(r); } else { r.comoTras = false; r.estado = 'nuevo'; r.incluir = true; } sentir('tic'); updateSheet(impHtml()); },
+  impTrasCon: ([k], el) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.otra = el.value || ''; r.incluir = !!r.otra; if (r.otra) r.ofrecerTras = impPropTras(r); updateSheet(impHtml()); },
   impReglaTras: ([k]) => { const r = IMP && IMP.filas[Number(k)]; if (!r || !r.ofrecerTras || !r.otra || !IMP.cuenta) return;
-    if (guardarRegla(r.ofrecerTras, 'Traspaso', '', { cuenta: IMP.cuenta, tras: r.otra })) toast('Regla creada: «' + normDesc(r.ofrecerTras) + '» en ' + nombreCuenta(IMP.cuenta) + ' → traspaso con ' + nombreCuenta(r.otra));
+    if (guardarRegla(r.ofrecerTras, '—', '', { cuenta: IMP.cuenta, tras: r.otra })) toast('Regla creada: «' + normDesc(r.ofrecerTras) + '» en ' + nombreCuenta(IMP.cuenta) + ' → traspaso con ' + nombreCuenta(r.otra));
     r.ofrecerTras = ''; updateSheet(impHtml()); },
   impSaldoUsar: () => impSaldoUsar(),
   impSaldoNo: () => { if (!IMP) return; IMP.saldoFin = null; updateSheet(impHtml()); },
@@ -11126,11 +11132,11 @@ const H = {
   reglaQuitar: ([i]) => { const rs = (cfg().reglasCat || []).slice(); rs.splice(Number(i), 1); saveConfig({ reglasCat: rs }); updateSheet(reglasHtml()); },
   reglaTipo: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || '', c = ($('#rgCat') || {}).value || ''; FORM.rgTipo = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c; sentir('tic'); },
   reglaAnadir: () => { const t = $('#rgTexto').value, F = FORM || {};
-    if (F.rgEs === 'tras') { const o = ($('#rgTras') || {}).value || ''; if (!normDesc(t) || !o) return toast('Pon el texto y la otra cuenta'); guardarRegla(t, 'Traspaso', '', { cuenta: F.rgCuenta || '', tras: o }); }
+    if (F.rgEs === 'tras') { const o = ($('#rgTras') || {}).value || ''; if (!normDesc(t) || !o) return toast('Pon el texto y la otra cuenta'); guardarRegla(t, '—', '', { cuenta: F.rgCuenta || '', tras: o }); }
     else { const c = $('#rgCat').value.trim(); if (!normDesc(t) || !c) return toast('Pon el texto y la categoría'); guardarRegla(t, c, $('#rgTipo').value, { cuenta: F.rgCuenta || '' }); }
     updateSheet(reglasHtml()); toast('Regla añadida'); },
-  reglaCuenta: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; FORM.rgCuenta = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; sentir('tic'); },
-  reglaEs: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; FORM.rgEs = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; sentir('tic'); },
+  reglaCuenta: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; const c0 = ($('#rgCat') || {}).value || '', tr0 = ($('#rgTras') || {}).value || ''; FORM.rgCuenta = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c0; if ($('#rgTras') && tr0 && [...$('#rgTras').options].some((o) => o.value === tr0)) $('#rgTras').value = tr0; sentir('tic'); },
+  reglaEs: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; const c0 = ($('#rgCat') || {}).value || '', tr0 = ($('#rgTras') || {}).value || ''; FORM.rgEs = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c0; if ($('#rgTras') && tr0 && [...$('#rgTras').options].some((o) => o.value === tr0)) $('#rgTras').value = tr0; sentir('tic'); },
   onDescInput: () => { autoCategoriaDesc(); refrescarReglaBox(); },
   reglaCheck: (_, el) => { FORM.recordar = el.checked; },
   reglaTexto: (_, el) => { FORM.reglaTexto = el.value; },
@@ -11857,6 +11863,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
