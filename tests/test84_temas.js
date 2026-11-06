@@ -32,9 +32,9 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   H.compRapido(['g:g1']); await sleep(30);
   const caja = () => sh().querySelector('.tema-caja');
   ok(caja() && /¿De qué tema\?/.test(caja().textContent), 'al elegir el grupo sale «¿De qué tema? · opcional»');
-  const chips = [...caja().querySelectorAll('.chip')].map((x) => x.textContent.trim());
+  const chips = [...caja().querySelectorAll('.tema-chips .chip')].map((x) => x.textContent.trim());
   ok(chips.join('|') === 'Ninguno|Roma|Compra|Nuevo', 'chips: Ninguno, los temas del grupo y Nuevo (' + chips.join('|') + ')');
-  ok(caja().querySelector('.chip.active') && /Roma/.test(caja().querySelector('.chip.active').textContent) && /Elegido por la fecha: Roma/.test(caja().textContent), 'Roma viene elegido por la fecha y dice por qué');
+  ok(caja().querySelector('.chip.active') && /Roma/.test(caja().querySelector('.chip.active').textContent) && /Elegido por la fecha: Roma|Esta fecha es del viaje «Roma»/.test(caja().textContent), 'Roma viene elegido por la fecha y dice por qué (si es un viaje, lo pregunta: 06/11)');
   // cambiar la fecha fuera del viaje → «Ninguno»
   const f = sh().querySelector('#crFecha'); f.value = mas(-20); f.dispatchEvent(new e.w.Event('change', { bubbles: true })); await sleep(10);
   ok(/Ninguno/.test(caja().querySelector('.chip.active').textContent), 'al cambiar la fecha fuera del viaje, vuelve a «Ninguno»');
