@@ -2307,7 +2307,7 @@ function nombreSugerido() {
   const e = ((S.user && S.user.email) || '').split('@')[0].replace(/[._\-]+/g, ' ').replace(/\d+/g, '').trim().split(' ')[0] || 'Yo';
   return e.charAt(0).toUpperCase() + e.slice(1);
 }
-const ERR_GRUPO = { grupo_cerrado: 'Este grupo está cerrado: ya no se puede añadir nada', asignado_no_valido: 'Esa persona ya no está en el grupo', agenda_borrado: 'Ese plan ya está borrado', objetivos_compartidos_forma_check: 'Esa forma no vale', carpeta_no_valida: 'Ese tema ya no existe o es de otro grupo', demasiadas_carpetas: 'Este grupo ya tiene 30 temas: cierra o borra alguno', carpeta_borrada: 'Ese tema está borrado', 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
+const ERR_GRUPO = { no_autorizado: 'No tienes permiso para cambiar eso en este grupo', demasiados: 'Son demasiados de una vez: prueba con menos', grupo_cerrado: 'Este grupo está cerrado: ya no se puede añadir nada', asignado_no_valido: 'Esa persona ya no está en el grupo', agenda_borrado: 'Ese plan ya está borrado', objetivos_compartidos_forma_check: 'Esa forma no vale', carpeta_no_valida: 'Ese tema ya no existe o es de otro grupo', demasiadas_carpetas: 'Este grupo ya tiene 30 temas: cierra o borra alguno', carpeta_borrada: 'Ese tema está borrado', 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
   demasiadas_invitaciones: 'Hay demasiados enlaces pendientes. Anula alguno.', demasiados_grupos: 'Has creado muchos grupos hoy. Prueba mañana.', usa_salir: 'Para irte tú, usa «Salir del grupo».', sin_sesion: 'Tienes que iniciar sesión.',
   saldo_pendiente: 'Hay cuentas pendientes. Saldadlas antes (botón «Saldar»).', reparto_no_cuadra: 'El reparto no suma el total.', reparto_no_valido: 'Revisa el reparto: solo puede incluir a miembros.', pagador_no_valido: 'Quien pagó tiene que ser del grupo.', compartido_borrado: 'Ese gasto ya se había eliminado.', objetivo_no_valido: 'Elige una meta o deuda de ese grupo.', objetivo_borrado: 'Esa meta o deuda ya se había eliminado.' };
 function errGrupo(e) { const m = String((e && (e.message || (e.original && e.original.message))) || ''); const k = Object.keys(ERR_GRUPO).find((x) => m.indexOf(x) >= 0); return k ? ERR_GRUPO[k] : 'No se pudo completar. Revisa tu conexión.'; }
@@ -5451,7 +5451,7 @@ function gastosDeTema(gid, tid) { return (S.compartidos || []).filter((c) => c.g
 // El tema que viene elegido solo: el que cubre la fecha; si no, el último que usaste en ese grupo en las últimas 12 horas
 function temaSugerido(gid, fecha) {
   const ts = temasDe(gid), porFecha = ts.find((t) => t.desde && t.hasta && fecha >= t.desde && fecha <= t.hasta);
-  if (porFecha) return { id: porFecha.id, por: 'Elegido por la fecha: ' + porFecha.nombre + ' es ' + (porFecha.desde === porFecha.hasta ? 'el ' : 'del ') + temaFechasTxt(porFecha).replace('–', ' al ') + '.' };
+  if (porFecha) return { id: porFecha.id, porFecha: true, por: 'Elegido por la fecha: ' + porFecha.nombre + ' es ' + (porFecha.desde === porFecha.hasta ? 'el ' : 'del ') + temaFechasTxt(porFecha).replace('–', ' al ') + '.' };
   const u = (S._temaUlt || {})[gid];
   if (u && Date.now() - u.ts < 12 * 3600e3 && ts.some((t) => t.id === u.id)) { const t = temaPorId(u.id); return { id: u.id, por: 'Elegido porque es el último que usaste: ' + t.nombre + '.' }; }
   return { id: null, por: '' };
@@ -5460,7 +5460,7 @@ function temaGidDeForm() { const cp = FORM && FORM.comp; return cp && cp.dest &&
 function temaAutoAplicar() {
   const F = FORM, gid = temaGidDeForm(); if (!F || !gid) { if (F) { F.tema = null; F.temaPor = ''; } return; }
   if (F.temaTocado) return;
-  const s = temaSugerido(gid, F.fecha || todayISO()); F.tema = s.id; F.temaPor = s.por;
+  const s = temaSugerido(gid, F.fecha || todayISO()); F.tema = s.id; F.temaPor = s.por; F.temaPorFecha = !!s.porFecha;
 }
 // «¿De qué tema?» al compartir un gasto: justo debajo de «Con»
 function temaCajaHtml() {
@@ -5477,6 +5477,9 @@ function temaCajaHtml() {
       '<div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.slice(0, 6).map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + (TEMA_ICONO_NOMBRE[k] || k) + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaIco', k) + '>' + ic(k) + '</button>').join('') + '</div>' +
       '<button type="button" class="btn accent block" ' + act('temaCrearRapido') + '>Crear tema</button></div>';
   } else if (!ts.length) h += '<div class="tema-por">Para separar un viaje, la compra o la casa.</div>';
+  else if (F.tema && F.temaPor && !F.temaTocado && elegido && temaEsViaje(elegido) && F.temaPorFecha)
+    h += '<div class="tema-pregunta" role="group" aria-label="¿Va en el viaje?"><b>' + ic('plane') + ' Esta fecha es del viaje «' + escapeHtml(elegido.nombre) + '». ¿Va en el viaje?</b>' +
+      '<div class="tema-preg-b"><button type="button" class="chip active" ' + act('temaElegir', elegido.id) + '>Sí, va en el viaje</button><button type="button" class="chip" ' + act('temaElegir', '') + '>No</button></div></div>';
   else if (F.tema && F.temaPor && !F.temaTocado) h += '<div class="tema-por">' + escapeHtml(F.temaPor) + '</div>';
   return h + '</div>';
 }
@@ -5521,6 +5524,8 @@ function temaResumenHtml(g, t) {
     '<div class="tema-cab-t"><b>' + escapeHtml(t.nombre) + '</b><span>' + escapeHtml([nombreDestino(g), temaFechasTxt(t), gs.length + (gs.length === 1 ? ' gasto' : ' gastos'), t.cerrada ? 'cerrado' : ''].filter(Boolean).join(' · ')) + '</span></div>' +
     '<button type="button" class="icon-btn" aria-label="Opciones del tema" ' + act('temaMenu', t.id) + '>' + ic('more') + '</button></div>';
   if (F_temaMenu(t.id)) h += temaMenuHtml(g, t);
+  if (FORM && FORM.temaMeter === t.id) return h + temaMeterHtml(g, t);
+  if (!t.cerrada && temaCandidatos(g.id, t).length) h += '<button type="button" class="btn ghost block tema-meter-b" ' + act('temaMeterAbrir', t.id) + '>' + ic('plus') + ' Añadir gastos ya apuntados' + (temaEsViaje(t) ? ' al viaje' : '') + '</button>';
   if (FORM && FORM.temaCerrarPre === t.id) { const pend = deudasDe(g.id).length;
     h += '<div class="card tema-cierre"><b>' + (temaEsViaje(t) ? 'Cómo quedó el viaje' : 'Cerrar «' + escapeHtml(t.nombre) + '»') + '</b>' +
       '<span>' + escapeHtml(money(tot) + ' ' + entre + ' · tu parte ' + money(mia) + (dias > 1 ? ' · unos ' + Math.round(tot / dias).toLocaleString('es-ES') + ' € al día' : '')) + '</span>' +
@@ -5553,6 +5558,25 @@ function temaFormHtml(g) {
     '<div class="field"><label>Fechas <span class="hint">· opcional</span></label><div class="tema-fechas"><input id="tfDesde" type="date" aria-label="Desde" value="' + escapeHtml(T.desde || '') + '" ' + onChange('temaFormFecha') + '><span>al</span><input id="tfHasta" type="date" aria-label="Hasta" value="' + escapeHtml(T.hasta || '') + '" ' + onChange('temaFormFecha') + '></div></div>' +
     (ids.length ? '<label class="tema-meter"><input id="tfMeter" type="checkbox"' + (T.meter !== false ? ' checked' : '') + '> Meter ' + (ids.length === 1 ? 'el gasto' : 'los ' + ids.length + ' gastos') + ' de esos días</label>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('temaFormCerrar') + '>Cancelar</button><button class="btn accent block" ' + act('temaFormGuardar') + '>' + (T.id ? 'Guardar' : 'Crear tema') + '</button></div>';
+}
+// docs/29: meter en un tema (viaje) gastos del grupo que ya estaban apuntados. Primero los de esas fechas.
+function temaCandidatos(gid, t) {
+  return (S.compartidos || []).filter((c) => c.grupoId === gid && (c.tipo === 'Gasto' || c.tipo === 'Factura') && c.carpetaId !== t.id && puedeEditarComp(c)) // solo lo que puedes cambiar
+    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+}
+function temaMeterHtml(g, t) {
+  const F = FORM, sel = F.temaSel || {}, todos = temaCandidatos(g.id, t), ext = (d, n) => { const x = parseISO(d); if (!x) return ''; x.setDate(x.getDate() + n); return x.getFullYear() + '-' + pad2(x.getMonth() + 1) + '-' + pad2(x.getDate()); };
+  const enFechas = (c) => t.desde && t.hasta && c.fecha >= ext(t.desde, -3) && c.fecha <= ext(t.hasta, 3);
+  const cerca = todos.filter(enFechas), resto = todos.filter((c) => !enFechas(c)), ver = F.temaVerTodos || !cerca.length ? cerca.concat(resto) : cerca;
+  const fila = (c) => { const en = temaPorId(c.carpetaId); return '<label class="tema-sel-f"><input type="checkbox" ' + (sel[c.id] ? 'checked ' : '') + onChange('temaSelTog', c.id) + '>' +
+    '<span class="tema-sel-x"><b>' + escapeHtml(c.descripcion || c.categoria || 'Gasto') + '</b><span>' + escapeHtml(fmtDateShort(c.fecha) + ' · pagó ' + nombreDe(g.id, c.pagadoPor) + (en ? ' · ahora en «' + en.nombre + '»' : '')) + '</span></span><b class="tnum">' + money(num(c.importe)) + '</b></label>'; };
+  const n = Object.keys(sel).filter((k) => sel[k]).length;
+  return '<div class="card tema-meter"><b>Añadir gastos ya apuntados</b><span class="rec-hint">' + (cerca.length ? 'Primero los de las fechas del viaje (' + escapeHtml(temaFechasTxt(t)) + ').' : 'Elige los gastos del grupo que van en «' + escapeHtml(t.nombre) + '».') + '</span>' +
+    (cerca.length && !F.temaVerTodos ? '<button type="button" class="link" ' + act('temaSelTodosFechas') + '>Marcar los ' + cerca.length + ' de esas fechas</button>' : '') +
+    '<div class="tema-sel-lista">' + ver.map(fila).join('') + '</div>' +
+    (!F.temaVerTodos && resto.length && cerca.length ? '<button type="button" class="link" ' + act('temaVerTodosB') + '>Ver también otros ' + resto.length + ' gastos</button>' : '') +
+    '<div class="rec-hint">¿Un gasto tuyo que no compartiste? Ábrelo, pulsa «Compartir» y elige este viaje.</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('temaMeterCerrar') + '>Cancelar</button><button class="btn accent block" ' + act('temaMeterOk', t.id) + (n ? '' : ' disabled') + '>' + (n ? 'Añadir ' + n : 'Elige gastos') + '</button></div></div>';
 }
 function temaGastosEnFechas(gid, desde, hasta) {
   if (!desde || !hasta || hasta < desde) return [];
@@ -8913,16 +8937,20 @@ function adivinarColumnas(I) {
 }
 function firmaArchivo(I) { return normDesc(cabecerasDe(I).join('|')); }
 /* ---- reglas y sugerencias de categoría ---- */
-function reglaPara(desc, tipo) {
+// docs/30 tanda 4: una regla puede valer «solo en» una cuenta y puede decir «es un traspaso a/desde» otra cuenta
+function reglaMejor(desc, cuenta, fn) {
   const d = normDesc(desc); if (!d) return null;
   let best = null;
+  const mejor = (r, t) => { if (!best) return true; const bc = !!best.cuenta, rc = !!r.cuenta; if (rc !== bc) return rc; return t.length > normDesc(best.texto).length; }; // la de una cuenta concreta gana a «cualquier cuenta»
   (cfg().reglasCat || []).forEach((r) => {
-    const t = normDesc(r && r.texto); if (!t || !r.categoria) return;
-    if (r.tipo && r.tipo !== tipo) return;
-    if (d.indexOf(t) >= 0 && (!best || t.length > normDesc(best.texto).length)) best = r;
+    const t = normDesc(r && r.texto); if (!t || !fn(r)) return;
+    if (r.cuenta && (!cuenta || r.cuenta !== cuenta || !cuentaPorId(r.cuenta))) return;
+    if (d.indexOf(t) >= 0 && mejor(r, t)) best = r;
   });
   return best;
 }
+function reglaPara(desc, tipo, cuenta) { return reglaMejor(desc, cuenta, (r) => !r.tras && !!r.categoria && (!r.tipo || r.tipo === tipo)); }
+function reglaTras(desc, cuenta) { const r = reglaMejor(desc, cuenta, (r) => !!r.tras && !!cuentaPorId(r.tras) && r.tras !== cuenta); return r ? r.tras : null; }
 const PALABRAS_VACIAS = new Set(['compra', 'compras', 'tarjeta', 'tarj', 'pago', 'pagos', 'recibo', 'transferencia', 'transf', 'bizum', 'adeudo', 'cargo', 'abono', 'sepa', 'con', 'del', 'las', 'los', 'para', 'por', 'una', 'favor', 'operacion', 'movil', 'contactless', 'internet', 'www', 'com', 'cuenta', 'concepto', 'devolucion', 'ref', 'num']);
 function tokensDesc(desc) { return normDesc(desc).split(' ').filter((w) => w.length >= 4 && !/^\d+$/.test(w) && !PALABRAS_VACIAS.has(w)); }
 function indiceCategorias() {
@@ -9012,6 +9040,7 @@ function impHtml() {
         (r.estado === 'otraMitad' ? ' · <b style="color:var(--accent)">ya está como traspaso ' + escapeHtml(r.con.que) + ' (' + escapeHtml(fmtDateShort(r.con.fecha)) + '): no se importa</b>' : '') +
         (r.origenCat === 'regla' ? ' · por tu regla' : r.origenCat === 'historial' ? ' · sugerida' : r.origenCat === 'factura' ? ' · pago fijo' : '') + '</div>' +
         (r.comoTras ? '<div class="imp-sels"><select aria-label="Con qué cuenta" ' + onChange('impTrasCon', k) + '><option value="">' + (r.sig < 0 ? 'A…' : 'Desde…') + '</option>' + cuentasCfg().filter((c) => c.id !== IMP.cuenta).map((c) => '<option value="' + escapeHtml(c.id) + '"' + (r.otra === c.id ? ' selected' : '') + '>' + (r.sig < 0 ? 'A ' : 'Desde ') + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>' +
+          (r.ofrecerTras && r.otra ? '<button type="button" class="link" style="font-size:12px;" ' + act('impReglaTras', k) + '>Recordar: «' + escapeHtml(r.ofrecerTras) + '» en ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ' → traspaso con ' + escapeHtml(nombreCuenta(r.otra)) + '</button>' : '') +
           '<div class="imp-mismo"><button type="button" class="chip active" ' + act('impTras', k, '1') + '>Es un traspaso</button><button type="button" class="chip" ' + act('impTras', k, '0') + '>No, es un ' + (r.sig < 0 ? 'gasto' : 'ingreso') + '</button></div>'
         : '<div class="imp-sels"><select ' + onChange('impTipo', k) + '>' + tipos.map((t) => '<option' + (t === r.tipo ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
         '<select ' + onChange('impCat', k) + '>' + opts + '</select></div>' +
@@ -9158,6 +9187,7 @@ function impSaldoUsar() {
 /* ---- docs/30 tanda 3: traspasos entre tus cuentas al importar ---- */
 // ¿con qué otra cuenta tuya va esta fila? (por su texto: «TRANSFERENCIA A ING…», «REINTEGRO CAJERO» → Efectivo)
 function impTrasOtra(desc, cuenta, sig, porTipo) {
+  { const rt = reglaTras(desc, cuenta); if (rt) return rt; } // tu regla manda
   const t = ' ' + normDesc(desc).replace(/[^a-z0-9]+/g, ' ') + ' ', otras = cuentasCfg().filter((c) => c.id !== cuenta);
   const lim = (w) => normDesc(w || '').replace(/[^a-z0-9]+/g, ' ').trim();
   const esta = (w) => { w = lim(w); return w.length >= 2 && t.indexOf(' ' + w + ' ') >= 0; };
@@ -9173,6 +9203,12 @@ function impTrasOtra(desc, cuenta, sig, porTipo) {
   }
   if (sig < 0 && / (reintegro|cajero|retirada|atm) /.test(t) && !/ (comision|comisiones|cuota|gastos) /.test(t)) { const ef = otras.filter((c) => tipoCuenta(c) === 'efectivo'); if (ef.length === 1) return ef[0].id; }
   return porTipo ? '' : null; // '' = es traspaso pero no sabemos con cuál
+}
+// texto para «Recordar»: dos palabras útiles solo si van seguidas; si no, una; nunca si ya hay una regla igual
+function impPropTras(r) {
+  const d = normDesc(r.desc), tk = tokensDesc(r.desc); if (!tk.length || reglaTras(r.desc, IMP && IMP.cuenta) === r.otra) return '';
+  const dos = tk.slice(0, 2).join(' ');
+  return tk.length > 1 && d.indexOf(dos) >= 0 ? dos : (d.indexOf(tk[0]) >= 0 ? tk[0] : '');
 }
 function impTrasDir(r, cuenta) { return r.sig < 0 ? { de: cuenta, a: r.otra } : { de: r.otra, a: cuenta }; }
 function impProcesar() {
@@ -9209,7 +9245,7 @@ function impProcesar() {
     if (!tipo) tipo = imp < 0 ? 'Gasto' : 'Ingreso';
     let categoria = m.cat != null && m.cat !== '' ? String(f[m.cat] == null ? '' : f[m.cat]).trim() : '', origenCat = categoria ? 'archivo' : '';
     if (!categoria && tipo === 'Gasto') { const fa = (cfg().facturas || []).find((x) => x && x.nombre && normDesc(x.nombre).length >= 3 && normDesc(desc).indexOf(normDesc(x.nombre)) >= 0); if (fa) { tipo = 'Factura'; categoria = fa.nombre; origenCat = 'factura'; } }
-    if (!categoria) { const r = reglaPara(desc, tipo); if (r) { categoria = r.categoria; origenCat = 'regla'; } }
+    if (!categoria) { const r = reglaPara(desc, tipo, hayVariasCuentas() ? I.cuenta : null); if (r) { categoria = r.categoria; origenCat = 'regla'; } }
     if (!categoria) { const sg = sugerirCategoria(desc, tipo); if (sg) { categoria = sg; origenCat = 'historial'; } }
     const base = uid + '|' + fecha + '|' + imp.toFixed(2) + '|' + normDesc(desc);
     ocurr[base] = (ocurr[base] || 0) + 1;
@@ -9359,19 +9395,28 @@ function reglasHtml() {
   const sugs = tipo === 'Ingreso' ? (cfg().ingresos || []) : catsGasto().map((c) => c.nombre);
   return '<div class="handle"></div><h2>Reglas de categorías</h2>' +
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Si la descripción de un movimiento contiene el texto, se le pone la categoría sola (al apuntarlo y al importar).</div>' +
-    (rs.length ? '<div class="list">' + rs.map((r, i) => '<div class="row static"><div class="main"><div class="ttl">«' + escapeHtml(r.texto) + '» → ' + escapeHtml(r.categoria) + '</div><div class="meta">' + escapeHtml(r.tipo === 'Factura' ? 'Pago fijo' : r.tipo || 'Cualquier tipo') + '</div></div><button class="rm" aria-label="Borrar la regla «' + escapeHtml(r.texto) + '»" ' + act('reglaQuitar', i) + '>' + ic('trash') + '</button></div>').join('') + '</div>'
+    (rs.length ? '<div class="list">' + rs.map((r, i) => '<div class="row static"><div class="main"><div class="ttl">«' + escapeHtml(r.texto) + '» → ' + escapeHtml(r.tras ? 'traspaso con ' + nombreCuenta(r.tras) : r.categoria) + '</div><div class="meta">' + escapeHtml((r.tras ? 'Traspaso' : r.tipo === 'Factura' ? 'Pago fijo' : r.tipo || 'Cualquier tipo') + (r.cuenta ? ' · solo en ' + nombreCuenta(r.cuenta) : '')) + '</div></div><button class="rm" aria-label="Borrar la regla «' + escapeHtml(r.texto) + '»" ' + act('reglaQuitar', i) + '>' + ic('trash') + '</button></div>').join('') + '</div>'
       : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no tienes reglas. Se crean al apuntar un movimiento con descripción («Recordar…») o al importar.</div>') +
     '<div class="section-title">Añadir regla</div><div class="card">' +
     '<div class="field"><label>Si la descripción contiene</label><input id="rgTexto" type="text" placeholder="mercadona"></div>' +
-    '<div class="field"><label>Tipo</label><input type="hidden" id="rgTipo" value="' + escapeHtml(tipo) + '"><div class="chips" role="radiogroup" aria-label="Tipo">' + tipos.map(([v, l]) => '<button type="button" class="chip' + (v === tipo ? ' active' : '') + '" role="radio" aria-checked="' + (v === tipo) + '" ' + act('reglaTipo', v) + '>' + escapeHtml(l) + '</button>').join('') + '</div></div>' +
-    '<div class="field"><label>Categoría</label><input id="rgCat" type="text" placeholder="Supermercado" list="rgCatLista" autocomplete="off"><datalist id="rgCatLista">' + sugs.map((n) => '<option value="' + escapeHtml(n) + '">').join('') + '</datalist></div>' +
+ (FORM && FORM.rgEs === 'tras' ? '<input type="hidden" id="rgTipo" value="">' : '') + (FORM && FORM.rgEs === 'tras' ? '' : '<div class="field"><label>Tipo</label><input type="hidden" id="rgTipo" value="' + escapeHtml(tipo) + '"><div class="chips" role="radiogroup" aria-label="Tipo">' + tipos.map(([v, l]) => '<button type="button" class="chip' + (v === tipo ? ' active' : '') + '" role="radio" aria-checked="' + (v === tipo) + '" ' + act('reglaTipo', v) + '>' + escapeHtml(l) + '</button>').join('') + '</div></div>') +
+    (FORM && FORM.rgEs === 'tras' ? '' : '<div class="field"><label>Categoría</label><input id="rgCat" type="text" placeholder="Supermercado" list="rgCatLista" autocomplete="off"><datalist id="rgCatLista">' + sugs.map((n) => '<option value="' + escapeHtml(n) + '">').join('') + '</datalist></div>') +
+    reglaCuentaHtml() +
     '<button class="btn ghost block" ' + act('reglaAnadir') + '>' + ic('plus') + ' Añadir regla</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
-function guardarRegla(texto, categoria, tipo) {
+function reglaCuentaHtml() {
+  if (!hayVariasCuentas()) return '';
+  const F = FORM || {}, cs = cuentasCfg(), ch = (accion, v, on, txt) => '<button type="button" class="chip' + (on ? ' active' : '') + '" aria-pressed="' + !!on + '" ' + act(accion, v) + '>' + escapeHtml(txt) + '</button>';
+  return '<div class="field"><label>Solo en</label><div class="chips">' + ch('reglaCuenta', '', !F.rgCuenta, 'Cualquier cuenta') + cs.map((c) => ch('reglaCuenta', c.id, F.rgCuenta === c.id, c.nombre)).join('') + '</div></div>' +
+    '<div class="field"><label>Entonces es</label><div class="chips">' + ch('reglaEs', '', F.rgEs !== 'tras', 'Una categoría') + ch('reglaEs', 'tras', F.rgEs === 'tras', 'Un traspaso') + '</div>' +
+    (F.rgEs === 'tras' ? '<select id="rgTras" aria-label="Con qué cuenta" style="margin-top:8px;"><option value="">Con qué cuenta…</option>' + cs.filter((c) => c.id !== F.rgCuenta).map((c) => '<option value="' + escapeHtml(c.id) + '">Con ' + escapeHtml(c.nombre) + '</option>').join('') + '</select><div class="rec-hint">Al importar, lo que contenga ese texto se guarda como traspaso entre tus cuentas (la dirección sale del signo).</div>' : '') + '</div>';
+}
+function guardarRegla(texto, categoria, tipo, extra) {
   const t = normDesc(texto); if (!t || !categoria) return false;
-  const rs = (cfg().reglasCat || []).filter((r) => !(normDesc(r.texto) === t && (r.tipo || '') === (tipo || '')));
-  rs.push({ texto: t, categoria, tipo: tipo || '' });
+  const ex = extra || {}, cu = ex.cuenta || '';
+  const rs = (cfg().reglasCat || []).filter((r) => !(normDesc(r.texto) === t && (r.tipo || '') === (tipo || '') && (r.cuenta || '') === cu && !!r.tras === !!ex.tras));
+  rs.push(Object.assign({ texto: t, categoria, tipo: tipo || '' }, cu ? { cuenta: cu } : {}, ex.tras ? { tras: ex.tras } : {}));
   saveConfig({ reglasCat: rs });
   return true;
 }
@@ -10916,6 +10961,22 @@ const H = {
     } catch (e) { console.error(e); toast(errGrupo(e)); } finally { T.guardando = false; }
   },
   temaCerrarPre: ([id]) => { if (!FORM) return; FORM.temaMenu = null; FORM.temaCerrarPre = id; temaRefrescarGrupo(); setTimeout(() => { const c = $('#sheetHost .tema-cierre'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
+  temaMeterAbrir: ([id]) => { if (!FORM) return; FORM.temaMenu = null; FORM.temaMeter = id; FORM.temaSel = {}; FORM.temaVerTodos = false; temaRefrescarGrupo(); },
+  temaMeterCerrar: () => { if (!FORM) return; FORM.temaMeter = null; FORM.temaSel = {}; temaRefrescarGrupo(); },
+  temaSelTog: ([cid], el) => { if (!FORM) return; FORM.temaSel = FORM.temaSel || {}; FORM.temaSel[cid] = !!(el && el.checked); const t = temaPorId(FORM.temaMeter), g = t && grupoDe(t.grupoId); const b = $('#sheetHost .tema-meter .actions .btn.accent'); const n = Object.keys(FORM.temaSel).filter((k) => FORM.temaSel[k]).length; if (b) { b.disabled = !n; b.textContent = n ? 'Añadir ' + n : 'Elige gastos'; } else if (g) temaRefrescarGrupo(); },
+  temaSelTodosFechas: () => { const F = FORM, t = F && temaPorId(F.temaMeter); if (!t) return; const ext = (d, n) => { const x = parseISO(d); x.setDate(x.getDate() + n); return x.getFullYear() + '-' + pad2(x.getMonth() + 1) + '-' + pad2(x.getDate()); };
+    F.temaSel = F.temaSel || {}; temaCandidatos(t.grupoId, t).forEach((c) => { if (t.desde && t.hasta && c.fecha >= ext(t.desde, -3) && c.fecha <= ext(t.hasta, 3)) F.temaSel[c.id] = true; }); sentir('tic'); temaRefrescarGrupo(); },
+  temaVerTodosB: () => { if (!FORM) return; FORM.temaVerTodos = true; temaRefrescarGrupo(); },
+  temaMeterOk: async ([id]) => { const F = FORM, t = temaPorId(id); if (!F || !t || F._metiendo) return; const ids = Object.keys(F.temaSel || {}).filter((k) => F.temaSel[k]); if (!ids.length) return;
+    const antes = {}; ids.forEach((k) => { const c = (S.compartidos || []).find((x) => x.id === k); antes[k] = c ? c.carpetaId || null : null; });
+    F._metiendo = true;
+    const tandas = (L) => { const o = []; for (let i = 0; i < L.length; i += 200) o.push(L.slice(i, i + 200)); return o; }; // la función acepta 200 de cada vez
+    try { for (const tr of tandas(ids)) await S.db.rpc('poner_carpeta', { p_ids: tr, p_carpeta: t.id }); (S.compartidos || []).forEach((c) => { if (ids.indexOf(c.id) >= 0) c.carpetaId = t.id; }); sentir('ok');
+      F.temaMeter = null; F.temaSel = {}; temaRefrescarGrupo(); render();
+      toast(ids.length + (ids.length === 1 ? ' gasto añadido a «' : ' gastos añadidos a «') + t.nombre + '»', { deshacer: async () => { // vuelven a su tema de antes (o a ninguno)
+        const grupos = {}; ids.forEach((k) => { const a = antes[k] || ''; (grupos[a] = grupos[a] || []).push(k); });
+        try { for (const a of Object.keys(grupos)) { for (const tr of tandas(grupos[a])) await S.db.rpc('poner_carpeta', { p_ids: tr, p_carpeta: a || null }); (S.compartidos || []).forEach((c) => { if (grupos[a].indexOf(c.id) >= 0) c.carpetaId = a || null; }); } temaRefrescarGrupo(); render(); } catch (e) { console.error(e); toast(errGrupo(e)); } } });
+    } catch (e) { console.error(e); toast(errGrupo(e)); } finally { F._metiendo = false; } },
   temaCerrarNo: () => { if (!FORM) return; FORM.temaCerrarPre = null; temaRefrescarGrupo(); },
   temaCerrar: async ([id]) => { const t0 = temaPorId(id), viaje = temaEsViaje(t0), paz = t0 && !deudasDe(t0.grupoId).length;
     try { const t = await S.db.carpetas.editar(id, { cerrada: new Date().toISOString() }); temaAplicarLocal(t); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; FORM.temaCerrarPre = null; } if (viaje && paz) sentir('ok'); toast(viaje ? 'Viaje cerrado: ya no sale al apuntar gastos' : 'Tema cerrado: ya no sale al apuntar gastos'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
@@ -11069,8 +11130,11 @@ const H = {
     IMP.paso = 'revisar'; IMP.verTodo = false; updateSheet(impHtml());
   },
   impIncluir: ([k], el) => { const r = IMP.filas[Number(k)]; if (r) { r.incluir = el.checked; updateSheet(impHtml()); } },
-  impTras: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; if (v === '1') { r.comoTras = true; r.estado = 'traspaso'; if (r.otra === undefined) r.otra = ''; r.incluir = !!r.otra; } else { r.comoTras = false; r.estado = 'nuevo'; r.incluir = true; } sentir('tic'); updateSheet(impHtml()); },
-  impTrasCon: ([k], el) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.otra = el.value || ''; r.incluir = !!r.otra; updateSheet(impHtml()); },
+  impTras: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; if (v === '1') { r.comoTras = true; r.estado = 'traspaso'; if (r.otra === undefined) r.otra = ''; r.incluir = !!r.otra; if (r.otra) r.ofrecerTras = impPropTras(r); } else { r.comoTras = false; r.estado = 'nuevo'; r.incluir = true; } sentir('tic'); updateSheet(impHtml()); },
+  impTrasCon: ([k], el) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.otra = el.value || ''; r.incluir = !!r.otra; if (r.otra) r.ofrecerTras = impPropTras(r); updateSheet(impHtml()); },
+  impReglaTras: ([k]) => { const r = IMP && IMP.filas[Number(k)]; if (!r || !r.ofrecerTras || !r.otra || !IMP.cuenta) return;
+    if (guardarRegla(r.ofrecerTras, '—', '', { cuenta: IMP.cuenta, tras: r.otra })) toast('Regla creada: «' + normDesc(r.ofrecerTras) + '» en ' + nombreCuenta(IMP.cuenta) + ' → traspaso con ' + nombreCuenta(r.otra));
+    r.ofrecerTras = ''; updateSheet(impHtml()); },
   impSaldoUsar: () => impSaldoUsar(),
   impSaldoNo: () => { if (!IMP) return; IMP.saldoFin = null; updateSheet(impHtml()); },
   impCuenta: ([id]) => { if (!IMP) return; IMP.cuenta = id; IMP.cuentaRecordada = false; sentir('tic'); updateSheet(impHtml()); },
@@ -11079,7 +11143,7 @@ const H = {
   impEnCuenta: ([id]) => { verBadge('importar'); IMP = { paso: 'archivo', cuentaFija: id }; if ($('#sheetBackdrop')) updateSheet(impHtml()); else openSheet(impHtml()); },
   impTodas: ([v]) => { IMP.filas.forEach((r) => { if (r.id && r.estado !== 'importado' && (v !== '1' || r.estado === 'nuevo' || !r.estado)) r.incluir = v === '1'; }); updateSheet(impHtml()); }, // «Marcar todas» no marca lo dudoso (riesgo 2)
   impVerTodo: () => { IMP.verTodo = true; updateSheet(impHtml()); },
-  impTipo: ([k], el) => { const r = IMP.filas[Number(k)]; if (!r) return; r.tipo = el.value; if (r.origenCat !== 'archivo') { const rg = reglaPara(r.desc, r.tipo); r.categoria = rg ? rg.categoria : sugerirCategoria(r.desc, r.tipo); r.origenCat = rg ? 'regla' : r.categoria ? 'historial' : ''; } updateSheet(impHtml()); },
+  impTipo: ([k], el) => { const r = IMP.filas[Number(k)]; if (!r) return; r.tipo = el.value; if (r.origenCat !== 'archivo') { const rg = reglaPara(r.desc, r.tipo, hayVariasCuentas() ? IMP.cuenta : null); r.categoria = rg ? rg.categoria : sugerirCategoria(r.desc, r.tipo); r.origenCat = rg ? 'regla' : r.categoria ? 'historial' : ''; } updateSheet(impHtml()); },
   impCat: ([k], el) => {
     const r = IMP.filas[Number(k)]; if (!r) return;
     r.categoria = el.value; r.origenCat = 'manual';
@@ -11107,7 +11171,12 @@ const H = {
   openReglas: () => { verBadge('reglas'); FORM = { kind: 'reglas' }; openSheet(reglasHtml()); },
   reglaQuitar: ([i]) => { const rs = (cfg().reglasCat || []).slice(); rs.splice(Number(i), 1); saveConfig({ reglasCat: rs }); updateSheet(reglasHtml()); },
   reglaTipo: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || '', c = ($('#rgCat') || {}).value || ''; FORM.rgTipo = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c; sentir('tic'); },
-  reglaAnadir: () => { const t = $('#rgTexto').value, c = $('#rgCat').value.trim(); if (!normDesc(t) || !c) return toast('Pon el texto y la categoría'); guardarRegla(t, c, $('#rgTipo').value); updateSheet(reglasHtml()); toast('Regla añadida'); },
+  reglaAnadir: () => { const t = $('#rgTexto').value, F = FORM || {};
+    if (F.rgEs === 'tras') { const o = ($('#rgTras') || {}).value || ''; if (!normDesc(t) || !o) return toast('Pon el texto y la otra cuenta'); guardarRegla(t, '—', '', { cuenta: F.rgCuenta || '', tras: o }); }
+    else { const c = $('#rgCat').value.trim(); if (!normDesc(t) || !c) return toast('Pon el texto y la categoría'); guardarRegla(t, c, $('#rgTipo').value, { cuenta: F.rgCuenta || '' }); }
+    updateSheet(reglasHtml()); toast('Regla añadida'); },
+  reglaCuenta: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; const c0 = ($('#rgCat') || {}).value || '', tr0 = ($('#rgTras') || {}).value || ''; FORM.rgCuenta = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c0; if ($('#rgTras') && tr0 && [...$('#rgTras').options].some((o) => o.value === tr0)) $('#rgTras').value = tr0; sentir('tic'); },
+  reglaEs: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; const c0 = ($('#rgCat') || {}).value || '', tr0 = ($('#rgTras') || {}).value || ''; FORM.rgEs = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c0; if ($('#rgTras') && tr0 && [...$('#rgTras').options].some((o) => o.value === tr0)) $('#rgTras').value = tr0; sentir('tic'); },
   onDescInput: () => { autoCategoriaDesc(); refrescarReglaBox(); },
   reglaCheck: (_, el) => { FORM.recordar = el.checked; },
   reglaTexto: (_, el) => { FORM.reglaTexto = el.value; },
@@ -11834,6 +11903,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
