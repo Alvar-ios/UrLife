@@ -2307,7 +2307,7 @@ function nombreSugerido() {
   const e = ((S.user && S.user.email) || '').split('@')[0].replace(/[._\-]+/g, ' ').replace(/\d+/g, '').trim().split(' ')[0] || 'Yo';
   return e.charAt(0).toUpperCase() + e.slice(1);
 }
-const ERR_GRUPO = { grupo_cerrado: 'Este grupo está cerrado: ya no se puede añadir nada', asignado_no_valido: 'Esa persona ya no está en el grupo', agenda_borrado: 'Ese plan ya está borrado', objetivos_compartidos_forma_check: 'Esa forma no vale', carpeta_no_valida: 'Ese tema ya no existe o es de otro grupo', demasiadas_carpetas: 'Este grupo ya tiene 30 temas: cierra o borra alguno', carpeta_borrada: 'Ese tema está borrado', 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
+const ERR_GRUPO = { no_autorizado: 'No tienes permiso para cambiar eso en este grupo', demasiados: 'Son demasiados de una vez: prueba con menos', grupo_cerrado: 'Este grupo está cerrado: ya no se puede añadir nada', asignado_no_valido: 'Esa persona ya no está en el grupo', agenda_borrado: 'Ese plan ya está borrado', objetivos_compartidos_forma_check: 'Esa forma no vale', carpeta_no_valida: 'Ese tema ya no existe o es de otro grupo', demasiadas_carpetas: 'Este grupo ya tiene 30 temas: cierra o borra alguno', carpeta_borrada: 'Ese tema está borrado', 'multiple (or no) rows': 'No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.', ultimo_admin: 'El grupo necesita al menos un administrador. Haz administrador a otra persona antes.', ya_es_miembro: 'Ya eres miembro de este grupo.', no_es_amigo: 'Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.', no_autorizado: 'No tienes permiso para esto.', invitacion_no_valida: 'Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.', grupo_completo: 'Este grupo ya está completo.',
   demasiadas_invitaciones: 'Hay demasiados enlaces pendientes. Anula alguno.', demasiados_grupos: 'Has creado muchos grupos hoy. Prueba mañana.', usa_salir: 'Para irte tú, usa «Salir del grupo».', sin_sesion: 'Tienes que iniciar sesión.',
   saldo_pendiente: 'Hay cuentas pendientes. Saldadlas antes (botón «Saldar»).', reparto_no_cuadra: 'El reparto no suma el total.', reparto_no_valido: 'Revisa el reparto: solo puede incluir a miembros.', pagador_no_valido: 'Quien pagó tiene que ser del grupo.', compartido_borrado: 'Ese gasto ya se había eliminado.', objetivo_no_valido: 'Elige una meta o deuda de ese grupo.', objetivo_borrado: 'Esa meta o deuda ya se había eliminado.' };
 function errGrupo(e) { const m = String((e && (e.message || (e.original && e.original.message))) || ''); const k = Object.keys(ERR_GRUPO).find((x) => m.indexOf(x) >= 0); return k ? ERR_GRUPO[k] : 'No se pudo completar. Revisa tu conexión.'; }
@@ -5451,7 +5451,7 @@ function gastosDeTema(gid, tid) { return (S.compartidos || []).filter((c) => c.g
 // El tema que viene elegido solo: el que cubre la fecha; si no, el último que usaste en ese grupo en las últimas 12 horas
 function temaSugerido(gid, fecha) {
   const ts = temasDe(gid), porFecha = ts.find((t) => t.desde && t.hasta && fecha >= t.desde && fecha <= t.hasta);
-  if (porFecha) return { id: porFecha.id, por: 'Elegido por la fecha: ' + porFecha.nombre + ' es ' + (porFecha.desde === porFecha.hasta ? 'el ' : 'del ') + temaFechasTxt(porFecha).replace('–', ' al ') + '.' };
+  if (porFecha) return { id: porFecha.id, porFecha: true, por: 'Elegido por la fecha: ' + porFecha.nombre + ' es ' + (porFecha.desde === porFecha.hasta ? 'el ' : 'del ') + temaFechasTxt(porFecha).replace('–', ' al ') + '.' };
   const u = (S._temaUlt || {})[gid];
   if (u && Date.now() - u.ts < 12 * 3600e3 && ts.some((t) => t.id === u.id)) { const t = temaPorId(u.id); return { id: u.id, por: 'Elegido porque es el último que usaste: ' + t.nombre + '.' }; }
   return { id: null, por: '' };
@@ -5460,7 +5460,7 @@ function temaGidDeForm() { const cp = FORM && FORM.comp; return cp && cp.dest &&
 function temaAutoAplicar() {
   const F = FORM, gid = temaGidDeForm(); if (!F || !gid) { if (F) { F.tema = null; F.temaPor = ''; } return; }
   if (F.temaTocado) return;
-  const s = temaSugerido(gid, F.fecha || todayISO()); F.tema = s.id; F.temaPor = s.por;
+  const s = temaSugerido(gid, F.fecha || todayISO()); F.tema = s.id; F.temaPor = s.por; F.temaPorFecha = !!s.porFecha;
 }
 // «¿De qué tema?» al compartir un gasto: justo debajo de «Con»
 function temaCajaHtml() {
@@ -5477,7 +5477,7 @@ function temaCajaHtml() {
       '<div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.slice(0, 6).map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + (TEMA_ICONO_NOMBRE[k] || k) + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaIco', k) + '>' + ic(k) + '</button>').join('') + '</div>' +
       '<button type="button" class="btn accent block" ' + act('temaCrearRapido') + '>Crear tema</button></div>';
   } else if (!ts.length) h += '<div class="tema-por">Para separar un viaje, la compra o la casa.</div>';
-  else if (F.tema && F.temaPor && !F.temaTocado && elegido && temaEsViaje(elegido) && /por la fecha/.test(F.temaPor))
+  else if (F.tema && F.temaPor && !F.temaTocado && elegido && temaEsViaje(elegido) && F.temaPorFecha)
     h += '<div class="tema-pregunta" role="group" aria-label="¿Va en el viaje?"><b>' + ic('plane') + ' Esta fecha es del viaje «' + escapeHtml(elegido.nombre) + '». ¿Va en el viaje?</b>' +
       '<div class="tema-preg-b"><button type="button" class="chip active" ' + act('temaElegir', elegido.id) + '>Sí, va en el viaje</button><button type="button" class="chip" ' + act('temaElegir', '') + '>No</button></div></div>';
   else if (F.tema && F.temaPor && !F.temaTocado) h += '<div class="tema-por">' + escapeHtml(F.temaPor) + '</div>';
@@ -5561,7 +5561,7 @@ function temaFormHtml(g) {
 }
 // docs/29: meter en un tema (viaje) gastos del grupo que ya estaban apuntados. Primero los de esas fechas.
 function temaCandidatos(gid, t) {
-  return (S.compartidos || []).filter((c) => c.grupoId === gid && (c.tipo === 'Gasto' || c.tipo === 'Factura') && c.carpetaId !== t.id)
+  return (S.compartidos || []).filter((c) => c.grupoId === gid && (c.tipo === 'Gasto' || c.tipo === 'Factura') && c.carpetaId !== t.id && puedeEditarComp(c)) // solo lo que puedes cambiar
     .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
 }
 function temaMeterHtml(g, t) {
@@ -10965,16 +10965,17 @@ const H = {
   temaMeterCerrar: () => { if (!FORM) return; FORM.temaMeter = null; FORM.temaSel = {}; temaRefrescarGrupo(); },
   temaSelTog: ([cid], el) => { if (!FORM) return; FORM.temaSel = FORM.temaSel || {}; FORM.temaSel[cid] = !!(el && el.checked); const t = temaPorId(FORM.temaMeter), g = t && grupoDe(t.grupoId); const b = $('#sheetHost .tema-meter .actions .btn.accent'); const n = Object.keys(FORM.temaSel).filter((k) => FORM.temaSel[k]).length; if (b) { b.disabled = !n; b.textContent = n ? 'Añadir ' + n : 'Elige gastos'; } else if (g) temaRefrescarGrupo(); },
   temaSelTodosFechas: () => { const F = FORM, t = F && temaPorId(F.temaMeter); if (!t) return; const ext = (d, n) => { const x = parseISO(d); x.setDate(x.getDate() + n); return x.getFullYear() + '-' + pad2(x.getMonth() + 1) + '-' + pad2(x.getDate()); };
-    F.temaSel = {}; temaCandidatos(t.grupoId, t).forEach((c) => { if (t.desde && t.hasta && c.fecha >= ext(t.desde, -3) && c.fecha <= ext(t.hasta, 3)) F.temaSel[c.id] = true; }); sentir('tic'); temaRefrescarGrupo(); },
+    F.temaSel = F.temaSel || {}; temaCandidatos(t.grupoId, t).forEach((c) => { if (t.desde && t.hasta && c.fecha >= ext(t.desde, -3) && c.fecha <= ext(t.hasta, 3)) F.temaSel[c.id] = true; }); sentir('tic'); temaRefrescarGrupo(); },
   temaVerTodosB: () => { if (!FORM) return; FORM.temaVerTodos = true; temaRefrescarGrupo(); },
   temaMeterOk: async ([id]) => { const F = FORM, t = temaPorId(id); if (!F || !t || F._metiendo) return; const ids = Object.keys(F.temaSel || {}).filter((k) => F.temaSel[k]); if (!ids.length) return;
     const antes = {}; ids.forEach((k) => { const c = (S.compartidos || []).find((x) => x.id === k); antes[k] = c ? c.carpetaId || null : null; });
     F._metiendo = true;
-    try { await S.db.rpc('poner_carpeta', { p_ids: ids, p_carpeta: t.id }); (S.compartidos || []).forEach((c) => { if (ids.indexOf(c.id) >= 0) c.carpetaId = t.id; }); sentir('ok');
+    const tandas = (L) => { const o = []; for (let i = 0; i < L.length; i += 200) o.push(L.slice(i, i + 200)); return o; }; // la función acepta 200 de cada vez
+    try { for (const tr of tandas(ids)) await S.db.rpc('poner_carpeta', { p_ids: tr, p_carpeta: t.id }); (S.compartidos || []).forEach((c) => { if (ids.indexOf(c.id) >= 0) c.carpetaId = t.id; }); sentir('ok');
       F.temaMeter = null; F.temaSel = {}; temaRefrescarGrupo(); render();
       toast(ids.length + (ids.length === 1 ? ' gasto añadido a «' : ' gastos añadidos a «') + t.nombre + '»', { deshacer: async () => { // vuelven a su tema de antes (o a ninguno)
         const grupos = {}; ids.forEach((k) => { const a = antes[k] || ''; (grupos[a] = grupos[a] || []).push(k); });
-        try { for (const a of Object.keys(grupos)) { await S.db.rpc('poner_carpeta', { p_ids: grupos[a], p_carpeta: a || null }); (S.compartidos || []).forEach((c) => { if (grupos[a].indexOf(c.id) >= 0) c.carpetaId = a || null; }); } temaRefrescarGrupo(); render(); } catch (e) { console.error(e); toast(errGrupo(e)); } } });
+        try { for (const a of Object.keys(grupos)) { for (const tr of tandas(grupos[a])) await S.db.rpc('poner_carpeta', { p_ids: tr, p_carpeta: a || null }); (S.compartidos || []).forEach((c) => { if (grupos[a].indexOf(c.id) >= 0) c.carpetaId = a || null; }); } temaRefrescarGrupo(); render(); } catch (e) { console.error(e); toast(errGrupo(e)); } } });
     } catch (e) { console.error(e); toast(errGrupo(e)); } finally { F._metiendo = false; } },
   temaCerrarNo: () => { if (!FORM) return; FORM.temaCerrarPre = null; temaRefrescarGrupo(); },
   temaCerrar: async ([id]) => { const t0 = temaPorId(id), viaje = temaEsViaje(t0), paz = t0 && !deudasDe(t0.grupoId).length;
