@@ -5477,6 +5477,9 @@ function temaCajaHtml() {
       '<div class="tema-icos" role="radiogroup" aria-label="Icono">' + TEMA_ICONOS.slice(0, 6).map((k) => '<button type="button" role="radio" aria-checked="' + (k === ico) + '" aria-label="' + (TEMA_ICONO_NOMBRE[k] || k) + '" class="tema-ico' + (k === ico ? ' on' : '') + '" ' + act('temaIco', k) + '>' + ic(k) + '</button>').join('') + '</div>' +
       '<button type="button" class="btn accent block" ' + act('temaCrearRapido') + '>Crear tema</button></div>';
   } else if (!ts.length) h += '<div class="tema-por">Para separar un viaje, la compra o la casa.</div>';
+  else if (F.tema && F.temaPor && !F.temaTocado && elegido && temaEsViaje(elegido) && /por la fecha/.test(F.temaPor))
+    h += '<div class="tema-pregunta" role="group" aria-label="¿Va en el viaje?"><b>' + ic('plane') + ' Esta fecha es del viaje «' + escapeHtml(elegido.nombre) + '». ¿Va en el viaje?</b>' +
+      '<div class="tema-preg-b"><button type="button" class="chip active" ' + act('temaElegir', elegido.id) + '>Sí, va en el viaje</button><button type="button" class="chip" ' + act('temaElegir', '') + '>No</button></div></div>';
   else if (F.tema && F.temaPor && !F.temaTocado) h += '<div class="tema-por">' + escapeHtml(F.temaPor) + '</div>';
   return h + '</div>';
 }
@@ -5521,6 +5524,8 @@ function temaResumenHtml(g, t) {
     '<div class="tema-cab-t"><b>' + escapeHtml(t.nombre) + '</b><span>' + escapeHtml([nombreDestino(g), temaFechasTxt(t), gs.length + (gs.length === 1 ? ' gasto' : ' gastos'), t.cerrada ? 'cerrado' : ''].filter(Boolean).join(' · ')) + '</span></div>' +
     '<button type="button" class="icon-btn" aria-label="Opciones del tema" ' + act('temaMenu', t.id) + '>' + ic('more') + '</button></div>';
   if (F_temaMenu(t.id)) h += temaMenuHtml(g, t);
+  if (FORM && FORM.temaMeter === t.id) return h + temaMeterHtml(g, t);
+  if (!t.cerrada && temaCandidatos(g.id, t).length) h += '<button type="button" class="btn ghost block tema-meter-b" ' + act('temaMeterAbrir', t.id) + '>' + ic('plus') + ' Añadir gastos ya apuntados' + (temaEsViaje(t) ? ' al viaje' : '') + '</button>';
   if (FORM && FORM.temaCerrarPre === t.id) { const pend = deudasDe(g.id).length;
     h += '<div class="card tema-cierre"><b>' + (temaEsViaje(t) ? 'Cómo quedó el viaje' : 'Cerrar «' + escapeHtml(t.nombre) + '»') + '</b>' +
       '<span>' + escapeHtml(money(tot) + ' ' + entre + ' · tu parte ' + money(mia) + (dias > 1 ? ' · unos ' + Math.round(tot / dias).toLocaleString('es-ES') + ' € al día' : '')) + '</span>' +
@@ -5553,6 +5558,25 @@ function temaFormHtml(g) {
     '<div class="field"><label>Fechas <span class="hint">· opcional</span></label><div class="tema-fechas"><input id="tfDesde" type="date" aria-label="Desde" value="' + escapeHtml(T.desde || '') + '" ' + onChange('temaFormFecha') + '><span>al</span><input id="tfHasta" type="date" aria-label="Hasta" value="' + escapeHtml(T.hasta || '') + '" ' + onChange('temaFormFecha') + '></div></div>' +
     (ids.length ? '<label class="tema-meter"><input id="tfMeter" type="checkbox"' + (T.meter !== false ? ' checked' : '') + '> Meter ' + (ids.length === 1 ? 'el gasto' : 'los ' + ids.length + ' gastos') + ' de esos días</label>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('temaFormCerrar') + '>Cancelar</button><button class="btn accent block" ' + act('temaFormGuardar') + '>' + (T.id ? 'Guardar' : 'Crear tema') + '</button></div>';
+}
+// docs/29: meter en un tema (viaje) gastos del grupo que ya estaban apuntados. Primero los de esas fechas.
+function temaCandidatos(gid, t) {
+  return (S.compartidos || []).filter((c) => c.grupoId === gid && (c.tipo === 'Gasto' || c.tipo === 'Factura') && c.carpetaId !== t.id)
+    .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+}
+function temaMeterHtml(g, t) {
+  const F = FORM, sel = F.temaSel || {}, todos = temaCandidatos(g.id, t), ext = (d, n) => { const x = parseISO(d); if (!x) return ''; x.setDate(x.getDate() + n); return x.getFullYear() + '-' + pad2(x.getMonth() + 1) + '-' + pad2(x.getDate()); };
+  const enFechas = (c) => t.desde && t.hasta && c.fecha >= ext(t.desde, -3) && c.fecha <= ext(t.hasta, 3);
+  const cerca = todos.filter(enFechas), resto = todos.filter((c) => !enFechas(c)), ver = F.temaVerTodos || !cerca.length ? cerca.concat(resto) : cerca;
+  const fila = (c) => { const en = temaPorId(c.carpetaId); return '<label class="tema-sel-f"><input type="checkbox" ' + (sel[c.id] ? 'checked ' : '') + onChange('temaSelTog', c.id) + '>' +
+    '<span class="tema-sel-x"><b>' + escapeHtml(c.descripcion || c.categoria || 'Gasto') + '</b><span>' + escapeHtml(fmtDateShort(c.fecha) + ' · pagó ' + nombreDe(g.id, c.pagadoPor) + (en ? ' · ahora en «' + en.nombre + '»' : '')) + '</span></span><b class="tnum">' + money(num(c.importe)) + '</b></label>'; };
+  const n = Object.keys(sel).filter((k) => sel[k]).length;
+  return '<div class="card tema-meter"><b>Añadir gastos ya apuntados</b><span class="rec-hint">' + (cerca.length ? 'Primero los de las fechas del viaje (' + escapeHtml(temaFechasTxt(t)) + ').' : 'Elige los gastos del grupo que van en «' + escapeHtml(t.nombre) + '».') + '</span>' +
+    (cerca.length && !F.temaVerTodos ? '<button type="button" class="link" ' + act('temaSelTodosFechas') + '>Marcar los ' + cerca.length + ' de esas fechas</button>' : '') +
+    '<div class="tema-sel-lista">' + ver.map(fila).join('') + '</div>' +
+    (!F.temaVerTodos && resto.length && cerca.length ? '<button type="button" class="link" ' + act('temaVerTodosB') + '>Ver también otros ' + resto.length + ' gastos</button>' : '') +
+    '<div class="rec-hint">¿Un gasto tuyo que no compartiste? Ábrelo, pulsa «Compartir» y elige este viaje.</div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('temaMeterCerrar') + '>Cancelar</button><button class="btn accent block" ' + act('temaMeterOk', t.id) + (n ? '' : ' disabled') + '>' + (n ? 'Añadir ' + n : 'Elige gastos') + '</button></div></div>';
 }
 function temaGastosEnFechas(gid, desde, hasta) {
   if (!desde || !hasta || hasta < desde) return [];
@@ -10937,6 +10961,21 @@ const H = {
     } catch (e) { console.error(e); toast(errGrupo(e)); } finally { T.guardando = false; }
   },
   temaCerrarPre: ([id]) => { if (!FORM) return; FORM.temaMenu = null; FORM.temaCerrarPre = id; temaRefrescarGrupo(); setTimeout(() => { const c = $('#sheetHost .tema-cierre'); if (c && c.scrollIntoView) c.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
+  temaMeterAbrir: ([id]) => { if (!FORM) return; FORM.temaMenu = null; FORM.temaMeter = id; FORM.temaSel = {}; FORM.temaVerTodos = false; temaRefrescarGrupo(); },
+  temaMeterCerrar: () => { if (!FORM) return; FORM.temaMeter = null; FORM.temaSel = {}; temaRefrescarGrupo(); },
+  temaSelTog: ([cid], el) => { if (!FORM) return; FORM.temaSel = FORM.temaSel || {}; FORM.temaSel[cid] = !!(el && el.checked); const t = temaPorId(FORM.temaMeter), g = t && grupoDe(t.grupoId); const b = $('#sheetHost .tema-meter .actions .btn.accent'); const n = Object.keys(FORM.temaSel).filter((k) => FORM.temaSel[k]).length; if (b) { b.disabled = !n; b.textContent = n ? 'Añadir ' + n : 'Elige gastos'; } else if (g) temaRefrescarGrupo(); },
+  temaSelTodosFechas: () => { const F = FORM, t = F && temaPorId(F.temaMeter); if (!t) return; const ext = (d, n) => { const x = parseISO(d); x.setDate(x.getDate() + n); return x.getFullYear() + '-' + pad2(x.getMonth() + 1) + '-' + pad2(x.getDate()); };
+    F.temaSel = {}; temaCandidatos(t.grupoId, t).forEach((c) => { if (t.desde && t.hasta && c.fecha >= ext(t.desde, -3) && c.fecha <= ext(t.hasta, 3)) F.temaSel[c.id] = true; }); sentir('tic'); temaRefrescarGrupo(); },
+  temaVerTodosB: () => { if (!FORM) return; FORM.temaVerTodos = true; temaRefrescarGrupo(); },
+  temaMeterOk: async ([id]) => { const F = FORM, t = temaPorId(id); if (!F || !t || F._metiendo) return; const ids = Object.keys(F.temaSel || {}).filter((k) => F.temaSel[k]); if (!ids.length) return;
+    const antes = {}; ids.forEach((k) => { const c = (S.compartidos || []).find((x) => x.id === k); antes[k] = c ? c.carpetaId || null : null; });
+    F._metiendo = true;
+    try { await S.db.rpc('poner_carpeta', { p_ids: ids, p_carpeta: t.id }); (S.compartidos || []).forEach((c) => { if (ids.indexOf(c.id) >= 0) c.carpetaId = t.id; }); sentir('ok');
+      F.temaMeter = null; F.temaSel = {}; temaRefrescarGrupo(); render();
+      toast(ids.length + (ids.length === 1 ? ' gasto añadido a «' : ' gastos añadidos a «') + t.nombre + '»', { deshacer: async () => { // vuelven a su tema de antes (o a ninguno)
+        const grupos = {}; ids.forEach((k) => { const a = antes[k] || ''; (grupos[a] = grupos[a] || []).push(k); });
+        try { for (const a of Object.keys(grupos)) { await S.db.rpc('poner_carpeta', { p_ids: grupos[a], p_carpeta: a || null }); (S.compartidos || []).forEach((c) => { if (grupos[a].indexOf(c.id) >= 0) c.carpetaId = a || null; }); } temaRefrescarGrupo(); render(); } catch (e) { console.error(e); toast(errGrupo(e)); } } });
+    } catch (e) { console.error(e); toast(errGrupo(e)); } finally { F._metiendo = false; } },
   temaCerrarNo: () => { if (!FORM) return; FORM.temaCerrarPre = null; temaRefrescarGrupo(); },
   temaCerrar: async ([id]) => { const t0 = temaPorId(id), viaje = temaEsViaje(t0), paz = t0 && !deudasDe(t0.grupoId).length;
     try { const t = await S.db.carpetas.editar(id, { cerrada: new Date().toISOString() }); temaAplicarLocal(t); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; FORM.temaCerrarPre = null; } if (viaje && paz) sentir('ok'); toast(viaje ? 'Viaje cerrado: ya no sale al apuntar gastos' : 'Tema cerrado: ya no sale al apuntar gastos'); temaRefrescarGrupo(); } catch (e) { console.error(e); toast(errGrupo(e)); } },
