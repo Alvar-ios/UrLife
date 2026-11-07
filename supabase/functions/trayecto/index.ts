@@ -31,7 +31,7 @@ async function conSesion(req: Request): Promise<boolean> {
 async function getJson(url: string, init: RequestInit = {}, ms = 30000) {
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms);
   try { const r = await fetch(url, { ...init, signal: ctl.signal }); const text = await r.text(); let data: any = null; try { data = JSON.parse(text); } catch { /* */ } return { ok: r.ok, status: r.status, data }; }
-  catch { return { ok: false, status: 0, data: null }; } finally { clearTimeout(t); }
+  catch (e) { return { ok: false, status: 0, data: null, err: String((e as Error)?.message || e).slice(0, 200) }; } finally { clearTimeout(t); }
 }
 const mediana = (xs: number[]) => { const a = xs.slice().sort((x, y) => x - y), m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
 
@@ -92,6 +92,7 @@ async function distancia(de: string, a: string) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+  if (new URL(req.url).searchParams.get('diag') === '1') { const r = await getJson(MINISTERIO, { headers: { Accept: 'application/json' } }, 60000); return json({ status: r.status, err: (r as any).err, n: r.data?.ListaEESSPrecio?.length || 0 }); } // TEMPORAL
   if (!(await conSesion(req))) return json({ error: 'sin_sesion' }, 401);
   let b: any = {}; try { b = await req.json(); } catch { /* */ }
   if (b.accion === 'refrescar') return json(await refrescar());

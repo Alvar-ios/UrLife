@@ -43,7 +43,7 @@ console.error = () => {};
   ok(g.length === 1 && g[0].km === 100 && g[0].vuelta === true && !('de' in g[0]) && A.cfg().trayecto.provincia === '28', 'guarda nombre, km y coche (sin direcciones) y recuerda la provincia');
   H.closeSheet([]); await sleep(260);
   H.trAbrir([]); await sleep(20);
-  ok(/Repetir trayecto/.test(sh().textContent) && /Casa – pueblo/.test(sh().textContent), 'al volver sale «Repetir trayecto»');
+  ok(!!sh().querySelector('.tr-rep') && /Casa – pueblo/.test(sh().textContent) && /Cambiar/.test(sh().textContent), 'al volver sale el trayecto guardado y el coche recogido con «Cambiar»');
   H.trUsar([g[0].id]); await sleep(10);
   ok(A.trCalc().km === 200, 'repetir rellena los km');
   // apuntar
@@ -52,7 +52,7 @@ console.error = () => {};
   ok(A.form().kind === 'mov' && imp && Number(String(imp.value).replace(',', '.')) > 0, '«Apuntar gasto» abre el gasto con el importe');
   // sitios sin servidor: mensaje claro
   H.closeSheet([]); await sleep(260); H.trAbrir([]); await sleep(10);
-  H.trDist([]); await sleep(10);
+  H.trModo(['sitios']); await sleep(5); H.trDist([]); await sleep(10);
   ok(/Escribe de dónde sales/.test(sh().textContent), 'calcular sin sitios pide escribirlos');
   console.log(fails ? fails + ' FALLOS' : 'TODO OK'); process.exit(fails ? 1 : 0);
 })();
