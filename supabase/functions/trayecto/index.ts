@@ -18,7 +18,7 @@ const CAMPOS: Record<string, string> = {
   'Gasolina 95 E5': 'g95', 'Gasolina 95 E10': 'g95e10', 'Gasolina 95 E5 Premium': 'g95p', 'Gasolina 98 E5': 'g98', 'Bioetanol': 'bioet',
   'Gases licuados del petróleo': 'glp', 'Gas Natural Comprimido': 'gnc', 'Gas Natural Licuado': 'gnl', 'Hidrogeno': 'h2',
 };
-const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 const CAMPOS_N: Record<string, string> = Object.fromEntries(Object.entries(CAMPOS).map(([k, v]) => [norm(k), v]));
 
 // Comprueba la sesión con Supabase (firma incluida), no solo leyendo el token: así no depende de que la función

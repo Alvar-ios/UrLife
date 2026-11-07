@@ -147,3 +147,7 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - Antes de aplicarla se probó A+B entera en la base real dentro de una transacción que se deshizo (5 cuentas inventadas): 50 de 50 bien.
 - B (no aditiva: reemplaza `validar_compartido`, copia en `copias/validar_compartido_2026-10-30.sql`) APLICADA el 30/10 por la tarde, con la app de «Recuperar» (migración `historial_compartidos_b`). Antes se comprobó que la función real seguía igual que la copia (mismo md5); después, comprobación en una transacción deshecha: crear, cambiar, borrar (fecha del servidor), recuperar (vuelve igual, mismo autor), doble recuperar = `no_borrado`, historial creado → editado → borrado → recuperado. Para deshacer B: ejecutar la copia y `drop function public.recuperar_compartido(uuid)`.
 - Avisos de Supabase después: solo `historial_grupo` e `historial_nuevos` ejecutables con sesión, que es lo buscado.
+
+## 07/11/2026
+- `precios_carburante` (aplicada): tabla pública de precios medianos por provincia y día (Ministerio + PVPC de Red Eléctrica). Solo lectura con sesión; la escribe la función `trayecto`, que guarda 60 días.
+- `poner_carpeta_permisos` (aplicada): `poner_carpeta` exige `puede_editar_compartido` en cada gasto (en grupos «solo el autor», solo el autor o un administrador).

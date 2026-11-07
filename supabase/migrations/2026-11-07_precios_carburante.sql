@@ -1,4 +1,4 @@
--- 07/11/2026 · precios_carburante (docs/31, calculadora de trayecto). SIN APLICAR: espera la revisión de Datos y Seguridad y el «sí» del dueño.
+-- 07/11/2026 · precios_carburante (docs/31, calculadora de trayecto). APLICADA el 07/11 tras revisión de Datos y Seguridad y el «sí» del dueño. Función «trayecto» publicada el mismo día.
 -- Solo AÑADE una tabla nueva con datos públicos del Ministerio y de Red Eléctrica (precio mediano por provincia y día).
 -- No contiene datos de ningún usuario. La app solo la lee; la escribe la función «trayecto» (con su clave de servicio).
 -- Marcha atrás: drop table public.precios_carburante;
