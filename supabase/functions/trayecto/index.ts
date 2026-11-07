@@ -35,10 +35,13 @@ async function getJson(url: string, init: RequestInit = {}, ms = 30000) {
 }
 const mediana = (xs: number[]) => { const a = xs.slice().sort((x, y) => x - y), m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
 
+let ultimoIntento = 0; // si el Ministerio falla, no se reintenta en esta instancia hasta pasados 15 minutos
 async function refrescar() {
   const fecha = hoyMadrid();
   const { count } = await sb.from('precios_carburante').select('*', { count: 'exact', head: true }).eq('fecha', fecha);
   if (count && count > 0) return { ok: true, fecha, ya: true };
+  if (Date.now() - ultimoIntento < 15 * 60e3) return { error: 'reintento_pronto' };
+  ultimoIntento = Date.now();
   const r = await getJson(MINISTERIO, { headers: { Accept: 'application/json' } }, 60000);
   const lista: any[] = r.data?.ListaEESSPrecio || [];
   if (!lista.length) return { error: 'sin_datos' };

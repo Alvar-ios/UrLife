@@ -3764,7 +3764,7 @@ function trResHtml() {
     '<div class="tr-res-d tnum">' + trNum(r.km, 0) + ' km · ' + trNum(r.cant) + ' ' + trUnidadTxt(r.unidad) + (r.n > 1 ? ' · ' + money(r.porPersona) + ' cada uno' : '') + '</div></div>';
 }
 function trPrecioTxt() {
-  const pr = trPrecio(), u = TR_PRODS[FORM.prod].u, v = trNum(pr.v, 3).replace(/^(\d+)$/, '$1') + ' ' + sym() + '/' + (u === 'l' ? 'l' : u);
+  const pr = trPrecio(), u = TR_PRODS[FORM.prod].u, v = trNum(pr.v, 3) + ' ' + sym() + '/' + (u === 'l' ? 'l' : u);
   if (pr.fuente === 'tuyo') return 'Usando tu precio: <b class="tnum">' + v + '</b>';
   if (pr.fuente === 'aprox') return 'Precio orientativo: <b class="tnum">' + v + '</b>' + (TR_SIN_OFICIAL[FORM.prod] ? ' (media de los cargadores)' : '');
   const prov = PROVINCIAS.find((x) => x[0] === FORM.provincia);
@@ -3793,10 +3793,9 @@ function trayHtml() {
     '<div class="tr-precio-f"><div class="field tr-km"><input id="trPrecio" type="text" inputmode="decimal" placeholder="Pon tu precio" value="' + escapeHtml(F.precio || '') + '" ' + onInput('trPrecioIn') + '><span>' + sym() + '/' + (p.u === 'l' ? 'l' : p.u) + '</span></div>' +
     (TR_SIN_OFICIAL[F.prod] ? '' : '<div class="field"><select id="trProv" aria-label="Provincia" ' + onChange('trProv') + '><option value="">Media de España</option>' + PROVINCIAS.map(([id, n]) => '<option value="' + id + '"' + (F.provincia === id ? ' selected' : '') + '>' + escapeHtml(n) + '</option>').join('') + '</select></div>') + '</div>' +
     '<div class="cr-lbl">¿Cuántos vais?</div><div class="tr-pers"><button type="button" class="btn ghost" aria-label="Uno menos" ' + act('trPers', -1) + '>−</button><b class="tnum" id="trPersN">' + (F.personas || 1) + '</b><button type="button" class="btn ghost" aria-label="Uno más" ' + act('trPers', 1) + '>+</button></div>' +
-    '<div id="trRes">' + trResHtml() + '</div>' +
     (F.guardando ? '<div class="tr-guardar"><div class="field"><input id="trNombre" type="text" maxlength="40" placeholder="Nombre (por ejemplo: Casa – trabajo)" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('trNombre') + '></div><button type="button" class="btn accent" ' + act('trGuardarOk') + '>Guardar</button></div>'
       : '<button type="button" class="link tr-guardar-l" ' + act('trGuardar') + '>' + ic('repeat') + ' Guardar para repetirlo</button>') +
-    '<div class="actions"><button class="btn ghost block" ' + act('trApuntar') + '>' + ic('arrowDown') + ' Apuntar gasto</button>' +
+    '<div class="actions tr-acc"><div id="trRes">' + trResHtml() + '</div><button class="btn ghost block" ' + act('trApuntar') + '>' + ic('arrowDown') + ' Apuntar</button>' +
     (compartidosDisponible() ? '<button class="btn accent block" ' + act('trCompartir') + '>' + ic('users') + ' Compartir</button>' : '') + '</div>';
 }
 function trRefrescar() { const r = $('#trRes'); if (r) r.innerHTML = trResHtml(); const p = $('#trPrecioTxt'); if (p) p.innerHTML = trPrecioTxt(); }
@@ -3822,7 +3821,7 @@ async function trCargarPrecios() {
   } catch (e) { /* sin precios del día: se usa el orientativo */ }
 }
 function trRecordar(extra) { const t = cfg().trayecto || {}; saveConfig({ trayecto: Object.assign({}, t, { prod: FORM.prod, consumo: numCampo(FORM.consumo || '') || null, provincia: FORM.provincia || '' }, extra || {}) }); }
-function trDescripcion() { const p = TR_PRODS[FORM.prod], base = p.g === 'electrico' ? 'Carga del coche' : 'Gasolina'; const ruta = FORM.modo === 'sitios' && FORM.de && FORM.a ? ' · ' + FORM.de.split(',')[0].trim() + ' – ' + FORM.a.split(',')[0].trim() : ''; return (base + ruta).slice(0, 80); }
+function trDescripcion() { const p = TR_PRODS[FORM.prod], base = p.g === 'electrico' ? 'Carga del coche' : 'Gasolina'; const ruta = FORM.ruta ? ' · ' + FORM.ruta : ''; /* solo las localidades que devolvió el cálculo, nunca la calle escrita */ return (base + ruta).slice(0, 80); }
 function trCategoria() { const cs = catsGasto().map((c) => c.nombre); return cs.includes('Transporte') ? 'Transporte' : (cs.find((c) => /transporte|coche/i.test(c)) || 'Otros'); }
 async function trayectoApi(accion, extra) {
   const c = window.SUPABASE_CONFIG; const ses = await window.Auth.getSession();
@@ -10542,11 +10541,11 @@ const H = {
   trModo: ([m]) => { FORM.modo = m === 'km' ? 'km' : 'sitios'; trRepintar(); },
   trVuelta: ([v]) => { FORM.vuelta = String(v) === '1'; trRepintar(); },
   trGrupo: ([g]) => { const gr = TR_GRUPOS.find((x) => x[0] === g); if (!gr || TR_PRODS[FORM.prod].g === g) return; FORM.prod = gr[2][0][0]; FORM.consumo = ''; FORM.precio = ''; trRepintar(); },
-  trProd: ([k]) => { if (!TR_PRODS[k]) return; const mismaU = TR_PRODS[k].u === TR_PRODS[FORM.prod].u; FORM.prod = k; if (!mismaU) FORM.consumo = ''; FORM.precio = ''; trRepintar(); },
+  trProd: ([k]) => { if (!TR_PRODS[k]) return; FORM.prod = k; FORM.consumo = ''; FORM.precio = ''; trRepintar(); },
   trNivel: ([n]) => { const c = TR_PRODS[FORM.prod].c * (n === 'poco' ? 0.8 : n === 'mucho' ? 1.25 : 1); FORM.consumo = trNum(c, 2).replace(/\./g, ''); trRepintar(); },
-  trDe: (_a, el) => { FORM.de = el.value; },
-  trA: (_a, el) => { FORM.a = el.value; },
-  trKm: (_a, el) => { FORM.km = el.value; trRefrescar(); },
+  trDe: (_a, el) => { FORM.de = el.value; FORM.ruta = ''; },
+  trA: (_a, el) => { FORM.a = el.value; FORM.ruta = ''; },
+  trKm: (_a, el) => { FORM.km = el.value; FORM.ruta = ''; trRefrescar(); },
   trCons: (_a, el) => { FORM.consumo = el.value; trRefrescar(); },
   trPrecioIn: (_a, el) => { FORM.precio = el.value; trRefrescar(); },
   trProv: (_a, el) => { FORM.provincia = el.value; S.preciosCarb = null; trRefrescar(); trCargarPrecios(); },
@@ -10561,7 +10560,7 @@ const H = {
     let j; try { j = await trayectoApi('distancia', { de, a }); } catch (e) { j = { error: 'red' }; }
     if (FORM !== F) return;
     F.buscando = false;
-    if (j && num(j.km) > 0) { F.km = trNum(j.km, 0).replace(/\./g, ''); F.distMsg = 'Unos <b class="tnum">' + trNum(j.km, 0) + ' km</b> por carretera' + (j.desde && j.hasta ? ' de ' + escapeHtml(j.desde) + ' a ' + escapeHtml(j.hasta) : '') + '. Puedes cambiarlos en «Ya sé los km».'; sentir('ok'); }
+    if (j && num(j.km) > 0) { F.km = trNum(j.km, 0).replace(/\./g, ''); F.distMsg = 'Unos <b class="tnum">' + trNum(j.km, 0) + ' km</b> por carretera' + (j.desde && j.hasta ? ' de ' + escapeHtml(j.desde) + ' a ' + escapeHtml(j.hasta) : '') + '. Puedes cambiarlos en «Ya sé los km».'; F.ruta = j.desde && j.hasta && j.desde !== j.hasta ? (j.desde + ' – ' + j.hasta).slice(0, 60) : ''; sentir('ok'); }
     else F.distMsg = trDistErr(j && j.error);
     trRepintar();
   },

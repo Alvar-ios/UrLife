@@ -1278,3 +1278,7 @@ html.cambiando *, html.cambiando *::before, html.cambiando *::after { transition
 .tr-guardar { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
 .tr-guardar .field { flex: 1; margin: 0; }
 .tr-guardar-l { display: inline-flex; gap: 6px; align-items: center; margin: 4px 0; }
+.tr-acc { flex-wrap: wrap; }
+.tr-acc #trRes { flex-basis: 100%; }
+.tr-acc .tr-res { margin: 0 0 8px; padding: 8px 12px; }
+.tr-acc .tr-res-n { font-size: 22px; }
