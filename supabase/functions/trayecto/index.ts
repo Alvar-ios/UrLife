@@ -92,7 +92,6 @@ async function distancia(de: string, a: string) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-  if (new URL(req.url).searchParams.get('diag') === '1') { const r = await getJson(MINISTERIO, { headers: { Accept: 'application/json' } }, 60000); return json({ status: r.status, err: (r as any).err, n: r.data?.ListaEESSPrecio?.length || 0 }); } // TEMPORAL
   if (!(await conSesion(req))) return json({ error: 'sin_sesion' }, 401);
   let b: any = {}; try { b = await req.json(); } catch { /* */ }
   if (b.accion === 'refrescar') return json(await refrescar());
