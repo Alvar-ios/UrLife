@@ -21,8 +21,12 @@ const CAMPOS: Record<string, string> = {
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 const CAMPOS_N: Record<string, string> = Object.fromEntries(Object.entries(CAMPOS).map(([k, v]) => [norm(k), v]));
 
-function rol(req: Request): string | null {
-  try { const t = (req.headers.get('Authorization') || '').replace(/^Bearer /i, ''); return JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role || null; } catch { return null; }
+// Comprueba la sesión con Supabase (firma incluida), no solo leyendo el token: así no depende de que la función
+// se publique con la verificación de JWT activada.
+async function conSesion(req: Request): Promise<boolean> {
+  const t = (req.headers.get('Authorization') || '').replace(/^Bearer /i, '');
+  if (!t) return false;
+  try { const { data, error } = await sb.auth.getUser(t); return !error && !!data?.user; } catch { return false; }
 }
 async function getJson(url: string, init: RequestInit = {}, ms = 30000) {
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms);
@@ -40,6 +44,7 @@ async function refrescar() {
   if (!lista.length) return { error: 'sin_datos' };
   const por: Record<string, Record<string, number[]>> = {}; // provincia → producto → precios
   for (const e of lista) {
+    if (e['Tipo Venta'] && e['Tipo Venta'] !== 'P') continue; // solo venta al público
     const prov = String(e.IDProvincia || '').padStart(2, '0');
     for (const [k, v] of Object.entries(e)) {
       if (!k.startsWith('Precio ')) continue;
@@ -84,7 +89,7 @@ async function distancia(de: string, a: string) {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-  if (rol(req) !== 'authenticated') return json({ error: 'sin_sesion' }, 401);
+  if (!(await conSesion(req))) return json({ error: 'sin_sesion' }, 401);
   let b: any = {}; try { b = await req.json(); } catch { /* */ }
   if (b.accion === 'refrescar') return json(await refrescar());
   if (b.accion === 'distancia') {
