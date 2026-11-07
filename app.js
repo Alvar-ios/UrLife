@@ -3717,8 +3717,127 @@ function crearHtmlV2() {
       (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + '</div>' +
     (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
     '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy2', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'trendUp', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'repeat', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura') +
-      op('crearIr', ['deuda'], 'deuda', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'fileIn', 'Importar', 'k-imp') + '</div>' +
+      op('crearIr', ['deuda'], 'deuda', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'fileIn', 'Importar', 'k-imp') + op('trAbrir', [], 'coche2', 'Trayecto<small>gasolina o carga de un viaje</small>', 'k-tray') + '</div>' +
     (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '');
+}
+/* ============================================================
+   TRAYECTO (07/11/2026, docs/31-calculadora-trayecto.md): cuánto cuesta un viaje en coche.
+   Distancia (por sitios, con la función «trayecto», o km a mano) · ida o ida y vuelta · tu coche · precio del día
+   por provincia (tabla pública «precios_carburante») o el tuyo → «unos X €» con Apuntar gasto y Compartir.
+   Lo que se recuerda va en cfg().trayecto = { prod, consumo, provincia, guardados: [{ id, nombre, km, vuelta, prod, consumo }] }.
+   No se guardan direcciones: un trayecto guardado lleva solo el nombre que le pongas.
+   ============================================================ */
+// [clave, nombre, unidad, precio orientativo, consumo típico cada 100 km]
+const TR_GRUPOS = [
+  ['diesel', 'Diésel', [['goA', 'Gasóleo A', 'l', 1.90, 5.5], ['goP', 'Gasóleo premium', 'l', 1.98, 5.5], ['goR', 'Diésel renovable (HVO)', 'l', 2.10, 5.5], ['bio', 'Biodiésel', 'l', 1.85, 5.8]]],
+  ['gasolina', 'Gasolina', [['g95', 'Gasolina 95', 'l', 1.70, 6.5], ['g95e10', 'Gasolina 95 E10', 'l', 1.66, 6.7], ['g95p', 'Gasolina 95 premium', 'l', 1.80, 6.5], ['g98', 'Gasolina 98', 'l', 1.85, 6.5], ['bioet', 'Bioetanol (E85)', 'l', 1.30, 8.5]]],
+  ['electrico', 'Eléctrico', [['eCasa', 'En casa', 'kWh', 0.15, 17], ['ePub', 'Punto de carga normal', 'kWh', 0.40, 17], ['eRap', 'Carga rápida', 'kWh', 0.55, 18], ['eUltra', 'Ultrarrápida', 'kWh', 0.65, 18]]],
+  ['gas', 'Gas', [['glp', 'Autogás (GLP)', 'l', 1.00, 8.5], ['gnc', 'Gas natural (GNC)', 'kg', 1.40, 4.5], ['gnl', 'Gas natural licuado (GNL)', 'kg', 1.30, 4.5]]],
+  ['otros', 'Otros', [['h2', 'Hidrógeno', 'kg', 12.0, 1.0]]]
+];
+const TR_PRODS = {}; TR_GRUPOS.forEach(([g, , ps]) => ps.forEach(([k, n, u, p, c]) => { TR_PRODS[k] = { k, n, u, p, c, g }; }));
+// Precios que no publica nadie de forma oficial: valor medio orientativo (puedes poner el tuyo)
+const TR_SIN_OFICIAL = { ePub: 1, eRap: 1, eUltra: 1 };
+const PROVINCIAS = [['01', 'Álava'], ['02', 'Albacete'], ['03', 'Alicante'], ['04', 'Almería'], ['33', 'Asturias'], ['05', 'Ávila'], ['06', 'Badajoz'], ['07', 'Baleares'], ['08', 'Barcelona'], ['48', 'Bizkaia'], ['09', 'Burgos'], ['10', 'Cáceres'], ['11', 'Cádiz'], ['39', 'Cantabria'], ['12', 'Castellón'], ['51', 'Ceuta'], ['13', 'Ciudad Real'], ['14', 'Córdoba'], ['15', 'A Coruña'], ['16', 'Cuenca'], ['20', 'Gipuzkoa'], ['17', 'Girona'], ['18', 'Granada'], ['19', 'Guadalajara'], ['21', 'Huelva'], ['22', 'Huesca'], ['23', 'Jaén'], ['26', 'La Rioja'], ['35', 'Las Palmas'], ['24', 'León'], ['25', 'Lleida'], ['27', 'Lugo'], ['28', 'Madrid'], ['29', 'Málaga'], ['52', 'Melilla'], ['30', 'Murcia'], ['31', 'Navarra'], ['32', 'Ourense'], ['34', 'Palencia'], ['36', 'Pontevedra'], ['37', 'Salamanca'], ['38', 'Santa Cruz de Tenerife'], ['40', 'Segovia'], ['41', 'Sevilla'], ['42', 'Soria'], ['43', 'Tarragona'], ['44', 'Teruel'], ['45', 'Toledo'], ['46', 'Valencia'], ['47', 'Valladolid'], ['49', 'Zamora'], ['50', 'Zaragoza']];
+function trCfg() { const t = cfg().trayecto || {}; return { prod: TR_PRODS[t.prod] ? t.prod : 'g95', consumo: num(t.consumo) > 0 ? num(t.consumo) : null, provincia: t.provincia || '', guardados: Array.isArray(t.guardados) ? t.guardados : [] }; }
+function trUnidadTxt(u) { return u === 'kWh' ? 'kWh' : u === 'kg' ? 'kg' : 'litros'; }
+// Precio que se usa: el tuyo > el del día (provincia, si no la media de España) > el orientativo
+function trPrecio() {
+  const F = FORM, p = TR_PRODS[F.prod], propio = numCampo(F.precio || '');
+  if (propio > 0) return { v: propio, fuente: 'tuyo' };
+  const d = S.preciosCarb && S.preciosCarb.datos && S.preciosCarb.datos[F.prod];
+  if (d && d.precio > 0) return { v: d.precio, fuente: d.provincia === 'ES' ? 'espana' : 'provincia', fecha: d.fecha };
+  return { v: p.p, fuente: 'aprox' };
+}
+function trKmTotal() { const km = numCampo(FORM.km || ''); return km > 0 ? km * (FORM.vuelta ? 2 : 1) : 0; }
+function trCalc() {
+  const F = FORM, p = TR_PRODS[F.prod], km = trKmTotal(), cons = numCampo(F.consumo || '') || p.c, pr = trPrecio();
+  if (!(km > 0)) return null;
+  const cant = km * cons / 100, coste = Math.round(cant * pr.v * 100) / 100, n = Math.max(1, F.personas || 1);
+  return { km, cant, coste, porPersona: Math.round(coste / n * 100) / 100, n, unidad: p.u, precio: pr };
+}
+function trNum(n, d) { return Number(n).toLocaleString('es-ES', { maximumFractionDigits: d == null ? 1 : d }); }
+function trResHtml() {
+  const r = trCalc();
+  if (!r) return '<div class="tr-res vacio">Pon la distancia y verás aquí lo que cuesta.</div>';
+  return '<div class="tr-res"><div class="tr-res-l">Gasto estimado</div><div class="tr-res-n tnum">unos ' + money(r.coste) + '</div>' +
+    '<div class="tr-res-d tnum">' + trNum(r.km, 0) + ' km · ' + trNum(r.cant) + ' ' + trUnidadTxt(r.unidad) + (r.n > 1 ? ' · ' + money(r.porPersona) + ' cada uno' : '') + '</div></div>';
+}
+function trPrecioTxt() {
+  const pr = trPrecio(), u = TR_PRODS[FORM.prod].u, v = trNum(pr.v, 3).replace(/^(\d+)$/, '$1') + ' ' + sym() + '/' + (u === 'l' ? 'l' : u);
+  if (pr.fuente === 'tuyo') return 'Usando tu precio: <b class="tnum">' + v + '</b>';
+  if (pr.fuente === 'aprox') return 'Precio orientativo: <b class="tnum">' + v + '</b>' + (TR_SIN_OFICIAL[FORM.prod] ? ' (media de los cargadores)' : '');
+  const prov = PROVINCIAS.find((x) => x[0] === FORM.provincia);
+  return (pr.fuente === 'provincia' && prov ? 'Precio medio en ' + escapeHtml(prov[1]) : 'Precio medio en España') + ': <b class="tnum">' + v + '</b>' + (pr.fecha ? ' · ' + fechaCorta(pr.fecha) : '');
+}
+function trayHtml() {
+  const F = FORM, t = trCfg(), p = TR_PRODS[F.prod], seg = (accion, ops, sel) => '<div class="segmented tr-seg">' + ops.map(([v, l]) => '<button type="button" class="' + (sel === v ? 'active' : '') + '" ' + act(accion, v) + '>' + l + '</button>').join('') + '</div>';
+  const grupo = TR_GRUPOS.find((g) => g[0] === p.g);
+  const consTipico = p.c, cons = numCampo(F.consumo || '');
+  const nivel = !cons ? 'normal' : Math.abs(cons - consTipico * 0.8) < 0.05 ? 'poco' : Math.abs(cons - consTipico * 1.25) < 0.05 ? 'mucho' : Math.abs(cons - consTipico) < 0.05 ? 'normal' : '';
+  return '<div class="handle"></div><h2>Trayecto en coche</h2><div class="rec-hint tr-intro">Calcula lo que cuesta un viaje y apúntalo o compártelo.</div>' +
+    (t.guardados.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir trayecto</span><div class="crear-rep-f">' + t.guardados.map((g) => '<button type="button" class="chip tappable" ' + act('trUsar', g.id) + '>' + ic('repeat') + '<span>' + escapeHtml(g.nombre) + ' · <b class="tnum">' + trNum(g.km * (g.vuelta ? 2 : 1), 0) + ' km</b></span></button>').join('') + '</div></div>' : '') +
+    '<div class="cr-lbl">Distancia</div>' + seg('trModo', [['sitios', 'De un sitio a otro'], ['km', 'Ya sé los km']], F.modo) +
+    (F.modo === 'sitios'
+      ? '<div class="tr-sitios"><div class="field"><input id="trDe" type="text" maxlength="120" autocomplete="off" placeholder="Desde (ciudad, calle…)" value="' + escapeHtml(F.de || '') + '" ' + onInput('trDe') + '></div>' +
+        '<div class="field"><input id="trA" type="text" maxlength="120" autocomplete="off" placeholder="Hasta" value="' + escapeHtml(F.a || '') + '" ' + onInput('trA') + '></div>' +
+        '<button type="button" class="btn ghost block" ' + act('trDist') + (F.buscando ? ' disabled' : '') + '>' + ic('pin') + (F.buscando ? ' Calculando…' : ' Calcular km') + '</button>' +
+        '<div class="rec-hint" id="trDistMsg">' + (F.distMsg || 'Los km se calculan por carretera. Las direcciones no se guardan.') + '</div></div>'
+      : '<div class="field tr-km"><input id="trKm" type="text" inputmode="decimal" placeholder="0" value="' + escapeHtml(F.km || '') + '" ' + onInput('trKm') + '><span>km</span></div>') +
+    seg('trVuelta', [[0, 'Solo ida'], [1, 'Ida y vuelta']], F.vuelta ? 1 : 0) +
+    '<div class="cr-lbl">Tu coche</div><div class="chips tr-grupos">' + TR_GRUPOS.map(([g, n]) => '<button type="button" class="chip ' + (p.g === g ? 'active' : '') + '" ' + act('trGrupo', g) + '>' + n + '</button>').join('') + '</div>' +
+    (grupo[2].length > 1 ? '<div class="chips tr-prods">' + grupo[2].map(([k, n]) => '<button type="button" class="chip ' + (F.prod === k ? 'active' : '') + '" ' + act('trProd', k) + '>' + n + '</button>').join('') + '</div>' : '') +
+    '<div class="cr-lbl">Lo que gasta cada 100 km</div><div class="tr-cons">' + seg('trNivel', [['poco', 'Poco'], ['normal', 'Normal'], ['mucho', 'Mucho']], nivel) +
+    '<div class="field tr-km"><input id="trCons" type="text" inputmode="decimal" placeholder="' + trNum(consTipico) + '" value="' + escapeHtml(F.consumo || '') + '" ' + onInput('trCons') + '><span>' + (p.u === 'l' ? 'l' : p.u) + '/100 km</span></div></div>' +
+    '<div class="cr-lbl">Precio</div><div class="rec-hint tr-precio" id="trPrecioTxt">' + trPrecioTxt() + '</div>' +
+    '<div class="tr-precio-f"><div class="field tr-km"><input id="trPrecio" type="text" inputmode="decimal" placeholder="Pon tu precio" value="' + escapeHtml(F.precio || '') + '" ' + onInput('trPrecioIn') + '><span>' + sym() + '/' + (p.u === 'l' ? 'l' : p.u) + '</span></div>' +
+    (TR_SIN_OFICIAL[F.prod] ? '' : '<div class="field"><select id="trProv" aria-label="Provincia" ' + onChange('trProv') + '><option value="">Media de España</option>' + PROVINCIAS.map(([id, n]) => '<option value="' + id + '"' + (F.provincia === id ? ' selected' : '') + '>' + escapeHtml(n) + '</option>').join('') + '</select></div>') + '</div>' +
+    '<div class="cr-lbl">¿Cuántos vais?</div><div class="tr-pers"><button type="button" class="btn ghost" aria-label="Uno menos" ' + act('trPers', -1) + '>−</button><b class="tnum" id="trPersN">' + (F.personas || 1) + '</b><button type="button" class="btn ghost" aria-label="Uno más" ' + act('trPers', 1) + '>+</button></div>' +
+    '<div id="trRes">' + trResHtml() + '</div>' +
+    (F.guardando ? '<div class="tr-guardar"><div class="field"><input id="trNombre" type="text" maxlength="40" placeholder="Nombre (por ejemplo: Casa – trabajo)" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('trNombre') + '></div><button type="button" class="btn accent" ' + act('trGuardarOk') + '>Guardar</button></div>'
+      : '<button type="button" class="link tr-guardar-l" ' + act('trGuardar') + '>' + ic('repeat') + ' Guardar para repetirlo</button>') +
+    '<div class="actions"><button class="btn ghost block" ' + act('trApuntar') + '>' + ic('arrowDown') + ' Apuntar gasto</button>' +
+    (compartidosDisponible() ? '<button class="btn accent block" ' + act('trCompartir') + '>' + ic('users') + ' Compartir</button>' : '') + '</div>';
+}
+function trRefrescar() { const r = $('#trRes'); if (r) r.innerHTML = trResHtml(); const p = $('#trPrecioTxt'); if (p) p.innerHTML = trPrecioTxt(); }
+function trRepintar() { if (FORM && FORM.kind === 'trayecto') updateSheet(trayHtml()); }
+function trAbrir(g) {
+  const t = trCfg(), prod = g && TR_PRODS[g.prod] ? g.prod : t.prod;
+  FORM = { kind: 'trayecto', modo: g ? 'km' : 'sitios', de: '', a: '', km: g ? String(g.km).replace('.', ',') : '', vuelta: g ? !!g.vuelta : false, prod, consumo: g && g.consumo ? String(g.consumo).replace('.', ',') : t.consumo ? String(t.consumo).replace('.', ',') : '', precio: '', provincia: t.provincia, personas: 1 };
+  if ($('#sheetBackdrop')) updateSheet(trayHtml()); else openSheet(trayHtml());
+  trCargarPrecios();
+}
+// Precios del día (tabla pública): los de tu provincia y, si falta alguno, la media de España
+async function trCargarPrecios() {
+  if (!window.Data || !window.Data.carburantes) return;
+  // Una vez al día, pide a la función que traiga los precios de hoy (si ya están, no hace nada)
+  if (activosDisponible() && S._carbRefresco !== todayISO()) { S._carbRefresco = todayISO(); try { await trayectoApi('refrescar'); } catch (e) { /* se usan los últimos guardados */ } }
+  const prov = FORM && FORM.kind === 'trayecto' ? FORM.provincia : '';
+  if (S.preciosCarb && S.preciosCarb.prov === prov && S.preciosCarb.cuando > Date.now() - 3600e3) return;
+  try {
+    const filas = await window.Data.carburantes.ultimos(prov);
+    const datos = {}; (filas || []).forEach((f) => { const ya = datos[f.producto]; if (!ya || (ya.provincia === 'ES' && f.provincia !== 'ES')) datos[f.producto] = { precio: Number(f.precio), provincia: f.provincia, fecha: f.fecha }; });
+    S.preciosCarb = { prov, datos, cuando: Date.now() };
+    if (FORM && FORM.kind === 'trayecto') trRefrescar();
+  } catch (e) { /* sin precios del día: se usa el orientativo */ }
+}
+function trRecordar(extra) { const t = cfg().trayecto || {}; saveConfig({ trayecto: Object.assign({}, t, { prod: FORM.prod, consumo: numCampo(FORM.consumo || '') || null, provincia: FORM.provincia || '' }, extra || {}) }); }
+function trDescripcion() { const p = TR_PRODS[FORM.prod], base = p.g === 'electrico' ? 'Carga del coche' : 'Gasolina'; const ruta = FORM.modo === 'sitios' && FORM.de && FORM.a ? ' · ' + FORM.de.split(',')[0].trim() + ' – ' + FORM.a.split(',')[0].trim() : ''; return (base + ruta).slice(0, 80); }
+function trCategoria() { const cs = catsGasto().map((c) => c.nombre); return cs.includes('Transporte') ? 'Transporte' : (cs.find((c) => /transporte|coche/i.test(c)) || 'Otros'); }
+async function trayectoApi(accion, extra) {
+  const c = window.SUPABASE_CONFIG; const ses = await window.Auth.getSession();
+  if (!ses || !ses.access_token) throw new Error('sin_sesion');
+  const r = await fetch(c.url + '/functions/v1/trayecto', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ses.access_token, apikey: c.anonKey }, body: JSON.stringify(Object.assign({ accion }, extra || {})) });
+  let j; try { j = await r.json(); } catch (e) { j = { error: 'respuesta_invalida' }; }
+  if (!r.ok && !j.error) j.error = 'http_' + r.status;
+  return j;
+}
+function trDistErr(e) {
+  if (e === 'no_encontrado_de') return 'No encuentro el sitio de salida. Prueba a escribirlo con la ciudad.';
+  if (e === 'no_encontrado_a') return 'No encuentro el sitio de llegada. Prueba a escribirlo con la ciudad.';
+  if (e === 'sin_ruta') return 'No hay ruta en coche entre esos dos sitios.';
+  if (e === 'limite') return 'Hoy se han agotado los cálculos gratuitos. Pon los km a mano.';
+  return 'Ahora no se pueden calcular los km. Pon los km a mano.';
 }
 /* ============================================================
    DINERO (patrimonio, metas, inversiones, deudas y compartido) · AGENDA · TÚ  (Bloque 9)
@@ -5789,9 +5908,9 @@ function planesGrupoHtml(g) {
   if (tareas.length) h += '<div class="section-title">Tareas · ' + (pend.length === 1 ? '1 por hacer' : pend.length + ' por hacer') + '</div><div class="list">' + pend.concat(hechas).map(tareaCFilaHtml).join('') + '</div>';
   return h;
 }
-function abrirCompRapido(dest) {
-  const yo = miUid();
-  FORM = { kind: 'compRapido', tipo: 'Gasto', id: null, compId: null, comp: { on: true }, importe: '', desc: '', cat: 'Otros', catTocada: false, fecha: todayISO(), cuenta: cuentaRecordada('') };
+function abrirCompRapido(dest, pre) {
+  const yo = miUid(); pre = pre || {};
+  FORM = { kind: 'compRapido', tipo: 'Gasto', id: null, compId: null, comp: { on: true }, importe: pre.importe || '', desc: pre.desc || '', cat: pre.cat || 'Otros', catTocada: !!pre.cat, fecha: todayISO(), cuenta: cuentaRecordada('') };
   const k = dest || destinoPorDefecto(); if (k) compPrepararDestino(k);
   FORM.comp.pagador = FORM.comp.pagador || yo;
   temaAutoAplicar();
@@ -10418,6 +10537,52 @@ const H = {
     $$('#content .tu-grupo').forEach((g) => { if (g.classList.contains('tu-mas-btn')) { g.style.display = q ? 'none' : ''; return; } let vis = 0; g.querySelectorAll('.menu-item').forEach((b) => { const ok = !q || (b.getAttribute('data-k') || '').indexOf(q) >= 0; b.style.display = ok ? '' : 'none'; if (ok) vis++; }); g.style.display = vis && (q || !g.classList.contains('tu-mas') || S.tuMas) ? '' : 'none'; n += vis; });
     const z = $('#tuNada'); if (z) z.style.display = n ? 'none' : '';
   },
+  trAbrir: () => { S._volverGrupo = null; verBadge('trayecto'); trAbrir(null); },
+  trUsar: ([id]) => { const g = trCfg().guardados.find((x) => x.id === id); if (g) trAbrir(g); },
+  trModo: ([m]) => { FORM.modo = m === 'km' ? 'km' : 'sitios'; trRepintar(); },
+  trVuelta: ([v]) => { FORM.vuelta = String(v) === '1'; trRepintar(); },
+  trGrupo: ([g]) => { const gr = TR_GRUPOS.find((x) => x[0] === g); if (!gr || TR_PRODS[FORM.prod].g === g) return; FORM.prod = gr[2][0][0]; FORM.consumo = ''; FORM.precio = ''; trRepintar(); },
+  trProd: ([k]) => { if (!TR_PRODS[k]) return; const mismaU = TR_PRODS[k].u === TR_PRODS[FORM.prod].u; FORM.prod = k; if (!mismaU) FORM.consumo = ''; FORM.precio = ''; trRepintar(); },
+  trNivel: ([n]) => { const c = TR_PRODS[FORM.prod].c * (n === 'poco' ? 0.8 : n === 'mucho' ? 1.25 : 1); FORM.consumo = trNum(c, 2).replace(/\./g, ''); trRepintar(); },
+  trDe: (_a, el) => { FORM.de = el.value; },
+  trA: (_a, el) => { FORM.a = el.value; },
+  trKm: (_a, el) => { FORM.km = el.value; trRefrescar(); },
+  trCons: (_a, el) => { FORM.consumo = el.value; trRefrescar(); },
+  trPrecioIn: (_a, el) => { FORM.precio = el.value; trRefrescar(); },
+  trProv: (_a, el) => { FORM.provincia = el.value; S.preciosCarb = null; trRefrescar(); trCargarPrecios(); },
+  trPers: ([d]) => { FORM.personas = Math.min(20, Math.max(1, (FORM.personas || 1) + Number(d))); const n = $('#trPersN'); if (n) n.textContent = FORM.personas; trRefrescar(); },
+  trNombre: (_a, el) => { FORM.nombre = el.value; },
+  trDist: async () => {
+    const F = FORM; if (!F || F.kind !== 'trayecto' || F.buscando) return;
+    const de = (F.de || '').trim(), a = (F.a || '').trim();
+    if (!de || !a) { F.distMsg = 'Escribe de dónde sales y adónde vas.'; trRepintar(); return; }
+    if (!activosDisponible()) { F.distMsg = trDistErr(''); trRepintar(); return; }
+    F.buscando = true; F.distMsg = ''; trRepintar();
+    let j; try { j = await trayectoApi('distancia', { de, a }); } catch (e) { j = { error: 'red' }; }
+    if (FORM !== F) return;
+    F.buscando = false;
+    if (j && num(j.km) > 0) { F.km = trNum(j.km, 0).replace(/\./g, ''); F.distMsg = 'Unos <b class="tnum">' + trNum(j.km, 0) + ' km</b> por carretera' + (j.desde && j.hasta ? ' de ' + escapeHtml(j.desde) + ' a ' + escapeHtml(j.hasta) : '') + '. Puedes cambiarlos en «Ya sé los km».'; sentir('ok'); }
+    else F.distMsg = trDistErr(j && j.error);
+    trRepintar();
+  },
+  trGuardar: () => { const F = FORM; if (!(numCampo(F.km || '') > 0)) { toast('Pon antes la distancia'); return; } F.guardando = true; trRepintar(); setTimeout(() => { const el = $('#trNombre'); if (el) el.focus(); }, 80); },
+  trGuardarOk: () => {
+    const F = FORM, nombre = (F.nombre || '').trim(), km = numCampo(F.km || '');
+    if (!nombre) { toast('Ponle un nombre'); return; }
+    const t = trCfg(), g = { id: 't' + Date.now().toString(36), nombre: nombre.slice(0, 40), km, vuelta: !!F.vuelta, prod: F.prod, consumo: numCampo(F.consumo || '') || null };
+    const lista = [g].concat(t.guardados.filter((x) => normDesc(x.nombre) !== normDesc(nombre))).slice(0, 8);
+    trRecordar({ guardados: lista }); F.guardando = false; F.nombre = ''; toast('Trayecto guardado'); trRepintar();
+  },
+  trApuntar: () => {
+    const r = trCalc(); if (!r) { toast('Pon antes la distancia'); return; }
+    trRecordar(); S._volverGrupo = null;
+    openMovForm(null, { tipo: 'Gasto', importe: r.coste, categoria: trCategoria(), descripcion: trDescripcion() });
+  },
+  trCompartir: () => {
+    const r = trCalc(); if (!r) { toast('Pon antes la distancia'); return; }
+    trRecordar(); S._volverGrupo = null;
+    abrirCompRapido('', { importe: String(r.coste).replace('.', ','), desc: trDescripcion(), cat: trCategoria() });
+  },
   crearIr: ([k]) => {
     if (k === 'ticket') { closeSheet(); elegirFotoTicket(); return; } // en el mismo toque, para que el móvil deje abrir la cámara
     S._volverGrupo = null;
@@ -11903,6 +12068,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();

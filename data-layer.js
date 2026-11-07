@@ -354,5 +354,15 @@
       return q(sb.from('divisas').select('fecha,por_eur').eq('moneda', moneda).lte('fecha', fecha).gte('fecha', desde).order('fecha', { ascending: false }).limit(1)).then(function (r) { return r && r[0] ? { fecha: r[0].fecha, porEur: Number(r[0].por_eur) } : null; });
     }
   };
-  window.Data = { collection: collection, divisas: divisas, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, agendaPermisos: agendaPermisos, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
+  // Precios de carburante del día (tabla pública «precios_carburante», solo lectura; la rellena la función «trayecto»)
+  var carburantes = {
+    ultimos: function (provincia) {
+      var d = new Date(); d.setDate(d.getDate() - 7);
+      var provs = provincia ? ['ES', provincia] : ['ES'];
+      return q(sb.from('precios_carburante').select('fecha,provincia,producto,precio').in('provincia', provs).gte('fecha', d.toISOString().slice(0, 10)).order('fecha', { ascending: false }).limit(200)).then(function (r) {
+        var vistos = {}; return (r || []).filter(function (f) { var k = f.provincia + '|' + f.producto; if (vistos[k]) return false; vistos[k] = 1; return true; });
+      });
+    }
+  };
+  window.Data = { collection: collection, divisas: divisas, carburantes: carburantes, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, agendaPermisos: agendaPermisos, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
 })();

@@ -1258,3 +1258,23 @@ html.cambiando *, html.cambiando *::before, html.cambiando *::after { transition
 .tumes-dia { margin: -2px 0 10px; }
 .kpi-row.kpi-mes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .kpi.sav .v { color: var(--savings); } .kpi.debt .v { color: var(--debt, var(--expense)); }
+/* Trayecto (docs/31) */
+.k-tray .crear-ic { background: var(--paper-sunken); color: var(--text-muted); }
+.tr-intro { margin-top: -4px; }
+.tr-seg { margin: 6px 0 10px; }
+.tr-sitios .field { margin-bottom: 8px; }
+.tr-km { display: flex; align-items: center; gap: 8px; }
+.tr-km input { flex: 1; min-width: 0; }
+.tr-km span { color: var(--text-muted); font-size: 13px; white-space: nowrap; }
+.tr-prods { margin-top: 6px; }
+.tr-precio-f { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tr-pers { display: flex; align-items: center; gap: 14px; margin: 4px 0 12px; }
+.tr-pers b { min-width: 24px; text-align: center; font-size: 17px; }
+.tr-res { margin: 12px 0 6px; padding: 14px 16px; border-radius: 16px; background: var(--paper-sunken); text-align: center; }
+.tr-res.vacio { color: var(--text-muted); font-size: 13.5px; }
+.tr-res-l { font-size: 12.5px; color: var(--text-muted); }
+.tr-res-n { font-size: 28px; font-weight: 700; margin: 2px 0; }
+.tr-res-d { font-size: 13px; color: var(--text-muted); }
+.tr-guardar { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+.tr-guardar .field { flex: 1; margin: 0; }
+.tr-guardar-l { display: inline-flex; gap: 6px; align-items: center; margin: 4px 0; }
