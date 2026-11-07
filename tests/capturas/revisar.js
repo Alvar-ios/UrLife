@@ -17,7 +17,8 @@ const PANTALLAS = [
   ['moneda', 'A.S.tab="juntos";A.render();A.H.compRapido(["g:"+C.G1]);setTimeout(()=>{A.H.monAbrir([]);setTimeout(()=>{const el=document.querySelector("#monImporte");el.value="120";A.H.monImporte([],el);},150);},150)'],
   ['viaje', 'A.S.tab="juntos";A.render();A.H.grupoVer([C.G1]);setTimeout(()=>{A.H.temaVer(["tv1"]);A.H.temaCerrarPre(["tv1"]);},150)'],
   ['trayecto', 'A.S.tab="inicio";A.render();A.H.trAbrir([]);setTimeout(()=>{A.H.trModo(["km"]);setTimeout(()=>{const el=document.querySelector("#trKm");el.value="1.234";A.H.trKm([],el);A.H.trPers([1]);A.H.trPers([1]);},100);},150)'],
-  ['trayecto-sitios', 'A.S.tab="inicio";A.render();A.H.trAbrir([]);setTimeout(()=>{A.H.trGrupo(["electrico"]);},150)'],
+  ['trayecto-sitios', 'A.S.tab="inicio";A.render();A.H.trAbrir([]);setTimeout(()=>{A.H.trModo(["sitios"]);A.H.trGrupo(["electrico"]);},150)'],
+  ['trayecto-recogido', 'A.S.config=Object.assign({},A.S.config,{trayecto:{prod:"goA",consumo:5.8,provincia:"28",guardados:[{id:"tg1",nombre:"Casa – trabajo",km:23,vuelta:true}]}});A.S.preciosCarb={prov:"28",cuando:Date.now(),datos:{goA:{precio:1.459,provincia:"28",fecha:"2026-11-07"}}};A.S.tab="inicio";A.render();A.H.trAbrir([])'],
   ['mas', 'A.S.tab="inicio";A.S.inicioSub="";A.S.inicioVista="";A.render();A.openCrear()'],
 ];
 // en la página: busca textos cortados (sin «…» a propósito) y cosas que se salen por la derecha

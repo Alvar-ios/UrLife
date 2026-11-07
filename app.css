@@ -1282,3 +1282,23 @@ html.cambiando *, html.cambiando *::before, html.cambiando *::after { transition
 .tr-acc #trRes { flex-basis: 100%; }
 .tr-acc .tr-res { margin: 0 0 8px; padding: 8px 12px; }
 .tr-acc .tr-res-n { font-size: 22px; }
+/* Trayecto v2: tres pasos */
+.tr-paso { margin: 4px 0 16px; }
+.tr-paso-t { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+.tr-n { width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 12px; background: var(--paper-sunken); color: var(--text-muted); }
+.tr-kmfila { display: flex; gap: 8px; align-items: center; }
+.tr-kmfila .tr-km { flex: 1; margin: 0; }
+.tr-vuelta { white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
+.tr-vuelta svg, .tr-link svg, .tr-rep svg { width: 15px; height: 15px; }
+.tr-link { display: inline-flex; gap: 6px; align-items: center; margin-top: 8px; }
+.tr-rep { margin-bottom: 8px; }
+.tr-sitios { margin-top: 10px; }
+.tr-coche { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; border: 1px solid var(--line, rgba(127,127,127,.25)); background: transparent; color: inherit; text-align: left; font: inherit; }
+.tr-coche-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tr-coche-t small { color: var(--text-muted); font-size: 12.5px; }
+.tr-cambiar { color: var(--accent, currentColor); font-size: 13.5px; font-weight: 600; }
+.tr-sub { font-size: 13px; color: var(--text-muted); margin: 10px 0 4px; }
+.tr-listo { margin-top: 8px; }
+.tr-pers-f { display: flex; justify-content: space-between; align-items: center; }
+.tr-pers-f .tr-paso-t { margin: 0; }
+.tr-pers-f .tr-pers { margin: 0; }

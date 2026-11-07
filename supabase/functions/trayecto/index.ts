@@ -31,7 +31,7 @@ async function conSesion(req: Request): Promise<boolean> {
 async function getJson(url: string, init: RequestInit = {}, ms = 30000) {
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), ms);
   try { const r = await fetch(url, { ...init, signal: ctl.signal }); const text = await r.text(); let data: any = null; try { data = JSON.parse(text); } catch { /* */ } return { ok: r.ok, status: r.status, data }; }
-  catch { return { ok: false, status: 0, data: null }; } finally { clearTimeout(t); }
+  catch (e) { return { ok: false, status: 0, data: null, err: String((e as Error)?.message || e).slice(0, 200) }; } finally { clearTimeout(t); }
 }
 const mediana = (xs: number[]) => { const a = xs.slice().sort((x, y) => x - y), m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; };
 

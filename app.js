@@ -3742,9 +3742,9 @@ const PROVINCIAS = [['01', 'Álava'], ['02', 'Albacete'], ['03', 'Alicante'], ['
 function trCfg() { const t = cfg().trayecto || {}; return { prod: TR_PRODS[t.prod] ? t.prod : 'g95', consumo: num(t.consumo) > 0 ? num(t.consumo) : null, provincia: t.provincia || '', guardados: Array.isArray(t.guardados) ? t.guardados : [] }; }
 function trUnidadTxt(u) { return u === 'kWh' ? 'kWh' : u === 'kg' ? 'kg' : 'litros'; }
 // Precio que se usa: el tuyo > el del día (provincia, si no la media de España) > el orientativo
-function trPrecio() {
-  const F = FORM, p = TR_PRODS[F.prod], propio = numCampo(F.precio || '');
-  if (propio > 0) return { v: propio, fuente: 'tuyo' };
+function trPrecio() { const propio = numCampo(FORM.precio || ''); return propio > 0 ? { v: propio, fuente: 'tuyo' } : trPrecioAuto(); }
+function trPrecioAuto() {
+  const F = FORM, p = TR_PRODS[F.prod];
   const d = S.preciosCarb && S.preciosCarb.datos && S.preciosCarb.datos[F.prod];
   if (d && d.precio > 0) return { v: d.precio, fuente: d.provincia === 'ES' ? 'espana' : 'provincia', fecha: d.fecha };
   return { v: p.p, fuente: 'aprox' };
@@ -3771,38 +3771,52 @@ function trPrecioTxt() {
   return (pr.fuente === 'provincia' && prov ? 'Precio medio en ' + escapeHtml(prov[1]) : 'Precio medio en España') + ': <b class="tnum">' + v + '</b>' + (pr.fecha ? ' · ' + fechaCorta(pr.fecha) : '');
 }
 function trayHtml() {
-  const F = FORM, t = trCfg(), p = TR_PRODS[F.prod], seg = (accion, ops, sel) => '<div class="segmented tr-seg">' + ops.map(([v, l]) => '<button type="button" class="' + (sel === v ? 'active' : '') + '" ' + act(accion, v) + '>' + l + '</button>').join('') + '</div>';
-  const grupo = TR_GRUPOS.find((g) => g[0] === p.g);
-  const consTipico = p.c, cons = numCampo(F.consumo || '');
-  const nivel = !cons ? 'normal' : Math.abs(cons - consTipico * 0.8) < 0.05 ? 'poco' : Math.abs(cons - consTipico * 1.25) < 0.05 ? 'mucho' : Math.abs(cons - consTipico) < 0.05 ? 'normal' : '';
-  return '<div class="handle"></div><h2>Trayecto en coche</h2><div class="rec-hint tr-intro">Calcula lo que cuesta un viaje y apúntalo o compártelo.</div>' +
-    (t.guardados.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir trayecto</span><div class="crear-rep-f">' + t.guardados.map((g) => '<button type="button" class="chip tappable" ' + act('trUsar', g.id) + '>' + ic('repeat') + '<span>' + escapeHtml(g.nombre) + ' · <b class="tnum">' + trNum(g.km * (g.vuelta ? 2 : 1), 0) + ' km</b></span></button>').join('') + '</div></div>' : '') +
-    '<div class="cr-lbl">Distancia</div>' + seg('trModo', [['sitios', 'De un sitio a otro'], ['km', 'Ya sé los km']], F.modo) +
+  const F = FORM, t = trCfg(), p = TR_PRODS[F.prod], grupo = TR_GRUPOS.find((g) => g[0] === p.g), uC = p.u === 'l' ? 'l' : p.u;
+  const cons = numCampo(F.consumo || '') || p.c;
+  const nivel = Math.abs(cons - p.c * 0.8) < 0.05 ? 'poco' : Math.abs(cons - p.c * 1.25) < 0.05 ? 'mucho' : Math.abs(cons - p.c) < 0.05 ? 'normal' : '';
+  const seg = (accion, ops, sel) => '<div class="segmented tr-seg">' + ops.map(([v, l]) => '<button type="button" class="' + (sel === v ? 'active' : '') + '" ' + act(accion, v) + '>' + l + '</button>').join('') + '</div>';
+  // 1 · ¿Cuántos km?
+  const dist = '<div class="tr-paso"><div class="tr-paso-t"><span class="tr-n">1</span>¿Cuántos km?</div>' +
+    (t.guardados.length ? '<div class="chips tr-rep">' + t.guardados.map((g) => '<button type="button" class="chip tappable" ' + act('trUsar', g.id) + '>' + ic('repeat') + ' ' + escapeHtml(g.nombre) + ' · <b class="tnum">' + trNum(g.km * (g.vuelta ? 2 : 1), 0) + ' km</b></button>').join('') + '</div>' : '') +
+    '<div class="tr-kmfila"><div class="field tr-km"><input id="trKm" aria-label="Kilómetros" type="text" inputmode="decimal" placeholder="0" value="' + escapeHtml(F.km || '') + '" ' + onInput('trKm') + '><span>km</span></div>' +
+    '<button type="button" class="chip tr-vuelta ' + (F.vuelta ? 'active' : '') + '" aria-pressed="' + !!F.vuelta + '" ' + act('trVuelta', F.vuelta ? 0 : 1) + '>' + ic('swap') + ' Ida y vuelta</button></div>' +
     (F.modo === 'sitios'
-      ? '<div class="tr-sitios"><div class="field"><input id="trDe" type="text" maxlength="120" autocomplete="off" placeholder="Desde (ciudad, calle…)" value="' + escapeHtml(F.de || '') + '" ' + onInput('trDe') + '></div>' +
-        '<div class="field"><input id="trA" type="text" maxlength="120" autocomplete="off" placeholder="Hasta" value="' + escapeHtml(F.a || '') + '" ' + onInput('trA') + '></div>' +
+      ? '<div class="tr-sitios"><div class="field"><input id="trDe" aria-label="Desde" type="text" maxlength="120" autocomplete="off" placeholder="Desde (ciudad o dirección)" value="' + escapeHtml(F.de || '') + '" ' + onInput('trDe') + '></div>' +
+        '<div class="field"><input id="trA" aria-label="Hasta" type="text" maxlength="120" autocomplete="off" placeholder="Hasta" value="' + escapeHtml(F.a || '') + '" ' + onInput('trA') + '></div>' +
         '<button type="button" class="btn ghost block" ' + act('trDist') + (F.buscando ? ' disabled' : '') + '>' + ic('pin') + (F.buscando ? ' Calculando…' : ' Calcular km') + '</button>' +
-        '<div class="rec-hint" id="trDistMsg">' + (F.distMsg || 'Los km se calculan por carretera. Las direcciones no se guardan.') + '</div></div>'
-      : '<div class="field tr-km"><input id="trKm" type="text" inputmode="decimal" placeholder="0" value="' + escapeHtml(F.km || '') + '" ' + onInput('trKm') + '><span>km</span></div>') +
-    seg('trVuelta', [[0, 'Solo ida'], [1, 'Ida y vuelta']], F.vuelta ? 1 : 0) +
-    '<div class="cr-lbl">Tu coche</div><div class="chips tr-grupos">' + TR_GRUPOS.map(([g, n]) => '<button type="button" class="chip ' + (p.g === g ? 'active' : '') + '" ' + act('trGrupo', g) + '>' + n + '</button>').join('') + '</div>' +
-    (grupo[2].length > 1 ? '<div class="chips tr-prods">' + grupo[2].map(([k, n]) => '<button type="button" class="chip ' + (F.prod === k ? 'active' : '') + '" ' + act('trProd', k) + '>' + n + '</button>').join('') + '</div>' : '') +
-    '<div class="cr-lbl">Lo que gasta cada 100 km</div><div class="tr-cons">' + seg('trNivel', [['poco', 'Poco'], ['normal', 'Normal'], ['mucho', 'Mucho']], nivel) +
-    '<div class="field tr-km"><input id="trCons" type="text" inputmode="decimal" placeholder="' + trNum(consTipico) + '" value="' + escapeHtml(F.consumo || '') + '" ' + onInput('trCons') + '><span>' + (p.u === 'l' ? 'l' : p.u) + '/100 km</span></div></div>' +
-    '<div class="cr-lbl">Precio</div><div class="rec-hint tr-precio" id="trPrecioTxt">' + trPrecioTxt() + '</div>' +
-    '<div class="tr-precio-f"><div class="field tr-km"><input id="trPrecio" type="text" inputmode="decimal" placeholder="Pon tu precio" value="' + escapeHtml(F.precio || '') + '" ' + onInput('trPrecioIn') + '><span>' + sym() + '/' + (p.u === 'l' ? 'l' : p.u) + '</span></div>' +
-    (TR_SIN_OFICIAL[F.prod] ? '' : '<div class="field"><select id="trProv" aria-label="Provincia" ' + onChange('trProv') + '><option value="">Media de España</option>' + PROVINCIAS.map(([id, n]) => '<option value="' + id + '"' + (F.provincia === id ? ' selected' : '') + '>' + escapeHtml(n) + '</option>').join('') + '</select></div>') + '</div>' +
-    '<div class="cr-lbl">¿Cuántos vais?</div><div class="tr-pers"><button type="button" class="btn ghost" aria-label="Uno menos" ' + act('trPers', -1) + '>−</button><b class="tnum" id="trPersN">' + (F.personas || 1) + '</b><button type="button" class="btn ghost" aria-label="Uno más" ' + act('trPers', 1) + '>+</button></div>' +
-    (F.guardando ? '<div class="tr-guardar"><div class="field"><input id="trNombre" type="text" maxlength="40" placeholder="Nombre (por ejemplo: Casa – trabajo)" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('trNombre') + '></div><button type="button" class="btn accent" ' + act('trGuardarOk') + '>Guardar</button></div>'
-      : '<button type="button" class="link tr-guardar-l" ' + act('trGuardar') + '>' + ic('repeat') + ' Guardar para repetirlo</button>') +
+        '<div class="rec-hint" id="trDistMsg">' + (F.distMsg || 'Por carretera. Las direcciones no se guardan.') + '</div><button type="button" class="link tr-link" ' + act('trModo', 'km') + '>' + ic('close') + ' Cerrar</button></div>'
+      : '<button type="button" class="link tr-link" ' + act('trModo', 'sitios') + '>' + ic('pin') + ' No lo sé: calcular entre dos sitios</button>') + '</div>';
+  // 2 · Tu coche (resumen; «Cambiar» abre los detalles)
+  const coche = '<div class="tr-paso"><div class="tr-paso-t"><span class="tr-n">2</span>Tu coche</div>' +
+    (!F.cocheAbierto
+      ? '<button type="button" class="tr-coche tappable" ' + act('trCoche', 1) + '><span class="crear-ic">' + ic(p.g === 'electrico' ? 'bolt' : 'coche2') + '</span><span class="tr-coche-t" id="trCocheTxt">' + trCocheTxt() + '</span><span class="tr-cambiar">Cambiar</span></button>'
+      : '<div class="chips tr-grupos">' + TR_GRUPOS.map(([g, n]) => '<button type="button" class="chip ' + (p.g === g ? 'active' : '') + '" ' + act('trGrupo', g) + '>' + n + '</button>').join('') + '</div>' +
+        (grupo[2].length > 1 ? '<div class="field"><select id="trProdSel" aria-label="Tipo" ' + onChange('trProdSel') + '>' + grupo[2].map(([k, n]) => '<option value="' + k + '"' + (F.prod === k ? ' selected' : '') + '>' + escapeHtml(n) + '</option>').join('') + '</select></div>' : '') +
+        '<div class="tr-sub">Lo que gasta cada 100 km</div>' + seg('trNivel', [['poco', 'Poco'], ['normal', 'Normal'], ['mucho', 'Mucho']], nivel) +
+        '<div class="field tr-km"><input id="trCons" aria-label="Consumo cada 100 km" type="text" inputmode="decimal" placeholder="' + trNum(p.c) + '" value="' + escapeHtml(F.consumo || '') + '" ' + onInput('trCons') + '><span>' + uC + '/100 km</span></div>' +
+        '<div class="tr-sub">Precio</div>' +
+        (TR_SIN_OFICIAL[F.prod] ? '' : '<div class="field"><select id="trProv" aria-label="Provincia" ' + onChange('trProv') + '><option value="">Media de España</option>' + PROVINCIAS.map(([id, n]) => '<option value="' + id + '"' + (F.provincia === id ? ' selected' : '') + '>' + escapeHtml(n) + '</option>').join('') + '</select></div>') +
+        '<div class="field tr-km"><input id="trPrecio" aria-label="Tu precio" type="text" inputmode="decimal" placeholder="' + trNum(trPrecioAuto().v, 3) + ' (o pon el tuyo)" value="' + escapeHtml(F.precio || '') + '" ' + onInput('trPrecioIn') + '><span>' + sym() + '/' + uC + '</span></div>' +
+        '<div class="rec-hint" id="trPrecioTxt">' + trPrecioTxt() + '</div>' +
+        '<button type="button" class="btn ghost block tr-listo" ' + act('trCoche', 0) + '>Listo</button>') + '</div>';
+  // 3 · ¿Cuántos vais?
+  const pers = '<div class="tr-paso tr-pers-f"><div class="tr-paso-t"><span class="tr-n">3</span>¿Cuántos vais?</div><div class="tr-pers"><button type="button" class="btn ghost" aria-label="Uno menos" ' + act('trPers', -1) + '>−</button><b class="tnum" id="trPersN">' + (F.personas || 1) + '</b><button type="button" class="btn ghost" aria-label="Uno más" ' + act('trPers', 1) + '>+</button></div></div>';
+  const guardar = F.guardando ? '<div class="tr-guardar"><div class="field"><input id="trNombre" aria-label="Nombre del trayecto" type="text" maxlength="40" placeholder="Nombre (por ejemplo: Casa – trabajo)" value="' + escapeHtml(F.nombre || '') + '" ' + onInput('trNombre') + '></div><button type="button" class="btn accent" ' + act('trGuardarOk') + '>Guardar</button></div>'
+    : '<button type="button" class="link tr-guardar-l" ' + act('trGuardar') + '>' + ic('repeat') + ' Guardar este trayecto para repetirlo</button>';
+  return '<div class="handle"></div><h2>Trayecto en coche</h2>' + dist + coche + pers + guardar +
     '<div class="actions tr-acc"><div id="trRes">' + trResHtml() + '</div><button class="btn ghost block" ' + act('trApuntar') + '>' + ic('arrowDown') + ' Apuntar</button>' +
     (compartidosDisponible() ? '<button class="btn accent block" ' + act('trCompartir') + '>' + ic('users') + ' Compartir</button>' : '') + '</div>';
 }
-function trRefrescar() { const r = $('#trRes'); if (r) r.innerHTML = trResHtml(); const p = $('#trPrecioTxt'); if (p) p.innerHTML = trPrecioTxt(); }
+function trCocheTxt() {
+  const F = FORM, p = TR_PRODS[F.prod], uC = p.u === 'l' ? 'l' : p.u, cons = numCampo(F.consumo || '') || p.c, pr = trPrecio(), prov = PROVINCIAS.find((x) => x[0] === F.provincia);
+  const fuente = pr.fuente === 'tuyo' ? 'tu precio' : pr.fuente === 'aprox' ? (TR_SIN_OFICIAL[F.prod] ? 'precio medio de los cargadores' : 'precio orientativo') : 'precio medio de hoy en ' + (pr.fuente === 'provincia' && prov ? escapeHtml(prov[1]) : 'España');
+  return '<b>' + escapeHtml(p.n) + '</b><small><span class="tnum">' + trNum(cons) + ' ' + uC + '/100 km · ' + trNum(pr.v, 3) + ' ' + sym() + '/' + uC + '</span> · ' + fuente + '</small>';
+}
+function trRefrescar() { const r = $('#trRes'); if (r) r.innerHTML = trResHtml(); const p = $('#trPrecioTxt'); if (p) p.innerHTML = trPrecioTxt(); const c = $('#trCocheTxt'); if (c) c.innerHTML = trCocheTxt(); const i = $('#trPrecio'); if (i) i.placeholder = trNum(trPrecioAuto().v, 3) + ' (o pon el tuyo)'; }
 function trRepintar() { if (FORM && FORM.kind === 'trayecto') updateSheet(trayHtml()); }
 function trAbrir(g) {
   const t = trCfg(), prod = g && TR_PRODS[g.prod] ? g.prod : t.prod;
-  FORM = { kind: 'trayecto', modo: g ? 'km' : 'sitios', de: '', a: '', km: g ? String(g.km).replace('.', ',') : '', vuelta: g ? !!g.vuelta : false, prod, consumo: g && g.consumo ? String(g.consumo).replace('.', ',') : t.consumo ? String(t.consumo).replace('.', ',') : '', precio: '', provincia: t.provincia, personas: 1 };
+  FORM = { kind: 'trayecto', cocheAbierto: !cfg().trayecto, modo: 'km', de: '', a: '', km: g ? String(g.km).replace('.', ',') : '', vuelta: g ? !!g.vuelta : false, prod, consumo: g && g.consumo ? String(g.consumo).replace('.', ',') : t.consumo ? String(t.consumo).replace('.', ',') : '', precio: '', provincia: t.provincia, personas: 1 };
   if ($('#sheetBackdrop')) updateSheet(trayHtml()); else openSheet(trayHtml());
   trCargarPrecios();
 }
@@ -10538,6 +10552,8 @@ const H = {
   },
   trAbrir: () => { S._volverGrupo = null; verBadge('trayecto'); trAbrir(null); },
   trUsar: ([id]) => { const g = trCfg().guardados.find((x) => x.id === id); if (g) trAbrir(g); },
+  trCoche: ([v]) => { FORM.cocheAbierto = String(v) === '1'; trRepintar(); },
+  trProdSel: (_a, el) => H.trProd([el.value]),
   trModo: ([m]) => { FORM.modo = m === 'km' ? 'km' : 'sitios'; trRepintar(); },
   trVuelta: ([v]) => { FORM.vuelta = String(v) === '1'; trRepintar(); },
   trGrupo: ([g]) => { const gr = TR_GRUPOS.find((x) => x[0] === g); if (!gr || TR_PRODS[FORM.prod].g === g) return; FORM.prod = gr[2][0][0]; FORM.consumo = ''; FORM.precio = ''; trRepintar(); },

@@ -11,7 +11,7 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   const set = (id, v, h) => { const el = doc.querySelector(id); el.value = v; H[h]([], el); };
   // Usuario nuevo, sin grupos
   H.trAbrir([]); await sleep(20);
-  ok(!!doc.querySelector('#trDe'), 'usuario nuevo: se abre en «De un sitio a otro»');
+  ok(!!doc.querySelector('#trKm') && !!doc.querySelector('.tr-grupos'), 'usuario nuevo (07/11, diseño en 3 pasos): km a mano y «Tu coche» abierto');
   // Miles y comas
   H.trModo(['km']); await sleep(5);
   set('#trKm', '1.234', 'trKm'); ok(A.trCalc().km === 1234, '«1.234» km = 1234');
@@ -41,7 +41,7 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   ok(/Gasolina/.test((doc.querySelector('#fDesc') || {}).value || sh().innerHTML), '«Apuntar gasto» lleva la descripción');
   H.closeSheet([]); await sleep(260);
   // Privacidad: la descripción no debe llevar calles
-  H.trAbrir([]); await sleep(10);
+  H.trAbrir([]); await sleep(10); H.trModo(['sitios']); await sleep(5);
   set('#trDe', 'Calle Falsa 123, Pueblo', 'trDe'); set('#trA', 'Avenida Inventada 7, Villa', 'trA');
   H.trModo(['km']); await sleep(5); set('#trKm', '30', 'trKm'); H.trModo(['sitios']); await sleep(5);
   H.trApuntar([]); await sleep(20);
@@ -55,7 +55,7 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   S.compartidos = []; S.objetivos = []; S.aportes = [];
   S.carpetas = [{ id: 't1', grupoId: 'g1', nombre: 'Roma', icono: 'plane', desde: mas(-2), hasta: mas(3), cerrada: null, createdAt: '2026-10-01T09:00:00Z' }];
   S.db = Object.assign(S.db || {}, { grupos: { listar: async () => { throw new Error('x'); }, invitaciones: async () => [] }, rpc: async () => [], compartidos: Object.assign({}, (S.db && S.db.compartidos) || {}, { crear: async (o) => o }), carpetas: { suscribir: () => () => {} } });
-  H.trAbrir([]); await sleep(10); H.trModo(['km']); await sleep(5); set('#trKm', '100', 'trKm'); set('#trPrecio', '1,7', 'trPrecioIn');
+  H.trAbrir([]); await sleep(10); H.trModo(['km']); await sleep(5); set('#trKm', '100', 'trKm'); H.trCoche([1]); await sleep(5); set('#trPrecio', '1,7', 'trPrecioIn');
   ok(/Compartir/.test(sh().textContent), 'con grupo sale «Compartir»');
   H.trCompartir([]); await sleep(30);
   const F = A.form();
