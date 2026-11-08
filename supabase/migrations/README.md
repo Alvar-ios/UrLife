@@ -152,3 +152,9 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - `precios_carburante` (aplicada): tabla pública de precios medianos por provincia y día (Ministerio + PVPC de Red Eléctrica). Solo lectura con sesión; la escribe la función `trayecto`, que guarda 60 días.
 - `poner_carpeta_permisos` (aplicada): `poner_carpeta` exige `puede_editar_compartido` en cada gasto (en grupos «solo el autor», solo el autor o un administrador).
 - `precios_carburante_cron` (aplicada 08/11): pg_cron pide a las 05:20 UTC (`carburantes_pedir`, pg_net) y guarda a las 05:35 (`carburantes_guardar`) los precios del Ministerio; solo vale una descarga de las últimas 2 h.
+
+## Borrar mi cuenta (08/11): borrar_cuenta — PROPUESTA, SIN APLICAR
+- SQL en `2026-11-08_borrar_cuenta.sql`; prueba en `../pruebas/2026-11-08_borrar_cuenta_prueba.sql` (termina siempre en error a propósito: no guarda nada); función `functions/borrar-cuenta` (sin desplegar). Ver `docs/33-play-store.md` §5.
+- Aditiva: una función nueva `borrar_cuenta_datos(p_user)`, solo para service_role. Con dinero pendiente en un grupo abierto no borra nada y dice en cuáles. Si no: borra lo personal, deja a la persona como baja con su nombre, pasa administrador y creador a otro miembro y cierra (sin borrar) los grupos donde no queda nadie con cuenta.
+- La cuenta de Auth se borra en SUAVE (`deleteUser(id, true)`): la fila de `auth.users` se queda (sin correo, contraseña ni sesiones), así no saltan los CASCADE de `grupos` y `grupo_miembros`. Nunca usar «Delete user» normal con estas cuentas.
+- Probada solo en una copia simulada local (21 de 21); falta la prueba en la base real dentro de una transacción que se deshace.
