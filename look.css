@@ -2384,3 +2384,5 @@ html[data-look="nuevo"] .mov-vacio-ic { width: 56px; height: 56px; border-radius
 html[data-look="nuevo"] .mov-vacio-ic svg { width: 26px; height: 26px; }
 html[data-look="nuevo"] .mov-vacio p { margin: 0 0 8px; color: var(--text-muted); font-size: 14px; }
 html[data-look="nuevo"] .mov-vacio .btn { width: 100%; }
+html[data-look="nuevo"] .tu2-borrar { color: var(--expense); }
+html[data-look="nuevo"] .tu2-borrar .ic { color: var(--expense); }

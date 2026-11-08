@@ -564,7 +564,7 @@ function marcarCampo(sel) {
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-function cifrasOcultas() { return lsGet('cifrasOcultas') === '1'; }
+function cifrasOcultas() { const v = lsGet('cifrasOcultas'); return v == null ? !!(typeof S !== 'undefined' && S._ocultas) : v === '1'; } // sin almacenamiento: dura mientras la app esté abierta
 function aplicarOcultar() { document.documentElement.classList.toggle('cifras-ocultas', cifrasOcultas()); }
 function ojoBtnHtml() { const o = cifrasOcultas(); return '<button type="button" class="icon-btn sm ojo-btn" aria-pressed="' + o + '" aria-label="' + (o ? 'Mostrar cifras' : 'Ocultar cifras') + '" ' + act('ocultarCifras') + '>' + ic(o ? 'ojoNo' : 'ojo') + '</button>'; }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento local */ } }
@@ -938,6 +938,36 @@ function loadingHtml() {
    LOGIN (pantalla completa, sin navegación)
    ============================================================ */
 // 08/11: pedir la contraseña nueva al volver del correo (antes el enlace entraba en la app sin cambiarla)
+/* ---- Borrar mi cuenta (obligatorio en Google Play; docs/33). La función «borrar-cuenta» usa SIEMPRE el id de tu sesión. ---- */
+function abrirExterno(url) { const w = window.open(url, '_blank', 'noopener'); if (!w) location.href = url; }
+function borrarCuentaHtml(msg) {
+  const F = FORM || {};
+  return '<div class="handle"></div><h2>¿Borrar tu cuenta y tus datos?</h2>' +
+    '<p class="sheet-sub">Se borran tus movimientos, cuentas, metas, deudas, tareas y ajustes. En tus grupos seguirás saliendo como «baja» para que sus cuentas cuadren. <b>No se puede deshacer.</b></p>' +
+    (msg ? '<div class="alert" style="margin-bottom:12px;">' + ic('alert') + '<div>' + msg + '</div></div>' : '') +
+    '<div class="field"><label for="bcPass">Tu contraseña</label><input id="bcPass" type="password" autocomplete="current-password"></div>' +
+    '<div class="field"><label for="bcConf">Escribe BORRAR para confirmar</label><input id="bcConf" type="text" autocapitalize="characters" autocomplete="off"></div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn danger block" ' + act('borrarCuentaOk') + (F.borrando ? ' disabled' : '') + '>' + (F.borrando ? 'Borrando…' : 'Borrar mi cuenta') + '</button></div>' +
+    '<button type="button" class="link" style="display:block;margin:12px auto 0;font-size:12.5px;" ' + act('abrirPrivacidad') + '>Qué se borra y qué se conserva</button>';
+}
+async function borrarCuentaOk() {
+  const F = FORM; if (!F || F.kind !== 'borrarCuenta' || F.borrando) return;
+  const pass = ($('#bcPass') || {}).value || '', conf = (($('#bcConf') || {}).value || '').trim().toUpperCase();
+  if (conf !== 'BORRAR') return updateSheet(borrarCuentaHtml('Escribe BORRAR para confirmar.'));
+  const email = S.user && S.user.email;
+  try { await window.Auth.signIn(email, pass); } catch (e) { return updateSheet(borrarCuentaHtml('La contraseña no es correcta.')); }
+  F.borrando = true; updateSheet(borrarCuentaHtml());
+  let j = null;
+  try {
+    const c = window.SUPABASE_CONFIG, ses = await window.Auth.getSession();
+    const r0 = await fetch(c.url + '/functions/v1/borrar-cuenta', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ses.access_token, apikey: c.anonKey }, body: JSON.stringify({ confirmar: 'BORRAR' }) });
+    try { j = await r0.json(); } catch (e) { j = { error: 'http_' + r0.status }; }
+  } catch (e) { j = { error: 'red' }; }
+  F.borrando = false;
+  if (j && j.ok) { closeSheet(); toast('Tu cuenta se ha borrado'); try { await window.Auth.signOut(); } catch (e) { /* */ } return; }
+  if (j && j.error === 'saldo_pendiente') return updateSheet(borrarCuentaHtml('Antes tienes que estar en paz en ' + escapeHtml((j.grupos || []).join(', ') || 'tus grupos') + '. Salda lo pendiente en Juntos y vuelve aquí.'));
+  updateSheet(borrarCuentaHtml('Ahora no se puede borrar desde aquí. Escríbenos a <a href="mailto:' + CONTACTO.correo + '?subject=Borrar%20mi%20cuenta">' + escapeHtml(CONTACTO.correo) + '</a> y lo hacemos nosotros en menos de 30 días.'));
+}
 function renderNuevaContrasena(msg) {
   $('#app').innerHTML = '<div style="min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;"><div class="card" style="width:100%;max-width:360px;">' +
     '<h2 style="margin:0 0 6px;">Pon tu contraseña nueva</h2><p class="rec-hint" style="margin:0 0 14px;">Al menos 8 caracteres. Con ella entrarás a partir de ahora.</p>' +
@@ -958,6 +988,7 @@ function renderLoginScreen(msg) {
     (msg ? '<div class="alert" style="margin-top:2px;">' + ic('alert') + '<div>' + escapeHtml(msg) + '</div></div>' : '') +
     '<button class="btn accent block" style="margin-top:6px;" ' + act('doLogin') + '>Iniciar sesión</button>' +
     '<button class="section-title link" style="width:100%;text-align:center;margin-top:16px;justify-content:center;" ' + act('doForgotPassword') + '>¿Olvidaste tu contraseña?</button>' +
+    '<button class="link" style="display:block;margin:10px auto 0;font-size:12.5px;" ' + act('abrirPrivacidad') + '>Privacidad</button>' +
     '</div></div>';
   setTimeout(() => { const el = $('#loginEmail'); if (el) el.focus(); }, 60);
 }
@@ -4015,7 +4046,9 @@ function renderTuV2() {
     '<div class="tu-grupo tu-mas-btn"><div class="card menu"><button type="button" class="menu-item" aria-expanded="' + (S.tuMas ? 'true' : 'false') + '" ' + act('tuMasToggle') + '><span class="ic">' + ic('sliders') + '</span>Más ajustes<span class="menu-extra">' + mas.length + '</span><span class="chev">' + ic(S.tuMas ? 'chevD' : 'chevR') + '</span></button></div></div>' +
     '<div class="tu-grupo tu-mas"' + (S.tuMas ? '' : ' style="display:none"') + '><div class="card menu">' + mas.join('') + '</div></div>' +
     grupo('Tu cuenta', [mfaDisponible() ? it('openSeguridad', [], 'candado', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
-      '<button class="menu-item tu2-salir" data-k="cerrar sesion salir" ' + act('logoutPreguntar') + '><span class="ic">' + ic('salir') + '</span>Cerrar sesión</button>']) +
+      it('abrirPrivacidad', [], 'shield', 'Privacidad', '', 'datos privacidad politica rgpd'),
+      '<button class="menu-item tu2-salir" data-k="cerrar sesion salir" ' + act('logoutPreguntar') + '><span class="ic">' + ic('salir') + '</span>Cerrar sesión</button>',
+      '<button class="menu-item tu2-borrar" data-k="borrar cuenta eliminar baja datos" ' + act('borrarCuentaAbrir') + '><span class="ic">' + ic('trash') + '</span>Borrar mi cuenta</button>']) +
     '<div class="empty-mini" id="tuNada" style="display:none;">No hay ningún ajuste con ese nombre.</div>' +
     '<p class="tu2-pie">PalomApp' + (parche ? ' · ' + escapeHtml(parche) : '') + '</p>';
 }
@@ -4209,7 +4242,7 @@ function heroMesHtmlV2() {
   const pr = pv ? '<button type="button" class="h2-dato prev tappable" ' + act('previstoAbrir') + '><span><i class="prev-tag">Previsto</i> fin de mes</span><b class="tnum">' + moneyShort(pv.total) + '</b></button>' : '';
   return '<section class="hero hero2 hero2v2" aria-label="Cómo vas este mes">' +
     '<div class="hero2-top"><button type="button" class="mes-pill' + anim + '" ' + act('tuMesAbrir') + '><b>' + MESES[m - 1] + (y !== mesActual().y ? ' ' + y : '') + '</b><span>· ' + mesPillTxt(y, m) + '</span><span class="mes-pill-ic">' + ic('chevR') + '</span></button>' +
-    '<span class="hero2-flechas"><button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
+    '<span class="hero2-flechas">' + ojoBtnHtml() + '<button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
     '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
     '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (banco ? 'En tu banco hoy' : actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (!banco && disp < 0 ? ' neg' : '') + (nuevo && !banco ? ' vacio' : '') + '">' + cifraHtml(banco ? enTusCuentas() : disp) + '</span></button>' +
     (nuevo ? '<p class="hero-nuevo">' + (banco ? 'Apunta lo que gastas y aquí verás cuánto te queda este mes.' : 'Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.') + '</p>' : (inicioV3() ? heroCifrasHtml(k, y, m) : heroBarraHtml(k))) +
@@ -11670,6 +11703,9 @@ const H = {
   usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   exportCsv: () => exportCsv(),
+  abrirPrivacidad: () => abrirExterno(APP_URL + 'privacidad.html'),
+  borrarCuentaAbrir: () => { FORM = { kind: 'borrarCuenta' }; openSheet(borrarCuentaHtml()); },
+  borrarCuentaOk: () => borrarCuentaOk(),
   nuevaContrasenaOk: async () => {
     const a = ($('#ncPass') || {}).value || '', b = ($('#ncPass2') || {}).value || '';
     if (a.length < 8) return renderNuevaContrasena('Tiene que tener al menos 8 caracteres.');
@@ -11677,7 +11713,7 @@ const H = {
     try { await window.Auth.cambiarContrasena(a); toast('Contraseña cambiada'); const s0 = await window.Auth.getSession(); if (s0) { if (needsMfa(s0)) renderMfaScreen(); else enterApp(s0); } else renderLoginScreen('Contraseña cambiada. Ya puedes entrar.'); }
     catch (e) { renderNuevaContrasena('No se pudo cambiar: ' + errMsg(e)); }
   },
-  ocultarCifras: () => { const v = !cifrasOcultas(); lsSet('cifrasOcultas', v ? '1' : '0'); aplicarOcultar(); sentir('tic'); toast(v ? 'Cifras ocultas' : 'Cifras a la vista'); render(); },
+  ocultarCifras: () => { const v = !cifrasOcultas(); S._ocultas = v; lsSet('cifrasOcultas', v ? '1' : '0'); aplicarOcultar(); sentir('tic'); toast(v ? 'Cifras ocultas' : 'Cifras a la vista'); render(); },
   reintentarCarga: () => location.reload(),
   tbVolver: () => { if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) H.setInicioVista(['hoy']); else H.goTab(['inicio']); },
   metaGuardar: () => metaGuardar(),
@@ -12238,6 +12274,7 @@ document.addEventListener('keydown', (e) => { if (tecTeclaFisica(e)) return; if 
 async function enterApp(session) {
   S.user = session.user;
   S.db = window.Data;
+  if (/[?&]borrar-cuenta/.test(location.search || '')) setTimeout(() => { if (!S.onboarding) H.borrarCuentaAbrir([]); }, 1800); // enlace de Google Play
   S.appStarted = true; S._inicioApp = Date.now(); S._novRevisado = false;
   S.movimientos = []; S.traspasos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S.objetivos = null; S.carpetas = null; S.agenda = null; S._gruposVistos = {};
   S.loaded = { mov: false, tar: false, golf: false, cfg: false };

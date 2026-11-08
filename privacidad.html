@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacidad · PalomApp</title>
+<style>
+  :root { --bg: #F5F5F2; --card: #FFFFFF; --text: #14162B; --muted: #5A5C6E; --line: #E8E7E1; --accent: #6C4CF1; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0A0A0C; --card: #17171B; --text: #F3F3F7; --muted: #A4A5B4; --line: #2B2B33; --accent: #A895FF; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; } h2 { font-size: 19px; margin: 28px 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; }
+  a { color: var(--accent); }
+  .tabla { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+<h1>Privacidad en PalomApp</h1>
+<p class="sub">Última actualización: 8 de noviembre de 2026</p>
+
+<p>PalomApp es una app para llevar tu dinero, tus planes y los gastos que compartes con otras personas. Esta página explica qué datos guarda, para qué y qué puedes hacer con ellos. Lo resumimos así: <b>tus datos son tuyos, no los vendemos, no hay publicidad ni analítica, y puedes borrarlo todo cuando quieras.</b></p>
+
+<h2>Quién es el responsable</h2>
+<p>El responsable de tus datos es la persona que publica PalomApp en Google Play (su nombre aparece en la ficha de la app). Para cualquier cosa sobre tus datos, escríbenos a <a href="mailto:cortex.studio.mkt@gmail.com">cortex.studio.mkt@gmail.com</a>.</p>
+
+<h2>Qué datos guardamos</h2>
+<div class="tabla"><table>
+<tr><th>Dato</th><th>Para qué</th><th>Quién más lo ve</th></tr>
+<tr><td>Tu correo y tu contraseña (cifrada)</td><td>Entrar en tu cuenta</td><td>Nadie</td></tr>
+<tr><td>Tu nombre</td><td>Que te reconozcan en tus grupos</td><td>Las personas de tus grupos</td></tr>
+<tr><td>Movimientos, cuentas y saldos, metas, deudas, inversiones y ajustes</td><td>Es lo que hace la app</td><td>Nadie</td></tr>
+<tr><td>Gastos, metas y planes compartidos y su historial</td><td>Llevar las cuentas con otras personas</td><td>Las personas de ese grupo</td></tr>
+<tr><td>Tareas y agenda</td><td>Organizarte</td><td>Solo a quien tú se la compartas</td></tr>
+</table></div>
+<p>No pedimos tu ubicación, ni tus contactos, ni accedemos a tu banco. Los extractos que importas se leen en tu móvil y solo se guardan los movimientos que eliges.</p>
+
+<h2>Servicios que nos ayudan</h2>
+<p>Para que la app funcione usamos estos servicios, que tratan los datos solo por encargo nuestro:</p>
+<ul>
+<li><b>Supabase</b>: guarda tu cuenta y tus datos.</li>
+<li><b>Vercel</b>: sirve la versión web.</li>
+<li><b>Anthropic</b>: si usas «Leer un ticket con una foto», la foto se envía para leerla. La foto no se guarda: solo los artículos que confirmas.</li>
+<li><b>OpenRouteService</b>: si usas «Calcular km» en la calculadora de trayecto, recibe los dos sitios que escribes. No se guardan.</li>
+<li><b>EODHD y CoinGecko</b>: reciben solo el nombre de un activo cuando lo buscas, sin ningún dato tuyo.</li>
+<li><b>Google Fonts, jsDelivr y cdnjs</b>: en la versión web, sirven tipos de letra y librerías, y pueden ver tu dirección IP.</li>
+</ul>
+
+<h2>Cuánto tiempo los guardamos</h2>
+<p>Mientras tengas la cuenta. Hacemos una copia de seguridad cifrada cada semana, que se guarda 90 días: por eso, después de borrar tu cuenta, tus datos pueden seguir en esas copias hasta 90 días y luego desaparecen.</p>
+
+<h2>Tus derechos</h2>
+<p>Puedes ver, corregir y descargar tus datos desde la app (Tú → Traer y guardar). Puedes <b>borrar tu cuenta y tus datos</b> desde Tú → Tu cuenta → «Borrar mi cuenta», o como se explica en <a href="borrar-cuenta.html">esta página</a>. También puedes escribirnos para ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad, y reclamar ante la Agencia Española de Protección de Datos (aepd.es).</p>
+
+<h2>Menores</h2>
+<p>PalomApp no está pensada para menores de 14 años.</p>
+
+<h2>Cambios</h2>
+<p>Si cambiamos esta página, lo diremos en la app.</p>
+</main>
+</body>
+</html>
