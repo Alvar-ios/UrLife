@@ -1,4 +1,4 @@
--- 07/11/2026 · Recarga diaria de precios_carburante desde la base de datos (pg_net + pg_cron). SIN APLICAR: espera el «sí» del dueño.
+-- 07/11/2026 · Recarga diaria de precios_carburante desde la base de datos (pg_net + pg_cron). APLICADA el 08/11 con el «sí» del dueño.
 -- Por qué: la función «trayecto» no consigue descargar la web del Ministerio, pero la base de datos sí (probado el 07/11:
 -- 11.477 gasolineras; gasóleo A 1,899 y gasolina 95 1,699 de mediana en España). Solo toca la tabla pública de precios.
 -- Marcha atrás: select cron.unschedule('carburantes-pedir'); select cron.unschedule('carburantes-guardar');
