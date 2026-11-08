@@ -1932,7 +1932,11 @@ async function saveMov() {
       const validas = metaOpciones().map((o) => o.k), l = (FORM.metaSels || []).filter((k) => validas.indexOf(k) >= 0);
       const unaComp = []; let lista = l.filter((k) => { if (k.indexOf('g:') !== 0) return true; if (unaComp.length) return false; unaComp.push(k); return true; });
       data.metaIds = lista; data.metaId = lista[0] || null;
-    } else if (FORM.tipo === 'Ahorro') { data.metaId = FORM.metaSel && metaOpciones().some((o) => o.k === FORM.metaSel) ? FORM.metaSel : null; if ('metaIds' in data) data.metaIds = null; }
+    } else if (FORM.tipo === 'Ahorro') { data.metaId = FORM.metaSel && metaOpciones().some((o) => o.k === FORM.metaSel) ? FORM.metaSel : null; if ('metaIds' in data) data.metaIds = null;
+      // tanda 6: aportar a una meta ligada desde aquí también mueve el dinero (desde tu cuenta principal); si dejas de ligarla, deja de moverlo
+      const dest = data.metaId ? cuentaDeMeta(data.metaId) : null;
+      if (dest && !FORM.id) { if (!data.cuentaId || data.cuentaId === dest) data.cuentaId = cuentaDesdeDefecto(dest); if (data.cuentaId) data.cuentaDestinoId = dest; }
+      else if (!dest && 'cuentaDestinoId' in data) data.cuentaDestinoId = null; }
     else { if ('metaId' in data) data.metaId = null; if ('metaIds' in data) data.metaIds = null; }
     const reglaNueva = FORM.recordar && FORM.tipo !== 'Inversión' ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
     let movId = FORM.id;
@@ -6222,6 +6226,7 @@ function metaVerHtml(k) {
     '<div class="dm-hring">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132, { color: metaColor(r), grande: true }) : anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132)) +
     '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
     (consejo ? '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(consejo) + '</div>' : '') +
+    (!vos && cuentaDeMeta(r.id) ? '<div class="rec-hint dm-meta-cuenta">' + ic('bank') + ' Guardado en ' + escapeHtml(nombreCuenta(cuentaDeMeta(r.id))) + (metaCuentaAviso(cuentaDeMeta(r.id)) ? '<br><span style="color:var(--warn)">' + escapeHtml(metaCuentaAviso(cuentaDeMeta(r.id))) + '</span>' : '') + '</div>' : '') +
     (r.conseguida ? '' : '<button class="btn accent block" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>') +
     '<div class="dm-hbtns"><button class="btn ghost block" ' + act('usoAbrir', r.key) + '>He usado dinero</button><button class="btn ghost block" ' + act('metaMas') + '>' + (mas ? 'Menos' : 'Más') + '</button></div>' +
     (mas ? '<div class="card dm-hmas">' + (vos ? '' : '<button type="button" class="dm-hmas-b" ' + act('metaAsignar', r.key) + '>' + ic('list') + '<span><b>Elegir movimientos</b><span>Qué apartados e inversiones cuentan para esta meta</span></span></button>') +
@@ -6248,7 +6253,10 @@ function aportarRHtml() {
     '<div class="chips dm-ap-chips">' + chips + '</div>' +
     '<div class="cr-res" id="apPrev">' + escapeHtml(prev) + '</div>' +
     '<div class="field jv-fecha"><label>Fecha</label><button type="button" class="chip active" id="apFechaChip" ' + act('apFechaVer') + '>' + ic('calendar') + ' Hoy</button><input id="apFecha" type="date" value="' + todayISO() + '" hidden></div>' +
-    '<div class="rec-hint">Apartar no saca dinero del banco: es para que sepas que ese dinero tiene dueño.</div>' +
+    (() => { const dest = cuentaDeMeta(F.key); if (!dest) return '<div class="rec-hint">Apartar no saca dinero del banco: es para que sepas que ese dinero tiene dueño.</div>';
+      if (!F.desde || !cuentaPorId(F.desde) || F.desde === dest) F.desde = cuentaDesdeDefecto(dest);
+      return '<div class="field"><label>Desde</label><div class="chips">' + cuentasCfg().filter((c) => c.id !== dest).map((c) => '<button type="button" class="chip' + (F.desde === c.id ? ' active' : '') + '" aria-pressed="' + (F.desde === c.id) + '" ' + act('aportarRDesde', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' +
+        '<div class="rec-hint">El dinero pasará de ' + escapeHtml(nombreCuenta(F.desde)) + ' a ' + escapeHtml(nombreCuenta(dest)) + ', donde guardas esta meta. En tu mes cuenta como apartado, igual que siempre.</div>'; })() +
     '<button class="btn accent block" id="apGuardar" ' + act('aportarRGuardar') + '>' + (imp > 0 ? 'Aportar ' + money(imp) : 'Aportar') + '</button>' +
     (tec ? tecladoHtml(F.tec) : '');
 }
@@ -6269,6 +6277,7 @@ async function aportarRGuardar() {
   F.guardando = true;
   try {
     const data = { creadoEn: Date.now(), tipo: 'Ahorro', importe: imp, categoria: r.nombre, fecha, descripcion: '', metodoPago: '', metaId: F.key };
+    const dest = cuentaDeMeta(F.key); if (dest && F.desde && cuentaPorId(F.desde) && F.desde !== dest) { data.cuentaId = F.desde; data.cuentaDestinoId = dest; }
     let movId = null;
     const ok = await write(async () => { const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || null; return r0; });
     if (!ok) return;
@@ -6974,6 +6983,18 @@ function buscarResHtml(q0) {
    ============================================================ */
 const RENT_DEFECTO = 4; // % anual: estimación prudente cuando no hay histórico suficiente
 function nuevoIdMeta() { return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+/* ---- docs/30 tanda 6: meta ligada a una cuenta. Aportar sigue siendo un Ahorro, pero además mueve el dinero
+   de la cuenta «Desde» (cuentaId) a la de la meta (cuentaDestinoId). Lo de antes de ligarla no se toca. ---- */
+function cuentaDeMeta(id) { const m = (cfg().ahorro || []).find((x) => x && x.id === id); return m && m.cuentaId && cuentaPorId(m.cuentaId) && hayVariasCuentas() ? m.cuentaId : null; }
+const esAporteLigado = (m) => m && m.tipo === 'Ahorro' && m.cuentaDestinoId && !!cuentaPorId(m.cuentaDestinoId);
+function cuentaDesdeDefecto(destino) { const pc = cuentaPrincipal(); if (pc && pc.id !== destino) return pc.id; const o = cuentasCfg().find((c) => c.id !== destino); return o ? o.id : null; }
+// Si lo que llevan las metas ligadas a esa cuenta supera su saldo, un aviso suave (no corrige nada)
+function metaCuentaAviso(cuentaId) {
+  const c = cuentaPorId(cuentaId); if (!c) return '';
+  const sal = saldoCuenta(c); if (sal == null) return '';
+  const ligadas = metasCfg().filter((m) => m.id && m.cuentaId === cuentaId), tot = ligadas.reduce((a, m) => { const r = metaPorKey(m.id); return a + (r ? Math.max(0, r.valor) : 0); }, 0);
+  return tot > sal + 0.5 ? (ligadas.length > 1 ? 'Tus metas en ' : 'Esta meta en ') + c.nombre + (ligadas.length > 1 ? ' suman ' : ' lleva ') + money(tot) + ', pero la cuenta tiene ' + money(sal) + '.' : '';
+}
 function metasCfg() { return (cfg().ahorro || []).filter((m) => m && m.nombre); }
 function tipoMeta(m) { return m && m.tipo === 'inversion' ? 'inversion' : 'ahorro'; }
 // Da un identificador a las metas que aún no lo tienen (una vez por sesión). Los movimientos antiguos siguen contando por nombre.
@@ -7378,6 +7399,7 @@ function metaEditorHtml() {
   return '<div class="handle"></div><h2>' + (F.id ? 'Editar meta' : 'Nueva meta') + '</h2>' +
     '<div class="rec-hint" style="margin:-8px 0 12px;">Una meta junta lo que apartas y lo que inviertes para ella. Al apuntar un movimiento eliges «¿Para qué meta?».</div>' +
     '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '" ' + onInput('metaNombreIn') + '></div>' + (metasVariante() === 'formas' ? formaElegirHtml(F.forma, F.nombre) + metaColoresHtml(F.color || metaColor({ id: F.id }), 'metaColorElegir') : '') +
+    metaCuentaCampoHtml() +
     '<div class="field"><label>Objetivo (' + sym() + ')</label><input id="mObjetivo" type="number" step="0.01" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="mFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
     '<div class="field"><label>Lo que ya tenías antes (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"></div>' +
@@ -7386,9 +7408,17 @@ function metaEditorHtml() {
     '<div class="actions"><button class="btn ghost block" ' + act('openMetas') + '>Cancelar</button><button class="btn accent block" ' + act('metaGuardar') + '>Guardar</button></div>' +
     (F.id ? '<button class="btn danger block" style="margin-top:10px;" ' + act('metaEliminar') + '>' + ic('trash') + ' Eliminar meta</button><div class="rec-hint" style="text-align:center;">Eliminar la meta no borra ningún movimiento.</div>' : '');
 }
+function metaCuentaCampoHtml() {
+  if (!hayVariasCuentas()) return '';
+  const F = FORM, cs = cuentasCfg().slice().sort((a, b) => (b.tipo === 'ahorro') - (a.tipo === 'ahorro'));
+  const ch = (id, txt, dot) => '<button type="button" class="chip' + ((F.cuentaMeta || '') === id ? ' active' : '') + '" aria-pressed="' + ((F.cuentaMeta || '') === id) + '" ' + act('metaCuentaElegir', id) + '>' + (dot ? '<span class="dot" style="background:' + dot + '"></span>' : '') + escapeHtml(txt) + '</button>';
+  return '<div class="field"><label>¿Dónde guardas este dinero? <span class="hint">· opcional</span></label><div class="chips">' + ch('', 'En ninguna cuenta concreta') + cs.map((c) => ch(c.id, c.nombre, colorCuenta(c))).join('') + '</div>' +
+    (F.cuentaMeta && cuentaPorId(F.cuentaMeta) ? '<div class="rec-hint">' + (F.cuentaMeta !== F.cuentaMetaOrig ? 'A partir de ahora, al aportar, el dinero pasará de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '. Lo que ya llevabas no cambia.' : 'Al aportar, el dinero pasa de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '.') + '</div>' : '') + '</div>';
+}
 function metaAbrirEditor(id) {
   const m = id ? metasCfg().find((x) => x.id === id) : null;
   FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null, forma: m && FORMAS[m.forma] ? m.forma : null, color: m && META_COLORES[m.color] ? m.color : null };
+  FORM.cuentaMeta = m && m.cuentaId && cuentaPorId(m.cuentaId) ? m.cuentaId : ''; FORM.cuentaMetaOrig = FORM.cuentaMeta;
   if ($('#sheetBackdrop')) updateSheet(metaEditorHtml()); else openSheet(metaEditorHtml());
 }
 function metaLeerForm() {
@@ -7406,6 +7436,7 @@ async function metaGuardar() {
   const prev = idx >= 0 ? arr[idx] : {};
   const item = Object.assign({}, prev, F.forma ? { forma: F.forma } : {}, META_COLORES[F.color] ? { color: F.color } : !prev || !META_COLORES[prev.color] ? { color: metaColor({ id: F.id }) } : {}, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
   delete item.tipo; // todas las metas son híbridas
+  if (F.cuentaMeta && cuentaPorId(F.cuentaMeta)) item.cuentaId = F.cuentaMeta; else delete item.cuentaId;
   if (!F.forma) delete item.forma; // sin elegir: la que sale del nombre
   // renombrar: los movimientos de Ahorro que se enlazaban por el nombre antiguo pasan a enlazarse por el identificador
   if (F.id && F.nombreOrig && normName(F.nombreOrig) !== normName(F.nombre)) {
@@ -7609,6 +7640,7 @@ function saldoCuenta(c) {
   let s = num(c.saldo);
   S.movimientos.forEach((m) => {
     if (m.compartidoId && vivos.has(m.compartidoId)) return; // tu parte de un compartido: cuenta el compartido entero (abajo)
+    if (esAporteLigado(m)) { if (!posteriorA(m, c)) return; if (cuentaIdDe(m) === c.id) s -= num(m.importe); if (m.cuentaDestinoId === c.id) s += num(m.importe); return; } // tanda 6: mueve entre cuentas
     if (cuentaIdDe(m) === c.id && posteriorA(m, c)) s += num(m.importe) * (SIGNO_CUENTA[m.tipo] || 0);
   });
   flujosCompartidos().forEach((f) => { if (f.cuentaId === c.id && posteriorA(f, c)) s += f.v; });
@@ -7679,7 +7711,7 @@ function renderCuentasDinero() {
 }
 function movsDeCuenta(id) {
   const vivos = new Set((S.compartidos || []).map((x) => x.id));
-  const propios = S.movimientos.filter((m) => tocaCuenta(m) && cuentaIdDe(m) === id && !(m.compartidoId && vivos.has(m.compartidoId)));
+  const propios = S.movimientos.filter((m) => ((tocaCuenta(m) && cuentaIdDe(m) === id) || (esAporteLigado(m) && (cuentaIdDe(m) === id || m.cuentaDestinoId === id))) && !(m.compartidoId && vivos.has(m.compartidoId)));
   const juntos = movsEfectivos().filter((m) => m.comp && compSaleDeCuenta(m.comp, id)).concat(flujosJuntosFilas(id));
   return propios.concat(juntos).concat((S.traspasos || []).filter((t) => t.cuentaId === id || t.cuentaDestinoId === id)).sort(cmpMov);
 }
@@ -9296,7 +9328,9 @@ function saldoCuentaEn(c, dia, extra) {
   const vivos = new Set((S.compartidos || []).map((x) => x.id)), en = (x) => posteriorA(x, c) && (x.fecha || '') <= dia;
   let s = num(c.saldo);
   const ids = new Set(S.movimientos.map((m) => m.id)), todos = S.movimientos.concat((extra || []).filter((m) => !ids.has(m.id))); // lo recién importado aún no ha llegado del servidor
-  todos.forEach((m) => { if (m.compartidoId && vivos.has(m.compartidoId)) return; if (cuentaIdDe(m) === c.id && en(m)) s += num(m.importe) * (SIGNO_CUENTA[m.tipo] || 0); });
+  todos.forEach((m) => { if (m.compartidoId && vivos.has(m.compartidoId)) return;
+    if (esAporteLigado(m)) { if (!en(m)) return; if (cuentaIdDe(m) === c.id) s -= num(m.importe); if (m.cuentaDestinoId === c.id) s += num(m.importe); return; }
+    if (cuentaIdDe(m) === c.id && en(m)) s += num(m.importe) * (SIGNO_CUENTA[m.tipo] || 0); });
   flujosCompartidos().forEach((f) => { if (f.cuentaId === c.id && en(f)) s += f.v; });
   const idsT = new Set((S.traspasos || []).map((t) => t.id)), tras = (S.traspasos || []).concat((extra || []).filter((m) => m.tipo === 'Traspaso' && !idsT.has(m.id)));
   tras.forEach((t) => { if (!en(t)) return; if (t.cuentaId === c.id) s -= num(t.importe); if (t.cuentaDestinoId === c.id) s += num(t.importe); });
@@ -11574,6 +11608,8 @@ const H = {
   usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   metaGuardar: () => metaGuardar(),
+  metaCuentaElegir: ([id]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.cuentaMeta = id || ''; updateSheet(metaEditorHtml()); sentir('tic'); },
+  aportarRDesde: ([id]) => { if (!FORM || FORM.kind !== 'aportarR' || !cuentaPorId(id)) return; FORM.desde = id; const t = FORM.tec, imp = FORM.importe; updateSheet(aportarRHtml()); FORM.importe = imp; if (t) tecSync(); sentir('tic'); },
   metaColorElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta' || !META_COLORES[k]) return; metaLeerForm(); FORM.color = k; sentir('tic'); updateSheet(metaEditorHtml()); },
   metaFormaElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.forma = FORMAS[k] ? k : null; sentir('tic'); updateSheet(metaEditorHtml()); },
   metaNombreIn: () => { if (!FORM || FORM.kind !== 'meta' || FORM.forma) return; const el = $('#mNombre'), sug = formaSugerida(el ? el.value : ''); const g = $('.fm-grid'); if (!g || ((g.querySelector('.fm-op.sug') || {}).dataset || {}).k === sug) return; const campo = g.closest('.field'); if (campo) campo.outerHTML = formaElegirHtml(FORM.forma, el ? el.value : ''); },
@@ -12182,6 +12218,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
