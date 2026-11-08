@@ -1,3 +1,4 @@
+// 08/11: los 8 fallos de Calidad de las tandas 5 y 6, ya arreglados (antes «pendiente_t56.js»).
 // 08/11/2026 · Calidad: fallos encontrados en la rama fase9/tanda5 (tandas 5 y 6). Datos inventados.
 // NO va en `npm test` (run.js solo coge test*.js): hoy FALLA a propósito. Cuando Desarrollo arregle cada punto,
 // que lo compruebe con `node tests/pendiente_t56.js` y pase la comprobación a un testN.js.

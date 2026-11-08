@@ -1253,7 +1253,7 @@ function casaImporte(m, q) {
 }
 function movsFiltrados() {
   let movs = movsEfectivos().filter(inPeriodo);
-  if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta)).concat(flujosJuntosFilas(S.movCuenta).filter(inPeriodo));
+  if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta) || (esAporteLigado(m) && (cuentaIdDe(m) === S.movCuenta || m.cuentaDestinoId === S.movCuenta))).concat(flujosJuntosFilas(S.movCuenta).filter(inPeriodo));
   if (S.movFiltroTipo === '_tras') movs = [];
   else if (S.movFiltroTipo === '_comp') movs = movs.filter((m) => m.comp);
   else if (S.movFiltroTipo === '_ticket') movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
@@ -1406,7 +1406,7 @@ function movFiltrosHtml() {
 function movCalMovs(y, m) {
   const k = y + '-' + pad2(m);
   let movs = movsEfectivos().filter((x) => mesDe(x.fecha || '') === k);
-  if (movCuentaActiva()) movs = movs.filter((x) => x.comp ? compSaleDeCuenta(x.comp, S.movCuenta) : (tocaCuenta(x) && cuentaIdDe(x) === S.movCuenta));
+  if (movCuentaActiva()) movs = movs.filter((x) => x.comp ? compSaleDeCuenta(x.comp, S.movCuenta) : (tocaCuenta(x) && cuentaIdDe(x) === S.movCuenta) || (esAporteLigado(x) && (cuentaIdDe(x) === S.movCuenta || x.cuentaDestinoId === S.movCuenta)));
   return movs;
 }
 function renderMovCal() {
@@ -1962,8 +1962,10 @@ async function saveMov() {
     } else if (FORM.tipo === 'Ahorro') { data.metaId = FORM.metaSel && metaOpciones().some((o) => o.k === FORM.metaSel) ? FORM.metaSel : null; if ('metaIds' in data) data.metaIds = null;
       // tanda 6: aportar a una meta ligada desde aquí también mueve el dinero (desde tu cuenta principal); si dejas de ligarla, deja de moverlo
       const dest = data.metaId ? cuentaDeMeta(data.metaId) : null;
-      if (dest && !FORM.id) { if (!data.cuentaId || data.cuentaId === dest) data.cuentaId = cuentaDesdeDefecto(dest); if (data.cuentaId) data.cuentaDestinoId = dest; }
-      else if (!dest && 'cuentaDestinoId' in data) data.cuentaDestinoId = null; }
+      const previo = FORM.id ? S.movimientos.find((x) => x.id === FORM.id) : null;
+      if (dest && (!previo || previo.metaId !== data.metaId)) { if (!data.cuentaId || data.cuentaId === dest || !conSaldo(cuentaPorId(data.cuentaId))) data.cuentaId = cuentaDesdeDefecto(dest); if (data.cuentaId) data.cuentaDestinoId = dest; }
+      // Calidad 08/11: si desligas la meta o editas la nota, lo que ya se movió se queda donde está (no se toca cuentaDestinoId)
+    }
     else { if ('metaId' in data) data.metaId = null; if ('metaIds' in data) data.metaIds = null; }
     const reglaNueva = FORM.recordar && FORM.tipo !== 'Inversión' ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
     let movId = FORM.id;
@@ -6286,7 +6288,7 @@ function aportarRHtml() {
     '<div class="field jv-fecha"><label>Fecha</label><button type="button" class="chip active" id="apFechaChip" ' + act('apFechaVer') + '>' + ic('calendar') + ' Hoy</button><input id="apFecha" type="date" value="' + todayISO() + '" hidden></div>' +
     (() => { const dest = cuentaDeMeta(F.key); if (!dest) return '<div class="rec-hint">Apartar no saca dinero del banco: es para que sepas que ese dinero tiene dueño.</div>';
       if (!F.desde || !cuentaPorId(F.desde) || F.desde === dest) F.desde = cuentaDesdeDefecto(dest);
-      return '<div class="field"><label>Desde</label><div class="chips">' + cuentasCfg().filter((c) => c.id !== dest).map((c) => '<button type="button" class="chip' + (F.desde === c.id ? ' active' : '') + '" aria-pressed="' + (F.desde === c.id) + '" ' + act('aportarRDesde', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' +
+      return '<div class="field"><label>Desde</label><div class="chips">' + cuentasCfg().filter((c) => c.id !== dest && conSaldo(c)).map((c) => '<button type="button" class="chip' + (F.desde === c.id ? ' active' : '') + '" aria-pressed="' + (F.desde === c.id) + '" ' + act('aportarRDesde', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' +
         '<div class="rec-hint">El dinero pasará de ' + escapeHtml(nombreCuenta(F.desde)) + ' a ' + escapeHtml(nombreCuenta(dest)) + ', donde guardas esta meta. En tu mes cuenta como apartado, igual que siempre.</div>'; })() +
     '<button class="btn accent block" id="apGuardar" ' + act('aportarRGuardar') + '>' + (imp > 0 ? 'Aportar ' + money(imp) : 'Aportar') + '</button>' +
     (tec ? tecladoHtml(F.tec) : '');
@@ -7016,9 +7018,10 @@ const RENT_DEFECTO = 4; // % anual: estimación prudente cuando no hay históric
 function nuevoIdMeta() { return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 /* ---- docs/30 tanda 6: meta ligada a una cuenta. Aportar sigue siendo un Ahorro, pero además mueve el dinero
    de la cuenta «Desde» (cuentaId) a la de la meta (cuentaDestinoId). Lo de antes de ligarla no se toca. ---- */
-function cuentaDeMeta(id) { const m = (cfg().ahorro || []).find((x) => x && x.id === id); return m && m.cuentaId && cuentaPorId(m.cuentaId) && hayVariasCuentas() ? m.cuentaId : null; }
+const conSaldo = (c) => !!c && c.saldo != null && c.saldo !== '' && isFinite(Number(c.saldo));
+function cuentaDeMeta(id) { const m = (cfg().ahorro || []).find((x) => x && x.id === id); return m && m.cuentaId && conSaldo(cuentaPorId(m.cuentaId)) && cuentasCfg().filter(conSaldo).length >= 2 ? m.cuentaId : null; } // Calidad 08/11: sin saldo puesto, mover descuadraría «Lo que tienes»
 const esAporteLigado = (m) => m && m.tipo === 'Ahorro' && m.cuentaDestinoId && !!cuentaPorId(m.cuentaDestinoId);
-function cuentaDesdeDefecto(destino) { const pc = cuentaPrincipal(); if (pc && pc.id !== destino) return pc.id; const o = cuentasCfg().find((c) => c.id !== destino); return o ? o.id : null; }
+function cuentaDesdeDefecto(destino) { const pc = cuentaPrincipal(); if (pc && pc.id !== destino && conSaldo(pc)) return pc.id; const ok = cuentasCfg().filter((c) => c.id !== destino && conSaldo(c)); const o = ok.find((c) => c.tipo !== 'efectivo' && c.tipo !== 'ahorro') || ok[0]; return o ? o.id : null; }
 // Si lo que llevan las metas ligadas a esa cuenta supera su saldo, un aviso suave (no corrige nada)
 function metaCuentaAviso(cuentaId) {
   const c = cuentaPorId(cuentaId); if (!c) return '';
@@ -7442,9 +7445,11 @@ function metaEditorHtml() {
 function metaCuentaCampoHtml() {
   if (!hayVariasCuentas()) return '';
   const F = FORM, cs = cuentasCfg().slice().sort((a, b) => (b.tipo === 'ahorro') - (a.tipo === 'ahorro'));
+  const sinS = cs.filter((c) => !conSaldo(c));
   const ch = (id, txt, dot) => '<button type="button" class="chip' + ((F.cuentaMeta || '') === id ? ' active' : '') + '" aria-pressed="' + ((F.cuentaMeta || '') === id) + '" ' + act('metaCuentaElegir', id) + '>' + (dot ? '<span class="dot" style="background:' + dot + '"></span>' : '') + escapeHtml(txt) + '</button>';
   return '<div class="field"><label>¿Dónde guardas este dinero? <span class="hint">· opcional</span></label><div class="chips">' + ch('', 'En ninguna cuenta concreta') + cs.map((c) => ch(c.id, c.nombre, colorCuenta(c))).join('') + '</div>' +
-    (F.cuentaMeta && cuentaPorId(F.cuentaMeta) ? '<div class="rec-hint">' + (F.cuentaMeta !== F.cuentaMetaOrig ? 'A partir de ahora, al aportar, el dinero pasará de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '. Lo que ya llevabas no cambia.' : 'Al aportar, el dinero pasa de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '.') + '</div>' : '') + '</div>';
+    (F.cuentaMeta && cuentaPorId(F.cuentaMeta) && !conSaldo(cuentaPorId(F.cuentaMeta)) ? '<div class="rec-hint" style="color:var(--warn)">' + escapeHtml(nombreCuenta(F.cuentaMeta)) + ' no tiene saldo puesto: hasta que se lo pongas (Tú → Cuentas), aportar no moverá dinero.</div>' : '') +
+    (F.cuentaMeta && conSaldo(cuentaPorId(F.cuentaMeta)) ? '<div class="rec-hint">' + (F.cuentaMeta !== F.cuentaMetaOrig ? 'A partir de ahora, al aportar, el dinero pasará de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '. Lo que ya llevabas no cambia.' : 'Al aportar, el dinero pasa de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '.') + '</div>' : '') + '</div>';
 }
 function metaAbrirEditor(id) {
   const m = id ? metasCfg().find((x) => x.id === id) : null;
@@ -9511,9 +9516,10 @@ function impProcesar() {
     if (estado === 'nuevo' && otraT != null) {
       // ¿ya está ese traspaso (la otra mitad, apuntada desde la otra cuenta o a mano)? mismo importe, misma dirección, 0-3 días
       const dir = o.sig < 0 ? { de: cuenta, a: otraT } : { de: otraT, a: cuenta };
-      const mitad = (S.traspasos || []).find((t) => !usadosC.has('t:' + t.id) && Math.abs(Math.abs(num(t.importe)) - imp) < 0.005 && impDias(t.fecha, fecha) <= 3 &&
+      const comoTras = (S.traspasos || []).map((t) => Object.assign({ _k: 't:' + t.id }, t)).concat(S.movimientos.filter(esAporteLigado).map((m) => Object.assign({}, m, { _k: 'm:' + m.id, cuentaId: cuentaIdDe(m) })));
+      const mitad = comoTras.find((t) => !usadosC.has(t._k) && Math.abs(Math.abs(num(t.importe)) - imp) < 0.005 && impDias(t.fecha, fecha) <= 3 &&
         (otraT ? t.cuentaId === dir.de && t.cuentaDestinoId === dir.a : (o.sig < 0 ? t.cuentaId === cuenta : t.cuentaDestinoId === cuenta)));
-      if (mitad) { usadosC.add('t:' + mitad.id); estado = 'otraMitad'; con = { que: nombreCuenta(mitad.cuentaId) + ' → ' + nombreCuenta(mitad.cuentaDestinoId), fecha: mitad.fecha }; }
+      if (mitad) { usadosC.add(mitad._k); estado = 'otraMitad'; con = { que: nombreCuenta(mitad.cuentaId) + ' → ' + nombreCuenta(mitad.cuentaDestinoId), fecha: mitad.fecha }; }
       // docs/30b · tanda 5 (caso antiguo): la otra mitad entró como gasto (o ingreso) en la otra cuenta → se ofrece convertirlo
       if (!mitad && otraT) {
         const quiero = o.sig > 0 ? ['Gasto', 'Factura'] : ['Ingreso'];
@@ -9628,7 +9634,9 @@ async function impEjecutar() {
   const extra = hechos && I.anadirConfig !== false ? impPatchConfig(sel.filter((r) => !r.comoTras)).patch : {};
   saveConfig(Object.assign({ importLotes: lotes, importPerfiles: perfiles }, extra));
   if (fallosArr && !fallo) fallo = fallosArr + (fallosArr === 1 ? ' arreglo no se pudo guardar' : ' arreglos no se pudieron guardar');
-  Object.assign(I, { paso: 'hecho', hechos, arreglados, fallo, configNuevos: Object.keys(extra).length, recien: items.map((it) => Object.assign({ id: it.id }, it.data)) });
+  const rawM = new Map((S._movsRaw || []).map((m) => [m.id, m]));
+  const convertidos = cambios.filter((cb) => cb.campos.indexOf('tipo') >= 0 && rawM.get(cb.id)).map((cb) => Object.assign({}, rawM.get(cb.id), cb.despues, { id: cb.id })); // mismo id: cuenta hasta que llegue del servidor y luego no se repite
+  Object.assign(I, { paso: 'hecho', hechos, arreglados, fallo, configNuevos: Object.keys(extra).length, recien: items.map((it) => Object.assign({ id: it.id }, it.data)).concat(convertidos) });
   updateSheet(impHtml());
   if (!fallo) toast(hechos || arreglados ? [hechos ? hechos + (hechos === 1 ? ' movimiento importado' : ' movimientos importados') : '', arreglados ? arreglados + (arreglados === 1 ? ' arreglo en lo que ya tenías' : ' arreglos en lo que ya tenías') : ''].filter(Boolean).join(' y ') : 'No había nada nuevo: ya lo tenías todo');
 }
@@ -9642,7 +9650,7 @@ function impDeshacerPlan(lote) {
     const igualDespues = cb.campos.every((k) => impMismoValor(m[k], cb.despues[k])), igualAntes = cb.campos.every((k) => impMismoValor(m[k], cb.antes[k]));
     const enlazado = !!(m.compartidoId || m.metaId || (m.metaIds && m.metaIds.length) || m.activoId);
     if (igualAntes) plan.nada.push(cb);
-    else if (!igualDespues || enlazado) plan.saltar.push(cb);
+    else if (!igualDespues || (enlazado && cb.campos.indexOf('tipo') >= 0)) plan.saltar.push(cb); // devolver solo la cuenta no rompe ningún enlace
     else plan.devolver.push(Object.assign({ m }, cb));
   });
   return plan;
@@ -11507,7 +11515,7 @@ const H = {
   impSinCuentaTodas: () => { const fs = IMP.filas.filter((r) => r.estado === 'sinCuenta'); fs.forEach((r) => { r.incluir = true; }); toast(fs.length + (fs.length === 1 ? ' fila marcada' : ' filas marcadas') + ': se pondrán en ' + nombreCuenta(IMP.cuenta)); updateSheet(impHtml()); },
   impMismo: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.incluir = v !== '1'; r.asignar = v === '1' && !!(r.con && r.con.sinCuentaId); r.respondido = true; sentir('tic'); updateSheet(impHtml()); },
   impEnCuenta: ([id]) => { verBadge('importar'); IMP = { paso: 'archivo', cuentaFija: id }; if ($('#sheetBackdrop')) updateSheet(impHtml()); else openSheet(impHtml()); },
-  impTodas: ([v]) => { IMP.filas.forEach((r) => { if (r.id && r.estado !== 'importado' && (v !== '1' || r.estado === 'nuevo' || !r.estado)) r.incluir = v === '1'; }); updateSheet(impHtml()); }, // «Marcar todas» no marca lo dudoso (riesgo 2)
+  impTodas: ([v]) => { IMP.filas.forEach((r) => { if (r.id && r.estado !== 'importado' && (v !== '1' || r.estado === 'nuevo' || !r.estado)) r.incluir = v === '1'; if (v !== '1') { r.convertir = false; r.asignar = false; } }); updateSheet(impHtml()); }, // «Marcar todas» no marca lo dudoso (riesgo 2)
   impVerTodo: () => { IMP.verTodo = true; updateSheet(impHtml()); },
   impTipo: ([k], el) => { const r = IMP.filas[Number(k)]; if (!r) return; r.tipo = el.value; if (r.origenCat !== 'archivo') { const rg = reglaPara(r.desc, r.tipo, hayVariasCuentas() ? IMP.cuenta : null); r.categoria = rg ? rg.categoria : sugerirCategoria(r.desc, r.tipo); r.origenCat = rg ? 'regla' : r.categoria ? 'historial' : ''; } updateSheet(impHtml()); },
   impCat: ([k], el) => {
