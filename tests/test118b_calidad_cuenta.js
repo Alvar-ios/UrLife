@@ -104,7 +104,7 @@ const fila = (I, re) => I.filas.find((r) => re.test(r.desc || ''));
   const viejos = guardados(e);
   e = await env(viejos, DOS); A = e.w.__APP__;
   await abrir(e, 'viejo.csv', F5, 'ci'); I = await revisar(e);
-  ok(I.filas.every((r) => r.estado === 'importado'), 'importado antes sin cuenta: con 2 cuentas, en cualquier cuenta sale como ya importado (no duplica)');
+  ok(I.filas.every((r) => (r.estado === 'importado' || r.estado === 'sinCuenta') && !r.incluir), 'importado antes sin cuenta: con 2 cuentas no se duplica (desde el 08/11, tanda 5: sale como «ya importado, sin cuenta», desmarcado)');
   A.H.closeSheet([]); await sleep(260);
 
   /* 7. Emparejar uno a uno: 2 filas iguales y 1 apuntada a mano = 1 «ya lo tenías» + 1 nueva */

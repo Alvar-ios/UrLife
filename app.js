@@ -9148,7 +9148,8 @@ function impHtml() {
   if (I.paso === 'revisar') {
     const F = I.filas, ok = F.filter((r) => r.id), err = F.filter((r) => !r.id);
     const nImp = ok.filter((r) => r.estado === 'importado').length, nDup = ok.filter((r) => r.estado === 'dup' || r.estado === 'juntos').length, nQ = ok.filter((r) => r.estado === 'quizas').length;
-    const sel = ok.filter((r) => r.incluir && r.estado !== 'importado'), cuenta0 = hayVariasCuentas() ? I.cuenta : null;
+    const sel = ok.filter((r) => r.incluir && !['importado', 'sinCuenta', 'convertir'].includes(r.estado)), cuenta0 = hayVariasCuentas() ? I.cuenta : null;
+    const nArr = cuenta0 && cuentaPorId(cuenta0) ? impCambiosDe(I, cuenta0).length : 0, nSinC = ok.filter((r) => r.estado === 'sinCuenta').length, nConv = ok.filter((r) => r.estado === 'convertir').length;
     const tot = (t) => sel.filter((r) => !r.comoTras && (t === 'in' ? r.tipo === 'Ingreso' : r.tipo !== 'Ingreso')).reduce((a, r) => a + r.importe, 0), nTras = sel.filter((r) => r.comoTras).length;
     const sinCat = sel.filter((r) => !r.categoria).length;
     const LIM = I.verTodo ? 2000 : 150;
@@ -9159,24 +9160,30 @@ function impHtml() {
       const cats = categoriasPorTipo(r.tipo);
       const opts = '<option value="">Sin categoría</option>' + [...new Set(cats.concat(r.categoria ? [r.categoria] : []))].map((c) => '<option' + (c === r.categoria ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('');
       return '<div class="imp-row' + (r.incluir ? '' : ' off') + '">' +
-        '<input type="checkbox" ' + (r.incluir ? 'checked' : '') + ' ' + onChange('impIncluir', k) + '>' +
+        (r.estado === 'convertir' ? '<span class="imp-cb-hueco"></span>' : '<input type="checkbox" aria-label="Incluir esta fila" ' + (r.incluir ? 'checked' : '') + ' ' + onChange('impIncluir', k) + '>') +
         '<div class="imp-main"><div class="imp-top"><span class="imp-desc">' + escapeHtml(r.desc || '(sin descripción)') + '</span><span class="imp-amt tnum" style="color:' + ((r.importe >= 0) ? (r.tipo === 'Ingreso' ? 'var(--income)' : 'var(--expense)') : 'var(--text-muted)') + '">' + ((r.importe >= 0) ? (r.tipo === 'Ingreso' ? '+' : '−') : (r.tipo === 'Ingreso' ? '−' : '+')) + fmt2(Math.abs(r.importe)) + (r.tipo !== 'Ingreso' && r.importe < 0 ? ' <small>devolución</small>' : '') + '</span></div>' +
         '<div class="imp-sub">' + fechaCortaU(r.fecha) + ' ' + r.fecha.slice(0, 4) +
         (r.estado === 'dup' ? ' · <b style="color:var(--accent)">ya lo tenías' + (r.con ? ': ' + escapeHtml(r.con.que) : '') + '</b>' : '') +
         (r.estado === 'quizas' ? ' · <b style="color:var(--accent)">¿es el mismo que apuntaste el ' + escapeHtml(fmtDateShort(r.con.fecha)) + ' (' + escapeHtml(r.con.que) + ')?</b>' : '') +
         (r.estado === 'juntos' ? ' · <b style="color:var(--accent)">ya está en Juntos: ' + escapeHtml(r.con.que) + '</b>' : '') +
         (r.estado === 'otraCuenta' ? ' · <b style="color:var(--accent)">ya importado en ' + escapeHtml(r.con.que) + ': márcalo si es otro</b>' : '') +
+        (r.estado === 'sinCuenta' ? ' · <b style="color:var(--accent)">ya lo tenías, sin cuenta: márcalo para ponerlo en ' + escapeHtml(nombreCuenta(IMP.cuenta)) + '</b>' : '') +
+        (r.estado === 'convertir' ? ' · <b style="color:var(--accent)">¿es el ' + escapeHtml(r.con.tipo === 'Ingreso' ? 'ingreso' : 'gasto') + ' de ' + escapeHtml(nombreCuenta(r.otra)) + ' del ' + escapeHtml(fmtDateShort(r.con.fecha)) + ' (' + escapeHtml(r.con.que) + ')? Lo convertiremos en un traspaso ' + escapeHtml(r.con.tipo === 'Ingreso' ? nombreCuenta(IMP.cuenta) + ' → ' + nombreCuenta(r.otra) : nombreCuenta(r.otra) + ' → ' + nombreCuenta(IMP.cuenta)) + '</b>' : '') +
         (r.estado === 'traspaso' && !r.comoTras ? ' · <b style="color:var(--accent)">traspaso entre cuentas: apúntalo con «Traspaso»</b>' : '') +
         (r.estado === 'traspaso' && r.comoTras ? ' · <b style="color:var(--accent)">' + (r.otra ? 'parece un traspaso ' + (r.sig < 0 ? 'a ' : 'desde ') + escapeHtml(nombreCuenta(r.otra)) : 'traspaso: ¿con qué cuenta?') + '</b>' : '') +
         (r.estado === 'traspaso' && !r.comoTras && r.otra !== undefined ? ' · <b style="color:var(--accent)">lo guardas como ' + escapeHtml(r.tipo === 'Ingreso' ? 'ingreso' : 'gasto') + '</b>' : '') +
         (r.estado === 'otraMitad' ? ' · <b style="color:var(--accent)">ya está como traspaso ' + escapeHtml(r.con.que) + ' (' + escapeHtml(fmtDateShort(r.con.fecha)) + '): no se importa</b>' : '') +
         (r.origenCat === 'regla' ? ' · por tu regla' : r.origenCat === 'historial' ? ' · sugerida' : r.origenCat === 'factura' ? ' · pago fijo' : '') + '</div>' +
-        (r.comoTras ? '<div class="imp-sels"><select aria-label="Con qué cuenta" ' + onChange('impTrasCon', k) + '><option value="">' + (r.sig < 0 ? 'A…' : 'Desde…') + '</option>' + cuentasCfg().filter((c) => c.id !== IMP.cuenta).map((c) => '<option value="' + escapeHtml(c.id) + '"' + (r.otra === c.id ? ' selected' : '') + '>' + (r.sig < 0 ? 'A ' : 'Desde ') + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>' +
+        (r.estado === 'convertir' ? '<div class="imp-mismo"><button type="button" class="chip' + (r.convertir ? ' active' : '') + '" ' + act('impConvertir', k, '1') + '>Sí, convertir</button><button type="button" class="chip" ' + act('impConvertir', k, '0') + '>No, son distintos</button></div>'
+        : r.estado === 'sinCuenta' ? ''
+        : r.comoTras ? '<div class="imp-sels"><select aria-label="Con qué cuenta" ' + onChange('impTrasCon', k) + '><option value="">' + (r.sig < 0 ? 'A…' : 'Desde…') + '</option>' + cuentasCfg().filter((c) => c.id !== IMP.cuenta).map((c) => '<option value="' + escapeHtml(c.id) + '"' + (r.otra === c.id ? ' selected' : '') + '>' + (r.sig < 0 ? 'A ' : 'Desde ') + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>' +
           (r.ofrecerTras && r.otra ? '<button type="button" class="link" style="font-size:12px;" ' + act('impReglaTras', k) + '>Recordar: «' + escapeHtml(r.ofrecerTras) + '» en ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ' → traspaso con ' + escapeHtml(nombreCuenta(r.otra)) + '</button>' : '') +
           '<div class="imp-mismo"><button type="button" class="chip active" ' + act('impTras', k, '1') + '>Es un traspaso</button><button type="button" class="chip" ' + act('impTras', k, '0') + '>No, es un ' + (r.sig < 0 ? 'gasto' : 'ingreso') + '</button></div>'
         : '<div class="imp-sels"><select ' + onChange('impTipo', k) + '>' + tipos.map((t) => '<option' + (t === r.tipo ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
         '<select ' + onChange('impCat', k) + '>' + opts + '</select></div>' +
         (r.otra !== undefined && hayVariasCuentas() && IMP.cuenta ? '<button type="button" class="link imp-volver-tras" ' + act('impTras', k, '1') + '>Es un traspaso</button>' : '')) +
+        (r.estado === 'dup' && r.con && r.con.sinCuentaId ? '<label class="imp-asig"><input type="checkbox" ' + (r.asignar ? 'checked' : '') + ' ' + onChange('impAsignar', k) + '> Ponerle la cuenta ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ' (no la tenía)</label>' : '') +
+        (r.estado === 'quizas' && r.con && r.con.sinCuentaId && r.respondido && !r.incluir ? '<div class="rec-hint">Le pondremos la cuenta ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ', que no tenía.</div>' : '') +
         (r.estado === 'quizas' ? '<div class="imp-mismo"><button type="button" class="chip' + (r.respondido && !r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '1') + '>Es el mismo</button><button type="button" class="chip' + (r.respondido && r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '0') + '>Son distintos</button></div>' : '') +
         (r.ofrecerRegla ? '<button type="button" class="link" style="font-size:12px;" ' + act('impRegla', k) + '>Recordar: «' + escapeHtml(r.ofrecerRegla) + '» → ' + escapeHtml(r.categoria) + '</button>' : '') +
         '</div></div>';
@@ -9191,6 +9198,9 @@ function impHtml() {
         : '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> Los importes no cuadran con la columna Saldo (cuadran ' + I.saldoChk.ok + ' de ' + I.saldoChk.total + ' filas). Puede que el signo o la columna de importe no sean los correctos. <button type="button" class="link" ' + act('impVolver', 'columnas') + '>Revisar columnas</button></div>') : '') +
       (nTras ? '<div class="imp-note">' + ic('swap') + ' ' + nTras + (nTras === 1 ? ' traspaso entre tus cuentas: no cuenta como gasto ni ingreso.' : ' traspasos entre tus cuentas: no cuentan como gasto ni ingreso.') + '</div>' : '') +
       (ok.some((r) => r.estado === 'otraMitad') ? '<div class="imp-note">✓ ' + ok.filter((r) => r.estado === 'otraMitad').length + ' ya estaban como traspaso desde tu otra cuenta: se omiten.</div>' : '') +
+      (nSinC ? '<div class="imp-note">' + ic('fileIn') + ' ' + nSinC + (nSinC === 1 ? ' fila ya estaba importada, pero sin cuenta' : ' filas ya estaban importadas, pero sin cuenta') + '. Van desmarcadas: marca las que quieras poner en ' + escapeHtml(nombreCuenta(cuenta0)) + '. <button type="button" class="link" ' + act('impSinCuentaTodas') + '>Marcar las ' + nSinC + '</button></div>' : '') +
+      (nConv ? '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> ' + nConv + (nConv === 1 ? ' fila parece un traspaso que ya tenías apuntado como gasto o ingreso en tu otra cuenta' : ' filas parecen traspasos que ya tenías apuntados como gasto o ingreso en tu otra cuenta') + '. Dinos si lo convertimos; si no contestas, esa fila no se importa.</div>' : '') +
+      (nArr ? '<div class="imp-note">' + ic('swap') + ' Además se ' + (nArr === 1 ? 'arreglará 1 movimiento' : 'arreglarán ' + nArr + ' movimientos') + ' que ya tenías. Se puede deshacer.</div>' : '') +
       (nImp ? '<div class="imp-note">✓ ' + nImp + (nImp === 1 ? ' fila ya estaba importada' : ' filas ya estaban importadas') + ': se omiten.</div>' : '') +
       (nDup ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nDup + (nDup === 1 ? ' fila ya la tenías' : ' filas ya las tenías') + ' (mismo importe y fecha' + (cuenta0 ? ' en ' + escapeHtml(nombreCuenta(cuenta0)) : '') + ', o ya está en Juntos). Van desmarcadas; márcalas si son distintas.</div>' : '') +
       (nQ ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nQ + (nQ === 1 ? ' fila se parece' : ' filas se parecen') + ' a algo que apuntaste unos días antes o después. Dinos si es lo mismo.</div>' : '') +
@@ -9203,15 +9213,15 @@ function impHtml() {
       '<div class="imp-bulk"><button type="button" class="link" ' + act('impTodas', '1') + '>Marcar las nuevas</button> · <button type="button" class="link" ' + act('impTodas', '0') + '>Desmarcar todas</button></div>' +
       '<div class="imp-list">' + visibles.slice(0, LIM).map(filaHtml).join('') + '</div>' +
       (visibles.length > LIM ? '<button class="btn ghost block" style="margin-top:8px;" ' + act('impVerTodo') + '>Ver las ' + visibles.length + ' filas</button>' : '') +
-      '<div class="actions"><button class="btn ghost block" ' + act('impVolver', 'columnas') + '>Atrás</button>' + (sel.length ? '<button class="btn accent block" ' + act('impEjecutar') + '>' + (I.saldoChk && !impSaldoOk(I) ? 'Importar igualmente (' + sel.length + ')' : 'Importar ' + sel.length) + '</button>' : '<button class="btn accent block" ' + act('closeSheet') + '>Cerrar: no hay nada nuevo</button>') + '</div>';
+      '<div class="actions"><button class="btn ghost block" ' + act('impVolver', 'columnas') + '>Atrás</button>' + (sel.length || nArr ? '<button class="btn accent block" ' + act('impEjecutar') + '>' + (!sel.length ? 'Arreglar ' + nArr : I.saldoChk && !impSaldoOk(I) ? 'Importar igualmente (' + sel.length + ')' : 'Importar ' + sel.length) + '</button>' : '<button class="btn accent block" ' + act('closeSheet') + '>Cerrar: no hay nada nuevo</button>') + '</div>';
   }
   if (I.paso === 'importando') return h2('Importando…') + '<div style="color:var(--text-muted);font-size:14px;">Guardando ' + I.total + ' movimientos. No cierres la app.</div>';
   if (I.paso === 'hecho') {
     return h2(I.fallo ? 'Importación incompleta' : '¡Importado!') +
-      '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '<span class="ic-warn">' + ic('alert') + '</span> ' + 'No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '<span class="ic-ok">' + ic('checkCircle') + '</span> ' + (I.hechos ? 'Se han guardado <b>' + I.hechos + '</b> ' + (I.hechos === 1 ? 'movimiento' : 'movimientos') + (hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? ' en <b>' + escapeHtml(nombreCuenta(I.cuenta)) + '</b>.' : '.') : 'No había nada nuevo: ya tenías todo lo de este archivo.') + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.' : '')) + '</div>' +
+      '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '<span class="ic-warn">' + ic('alert') + '</span> ' + 'No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '<span class="ic-ok">' + ic('checkCircle') + '</span> ' + (I.hechos ? 'Se han guardado <b>' + I.hechos + '</b> ' + (I.hechos === 1 ? 'movimiento' : 'movimientos') + (hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? ' en <b>' + escapeHtml(nombreCuenta(I.cuenta)) + '</b>.' : '.') : I.arreglados ? '' : 'No había nada nuevo: ya tenías todo lo de este archivo.') + (I.arreglados ? ' Se ' + (I.arreglados === 1 ? 'ha arreglado <b>1</b> movimiento' : 'han arreglado <b>' + I.arreglados + '</b> movimientos') + ' que ya tenías.' : '') + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.' : '')) + '</div>' +
       impSaldoTarjetaHtml(I) +
-      (I.hechos ? '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Tú → Importaciones.</div>' : '') +
-      '<div class="actions">' + (I.hechos ? '<button class="btn ghost block" ' + act('impDeshacer', I.lote) + '>Deshacer</button>' : '') + '<button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+      (I.hechos || I.arreglados ? '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Tú → Importaciones.</div>' : '') +
+      '<div class="actions">' + (I.hechos || I.arreglados ? '<button class="btn ghost block" ' + act('impDeshacer', I.lote) + '>Deshacer</button>' : '') + '<button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
   }
   return '';
 }
@@ -9343,6 +9353,32 @@ function impPropTras(r) {
   return tk.length > 1 && d.indexOf(dos) >= 0 ? dos : (d.indexOf(tk[0]) >= 0 ? tk[0] : '');
 }
 function impTrasDir(r, cuenta) { return r.sig < 0 ? { de: cuenta, a: r.otra } : { de: r.otra, a: cuenta }; }
+/* ---- docs/30b · tanda 5: arreglar lo que ya tenías al importar (cuenta que faltaba, gasto que era un traspaso). Se guarda una copia
+   de SOLO los campos que cambian en el lote (cfg().importLotes[].cambios) para que «Deshacer» lo devuelva como estaba. Nunca se toca el lote. */
+const IMP_CAMBIOS_LOTE = 200, IMP_CAMBIOS_TOTAL = 500;
+function impCambiosPendientes() { const s = new Set(); (cfg().importLotes || []).forEach((l) => (l.cambios || []).forEach((c) => s.add(c.id))); return s; }
+const impMismoValor = (a, b) => { const v = (x) => (x == null || x === '' ? null : typeof x === 'number' || (typeof x === 'string' && /^-?\d+(\.\d+)?$/.test(x)) ? String(Math.round(Number(x) * 100) / 100) : String(x)); return v(a) === v(b); };
+function impCambiosDe(I, cuenta) {
+  const raw = new Map((S._movsRaw || []).map((m) => [m.id, m])), out = [], vistos = new Set();
+  const add = (id, despues) => { const m = raw.get(id); if (!m || vistos.has(id)) return; vistos.add(id); const campos = Object.keys(despues), antes = {}; campos.forEach((k) => { antes[k] = m[k] == null ? null : m[k]; }); out.push({ id, campos, antes, despues, ts: Date.now() }); };
+  I.filas.forEach((r) => {
+    if (!r.id) return;
+    if (r.estado === 'sinCuenta' && r.incluir && r.con) add(r.con.id, { cuentaId: cuenta });
+    if ((r.estado === 'dup' || r.estado === 'quizas') && r.asignar && r.con && r.con.sinCuentaId) add(r.con.sinCuentaId, { cuentaId: cuenta });
+    if (r.estado === 'convertir' && r.convertir && r.con && cuentaPorId(r.otra)) {
+      const m = raw.get(r.con.id); if (!m || !convertibleATraspaso(m)) return;
+      const sale = m.tipo !== 'Ingreso'; // el gasto salió de la otra cuenta → traspaso otra → esta
+      add(r.con.id, { tipo: 'Traspaso', categoria: 'Traspaso', importe: Math.round(Math.abs(num(m.importe)) * 100) / 100, cuentaId: sale ? r.otra : cuenta, cuentaDestinoId: sale ? cuenta : r.otra });
+    }
+  });
+  return out;
+}
+// Recorta a 50 lotes sin perder copias: primero salen los viejos sin cambios
+function impRecortarLotes(lotes) {
+  const ls = lotes.slice();
+  while (ls.length > 50) { const i = ls.findIndex((l) => !(l.cambios && l.cambios.length)); if (i < 0) break; ls.splice(i, 1); }
+  return ls;
+}
 function impProcesar() {
   const I = IMP, m = I.map, filas = I.hoja.filas.slice(I.cab + 1);
   const uid = (S.user && S.user.id) || '';
@@ -9351,7 +9387,7 @@ function impProcesar() {
   const existentes = new Set(yaApuntados.map((x) => x.id));
   const cuenta = hayVariasCuentas() ? I.cuenta || null : null;
   const porId = {}; yaApuntados.forEach((x) => { porId[x.id] = x; });
-  const cands = impCandidatos(cuenta), usadosC = new Set();
+  const cands = impCandidatos(cuenta), usadosC = new Set(), pendientes = impCambiosPendientes();
   const buscar = (fecha, abs, maxDias) => { let mejor = null, md = 99; cands.forEach((c) => { if (usadosC.has(c.k) || Math.abs(c.abs - abs) > 0.004) return; const d = impDias(c.fecha, fecha); if (d <= maxDias && d < md) { mejor = c; md = d; } }); return mejor; };
   const ocurr = {}, out = [];
   const col = (f, k) => (k == null || k === '' ? '' : f[k]);
@@ -9401,7 +9437,9 @@ function impProcesar() {
       const otra = cuenta && previo.cuentaId && cuentaPorId(previo.cuentaId) && previo.cuentaId !== cuenta;
       if (otra) { idF = 'imp-' + hash53(base + '|' + o.oc + '|' + cuenta); if (existentes.has(idF)) estado = 'importado'; else { estado = 'otraCuenta'; con = { que: nombreCuenta(previo.cuentaId) }; } }
       else estado = 'importado';
-      if (estado === 'importado') { const k = (previo.tipo === 'Traspaso' ? 't:' : 'm:') + previo.id; usadosC.add(k); }
+      // docs/30b · tanda 5: ya importado antes de las cuentas (sin cuenta): se ofrece ponerle esta, desmarcado
+      if (estado === 'importado' && cuenta && previo.tipo !== 'Traspaso' && !(previo.cuentaId && cuentaPorId(previo.cuentaId)) && !pendientes.has(previo.id)) { estado = 'sinCuenta'; con = { id: previo.id }; }
+      if (estado === 'importado' || estado === 'sinCuenta') { const k = (previo.tipo === 'Traspaso' ? 't:' : 'm:') + previo.id; usadosC.add(k); }
     }
     let otraT = null;
     if (estado === 'nuevo' && cuenta) otraT = impTrasOtra(o.desc, cuenta, o.sig, esTras);
@@ -9411,16 +9449,25 @@ function impProcesar() {
       const mitad = (S.traspasos || []).find((t) => !usadosC.has('t:' + t.id) && Math.abs(Math.abs(num(t.importe)) - imp) < 0.005 && impDias(t.fecha, fecha) <= 3 &&
         (otraT ? t.cuentaId === dir.de && t.cuentaDestinoId === dir.a : (o.sig < 0 ? t.cuentaId === cuenta : t.cuentaDestinoId === cuenta)));
       if (mitad) { usadosC.add('t:' + mitad.id); estado = 'otraMitad'; con = { que: nombreCuenta(mitad.cuentaId) + ' → ' + nombreCuenta(mitad.cuentaDestinoId), fecha: mitad.fecha }; }
+      // docs/30b · tanda 5 (caso antiguo): la otra mitad entró como gasto (o ingreso) en la otra cuenta → se ofrece convertirlo
+      if (!mitad && otraT) {
+        const quiero = o.sig > 0 ? ['Gasto', 'Factura'] : ['Ingreso'];
+        const viejo = S.movimientos.filter((m) => !usadosC.has('m:' + m.id) && !pendientes.has(m.id) && m.cuentaId === otraT && quiero.includes(m.tipo) && Math.abs(Math.abs(num(m.importe)) - imp) < 0.005 && impDias(m.fecha, fecha) <= 3 && convertibleATraspaso(m))
+          .sort((a, b) => impDias(a.fecha, fecha) - impDias(b.fecha, fecha))[0];
+        if (viejo) { usadosC.add('m:' + viejo.id); estado = 'convertir'; o.otra = otraT; con = { id: viejo.id, que: viejo.descripcion || viejo.categoria || viejo.tipo, fecha: viejo.fecha, tipo: viejo.tipo }; }
+      }
     }
     if (estado === 'nuevo') {
       // lo ya apuntado a mano (también si lo apuntaste como gasto) se mira antes de proponer un traspaso: si no, se restaría dos veces
       const igual = buscar(fecha, Math.abs(imp), 0);
       if (igual) { estado = igual.donde === 'juntos' ? 'juntos' : 'dup'; con = igual; usadosC.add(igual.k); }
       else { const cerca = buscar(fecha, Math.abs(imp), 3); if (cerca) { estado = cerca.donde === 'juntos' ? 'juntos' : 'quizas'; con = cerca; usadosC.add(cerca.k); } }
+      // tanda 5: si «lo que ya tenías» no tiene cuenta, se puede poner la de este extracto (desmarcado: lo decides tú)
+      if (con && cuenta && con.donde === 'mov' && con.k) { const mid = con.k.slice(2), mv = porId[mid]; if (mv && mv.tipo !== 'Traspaso' && !(mv.cuentaId && cuentaPorId(mv.cuentaId)) && !pendientes.has(mid)) con.sinCuentaId = mid; }
     }
     if (estado === 'nuevo' && otraT != null) { estado = 'traspaso'; o.comoTras = true; o.otra = otraT || ''; }
     if (esTras && estado === 'nuevo') estado = 'traspaso';
-    Object.assign(o, { id: idF, estado, con, incluir: estado === 'nuevo' || (estado === 'traspaso' && !!o.comoTras && !!o.otra) }); delete o.base; delete o.oc; delete o.esTras; delete o.abs;
+    Object.assign(o, { id: idF, estado, con, incluir: estado === 'nuevo' || (estado === 'traspaso' && !!o.comoTras && !!o.otra), asignar: false }); delete o.base; delete o.oc; delete o.esTras; delete o.abs;
   });
   impSaldoComprobar(I, out);
   I.filas = out;
@@ -9472,10 +9519,15 @@ function impPatchConfig(filas) {
 }
 async function impEjecutar() {
   const I = IMP;
-  const sel = I.filas.filter((r) => r.id && r.incluir && r.estado !== 'importado');
-  if (!sel.length) return toast('No hay filas marcadas');
+  const sel = I.filas.filter((r) => r.id && r.incluir && !['importado', 'sinCuenta', 'convertir'].includes(r.estado));
+  const cuentaArr = hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? I.cuenta : null;
+  const cambios = cuentaArr ? impCambiosDe(I, cuentaArr) : [];
+  if (!sel.length && !cambios.length) return toast('No hay filas marcadas');
+  if (cambios.length > IMP_CAMBIOS_LOTE) return toast('Son muchos cambios de una vez (' + cambios.length + '). Marca como máximo ' + IMP_CAMBIOS_LOTE + ' e importa el resto después');
+  const yaCambios = (cfg().importLotes || []).reduce((a, l) => a + ((l.cambios || []).length), 0);
+  if (cambios.length && yaCambios + cambios.length > IMP_CAMBIOS_TOTAL) return toast('Tienes muchos arreglos guardados para deshacer. En Tú → Importaciones, pulsa «Dar por bueno» en las que ya revisaste');
   const lote = 'L' + Date.now().toString(36);
-  Object.assign(I, { paso: 'importando', total: sel.length, lote });
+  Object.assign(I, { paso: 'importando', total: sel.length + cambios.length, lote });
   updateSheet(impHtml());
   const ahora = Date.now();
   const items = sel.map((r, i) => { const cn = catNorm(r.tipo, r.categoria || (r.tipo === 'Gasto' || r.tipo === 'Factura' ? 'Otros' : 'Sin categoría')); const d = { creadoEn: ahora + i, tipo: r.tipo, importe: Math.round(r.importe * 100) / 100, categoria: cn.categoria, fecha: r.fecha, descripcion: r.desc, metodoPago: '', lote }; if (cn.subcategoria) d.subcategoria = cn.subcategoria; return { id: r.id, data: d }; });
@@ -9485,28 +9537,67 @@ async function impEjecutar() {
   if (cuentaImp) items.forEach((it) => { it.data.cuentaId = cuentaImp; });
   if (cuentaImp) sel.forEach((r, i) => { if (!r.comoTras || !r.otra || !cuentaPorId(r.otra)) return; const d = impTrasDir(r, cuentaImp);
     items[i].data = { creadoEn: items[i].data.creadoEn, tipo: 'Traspaso', categoria: 'Traspaso', importe: Math.round(Math.abs(r.importe) * 100) / 100, fecha: r.fecha, descripcion: r.desc, lote, cuentaId: d.de, cuentaDestinoId: d.a }; });
+  // tanda 5: primero se guarda la copia en el lote (si se corta, al deshacer se ve que no cambió y no se hace nada); luego se cambia
+  let arreglados = 0, fallosArr = 0;
+  if (cambios.length) {
+    const c0 = cfg();
+    await saveConfig({ importLotes: impRecortarLotes((c0.importLotes || []).filter((l) => l.id !== lote).concat([Object.assign({ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: 0, cambios }, cuentaImp ? { cuenta: cuentaImp } : {})])) });
+    const raw = new Map((S._movsRaw || []).map((m) => [m.id, m])), malos = new Set();
+    for (const cb of cambios) {
+      const m = raw.get(cb.id); if (!m) { malos.add(cb.id); continue; }
+      try { await withRetry(() => S.db.collection('movimientos').doc(cb.id).set(Object.assign(stripId(m), cb.despues))); arreglados++; } catch (e) { console.error(e); malos.add(cb.id); fallosArr++; }
+    }
+    if (malos.size) { const ls = (cfg().importLotes || []).map((l) => l.id === lote ? Object.assign({}, l, { cambios: (l.cambios || []).filter((x) => !malos.has(x.id)) }) : l); await saveConfig({ importLotes: ls }); }
+  }
   try {
     const col = S.db.collection('movimientos');
-    if (typeof col.bulkInsert === 'function') hechos = await col.bulkInsert(items); // reintenta cada bloque por dentro
+    if (!items.length) hechos = 0;
+    else if (typeof col.bulkInsert === 'function') hechos = await col.bulkInsert(items); // reintenta cada bloque por dentro
     else { for (const it of items) { await withRetry(() => col.doc(it.id).set(it.data)); hechos++; } }
   } catch (e) { console.error(e); fallo = errMsg(e); }
   const c = cfg();
-  const lotes = hechos ? (c.importLotes || []).concat([Object.assign({ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: hechos }, cuentaImp ? { cuenta: cuentaImp } : {})]).slice(-50) : (c.importLotes || []); // sin nada nuevo, no se apunta un lote vacío
+  const yaLote = (c.importLotes || []).find((l) => l.id === lote);
+  const lotes = yaLote ? (c.importLotes || []).map((l) => l.id === lote ? Object.assign({}, l, { n: hechos }) : l).filter((l) => l.id !== lote || hechos || (l.cambios && l.cambios.length))
+    : hechos ? impRecortarLotes((c.importLotes || []).concat([Object.assign({ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: hechos }, cuentaImp ? { cuenta: cuentaImp } : {})])) : (c.importLotes || []); // sin nada nuevo, no se apunta un lote vacío
   const perfiles = Object.assign({}, c.importPerfiles || {}, { [firmaArchivo(I)]: Object.assign({ map: Object.assign({ saldo: null }, I.map), modoImporte: I.modoImporte, signo: I.signo, fmtFecha: I.fmtFecha, usado: todayISO() }, cuentaImp ? { cuenta: cuentaImp } : {}) });
   const extra = hechos && I.anadirConfig !== false ? impPatchConfig(sel.filter((r) => !r.comoTras)).patch : {};
   saveConfig(Object.assign({ importLotes: lotes, importPerfiles: perfiles }, extra));
-  Object.assign(I, { paso: 'hecho', hechos, fallo, configNuevos: Object.keys(extra).length, recien: items.map((it) => Object.assign({ id: it.id }, it.data)) });
+  if (fallosArr && !fallo) fallo = fallosArr + (fallosArr === 1 ? ' arreglo no se pudo guardar' : ' arreglos no se pudieron guardar');
+  Object.assign(I, { paso: 'hecho', hechos, arreglados, fallo, configNuevos: Object.keys(extra).length, recien: items.map((it) => Object.assign({ id: it.id }, it.data)) });
   updateSheet(impHtml());
-  if (!fallo) toast(hechos ? hechos + (hechos === 1 ? ' movimiento importado' : ' movimientos importados') : 'No había nada nuevo: ya lo tenías todo');
+  if (!fallo) toast(hechos || arreglados ? [hechos ? hechos + (hechos === 1 ? ' movimiento importado' : ' movimientos importados') : '', arreglados ? arreglados + (arreglados === 1 ? ' arreglo en lo que ya tenías' : ' arreglos en lo que ya tenías') : ''].filter(Boolean).join(' y ') : 'No había nada nuevo: ya lo tenías todo');
+}
+// tanda 5: devuelve lo que la importación cambió en movimientos que ya tenías. Nunca crea ni pisa: si no existe o lo cambiaste después, se salta
+function impDeshacerPlan(lote) {
+  const l = (cfg().importLotes || []).find((x) => x.id === lote), raw = new Map((S._movsRaw || []).map((m) => [m.id, m]));
+  const plan = { devolver: [], saltar: [], nada: [], borrados: [] };
+  ((l && l.cambios) || []).slice().reverse().forEach((cb) => {
+    const m = raw.get(cb.id);
+    if (!m) { plan.nada.push(cb); return; }
+    const igualDespues = cb.campos.every((k) => impMismoValor(m[k], cb.despues[k])), igualAntes = cb.campos.every((k) => impMismoValor(m[k], cb.antes[k]));
+    const enlazado = !!(m.compartidoId || m.metaId || (m.metaIds && m.metaIds.length) || m.activoId);
+    if (igualAntes) plan.nada.push(cb);
+    else if (!igualDespues || enlazado) plan.saltar.push(cb);
+    else plan.devolver.push(Object.assign({ m }, cb));
+  });
+  return plan;
 }
 async function deshacerLote(lote) {
   const col = S.db.collection('movimientos');
+  const plan = impDeshacerPlan(lote);
+  if (plan.devolver.length) {
+    const hechos = new Set();
+    for (const cb of plan.devolver) {
+      try { await withRetry(() => col.doc(cb.id).set(Object.assign(stripId(cb.m), cb.antes))); hechos.add(cb.id); }
+      catch (e) { console.error(e); const ls = (cfg().importLotes || []).map((l) => l.id === lote ? Object.assign({}, l, { cambios: (l.cambios || []).filter((x) => !hechos.has(x.id)) }) : l); await saveConfig({ importLotes: ls }); toast('No se pudo deshacer todo (' + errMsg(e) + '). Vuelve a intentarlo: no se repetirá nada'); return false; }
+    }
+  }
   let ok;
   if (typeof col.deleteWhere === 'function') ok = await write(() => col.deleteWhere('lote', lote));
   else { ok = true; for (const m of S.movimientos.concat(S.traspasos || []).filter((x) => x.lote === lote)) { if (!(await write(() => col.doc(m.id).delete()))) { ok = false; break; } } }
   if (!ok) return false;
   saveConfig({ importLotes: (cfg().importLotes || []).filter((l) => l.id !== lote) });
-  toast('Importación deshecha');
+  toast('Importación deshecha' + (plan.devolver.length ? ': ' + plan.devolver.length + (plan.devolver.length === 1 ? ' movimiento volvió' : ' movimientos volvieron') + ' a como estaban' : '') + (plan.saltar.length ? '. ' + plan.saltar.length + ' lo cambiaste después y se queda como está' : ''), { ms: plan.saltar.length ? 8000 : 4000 });
   return true;
 }
 function lotesHtml() {
@@ -9514,11 +9605,12 @@ function lotesHtml() {
   const cuenta = (id) => S.movimientos.filter((m) => m.lote === id).length + (S.traspasos || []).filter((t) => t.lote === id).length; // también los convertidos en traspaso
   return '<div class="handle"></div><h2>Importaciones</h2>' +
     (lotes.length ? '<div class="list">' + lotes.map((l) => {
-      const n = cuenta(l.id), f = new Date(l.fecha);
-      return '<div class="row static"><div class="main"><div class="ttl">' + escapeHtml(l.archivo || 'Archivo') + '</div><div class="meta">' + f.getDate() + ' ' + MESES_CORTO[f.getMonth()] + ' ' + f.getFullYear() + ' · ' + (l.cuenta && cuentaPorId(l.cuenta) ? escapeHtml(nombreCuenta(l.cuenta)) + ' · ' : '') + n + ' movimientos</div></div>' +
+      const n = cuenta(l.id), f = new Date(l.fecha), nc = (l.cambios || []).length;
+      return '<div class="row static"><div class="main"><div class="ttl">' + escapeHtml(l.archivo || 'Archivo') + '</div><div class="meta">' + f.getDate() + ' ' + MESES_CORTO[f.getMonth()] + ' ' + f.getFullYear() + ' · ' + (l.cuenta && cuentaPorId(l.cuenta) ? escapeHtml(nombreCuenta(l.cuenta)) + ' · ' : '') + n + ' movimientos' + (nc ? ' y ' + nc + (nc === 1 ? ' arreglo' : ' arreglos') + ' en lo que ya tenías' : '') + '</div>' +
+        (nc ? '<button type="button" class="link" style="font-size:12.5px;" ' + act('loteBueno', l.id) + '>Dar por bueno</button>' : '') + '</div>' +
         '<button class="btn sm danger" ' + act('loteDeshacer', l.id) + '>Deshacer</button></div>';
     }).join('') + '</div>' : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no has importado nada.</div>') +
-    '<div style="font-size:12.5px;color:var(--text-faint);margin-top:10px;line-height:1.45;">Deshacer borra todos los movimientos de esa importación (también los que hayas editado después).</div>' +
+    '<div style="font-size:12.5px;color:var(--text-faint);margin-top:10px;line-height:1.45;">Deshacer borra todos los movimientos de esa importación (también los que hayas editado después). Lo que arregló en lo que ya tenías (la cuenta, o un gasto que era un traspaso) vuelve a como estaba, salvo que lo hayas cambiado tú después. «Dar por bueno» deja los arreglos como están y ya no se podrán deshacer.</div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 function reglasHtml() {
@@ -11319,7 +11411,13 @@ const H = {
   impSaldoNo: () => { if (!IMP) return; IMP.saldoFin = null; updateSheet(impHtml()); },
   impCuenta: ([id]) => { if (!IMP) return; IMP.cuenta = id; IMP.cuentaRecordada = false; sentir('tic'); updateSheet(impHtml()); },
   impCuentaSel: (_a, el) => { if (!IMP) return; IMP.cuenta = el.value || null; IMP.cuentaRecordada = false; updateSheet(impHtml()); },
-  impMismo: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.incluir = v !== '1'; r.respondido = true; sentir('tic'); updateSheet(impHtml()); },
+  impConvertir: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return;
+    if (v === '1') { r.convertir = true; r.incluir = false; }
+    else { r.convertir = false; r.estado = 'traspaso'; r.comoTras = true; r.incluir = !!r.otra; r.con = null; }
+    sentir('tic'); updateSheet(impHtml()); },
+  impAsignar: ([k], el) => { const r = IMP && IMP.filas[Number(k)]; if (r) { r.asignar = !!el.checked; updateSheet(impHtml()); } },
+  impSinCuentaTodas: () => { const fs = IMP.filas.filter((r) => r.estado === 'sinCuenta'); fs.forEach((r) => { r.incluir = true; }); toast(fs.length + (fs.length === 1 ? ' fila marcada' : ' filas marcadas') + ': se pondrán en ' + nombreCuenta(IMP.cuenta)); updateSheet(impHtml()); },
+  impMismo: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.incluir = v !== '1'; r.asignar = v === '1' && !!(r.con && r.con.sinCuentaId); r.respondido = true; sentir('tic'); updateSheet(impHtml()); },
   impEnCuenta: ([id]) => { verBadge('importar'); IMP = { paso: 'archivo', cuentaFija: id }; if ($('#sheetBackdrop')) updateSheet(impHtml()); else openSheet(impHtml()); },
   impTodas: ([v]) => { IMP.filas.forEach((r) => { if (r.id && r.estado !== 'importado' && (v !== '1' || r.estado === 'nuevo' || !r.estado)) r.incluir = v === '1'; }); updateSheet(impHtml()); }, // «Marcar todas» no marca lo dudoso (riesgo 2)
   impVerTodo: () => { IMP.verTodo = true; updateSheet(impHtml()); },
@@ -11347,6 +11445,7 @@ const H = {
   openPapelera: () => { verBadge('papelera'); FORM = { kind: 'papelera' }; openSheet(papeleraHtml()); },
   papeleraRecuperar: ([k, id]) => papeleraRecuperar(k, id),
   openLotes: () => { FORM = { kind: 'lotes' }; openSheet(lotesHtml()); },
+  loteBueno: ([id], el) => confirmDelete(el, () => { saveConfig({ importLotes: (cfg().importLotes || []).map((l) => l.id === id ? Object.assign({}, l, { cambios: [] }) : l) }); toast('Hecho: esos arreglos se quedan como están'); setTimeout(() => updateSheet(lotesHtml()), 300); }, 'Dar por bueno'),
   loteDeshacer: ([id], el) => confirmDelete(el, async () => { if (await deshacerLote(id)) setTimeout(() => updateSheet(lotesHtml()), 400); }),
   openReglas: () => { verBadge('reglas'); FORM = { kind: 'reglas' }; openSheet(reglasHtml()); },
   reglaQuitar: ([i]) => { const rs = (cfg().reglasCat || []).slice(); rs.splice(Number(i), 1); saveConfig({ reglasCat: rs }); updateSheet(reglasHtml()); },
