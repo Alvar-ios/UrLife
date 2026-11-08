@@ -19,8 +19,8 @@
   };
   var cfg = { app: { nombre: 'Álex Prueba', onboarded: true, novedadesVistas: '9999-12-31', compararVersiones: false,
     cuentas: [{ id: 'c1', nombre: 'Cuenta nómina', banco: 'santander', saldo: 2430.55, saldoFecha: dia(-30), principal: true }, { id: 'c2', nombre: 'Ahorro', banco: 'myinvestor', saldo: 5200, saldoFecha: dia(-30) }],
-    metas: [{ id: 'mt1', nombre: 'Viaje a Japón', objetivo: 3000, fecha: dia(200) }],
-    deudas: [{ nombre: 'Préstamo del coche', total: 9000, previo: 3000, cuotaMes: 250 }],
+    ahorro: [{ id: 'mt1', nombre: 'Viaje a Japón', objetivo: 3000, fechaObjetivo: dia(200) }],
+    deudas: [{ nombre: 'Préstamo del coche', objetivo: 9000, previo: 3000, cuotaMes: 250 }],
     categoriasGasto: [{ nombre: 'Supermercado', presupuesto: 300 }, { nombre: 'Restaurantes', presupuesto: 120 }, { nombre: 'Transporte' }, { nombre: 'Ocio', presupuesto: 60 }, { nombre: 'Hogar' }, { nombre: 'Suscripciones' }, { nombre: 'Salud' }, { nombre: 'Ropa' }] },
     meta: { onboarded: true } };
   var grupos = [{ id: G1, nombre: 'Piso compartido de la calle Mayor', tipo: 'grupo', edicion: 'todos', created_at: dia(-60) }, { id: G2, nombre: '', tipo: 'directo', edicion: 'todos', created_at: dia(-60) }];

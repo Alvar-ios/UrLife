@@ -13,6 +13,7 @@ function makeEnv(seed){ // seed: {config:{app,meta}, movs:[]}
   const Auth={_f:[],onChange(f){this._f.push(f);setTimeout(()=>f(seed.session||{user:{email:'t@t.com'}}),0)},signIn(){},signOut(){},resetPassword(){}};
   const dom=new JSDOM('<div id="app"></div>',Object.assign({runScripts:'outside-only',pretendToBeVisual:true},seed.url?{url:seed.url}:{}));
   const w=dom.window;w.Auth=Auth;w.Data=Data;w.scrollTo=()=>{};
+  if(process.env.FECHA_MAS){const off=Number(process.env.FECHA_MAS)*864e5,D=w.Date;class FD extends D{constructor(...a){if(a.length)super(...a);else super(D.now()+off);}static now(){return D.now()+off;}}w.Date=FD;} // 08/11 (Calidad): FECHA_MAS=14 npm test → la app cree que es dentro de 14 días (para ver qué pruebas caducan)
   if(seed.pre)seed.pre(w);
   w.eval(fs.readFileSync(require('path').join(__dirname,'..','app.js'),'utf8'));
   w.__APP__.S.verAnterior=Object.assign({tu:1,agenda:1,crear:1,importe:1,movResumen:0,dinero:4,balance:1},w.__APP__.S.verAnterior||{}); // 22/10: las pruebas antiguas miran Tú, Agenda y + de antes (las nuevas pasan version:{tu:0,…})
