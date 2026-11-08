@@ -10538,7 +10538,7 @@ function exportCsv() {
   } catch (e) { console.error(e); toast('No se pudo descargar'); }
 }
 function exportBackup() {
-  const payload = { exportadoEl: new Date().toISOString(), movimientos: S.movimientos.concat(S.traspasos || []), tareas: S.tareas, golf: S.golf, config: S.config, compartidos: S.compartidos || [], objetivosCompartidos: S.objetivos || [] };
+  const payload = { exportadoEl: new Date().toISOString(), movimientos: S.movimientos.concat(S.traspasos || []), tareas: S.tareas, golf: S.golf, config: S.config, compartidos: S.compartidos || [], objetivosCompartidos: S.objetivos || [], carpetas: S.carpetas || [], aportes: S.aportes || [] }; // barrido 08/11: también viajes/temas y aportes
   try {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);

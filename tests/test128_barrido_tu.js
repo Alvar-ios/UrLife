@@ -75,7 +75,7 @@ const hoyD = new Date(), d = (n) => { const x = new Date(hoyD); x.setDate(x.getD
   console.log('   (copia: ' + (copia ? Object.keys(copia).join(', ') + ' · config: ' + Object.keys(copia.config || {}).slice(0, 8).join(', ') : 'nada') + ')');
   ok(copia && copia.movimientos.length === 2 && copia.config && Array.isArray(copia.tareas), 'Copia de seguridad: lleva los 2 movimientos, las tareas y los ajustes');
   ok(copia && copia.config.facturas && copia.config.facturas[0].nombre === 'Gimnasio', 'Copia de seguridad: lleva los pagos fijos');
-  conocido(copia && 'carpetas' in copia && 'aportes' in copia, 'Copia de seguridad: lleva también viajes/temas de los grupos y aportes a metas compartidas (hoy no)');
+  ok(copia && 'carpetas' in copia && 'aportes' in copia, 'Copia de seguridad: lleva también viajes/temas de los grupos y aportes a metas compartidas (hoy no)');
 
   // 4) Aspecto: paleta, tema oscuro, tipo de letra y fondo; se quedan en el móvil
   H.openAspecto([]); await sleep(20);
