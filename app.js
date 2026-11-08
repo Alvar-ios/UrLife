@@ -300,7 +300,7 @@ function toast(msg, opts) {
   const el = $('#toast'); if (!el) return;
   opts = opts || {};
   const aviso = opts.aviso || TOAST_AVISO.test(msg);
-  el.innerHTML = '<span class="toast-ic ' + (aviso ? 'aviso' : 'ok') + '">' + ic(aviso ? 'alert' : 'check') + '</span><span class="toast-txt"></span>' + (opts.deshacer ? '<button type="button" class="toast-btn">Deshacer</button>' : '');
+  el.innerHTML = '<span class="toast-ic ' + (aviso ? 'aviso' : 'ok') + '">' + ic(aviso ? 'alert' : 'check') + '</span><span class="toast-txt"></span>' + (opts.deshacer ? '<button type="button" class="toast-btn">' + escapeHtml(opts.boton || 'Deshacer') + '</button>' : '');
   el.querySelector('.toast-txt').textContent = msg;
   if (opts.deshacer) el.querySelector('.toast-btn').onclick = (ev) => { if (ev && ev.currentTarget) ev.currentTarget.onclick = null; else el.querySelector('.toast-btn').onclick = null; el.classList.remove('show'); clearTimeout(toast._t); opts.deshacer(); };
   el.classList.toggle('con-accion', !!opts.deshacer);
@@ -937,6 +937,16 @@ function loadingHtml() {
 /* ============================================================
    LOGIN (pantalla completa, sin navegación)
    ============================================================ */
+// 08/11: pedir la contraseña nueva al volver del correo (antes el enlace entraba en la app sin cambiarla)
+function renderNuevaContrasena(msg) {
+  $('#app').innerHTML = '<div style="min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;"><div class="card" style="width:100%;max-width:360px;">' +
+    '<h2 style="margin:0 0 6px;">Pon tu contraseña nueva</h2><p class="rec-hint" style="margin:0 0 14px;">Al menos 8 caracteres. Con ella entrarás a partir de ahora.</p>' +
+    (msg ? '<div class="alert" style="margin-bottom:12px;">' + ic('alert') + '<div>' + escapeHtml(msg) + '</div></div>' : '') +
+    '<div class="field"><label for="ncPass">Contraseña nueva</label><input id="ncPass" type="password" autocomplete="new-password" minlength="8"></div>' +
+    '<div class="field"><label for="ncPass2">Repítela</label><input id="ncPass2" type="password" autocomplete="new-password" minlength="8"></div>' +
+    '<button class="btn accent block" ' + act('nuevaContrasenaOk') + '>Guardar y entrar</button></div></div>';
+  setTimeout(() => { const el = $('#ncPass'); if (el) el.focus(); }, 80);
+}
 function renderLoginScreen(msg) {
   $('#app').innerHTML =
     '<div style="min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;">' +
@@ -1862,7 +1872,7 @@ function openMovForm(id, pre) {
     '<div id="cuentaField">' + cuentaFieldHtml() + '</div>' +
     '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>' +
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
-    metodos.map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' +
+    metodos.concat(ex && ex.metodoPago && metodos.indexOf(ex.metodoPago) < 0 ? [ex.metodoPago] : []).map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' + // barrido 08/11: no se pierde la que ya no está en tu lista
     '<div id="artField">' + artFieldHtml(comp || ex) + '</div></div>' +
     '<div class="actions"' + (corta ? ' hidden' : '') + '><button class="btn ghost block" ' + (S._volverGrupo ? act('grupoVer', S._volverGrupo) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
     (comp ? (puedeEditarComp(comp) ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>' : '<div class="rec-hint" style="margin-top:10px;">' + AVISO_PERMISO + '</div>')
@@ -10169,12 +10179,12 @@ function recGuardar() {
 }
 function recEliminar() {
   const F = FORM, key = F.origKind === 'cobro' ? 'cobros' : 'facturas';
-  const arr = (cfg()[key] || []).slice(); arr.splice(F.idx, 1);
+  const arr = (cfg()[key] || []).slice(), quitado = arr[F.idx], idx = F.idx; arr.splice(F.idx, 1);
   saveConfig({ [key]: arr });
   FORM = { kind: 'recLista' };
   updateSheet(recListaHtml());
   render();
-  toast('Eliminado');
+  toast('Eliminado', { deshacer: () => { const a2 = (cfg()[key] || []).slice(); a2.splice(Math.min(idx, a2.length), 0, quitado); saveConfig({ [key]: a2 }); if (FORM && FORM.kind === 'recLista') updateSheet(recListaHtml()); render(); toast('Recuperado'); } });
 }
 /* ---- Tareas recurrentes ---- */
 const REP_UNIDADES = { dia: ['día', 'días'], semana: ['semana', 'semanas'], mes: ['mes', 'meses'], anio: ['año', 'años'] };
@@ -10555,6 +10565,14 @@ function catsEditorHtml() {
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 // Guarda: de las estándar solo el presupuesto (si lo tienen); las personalizadas, enteras
+// Pasa a la categoría nueva los gastos que llevaban el nombre de antes (lo pide el usuario; con «Deshacer»)
+async function catPasarMovs(ids, de, a) {
+  const raw = new Map((S._movsRaw || []).map((m) => [m.id, m])), movs = ids.map((id) => raw.get(id)).filter((m) => m && m.categoria === de);
+  const hechos = [];
+  for (let k = 0; k < movs.length; k += 20) { const g = movs.slice(k, k + 20); const res = await Promise.allSettled(g.map((m) => withRetry(() => S.db.collection('movimientos').doc(m.id).set(Object.assign(stripId(m), { categoria: a }))))); res.forEach((x, j) => { if (x.status === 'fulfilled') hechos.push(g[j]); }); }
+  if (!hechos.length) return toast('No se pudieron cambiar');
+  toast(hechos.length + (hechos.length === 1 ? ' gasto pasado' : ' gastos pasados') + ' a «' + a + '»', { deshacer: async () => { for (const m of hechos) await withRetry(() => S.db.collection('movimientos').doc(m.id).set(Object.assign(stripId(m), { categoria: de }))); toast('Deshecho'); } });
+}
 function guardarCats(lista) {
   saveConfig({ categoriasGasto: lista.filter((c) => !c.std || (c.presupuesto != null && c.presupuesto !== '')).map((c) => ({ nombre: c.nombre, presupuesto: c.presupuesto == null || c.presupuesto === '' ? null : Number(c.presupuesto) })) });
 }
@@ -11644,6 +11662,13 @@ const H = {
   usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   exportCsv: () => exportCsv(),
+  nuevaContrasenaOk: async () => {
+    const a = ($('#ncPass') || {}).value || '', b = ($('#ncPass2') || {}).value || '';
+    if (a.length < 8) return renderNuevaContrasena('Tiene que tener al menos 8 caracteres.');
+    if (a !== b) return renderNuevaContrasena('Las dos contraseñas no coinciden.');
+    try { await window.Auth.cambiarContrasena(a); toast('Contraseña cambiada'); const s0 = await window.Auth.getSession(); if (s0) { if (needsMfa(s0)) renderMfaScreen(); else enterApp(s0); } else renderLoginScreen('Contraseña cambiada. Ya puedes entrar.'); }
+    catch (e) { renderNuevaContrasena('No se pudo cambiar: ' + errMsg(e)); }
+  },
   ocultarCifras: () => { const v = !cifrasOcultas(); lsSet('cifrasOcultas', v ? '1' : '0'); aplicarOcultar(); sentir('tic'); toast(v ? 'Cifras ocultas' : 'Cifras a la vista'); render(); },
   reintentarCarga: () => location.reload(),
   tbVolver: () => { if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) H.setInicioVista(['hoy']); else H.goTab(['inicio']); },
@@ -11722,8 +11747,11 @@ const H = {
       Object.values(cfg().cuentaJuntos || {}).filter((x) => x === c.id).length + (cfg().cobros || []).concat(cfg().facturas || []).filter((x) => x && x.cuentaId === c.id).length : 0;
     // si tiene movimientos, pide un segundo toque: esos movimientos pasan a contar como de la principal
     if (n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Tiene ' + n + (n === 1 ? ' movimiento' : ' movimientos') + '. Los movimientos pasarán a la cuenta principal y los traspasos dirán «Cuenta quitada». Toca «Quitar» otra vez para quitarla.'); }
+    if (!n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Toca otra vez para quitar ' + (c.nombre || 'la cuenta'), { aviso: true }); } // barrido 08/11
     const fijas = cs.map((x) => (x && x.id && !x.color ? Object.assign({}, x, { color: colorCuenta(x) }) : x)); // que las demás no cambien de color
+    const antes = cs.slice();
     fijas.splice(Number(i), 1); saveConfig({ cuentas: fijas }); FORM = { kind: 'cuentas' }; updateSheet(cuentasHtml()); render();
+    toast('Cuenta quitada', { deshacer: () => { saveConfig({ cuentas: antes }); if (FORM && FORM.kind === 'cuentas') updateSheet(cuentasHtml()); render(); toast('Recuperada'); } });
   },
   cuentaCampo: ([i, f], el) => {
     const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {});
@@ -11945,7 +11973,11 @@ const H = {
   catRenombrar: ([n], el) => {
     const v = el.value.trim(); if (!v || v === n) return;
     if (esCatStd(v) || ALIAS_STD[normName(v)]) { el.value = n; return toast('«' + v + '» ya es una categoría estándar'); }
+    if (catsGasto().some((c) => c.nombre !== n && normName(c.nombre) === normName(v))) { el.value = n; return toast('Ya tienes una categoría «' + v + '»'); } // barrido 08/11
     guardarCats(catsGasto().map((c) => (c.nombre === n ? Object.assign({}, c, { nombre: v }) : c)));
+    setTimeout(() => { if (FORM && $('#sheetBackdrop')) updateSheet(catsEditorHtml()); }, 50); // el siguiente cambio ya parte del nombre nuevo
+    const viejos = S.movimientos.filter((m) => (m.tipo === 'Gasto' || m.tipo === 'Factura') && m.categoria === n);
+    if (viejos.length) toast('Renombrada. ' + viejos.length + (viejos.length === 1 ? ' gasto sigue' : ' gastos siguen') + ' como «' + n + '»', { boton: 'Pasarlos', ms: 10000, deshacer: () => catPasarMovs(viejos.map((m) => m.id), n, v) });
   },
   catQuitar: ([n], el) => confirmDelete(el, () => { guardarCats(catsGasto().filter((c) => c.nombre !== n)); setTimeout(() => updateSheet(catsEditorHtml()), 50); }),
   catNueva: () => {
@@ -12252,6 +12284,7 @@ async function main() {
     return;
   }
   window.Auth.onChange((session) => {
+    if (session && window.Auth.recuperando && window.Auth.recuperando()) { renderNuevaContrasena(); return; } // 08/11: vuelta del correo de «¿Olvidaste tu contraseña?»
     if (session && needsMfa(session)) { if (!S.appStarted) renderMfaScreen(); return; }
     if (session) { if (!S.appStarted) enterApp(session); }
     else { leaveApp(); }

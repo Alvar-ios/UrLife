@@ -60,6 +60,13 @@
   }
 
   var currentUid = null;
+  // 08/11 (barrido de Calidad, fallo 3): lo que guardas se vuelve a leer aunque se pierda el aviso «en vivo»,
+  // y todo se relee al volver a la app o al recuperar la conexión.
+  var recargas = {};
+  function avisarCambio(table) { (recargas[table] || []).forEach(function (f) { try { f(); } catch (e) { /* */ } }); }
+  function recargarTodo() { Object.keys(recargas).forEach(avisarCambio); }
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') recargarTodo(); });
+  if (typeof window !== 'undefined') window.addEventListener('online', recargarTodo);
 
   function collection(path) {
     var table = TABLES[path];
@@ -89,12 +96,13 @@
         var timer = null;
         function refreshSoon() { clearTimeout(timer); timer = setTimeout(refresh, 300); }
         refresh();
+        (recargas[table] = recargas[table] || []).push(refreshSoon);
         if (currentUid) {
           channel = sb.channel(table + '-' + currentUid)
             .on('postgres_changes', { event: '*', schema: 'public', table: table, filter: 'user_id=eq.' + currentUid }, refreshSoon)
             .subscribe();
         }
-        return function unsubscribe() { stopped = true; if (channel) sb.removeChannel(channel); };
+        return function unsubscribe() { stopped = true; recargas[table] = (recargas[table] || []).filter(function (f) { return f !== refreshSoon; }); if (channel) sb.removeChannel(channel); };
       },
       doc: function (id) {
         var docId = id || newId();
@@ -109,11 +117,13 @@
           set: function (data) {
             return sb.from(table).upsert(objToRow(data, docId, currentUid)).then(function (res) {
               if (res.error) throw pgError(res.error);
+              avisarCambio(table);
             });
           },
           delete: function () {
             return sb.from(table).delete().eq('id', docId).eq('user_id', currentUid).then(function (res) {
               if (res.error) throw pgError(res.error);
+              avisarCambio(table);
             });
           },
         };
@@ -136,19 +146,21 @@
               return n + (Array.isArray(res.data) ? res.data.length : chunk.length); // solo las nuevas (las repetidas se ignoran)
             });
           });
-        }, Promise.resolve(0));
+        }, Promise.resolve(0)).then(function (n) { avisarCambio(table); return n; });
       },
       // Borra todas las filas propias con un valor concreto en un campo (solo se usa para deshacer una importación).
       deleteWhere: function (field, value) {
         if (field !== 'lote' || !value) return Promise.reject(new Error('Borrado no permitido'));
         return sb.from(table).delete().eq('user_id', currentUid).eq(toSnake(field), value).then(function (res) {
           if (res.error) throw pgError(res.error);
+          avisarCambio(table);
         });
       },
       add: function (data) {
         var id = newId();
         return sb.from(table).insert(objToRow(data, id, currentUid)).then(function (res) {
           if (res.error) throw pgError(res.error);
+          avisarCambio(table);
           return { id: id };
         });
       },
@@ -213,7 +225,12 @@
     lastSession = session || null;
     authListeners.forEach(function (fn) { fn(lastSession); });
   }
-  sb.auth.onAuthStateChange(function (_event, session) { notifyAuth(session); });
+  // 08/11: al volver del correo de «¿Olvidaste tu contraseña?», Supabase avisa con PASSWORD_RECOVERY: la app pide la nueva
+  var recuperando = false;
+  sb.auth.onAuthStateChange(function (event, session) { if (event === 'PASSWORD_RECOVERY') recuperando = true; notifyAuth(session); });
+  // La web pública: dentro de la app de Android el origen es «https://localhost», que no sirve para un enlace de correo
+  var WEB = 'https://urlife-zeta.vercel.app/';
+  function urlVuelta() { var o = window.location.origin || ''; return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o) || !/^https?:/.test(o) ? WEB : o + window.location.pathname; }
 
   window.Auth = {
     getSession: function () { return sb.auth.getSession().then(function (r) { return r.data.session; }); },
@@ -228,8 +245,16 @@
     },
     signOut: function () { return sb.auth.signOut(); },
     resetPassword: function (email) {
-      return sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname }).then(function (res) {
+      return sb.auth.resetPasswordForEmail(email, { redirectTo: urlVuelta() }).then(function (res) {
         if (res.error) throw pgError(res.error);
+      });
+    },
+    recuperando: function () { return recuperando || /type=recovery/.test(window.location.hash || ''); },
+    cambiarContrasena: function (nueva) {
+      return sb.auth.updateUser({ password: nueva }).then(function (res) {
+        if (res.error) throw pgError(res.error);
+        recuperando = false;
+        try { if (/type=recovery/.test(window.location.hash || '')) history.replaceState(null, '', window.location.pathname + window.location.search); } catch (e) { /* */ }
       });
     },
   };
