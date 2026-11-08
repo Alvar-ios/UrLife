@@ -965,7 +965,7 @@ async function borrarCuentaOk() {
   } catch (e) { j = { error: 'red' }; }
   F.borrando = false;
   if (j && j.ok) { closeSheet(); toast('Tu cuenta se ha borrado'); try { await window.Auth.signOut(); } catch (e) { /* */ } return; }
-  if (j && j.error === 'saldo_pendiente') return updateSheet(borrarCuentaHtml('Antes tienes que estar en paz en ' + escapeHtml((j.grupos || []).join(', ') || 'tus grupos') + '. Salda lo pendiente en Juntos y vuelve aquí.'));
+  if (j && j.error === 'saldo_pendiente') return updateSheet(borrarCuentaHtml('Antes tienes que estar en paz en ' + escapeHtml((j.grupos || []).map((g) => (typeof g === 'string' ? g : (grupoDe(g.grupo) ? nombreDestino(grupoDe(g.grupo)) : g.nombre))).filter(Boolean).join(', ') || 'tus grupos') + '. Salda lo pendiente en Juntos y vuelve aquí.'));
   updateSheet(borrarCuentaHtml('Ahora no se puede borrar desde aquí. Escríbenos a <a href="mailto:' + CONTACTO.correo + '?subject=Borrar%20mi%20cuenta">' + escapeHtml(CONTACTO.correo) + '</a> y lo hacemos nosotros en menos de 30 días.'));
 }
 function renderNuevaContrasena(msg) {
