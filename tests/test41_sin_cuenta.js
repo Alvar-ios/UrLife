@@ -76,12 +76,14 @@ const gastosMes = (X) => { const d = new Date(); return X.kpisMes(d.getFullYear(
   /* 1. Añadir a alguien sin la app */
   A.H.grupoVer(['g1']); await sleep(30);
   ok(/¿Alguien no tiene la app\?/.test(sh(a)), 'en el grupo se ofrece añadir a alguien sin la app');
-  ok(/Miembros \(2\) <span class="badge-new ">NUEVO/.test(a.doc.querySelector('#sheetHost').innerHTML), 'Parche 7: «Miembros» lleva la etiqueta NUEVO');
+  // 08/11 (Calidad): las etiquetas caducan a los 21 días (la de «sincuenta» es del 17/10): se comprueba según siga viva o no
+  const bSc = A.badgeActivo('sincuenta');
+  ok(bSc ? /Miembros \(2\) <span class="badge-new ">NUEVO/.test(a.doc.querySelector('#sheetHost').innerHTML) : !/Miembros \(\d\) <span class="badge-new/.test(a.doc.querySelector('#sheetHost').innerHTML), 'Parche 7: «Miembros» lleva la etiqueta NUEVO (mientras no caduque)');
   a.doc.querySelector('#gSinCuenta').value = 'Marta';
   click(a, 'sinCuentaAnadir', 'g1'); await sleep(40);
   const m = DB.sc[0];
   ok(m && m.nombre === 'Marta' && m.creado_por === 'uA', 'se guarda solo con su nombre');
-  ok(A.cfg().badgesVistos && A.cfg().badgesVistos.sincuenta && !/Miembros \(\d\) <span class="badge-new/.test(a.doc.querySelector('#sheetHost').innerHTML), 'al añadir a alguien sin la app, la etiqueta desaparece');
+  ok((!bSc || (A.cfg().badgesVistos && A.cfg().badgesVistos.sincuenta)) && !/Miembros \(\d\) <span class="badge-new/.test(a.doc.querySelector('#sheetHost').innerHTML), 'al añadir a alguien sin la app, la etiqueta desaparece');
   ok(/Marta/.test(sh(a)) && /sin cuenta/.test(sh(a)) && /Invitarle a la app/.test(sh(a)), 'sale en Miembros con la etiqueta «sin cuenta» y el botón para invitarle');
   const opciones = A.S.grupos.find((g) => g.id === 'g1').miembros.map((x) => x.nombre);
   ok(opciones.includes('Marta'), 'se puede elegir en los repartos como un miembro más');

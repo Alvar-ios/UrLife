@@ -23,11 +23,12 @@ const html = (e) => e.doc.querySelector('#content').innerHTML;
 
   /* 1. Inicio: «Así vas» con su etiqueta; al tocar una tarjeta se quita y hace lo de siempre */
   H.goTab(['inicio']); await sleep(10);
-  ok(/Así vas <span class="badge-new mejor">MEJORADO/.test(html(e)), 'Inicio: «Así vas» lleva MEJORADO (Parche 8)');
+  const vivaAv = A.badgeActivo('asivas'); // 08/11 (Calidad): caduca el 13/11
+  ok(vivaAv ? /Así vas <span class="badge-new mejor">MEJORADO/.test(html(e)) : !/Así vas <span class="badge-new/.test(html(e)), 'Inicio: «Así vas» lleva MEJORADO (Parche 8, mientras no caduque)');
   const tarjeta = e.doc.querySelector('.ins-card');
   ok(tarjeta && /^insIr\|/.test(tarjeta.getAttribute('data-click')), 'las tarjetas pasan por insIr');
   tarjeta.click(); await sleep(20);
-  ok(vistos().asivas, 'al tocar una tarjeta, la etiqueta queda vista');
+  ok(!vivaAv || vistos().asivas, 'al tocar una tarjeta, la etiqueta queda vista');
   ok(S.tab === 'movimientos', 'y la tarjeta sigue llevando a Movimientos como antes');
   /* 2. Movimientos: sin etiquetas, como lo dejó diseño */
   ok(!e.doc.querySelector('#content .badge-new'), 'Movimientos: ninguna etiqueta NUEVO / MEJORADO');
@@ -39,13 +40,15 @@ const html = (e) => e.doc.querySelector('#content').innerHTML;
 
   /* 3. Tú: «Tu mes» y «Cuentas y saldos» con NUEVO */
   H.goTab(['tu']); await sleep(10);
-  ok(/Tu mes <span class="badge-new mejor">MEJORADO/.test(html(e)) && /Cuentas y saldos <span class="badge-new ">NUEVO/.test(html(e)), 'Tú: MEJORADO en «Tu mes» (Parche 8) y NUEVO en «Cuentas y saldos»');
-  ok(e.doc.querySelector('#tbAvatar').classList.contains('con-novedad'), 'punto en tu inicial mientras haya algo nuevo en Tú');
+  // 08/11 (Calidad): las etiquetas caducan a los 21 días; cada una se comprueba según siga viva o no
+  const vivaTm = A.badgeActivo('tumes'), vivaCu = A.badgeActivo('cuentas');
+  ok((vivaTm ? /Tu mes <span class="badge-new mejor">MEJORADO/.test(html(e)) : !/Tu mes <span class="badge-new/.test(html(e))) && (vivaCu ? /Cuentas y saldos <span class="badge-new ">NUEVO/.test(html(e)) : !/Cuentas y saldos <span class="badge-new/.test(html(e))), 'Tú: MEJORADO en «Tu mes» (Parche 8) y NUEVO en «Cuentas y saldos» (mientras no caduquen)');
+  if (vivaTm || vivaCu) ok(e.doc.querySelector('#tbAvatar').classList.contains('con-novedad'), 'punto en tu inicial mientras haya algo nuevo en Tú');
   click(e, 'tuMesAbrir'); await sleep(20);
-  ok(vistos().tumes, 'al abrir «Tu mes» se quita su etiqueta');
+  ok(!vivaTm || vistos().tumes, 'al abrir «Tu mes» se quita su etiqueta');
   H.closeSheet([]); await sleep(300);
   click(e, 'openCuentas'); await sleep(20);
-  ok(vistos().cuentas, 'al abrir «Cuentas y saldos» se quita su etiqueta');
+  ok(!vivaCu || vistos().cuentas, 'al abrir «Cuentas y saldos» se quita su etiqueta');
   H.closeSheet([]); await sleep(300);
   H.goTab(['tu']); await sleep(10);
   ok(!/Tu mes <span class="badge-new/.test(html(e)) && !/Cuentas y saldos <span class="badge-new/.test(html(e)), 'Tú: ya sin esas etiquetas');
