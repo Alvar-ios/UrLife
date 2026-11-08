@@ -50,7 +50,7 @@ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
  e.w.__APP__.H.goTab(['dinero']);
  ok(/Metas/.test(e.doc.querySelector('.chips-nav').textContent)&&/Viaje/.test(e.doc.querySelector('#content').textContent),'Dinero: apartados y metas');
  e.w.__APP__.H.goTab(['calendario']);
- ok(e.w.__APP__.S.tab==='inicio'&&e.w.__APP__.S.agendaSub==='calendario'&&e.doc.querySelector('[data-tab="inicio"]').classList.contains('active'),'el calendario vive dentro de Inicio');
+ ok(e.w.__APP__.S.tab==='inicio'&&e.w.__APP__.S.agendaSub==='calendario'&&!e.doc.querySelector('.tabbar [data-tab].active'),'el calendario vive dentro de Inicio (desde el 08/11 ninguna pestaña de abajo se marca en la Agenda)');
  const c=()=>e.doc.querySelector('#content');
  const cell=d=>[...c().querySelectorAll('[data-click^="calSelDia"]')].find(b=>b.getAttribute('data-click')==='calSelDia|'+ym+'-'+pad(d));
  ok(c().querySelectorAll('[data-click^="calSelDia"]').length===new Date(Y,M+1,0).getDate(),'month grid has all days');

@@ -31,6 +31,8 @@ const ICONS = {
   manoMoneda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h3l4.5 1.5h3.2a1.5 1.5 0 0 0 0-3H11"/><path d="M6 20.5h7l6.2-3.7a1.6 1.6 0 0 0-1.6-2.8L14 15.8"/><path d="M3 13v8"/><circle cx="15.5" cy="6.5" r="3.5"/></svg>',
   comparar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M12 4v16"/><path d="m7 10-2 2 2 2M17 10l2 2-2 2"/></svg>',
   sonrisa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c.9 1.4 2.1 2 3.5 2s2.6-.6 3.5-2"/><circle cx="9" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r=".9" fill="currentColor" stroke="none"/></svg>',
+  ojo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  ojoNo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.6A9.7 9.7 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.2 6.9C3.9 8.5 2.5 12 2.5 12S6 18.5 12 18.5c1.6 0 3-.4 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>',
   candado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/></svg>',
   estrella: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>',
   play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12.5" rx="2.5"/><path d="M10.3 8.8v5l4.2-2.5z"/><path d="M8 20.5h8"/></svg>',
@@ -562,6 +564,9 @@ function marcarCampo(sel) {
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function cifrasOcultas() { return lsGet('cifrasOcultas') === '1'; }
+function aplicarOcultar() { document.documentElement.classList.toggle('cifras-ocultas', cifrasOcultas()); }
+function ojoBtnHtml() { const o = cifrasOcultas(); return '<button type="button" class="icon-btn sm ojo-btn" aria-pressed="' + o + '" aria-label="' + (o ? 'Mostrar cifras' : 'Ocultar cifras') + '" ' + act('ocultarCifras') + '>' + ic(o ? 'ojoNo' : 'ojo') + '</button>'; }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento local */ } }
 
 /* Atributos de eventos delegados: data-click="nombre|arg1|arg2" (args codificados) */
@@ -885,6 +890,8 @@ const TABS = [
 const TITULOS = { inicio: 'Inicio', movimientos: 'Movimientos', dinero: 'Dinero', agenda: 'Agenda', juntos: 'Juntos', tu: 'Tú' };
 // Nombres antiguos de pestañas → dónde están ahora
 const TAB_ALIAS = { analisis: 'inicio', mas: 'tu', tareas: 'agenda', calendario: 'agenda' };
+// «domingo, 8 nov» (docs/32 A8)
+function fechaCabecera() { const d = new Date(); return d.toLocaleDateString('es-ES', { weekday: 'long' }) + ', ' + d.getDate() + ' ' + MESES_CORTO[d.getMonth()]; }
 function tabBtn(t) {
   return '<button class="tab" data-tab="' + t.id + '" ' + act('goTab', t.id) + '><span class="ic">' + ic(t.icon) + '</span><span>' + t.label + '</span></button>';
 }
@@ -908,12 +915,12 @@ function perfilHtml() {
 }
 function renderShell() {
   $('#app').innerHTML =
-    '<nav class="rail" aria-label="Secciones"><div class="brand">Mis Finanzas<span class="sub">y Tareas</span></div>' +
+    '<nav class="rail" aria-label="Secciones"><div class="brand">PalomApp<span class="sub">Tu dinero y tus planes</span></div>' +
     tabsNav().map(tabBtn).join('') +
     '<button class="rail-fab" ' + act('onFab') + '>' + ic('plus') + ' Añadir</button>' +
     '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
-    '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('goTab', 'inicio') + '>' + ic('chevL') + '</button>' +
-    '<div><h1 id="pageTitle"></h1><div class="sub">' + fmtDateLong(todayISO()) + '</div></div></div>' +
+    '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('tbVolver') + '>' + ic('chevL') + '</button>' +
+    '<div><h1 id="pageTitle"></h1><div class="sub" id="pageSub"></div></div></div>' +
     '<div class="tb-r"><span id="compararHost"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda" ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
     '<nav class="tabbar" aria-label="Secciones">' + tabBtn(tabsNav()[0]) + tabBtn(tabsNav()[1]) +
@@ -922,6 +929,7 @@ function renderShell() {
 }
 
 function loadingHtml() {
+  clearTimeout(S._sinRedT); S._sinRedT = setTimeout(() => { if (allLoaded()) return; const m = $('#loadingMsg'); if (m) m.innerHTML = (navigator.onLine === false ? 'No hay conexión. En cuanto vuelva, verás tus datos.' : 'Está tardando más de lo normal. Comprueba tu conexión.') + '<br><button class="btn ghost" style="margin-top:12px;" ' + act('reintentarCarga') + '>Reintentar</button>'; }, 8000);
   return '<div class="esqueleto" aria-busy="true"><div class="sk sk-hero"></div><div class="sk sk-t"></div><div class="sk-fila"><div class="sk sk-card"></div><div class="sk sk-card"></div></div><div class="sk sk-t"></div><div class="sk sk-lista"></div>' +
     '<div class="loading-txt" id="loadingMsg">' + escapeHtml(S.loadingMsg) + '</div></div>';
 }
@@ -934,7 +942,7 @@ function renderLoginScreen(msg) {
     '<div style="min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;">' +
     '<div class="card" style="width:100%;max-width:360px;">' +
     '<div style="text-align:center;margin-bottom:22px;">' +
-    '<div class="num" style="font-size:26px;font-weight:600;color:var(--ink);">Mis Finanzas<span style="display:block;font-family:var(--font-ui);font-size:13px;font-weight:400;color:var(--text-faint);margin-top:2px;">y Tareas</span></div></div>' +
+    '<div class="num" style="font-size:26px;font-weight:600;color:var(--ink);">PalomApp<span style="display:block;font-family:var(--font-ui);font-size:13px;font-weight:400;color:var(--text-faint);margin-top:2px;">Tu dinero, tus planes y tu gente</span></div></div>' +
     '<div class="field"><label>Correo</label><input id="loginEmail" type="email" autocomplete="username" placeholder="tu@correo.com"></div>' +
     '<div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password"></div>' +
     (msg ? '<div class="alert" style="margin-top:2px;">' + ic('alert') + '<div>' + escapeHtml(msg) + '</div></div>' : '') +
@@ -1024,6 +1032,10 @@ function render() {
   const tbA = $('#tbAgenda'); if (tbA) { const enAg = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0); tbA.classList.toggle('on', enAg); tbA.setAttribute('aria-current', enAg ? 'page' : 'false'); const n = allLoaded() ? agendaHoyN() : 0, nb = $('#tbAgendaN'); if (nb) { nb.hidden = !n; nb.textContent = n > 9 ? '9+' : String(n); } tbA.setAttribute('aria-label', 'Agenda' + (n ? ', ' + n + (n === 1 ? ' cosa hoy' : ' cosas hoy') : '')); }
   document.body.classList.toggle('en-movlista', S.tab === 'movimientos' && movVistaAct() === 'lista'); // allí ya hay una lupa que busca en la lista
   document.body.classList.toggle('en-tu2', S.tab === 'tu' && !verAnterior('tu'));
+  const enAgenda = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0);
+  const sub = $('#pageSub'); if (sub) { const enHoy = S.tab === 'inicio' && !enAgenda; sub.textContent = enHoy ? fechaCabecera() : ''; sub.hidden = !enHoy; }
+  document.body.classList.toggle('en-agenda', enAgenda); // docs/32 A6/A7: en la Agenda, flecha para volver y ninguna pestaña marcada
+  if (enAgenda) $$('.tabbar [data-tab], .rail [data-tab]').forEach((b) => b.classList.remove('active'));
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : TITULOS[S.tab];
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
   const _agEl = document.activeElement && document.activeElement.id === 'agRapida' ? document.activeElement : null, _agV = _agEl ? _agEl.value : null;
@@ -1263,11 +1275,16 @@ function movVistaSegHtml() {
   const v = movVistaAct();
   return '<div class="segmented mov-vista">' + MOV_VISTAS.map(([id, l]) => '<button class="' + (v === id ? 'active' : '') + '" ' + act('setMovVista', id) + '>' + l + '</button>').join('') + '</div>';
 }
+function movVacioHtml() {
+  return '<div class="card mov-vacio"><span class="mov-vacio-ic">' + ic('list') + '</span><b>Aquí verás en qué se va tu dinero</b><p>Apunta tu primer gasto o trae el extracto de tu banco.</p>' +
+    '<button class="btn accent block" ' + act('crearIr', 'gasto') + '>' + ic('plus') + ' Apuntar un gasto</button><button class="btn ghost block" ' + act('impAbrir') + '>' + ic('fileIn') + ' Importar extracto</button></div>';
+}
 function renderMovTab() {
   const v = movVistaAct(), dir = S._movDir || 0; S._movDir = 0;
   if (v !== 'lista') { const p = movPerNorm(S.movPeriodo); if (!/^m:/.test(p) && !(v === 'resumen' && /^y:/.test(p))) S.movPeriodo = mesHoyClave(); }
   const cuerpo = v === 'resumen' ? renderMovResumen() : v === 'calendario' ? (agendaV2() ? calCapasHtml('dinero') : '') + renderMovCal() : renderMovimientos();
-  return movVistaSegHtml() + (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
+  const vacio = v === 'resumen' && !S.movimientos.length && !(S.traspasos || []).length && !(S.compartidos || []).length && movPerNorm(S.movPeriodo) === mesHoyClave() ? movVacioHtml() : ''; // docs/32 A10
+  return movVistaSegHtml() + vacio + (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
     movCabHtml(dir) + '<div class="mov-marco"><div id="movCuerpo" class="mov-cuerpo-' + v + '">' + cuerpo + '</div></div>';
 }
 function movLimpiarFiltros() { S.movFiltroTipo = 'Todos'; S.movQuery = ''; S.movSub = ''; S.movSoloTicket = false; S.movSoloComp = false; S._movBuscando = false; S.movLimit = 120; }
@@ -3602,7 +3619,7 @@ function renderAgendaSemanaV2() {
   const plegH = (adelante.length || hechas.length || encargadas.length) ? '<div class="ag-plegs">' + pleg('adelante', sel > hoy ? 'Otros días' : 'Más adelante', adelante) + plegE + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
   setTimeout(agendaMarcarVista, 0); // al abrir la Agenda, lo que te encargaron deja de ser «nuevo» en Inicio
   const otrosH = otrosDia.length ? '<div class="list agc-list">' + otrosDia.map(agcFilaHtml).join('') + '</div>' : '';
-  return cab + tira + agcCarasHtml() + rapida + vencH + diaH + otrosH + proxH + sinFH + plegH;
+  return cab + tira + agcCarasHtml() + rapida + vencH + diaH + otrosH + proxH + sinFH + plegH + agcEnlaceFinalHtml();
 }
 // Calendario v2: solo el mes; la leyenda de colores de abajo es el filtro
 // Un solo calendario con dos capas: «Planes y tareas» (Agenda) y «Dinero» (Movimientos → Calendario)
@@ -3632,7 +3649,7 @@ function renderCalendarioV2() {
     '<div class="cal2-ley" role="group" aria-label="Qué se ve en el calendario">' + ley.map(([k, l, c]) => '<button type="button" class="cal2-ley-i' + (f[k] ? ' on' : '') + '" aria-pressed="' + !!f[k] + '" ' + act('calToggle', k) + '><i style="' + (f[k] ? 'background:' : 'border-color:') + c + '"></i>' + l + '</button>').join('') + '</div></div>' +
     '<div class="section-title">' + DIAS_LARGO[dowMon(dsel)] + ' ' + dsel.getDate() + ' de ' + MESES[dsel.getMonth()].toLowerCase() + '<button class="link" ' + act('tareaEnDia', anchor) + '>' + ic('plus') + ' Tarea</button></div>' +
     (evsSel.length ? '<div class="list">' + evsSel.map(calEventRow).join('') + '</div>' : (agcOn() && agcDelDia(anchor).length ? '' : '<div class="card empty-mini">Nada este día.</div>')) +
-    (agcOn() && agcDelDia(anchor).length ? '<div class="list agc-list">' + agcDelDia(anchor).map(agcFilaHtml).join('') + '</div>' : '') + (agcOn() ? (agcAsegurar(), agcCarasHtml()) : '');
+    (agcOn() && agcDelDia(anchor).length ? '<div class="list agc-list">' + agcDelDia(anchor).map(agcFilaHtml).join('') + '</div>' : '') + (agcOn() ? (agcAsegurar(), agcCarasHtml() + agcEnlaceFinalHtml()) : '');
 }
 /* Formulario de tarea v2: qué, para cuándo y categoría; lo demás en «Más opciones» */
 function finde(hoy) { const d = dowMon(parseISO(hoy)); return d >= 5 ? hoy : uAdd(hoy, 5 - d); }
@@ -3975,6 +3992,7 @@ function renderTuV2() {
     grupo('Traer y guardar', [it('impAbrir', [], 'fileIn', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
       ticketsDisponible() ? it('ticketsInfo', [], 'receipt', 'Fotos de tickets', ticketsFilaExtra(), 'tickets lecturas foto camara recibo quedan') : '',
       it('openPapelera', [], 'trash', 'Papelera', badge('papelera') + '<span class="menu-extra">' + (papeleraItems().length ? papeleraItems().length + ' dentro' : 'vacía') + '</span>', 'borrados recuperar eliminados'),
+      it('exportCsv', [], 'download', 'Descargar mis movimientos (Excel)', '', 'exportar excel csv hoja de calculo'),
       it('exportBackup', [], 'archive', 'Copia de seguridad', '<span class="menu-extra">Descargar</span>', 'exportar backup json')]) +
     grupo('La app', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', badge('aspecto') + '<span class="menu-extra">' + (PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1] + '</span>', 'aspecto color paleta tipografia cifras fuente vibracion sonido estilo'),
       '<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
@@ -4044,8 +4062,7 @@ function renderInicioNuevo() {
   if (vista !== 'hoy') {
     // la Agenda vive detrás de «Agenda ›»: se vuelve a Inicio con un toque
     S.agendaSub = vista;
-    return '<button class="link volver" ' + act('setInicioVista', 'hoy') + '>' + ic('chevL') + ' Inicio</button>' +
-      '<div class="segmented inicio-seg">' + [['tareas', agendaV2() ? 'Tareas' : 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (vista === id ? 'active' : '') + '" ' + act('setInicioVista', id) + '>' + l + '</button>').join('') + '</div>' +
+    return '<div class="segmented inicio-seg">' + [['tareas', agendaV2() ? 'Tareas' : 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (vista === id ? 'active' : '') + '" ' + act('setInicioVista', id) + '>' + l + '</button>').join('') + '</div>' +
       (vista === 'calendario' ? (agendaV2() ? renderCalendarioV2() : renderCalendario()) : (agendaV2() ? renderAgendaSemanaV2() : renderAgendaSemana()));
   }
   // los primeros pasos solo para quien empieza: a quien ya usa la app no le quitan sitio en Inicio
@@ -4068,7 +4085,7 @@ function heroMesHtml() {
   const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
   return '<section class="hero hero2" aria-label="Cómo vas este mes">' +
     '<div class="hero2-top"><button type="button" class="mes-pill' + anim + '" ' + act('tuMesAbrir') + '><b>' + MESES[m - 1] + (y !== mesActual().y ? ' ' + y : '') + '</b><span>· ' + mesPillTxt(y, m) + '</span><span class="mes-pill-ic">' + ic('chevR') + '</span></button>' +
-    '<span class="hero2-flechas"><button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
+    '<span class="hero2-flechas">' + ojoBtnHtml() + '<button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
     '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
     '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (disp < 0 ? ' neg' : '') + (nuevo ? ' vacio' : '') + '">' + cifraHtml(disp) + '</span></button>' +
     (nuevo ? '<p class="hero-nuevo">Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.</p>' : heroBarraHtml(k)) +
@@ -4351,7 +4368,7 @@ function avisosInicioFilas() {
   const ha = histAvisos();
   if (ha.length) { const f = ha[0], ef = histEfecto(f), g = grupoDe(f.gid);
     filas.push({ cls: 'juntos-nov', caras: caraHtml(aliasDe(f.gid, f.por), histQuien(f), 'mini'), t: histFraseHtml(f),
-      d: escapeHtml((ha.length > 1 ? 'Y ' + (ha.length - 1) + (ha.length === 2 ? ' cambio más' : ' cambios más') + ' · ' : '') + 'a tu saldo ' + (ef > 0 ? '+' : '−') + money(Math.abs(ef)) + ' · ' + nombreDestino(g)), a: act('histVer', f.gid) }); }
+      d: escapeHtml((ef > 0 ? '+' : '−') + money(Math.abs(ef)) + ' a tu saldo' + (ha.length > 1 ? ' · y ' + (ha.length - 1) + (ha.length === 2 ? ' cambio más' : ' cambios más') : '') + ' · ' + nombreDestino(g)), a: act('histVer', f.gid) }); }
   if (nov.length) {
     const c = nov[0], quien = nombreEnGrupo(c.grupoId, c.creadoPor), liq = c.tipo === 'Liquidación', rec = Object.keys(c.reparto || {})[0];
     const que = liq ? (esMio(c.grupoId, c.pagadoPor) ? 'Pagaste ' + money(c.importe) + ' a ' + nombreEnGrupo(c.grupoId, rec) : nombreEnGrupo(c.grupoId, c.pagadoPor) + (esMio(c.grupoId, rec) ? ' te pagó ' + money(c.importe) : ' pagó a ' + nombreEnGrupo(c.grupoId, rec))) : quien + ' apuntó «' + (c.descripcion || c.categoria || 'un gasto') + '»', parteTxt = liq || miParte(c) < 0.005 ? '' : ' · tu parte ' + money(miParte(c));
@@ -5058,8 +5075,8 @@ function infPendientes() {
 // el aviso en Inicio: siempre que haya un informe nuevo (un solo aviso a la vez, después de la invitación de Juntos)
 function infAvisoHtml() {
   const c = infPendientes()[0]; if (!c) return '';
-  const D = infDatos(c), P = D.P;
-  return '<div class="card inf-ini"><span class="inf-ini-ic">' + ic('sparkle') + '</span><button type="button" class="inf-ini-x tappable" ' + act('infVer', c) + '><b>Tu informe ' + (P.tipo === 'semana' ? 'de la semana' : P.tipo === 'anio' ? 'de ' + P.y : P.tipo === 'trimestre' ? 'del trimestre' : 'de ' + MESES[P.m - 1].toLowerCase()) + '</b><span>' + escapeHtml(D.titular) + '</span></button>' +
+  const P = infDatos(c).P;
+  return '<div class="card inf-ini inf-ini-1"><span class="inf-ini-ic">' + ic('sparkle') + '</span><button type="button" class="inf-ini-x tappable" ' + act('infVer', c) + '><b>Tu informe ' + (P.tipo === 'semana' ? 'de la semana' : P.tipo === 'anio' ? 'de ' + P.y : P.tipo === 'trimestre' ? 'del trimestre' : 'de ' + MESES[P.m - 1].toLowerCase()) + ' está listo</b>' + ic('chevR') + '</button>' +
     '<button type="button" class="icon-btn sm" aria-label="Cerrar el aviso" ' + act('infDescartar', c) + '>' + ic('close') + '</button></div>';
 }
 function infMarcarVisto(c) { const C = cfg().informes || {}; if ((C.vistos || {})[c]) return; const vistos = Object.assign({}, C.vistos || {}, { [c]: todayISO() }); Object.keys(vistos).sort((a, b) => String(vistos[a]).localeCompare(String(vistos[b]))).slice(0, -60).forEach((x) => delete vistos[x]); saveConfig({ informes: Object.assign({}, C, { vistos }) }); }
@@ -5117,13 +5134,17 @@ function agcVerHtml(uid, clave) {
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
 }
 // la fila de caras de la Agenda: Yo + quien me enseña la suya (tocar enciende o apaga)
+function agcEnlaceFinalHtml() {
+  if (!agcOn() || !S._agcTs || S.agcError || !amigos().length || (S.agcPermisos || []).length) return '';
+  return '<button type="button" class="link agc-fin agc-compartir" ' + act('agcAbrir') + '>' + ic('users') + ' Compartir mi agenda ›</button>';
+}
 function agcCarasHtml() {
   if (!agcOn()) return ''; const cm = S.agcConmigo || [], la = (S.agcPermisos || []);
   const ven = la.map((p) => p.aUsuario ? agcPersonaNombre(p.aUsuario) : (grupoDe(p.aGrupo) ? nombreDestino(grupoDe(p.aGrupo)) : 'un grupo'));
   const caras = cm.length ? '<div class="agc-caras" role="group" aria-label="Agendas que ves">' + '<span class="agc-cara on yo">' + caraHtml(miUid(), miNombreAlguno(), 'mini') + '<span>Yo</span></span>' +
     cm.map((p) => { const on = agcCapaOn(p.uid), n = agcPersonaNombre(p.uid); return '<button type="button" class="agc-cara' + (on ? ' on' : '') + '" aria-pressed="' + on + '" style="--pc:' + colorPersona(p.uid) + '" ' + act('agcCapa', p.uid) + '>' + caraHtml(p.uid, n, 'mini') + '<span>' + escapeHtml(n.split(' ')[0]) + '</span></button>'; }).join('') + '</div>' : '';
   const laVen = ven.length ? '<button type="button" class="agc-laven" ' + act('agcAbrir') + '>' + ic('users') + '<span>La ven ' + escapeHtml(ven.length > 2 ? ven.slice(0, 2).join(', ') + ' y ' + (ven.length - 2) + ' más' : ven.join(' y ')) + '</span>' + ic('chevR') + '</button>'
-    : S._agcTs && !S.agcError && amigos().length ? '<button type="button" class="agc-laven agc-compartir" ' + act('agcAbrir') + '>' + ic('users') + '<span>Compartir mi agenda' + badge('agendaComp') + '</span>' + ic('chevR') + '</button>' : ''; // también desde la propia Agenda
+    : ''; // 08/11 (docs/32 A6): «Compartir mi agenda» ya no ocupa la mejor fila; va como enlace al final (agcEnlaceFinalHtml)
   return caras + laVen;
 }
 /* ---- hoja «Compartir mi agenda» ---- */
@@ -10457,7 +10478,7 @@ function introJuntosHtml(gid) {
 function renderMas() {
   const item = (key) => '<button class="menu-item" ' + act('openListEditor', key) + '><span class="ic">' + ic(LIST_META[key].icon) + '</span>' + LIST_META[key].title + '<span class="chev">' + ic('chevR') + '</span></button>';
   return '<button class="btn accent block" style="margin-bottom:18px;" ' + act('startOnboardingManually') + '>' + ic('flag') + ' Volver a ver la bienvenida</button>' +
-    '<div class="profile-tile"><div class="av">' + sym() + '</div><div><div class="t">Mis Finanzas y Tareas</div>' +
+    '<div class="profile-tile"><div class="av">' + sym() + '</div><div><div class="t">PalomApp</div>' +
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · datos privados, sincronizados entre tus dispositivos.</div></div></div>' +
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
     item('categoriasGasto') +
@@ -10483,13 +10504,28 @@ function renderMas() {
     '<div class="menu-item static"><span class="ic">' + ic('bank') + '</span>Conexión con tu banco<span class="future-badge">Pronto</span></div></div>' +
     '<div class="section-title">Cuenta</div><div class="card menu"><button class="menu-item" ' + act('doLogout') + '><span class="ic">' + ic('close') + '</span>Cerrar sesión</button></div>';
 }
+// docs/32 B8: «Descargar mis movimientos (Excel)» — CSV con punto y coma e importes con coma, que Excel abre bien
+function exportCsv() {
+  const q = (x) => { const t = String(x == null ? '' : x); return /[;"\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const filas = S.movimientos.concat(S.traspasos || []).slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+  const signo = (m) => (m.tipo === 'Ingreso' ? 1 : m.tipo === 'Traspaso' ? 0 : -1);
+  const lineas = [['Fecha', 'Tipo', 'Concepto', 'Categoría', 'Subcategoría', 'Cuenta', 'Importe'].join(';')].concat(filas.map((m) => [m.fecha, m.tipo === 'Factura' ? 'Pago fijo' : m.tipo, m.descripcion || '', m.tipo === 'Traspaso' ? '' : m.categoria || '', m.subcategoria || '',
+    m.tipo === 'Traspaso' ? nombreCuenta(m.cuentaId) + ' → ' + nombreCuenta(m.cuentaDestinoId) : (hayVariasCuentas() ? nombreCuenta(cuentaIdDe(m)) : ''), (signo(m) ? signo(m) * Math.abs(num(m.importe)) : Math.abs(num(m.importe))).toFixed(2).replace('.', ',')].map(q).join(';')));
+  try {
+    const blob = new Blob(['\ufeff' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = 'palomapp-movimientos-' + todayISO() + '.csv';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast(filas.length + (filas.length === 1 ? ' movimiento descargado' : ' movimientos descargados'));
+  } catch (e) { console.error(e); toast('No se pudo descargar'); }
+}
 function exportBackup() {
   const payload = { exportadoEl: new Date().toISOString(), movimientos: S.movimientos.concat(S.traspasos || []), tareas: S.tareas, golf: S.golf, config: S.config, compartidos: S.compartidos || [], objetivosCompartidos: S.objetivos || [] };
   try {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'mis-finanzas-backup-' + todayISO() + '.json';
+    a.href = url; a.download = 'palomapp-copia-' + todayISO() + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     toast('Copia de seguridad descargada');
@@ -11607,6 +11643,10 @@ const H = {
   usoGuardar: () => usoGuardar(),
   usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
+  exportCsv: () => exportCsv(),
+  ocultarCifras: () => { const v = !cifrasOcultas(); lsSet('cifrasOcultas', v ? '1' : '0'); aplicarOcultar(); sentir('tic'); toast(v ? 'Cifras ocultas' : 'Cifras a la vista'); render(); },
+  reintentarCarga: () => location.reload(),
+  tbVolver: () => { if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) H.setInicioVista(['hoy']); else H.goTab(['inicio']); },
   metaGuardar: () => metaGuardar(),
   metaCuentaElegir: ([id]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.cuentaMeta = id || ''; updateSheet(metaEditorHtml()); sentir('tic'); },
   aportarRDesde: ([id]) => { if (!FORM || FORM.kind !== 'aportarR' || !cuentaPorId(id)) return; FORM.desde = id; const t = FORM.tec, imp = FORM.importe; updateSheet(aportarRHtml()); FORM.importe = imp; if (t) tecSync(); sentir('tic'); },
@@ -12023,7 +12063,7 @@ const H = {
       const api = mfaApi();
       const l = await api.listFactors();
       for (const f of (l.data && l.data.all) || []) { if (f.status !== 'verified') await api.unenroll({ factorId: f.id }); } // limpia intentos abandonados
-      const r = await api.enroll({ factorType: 'totp', friendlyName: 'Mis Finanzas ' + Date.now() });
+      const r = await api.enroll({ factorType: 'totp', friendlyName: 'PalomApp ' + Date.now() });
       if (r.error) throw r.error;
       const t = r.data.totp;
       updateSheet('<div class="handle"></div><h2>Escanea el código QR</h2>' +
@@ -12200,7 +12240,7 @@ function ajustarAlTeclado() {
   else { bd.style.top = ''; bd.style.height = ''; bd.style.bottom = ''; }
 }
 async function main() {
-  applyTheme(); applyLook();
+  applyTheme(); applyLook(); aplicarOcultar();
   window.addEventListener('scroll', () => { const t = $('.topbar'); if (t) t.classList.toggle('scrolled', window.scrollY > 4); }, { passive: true });
   ['pointerdown', 'touchend', 'keydown'].forEach((ev) => document.addEventListener(ev, () => { if (sonidoOn()) audioCtx(); }, { passive: true, once: true })); // el navegador solo deja sonar tras un toque
   if (window.visualViewport) { window.visualViewport.addEventListener('resize', ajustarAlTeclado); window.visualViewport.addEventListener('scroll', ajustarAlTeclado); }

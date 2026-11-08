@@ -13,7 +13,7 @@ const movs = [mv('j1', 'Ingreso', 'Nómina', 1000, '2026-07-01'), mv('j2', 'Gast
   await sleep(200);
   const A = e.w.__APP__, S = A.S, H = A.H, doc = e.doc, sh = () => doc.querySelector('#sheetHost').textContent;
   const card = doc.querySelector('.inf-ini');
-  ok(card && /Tu informe de septiembre/.test(card.textContent) && /Septiembre cerró con \+250/.test(card.textContent), 'Inicio avisa del informe de septiembre con su frase');
+  ok(card && /Tu informe de septiembre está listo/.test(card.textContent), 'Inicio avisa del informe de septiembre en una sola fila (08/11, docs/32 A2: la frase va dentro del informe)');
   H.infVer(['m:2026-09']); await sleep(20);
   const t = sh();
   ok(/Septiembre cerró con \+250\s€ a tu favor/.test(t) && /Las cifras/.test(t) && /Lo que cambió/.test(t), 'el informe: frase, cifras y lo que cambió');

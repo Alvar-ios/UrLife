@@ -85,7 +85,7 @@ const hace = (min) => new Date(Date.now() - min * 60000).toISOString();
   // Inicio: avisa del borrado y del cambio de Bea que te tocan (no del tuyo, ni de lo que no mueve tu saldo)
   A.S.tab = 'inicio'; A.render(); await sleep(120);
   const ini = appTxt(a);
-  ok(/Bea cambió «Cena»/.test(ini) && /a tu saldo −3,00 €/.test(ini) && /Y 1 cambio más/.test(ini), 'Inicio: «Bea cambió «Cena»» · Y 1 cambio más [' + (ini.match(/Bea[^€]*€[^·]*·?[^·]*/) || [''])[0] + ']');
+  ok(/Bea cambió «Cena»/.test(ini) && /−3,00 € a tu saldo/.test(ini) && /y 1 cambio más/.test(ini), 'Inicio: «Bea cambió «Cena»» · Y 1 cambio más [' + (ini.match(/Bea[^€]*€[^·]*·?[^·]*/) || [''])[0] + ']');
   ok(!/Cambiaste/.test(ini), 'Inicio no avisa de lo que cambiaste tú');
   // abrir el historial desde Inicio marca lo visto y el aviso desaparece
   A.H.histVer(['g1']); await sleep(80);
