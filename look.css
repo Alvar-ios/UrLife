@@ -2386,3 +2386,16 @@ html[data-look="nuevo"] .mov-vacio p { margin: 0 0 8px; color: var(--text-muted)
 html[data-look="nuevo"] .mov-vacio .btn { width: 100%; }
 html[data-look="nuevo"] .tu2-borrar { color: var(--expense); }
 html[data-look="nuevo"] .tu2-borrar .ic { color: var(--expense); }
+/* 08/11 · App de Android (Capacitor, borde a borde): la barra de arriba empieza en 0 y rellena el hueco de la hora;
+   así el contenido no se ve pasar por detrás de la hora al bajar (docs/32 §3.2) */
+html.nativo:root { padding-top: 0; }
+html.nativo .topbar { top: 0; padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
+html.nativo[data-look="nuevo"] .topbar { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+html.nativo body { overscroll-behavior-y: none; }
+/* Bloqueo con huella: tapa todo hasta desbloquear */
+.bloqueo { display: none; }
+html.bloqueada .bloqueo { display: flex; position: fixed; inset: 0; z-index: 9999; background: var(--paper); flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; }
+html.bloqueada .bloqueo svg { width: 40px; height: 40px; color: var(--accent); }
+.descartar { position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,.45); display: flex; align-items: flex-end; justify-content: center; }
+.descartar-c { background: var(--paper-raised, #fff); color: var(--text); width: 100%; max-width: 520px; border-radius: 20px 20px 0 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px)); }
+.descartar-c b { font-size: 18px; } .descartar-c p { color: var(--text-muted); margin: 6px 0 14px; }

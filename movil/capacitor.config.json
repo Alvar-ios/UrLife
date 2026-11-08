@@ -1,0 +1,14 @@
+{
+  "appId": "com.palomapp.app",
+  "appName": "PalomApp",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 600, "launchAutoHide": true, "backgroundColor": "#0A0A0C", "showSpinner": false },
+    "StatusBar": { "overlaysWebView": true }
+  }
+}

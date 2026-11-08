@@ -925,7 +925,8 @@ function renderShell() {
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
     '<nav class="tabbar" aria-label="Secciones">' + tabBtn(tabsNav()[0]) + tabBtn(tabsNav()[1]) +
     '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabBtn(tabsNav()[2]) + tabBtn(tabsNav()[3]) + '</nav>' +
-    '<div id="sheetHost"></div><div class="toast" id="toast" role="status"></div>';
+    '<div id="sheetHost"></div><div class="toast" id="toast" role="status"></div>' +
+    '<div class="bloqueo" aria-live="polite">' + ic('candado') + '<b>PalomApp está bloqueada</b><button class="btn accent" ' + act('desbloquear') + '>Desbloquear</button></div>';
 }
 
 function loadingHtml() {
@@ -4046,6 +4047,7 @@ function renderTuV2() {
     '<div class="tu-grupo tu-mas-btn"><div class="card menu"><button type="button" class="menu-item" aria-expanded="' + (S.tuMas ? 'true' : 'false') + '" ' + act('tuMasToggle') + '><span class="ic">' + ic('sliders') + '</span>Más ajustes<span class="menu-extra">' + mas.length + '</span><span class="chev">' + ic(S.tuMas ? 'chevD' : 'chevR') + '</span></button></div></div>' +
     '<div class="tu-grupo tu-mas"' + (S.tuMas ? '' : ' style="display:none"') + '><div class="card menu">' + mas.join('') + '</div></div>' +
     grupo('Tu cuenta', [mfaDisponible() ? it('openSeguridad', [], 'candado', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
+      window.__nativo && window.__nativo.huella ? '<button class="menu-item" data-k="huella bloqueo pin seguridad" ' + act('huellaCambiar') + '><span class="ic">' + ic('candado') + '</span>Pedir huella al abrir<span class="menu-extra">' + (lsGet('huella') === '1' ? 'Sí' : 'No') + '</span></button>' : '',
       it('abrirPrivacidad', [], 'shield', 'Privacidad', '', 'datos privacidad politica rgpd'),
       '<button class="menu-item tu2-salir" data-k="cerrar sesion salir" ' + act('logoutPreguntar') + '><span class="ic">' + ic('salir') + '</span>Cerrar sesión</button>',
       '<button class="menu-item tu2-borrar" data-k="borrar cuenta eliminar baja datos" ' + act('borrarCuentaAbrir') + '><span class="ic">' + ic('trash') + '</span>Borrar mi cuenta</button>']) +
@@ -10683,6 +10685,30 @@ function openSheet(html) {
   document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear'));
 }
 function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; limitarBadges(s); fijarAcciones(s); vincularEtiquetas(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
+/* ---- App de Android: botón y gesto de atrás (docs/32 A1). Devuelve true si la app lo ha resuelto; false = salir ---- */
+function hojaConAlgoEscrito() {
+  if (!FORM || ['mov', 'compRapido', 'traspaso', 'aportarR', 'tarea', 'trayecto'].indexOf(FORM.kind) < 0) return false;
+  const imp = FORM.tec ? String(FORM.tec.txt || '') : (($('#fImporte') || {}).value || ($('#apImporte') || {}).value || '');
+  const desc = (($('#fDesc') || {}).value || '').trim(), tit = (($('#tTitulo') || {}).value || '').trim();
+  return (!FORM.id && !!imp.replace(/[0,.\s]/g, '')) || (!FORM.id && (!!desc || !!tit));
+}
+function preguntarDescartar() {
+  if ($('#descartarHoja')) return;
+  const d = document.createElement('div'); d.id = 'descartarHoja'; d.className = 'descartar';
+  d.innerHTML = '<div class="descartar-c" role="alertdialog" aria-labelledby="descTit"><b id="descTit">¿Descartar este ' + (FORM && FORM.kind === 'tarea' ? 'plan' : 'gasto') + '?</b><p>Lo que has escrito no se guardará.</p>' +
+    '<div class="actions"><button class="btn ghost block" data-click="descartarNo">Seguir editando</button><button class="btn danger block" data-click="descartarSi">Descartar</button></div></div>';
+  document.body.appendChild(d);
+}
+function atrasAndroid() {
+  const dsc = $('#descartarHoja'); if (dsc) { dsc.remove(); return true; }
+  const b = $('#sheetBackdrop');
+  if (b && !b.dataset.cerrando) { if (hojaConAlgoEscrito()) preguntarDescartar(); else closeSheet(); return true; }
+  if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
+  if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
+  if (S.tab !== 'inicio') { H.goTab(['inicio']); return true; }
+  return false;
+}
+window.__atras = atrasAndroid;
 function closeSheet() {
   document.body.classList.remove('crear-abierto');
   if (FORM && FORM.tec) FORM.tec.on = false; // el teclado de la app deja de escuchar
@@ -11703,6 +11729,15 @@ const H = {
   usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   exportCsv: () => exportCsv(),
+  descartarNo: () => { const d = $('#descartarHoja'); if (d) d.remove(); },
+  descartarSi: () => { const d = $('#descartarHoja'); if (d) d.remove(); closeSheet(); },
+  huellaCambiar: async () => {
+    const N = window.__nativo; if (!N || !N.huella) return toast('Este móvil no tiene huella ni PIN configurado');
+    const on = lsGet('huella') === '1';
+    if (!on) { try { await N.probarHuella(); } catch (e) { return toast('No se ha podido confirmar'); } }
+    lsSet('huella', on ? '0' : '1'); toast(on ? 'Ya no se pedirá la huella' : 'Se pedirá la huella al abrir'); render();
+  },
+  desbloquear: () => { if (window.__nativo && window.__nativo.desbloquear) { document.documentElement.classList.remove('bloqueada'); window.__nativo.desbloquear(); } },
   abrirPrivacidad: () => abrirExterno(APP_URL + 'privacidad.html'),
   borrarCuentaAbrir: () => { FORM = { kind: 'borrarCuenta' }; openSheet(borrarCuentaHtml()); },
   borrarCuentaOk: () => borrarCuentaOk(),
