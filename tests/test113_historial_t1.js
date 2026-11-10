@@ -62,14 +62,16 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
 const appTxt = (e) => e.doc.querySelector('#app').textContent.replace(/\s+/g, ' ');
 const gasto = (id, gid, imp, pag, rep, desc, por) => ({ id, grupoId: gid, fecha: HOY, tipo: 'Gasto', categoria: 'Restaurantes', descripcion: desc || '', importe: imp, pagadoPor: pag, reparto: rep, modo: 'importe', creadoPor: por || pag, createdAt: '2026-10-17T10:00:00Z' });
 const hace = (min) => new Date(Date.now() - min * 60000).toISOString();
+// 11/11 (Calidad): «Ayer a mediodía» en hora local, para que la prueba no falle justo después de medianoche
+const ayerMediodia = () => { const d = new Date(); d.setDate(d.getDate() - 1); d.setHours(12, 0, 0, 0); return d.toISOString(); };
 (async () => {
   DB = nuevoDB();
   const k1 = gasto('k1', 'g1', 36, 'uB', { uA: 18, uB: 18 }, 'Cena', 'uB'); k1.createdAt = hace(2 * 1440);
   DB.comp.push(k1);
   const H0 = [
-    { id: 9, grupo_id: 'g1', compartido_id: 'k1', accion: 'editado', hecho_por: 'uB', hecho_por_nombre: 'Bea', hecho_en: hace(30), antes: { importe: 30, reparto: { uA: 15, uB: 15 } }, despues: { importe: 36, reparto: { uA: 18, uB: 18 } }, descripcion: 'Cena', tipo: 'Gasto', importe: 36, pagado_por: 'uB', reparto: { uA: 18, uB: 18 }, borrado: null, nombres: { uA: 'Ana', uB: 'Bea' } },
-    { id: 8, grupo_id: 'g1', compartido_id: 'k9', accion: 'borrado', hecho_por: 'uB', hecho_por_nombre: 'Bea', hecho_en: hace(40), antes: null, despues: null, descripcion: 'Taxi', tipo: 'Gasto', importe: 48, pagado_por: 'uA', reparto: { uA: 24, uB: 24 }, borrado: hace(40), nombres: { uA: 'Ana', uB: 'Bea' } },
-    { id: 7, grupo_id: 'g1', compartido_id: 'k8', accion: 'editado', hecho_por: 'uA', hecho_por_nombre: 'Ana', hecho_en: hace(1500), antes: { descripcion: 'Hotel' }, despues: { descripcion: 'Hotel Lisboa' }, descripcion: 'Hotel Lisboa', tipo: 'Gasto', importe: 100, pagado_por: 'uA', reparto: { uA: 50, uB: 50 }, borrado: null, nombres: { uA: 'Ana', uB: 'Bea' } },
+    { id: 9, grupo_id: 'g1', compartido_id: 'k1', accion: 'editado', hecho_por: 'uB', hecho_por_nombre: 'Bea', hecho_en: hace(0.2), antes: { importe: 30, reparto: { uA: 15, uB: 15 } }, despues: { importe: 36, reparto: { uA: 18, uB: 18 } }, descripcion: 'Cena', tipo: 'Gasto', importe: 36, pagado_por: 'uB', reparto: { uA: 18, uB: 18 }, borrado: null, nombres: { uA: 'Ana', uB: 'Bea' } },
+    { id: 8, grupo_id: 'g1', compartido_id: 'k9', accion: 'borrado', hecho_por: 'uB', hecho_por_nombre: 'Bea', hecho_en: hace(0.3), antes: null, despues: null, descripcion: 'Taxi', tipo: 'Gasto', importe: 48, pagado_por: 'uA', reparto: { uA: 24, uB: 24 }, borrado: hace(0.3), nombres: { uA: 'Ana', uB: 'Bea' } },
+    { id: 7, grupo_id: 'g1', compartido_id: 'k8', accion: 'editado', hecho_por: 'uA', hecho_por_nombre: 'Ana', hecho_en: ayerMediodia(), antes: { descripcion: 'Hotel' }, despues: { descripcion: 'Hotel Lisboa' }, descripcion: 'Hotel Lisboa', tipo: 'Gasto', importe: 100, pagado_por: 'uA', reparto: { uA: 50, uB: 50 }, borrado: null, nombres: { uA: 'Ana', uB: 'Bea' } },
     { id: 6, grupo_id: 'g1', compartido_id: 'k1', accion: 'creado', hecho_por: 'uB', hecho_por_nombre: 'Bea', hecho_en: hace(2 * 1440), antes: null, despues: { importe: 30, pagado_por: 'uB', reparto: { uA: 15, uB: 15 }, descripcion: 'Cena' }, descripcion: 'Cena', tipo: 'Gasto', importe: 36, pagado_por: 'uB', reparto: { uA: 18, uB: 18 }, borrado: null, nombres: { uA: 'Ana', uB: 'Bea' } },
   ];
   const a = env('uA'); await sleep(250); const A = a.w.__APP__;
