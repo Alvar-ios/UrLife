@@ -10,32 +10,53 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
 <style>
-  :root { --bg:#0B0B10; --card:#15151D; --card2:#1C1C27; --line:#2A2A38; --text:#EEEEF5; --muted:#A3A3B8; --faint:#6E6E85;
-    --vio:#8B6CFF; --vio2:#B9A8FF; --amar:#FFD166; --verde:#4ADE80; --rojo:#FF6B6B; --turq:#2DD4BF; --azul:#60A5FA; --rosa:#F472B6; }
+  :root { --bg:#0B0B10; --card:#15151D; --card2:#1C1C27; --line:#2A2A38; --text:#EEEEF5; --muted:#A3A3B8; --faint:#7A7A92;
+    --vio:#8B6CFF; --vio2:#B9A8FF; --amar:#FFD166; --verde:#4ADE80; --rojo:#FF6B6B; --gris:#6E6E85; --turq:#2DD4BF; --azul:#60A5FA; --rosa:#F472B6; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   main { max-width:1180px; margin:0 auto; padding:20px 16px 60px; }
-  h1 { font-size:24px; margin:0; } h2 { font-size:16px; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
-  .top { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  h1 { font-size:22px; margin:0; } h2 { font-size:16px; margin:0; display:flex; align-items:center; gap:8px; }
+  .top { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .muted { color:var(--muted); } .faint { color:var(--faint); font-size:12px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
-  .kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-bottom:16px; }
-  .kpi .v { font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; } .kpi .l { color:var(--muted); font-size:12.5px; }
-  .deps { display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:12px; }
-  .dep { border-top:4px solid var(--c); }
-  .dot { width:10px; height:10px; border-radius:50%; background:var(--c); display:inline-block; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; }
+  /* semáforo */
+  .luz { width:12px; height:12px; border-radius:50%; display:inline-block; flex:none; background:var(--gris); }
+  .luz.verde { background:var(--verde); box-shadow:0 0 10px rgba(74,222,128,.6); } .luz.ambar { background:var(--amar); box-shadow:0 0 10px rgba(255,209,102,.6); }
+  .luz.rojo { background:var(--rojo); box-shadow:0 0 10px rgba(255,107,107,.6); } .luz.gris { background:var(--gris); }
+  .estado { display:flex; gap:14px; align-items:center; margin-bottom:14px; border-left:6px solid var(--gris); }
+  .estado.verde { border-left-color:var(--verde); } .estado.ambar { border-left-color:var(--amar); } .estado.rojo { border-left-color:var(--rojo); }
+  .estado .grande { width:44px; height:44px; } .estado b { font-size:17px; display:block; }
+  .avisos { margin:6px 0 0; padding:0; list-style:none; display:grid; gap:4px; } .avisos li { display:flex; gap:8px; align-items:center; font-size:13px; color:var(--muted); }
+  .resumen-deps { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; } .chip { display:inline-flex; gap:6px; align-items:center; background:var(--card2); border-radius:99px; padding:4px 10px; font-size:12.5px; }
+  /* cifras de arriba */
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px; margin-bottom:14px; }
+  .kpi { position:relative; } .kpi .l { color:var(--muted); font-size:12.5px; display:flex; gap:6px; align-items:center; justify-content:space-between; }
+  .kpi .v { font-size:30px; font-weight:750; font-variant-numeric:tabular-nums; margin:4px 0 2px; }
+  .flecha { font-size:12px; font-weight:600; } .flecha.sube { color:var(--verde); } .flecha.baja { color:var(--rojo); } .flecha.igual { color:var(--faint); }
+  .barra { height:7px; background:var(--card2); border-radius:99px; overflow:hidden; margin:6px 0 4px; } .barra i { display:block; height:100%; border-radius:99px; background:var(--gris); }
+  .barra i.verde { background:var(--verde); } .barra i.ambar { background:var(--amar); } .barra i.rojo { background:var(--rojo); }
+  /* departamentos */
+  .deps { display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start; } @media (max-width:760px) { .deps { grid-template-columns:1fr; } }
+  .dep { border-top:4px solid var(--c); } .dep-cab { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .dep-frase { color:var(--muted); font-size:13px; margin:0 0 10px; }
+  .ind { display:grid; grid-template-columns:14px 1fr auto; gap:4px 10px; align-items:center; padding:7px 0; border-bottom:1px solid var(--line); }
+  .ind:last-of-type { border-bottom:none; } .ind .n { font-size:13.5px; } .ind .x { font-weight:700; font-variant-numeric:tabular-nums; text-align:right; }
+  .ind .barra, .ind .obj { grid-column:2 / 4; margin:0; } .ind .obj { font-size:11.5px; color:var(--faint); }
+  .embudo { display:grid; gap:6px; margin:6px 0 4px; } .paso { display:grid; grid-template-columns:118px 1fr 52px; gap:8px; align-items:center; font-size:12.5px; }
+  .paso .b { height:18px; border-radius:6px; background:linear-gradient(90deg, var(--c), transparent 160%); min-width:4px; } .paso .x { text-align:right; font-variant-numeric:tabular-nums; }
+  details { margin-top:8px; } summary { cursor:pointer; color:var(--vio2); font-size:13px; font-weight:600; padding:4px 0; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   td { padding:5px 4px; border-bottom:1px solid var(--line); } td:last-child { text-align:right; font-variant-numeric:tabular-nums; }
   tr:last-child td { border-bottom:none; }
-  .sec { color:var(--vio2); font-size:12px; text-transform:uppercase; letter-spacing:1px; margin:12px 0 4px; }
+  .sec { color:var(--vio2); font-size:11.5px; text-transform:uppercase; letter-spacing:1px; margin:12px 0 4px; }
   input, select, button { font:inherit; color:var(--text); background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:9px 11px; }
   button { background:var(--vio); border-color:var(--vio); color:#fff; cursor:pointer; font-weight:600; } button.ghost { background:transparent; color:var(--text); border-color:var(--line); }
   .fila { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
   .login { max-width:360px; margin:12vh auto; display:grid; gap:10px; }
-  .sem { display:inline-block; padding:2px 10px; border-radius:99px; font-weight:600; font-size:12px; }
-  .sem.verde { background:rgba(74,222,128,.15); color:var(--verde); } .sem.ambar { background:rgba(255,209,102,.15); color:var(--amar); } .sem.rojo { background:rgba(255,107,107,.15); color:var(--rojo); }
+  .leyenda { display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--faint); margin:0 0 14px; } .leyenda span { display:inline-flex; gap:5px; align-items:center; }
   canvas { width:100%; height:180px; }
   .err { color:var(--rojo); }
+  @media (max-width:420px) { .kpi .v { font-size:26px; } .paso { grid-template-columns:96px 1fr 44px; } .deps { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -78,68 +99,130 @@
   }
 
   const filas = (pares) => '<table>' + pares.map(([l, x]) => '<tr><td>' + esc(l) + '</td><td>' + x + '</td></tr>').join('') + '</table>';
-  const dep = (color, titulo, cuerpo) => '<section class="card dep" style="--c:' + color + '"><h2><span class="dot"></span>' + titulo + '</h2>' + cuerpo + '</section>';
+  const num = (x) => (typeof x === 'number' && isFinite(x) ? x : null); // «<5» y null = sin datos suficientes
+
+  /* Objetivos a 3 meses de publicar (docs/37 C.2; los «(P)» se revisan en abril con datos reales). */
+  const OBJ = { activas: 80, altasMes: 65, grupos: 20, ret7: 30, ret30: 15, apuntan24: 50, grupo7: 30, diaMes: 15, invUsadas: 40, invDirecta: 0.5,
+    costeActiva: 0.10, mbPro: 350, cierres: 1, nota: 4.3, ticketsFallan: 5 };
+  // semáforo: con objetivo «más es mejor», verde si llega, ámbar desde el 60 %, rojo por debajo. «menos es mejor»: al revés.
+  function luz(x, obj, menos) {
+    x = num(x); if (x == null || obj == null) return 'gris';
+    if (menos) return x <= obj ? 'verde' : x <= obj * 1.5 ? 'ambar' : 'rojo';
+    return x >= obj ? 'verde' : x >= obj * 0.6 ? 'ambar' : 'rojo';
+  }
+  const PALABRA = { verde: 'Bien', ambar: 'Vigilar', rojo: 'Atención', gris: 'Pocos datos' };
+  const peor = (ls) => (ls.indexOf('rojo') >= 0 ? 'rojo' : ls.indexOf('ambar') >= 0 ? 'ambar' : ls.indexOf('verde') >= 0 ? 'verde' : 'gris');
+  const barra = (x, obj, l, menos) => { x = num(x); const pct = x == null ? 0 : Math.max(3, Math.min(100, menos ? (x <= obj ? 100 : obj / x * 100) : x / obj * 100)); return '<div class="barra"><i class="' + l + '" style="width:' + pct + '%"></i></div>'; };
+  // un indicador: luz + nombre + cifra + barra hacia el objetivo
+  function ind(nombre, x, suf, obj, objTxt, menos) {
+    const l = luz(x, obj, menos);
+    return { l, nombre, html: '<div class="ind"><span class="luz ' + l + '" title="' + PALABRA[l] + '"></span><span class="n">' + esc(nombre) + '</span><span class="x">' + v(x, suf) + '</span>' +
+      (obj != null ? barra(x, obj, l, menos) + '<span class="obj">' + esc(objTxt) + '</span>' : '') + '</div>' };
+  }
+  function bloque(color, titulo, inds, extra, detalle) {
+    const l = peor(inds.map((i) => i.l)), malos = inds.filter((i) => i.l === 'rojo' || i.l === 'ambar').map((i) => i.nombre.charAt(0).toLowerCase() + i.nombre.slice(1));
+    const frase = l === 'gris' ? 'Aún no hay gente suficiente para medirlo (se muestra a partir de 5 personas).' : malos.length ? 'Mira: ' + malos.join(', ') + '.' : 'Todo lo que se puede medir va bien.';
+    return { l, titulo, malos, html: '<section class="card dep" style="--c:' + color + '"><div class="dep-cab"><h2><span class="luz ' + l + '"></span>' + titulo + '</h2><span class="chip">' + PALABRA[l] + '</span></div>' +
+      '<p class="dep-frase">' + esc(frase) + '</p>' + inds.map((i) => i.html).join('') + (extra || '') + '<details><summary>Ver todos los datos</summary>' + detalle + '</details></section>' };
+  }
+  // flecha frente a la semana anterior (con las fotos de cada lunes)
+  function flecha(ruta) {
+    const vals = HIST.map((h) => ruta(h.datos)).filter((x) => typeof x === 'number');
+    if (vals.length < 2) return '';
+    const a = vals[vals.length - 2], b = vals[vals.length - 1], d = b - a;
+    return d > 0 ? '<span class="flecha sube">▲ ' + nf.format(d) + '</span>' : d < 0 ? '<span class="flecha baja">▼ ' + nf.format(-d) + '</span>' : '<span class="flecha igual">= igual</span>';
+  }
+  function kpi(l, x, suf, obj, objTxt, fl, menos) {
+    const c = luz(x, obj, menos);
+    return '<div class="card kpi"><div class="l"><span>' + esc(l) + '</span><span class="luz ' + c + '" title="' + PALABRA[c] + '"></span></div><div class="v">' + v(x, suf) + '</div>' +
+      barra(x, obj, c, menos) + '<div class="fila" style="justify-content:space-between"><span class="faint">' + esc(objTxt) + '</span>' + (fl || '') + '</div></div>';
+  }
+  function embudo(pasos) {
+    const base = num(pasos[0][1]);
+    return '<div class="sec">Embudo de las altas</div><div class="embudo">' + pasos.map(([l, x]) => { const n = num(x), w = base && n != null ? Math.max(2, n / base * 100) : 0;
+      return '<div class="paso"><span>' + esc(l) + '</span><span class="b" style="width:' + w + '%"></span><span class="x">' + v(x) + '</span></div>'; }).join('') + '</div>';
+  }
 
   function pintar() {
     const P = R.producto, M = R.marketing, D = R.datos_seguridad, Q = R.calidad, A = R.a_mano || {};
     const play = A.play || {}, ios = A.app_store || {};
     const ret = (P.retencion_por_semana_de_alta || []).slice(-6);
-    const ultRet = ret.filter((x) => x.ret_30d_pct != null).slice(-1)[0];
+    const ultRet = ret.filter((x) => x.ret_30d_pct != null).slice(-1)[0], ultRet7 = ret.filter((x) => x.ret_7d_pct != null).slice(-1)[0];
     const herr = Object.assign({}, P.herramientas_configuradas_hoy, P.herramientas_usadas_en_periodo);
     const NOMB = { cuentas_bancarias: 'Cuentas del banco', varias_cuentas: 'Varias cuentas', metas: 'Metas', deudas: 'Deudas', importar_extracto: 'Importar extracto',
       pagos_fijos: 'Pagos fijos', cobros_fijos: 'Cobros fijos', trayecto: 'Trayecto', informes: 'Informes', inicio_a_su_gusto: 'Inicio a su gusto', con_configuracion: 'Con la app configurada',
       tickets: 'Tickets con foto', inversiones: 'Inversiones', traspasos: 'Traspasos', apartar_ahorro: 'Apartar', tareas: 'Tareas', agenda_compartida_y_planes: 'Planes y agenda de grupo',
       juntos_apuntan: 'Apuntan en Juntos', en_algun_grupo_hoy: 'Están en algún grupo', comparten_su_agenda_hoy: 'Comparten su agenda', aportan_a_metas_compartidas_alguna_vez: 'Aportan a metas compartidas' };
+    const fallosCron = Object.values(Q.tareas_programadas || {}).reduce((a, x) => a + (num(x.fallos) || 0), 0);
+    const mb = num(D.base_de_datos_mb), activas = num(P.activas.mes);
+    const mbLuz = mb == null ? 'gris' : mb >= OBJ.mbPro * 0.9 ? 'rojo' : mb >= OBJ.mbPro * 0.7 ? 'ambar' : 'verde';
+
+    const bP = bloque('var(--turq)', 'Producto', [
+        ind('Personas activas al mes', P.activas.mes, '', OBJ.activas, 'Objetivo abril: ' + OBJ.activas),
+        ind('Apuntan algo en sus primeras 24 h', P.apuntan_en_24h.pct, ' %', OBJ.apuntan24, 'Objetivo: ' + OBJ.apuntan24 + ' %'),
+        ind('Entran en un grupo en 7 días', P.grupo_en_7_dias.pct, ' %', OBJ.grupo7, 'Objetivo: ' + OBJ.grupo7 + ' %'),
+        ind('Vuelven a los 7 días', ultRet7 && ultRet7.ret_7d_pct, ' %', OBJ.ret7, 'Objetivo: ' + OBJ.ret7 + ' %'),
+        ind('Usan la app cada día (del total del mes)', P.activas.dia_entre_mes_pct, ' %', OBJ.diaMes, 'Objetivo: ' + OBJ.diaMes + ' %')],
+      embudo([['Altas', P.altas], ['Apuntan en 24 h', P.apuntan_en_24h.base != null && num(P.apuntan_en_24h.pct) != null && num(P.apuntan_en_24h.base) != null ? Math.round(P.apuntan_en_24h.pct * P.apuntan_en_24h.base / 100) : '<5'],
+        ['Grupo en 7 días', num(P.grupo_en_7_dias.pct) != null && num(P.grupo_en_7_dias.base) != null ? Math.round(P.grupo_en_7_dias.pct * P.grupo_en_7_dias.base / 100) : '<5']]),
+      filas([['Altas', v(P.altas)], ['Activas hoy · semana · mes', v(P.activas.ultimo_dia) + ' · ' + v(P.activas.semana) + ' · ' + v(P.activas.mes)],
+        ['Grupos creados · abiertos · activos', v(P.grupos.creados) + ' · ' + v(P.grupos.abiertos) + ' · ' + v(P.grupos.activos_periodo)], ['Personas por grupo (media)', v(P.personas_por_grupo.media)]]) +
+      '<div class="sec">Retención por semana de alta (7 / 30 días)</div>' + filas(ret.map((x) => [x.semana + ' (' + v(x.altas) + ' altas)', '<span class="luz ' + luz(x.ret_7d_pct, OBJ.ret7) + '"></span> ' + v(x.ret_7d_pct, ' %') + ' / <span class="luz ' + luz(x.ret_30d_pct, OBJ.ret30) + '"></span> ' + v(x.ret_30d_pct, ' %')])) +
+      '<div class="sec">Herramientas (personas)</div>' + filas(Object.keys(herr).map((k) => [NOMB[k] || k, v(herr[k])])));
+    const bM = bloque('var(--rosa)', 'Marketing', [
+        ind('Altas este periodo', P.altas, '', OBJ.altasMes, 'Objetivo: unas ' + OBJ.altasMes + ' al mes'),
+        ind('Invitaciones que se usan', M.invitaciones.usadas_pct, ' %', OBJ.invUsadas, 'Objetivo: ' + OBJ.invUsadas + ' % o más'),
+        ind('Altas por invitación ÷ directas', M.invitacion_entre_directa, '', OBJ.invDirecta, 'Objetivo: 0,5 o más'),
+        ind('Nota en Google Play', play.nota, '', OBJ.nota, 'Objetivo: ' + nf.format(OBJ.nota) + ' (se apunta a mano)')], '',
+      filas([['Invitaciones creadas · usadas', v(M.invitaciones.creadas) + ' · ' + v(M.invitaciones.usadas_de_esas)],
+        ['Enlaces para personas sin cuenta', v(M.enlaces_sin_cuenta.creados) + ' · usados ' + v(M.enlaces_sin_cuenta.usados)],
+        ['Altas por invitación · directas', v(M.altas_por_invitacion) + ' · ' + v(M.altas_directas)],
+        ['Google Play: visitas · instalaciones', v(play.visitas) + ' · ' + v(play.instalaciones)], ['App Store: visitas · instalaciones', v(ios.visitas) + ' · ' + v(ios.instalaciones)],
+        ['TikTok · Instagram (seguidores)', v((A.tiktok || {}).seguidores) + ' · ' + v((A.instagram || {}).seguidores)]]) +
+      '<div class="sec">Crecimiento por semana</div>' + filas((M.crecimiento_semanal || []).slice(-6).map((x) => [x.semana, v(x.altas) + ' altas · ' + v(x.cuentas_al_acabar) + ' cuentas · ' + v(x.activas) + ' activas'])));
+    const iMb = { l: mbLuz, nombre: 'Espacio de la base de datos', html: '<div class="ind"><span class="luz ' + mbLuz + '"></span><span class="n">Espacio de la base de datos</span><span class="x">' + v(mb, ' MB') + '</span>' +
+      '<div class="barra"><i class="' + mbLuz + '" style="width:' + Math.max(3, Math.min(100, (mb || 0) / OBJ.mbPro * 100)) + '%"></i></div><span class="obj">Pasar a Supabase Pro al llegar a ' + OBJ.mbPro + ' MB (o 400 activas)</span></div>' };
+    const bD = bloque('var(--azul)', 'Datos y Seguridad', [iMb,
+        ind('Coste por persona activa', D.coste_mes.por_activa_usd, ' $', OBJ.costeActiva, 'Objetivo: 0,10 $ o menos', true),
+        ind('Personas activas (para Supabase Pro)', activas, '', 400 * 0.7, 'Aviso al acercarse a 400', true)], '',
+      filas([['Coste del mes (total)', v(D.coste_mes.total_usd, ' $')], ['Tickets · Supabase · a mano', v(D.coste_mes.tickets_usd, ' $') + ' · ' + v(D.coste_mes.supabase_usd, ' $') + ' · ' + v(D.coste_mes.apuntado_a_mano_usd, ' $')],
+        ['Cuentas vivas · entraron en 30 días', v(D.usuarios_auth.cuentas_vivas) + ' · ' + v(D.usuarios_auth.entraron_30_dias)], ['Cuentas borradas (periodo · total)', v(D.cuentas_borradas.en_periodo) + ' · ' + v(D.cuentas_borradas.total)]]) +
+      '<div class="sec">Tickets por modelo</div>' + filas(Object.keys(D.tickets_por_modelo || {}).map((k) => [k, v(D.tickets_por_modelo[k].lecturas) + ' lecturas · ' + v(D.tickets_por_modelo[k].personas) + ' personas'])) +
+      '<div class="sec">Tablas más grandes</div>' + filas(Object.entries(D.filas_por_tabla || {}).sort((a, b) => b[1].mb - a[1].mb).slice(0, 6).map(([k, x]) => [k, nf.format(x.filas) + ' filas · ' + v(x.mb, ' MB')])));
+    const iCron = { l: fallosCron ? 'rojo' : 'verde', nombre: 'Tareas automáticas', html: '<div class="ind"><span class="luz ' + (fallosCron ? 'rojo' : 'verde') + '"></span><span class="n">Tareas automáticas (precios, limpiezas…)</span><span class="x">' + (fallosCron ? fallosCron + ' fallos' : 'Sin fallos') + '</span></div>' };
+    const bQ = bloque('var(--verde)', 'Calidad', [
+        ind('Tickets que no se leen', Q.tickets_fallidos_pct, ' %', OBJ.ticketsFallan, 'Objetivo: ' + OBJ.ticketsFallan + ' % o menos', true), iCron,
+        ind('Cierres inesperados Android', play.cierres_pct, ' %', OBJ.cierres, 'Por debajo de 1 % (se apunta a mano)', true),
+        ind('Cierres inesperados iPhone', ios.cierres_pct, ' %', OBJ.cierres, 'Por debajo de 1 % (se apunta a mano)', true)], '',
+      filas([['Tickets que fallan', v(Q.tickets_fallidos)], ['Nota Google Play · App Store', v(play.nota) + ' · ' + v(ios.nota)]]) +
+      '<div class="sec">Tareas programadas (ejecuciones · fallos)</div>' + filas(Object.entries(Q.tareas_programadas || {}).map(([k, x]) => [k, v(x.ejecuciones) + ' · ' + (x.fallos ? '<span class="err">' + v(x.fallos) + '</span>' : '0')])));
+
+    const deps = [bP, bM, bD, bQ], general = peor(deps.map((d) => d.l));
+    const avisos = [];
+    deps.forEach((d) => { if (d.l === 'rojo' || d.l === 'ambar') avisos.push([d.l, d.titulo + ': ' + d.malos.join(', ')]); });
+    if (activas != null && activas > 220) avisos.push(['ambar', 'Más de 220 activas: prepara el paso a Supabase Pro.']);
+    if (activas != null && activas < 40 && new Date() >= new Date('2027-04-01')) avisos.push(['rojo', 'Menos de 40 activas en abril: revisa la ficha y los primeros pasos antes que el marketing.']);
+    const titular = general === 'verde' ? 'Todo en orden' : general === 'ambar' ? 'Hay cosas que vigilar' : general === 'rojo' ? 'Hay cosas que necesitan atención' : 'Todavía hay muy poca gente para medir';
+    const sub = general === 'gris' ? 'Con menos de 5 personas las cifras salen como «<5» y el semáforo se queda en gris. Se encenderá solo cuando llegue gente.' : avisos.length ? '' : 'Ningún indicador está por debajo de lo esperado.';
+
     $('#app').innerHTML =
-      '<div class="top"><div><h1>Panel de PalomApp</h1><div class="faint">Calculado ' + esc(new Date(R.periodo.calculado).toLocaleString('es-ES')) + ' · «&lt;5» = de 1 a 4 personas (no se muestra por privacidad)</div></div>' +
+      '<div class="top"><div><h1>Panel de PalomApp</h1><div class="faint">Calculado ' + esc(new Date(R.periodo.calculado).toLocaleString('es-ES')) + ' · del ' + esc(desde) + ' al ' + esc(hasta) + '</div></div>' +
       '<div class="fila"><input id="d" type="date" value="' + desde + '"><input id="h" type="date" value="' + hasta + '"><button id="ok">Ver</button><button class="ghost" id="salir">Salir</button></div></div>' +
+      '<section class="card estado ' + general + '"><span class="luz grande ' + general + '"></span><div style="flex:1"><b>' + titular + '</b>' +
+        (sub ? '<span class="muted">' + esc(sub) + '</span>' : '') +
+        (avisos.length ? '<ul class="avisos">' + avisos.map(([l, t]) => '<li><span class="luz ' + l + '"></span>' + esc(t) + '</li>').join('') + '</ul>' : '') +
+        '<div class="resumen-deps">' + deps.map((d) => '<span class="chip"><span class="luz ' + d.l + '"></span>' + d.titulo + ': ' + PALABRA[d.l] + '</span>').join('') + '</div></div></section>' +
+      '<div class="leyenda"><span><span class="luz verde"></span>Llega al objetivo</span><span><span class="luz ambar"></span>Cerca (60 % o más)</span><span><span class="luz rojo"></span>Lejos</span><span><span class="luz gris"></span>Pocos datos («&lt;5»)</span><span>Objetivos: a 3 meses de publicar</span></div>' +
       '<div class="kpis">' +
-        [['Activas al mes', P.activas.mes], ['Altas del periodo', P.altas], ['Grupos activos (7 días)', P.grupos.activos_7_dias],
-         ['Retención a 30 días', ultRet ? ultRet.ret_30d_pct : null, ' %'], ['Coste del mes', D.coste_mes.total_usd, ' $']]
-          .map(([l, x, s]) => '<div class="card kpi"><div class="l">' + l + '</div><div class="v">' + v(x, s) + '</div></div>').join('') +
+        kpi('Activas al mes', P.activas.mes, '', OBJ.activas, 'Objetivo: ' + OBJ.activas, flecha((d) => (((d.marketing || {}).crecimiento_semanal || []).slice(-1)[0] || {}).activas)) +
+        kpi('Altas del periodo', P.altas, '', OBJ.altasMes, 'Objetivo: ' + OBJ.altasMes + '/mes', flecha((d) => (((d.marketing || {}).crecimiento_semanal || []).slice(-1)[0] || {}).altas)) +
+        kpi('Grupos activos (7 días)', P.grupos.activos_7_dias, '', OBJ.grupos, 'Objetivo: ' + OBJ.grupos, flecha((d) => (((d.producto || {}).grupos) || {}).activos_7_dias)) +
+        kpi('Vuelven a los 30 días', ultRet ? ultRet.ret_30d_pct : null, ' %', OBJ.ret30, 'Objetivo: ' + OBJ.ret30 + ' %') +
+        kpi('Coste del mes', D.coste_mes.total_usd, ' $', null, num(D.coste_mes.por_activa_usd) != null ? v(D.coste_mes.por_activa_usd, ' $') + ' por activa' : 'Sin coste por activa aún') +
       '</div>' +
-      '<section class="card" style="margin-bottom:12px"><h2>Evolución semanal</h2><canvas id="g" width="1100" height="180"></canvas><div class="faint">Activas por semana (morado) y altas (amarillo). Se guarda una foto cada lunes.</div></section>' +
-      '<div class="deps">' +
-      dep('var(--turq)', 'Producto', filas([
-          ['Altas', v(P.altas)], ['Apuntan algo en 24 h', v(P.apuntan_en_24h.pct, ' %') + ' <span class="faint">de ' + v(P.apuntan_en_24h.base) + '</span>'],
-          ['Entran en un grupo en 7 días', v(P.grupo_en_7_dias.pct, ' %') + ' <span class="faint">de ' + v(P.grupo_en_7_dias.base) + '</span>'],
-          ['Activas hoy · semana · mes', v(P.activas.ultimo_dia) + ' · ' + v(P.activas.semana) + ' · ' + v(P.activas.mes)],
-          ['Activas al día ÷ al mes', v(P.activas.dia_entre_mes_pct, ' %')],
-          ['Grupos creados · abiertos · activos', v(P.grupos.creados) + ' · ' + v(P.grupos.abiertos) + ' · ' + v(P.grupos.activos_periodo)],
-          ['Personas por grupo (media)', v(P.personas_por_grupo.media)]]) +
-        '<div class="sec">Retención por semana de alta (7 / 30 días)</div>' +
-        filas(ret.map((x) => [x.semana + ' (' + (typeof x.altas === 'string' ? x.altas : x.altas) + ' altas)', v(x.ret_7d_pct, ' %') + ' / ' + v(x.ret_30d_pct, ' %')])) +
-        '<div class="sec">Herramientas (personas)</div>' + filas(Object.keys(herr).map((k) => [NOMB[k] || k, v(herr[k])]))) +
-      dep('var(--rosa)', 'Marketing', filas([
-          ['Invitaciones creadas · usadas', v(M.invitaciones.creadas) + ' · ' + v(M.invitaciones.usadas_de_esas) + ' (' + v(M.invitaciones.usadas_pct, ' %') + ')'],
-          ['Enlaces para personas sin cuenta', v(M.enlaces_sin_cuenta.creados) + ' · usados ' + v(M.enlaces_sin_cuenta.usados)],
-          ['Altas por invitación · directas', v(M.altas_por_invitacion) + ' · ' + v(M.altas_directas)],
-          ['Invitación ÷ directa', v(M.invitacion_entre_directa)],
-          ['Google Play: visitas · instalaciones', v(play.visitas) + ' · ' + v(play.instalaciones)],
-          ['App Store: visitas · instalaciones', v(ios.visitas) + ' · ' + v(ios.instalaciones)],
-          ['TikTok · Instagram (seguidores)', v((A.tiktok || {}).seguidores) + ' · ' + v((A.instagram || {}).seguidores)]]) +
-        '<div class="sec">Crecimiento por semana</div>' +
-        filas((M.crecimiento_semanal || []).slice(-6).map((x) => [x.semana, v(x.altas) + ' altas · ' + v(x.cuentas_al_acabar) + ' cuentas · ' + v(x.activas) + ' activas']))) +
-      dep('var(--azul)', 'Datos y Seguridad', filas([
-          ['Plan gratis', '<span class="sem ' + esc(D.plan_gratis_aviso) + '">' + esc(D.plan_gratis_aviso) + '</span>'],
-          ['Base de datos', v(D.base_de_datos_mb, ' MB') + ' <span class="faint">(' + v(D.base_de_datos_pct_de_500mb, ' % de 500)') + '</span>'],
-          ['Cuentas vivas · entraron en 30 días', v(D.usuarios_auth.cuentas_vivas) + ' · ' + v(D.usuarios_auth.entraron_30_dias)],
-          ['Cuentas borradas (periodo · total)', v(D.cuentas_borradas.en_periodo) + ' · ' + v(D.cuentas_borradas.total)],
-          ['Coste del mes: tickets · Supabase · a mano', v(D.coste_mes.tickets_usd, ' $') + ' · ' + v(D.coste_mes.supabase_usd, ' $') + ' · ' + v(D.coste_mes.apuntado_a_mano_usd, ' $')],
-          ['Coste por persona activa', v(D.coste_mes.por_activa_usd, ' $')]]) +
-        '<div class="sec">Tickets por modelo</div>' +
-        filas(Object.keys(D.tickets_por_modelo || {}).map((k) => [k, v(D.tickets_por_modelo[k].lecturas) + ' lecturas · ' + v(D.tickets_por_modelo[k].personas) + ' personas'])) +
-        '<div class="sec">Tablas más grandes</div>' +
-        filas(Object.entries(D.filas_por_tabla || {}).sort((a, b) => b[1].mb - a[1].mb).slice(0, 6).map(([k, x]) => [k, nf.format(x.filas) + ' filas · ' + v(x.mb, ' MB')]))) +
-      dep('var(--verde)', 'Calidad', filas([
-          ['Tickets que fallan', v(Q.tickets_fallidos) + ' (' + v(Q.tickets_fallidos_pct, ' %') + ')'],
-          ['Cierres inesperados Android', v((A.play || {}).cierres_pct, ' %')],
-          ['Cierres inesperados iPhone', v((A.app_store || {}).cierres_pct, ' %')],
-          ['Nota Google Play · App Store', v((A.play || {}).nota) + ' · ' + v((A.app_store || {}).nota)]]) +
-        '<div class="sec">Tareas programadas (ejecuciones · fallos)</div>' +
-        filas(Object.entries(Q.tareas_programadas || {}).map(([k, x]) => [k, x.ejecuciones + ' · ' + (x.fallos ? '<span class="err">' + x.fallos + '</span>' : '0')]))) +
-      '</div>' +
-      '<section class="card" style="margin-top:12px"><h2>Apuntar cifras de fuera (5 minutos a la semana)</h2>' +
+      '<div class="deps">' + deps.map((d) => d.html).join('') + '</div>' +
+      '<section class="card" style="margin-top:12px"><h2>Evolución semanal</h2><canvas id="g" width="1100" height="180"></canvas><div class="faint">Activas por semana (morado) y altas (amarillo). Se guarda una foto cada lunes.</div></section>' +
+      '<section class="card" style="margin-top:12px"><h2>Apuntar cifras de fuera (5 minutos a la semana)</h2><p class="faint" style="margin:4px 0 10px">Lo que no ve la app: tiendas, redes y facturas. Enciende los semáforos de nota, cierres y coste.</p>' +
         '<div class="fila"><input id="mf" type="date" value="' + hoy() + '"><select id="ms">' +
         [['play', 'Google Play'], ['app_store', 'App Store'], ['tiktok', 'TikTok'], ['instagram', 'Instagram'], ['youtube', 'YouTube'], ['coste', 'Factura (USD)']]
           .map(([k, l]) => '<option value="' + k + '">' + l + '</option>').join('') + '</select>' +

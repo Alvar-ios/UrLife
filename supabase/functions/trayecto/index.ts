@@ -72,11 +72,13 @@ async function refrescar() {
 }
 
 async function distancia(de: string, a: string) {
-  const key = Deno.env.get('ORS_KEY') || '';
-  if (!key) return { error: 'sin_clave' };
+  const key = (Deno.env.get('ORS_KEY') || '').trim(); // por si se pegó con un espacio o un salto de línea
+  if (!key) { console.log('trayecto sin ORS_KEY'); return { error: 'sin_clave' }; }
   const geo = async (txt: string) => {
     const r = await getJson('https://api.openrouteservice.org/geocode/search?size=1&text=' + encodeURIComponent(txt), { headers: { Authorization: key } });
     if (r.status === 429) throw new Error('limite');
+    if (r.status === 401 || r.status === 403) throw new Error('clave_mala');
+    if (!r.ok) console.log('trayecto geocode', r.status);
     const f = r.data?.features?.[0]; return f ? { c: f.geometry.coordinates, label: String(f.properties?.locality || f.properties?.name || '').slice(0, 60) } : null;
   };
   try {
@@ -84,10 +86,12 @@ async function distancia(de: string, a: string) {
     const p2 = await geo(a); if (!p2) return { error: 'no_encontrado_a' };
     const r = await getJson('https://api.openrouteservice.org/v2/directions/driving-car', { method: 'POST', headers: { Authorization: key, 'Content-Type': 'application/json' }, body: JSON.stringify({ coordinates: [p1.c, p2.c] }) });
     if (r.status === 429) return { error: 'limite' };
+    if (r.status === 401 || r.status === 403) return { error: 'clave_mala' };
+    if (!r.ok) console.log('trayecto ruta', r.status);
     const m = r.data?.routes?.[0]?.summary?.distance;
     if (!(m > 0)) return { error: 'sin_ruta' };
     return { km: Math.round(m / 100) / 10, desde: p1.label, hasta: p2.label };
-  } catch (e) { return { error: (e as Error).message === 'limite' ? 'limite' : 'red' }; }
+  } catch (e) { const m = (e as Error).message; if (m !== 'limite' && m !== 'clave_mala') console.log('trayecto red', m); return { error: m === 'limite' || m === 'clave_mala' ? m : 'red' }; }
 }
 
 Deno.serve(async (req) => {

@@ -726,16 +726,27 @@ function subscribeAll() {
   if (S.db.carpetas) _unsubs.push(S.db.carpetas.suscribir((rows) => { S.carpetas = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.carpetas = S.carpetas || []; }));
   if (S.db.objetivos) _unsubs.push(S.db.objetivos.suscribir((rows) => { S.objetivos = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.objetivos = S.objetivos || []; }));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
-    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); setTimeout(revisarNivel30, 0); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
+    S.config = cfgConPendientes(snap.exists ? snap.data() : null); S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); setTimeout(revisarNivel30, 0); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
   }, fail('cfg', 'No se pudo cargar la configuración')));
 }
 
 /* -------- Config: escrituras en serie (una a la vez sobre el mismo documento) -------- */
 let _cfgChain = Promise.resolve();
+/* 10/11 (fallo de Alfredo): una lectura del servidor que salió ANTES de guardar puede llegar DESPUÉS
+   y borrar en pantalla lo recién cambiado (la cuenta nueva desaparecía y el siguiente guardado la pisaba).
+   Lo que está por guardar, o se guardó hace menos de 5 s, se vuelve a poner encima de lo que llega. */
+let _cfgRecientes = [];
+function cfgConPendientes(v) {
+  const ahora = Date.now();
+  _cfgRecientes = _cfgRecientes.filter((x) => x.hasta > ahora);
+  if (!_cfgRecientes.length) return v;
+  return _cfgRecientes.reduce((acc, x) => Object.assign(acc, x.partial), Object.assign({}, v || {}));
+}
 function saveConfig(partial) {
   S.config = Object.assign({}, cfg(), partial);
+  const rec = { partial, hasta: Infinity }; _cfgRecientes.push(rec);
   const job = _cfgChain.then(async () => {
-    await write(() => S.db.doc('config/app').update(partial));
+    try { await write(() => S.db.doc('config/app').update(partial)); } finally { rec.hasta = Date.now() + 5000; }
   });
   _cfgChain = job;
   return job;
@@ -3928,6 +3939,7 @@ function trDistErr(e) {
   if (e === 'no_encontrado_a') return 'No encuentro el sitio de llegada. Prueba a escribirlo con la ciudad.';
   if (e === 'sin_ruta') return 'No hay ruta en coche entre esos dos sitios.';
   if (e === 'limite') return 'Hoy se han agotado los cálculos gratuitos. Pon los km a mano.';
+  if (e === 'clave_mala' || e === 'sin_clave') return 'El cálculo de km aún no está activado. Pon los km a mano.';
   return 'Ahora no se pueden calcular los km. Pon los km a mano.';
 }
 /* ============================================================
@@ -7827,7 +7839,7 @@ const BANCOS = [
   ['bunq', 'bunq', '#3394D7', 'bq', 'banco', 0, '', 'bunq.svg'], ['paypal', 'PayPal', '#FFFFFF', 'PP', 'banco', 0, '', 'paypal.svg'],
   ['myinvestor', 'MyInvestor', '#C42CA5', 'my', 'broker', 1, '', 'myinvestor-app.png'], ['traderepublic', 'Trade Republic', '#000000', 'TR', 'broker', 1, '', 'traderepublic-app.png'], ['indexa', 'Indexa Capital', '#2A66AB', 'IX', 'broker', 1, '', 'indexa-app.png'],
   ['etoro', 'eToro', '#6CFE89', 'e', 'broker', 0, '', 'etoro-app.svg'], ['degiro', 'DEGIRO', '#009FDF', 'DG', 'broker', 0, 'flatexdegiro', 'degiro-app.png'], ['ibkr', 'Interactive Brokers', '#D92027', 'IB', 'broker', 0, 'ibkr', 'ibkr-app.png'],
-  ['scalable', 'Scalable Capital', '#1E1E3C', 'SC', 'broker', 0, '', 'scalable-app.png'], ['xtb', 'XTB', '#0A1F44', 'XTB', 'broker', 0, '', 'xtb-app.png'],
+  ['scalable', 'Scalable Capital', '#1E1E3C', 'SC', 'broker', 0, '', 'scalable-app.png'], ['xtb', 'XTB', '#0A1F44', 'XTB', 'broker', 0, '', 'xtb-app.png'], ['trading212', 'Trading 212', '#0BB4F0', 'T2', 'broker', 0, 'trading,t212,trading 212'],
   ['coinbase', 'Coinbase', '#0052FF', 'C', 'broker', 0], ['binance', 'Binance', '#1E2026', 'BN', 'broker', 0, '', 'binance.svg'],
 ].map(([k, n, color, letras, tipo, top, alias, logo]) => ({ k, n, color, letras, tipo, top: !!top, alias: alias || '', logo: logo || '' }));
 function bancoDe(c) { return c && c.banco ? BANCOS.find((b) => b.k === c.banco) || null : null; }
