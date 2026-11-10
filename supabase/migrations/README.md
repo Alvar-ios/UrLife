@@ -152,3 +152,9 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - `precios_carburante` (aplicada): tabla pública de precios medianos por provincia y día (Ministerio + PVPC de Red Eléctrica). Solo lectura con sesión; la escribe la función `trayecto`, que guarda 60 días.
 - `poner_carpeta_permisos` (aplicada): `poner_carpeta` exige `puede_editar_compartido` en cada gasto (en grupos «solo el autor», solo el autor o un administrador).
 - `precios_carburante_cron` (aplicada 08/11): pg_cron pide a las 05:20 UTC (`carburantes_pedir`, pg_net) y guarda a las 05:35 (`carburantes_guardar`) los precios del Ministerio; solo vale una descarga de las últimas 2 h.
+
+## Indicadores para el panel (10/11): kpis — PROPUESTA, SIN APLICAR
+- SQL en `2026-11-10_kpis.sql` (docs/37 §C). Prueba en `../pruebas/2026-11-10_kpis_prueba.sql` (transacción que se deshace; 34 de 34 bien solo en una copia simulada local, falta en la base real).
+- Aditiva: tablas `kpis_admins` y `kpis_excluidas` (sin acceso desde la app; se rellenan a mano en el editor SQL, nunca en el repositorio), `kpis_historial` (foto del lunes; solo la lee el dueño) y `kpis_manual` (cifras de tiendas, redes y facturas; solo el dueño lee y escribe). Funciones `kpis_resumen` (solo el dueño o el servicio interno; solo números, «<5» de 1 a 4 personas), `kpis_calcular` y `kpis_guardar_semana` (internas). pg_cron `kpis-semana`, lunes 06:00 UTC.
+- No cambia ningún dato. El paso 0 comprueba las columnas en `information_schema` y para si falta alguna.
+- Para deshacer: ver la cabecera del SQL.
