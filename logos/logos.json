@@ -198,5 +198,14 @@
   "fuente": "https://www.xtb.com/es (apple-icon)",
   "licencia": "Icono de la web oficial del banco (29/10/2026), a petición del dueño; marca registrada de su dueño",
   "tipo": "icono-app"
+ },
+ "trading212": {
+  "n": "Trading 212",
+  "color": "#000000",
+  "svg": "trading212-app.png",
+  "fondo": "icono",
+  "fuente": "Icono de la app, enviado por el dueño el 11/11/2026",
+  "licencia": "Marca registrada de su dueño; solo para que reconozcas tu cuenta",
+  "tipo": "icono"
  }
 }

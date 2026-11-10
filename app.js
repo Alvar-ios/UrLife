@@ -7840,7 +7840,7 @@ const BANCOS = [
   ['bunq', 'bunq', '#3394D7', 'bq', 'banco', 0, '', 'bunq.svg'], ['paypal', 'PayPal', '#FFFFFF', 'PP', 'banco', 0, '', 'paypal.svg'],
   ['myinvestor', 'MyInvestor', '#C42CA5', 'my', 'broker', 1, '', 'myinvestor-app.png'], ['traderepublic', 'Trade Republic', '#000000', 'TR', 'broker', 1, '', 'traderepublic-app.png'], ['indexa', 'Indexa Capital', '#2A66AB', 'IX', 'broker', 1, '', 'indexa-app.png'],
   ['etoro', 'eToro', '#6CFE89', 'e', 'broker', 0, '', 'etoro-app.svg'], ['degiro', 'DEGIRO', '#009FDF', 'DG', 'broker', 0, 'flatexdegiro', 'degiro-app.png'], ['ibkr', 'Interactive Brokers', '#D92027', 'IB', 'broker', 0, 'ibkr', 'ibkr-app.png'],
-  ['scalable', 'Scalable Capital', '#1E1E3C', 'SC', 'broker', 0, '', 'scalable-app.png'], ['xtb', 'XTB', '#0A1F44', 'XTB', 'broker', 0, '', 'xtb-app.png'], ['trading212', 'Trading 212', '#0BB4F0', 'T2', 'broker', 0, 'trading,t212,trading 212'],
+  ['scalable', 'Scalable Capital', '#1E1E3C', 'SC', 'broker', 0, '', 'scalable-app.png'], ['xtb', 'XTB', '#0A1F44', 'XTB', 'broker', 0, '', 'xtb-app.png'], ['trading212', 'Trading 212', '#000000', 'T2', 'broker', 0, 'trading,t212,trading 212', 'trading212-app.png'],
   ['coinbase', 'Coinbase', '#0052FF', 'C', 'broker', 0], ['binance', 'Binance', '#1E2026', 'BN', 'broker', 0, '', 'binance.svg'],
 ].map(([k, n, color, letras, tipo, top, alias, logo]) => ({ k, n, color, letras, tipo, top: !!top, alias: alias || '', logo: logo || '' }));
 function bancoDe(c) { return c && c.banco ? BANCOS.find((b) => b.k === c.banco) || null : null; }
