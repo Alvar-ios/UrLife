@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>PalomApp · Plan de negocio de lanzamiento (nov 2026 – nov 2027)</title>
+<style>
+  @page { size: A4; margin: 0; }
+  :root { --bg:#0B0B10; --card:#15151D; --card2:#1C1C27; --line:#2A2A38; --text:#EEEEF5; --muted:#A3A3B8; --faint:#6E6E85;
+    --vio:#8B6CFF; --vio2:#B9A8FF; --amar:#FFD166; --verde:#4ADE80; --rojo:#FF6B6B; --naranja:#FF9F43; --turq:#2DD4BF; --azul:#60A5FA; --rosa:#F472B6; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font:8.9pt/1.42 "Poppins", system-ui, sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .pag { width:210mm; height:297mm; overflow:hidden; padding:13mm 13mm 12mm; page-break-after:always; position:relative; background:var(--bg); }
+  .pag:last-child { page-break-after:auto; }
+  .pie { position:absolute; bottom:8mm; left:15mm; right:15mm; display:flex; justify-content:space-between; color:var(--faint); font-size:7.5pt; }
+  h1 { font-size:30pt; line-height:1.1; margin:0 0 6px; letter-spacing:-.5px; }
+  h2 { font-size:17pt; margin:0 0 4px; letter-spacing:-.2px; }
+  h3 { font-size:10.5pt; margin:10px 0 5px; color:var(--vio2); }
+  .kicker { color:var(--vio2); font-size:8.5pt; letter-spacing:2px; text-transform:uppercase; font-weight:600; margin-bottom:6px; }
+  .sub { color:var(--muted); margin:0 0 14px; }
+  p { margin:0 0 8px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:9px 11px; }
+  .card h4 { margin:0 0 4px; font-size:10pt; }
+  .card ul, ul { margin:4px 0 0; padding-left:16px; }
+  li { margin:2px 0; }
+  .big { font-size:22pt; font-weight:700; line-height:1.1; }
+  .muted { color:var(--muted); } .faint { color:var(--faint); font-size:8.5pt; }
+  .tag { display:inline-block; padding:1px 8px; border-radius:99px; font-size:7.5pt; font-weight:600; margin-right:4px; }
+  .t-bloq { background:rgba(255,107,107,.15); color:var(--rojo); }
+  .t-ok { background:rgba(74,222,128,.15); color:var(--verde); }
+  .t-dec { background:rgba(255,209,102,.15); color:var(--amar); }
+  table { width:100%; border-collapse:collapse; font-size:8pt; background:var(--card); border-radius:10px; overflow:hidden; }
+  th, td { padding:4px 7px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+  th { background:var(--card2); color:var(--vio2); font-weight:600; font-size:8.3pt; }
+  tr:last-child td { border-bottom:none; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; }
+  .dep { border-left:4px solid var(--c); }
+  .linea { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:8px; }
+  .fase { background:var(--card); border-radius:12px; padding:10px 12px; border-top:4px solid var(--c); }
+  .fase b { display:block; font-size:10.5pt; }
+  .fase .cuando { color:var(--muted); font-size:8pt; margin-bottom:4px; }
+  .portada { display:flex; flex-direction:column; justify-content:space-between; }
+  .logo { width:64px; height:64px; border-radius:16px; background:#6C4CF1; display:grid; place-items:center; font-size:38px; font-weight:800; color:#fff; position:relative; }
+  .logo:after { content:""; position:absolute; width:12px; height:12px; border-radius:50%; background:var(--amar); top:9px; right:10px; }
+  .callout { background:linear-gradient(135deg, rgba(139,108,255,.18), rgba(139,108,255,.04)); border:1px solid rgba(139,108,255,.4); border-radius:14px; padding:12px 14px; }
+  .alerta { background:rgba(255,107,107,.08); border:1px solid rgba(255,107,107,.35); border-radius:12px; padding:10px 12px; }
+  .ok { color:var(--verde); } .ko { color:var(--rojo); } .warn { color:var(--amar); }
+  .check li { list-style:none; margin-left:-16px; }
+  .check li:before { content:"☐ "; color:var(--vio2); }
+  .bar { height:8px; border-radius:4px; background:var(--card2); overflow:hidden; margin-top:4px; }
+  .bar i { display:block; height:100%; background:var(--c); }
+</style>
+</head>
+<body>
+
+<!-- 1 · PORTADA -->
+<section class="pag portada">
+  <div>
+    <div class="logo">P</div>
+    <div style="height:60px"></div>
+    <div class="kicker">Plan de negocio de lanzamiento</div>
+    <h1>PalomApp<br><span style="color:var(--vio2)">de aquí a un año</span></h1>
+    <p class="sub" style="font-size:12pt;max-width:140mm;">Noviembre 2026 → noviembre 2027. Hoja de ruta para publicar en Google Play, tareas del dueño y de cada departamento, marca y marketing, producto, costes, legal y objetivos.</p>
+    <div class="callout" style="max-width:150mm;margin-top:18px;">
+      <b style="font-size:12pt;">«Lo tuyo, lo nuestro, todo claro»</b><br>
+      <span class="muted">Tu dinero y el que compartes, en una sola app.</span>
+    </div>
+  </div>
+  <div class="grid4">
+    <div class="card"><div class="faint">Objetivo del año</div><b>Que la use mucha gente</b></div>
+    <div class="card"><div class="faint">Modelo</div><b>Gratis + Plus (más adelante)</b></div>
+    <div class="card"><div class="faint">Presupuesto</div><b>0–30 € al mes</b></div>
+    <div class="card"><div class="faint">Tu tiempo</div><b>5–8 h a la semana</b></div>
+  </div>
+  <div>
+    <p class="faint">Preparado por el subdirector con Producto y Diseño (docs/34), Marketing y Comunicación (docs/marketing/10), Datos y Seguridad (docs/35) y Calidad (docs/salud/2026-11-10). 10/11/2026. Las cifras de usuarios son estimaciones, no datos; las de costes y comisiones se consultaron el 10/11/2026 y pueden cambiar. No es asesoramiento fiscal ni legal.</p>
+  </div>
+</section>
+
+<!-- 2 · RESUMEN -->
+<section class="pag">
+  <div class="kicker">1 · En una página</div>
+  <h2>La apuesta</h2>
+  <p class="sub">Hay un hueco claro: las apps de finanzas no reparten gastos y las de repartir gastos no llevan tus finanzas. PalomApp hace las dos cosas, y cada grupo que se crea trae de 2 a 5 personas nuevas. Ese es el motor del año.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>Qué vamos a hacer</h4>
+      <ul>
+        <li><b>Dic 2026:</b> prueba cerrada de Google (12 personas, 14 días).</li>
+        <li><b>Ene 2027:</b> publicación en Google Play.</li>
+        <li><b>Feb–abr:</b> que la gente vuelva (avisos, widget, viajes con moneda).</li>
+        <li><b>May–jul:</b> que inviten (invitaciones mejores, iPhone por la web). Verano = pico de viajes.</li>
+        <li><b>Ago–nov:</b> sostenerla y decidir el plan de pago con números reales y un gestor.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>A quién vamos primero</h4>
+      <ul>
+        <li><b>1.</b> La persona que lleva las cuentas en una pareja que vive junta.</li>
+        <li><b>2.</b> Pisos compartidos (septiembre).</li>
+        <li><b>3.</b> Viajes en grupo como puerta de entrada (Semana Santa y verano).</li>
+      </ul>
+      <p class="faint" style="margin-top:6px;">En España 3 de cada 4 móviles son Android (Statcounter, sep 2026).</p>
+    </div>
+  </div>
+
+  <h3>Metas a noviembre de 2027</h3>
+  <div class="grid4">
+    <div class="card"><div class="faint">Altas</div><div class="big">1.000</div><div class="faint">trabajo: 1.500</div></div>
+    <div class="card"><div class="faint">Activas al mes</div><div class="big">300</div><div class="faint">trabajo: 500</div></div>
+    <div class="card"><div class="faint">Grupos activos</div><div class="big">100</div><div class="faint">trabajo: 150</div></div>
+    <div class="card"><div class="faint">Nota en la tienda</div><div class="big">4,4</div><div class="faint">con 40+ reseñas</div></div>
+  </div>
+  <p class="faint" style="margin-top:6px;">Arriba, el compromiso (propuesta de Producto); abajo, el objetivo de trabajo si el plan de marketing se hace entero. Referencia: la app típica de Google Play no pasa de 100–499 instalaciones en toda su vida. Revisamos en abril con datos reales.</p>
+
+  <h3>Dinero del primer año</h3>
+  <div class="grid3">
+    <div class="card"><div class="faint">Gasto estimado</div><div class="big">≈ 120–250 €</div><div class="faint">en todo el año; media por debajo de 30 €/mes</div></div>
+    <div class="card"><div class="faint">Ingresos</div><div class="big">0 €</div><div class="faint">el plan de pago no se activa antes de ago–sep 2027</div></div>
+    <div class="card"><div class="faint">Cuándo se paga sola</div><div class="big">≈ 3.000+</div><div class="faint">activas al mes, si hay que darse de alta de autónomo</div></div>
+  </div>
+
+  <div class="callout" style="margin-top:12px;">
+    <b>Mi opinión como subdirector.</b> El plan es realista porque no depende de gastar: depende de que Juntos funcione y de constancia (2 vídeos a la semana, contestar a todo). El mayor riesgo no es técnico, es de tiempo: 5–8 horas dan para una cosa grande y dos medianas por trimestre. Por eso propongo un orden estricto y no abrir frentes nuevos (iPhone nativo, conexión con bancos) en este año. Y una advertencia sincera: cobrar con 300 usuarios <b>perdería dinero</b> por el alta de autónomo; Plus es una decisión para octubre con gestor, no una promesa del plan.
+  </div>
+  <div class="pie"><span>PalomApp · Plan de negocio 2026–2027</span><span>2</span></div>
+</section>
+
+<!-- 3 · HOJA DE RUTA -->
+<section class="pag">
+  <div class="kicker">2 · Hoja de ruta</div>
+  <h2>Del 10 de noviembre a la publicación</h2>
+  <p class="sub">Lo que marca la fecha son los 12 probadores durante 14 días que exige Google, no el diseño: a la app le falta poco.</p>
+  <table>
+    <tr><th style="width:20%">Cuándo</th><th>Qué</th><th style="width:18%">Quién</th></tr>
+    <tr><td><b>10–16 nov</b></td><td>Publicar en la web lo hecho (rama <code>fase9/pulido</code>, ya revisado por Calidad). Contestar las decisiones bloqueantes (página 9). Abrir la cuenta de Google Play. Instalar el APK de prueba y pasar la lista de 30 minutos de Calidad.</td><td>Dueño</td></tr>
+    <tr><td><b>10–23 nov</b></td><td>Marca: elegir icono y lema; mirar «PalomApp» en el registro de marcas (OEPM). Reservar nombre en TikTok e Instagram. Dirección web propia. Servicio de correo y CAPTCHA en Supabase. Tope de gasto en Anthropic.</td><td>Dueño · Marketing · Datos</td></tr>
+    <tr><td><b>17–30 nov</b></td><td>Borrar cuenta en la base real (probar sin guardar → aplicar → desplegar). Primeros pasos para quien llega sin invitación, icono definitivo, «PalomApp» en crear cuenta, assetlinks para las invitaciones. Copia diaria privada.</td><td>Desarrollo · Datos · Producto</td></tr>
+    <tr><td><b>24 nov – 7 dic</b></td><td>Ficha de Google Play (textos listos), 8 capturas, formulario de seguridad de datos, AAB firmado. Grupo de WhatsApp «Probadores» con 15–20 personas.</td><td>Marketing · Desarrollo · Dueño</td></tr>
+    <tr><td><b>~8–22 dic</b></td><td><b>Prueba cerrada</b>: día 1 instalar y crear un grupo real; día 7 tres preguntas; día 13 Android vitals; día 14 gracias. Arreglos semanales.</td><td>Dueño · Calidad</td></tr>
+    <tr><td><b>Fin dic – ene</b></td><td>Pedir publicación a Google (tarda unos días). Preparar 6 vídeos por adelantado. <b>Lanzamiento</b>: reseñas de los probadores, vídeos, Reddit y Rankia, AlternativeTo.</td><td>Todos</td></tr>
+  </table>
+
+  <h3>El año, por trimestres</h3>
+  <div class="linea">
+    <div class="fase" style="--c:var(--vio)"><div class="cuando">Nov – ene</div><b>Salir</b><ul><li>Versión 1.0 en Google Play</li><li>Primeros pasos, icono, capturas</li><li>Cifras agregadas (sin espiar)</li><li>Pedir valoración en buen momento</li></ul></div>
+    <div class="fase" style="--c:var(--turq)"><div class="cuando">Feb – abr</div><b>Que vuelvan</b><ul><li>Avisos del móvil (fijos, tareas, fin de mes)</li><li>Viajes con otra moneda (antes de Semana Santa)</li><li>Avisos de Juntos</li><li>Widget «Te queda este mes»</li></ul></div>
+    <div class="fase" style="--c:var(--amar)"><div class="cuando">May – jul</div><b>Que inviten</b><ul><li>Invitar con la cifra en WhatsApp</li><li>iPhone por la web instalable</li><li>Ver datos sin conexión</li><li>Widget «Apuntar gasto»</li></ul></div>
+    <div class="fase" style="--c:var(--rosa)"><div class="cuando">Ago – nov</div><b>Sostenerla</b><ul><li>Decidir Plus (con gestor)</li><li>Gasto fijo compartido y Excel del grupo</li><li>Apuntar sin red</li><li>«Tu año» para compartir</li></ul></div>
+  </div>
+  <p class="faint" style="margin-top:8px;">Fuera de este año: conectar con el banco, App Store nativa de iPhone (se decide en T4 con cifras), ver un grupo con enlace sin cuenta (descartado por el dueño).</p>
+  <div class="pie"><span>PalomApp · Plan de negocio 2026–2027</span><span>3</span></div>
+</section>
+
+<!-- 4 · DUEÑO -->
+<section class="pag">
+  <div class="kicker">3 · Tu lista</div>
+  <h2>Lo que tienes que hacer tú</h2>
+  <p class="sub">En orden. Lo marcado <span class="tag t-bloq">bloquea</span> frena la publicación si no se hace.</p>
+  <div class="grid2">
+    <div class="card">
+      <h4>Esta semana</h4>
+      <ul class="check">
+        <li>Decir «publica» para lo ya revisado <span class="tag t-ok">listo</span></li>
+        <li>Contestar las 8 decisiones de la página 9 <span class="tag t-bloq">bloquea</span></li>
+        <li>Instalar <b>PalomApp-prueba.apk</b> y pasar la lista de 30 minutos (está en docs/salud)</li>
+        <li>Abrir la cuenta de Google Play (25 USD, verificar identidad) <span class="tag t-bloq">bloquea</span></li>
+        <li>Guardar la clave de OpenRouteService en Supabase como <code>ORS_KEY</code></li>
+      </ul>
+      <h4 style="margin-top:10px;">Antes del 23 de noviembre</h4>
+      <ul class="check">
+        <li>Buscar «PalomApp» y «Paloma» en el buscador de marcas de la OEPM</li>
+        <li>Reservar el nombre en TikTok e Instagram</li>
+        <li>Comprar la dirección web (si dices sí)</li>
+        <li>En Supabase: conectar un servicio de correo, activar CAPTCHA y aviso de consumo <span class="tag t-bloq">bloquea</span></li>
+        <li>En Anthropic: poner un tope de gasto mensual <span class="tag t-bloq">bloquea</span></li>
+        <li>Lista de 15–20 probadores con Android <span class="tag t-bloq">bloquea</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Antes de la prueba cerrada</h4>
+      <ul class="check">
+        <li>Crear la clave de firma conmigo (paso a paso, nunca en el chat) y guardar una copia fuera de GitHub</li>
+        <li>Aprobar textos de la ficha y capturas</li>
+        <li>Dar los secretos para la copia diaria privada</li>
+        <li>Probar en 2 móviles reales (uno pequeño)</li>
+      </ul>
+      <h4 style="margin-top:10px;">Durante la prueba y el lanzamiento</h4>
+      <ul class="check">
+        <li>Mensajes a probadores los días 1, 7 y 14 (textos de Marketing)</li>
+        <li>Pasarme los fallos cada 2–3 días</li>
+        <li>Pedir reseña sincera el día de publicar (nunca «5 estrellas», nada a cambio)</li>
+      </ul>
+      <h4 style="margin-top:10px;">Cada semana (≈ 6 h)</h4>
+      <table style="font-size:8.3pt;">
+        <tr><td>Contestar reseñas, correos y usuarios</td><td class="num">1 h</td></tr>
+        <tr><td>Grabar y subir 2 vídeos (guiones listos)</td><td class="num">2 h</td></tr>
+        <tr><td>Ayudar en 2–3 hilos de Reddit/Rankia</td><td class="num">1 h</td></tr>
+        <tr><td>Hablar con 1–2 usuarios / invitar a crear un grupo</td><td class="num">1 h</td></tr>
+        <tr><td>Viernes: mirar números y decidir</td><td class="num">1 h</td></tr>
+      </table>
+      <h4 style="margin-top:10px;">Verano de 2027</h4>
+      <ul class="check"><li>Hablar con un gestor sobre cobrar (036, autónomo, IVA)</li></ul>
+    </div>
+  </div>
+  <div class="pie"><span>PalomApp · Plan de negocio 2026–2027</span><span>4</span></div>
+</section>
+
+<!-- 5 · DEPARTAMENTOS -->
+<section class="pag">
+  <div class="kicker">4 · Departamentos</div>
+  <h2>Qué hace cada uno</h2>
+  <div class="grid2">
+    <div class="card dep" style="--c:var(--vio)">
+      <h4 style="color:var(--vio2)">Desarrollo (yo)</h4>
+      <ul>
+        <li>Publicar en la web lo ya revisado cuando digas «publica».</li>
+        <li>Borrar cuenta: aplicar el SQL y desplegar la función tras tu «sí».</li>
+        <li>Primeros pasos para quien llega de la tienda; pistas de primera vez; «mostrar contraseña».</li>
+        <li>Quitar el botón «Antes» con tus elecciones (Inicio nueva, anillo).</li>
+        <li>Invitaciones que abren la app (assetlinks) y recuperar contraseña dentro de la app.</li>
+        <li>AAB firmado y subida a la prueba cerrada.</li>
+        <li>Luego, por trimestre: avisos, widget, viajes con moneda, invitar mejor, sin conexión.</li>
+      </ul>
+    </div>
+    <div class="card dep" style="--c:var(--turq)">
+      <h4 style="color:var(--turq)">Producto y Diseño</h4>
+      <ul>
+        <li>Icono definitivo (2–3 propuestas sobre el camino que elijas).</li>
+        <li>Tarjeta «Primeros pasos» y pistas de primera vez.</li>
+        <li>Las 8 capturas de la ficha con su frase.</li>
+        <li>Lista de cifras agregadas para medir sin espiar.</li>
+        <li>Diseño de avisos y widget (T2) y de Plus (T3).</li>
+        <li>Revisión mensual con las cifras: qué se usa y qué no.</li>
+      </ul>
+    </div>
+    <div class="card dep" style="--c:var(--rosa)">
+      <h4 style="color:var(--rosa)">Marketing y Comunicación</h4>
+      <ul>
+        <li>Ficha de Google Play (ya escrita, falta tu visto bueno).</li>
+        <li>Mensajes a probadores y del día de lanzamiento.</li>
+        <li>10 piezas de contenido listas; 2 guiones nuevos a la semana.</li>
+        <li>Calendario mensual (San Valentín, Semana Santa, verano, pisos).</li>
+        <li>Revisión de objetivos en abril; balance en noviembre.</li>
+        <li>«Cerramos día» y notas de WhatsApp en cada versión.</li>
+      </ul>
+    </div>
+    <div class="card dep" style="--c:var(--azul)">
+      <h4 style="color:var(--azul)">Datos y Seguridad</h4>
+      <ul>
+        <li>Mirar Supabase en solo lectura (región, tamaño, coste real de tickets).</li>
+        <li>Borrar cuenta: prueba en la base real sin guardar, luego aplicar.</li>
+        <li>Copia diaria privada que incluya las cuentas, y simulacro de restauración.</li>
+        <li>Registro de actividades (RGPD), contratos de proveedores, plan ante fugas, aviso legal y condiciones de uso.</li>
+        <li>Formulario de seguridad de datos de Google Play.</li>
+        <li>Vigilar costes y límites cada mes; avisar antes de romper un plan gratis.</li>
+      </ul>
+    </div>
+    <div class="card dep" style="--c:var(--verde)">
+      <h4 style="color:var(--verde)">Calidad</h4>
+      <ul>
+        <li>Lista de 32 comprobaciones en móvil real (30 minutos) — ya escrita.</li>
+        <li>Organizar la prueba cerrada: fallos en una sola lista, preguntas días 1, 7 y 13.</li>
+        <li>9 criterios de «lista para publicar» (cero fallos de datos, &lt;1 % de cierres…).</li>
+        <li>Rutina: 1 h a la semana, 1 h 30 antes de cada versión; web primero y Google Play al 20 %.</li>
+        <li>Barrido completo una vez al mes.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Cómo nos coordinamos</h4>
+      <ul>
+        <li>Tú hablas solo conmigo.</li>
+        <li>Cada viernes: 5 líneas de estado (qué salió, qué falta, qué necesito de ti).</li>
+        <li>Cada mes: informe breve en PDF con cifras.</li>
+        <li>Ninguna versión sale sin Calidad; nada toca la base sin Datos y Seguridad y tu «sí».</li>
+      </ul>
+    </div>
+  </div>
+  <div class="pie"><span>PalomApp · Plan de negocio 2026–2027</span><span>5</span></div>
+</section>
+
+<!-- 6 · MARCA Y MARKETING -->
+<section class="pag">
+  <div class="kicker">5 · Marca y marketing</div>
+  <h2>Quiénes somos y cómo nos van a conocer</h2>
+  <div class="grid3">
+    <div class="card"><h4>Promesa</h4><p>Tu dinero y el que compartes, en una sola app.</p><h4>Lema</h4><p style="color:var(--amar)"><b>Lo tuyo, lo nuestro, todo claro.</b></p></div>
+    <div class="card"><h4>Tono</h4><ul><li>Cercano y claro, como un amigo ordenado.</li><li>Sí: «Os debéis 12 €. ¿Lo saldáis?»</li><li>No: jerga financiera, culpa, «¡ahorra ya!».</li></ul></div>
+    <div class="card"><h4>Identidad (elige)</h4><ul><li><b>A</b> · La P de hoy, pulida.</li><li><b>B</b> · Dos círculos que se cruzan: lo mío, lo tuyo y lo nuestro. <span class="tag t-dec">recomendado</span></li><li><b>C</b> · Una paloma (riesgo: parece de mensajes).</li></ul></div>
+  </div>
+
+  <h3>Competencia y hueco</h3>
+  <table>
+    <tr><th>App</th><th>Qué hace</th><th>Cómo cobra</th></tr>
+    <tr><td>Tricount</td><td>Repartir gastos (18 M de instalaciones, 4,76)</td><td>Gratis, sin Premium</td></tr>
+    <tr><td>Splitwise</td><td>Repartir gastos</td><td>Gratis limitado; Pro ≈ 4,99 $/mes (EE. UU.)</td></tr>
+    <tr><td>Fintonic</td><td>Finanzas conectadas al banco</td><td>Gratis; gana con préstamos</td></tr>
+    <tr><td>Spendee / Wallet</td><td>Presupuestos personales</td><td>≈ 1,99 €/mes o 14,99 €/año</td></tr>
+    <tr><td><b style="color:var(--vio2)">PalomApp</b></td><td><b>Las dos cosas: tus finanzas + lo compartido + agenda</b></td><td>Gratis, sin anuncios; Plus más adelante</td></tr>
+  </table>
+
+  <h3>Canales, por orden de efecto y esfuerzo</h3>
+  <table>
+    <tr><th>Canal</th><th>Qué hacer</th><th>Medir</th></tr>
+    <tr><td>1 · Invitaciones de Juntos</td><td>Cada grupo trae 2–5 personas. Que invitar sea facilísimo (T3).</td><td>Altas por invitación</td></tr>
+    <tr><td>2 · Ficha de Google Play</td><td>Título «PalomApp: gastos y finanzas», 8 capturas, reseñas sinceras.</td><td>Visitas → instalaciones</td></tr>
+    <tr><td>3 · Círculo cercano</td><td>Probadores, amigos, familia; pedir que creen un grupo real.</td><td>Grupos creados</td></tr>
+    <tr><td>4 · Vídeos cortos</td><td>2 a la semana (TikTok, Reels, Shorts), pantalla y voz, guiones listos.</td><td>Visitas al perfil</td></tr>
+    <tr><td>5 · Reddit y Rankia</td><td>Ayudar en hilos de finanzas, sin hacer spam.</td><td>Clics</td></tr>
+    <tr><td>6 · Una página útil al mes</td><td>«Cómo repartir gastos en pareja», «calculadora de un viaje en coche»…</td><td>Visitas desde Google</td></tr>
+  </table>
+  <p class="faint">No hacer: anuncios pagados, Product Hunt, comprar reseñas, X ni LinkedIn.</p>
+
+  <h3>Calendario de temas</h3>
+  <div class="grid4" style="font-size:8.3pt;">
+    <div class="card"><b>Ene</b> Lanzamiento: «este año sé en qué se va mi dinero»</div>
+    <div class="card"><b>Feb</b> San Valentín: dinero en pareja sin discutir</div>
+    <div class="card"><b>Mar</b> Semana Santa: viajes y moneda</div>
+    <div class="card"><b>Abr</b> Revisar objetivos y ficha</div>
+    <div class="card"><b>May</b> Bodas, despedidas, escapadas</div>
+    <div class="card"><b>Jun–Jul</b> Verano: el pico (3 vídeos/semana)</div>
+    <div class="card"><b>Sep</b> Pisos compartidos</div>
+    <div class="card"><b>Oct–Nov</b> Decidir Plus; balance del año</div>
+  </div>
+  <div class="pie"><span>PalomApp · Plan de negocio 2026–2027</span><span>6</span></div>
+</section>
+
+<!-- 7 · OBJETIVOS -->
+<section class="pag">
+  <div class="kicker">6 · Objetivos</div>
+  <h2>Tres escenarios desde la publicación</h2>
+  <p class="sub">Estimaciones de Marketing a 3, 6 y 12 meses de publicar (ene → abr → jul → ene 2028). El compromiso del plan es el de Producto: 1.000 altas, 300 activas, 100 grupos activos.</p>
+  <table>
+    <tr><th>Medida</th><th class="num">Prudente</th><th class="num">Esperado</th><th class="num">Optimista</th></tr>
+    <tr><td>Descargas</td><td class="num">150 / 400 / 1.000</td><td class="num">300 / 900 / 2.500</td><td class="num">800 / 2.500 / 8.000</td></tr>
+    <tr><td>Altas</td><td class="num">100 / 300 / 700</td><td class="num">200 / 550 / 1.500</td><td class="num">500 / 1.600 / 5.000</td></tr>
+    <tr><td><b>Activas al mes</b></td><td class="num">40 / 100 / 250</td><td class="num"><b>80 / 220 / 500</b></td><td class="num">200 / 700 / 1.800</td></tr>
+    <tr><td>Grupos activos</td><td class="num">10 / 25 / 60</td><td class="num">20 / 60 / 150</td><td class="num">50 / 170 / 500</td></tr>
+    <tr><td>Nota (reseñas)</td><td class="num">4,2 (40)</td><td class="num">4,4 (100)</td><td class="num">4,5 (300)</td></tr>
+  </table>
+
+  <h3>Cómo lo mediremos (sin espiar)</h3>
+  <div class="grid2">
+    <div class="card"><ul><li>Recuentos totales de Supabase: cuentas nuevas, personas que han apuntado algo en el mes, grupos con movimiento. Solo números, nunca filas.</li><li>Play Console: visitas a la ficha, instalaciones, desinstalaciones, cierres inesperados, nota.</li><li>Una línea nueva en la página de privacidad explicándolo.</li></ul></div>
+    <div class="card"><h4>Señales para cambiar de rumbo</h4><ul><li><span class="ko">●</span> En abril, menos de 40 activas → revisar ficha y primeros pasos antes que más marketing.</li><li><span class="warn">●</span> Muchas instalaciones y pocas activas → el problema es la primera experiencia.</li><li><span class="ok">●</span> Más de 220 activas en abril → adelantar avisos de Juntos y preparar Supabase Pro.</li></ul></div>
+  </div>
+
+  <h3>Lo que marca la diferencia</h3>
+  <div class="grid3">
+    <div class="card"><div class="faint">Grupos que crea cada persona</div><div class="big" style="color:var(--turq)">×2–5</div><p class="faint">personas nuevas por grupo: el bucle de Juntos</p></div>
+    <div class="card"><div class="faint">Constancia</div><div class="big" style="color:var(--rosa)">2 vídeos</div><p class="faint">a la semana durante todo el año</p></div>
+    <div class="card"><div class="faint">Confianza</div><div class="big" style="color:var(--amar)">4,4★</div><p class="faint">contestar todas las reseñas en 48 h</p></div>
+  </div>
+  <div class="pie"><span>PalomApp · Plan de negocio 2026–2027</span><span>7</span></div>
+</section>
+
+<!-- 8 · DINERO -->
+<section class="pag">
+  <div class="kicker">7 · Dinero</div>
+  <h2>Costes, ingresos y cuándo cobrar</h2>
+  <h3>Coste al mes según personas activas (app gratis, USD)</h3>
+  <table>
+    <tr><th>Activas</th><th class="num">50</th><th class="num">500</th><th class="num">2.000</th><th class="num">10.000</th><th class="num">50.000</th></tr>
+    <tr><td>Base de datos (Supabase)</td><td class="num">0</td><td class="num">25 (Pro)</td><td class="num">25</td><td class="num">≈30</td><td class="num">≈90</td></tr>
+    <tr><td>Leer tickets (IA)</td><td class="num">0,2</td><td class="num">2</td><td class="num">7</td><td class="num">37</td><td class="num">185</td></tr>
+    <tr><td>Precios de bolsa</td><td class="num">0</td><td class="num">0–20</td><td class="num">0–20</td><td class="num">0–20</td><td class="num">20+</td></tr>
+    <tr><td><b>Total</b></td><td class="num"><b class="ok">≈0</b></td><td class="num"><b class="warn">27–47</b></td><td class="num"><b class="warn">32–52</b></td><td class="num"><b class="ko">67–87</b></td><td class="num"><b class="ko">≈300</b></td></tr>
+  </table>
+  <p class="faint">Supuestos de Datos y Seguridad, sin medir aún: 1 MB por persona, 1 de cada 5 lee 8 tickets al mes. Leer un ticket cuesta ≈0,0008 $ en modo normal y ≈0,016 $ en «más precisión» (20 veces más). Lo primero que se rompe no es la base de datos: son los correos de registro (2 por hora sin servicio propio).</p>
+
+  <h3>Presupuesto del primer año (propuesta del subdirector)</h3>
+  <table>
+    <tr><th>Concepto</th><th>Cuándo</th><th class="num">Coste</th></tr>
+    <tr><td>Cuenta de Google Play</td><td>Noviembre, una vez</td><td class="num">25 $</td></tr>
+    <tr><td>Dirección web propia</td><td>Noviembre, al año</td><td class="num">≈10–15 € *</td></tr>
+    <tr><td>Supabase gratis + copia diaria privada en GitHub</td><td>Hasta ≈400 activas o 350 MB</td><td class="num">0</td></tr>
+    <tr><td>Supabase Pro</td><td>Cuando se acerque el límite (previsto verano)</td><td class="num">25 $/mes</td></tr>
+    <tr><td>Leer tickets, correo de registro (plan gratis), resto</td><td>Todo el año</td><td class="num">0–5 €/mes</td></tr>
+    <tr><td><b>Total estimado del año</b></td><td></td><td class="num"><b>≈120–250 €</b></td></tr>
+  </table>
+  <p class="faint">* De memoria; sin comprobar. Datos y Seguridad recomienda Supabase Pro desde el primer día por las copias; yo propongo empezar en gratis con copia diaria propia para no gastar el presupuesto entero desde el mes 1, y pasar a Pro con aviso de consumo. Decides tú (página 9).</p>
+
+  <h3>PalomApp Plus (más adelante)</h3>
+  <div class="grid2">
+    <div class="card"><h4 class="ok">Gratis</h4><ul><li>Apuntar gastos e ingresos, Juntos sin límite de grupos ni personas, viajes, cuentas, metas, inversiones, deudas, agenda, importar, Excel.</li><li>Huella, ocultar cifras, avisos, widget básico. Sin anuncios.</li><li>Lecturas de tickets incluidas al mes (cifra por decidir).</li></ul></div>
+    <div class="card"><h4 style="color:var(--vio2)">Plus · 1,99 €/mes o 14,99 €/año</h4><ul><li>Solo cosas nuevas: muchas más lecturas de tickets, resumen con IA, guardar la foto del ticket, historial del grupo de más de 6 meses, widgets y paletas extra.</li><li>Nada de lo gratis se quita.</li></ul></div>
+  </div>
+  <div class="alerta" style="margin-top:10px;">
+    <b>La cuenta de Plus, con honestidad.</b> Google se queda el 15 % y el IVA lo ingresa Google: llegan ≈1,40 € de 1,99 € al mes. Si para cobrar hay que darse de alta de autónomo (80 €/mes de tarifa plana el primer año), hacen falta ≈90–140 suscriptores solo para cubrirlo: unas 3.000–4.700 activas al mes con un 3 % pagando. Con 300 activas <b>Plus pierde dinero</b>. Por eso: no se promete en el plan; en octubre de 2027 se decide con números reales y un gestor (la ley no fija un mínimo de ingresos para el alta; el Supremo dijo en 2025 que ganar menos del salario mínimo no libra por sí solo). Mientras la app sea gratis, no hay nada que declarar.
+  </div>
+  <div class="pie"><span>PalomApp · Plan de negocio 2026–2027</span><span>8</span></div>
+</section>
+
+<!-- 9 · DECISIONES Y RIESGOS -->
+<section class="pag">
+  <div class="kicker">8 · Decisiones y riesgos</div>
+  <h2>Lo que necesito que decidas</h2>
+  <table>
+    <tr><th style="width:4%">#</th><th>Decisión</th><th>Recomendación</th><th style="width:12%"></th></tr>
+    <tr><td>1</td><td>¿Publicamos ya en la web lo revisado por Calidad?</td><td>Sí: sin fallos de datos y 161 pruebas bien.</td><td><span class="tag t-bloq">bloquea</span></td></tr>
+    <tr><td>2</td><td>¿Lecturas de tickets gratis al mes para quien llega de la tienda?</td><td>20 en modo normal; «más precisión» aparte (3 al mes). Los de hoy mantenéis 60.</td><td><span class="tag t-bloq">bloquea</span></td></tr>
+    <tr><td>3</td><td>¿Qué decimos del precio en público?</td><td>«Sin anuncios» e «Incluye N lecturas al mes», sin la palabra «siempre» (como decidiste en octubre).</td><td><span class="tag t-bloq">bloquea</span></td></tr>
+    <tr><td>4</td><td>¿Camino de identidad y lema?</td><td>B (dos círculos) y «Lo tuyo, lo nuestro, todo claro».</td><td><span class="tag t-bloq">bloquea</span></td></tr>
+    <tr><td>5</td><td>¿Dirección web propia antes de publicar?</td><td>Sí: cambiarla después rompe invitaciones y enlaces.</td><td><span class="tag t-bloq">bloquea</span></td></tr>
+    <tr><td>6</td><td>¿Autorizas, solo esta vez, poner «PalomApp» en crear cuenta (<code>auth-signup.js</code>)?</td><td>Sí, con revisión de Calidad.</td><td><span class="tag t-bloq">bloquea</span></td></tr>
+    <tr><td>7</td><td>Borrar cuenta: ¿probar en la base real sin guardar? ¿borrar sus luces y comentarios de paradores? ¿freno en el panel?</td><td>Sí a las tres.</td><td><span class="tag t-bloq">bloquea</span></td></tr>
+    <tr><td>8</td><td>¿Datos y Seguridad mira Supabase en solo lectura (tamaño, región, coste real)?</td><td>Sí: no cambia nada.</td><td><span class="tag t-dec">pronto</span></td></tr>
+    <tr><td>9</td><td>¿Supabase Pro desde el día 1 o al acercarnos al límite?</td><td>Al acercarnos, con copia diaria propia y aviso de consumo.</td><td><span class="tag t-dec">pronto</span></td></tr>
+    <tr><td>10</td><td>¿Sales tú en los vídeos?</td><td>Pantalla y voz.</td><td></td></tr>
+    <tr><td>11</td><td>¿Eres o has sido autónomo en los últimos 2–3 años?</td><td>Cambia el coste de cobrar; contesta cuando quieras.</td><td></td></tr>
+  </table>
+  <p class="faint">Ya cambiado: el identificador de Android era <code>com.palomapp.app</code>, que usa otra app publicada («Paloma», compraventa en Oriente Medio). Ahora es <code>es.palomapp.finanzas</code>. Google no deja cambiarlo después de la primera subida.</p>
+
+  <h3>Riesgos principales</h3>
+  <table>
+    <tr><th>Riesgo</th><th>Prob.</th><th>Qué hacemos</th></tr>
+    <tr><td>No llegar a 12 probadores 14 días seguidos</td><td class="warn">Media</td><td>Apuntar 15–20; recordatorios los días 1, 7 y 13.</td></tr>
+    <tr><td>Falta de tiempo del dueño</td><td class="ko">Alta</td><td>Orden estricto por trimestre; guiones y textos listos; nada nuevo fuera del plan.</td></tr>
+    <tr><td>Marca «PalomApp» registrada por otro</td><td class="ok">Baja</td><td>Mirar OEPM antes de pagar nada; nombres alternativos en reserva.</td></tr>
+    <tr><td>Borrar una cuenta afecta a los demás</td><td class="ok">Baja</td><td>Borrado diseñado para dejar «baja» en los grupos; freno en el panel.</td></tr>
+    <tr><td>Pocos usuarios activos tras el lanzamiento</td><td class="warn">Media</td><td>Revisión en abril: arreglar primera experiencia antes que más marketing.</td></tr>
+    <tr><td>Coste de IA por abuso de tickets</td><td class="ok">Baja</td><td>Límite por persona y tope de gasto en Anthropic.</td></tr>
+    <tr><td>Caída o pérdida de datos</td><td class="ok">Baja</td><td>Copia diaria privada, simulacro de restauración, web primero y Google Play al 20 %.</td></tr>
+  </table>
+  <div class="pie"><span>PalomApp · Plan de negocio 2026–2027</span><span>9</span></div>
+</section>
+
+</body>
+</html>
