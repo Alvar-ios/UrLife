@@ -49,7 +49,7 @@ const hoyD = new Date(), d = (n) => { const x = new Date(hoyD); x.setDate(x.getD
   ok(L.length === 5 && /4 movimientos descargados/.test(toastT()), 'Excel: salen los 4 movimientos (también el traspaso) y lo dice');
   ok(L.some((x) => /;"Tierra; ""especial""";Bonsáis;;Diario;-30,50$/.test(x)), 'Excel: el gasto va en negativo, con coma, y el texto con «;» y comillas no rompe las columnas');
   ok(L.some((x) => /;Ingreso;Nómina;Nómina;;Diario;1000,00$/.test(x)) && L.some((x) => /;Traspaso;;;;Diario → Hucha;200,00$/.test(x)), 'Excel: ingreso en positivo y traspaso con «de → a»');
-  conocido(L.some((x) => /Devolución maceta;.*;12,00$/.test(x)), 'Excel: una devolución (gasto en negativo) sale como dinero que entra (hoy sale como −12,00, otro gasto: la columna no suma lo mismo que la app)');
+  ok(L.some((x) => /Devolución maceta;.*;12,00$/.test(x)), 'Excel: una devolución (gasto en negativo) sale como dinero que entra (hoy sale como −12,00, otro gasto: la columna no suma lo mismo que la app)');
   ok(L.slice(1).map((x) => x.slice(0, 10)).join() === L.slice(1).map((x) => x.slice(0, 10)).sort().join(), 'Excel: ordenado por fecha');
 
   // forma de pago que ya no está en tu lista
@@ -132,7 +132,7 @@ const hoyD = new Date(), d = (n) => { const x = new Date(hoyD); x.setDate(x.getD
   aH.irAgenda(['tareas']); await sleep(30); aA.openTareaForm(); await sleep(40);
   const tn = ad.querySelector('#tNombre'); if (tn) tn.value = 'Llamar al fontanero';
   a.w.__atras();
-  conocido(!!ad.querySelector('#descartarHoja'), 'Android: «atrás» con un plan nuevo a medio escribir pregunta antes de descartar (hoy lo cierra sin preguntar: la app busca la casilla «tTitulo» y se llama «tNombre»)');
+  ok(!!ad.querySelector('#descartarHoja'), 'Android: «atrás» con un plan nuevo a medio escribir pregunta antes de descartar (hoy lo cierra sin preguntar: la app busca la casilla «tTitulo» y se llama «tNombre»)');
 
   /* ---------- 5. Usuario nuevo, sin nada ---------- */
   const n = makeEnv({ url: 'https://prueba.example.invalid/', version: NUEVAS, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } },

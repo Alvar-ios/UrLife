@@ -1,5 +1,5 @@
 {
-  "appId": "com.palomapp.app",
+  "appId": "es.palomapp.finanzas",
   "appName": "PalomApp",
   "webDir": "www",
   "android": {

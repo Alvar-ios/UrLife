@@ -4,7 +4,7 @@ android {
     namespace = "com.palomapp.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.palomapp.app"
+        applicationId "es.palomapp.finanzas"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // El número de versión lo pone GitHub Actions (cada compilación sube uno)

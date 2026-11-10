@@ -565,7 +565,15 @@ function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTi
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function cifrasOcultas() { const v = lsGet('cifrasOcultas'); return v == null ? !!(typeof S !== 'undefined' && S._ocultas) : v === '1'; } // sin almacenamiento: dura mientras la app esté abierta
-function aplicarOcultar() { document.documentElement.classList.toggle('cifras-ocultas', cifrasOcultas()); }
+// Importes dentro de frases («−2,00 € a tu saldo»): se envuelven para poder taparlos (Calidad 10/11)
+function taparCifrasTexto() {
+  const c = $('#content'); if (!c || !cifrasOcultas()) return;
+  const re = /[−+-]?\s?\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?\s?[€$£]/g;
+  const w = document.createTreeWalker(c, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentNode && n.parentNode.closest && n.parentNode.closest('.tnum,.num,.cifra-txt,input,textarea,script,style') ? NodeFilter.FILTER_REJECT : re.test(n.nodeValue) ? (re.lastIndex = 0, NodeFilter.FILTER_ACCEPT) : NodeFilter.FILTER_REJECT) });
+  const ns = []; let n; while ((n = w.nextNode())) ns.push(n);
+  ns.forEach((t) => { const span = document.createElement('span'); span.innerHTML = escapeHtml(t.nodeValue).replace(re, (m) => '<span class="cifra-txt">' + m + '</span>'); t.parentNode.replaceChild(span, t); });
+}
+function aplicarOcultar() { document.documentElement.classList.toggle('cifras-ocultas', cifrasOcultas()); if (cifrasOcultas()) setTimeout(taparCifrasTexto, 0); }
 function ojoBtnHtml() { const o = cifrasOcultas(); return '<button type="button" class="icon-btn sm ojo-btn" aria-pressed="' + o + '" aria-label="' + (o ? 'Mostrar cifras' : 'Ocultar cifras') + '" ' + act('ocultarCifras') + '>' + ic(o ? 'ojoNo' : 'ojo') + '</button>'; }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento local */ } }
 
@@ -921,7 +929,7 @@ function renderShell() {
     '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
     '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('tbVolver') + '>' + ic('chevL') + '</button>' +
     '<div><h1 id="pageTitle"></h1><div class="sub" id="pageSub"></div></div></div>' +
-    '<div class="tb-r"><span id="compararHost"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda" ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
+    '<div class="tb-r"><span id="compararHost"></span><span id="ojoTb"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda" ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
     '<nav class="tabbar" aria-label="Secciones">' + tabBtn(tabsNav()[0]) + tabBtn(tabsNav()[1]) +
     '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabBtn(tabsNav()[2]) + tabBtn(tabsNav()[3]) + '</nav>' +
@@ -1078,6 +1086,8 @@ function render() {
   const sub = $('#pageSub'); if (sub) { const enHoy = S.tab === 'inicio' && !enAgenda; sub.textContent = enHoy ? fechaCabecera() : ''; sub.hidden = !enHoy; }
   document.body.classList.toggle('en-agenda', enAgenda); // docs/32 A6/A7: en la Agenda, flecha para volver y ninguna pestaña marcada
   if (enAgenda) $$('.tabbar [data-tab], .rail [data-tab]').forEach((b) => b.classList.remove('active'));
+  const ojo = $('#ojoTb'); if (ojo) ojo.innerHTML = cifrasOcultas() && S.tab !== 'inicio' ? ojoBtnHtml() : ''; // Calidad 10/11: volver a ver las cifras desde cualquier pestaña
+  if (cifrasOcultas()) setTimeout(taparCifrasTexto, 0);
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : TITULOS[S.tab];
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
   const _agEl = document.activeElement && document.activeElement.id === 'agRapida' ? document.activeElement : null, _agV = _agEl ? _agEl.value : null;
@@ -10559,11 +10569,11 @@ function renderMas() {
 }
 // docs/32 B8: «Descargar mis movimientos (Excel)» — CSV con punto y coma e importes con coma, que Excel abre bien
 function exportCsv() {
-  const q = (x) => { const t = String(x == null ? '' : x); return /[;"\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const q = (x) => { let t = String(x == null ? '' : x); if (/^[=+\-@]/.test(t) && !/^-?\d+(,\d+)?$/.test(t)) t = "'" + t; return /[;"\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
   const filas = S.movimientos.concat(S.traspasos || []).slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
-  const signo = (m) => (m.tipo === 'Ingreso' ? 1 : m.tipo === 'Traspaso' ? 0 : -1);
-  const lineas = [['Fecha', 'Tipo', 'Concepto', 'Categoría', 'Subcategoría', 'Cuenta', 'Importe'].join(';')].concat(filas.map((m) => [m.fecha, m.tipo === 'Factura' ? 'Pago fijo' : m.tipo, m.descripcion || '', m.tipo === 'Traspaso' ? '' : m.categoria || '', m.subcategoria || '',
-    m.tipo === 'Traspaso' ? nombreCuenta(m.cuentaId) + ' → ' + nombreCuenta(m.cuentaDestinoId) : (hayVariasCuentas() ? nombreCuenta(cuentaIdDe(m)) : ''), (signo(m) ? signo(m) * Math.abs(num(m.importe)) : Math.abs(num(m.importe))).toFixed(2).replace('.', ',')].map(q).join(';')));
+  const signo = (m) => (m.tipo === 'Ingreso' ? 1 : m.tipo === 'Traspaso' ? 0 : -1); // devoluciones (gasto en negativo) salen en positivo
+  const lineas = [['Fecha', 'Tipo', 'Concepto', 'Categoría', 'Subcategoría', 'Cuenta', 'Importe'].join(';')].concat(filas.map((m) => [m.fecha, m.tipo === 'Factura' ? 'Pago fijo' : m.tipo === 'Ahorro' ? 'Apartar' : m.tipo, m.descripcion || '', m.tipo === 'Traspaso' ? '' : m.categoria || '', m.subcategoria || '',
+    m.tipo === 'Traspaso' ? nombreCuenta(m.cuentaId) + ' → ' + nombreCuenta(m.cuentaDestinoId) : (hayVariasCuentas() ? nombreCuenta(cuentaIdDe(m)) : ''), (signo(m) ? signo(m) * num(m.importe) : Math.abs(num(m.importe))).toFixed(2).replace('.', ',')].map(q).join(';')));
   try {
     const blob = new Blob(['\ufeff' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob), a = document.createElement('a');
@@ -10689,7 +10699,9 @@ function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.
 function hojaConAlgoEscrito() {
   if (!FORM || ['mov', 'compRapido', 'traspaso', 'aportarR', 'tarea', 'trayecto'].indexOf(FORM.kind) < 0) return false;
   const imp = FORM.tec ? String(FORM.tec.txt || '') : (($('#fImporte') || {}).value || ($('#apImporte') || {}).value || '');
-  const desc = (($('#fDesc') || {}).value || '').trim(), tit = (($('#tTitulo') || {}).value || '').trim();
+  const imp2 = (($('#crImporte') || {}).value || '');
+  const desc = ((($('#fDesc') || {}).value || ($('#crDesc') || {}).value) || '').trim(), tit = (($('#tNombre') || {}).value || '').trim();
+  if (!FORM.id && imp2.replace(/[0,.\s]/g, '')) return true;
   return (!FORM.id && !!imp.replace(/[0,.\s]/g, '')) || (!FORM.id && (!!desc || !!tit));
 }
 function preguntarDescartar() {
