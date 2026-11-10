@@ -7,8 +7,9 @@
 1. **Crecer gratis cuesta poco; cobrar es lo caro.** Con la app gratis, el gasto mensual sale en unos 0 USD con 50 usuarios, 27–47 con 500 y 67–87 con 10.000. El presupuesto de 0–30 € aguanta hasta unos 500–2.000 usuarios activos al mes, según se pague o no por los precios de bolsa.
 2. **Lo primero que se rompe no es la base de datos, son los correos de registro:** Supabase, sin un servicio de correo propio, solo manda 2 correos por hora. Con un lanzamiento público, casi nadie podría confirmar su cuenta. Hay que comprobarlo y arreglarlo **antes de publicar**.
 3. **El día que haya plan de pago cambian tres cosas a la vez:** Vercel gratis deja de valer (es solo para uso no comercial), en Google Play pasas a ser «comerciante» (se publican tu dirección y tu teléfono) y lo prudente es darte de alta en Hacienda y como autónomo (unos 80 €/mes el primer año). Por eso recomendamos **no cobrar hasta tener a la vista unos 60–100 suscriptores**.
-4. **Google se queda el 15 % de una suscripción** (10 % de servicio + 5 % por usar su sistema de cobro) y liquida él el IVA de los clientes de la UE. De 2,99 € te llegarían unos 2,10 €.
-5. **Dos huecos de seguridad antes de abrir al público:** la copia semanal no incluye las cuentas (correos y contraseñas), así que hoy no serviría para levantar la app en otro sitio; y la copia cifrada cuelga de un repositorio público. Además, cualquiera puede gastar 60 lecturas «precisas» de ticket al mes, que cuestan 20 veces más que las normales.
+4. **Google se queda el 15 % de una suscripción** (10 % de servicio + 5 % por usar su sistema de cobro) y liquida él el IVA de los clientes de la UE. De Plus a 1,99 €/mes (`docs/34`) te llegan unos **1,40 €**; de 14,99 €/año, unos **10,50 €** (0,88 € al mes).
+5. **Leer un ticket cuesta ~0,0008 USD en modo normal y ~0,016 USD en «más precisión»** (20 veces más). Las 20 lecturas gratis para los nuevos **caben en el presupuesto si «más precisión» no entra en las 20**: con uso normal, hasta unos 4.000–8.000 usuarios junto con Supabase Pro. Si todo el mundo gastara las 20, solo hasta unos 300–600 (apartado 3b).
+6. **Dos huecos de seguridad antes de abrir al público:** la copia semanal no incluye las cuentas (correos y contraseñas), así que hoy no serviría para levantar la app en otro sitio; y la copia cifrada cuelga de un repositorio público. Además, cualquiera puede gastar 60 lecturas «precisas» de ticket al mes, que cuestan 20 veces más que las normales.
 
 ## 2. Costes al mes según usuarios activos (USD)
 
@@ -69,13 +70,51 @@ Aparte: 25 USD una sola vez por la cuenta de Google Play. Un dominio propio (rec
 | ¿Y mientras sea gratis? | Sin ingresos ni publicidad no hay nada que declarar ni alta que hacer | Seguir así hasta decidir cobrar |
 | ¿Y si ya fueras autónomo? | No hay cuota nueva: se añade la actividad con un 036 y los ingresos se suman a los tuyos | Decírnoslo: cambia el umbral de abajo |
 
-**Cuántos suscriptores hacen falta** (a 2,10 € netos): 38 para pagar la tarifa plana; **unos 60** con Supabase y Vercel; **unos 100–120** cuando acabe la tarifa plana. Con 2.000 usuarios activos, eso es que pague un 3–6 %.
+**Cuántos suscriptores de Plus hacen falta** (1,40 € netos al mes o 0,88 € si pagan al año; los costes fijos son unos 80 € de tarifa plana + ~45 € de Supabase Pro y Vercel Pro, sin cambio de moneda exacto):
+
+| Para cubrir | Coste al mes (€) | Todos mensuales | Todos anuales |
+|---|---|---|---|
+| Solo la tarifa plana | 80 | ~57 | ~91 |
+| Tarifa plana + Supabase y Vercel | ~125 | ~90 | ~140 |
+| Tras la tarifa plana (cuota ~206 €) | ~250 | ~180 | ~285 |
+
+Con las 300 personas activas que pide `docs/34` para activar Plus, harían falta un **30–45 % pagando** solo para cubrir la tarifa plana y la infraestructura: muy por encima de lo normal (en `docs/34` suponen un 3 %). Con un 3 %, el punto de equilibrio está en **unos 3.000–4.700 activos**. Es decir: con 300 activos, Plus haría perder dinero por la cuota de autónomo; o se espera a tener varios miles, o se confirma con un gestor que se puede empezar sin alta (apartado de autónomos).
+
+## 3b. Lo que cuesta cada lectura de ticket y si caben 20 gratis
+
+La función `tickets-ia` usa hoy **`claude-haiku-5-5`** (normal) y **`claude-sonnet-5-5`** («Leer con más precisión»), con un límite de **60 al mes por persona que se comparte entre los dos modos**. Foto reducida a 1.568 px en el móvil; respuesta de 4.096 tokens como mucho.
+
+| Modo | Precio (USD por millón: entrada / salida) | Ticket normal (~3.000 / ~1.000 tokens) | Ticket muy largo (3.000 / 4.096) |
+|---|---|---|---|
+| Normal (Haiku 5.5) | 0,10 / 0,50 | **~0,0008 USD** | ~0,0023 USD |
+| Más precisión (Sonnet 5.5) | 2 / 10 | **~0,016 USD** | ~0,047 USD |
+
+Mil lecturas normales cuestan unos 0,80 USD; mil precisas, unos 16 USD.
+
+**Coste al mes de los tickets con 20 gratis por persona (USD):**
+
+| Usuarios activos al mes | 50 | 500 | 2.000 | 10.000 | 50.000 |
+|---|---|---|---|---|---|
+| A. Uso normal, solo modo normal (1 de cada 5 lee 8 al mes) | 0,06 | 0,6 | 2,6 | 13 | 64 |
+| B. Uso normal, 1 de cada 10 lecturas precisa | 0,2 | 1,9 | 7,4 | 37 | 186 |
+| C. Todos gastan las 20, modo normal | 0,8 | 8 | 32 | 160 | 800 |
+| D. Todos gastan las 20, todas precisas | 16 | 160 | 640 | 3.200 | 16.000 |
+
+**¿Caben en 0–30 €?** Si se paga Supabase Pro (25 USD), quedan unos 5–10 para tickets:
+
+- **Caso A:** caben hasta unos **4.000–8.000** activos. Es lo que recomendamos: «más precisión» fuera de las 20 gratis (o con un cupo propio pequeño, por ejemplo 3 al mes).
+- **Caso B:** hasta unos **1.400–2.700**.
+- **Caso C:** hasta unos **300–600**. No es realista que todos gasten las 20, pero un grupo de cuentas falsas sí podría: por eso hacen falta el CAPTCHA y un **tope de gasto mensual en la consola de Anthropic**.
+- **Caso D:** no cabe ni con 50 personas. Es la razón para separar «más precisión».
+- **Los 60 de los usuarios actuales** no cambian nada en el coste: son pocas personas (peor caso en modo normal, ~0,05 USD cada una al mes; en preciso, ~1 USD).
+
+Todo esto son estimaciones: los tokens reales de cada lectura están en `tickets_uso` (columnas `tokens_entrada` y `tokens_salida`). Con tu «sí», una consulta de solo lectura daría la media real, sin mirar quién ha leído qué.
 
 ## 4. Legal mínimo
 
 | Qué | Antes de publicar (gratis) | Antes de cobrar |
 |---|---|---|
-| RGPD | Al abrir la app al público deja de ser algo «doméstico» y el RGPD se aplica entero. Hace falta: política de privacidad (hecha, `privacidad.html`), **registro de actividades** (la AEPD dice que en la práctica casi todos deben llevarlo; es una hoja), borrar cuenta (rama `datos/borrar-cuenta`, sin aplicar) y saber qué hacer ante una fuga (avisar a la AEPD en 72 h) | Revisar la política (pagos, Google como vendedor) |
+| RGPD | Al abrir la app al público deja de ser algo «doméstico» y el RGPD se aplica entero. Hace falta: política de privacidad (`privacidad.html`, hecha en la rama `fase9/pulido`, **aún no publicada**), **registro de actividades** (la AEPD dice que en la práctica casi todos deben llevarlo; es una hoja), borrar cuenta (rama `datos/borrar-cuenta`, sin aplicar) y saber qué hacer ante una fuga (avisar a la AEPD en 72 h) | Revisar la política (pagos, Google como vendedor) |
 | Encargados | Aceptar o guardar el contrato de datos de cada uno: Supabase (va dentro de sus condiciones, con cláusulas tipo para sacar datos de la UE), Vercel, Anthropic, GitHub (copias), OpenRouteService. La política ya los nombra; **falta GitHub** | Igual |
 | Fuera de la UE | Anthropic (EE. UU.) recibe la foto del ticket: por defecto no la conserva y no entrena con ella sin permiso. **No sabemos en qué región está el proyecto de Supabase**: si no es la UE, hay que decirlo en la política | Igual |
 | Aviso legal (LSSI, art. 10) | Recomendable: quién eres y un correo | **Obligatorio**: nombre, NIF, domicilio y correo en la web |
@@ -86,7 +125,7 @@ Aparte: 25 USD una sola vez por la cuenta de Google Play. Un dominio propio (rec
 ## 5. Recomendaciones de seguridad y fiabilidad
 
 - **Copias: hoy no bastan para una app pública.** (a) Solo guardan el esquema `public`: sin las cuentas, una restauración en un proyecto nuevo dejaría los datos sin dueño. (b) Perder hasta 7 días es mucho con desconocidos. (c) En un repositorio público, cualquiera con cuenta de GitHub puede descargar el archivo cifrado: todo depende de la contraseña. (d) No consta que se haya probado restaurar. **Propuesta:** copia diaria, incluir las cuentas, guardarla en un sitio privado y hacer un simulacro de restauración. Con Supabase Pro, además, copia diaria suya de 7 días.
-- **Tickets:** límite aparte para «Más precisión» (por ejemplo 10 al mes, porque cuesta 20 veces más y hoy comparte el límite de 60), tope de gasto mensual en la consola de Anthropic y un tope diario global en la función. Peor caso hoy: **~1 USD al mes por cada cuenta** que lo exprima.
+- **Tickets:** límite aparte para «Más precisión» (por ejemplo 3–10 al mes, porque cuesta 20 veces más y hoy comparte el límite de 60; ver 3b), tope de gasto mensual en la consola de Anthropic y un tope diario global en la función. Peor caso hoy: **~1 USD al mes por cada cuenta** que lo exprima.
 - **Registro masivo:** CAPTCHA en registro y recuperación, confirmación por correo (ya está) y activar la protección de contraseñas filtradas (pendiente desde el 19/10).
 - **Bolsa y rutas:** un solo usuario puede gastar el cupo diario de todos (EODHD: 20; `trayecto` no tiene límite por persona). Añadir un tope por persona y día.
 - **Errores sin espiar:** nada de analítica. Un vigilante externo que mire cada 5 minutos si la web y Supabase responden y avise por correo; los avisos de consumo de Supabase y Anthropic; y el informe semanal de salud. Más adelante, una tabla propia de errores sin datos personales (sería una migración aditiva, con su revisión y tu «sí»).
@@ -133,7 +172,8 @@ Aparte: 25 USD una sola vez por la cuenta de Google Play. Un dominio propio (rec
 1. **¿Nos das el «sí» para mirar Supabase en solo lectura** (región, correo, tamaños, tickets)? No cambia nada. *Bloquea las tareas 1, 2 y 7.*
 2. **¿Supabase Pro (25 USD) desde el día de publicar o esperar a llenarse?** Recomendamos desde el día de publicar: trae copias diarias y se come casi todo el presupuesto, pero es lo que protege los datos. *No bloquea.*
 3. **Precios de bolsa:** ¿tope de activos con el plan gratis, o 20 USD al mes? Recomendamos tope ahora y que sea una ventaja del plan de pago. *No bloquea.*
-4. **¿«Más precisión» solo para el plan de pago?** Recomendamos limitarla ya a 10 al mes. *Bloquea la tarea 5.*
+4. **¿20 lecturas gratis para los nuevos, sin contar «más precisión»?** Recomendamos sí: 20 normales y «más precisión» con cupo propio de 3 al mes (o solo en Plus). *Bloquea la tarea 5 y la 1.0 (`docs/34`, pregunta 1).*
+7. **¿Plus con 300 activos aunque pierda dinero por la cuota de autónomo, o esperar a unos 3.000?** Recomendamos preguntarlo al gestor en el verano de 2027, con las cifras reales. *No bloquea publicar.*
 5. **¿Eres ya autónomo, o lo has sido en los últimos 2–3 años?** Cambia el coste de cobrar (sin cuota nueva, o sin tarifa plana). *Bloquea solo el plan de pago.*
 6. **¿Aceptas que tu dirección y teléfono sean públicos cuando cobres?** Si no, hay que buscar alternativa antes. *Bloquea solo el plan de pago.*
 
@@ -166,6 +206,7 @@ Aparte: 25 USD una sola vez por la cuenta de Google Play. Un dominio propio (rec
 - Banco de España, información sobre cuentas: https://clientebancario.bde.es/pcb/es/blog/informacion_cuentas_iniciacion_pagos.html
 - LSSI (Ley 34/2002): https://www.boe.es/buscar/act.php?id=BOE-A-2002-13758 (por referencia)
 - Fdaytalk, comerciante en Google Play (interés propio: blog).
+- Producto, `docs/34` (precio de Plus, 20 lecturas, 300 activos).
 - Código: `supabase/functions/tickets-ia/index.ts` (modelos y límite de 60), `activos-api` (20 consultas al día), `trayecto`, `data-layer.js`, `app.js` (`TICKET_LADO`), `.github/workflows/backup-semanal.yml`, `privacidad.html`, rama `datos/borrar-cuenta`.
 
 Para el PDF: una gráfica de escalera con el coste mensual según usuarios y una línea horizontal en 30 €; y un «semáforo» de dos columnas, «publicar gratis» y «empezar a cobrar», con lo que exige cada una.
