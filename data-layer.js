@@ -168,6 +168,15 @@
   }
 
   /* config/app y config/meta viven en una tabla `config` (user_id, key, value jsonb) */
+  // 10/11 (fallo de Alfredo): cada guardado de la configuración lleva la cuenta; una lectura que salió antes de que
+  // terminara un guardado (o mientras se guardaba) puede traer lo de antes, así que no se entrega: se vuelve a leer.
+  var cfgEsc = {};
+  function escCfg(key) { return (cfgEsc[key] = cfgEsc[key] || { enCurso: 0, seq: 0 }); }
+  function guardandoCfg(key, p) {
+    var st = escCfg(key); st.enCurso++;
+    function fin() { st.enCurso--; st.seq++; }
+    return p.then(function (x) { fin(); return x; }, function (e) { fin(); throw e; });
+  }
   function doc(path) {
     var parts = path.split('/');
     if (parts[0] !== 'config') throw new Error('Ruta de documento no soportada: ' + path);
@@ -183,26 +192,31 @@
         });
       },
       set: function (value) {
-        return sb.from('config').upsert({ user_id: currentUid, key: key, value: value }).then(function (res) {
+        return guardandoCfg(key, sb.from('config').upsert({ user_id: currentUid, key: key, value: value }).then(function (res) {
           if (res.error) throw pgError(res.error);
-        });
+        }));
       },
       update: function (partial) {
-        return fetchOne().then(function (res) {
+        return guardandoCfg(key, fetchOne().then(function (res) {
           if (res.error) throw pgError(res.error);
           var merged = Object.assign({}, (res.data && res.data.value) || {}, partial);
           return sb.from('config').upsert({ user_id: currentUid, key: key, value: merged }).then(function (r2) {
             if (r2.error) throw pgError(r2.error);
           });
-        });
+        }));
       },
       onSnapshot: function (next, errCb) {
         var channel = null, stopped = false;
+        var reintentos = 0;
         function refresh() {
           if (!currentUid) return;
+          var st = escCfg(key), seq0 = st.seq, durante = st.enCurso > 0;
           fetchOne().then(function (res) {
             if (stopped) return;
             if (res.error) { if (errCb) errCb(pgError(res.error)); return; }
+            // salió antes de terminar un guardado: puede traer lo de antes → se vuelve a leer (como mucho 5 veces seguidas)
+            if ((durante || st.enCurso > 0 || st.seq !== seq0) && reintentos < 5) { reintentos++; setTimeout(refresh, 250); return; }
+            reintentos = 0;
             next({ exists: !!res.data, data: function () { return res.data ? res.data.value : undefined; } });
           });
         }

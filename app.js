@@ -732,9 +732,10 @@ function subscribeAll() {
 
 /* -------- Config: escrituras en serie (una a la vez sobre el mismo documento) -------- */
 let _cfgChain = Promise.resolve();
-/* 10/11 (fallo de Alfredo): una lectura del servidor que salió ANTES de guardar puede llegar DESPUÉS
-   y borrar en pantalla lo recién cambiado (la cuenta nueva desaparecía y el siguiente guardado la pisaba).
-   Lo que está por guardar, o se guardó hace menos de 5 s, se vuelve a poner encima de lo que llega. */
+/* 10/11 (fallo de Alfredo): una lectura del servidor que llega mientras aún se está guardando no trae
+   lo recién cambiado y lo borraba en pantalla (la cuenta nueva desaparecía y el siguiente guardado la pisaba).
+   Lo que está por guardar se vuelve a poner encima de lo que llega. Las lecturas que salieron antes de
+   terminar un guardado las descarta data-layer.js (vuelve a leer). */
 let _cfgRecientes = [];
 function cfgConPendientes(v) {
   const ahora = Date.now();
@@ -746,7 +747,7 @@ function saveConfig(partial) {
   S.config = Object.assign({}, cfg(), partial);
   const rec = { partial, hasta: Infinity }; _cfgRecientes.push(rec);
   const job = _cfgChain.then(async () => {
-    try { await write(() => S.db.doc('config/app').update(partial)); } finally { rec.hasta = Date.now() + 5000; }
+    try { await write(() => S.db.doc('config/app').update(partial)); } finally { rec.hasta = 0; }
   });
   _cfgChain = job;
   return job;
