@@ -33,7 +33,7 @@
     if (!card) return;
     card.dataset.authMode = 'signup';
     card.innerHTML =
-      '<div class="auth-head"><div class="auth-title">Crear cuenta</div><div class="auth-subtitle">Mis Finanzas y Tareas</div></div>' +
+      '<div class="auth-head"><div class="auth-title">Crear cuenta</div><div class="auth-subtitle">PalomApp</div></div>' +
       '<div class="field"><label>Correo</label><input id="signupEmail" type="email" autocomplete="email" placeholder="tu@correo.com"></div>' +
       '<div class="field"><label>Contraseña</label><input id="signupPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></div>' +
       '<div class="field"><label>Repite la contraseña</label><input id="signupPassword2" type="password" autocomplete="new-password" placeholder="Repite tu contraseña"></div>' +
@@ -72,7 +72,7 @@
       if (card) card.dataset.authMode = 'login';
       document.getElementById('app').innerHTML =
         '<div class="auth-screen"><div class="card auth-card">' +
-        '<div class="auth-head"><div class="auth-title">Cuenta creada</div><div class="auth-subtitle">Mis Finanzas y Tareas</div></div>' +
+        '<div class="auth-head"><div class="auth-title">Cuenta creada</div><div class="auth-subtitle">PalomApp</div></div>' +
         '<div class="alert auth-message"><div>Revisa tu correo para confirmar la cuenta y después inicia sesión.</div></div>' +
         '<button class="btn accent block" id="backToLogin2">Iniciar sesión</button>' +
         '</div></div>';

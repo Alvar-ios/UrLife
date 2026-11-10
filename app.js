@@ -4002,7 +4002,8 @@ function contactoHay() { return !!(CONTACTO.whatsapp || CONTACTO.correo); }
 /* Lecturas de tickets: la app recuerda lo último que dijo la función (mes natural UTC, como cuenta el servidor) */
 function mesUTC() { return new Date().toISOString().slice(0, 7); }
 function ticketsUso() {
-  const u = cfg().ticketsUso, lim = (u && num(u.limite)) || 60;
+  const nuevo = !!(S.user && S.user.created_at && S.user.created_at >= '2026-11-11'); // 10/11: cuentas nuevas, 10 al mes
+  const u = cfg().ticketsUso, lim = (u && num(u.limite)) || (nuevo ? 10 : 60);
   if (!u || u.mes !== mesUTC()) return { limite: lim, usados: null, quedan: null };
   return { limite: lim, usados: num(u.usados), quedan: Math.max(0, lim - num(u.usados)) };
 }

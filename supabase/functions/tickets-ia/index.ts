@@ -4,7 +4,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Content-Type': 'application/json; charset=utf-8' };
-const LIMITE_MES = 60;
+// 10/11/2026 (decisión del dueño): quien ya tenía cuenta conserva 60 lecturas al mes; las cuentas nuevas, 10.
+const LIMITE_ANTIGUOS = 60, LIMITE_NUEVOS = 10, FECHA_CORTE = '2026-11-11T00:00:00Z';
+const limiteDe = (u: { created_at?: string }) => (u.created_at && u.created_at < FECHA_CORTE ? LIMITE_ANTIGUOS : LIMITE_NUEVOS);
 const MODELOS = { rapido: 'claude-haiku-5-5', preciso: 'claude-sonnet-5-5' };
 const MAX_B64 = 7_000_000; // ~5 MB de imagen
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
@@ -70,6 +72,7 @@ Deno.serve(async (req) => {
   const ahora = new Date(), inicioMes = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), 1)).toISOString();
   const { count } = await sb.from('tickets_uso').select('id', { count: 'exact', head: true }).eq('user_id', user.id).gte('created_at', inicioMes);
   const usados = count || 0;
+  const LIMITE_MES = limiteDe(user);
   if (usados >= LIMITE_MES) return json({ error: 'limite', usados, limite: LIMITE_MES });
   if (!clave) return json({ error: 'sin_clave' });
 
