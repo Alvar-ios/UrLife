@@ -21,6 +21,18 @@ const PANTALLAS = [
   ['trayecto-recogido', 'A.S.config=Object.assign({},A.S.config,{trayecto:{prod:"goA",consumo:5.8,provincia:"28",guardados:[{id:"tg1",nombre:"Casa – trabajo",km:23,vuelta:true}]}});A.S.preciosCarb={prov:"28",cuando:Date.now(),datos:{goA:{precio:1.459,provincia:"28",fecha:"2026-11-07"}}};A.S.tab="inicio";A.render();A.H.trAbrir([])'],
   ['mas', 'A.S.tab="inicio";A.S.inicioSub="";A.S.inicioVista="";A.render();A.openCrear()'],
 ];
+// 10/11 (docs/38, C1): «Lo básico» a 375 × 667 y 390 × 844. [id, variante de datos-falsos.js, código]
+const PANTALLAS_BASICO = [
+  ['b-inicio', 'basico', 'A.S.tab="inicio";A.render()'],
+  ['b-mas', 'basico', 'A.S.tab="inicio";A.render();A.openCrear()'],
+  ['b-mas-abierto', 'basico', 'A.S.tab="inicio";A.render();A.openCrear();A.H.crearMasToggle([])'],
+  ['b-tu', 'basico', 'A.S.tab="tu";A.render()'],
+  ['b-catalogo', 'basico', 'A.S.tab="inicio";A.render();A.H.descAbrir([])'],
+  ['b-que-ves', 'basico', 'A.S.tab="tu";A.render();A.H.nivelAbrir([])'],
+  ['b-invitado', 'invitado', 'A.S.tab="inicio";A.render()'],
+  ['b-bienvenida-1', 'bienvenida', ''],
+  ['b-bienvenida-2', 'bienvenida', 'A.H.obNext([])'],
+];
 // en la página: busca textos cortados (sin «…» a propósito) y cosas que se salen por la derecha
 function revisarPagina() {
   const out = [], W = window.innerWidth, vis = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
@@ -82,6 +94,32 @@ function revisarPagina() {
       informe.push({ pantalla: id, ancho, tema, captura: f, fallos });
     }
     if (errores.length) informe.push({ pantalla: '(errores de la app)', ancho, tema, fallos: errores.map((m) => ({ tipo: 'error', donde: '', txt: m })) });
+    await ctx.close();
+  }
+  for (const [ancho, alto] of [[375, 667], [390, 844]]) for (const tema of ['light', 'dark']) {
+    const ctx = await b.newContext({ viewport: { width: ancho, height: alto }, colorScheme: tema, deviceScaleFactor: 2 });
+    const errores = [];
+    for (const [id, variante, js] of PANTALLAS_BASICO) {
+      const p = await ctx.newPage(); p.on('pageerror', (e) => errores.push(id + ': ' + e.message));
+      await p.route('**/*', (r) => {
+        const u = r.request().url();
+        if (/data-layer\.js$/.test(u)) return r.fulfill({ path: path.join(__dirname, 'datos-falsos.js'), contentType: 'text/javascript' });
+        if (/supabase|config\.js$|auth-signup\.js$|fonts\.g/.test(u)) return r.fulfill({ body: '', contentType: /css|fonts/.test(u) ? 'text/css' : 'text/javascript' });
+        return r.continue();
+      });
+      await p.goto('file://' + path.join(RAIZ, 'index.html') + '#' + variante);
+      await p.waitForFunction(() => window.__APP__ && document.querySelector('#app').textContent.length > 50, null, { timeout: 15000 });
+      await p.waitForTimeout(700);
+      try { await p.evaluate((code) => { const A = window.__APP__; eval(code); }, js); } catch (e) { errores.push(id + ': ' + e.message); }
+      await p.waitForTimeout(700);
+      const fallos = await p.evaluate(revisarPagina);
+      if (id === 'b-inicio' || id === 'b-invitado') { const alto2 = await p.evaluate(() => ({ h: document.documentElement.scrollHeight, v: window.innerHeight })); if (alto2.h > alto2.v + 1) fallos.push({ tipo: 'Inicio con scroll', donde: 'página', txt: alto2.h + ' px de ' + alto2.v }); }
+      const f = id + '-' + ancho + 'x' + alto + '-' + (tema === 'dark' ? 'oscuro' : 'claro') + '.png';
+      await p.screenshot({ path: path.join(SALIDA, f) });
+      informe.push({ pantalla: id, ancho, tema, captura: f, fallos });
+      await p.close();
+    }
+    if (errores.length) informe.push({ pantalla: '(errores de la app, Lo básico)', ancho, tema, fallos: errores.map((m) => ({ tipo: 'error', donde: '', txt: m })) });
     await ctx.close();
   }
   await b.close();

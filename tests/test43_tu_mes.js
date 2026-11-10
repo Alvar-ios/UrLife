@@ -35,7 +35,8 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
   ok(natural === 1700 || natural === -100 || natural === 1800, 'mes natural calculado (' + natural + ')');
 
   /* 3. Inicio: dos bloques, la píldora del mes y «Estos días» */
-  e = await env({ mesInicio: { modo: 'cobro', dia: 28 } }, [{ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 50, fecha: hace(1) }]); A = e.w.__APP__;
+  // 10/11 (docs/38 §6.3): sin ningún ingreso apuntado la tarjeta dice «Gastos de este mes» y no lleva barra; aquí hay un ingreso para ver la barra
+  e = await env({ mesInicio: { modo: 'cobro', dia: 28 } }, [{ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 50, fecha: hace(1) }, { id: 'i1', tipo: 'Ingreso', categoria: 'Nómina', importe: 900, fecha: hace(1) }]); A = e.w.__APP__;
   ok(!!e.doc.querySelector('.hero2 [data-click="tuMesAbrir"]') && /desde el /.test(e.doc.querySelector('.mes-pill').textContent), 'la tarjeta enseña el mes y desde cuándo cuenta');
   ok(!e.doc.querySelector('.hero-tile') && !!e.doc.querySelector('.hero-bar') && !e.doc.querySelector('.inicio-seg') && !e.doc.querySelector('.prox-scroll'), 'Inicio: sin las tres cifras ni el selector de arriba; la barra vuelve (lo pidió Paloma, 17/10)');
   ok(/Estos días/.test(txt(e)) && !!e.doc.querySelector('.dias-tit [data-click="setInicioVista|tareas"]'), '«Estos días» con «Agenda ›»');
@@ -58,7 +59,8 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
   /* 5. Lo previsto: solo si falta un cobro, y se explica de dónde sale */
   const manana = Number(hace(-1).slice(8, 10)), ayer = Number(hace(1).slice(8, 10));
   const fijos = { cobros: [{ nombre: 'Nómina', importe: 1800, regla: { t: 'dia', dia: manana, ajuste: '' }, desde: hace(40) }], facturas: [{ nombre: 'Luz', importe: 55, regla: { t: 'dia', dia: manana, ajuste: '' }, desde: hace(40) }] };
-  e = await env(fijos, [{ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 100, fecha: hace(0) }]); A = e.w.__APP__;
+  // 10/11 (docs/38 §6.3): con un ingreso apuntado alguna vez (hace 2 meses, fuera de este mes) la cifra sigue siendo «Te queda»
+  e = await env(fijos, [{ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 100, fecha: hace(0) }, { id: 'i0', tipo: 'Ingreso', categoria: 'Nómina', importe: 1800, fecha: hace(70) }]); A = e.w.__APP__;
   const ma = A.mesActual(), pv = A.previstoMes(ma.y, ma.m), mismoMes = hace(-1).slice(0, 7) === hace(0).slice(0, 7);
   if (mismoMes) {
     ok(pv && pv.total === -100 + 1800 - 55, 'previsto = te queda hoy + nómina − luz (' + (pv && pv.total) + ')');

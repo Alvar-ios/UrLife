@@ -726,7 +726,7 @@ function subscribeAll() {
   if (S.db.carpetas) _unsubs.push(S.db.carpetas.suscribir((rows) => { S.carpetas = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.carpetas = S.carpetas || []; }));
   if (S.db.objetivos) _unsubs.push(S.db.objetivos.suscribir((rows) => { S.objetivos = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.objetivos = S.objetivos || []; }));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
-    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
+    S.config = snap.exists ? snap.data() : null; S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); setTimeout(revisarNivel30, 0); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
   }, fail('cfg', 'No se pudo cargar la configuración')));
 }
 
@@ -1078,6 +1078,7 @@ function render() {
   $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
   const av = $('#tbAvatar'); if (av) { const v2 = !verAnterior('tu'), pf = perfilCfg(); if (v2) av.innerHTML = miAvatarDentro(pf); else av.textContent = inicialUsuario(); av.classList.toggle('dib', v2 && pf.avatar === 'dibujo'); av.style.background = v2 ? miColor(pf) : ''; av.style.color = v2 ? '#fff' : ''; }
   document.body.classList.toggle('en-tu', S.tab === 'tu');
+  document.body.classList.toggle('ini-basico', S.tab === 'inicio' && !!S.config && basico()); // docs/38: Inicio de «Lo básico» cabe sin scroll
   // 24/10 (docs/19, opción A): la Agenda a un toque desde arriba, con lo que hay hoy
   const tbA = $('#tbAgenda'); if (tbA) { const enAg = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0); tbA.classList.toggle('on', enAg); tbA.setAttribute('aria-current', enAg ? 'page' : 'false'); const n = allLoaded() ? agendaHoyN() : 0, nb = $('#tbAgendaN'); if (nb) { nb.hidden = !n; nb.textContent = n > 9 ? '9+' : String(n); } tbA.setAttribute('aria-label', 'Agenda' + (n ? ', ' + n + (n === 1 ? ' cosa hoy' : ' cosas hoy') : '')); }
   document.body.classList.toggle('en-movlista', S.tab === 'movimientos' && movVistaAct() === 'lista'); // allí ya hay una lupa que busca en la lista
@@ -1108,7 +1109,7 @@ function render() {
   if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
   if (_agEl || S._agFoco) { S._agFoco = false; const nv = $('#agRapida'); if (nv) { if (_agV) nv.value = _agV; try { nv.focus(); } catch (e) { /* noop */ } } }
   if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') setTimeout(marcarJuntosVisto, 0); else if ((S._vjFuera = true) && !cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
-  pintarComparar();
+  pintarComparar(); pintarPista();
   if (S.tab === 'dinero' && dineroV2()) cabAltoMedir(); // después de «Antes»: ese botón puede bajar la fecha a dos líneas
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse') || lsGet('soy')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
@@ -2401,7 +2402,7 @@ async function cargarGrupos() {
       const nombres = sc.map((i) => ({ user_id: i.id, nombre: i.nombre, sinCuenta: true }));
       let reparto = g.reparto;
       if (reparto && typeof reparto === 'object' && Object.keys(alias).length) { reparto = {}; Object.keys(g.reparto).forEach((k) => { const u = alias[k] || k; reparto[u] = num(reparto[u]) + num(g.reparto[k]); }); }
-      return { id: g.id, nombre: g.nombre, tipo: g.tipo, reparto, edicion: g.edicion || 'todos', alias,
+      return { id: g.id, nombre: g.nombre, tipo: g.tipo, reparto, edicion: g.edicion || 'todos', alias, creadoPor: g.creado_por || null,
         miembros: activos.concat(sinCuenta).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || '')), todos: ms.concat(nombres), soyAdmin: !!(mio && mio.rol === 'admin'), miNombre: mio ? mio.nombre : '' };
     }).sort((a, b) => a.nombre.localeCompare(b.nombre));
     S._misAlias = misAlias; S._ef = null; // «tu parte» puede cambiar si ocupaste el sitio de alguien
@@ -3786,13 +3787,15 @@ function crearTicketBandaHtml() {
 }
 function crearHtmlV2() {
   const op = (accion, args, icono, txt, cls) => '<button class="crear-op tappable ' + cls + '" ' + act(accion, ...args) + '><span class="crear-ic">' + ic(icono) + '</span><span>' + txt + '</span></button>';
-  const hab = gastosHabituales();
+  const hab = gastosHabituales(), bas = basico(), comp = compartidosDisponible();
   return '<div class="handle"></div><h2>¿Qué quieres apuntar?</h2>' + crearTicketBandaHtml() +
-    '<div class="crear-grid crear-4' + (compartidosDisponible() ? '' : ' tres') + '">' + op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
-      (compartidosDisponible() ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + '</div>' +
+    '<div class="crear-grid crear-4' + (bas ? (comp ? ' tres' : ' dos') : comp ? '' : ' tres') + '">' + op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
+      (comp ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') + (bas ? '' : op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea')) + '</div>' +
     (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
-    '<div class="crear-grid crear-peq">' + op('crearIr', ['ahorro'], 'piggy2', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'trendUp', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'repeat', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura') +
+    (bas && !S.crearMas ? '<button type="button" class="crear-mas tappable" aria-expanded="false" ' + act('crearMasToggle') + '><span class="crear-ic">' + ic('more') + '</span><span><b>Más opciones</b><span>' + ['Tarea', 'Apartar', 'Pago fijo'].concat(hayVariasCuentas() ? ['Traspaso'] : []).concat(['Importar', 'Trayecto']).join(', ') + '…</span></span>' + ic('chevD') + '</button>' :
+    '<div class="crear-grid crear-peq">' + (bas ? op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') : '') + op('crearIr', ['ahorro'], 'piggy2', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'trendUp', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'repeat', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura') +
       op('crearIr', ['deuda'], 'deuda', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'fileIn', 'Importar', 'k-imp') + op('trAbrir', [], 'coche2', 'Trayecto<small>gasolina o carga de un viaje</small>', 'k-tray') + '</div>' +
+      (bas ? '<button type="button" class="link crear-desc" ' + act('descAbrir') + '>' + ic('sparkle') + ' Descubre para qué sirve cada una ' + ic('chevR') + '</button>' : '')) +
     (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '');
 }
 /* ============================================================
@@ -4029,34 +4032,38 @@ function renderTuV2() {
   const nGr = S.grupos ? S.grupos.filter((g) => g.tipo === 'grupo').length : null, nCu = cuentasCfg ? (cuentasCfg() || []).length : 0;
   const parche = NOVEDADES[0] ? String(NOVEDADES[0].titulo).split('·')[0].trim() : '';
   const nombre = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido());
+  const bas = basico(), baja = [], q = (x) => { if (bas) { baja.push(x); return ''; } return x; }; // docs/38 §2.3: en «Lo básico» algunas filas bajan a «Más ajustes»
+  const todasDesc = descubreN() >= DESCUBRE.length;
   const mas = [it('openMoneda', [], 'moneda', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
     lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'arrowUp', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
-    it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar')].concat(Object.keys(VERSIONES).every((k) => VERSIONES[k].cerrada) ? [] : [
+    it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar')].concat(bas || Object.keys(VERSIONES).every((k) => VERSIONES[k].cerrada) ? [] : [
     it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')]);
   return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t"><span class="t-n">' + escapeHtml(nombre) + '</span>' + badge('perfil') + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
       '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar</button></div>' +
-    '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
+    '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' + descTuHtml() +
     grupo('Tu dinero', [it('openCuentas', [], 'bank', 'Cuentas y saldos', (badge('cuentas') || badge('patrimonio')) + (nCu ? '<span class="menu-extra">' + nCu + (nCu === 1 ? ' cuenta' : ' cuentas') + '</span>' : ''), 'banco saldo patrimonio'),
       it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
-      it('openReglas', [], 'autoTag', 'Reglas de categorías', badge('reglas'), 'automatico'),
-      it('infAbrir', [], 'sparkle', 'Informes', badge('informes'), 'informe resumen semanal mensual trimestral anual asistente'),
+      q(it('openReglas', [], 'autoTag', 'Reglas de categorías', badge('reglas'), 'automatico')),
+      q(it('infAbrir', [], 'sparkle', 'Informes', badge('informes'), 'informe resumen semanal mensual trimestral anual asistente')),
       it('openRecurrentes', [], 'repeat', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recibos suscripciones'),
-      it('tuMesAbrir', [], 'calRango', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().nomina && cortesNomina() ? 'desde tu nómina' : mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
-      ...(agcOn() ? [it('agcAbrir', [], 'calendar', 'Compartir mi agenda', badge('agendaComp') + (agcCompartoAlgo() ? '<span class="menu-extra">' + S.agcPermisos.length + (S.agcPermisos.length === 1 ? ' persona o grupo' : ' personas o grupos') + '</span>' : ''), 'compartir agenda ver calendario pareja familia privada')] : []),
+      q(it('tuMesAbrir', [], 'calRango', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().nomina && cortesNomina() ? 'desde tu nómina' : mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza')),
+      ...(agcOn() ? [q(it('agcAbrir', [], 'calendar', 'Compartir mi agenda', badge('agendaComp') + (agcCompartoAlgo() ? '<span class="menu-extra">' + S.agcPermisos.length + (S.agcPermisos.length === 1 ? ' persona o grupo' : ' personas o grupos') + '</span>' : ''), 'compartir agenda ver calendario pareja familia privada'))] : []),
       it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir invitar whatsapp juntos')]) +
     grupo('Traer y guardar', [it('impAbrir', [], 'fileIn', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
       ticketsDisponible() ? it('ticketsInfo', [], 'receipt', 'Fotos de tickets', ticketsFilaExtra(), 'tickets lecturas foto camara recibo quedan') : '',
-      it('openPapelera', [], 'trash', 'Papelera', badge('papelera') + '<span class="menu-extra">' + (papeleraItems().length ? papeleraItems().length + ' dentro' : 'vacía') + '</span>', 'borrados recuperar eliminados'),
-      it('exportCsv', [], 'download', 'Descargar mis movimientos (Excel)', '', 'exportar excel csv hoja de calculo'),
-      it('exportBackup', [], 'archive', 'Copia de seguridad', '<span class="menu-extra">Descargar</span>', 'exportar backup json')]) +
+      q(it('openPapelera', [], 'trash', 'Papelera', badge('papelera') + '<span class="menu-extra">' + (papeleraItems().length ? papeleraItems().length + ' dentro' : 'vacía') + '</span>', 'borrados recuperar eliminados')),
+      q(it('exportCsv', [], 'download', 'Descargar mis movimientos (Excel)', '', 'exportar excel csv hoja de calculo')),
+      q(it('exportBackup', [], 'archive', 'Copia de seguridad', '<span class="menu-extra">Descargar</span>', 'exportar backup json'))]) +
     grupo('La app', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', badge('aspecto') + '<span class="menu-extra">' + (PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1] + '</span>', 'aspecto color paleta tipografia cifras fuente vibracion sonido estilo'),
       '<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
       '<div class="segmented tema-seg">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
-      it('verNovedades', ['1'], 'megafono', 'Qué hay de nuevo', '<span class="menu-extra">' + escapeHtml(parche) + '</span>', 'novedades parche'),
-      it('startOnboardingManually', [], 'replay', 'Volver a ver la bienvenida', '', 'empezar asistente bienvenida')]) +
+      it('nivelAbrir', [], 'sliders', 'Qué ves en la app', '<span class="menu-extra">' + (bas ? 'Lo básico' : 'Todo') + '</span>', 'basico sencillo todo completo modo herramientas'),
+      q(it('verNovedades', ['1'], 'megafono', 'Qué hay de nuevo', '<span class="menu-extra">' + escapeHtml(parche) + '</span>', 'novedades parche')),
+      it('startOnboardingManually', [], 'replay', 'Volver a ver la bienvenida', '', 'empezar asistente bienvenida'),
+      todasDesc ? it('descAbrir', [], 'sparkle', 'Descubre PalomApp', '<span class="menu-extra">Ya lo has probado todo</span>', 'descubre palomapp herramientas funciones que puedo hacer ayuda') : '']) +
     (contactoHay() ? '<div class="tu-grupo"><button type="button" class="tu2-escr tappable" data-k="escribenos contacto ayuda fallo idea sugerencia" ' + act('escrAbrir') + '><span class="ic">' + ic('send') + '</span><span><b>Escríbenos</b><span>¿Algo falla o tienes una idea? Lo lee quien hace la app.</span></span><span class="chev">' + ic('chevR') + '</span></button></div>' : '') +
-    '<div class="tu-grupo tu-mas-btn"><div class="card menu"><button type="button" class="menu-item" aria-expanded="' + (S.tuMas ? 'true' : 'false') + '" ' + act('tuMasToggle') + '><span class="ic">' + ic('sliders') + '</span>Más ajustes<span class="menu-extra">' + mas.length + '</span><span class="chev">' + ic(S.tuMas ? 'chevD' : 'chevR') + '</span></button></div></div>' +
-    '<div class="tu-grupo tu-mas"' + (S.tuMas ? '' : ' style="display:none"') + '><div class="card menu">' + mas.join('') + '</div></div>' +
+    '<div class="tu-grupo tu-mas-btn"><div class="card menu"><button type="button" class="menu-item" aria-expanded="' + (S.tuMas ? 'true' : 'false') + '" ' + act('tuMasToggle') + '><span class="ic">' + ic('sliders') + '</span>' + (bas ? '<span class="tu-mas-t">Más ajustes<small>Reglas, Informes, Tu mes, Papelera, Copia…</small></span>' : 'Más ajustes') + '<span class="menu-extra">' + (baja.length + mas.length) + '</span><span class="chev">' + ic(S.tuMas ? 'chevD' : 'chevR') + '</span></button></div></div>' +
+    '<div class="tu-grupo tu-mas"' + (S.tuMas ? '' : ' style="display:none"') + '><div class="card menu">' + baja.join('') + mas.join('') + '</div></div>' +
     grupo('Tu cuenta', [mfaDisponible() ? it('openSeguridad', [], 'candado', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
       window.__nativo && window.__nativo.huella ? '<button class="menu-item" data-k="huella bloqueo pin seguridad" ' + act('huellaCambiar') + '><span class="ic">' + ic('candado') + '</span>Pedir huella al abrir<span class="menu-extra">' + (lsGet('huella') === '1' ? 'Sí' : 'No') + '</span></button>' : '',
       it('abrirPrivacidad', [], 'shield', 'Privacidad', '', 'datos privacidad politica rgpd'),
@@ -4127,7 +4134,13 @@ function renderInicioNuevo() {
   if (versionDe('inicio') === 'antes') return heroMesHtml() + invitacionInicioHtml() + (S.movimientos.length ? '' : empiezaHtml()) + insightsHtml() + estosDiasHtml();
   const inv = invitacionInicioHtml();
   if (agcOn() && !S._agcTs && !S._agcCargando && S.grupos) setTimeout(() => agcCargar(), 0); // para que «Privada» esté a mano desde el +
-  return heroMesHtmlV2() + (inv || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + (inicioV3() ? inicioPiezasHtml() : insightsHtmlV2() + estosDiasHtml(true));
+  const piezas = () => (inicioV3() ? inicioPiezasHtml() : insightsHtmlV2() + estosDiasHtml(true));
+  if (basico()) { // docs/38 §2.1: una sola tarjeta de ayuda; las piezas, cuando ya no se ve «Primeros pasos»; al final, «Descubre PalomApp»
+    const avisoB = inv || infAvisoHtml(), pp = avisoB ? '' : ppEstado();
+    const ayuda = avisoB || (pp === 'tarjeta' || pp === 'hecho' ? ppTarjetaHtml() : (pp === 'linea' ? ppLineaHtml() : '') + sugerenciaHtml());
+    return heroMesHtmlV2() + ayuda + (pp === 'tarjeta' ? '' : piezas()) + descLineaHtml();
+  }
+  return heroMesHtmlV2() + (inv || aviso30Html() || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + piezas();
 }
 // la cifra grande, con los céntimos más pequeños
 function cifraHtml(v) { const t = money(v), i = t.lastIndexOf(','); return i < 0 ? escapeHtml(t) : escapeHtml(t.slice(0, i)) + '<small>' + escapeHtml(t.slice(i)) + '</small>'; }
@@ -4211,6 +4224,7 @@ const VERSIONES = {
   crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   balance: { txt: 'Mes cerrado', desde: '2026-10-29', variantes: [['nueva', 'Balance'], ['antes', 'Antes']] },
   importe: { txt: 'Apuntar importe', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
+  bienvenida: { txt: 'Bienvenida', desde: '2026-11-10', cerrada: '2026-11-10', def: 0, variantes: [['nueva', '2 pantallas'], ['antes', '4 pasos']] }, // docs/38 §6: 2 pantallas (1 con invitación) y «Lo básico»; «antes» = la de 4 pasos para todos (solo para las pruebas antiguas)
 };
 function seccionVersion() {
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
@@ -4251,14 +4265,20 @@ function heroMesHtmlV2() {
   const pv = !actual || (nuevo && !(cfg().cobros || []).some((x) => x && x.importe)) ? null : previstoMes(y, m);
   const ant = (y + '-' + pad2(m)) > lim.min, dir = S._inicioDir || 0; S._inicioDir = 0;
   const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
+  // docs/38 §6.3: quien nunca ha apuntado un ingreso ni puesto saldo ve lo que lleva gastado, no un «Te queda» en negativo
+  const gasMes = k.facturas + k.gastos, soloGastos = actual && !banco && gasMes > 0.004 && !(S.movimientos || []).some((x) => x.tipo === 'Ingreso') && !cuentasCfg().some(conSaldo);
+  const deJuntos = soloGastos ? k.movs.filter((x) => x.comp && (x.tipo === 'Gasto' || x.tipo === 'Factura')).reduce((a, x) => a + num(x.importe), 0) : 0;
   const cu = !nuevo && actual && hayVariasCuentas() ? '<button type="button" class="h2-dato tappable" ' + act('cuentasHoja') + '><span>En tus cuentas</span><b class="tnum">' + moneyShort(enTusCuentas()) + '</b></button>' : '';
   const pr = pv ? '<button type="button" class="h2-dato prev tappable" ' + act('previstoAbrir') + '><span><i class="prev-tag">Previsto</i> fin de mes</span><b class="tnum">' + moneyShort(pv.total) + '</b></button>' : '';
   return '<section class="hero hero2 hero2v2" aria-label="Cómo vas este mes">' +
     '<div class="hero2-top"><button type="button" class="mes-pill' + anim + '" ' + act('tuMesAbrir') + '><b>' + MESES[m - 1] + (y !== mesActual().y ? ' ' + y : '') + '</b><span>· ' + mesPillTxt(y, m) + '</span><span class="mes-pill-ic">' + ic('chevR') + '</span></button>' +
     '<span class="hero2-flechas">' + ojoBtnHtml() + '<button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
     '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
+    (soloGastos ? '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">Gastos de este mes</span><span class="hero-v tnum">' + cifraHtml(gasMes) + '</span></button>' +
+      (deJuntos > 0.004 ? '<p class="hero-nuevo hero-juntos">De ellos, ' + money(deJuntos) + ' son tu parte en Juntos.</p>' : '') +
+      '<button type="button" class="link hero-cobras" ' + act('crearIr', 'ingreso') + '>Apunta lo que cobras y verás cuánto te queda ' + ic('chevR') + '</button>' :
     '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (banco ? 'En tu banco hoy' : actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (!banco && disp < 0 ? ' neg' : '') + (nuevo && !banco ? ' vacio' : '') + '">' + cifraHtml(banco ? enTusCuentas() : disp) + '</span></button>' +
-    (nuevo ? '<p class="hero-nuevo">' + (banco ? 'Apunta lo que gastas y aquí verás cuánto te queda este mes.' : 'Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.') + '</p>' : (inicioV3() ? heroCifrasHtml(k, y, m) : heroBarraHtml(k))) +
+    (nuevo ? '<p class="hero-nuevo">' + (banco ? 'Apunta lo que gastas y aquí verás cuánto te queda este mes.' : 'Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.') + '</p>' : (inicioV3() ? heroCifrasHtml(k, y, m) : heroBarraHtml(k)))) +
     (cu || pr ? '<div class="h2-datos">' + pr + cu + '</div>' : '') + '</section>';
 }
 /* ===== INICIO v3 (22/10, docs/14-inicio-juntos.md): cifras del mes, «Así vas» con iconos y a tu gusto, avisos ===== */
@@ -4741,8 +4761,170 @@ function inicioPiezasHtml() {
     if (h[i] && iwMedio(l[i]) && i + 1 < l.length && h[i + 1] && iwMedio(l[i + 1])) { out += '<div class="iw-par">' + h[i] + h[i + 1] + '</div>'; i++; continue; }
     out += h[i] || '';
   }
-  return out + '<button type="button" class="iw-editar" ' + act('iwEditar') + '>' + ic('sliders') + ' Editar Inicio' + badge('inicioEd') + '</button>';
+  return out + (basico() ? '' : '<button type="button" class="iw-editar" ' + act('iwEditar') + '>' + ic('sliders') + ' Editar Inicio' + badge('inicioEd') + '</button>'); // en «Lo básico», «Inicio a tu gusto» está en Descubre
 }
+/* ============================================================
+   «LO BÁSICO» Y «DESCUBRE PALOMAPP» (10/11/2026, docs/38-lo-basico-diseno.md)
+   Las cuentas nuevas empiezan en «Lo básico»: Inicio, el + y Tú más sencillos, sin esconder nada (lo demás, plegado
+   y con su nombre a la vista). Sin la clave «nivel» la app es «Todo», como siempre. Todo va en cfg(), por saveConfig,
+   en claves sueltas (nivel, nivelCambio, descubierto, sugerencias, sugHoy, pistasVistas, primerosPasos, aviso30).
+   ============================================================ */
+function nivel() { return cfg().nivel === 'basico' ? 'basico' : 'todo'; }
+function basico() { return nivel() === 'basico'; }
+function diasEntre(a, b) { const x = parseISO(String(a || '').slice(0, 10)), y = parseISO(String(b || '').slice(0, 10)); return x && y ? Math.round((y - x) / 864e5) : 0; }
+// días desde que empezó (0 = el mismo día del alta, «día 1»)
+function diasAlta() { const c = cfg(), d = c.altaApp || (c.nivelCambio && c.nivelCambio.d); return d ? Math.max(0, diasEntre(d, todayISO())) : 0; }
+function nivelPoner(v, por) { return saveConfig({ nivel: v === 'basico' ? 'basico' : 'todo', nivelCambio: { d: todayISO(), por } }); }
+// A los 30 días de entrar por la bienvenida pasa sola a «Todo» y se avisa una vez (docs/38 §3.3). Se llama al cargar la configuración, nunca dentro de render()
+function revisarNivel30() {
+  if (S._nivel30 || !S.loaded.cfg || S.onboarding || !S.db) return;
+  S._nivel30 = true;
+  const c = cfg(), nc = c.nivelCambio || {};
+  if (c.nivel !== 'basico' || nc.por !== 'alta' || !nc.d || diasEntre(nc.d, todayISO()) < 30) return;
+  saveConfig({ nivel: 'todo', nivelCambio: { d: todayISO(), por: '30dias' }, aviso30: todayISO() }).then(() => render());
+  render();
+}
+function aviso30Html() {
+  const c = cfg(); if (S._aviso30Fuera || c.aviso30 !== todayISO() || !c.nivelCambio || c.nivelCambio.por !== '30dias') return '';
+  return '<div class="card sug-card"><span class="sug-ic">' + ic('sparkle') + '</span><div class="sug-x"><b>Ya llevas un mes con PalomApp</b><span>Desde hoy ves todas las herramientas en el + y en Tú.</span>' +
+    '<div class="sug-b"><button type="button" class="btn sm accent" ' + act('aviso30Ver') + '>Ver qué hay</button><button type="button" class="link" ' + act('aviso30Basico') + '>Prefiero lo básico</button></div></div></div>';
+}
+function abrirCuentaNueva() { FORM = { kind: 'banco', i: -1, nueva: true, q: '' }; if ($('#sheetBackdrop')) updateSheet(bancoElegirHtml()); else openSheet(bancoElegirHtml()); }
+/* ---- Catálogo «Descubre PalomApp»: 12 herramientas. Descubierta = lo dicen tus datos o la probaste aquí ---- */
+const esManual = (m) => !m.lote && !(Array.isArray(m.articulos) && m.articulos.length);
+const DESCUBRE = [
+  { k: 'ticket', ic: 'camera', n: 'Foto de ticket', f: 'Haz una foto y la app apunta el total por ti.', b: 'Probar', a: ['ticketFoto', []], si: () => num((cfg().ticketsUso || {}).usados) > 0 },
+  { k: 'cuentas', ic: 'bank', n: 'Cuentas y saldos', f: 'Pon lo que tienes en el banco y la app lo lleva al día.', b: 'Activar', a: ['openCuentas', []], si: () => cuentasCfg().some(conSaldo) },
+  { k: 'agenda', ic: 'calendar', n: 'Agenda y tareas', f: 'Lo que tienes que hacer, con su día, y aviso en Inicio.', b: 'Probar', a: ['irAgenda', ['tareas']], si: () => (S.tareas || []).length > 0 },
+  { k: 'presu', ic: 'checkCircle', n: 'Presupuestos', f: 'Elige cuánto quieres gastar al mes en cada cosa.', b: 'Activar', a: ['openListEditor', ['categoriasGasto']], si: () => catsGasto().some((c) => num(c.presupuesto) > 0) },
+  { k: 'fijos', ic: 'repeat', n: 'Cobros y pagos fijos', f: 'La nómina y los recibos, para ver cómo acabarás el mes.', b: 'Activar', a: ['openRecurrentes', []], si: () => (cfg().cobros || []).concat(cfg().facturas || []).some((x) => x && x.nombre) },
+  { k: 'importar', ic: 'fileIn', n: 'Importar del banco', f: 'Trae el extracto o un Excel y lo colocamos solo, sin duplicados.', b: 'Probar', a: ['impAbrir', []], si: () => (cfg().importLotes || []).length > 0 },
+  { k: 'metas', ic: 'target', n: 'Metas de ahorro', f: 'Aparta para un viaje o un colchón y mira cuánto te falta.', b: 'Activar', a: ['metaNueva', []], si: () => metasCfg().length > 0 || (S.objetivos || []).some((o) => o.tipo === 'ahorro') },
+  { k: 'deudas', ic: 'deuda', n: 'Deudas', f: 'Un préstamo o la tarjeta: cuánto queda y cuándo acabas.', b: 'Activar', a: ['deudaNueva', []], si: () => (cfg().deudas || []).some((d) => d && d.nombre) },
+  { k: 'inversiones', ic: 'trendUp', n: 'Inversiones', f: 'Lo que tienes invertido y cuánto ganas.', b: 'Probar', a: ['crearIr', ['inversion']], si: () => (S.movimientos || []).some((m) => m.tipo === 'Inversión') },
+  { k: 'trayecto', ic: 'coche2', n: 'Calculadora de trayecto', f: 'Cuánto cuesta un viaje en coche, con el precio de hoy.', b: 'Probar', a: ['trAbrir', []], si: () => !!cfg().trayecto },
+  { k: 'informes', ic: 'sparkle', n: 'Informes', f: 'Un resumen de tu mes en frases sencillas.', b: 'Activar', a: ['infAbrir', []], si: () => { const o = (cfg().informes || {}).on; return !!o && (o === true || Object.keys(o).some((k) => o[k])); } }, // los informes se guardan por tipo: { on: { mes: true, … } }
+  { k: 'inicio', ic: 'sliders', n: 'Inicio a tu gusto', f: 'Elige qué ves en Inicio: metas, cuentas, calendario…', b: 'Probar', a: ['iwEditar', []], si: () => !!cfg().inicioWidgets },
+];
+function descubierta(k) { const d = DESCUBRE.find((x) => x.k === k); if (!d) return false; if ((cfg().descubierto || {})[k]) return true; try { return !!d.si(); } catch (e) { return false; } }
+function descubreN() { return DESCUBRE.filter((d) => descubierta(d.k)).length; }
+function descubreTxt(n) { return 'Has descubierto ' + n + ' de ' + DESCUBRE.length + ' herramientas'; }
+function descBarraHtml(n) { return '<i class="desc-barra" aria-hidden="true"><i style="width:' + Math.round(n / DESCUBRE.length * 100) + '%"></i></i>'; }
+function descubreHtml() {
+  const ds = DESCUBRE.map((d) => Object.assign({ hecha: descubierta(d.k) }, d)), n = ds.filter((d) => d.hecha).length;
+  const fila = (d) => '<div class="desc-fila tappable' + (d.hecha ? ' hecha' : '') + '" role="button" tabindex="0" ' + act('descProbar', d.k) + '><span class="desc-ic">' + ic(d.ic) + (d.hecha ? '<i class="desc-ok">' + ic('check') + '</i>' : '') + '</span>' +
+    '<span class="desc-t"><b>' + d.n + '</b><span>' + d.f + '</span></span><button type="button" class="btn sm ' + (d.hecha ? 'ghost' : 'accent') + '" ' + act('descProbar', d.k) + '>' + (d.hecha ? 'Abrir' : d.b) + '</button></div>';
+  return '<div class="handle"></div><h2>Descubre PalomApp</h2><p class="desc-cuenta">' + descubreTxt(n) + '</p>' +
+    '<div class="desc-tramos" aria-hidden="true">' + ds.map((d, i) => '<i class="' + (i < n ? 'on' : '') + '"></i>').join('') + '</div>' +
+    '<div class="desc-lista">' + ds.filter((d) => !d.hecha).concat(ds.filter((d) => d.hecha)).map(fila).join('') + '</div>' +
+    '<p class="rec-hint desc-pie">Y en Tú también: Reglas de categorías, Tu mes, Compartir mi agenda, Ocultar cifras, Copia de seguridad, Aspecto.</p>' +
+    (basico() ? '<div class="desc-todo"><button type="button" class="btn ghost block" ' + act('descTodo') + '>Quiero verlo todo ya</button></div>' : ''); // al final de la lista, sin quedarse fijo abajo
+}
+// la línea del final de Inicio (mientras dure «Lo básico») y la tarjeta de Tú (para todos)
+function descLineaHtml() {
+  const n = descubreN();
+  return '<button type="button" class="iw-editar desc-linea" ' + act('descAbrir') + '>' + ic('sparkle') + '<span class="desc-l-t"><b><span class="dl-largo">Descubre todo lo que puede hacer PalomApp</span><span class="dl-corto">Descubre PalomApp</span></b><small>' + descubreTxt(n) + '</small>' + descBarraHtml(n) + '</span></button>';
+}
+function descTuHtml() {
+  const n = descubreN(); if (n >= DESCUBRE.length) return '';
+  return '<div class="tu-grupo"><button type="button" class="tu2-desc tappable" data-k="descubre palomapp herramientas funciones que puedo hacer ayuda" ' + act('descAbrir') + '><span class="ic">' + ic('sparkle') + '</span><span class="desc-l-t"><b>Descubre PalomApp</b><small>' + descubreTxt(n) + '</small>' + descBarraHtml(n) + '</span><span class="chev">' + ic('chevR') + '</span></button></div>';
+}
+/* ---- Hoja «Qué ves en la app» (Tú → La app) ---- */
+function nivelHtml() {
+  const v = (FORM && FORM.v) || nivel(), op = (k, t, d) => '<button type="button" class="av-op' + (v === k ? ' on' : '') + '" role="radio" aria-checked="' + (v === k) + '" ' + act('nivelElegir', k) + '><span class="av-op-t"><b>' + t + '</b><span class="nivel-d">' + d + '</span></span><span class="av-radio"></span></button>';
+  return '<div class="handle"></div><h2>Qué ves en la app</h2><div class="nivel-ops">' + op('basico', 'Lo básico', 'Lo justo para apuntar y compartir. Lo demás, plegado y en Descubre PalomApp.') + op('todo', 'Todo', 'Todas las herramientas a la vista, en el + y en Tú.') + '</div>' +
+    '<p class="rec-hint">No se borra ni se pierde nada: solo cambia lo que ves. Lo puedes cambiar cuando quieras.</p>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('nivelGuardar') + '>Guardar</button></div>';
+}
+/* ---- «Primeros pasos» (solo en «Lo básico»): 3 filas que se marcan solas ---- */
+function ppGrupoInv() { const u = cfg().unidoA; return u && u.gid ? u : null; }
+function compMio(c) { const yo = miUid(); return !!c && c.tipo !== 'Liquidación' && (c.creadoPor ? esMio(c.grupoId, c.creadoPor) : esMio(c.grupoId, c.pagadoPor)) && !!yo; }
+function grupoMio(g) { return g.tipo === 'grupo' && (g.creadoPor ? g.creadoPor === miUid() : !!g.soyAdmin); } // los grupos no traen quién los creó: vale ser administrador (quien lo crea lo es)
+function ppFilas() {
+  const inv = ppGrupoInv(), cs = S.compartidos || [], movs = (S.movimientos || []).filter((m) => !m.compartidoId);
+  if (inv) {
+    const n0 = String(inv.nombre || 'tu grupo'), nom = n0.length > 20 ? n0.slice(0, 18).trim() + '…' : n0; // un nombre muy largo no ocupa dos líneas
+    return [{ ic: 'users', t: 'Añade lo que pagues en «' + escapeHtml(nom) + '»', d: 'La app lo reparte entre todos.', a: act('compRapido', 'g:' + inv.gid), hecho: cs.some((c) => c.grupoId === inv.gid && compMio(c)) },
+      { ic: 'plus', t: 'Apunta un gasto tuyo', d: 'Solo lo ves tú.', a: act('crearIr', 'gasto'), hecho: movs.length > 0 },
+      { ic: 'send', t: 'Crea tu propio grupo', d: 'Para la casa, la pareja o el próximo viaje.', a: act('openGrupos'), hecho: (S.grupos || []).some((g) => g.id !== inv.gid && grupoMio(g)) }];
+  }
+  return [{ ic: 'plus', t: 'Apunta tu primer gasto', d: 'O hazle una foto al ticket.', a: act('crearIr', 'gasto'), hecho: (S.movimientos || []).length > 0 }].concat(compartidosDisponible() ? [
+    { ic: 'users', t: 'Comparte un gasto con alguien', d: 'Basta con su nombre: no hace falta que tenga la app.', a: act('crearIr', 'compartido'), hecho: cs.some(compMio) }] : []).concat([
+    { ic: 'bank', t: 'Pon el saldo de tu banco', d: 'Así sabrás lo que te queda de verdad.', a: act('openCuentas'), hecho: cuentasCfg().some(conSaldo) }]); // sin Juntos disponible, la fila de compartir no sale
+}
+// estado: '' (no sale), 'tarjeta', 'linea' (plegada a los 7 días) o 'hecho' (¡Ya lo tienes!, ese día)
+function ppEstado() {
+  const c = cfg(); if (!basico() || c.empiezaOculto) return '';
+  const pp = c.primerosPasos || {}, hoy = todayISO();
+  if (pp.hecho) return pp.hecho >= hoy ? 'hecho' : '';
+  if (ppFilas().every((f) => f.hecho)) return 'hecho';
+  return diasAlta() >= 7 ? 'linea' : 'tarjeta';
+}
+function ppTarjetaHtml(enHoja) {
+  const fs = ppFilas(), n = fs.filter((f) => f.hecho).length, est = ppEstado();
+  if (est === 'hecho') {
+    if (!(cfg().primerosPasos || {}).hecho && !S._ppProg) S._ppProg = setTimeout(() => { S._ppProg = null; if (!(cfg().primerosPasos || {}).hecho) { if (S._ppVioPendiente && !reduceMotion()) confeti(30, null); saveConfig({ primerosPasos: { hecho: todayISO() } }); } }, 0);
+    return '<div class="empieza pp"><div class="empieza-cab"><h3>¡Ya lo tienes!</h3></div><button type="button" class="empieza-paso pp-fila tappable" ' + act('descAbrir') + '><span class="pp-c on">' + ic('sparkle') + '</span><span><b>Ahora, descubre lo demás</b><span class="d">Has descubierto ' + descubreN() + ' de ' + DESCUBRE.length + ' herramientas.</span></span><span class="chev-s">' + ic('chevR') + '</span></button></div>';
+  }
+  S._ppVioPendiente = true;
+  if (S._ppN != null && n > S._ppN) setTimeout(() => sentir('ok'), 0);
+  S._ppN = n;
+  const fila = (f) => f.hecho ? '<div class="empieza-paso pp-fila hecha"><span class="pp-c on">' + ic('check') + '</span><span class="pp-t"><b>' + f.t + '</b><span class="d">' + f.d + '</span></span></div>'
+    : '<button type="button" class="empieza-paso pp-fila tappable" ' + (enHoja ? f.a.replace('data-click="', 'data-click="ppIr|') : f.a) + '><span class="pp-c"></span><span class="pp-t"><b>' + f.t + '</b><span class="d">' + f.d + '</span></span></button>';
+  return '<div class="empieza pp"><div class="empieza-cab"><h3>Primeros pasos</h3><span class="pp-cab-d"><span class="pp-n">' + n + ' de ' + fs.length + '</span><button type="button" class="link" ' + act('empiezaOcultar') + '>Ocultar</button></span></div>' + fs.map(fila).join('') + '</div>';
+}
+function ppLineaHtml() { const fs = ppFilas(), n = fs.filter((f) => f.hecho).length; return '<button type="button" class="pp-linea tappable" ' + act('ppAbrir') + '><span>Primeros pasos · ' + n + ' de ' + fs.length + '</span>' + ic('chevR') + '</button>'; }
+/* ---- Sugerencias según el uso (solo en «Lo básico», una al día como mucho) ---- */
+function sugCandidatas() {
+  const d = diasAlta(), hoy = todayISO(), movs = movsPersonales(), gastos = movs.filter((m) => m.tipo === 'Gasto'), manual = gastos.filter(esManual);
+  const ma = mesActual(), delMes = kpisMes(ma.y, ma.m).movs.filter((m) => m.tipo === 'Gasto');
+  const out = [];
+  if (d >= 2 && gastos.length >= 3) out.push({ k: 'fijos', ic: 'repeat', t: '¿Qué se repite cada mes?', f: 'Apunta la nómina y los recibos y verás cómo acabarás el mes.', b: 'Añadir', a: ['openRecurrentes', []] });
+  if (delMes.length >= 10) { const map = gastoPorCategoria(delMes), top = Object.keys(map).sort((a, b) => map[b] - map[a])[0] || 'Otros'; out.push({ k: 'presu', ic: 'checkCircle', t: '¿Ponemos un tope a lo que más gastas?', f: 'En ' + escapeHtml(top) + ' llevas ' + money(map[top] || 0) + '. Elige cuánto quieres gastar al mes.', b: 'Poner tope', a: ['presEditar', [top]] }); }
+  const tk = ticketsUso();
+  if (manual.length >= 2 && ticketsDisponible() && !(tk.usados > 0) && tk.quedan !== 0) out.push({ k: 'ticket', ic: 'camera', t: '¿Tienes el ticket a mano?', f: 'Hazle una foto y la app apunta el total por ti.', b: 'Probar', a: ['ticketFoto', []] });
+  if (cuentasCfg().some((c) => conSaldo(c) && c.fecha && String(c.fecha).slice(0, 10) < hoy)) out.push({ k: 'metas', ic: 'target', t: '¿Ahorras para algo?', f: 'Un viaje, la entrada de la casa, un colchón…', b: 'Crear meta', a: ['metaNueva', []] });
+  const hace14 = addDaysISO(hoy, -14);
+  if (manual.filter((m) => (m.fecha || '') >= hace14).length >= 15) out.push({ k: 'importar', ic: 'fileIn', t: '¿Te cansas de apuntar?', f: 'Trae el extracto de tu banco y lo colocamos solo.', b: 'Importar', a: ['impAbrir', []] });
+  const plazos = movs.filter((m) => (m.tipo === 'Gasto' || m.tipo === 'Factura') && /prestamo|hipoteca|financiacion|cuota/.test(normDesc((m.descripcion || '') + ' ' + (m.categoria || '') + ' ' + (m.subcategoria || ''))));
+  if (new Set(plazos.map((m) => mesDe(m.fecha || ''))).size >= 2) out.push({ k: 'deudas', ic: 'deuda', t: '¿Estás pagando algo a plazos?', f: 'Apúntalo como deuda y verás cuánto te queda y cuándo acabas.', b: 'Apuntar deuda', a: ['deudaNueva', []] });
+  if (d >= 13 && (S.movimientos || []).length >= 20) out.push({ k: 'inicio', ic: 'sliders', t: 'Pon en Inicio lo que más miras', f: 'Una meta, tus cuentas, el calendario de gastos…', b: 'Elegir', a: ['iwEditar', []] });
+  const sg = cfg().sugerencias || {};
+  return out.filter((x) => { const e = sg[x.k] || {}; return !descubierta(x.k) && !e.hecha && e.hasta !== 'nunca' && !(e.hasta && e.hasta > hoy); });
+}
+function sugerenciaHtml() {
+  if (!basico() || diasAlta() < 1) return '';
+  const hoy = todayISO(), sh = cfg().sugHoy || {}, cands = sugCandidatas();
+  const s = sh.d === hoy ? cands.find((x) => x.k === sh.k) : cands[0];
+  if (!s) return '';
+  if (sh.d !== hoy && !S._sugProg) S._sugProg = setTimeout(() => { S._sugProg = null; if ((cfg().sugHoy || {}).d !== todayISO()) saveConfig({ sugHoy: { d: todayISO(), k: s.k } }); }, 0); // tras pintar, nunca dentro de render()
+  return '<div class="card sug-card" data-sug="' + s.k + '"><span class="sug-ic">' + ic(s.ic) + '</span><div class="sug-x"><b>' + s.t + '</b><span>' + s.f + '</span>' +
+    '<div class="sug-b"><button type="button" class="btn sm accent" ' + act('sugSi', s.k) + '>' + s.b + '</button><button type="button" class="link" ' + act('sugNo', s.k) + '>Ahora no</button></div></div>' +
+    '<button type="button" class="icon-btn sm sug-cerrar" aria-label="Ahora no" ' + act('sugNo', s.k) + '>' + ic('close') + '</button></div>';
+}
+/* ---- Pistas de primera vez: un globo pequeño, una al día como mucho, nunca con una hoja abierta ---- */
+const PISTAS = { agenda: ['#tbAgenda', 'Tu agenda y tus tareas están aquí'], tu: ['#content .tu2-desc', 'Aquí tienes todas las herramientas'], deslizar: ['#content .swipe', 'Desliza a la izquierda para duplicar o borrar'], persona: ['#content [data-click^="juntosPersona"]', 'Toca a una persona para saldar o pedírselo por WhatsApp'] };
+function pistaToca() {
+  if (!basico() || S.onboarding || !allLoaded()) return null;
+  const b = $('#sheetBackdrop'); if (b && !b.dataset.cerrando) return null;
+  const pv = cfg().pistasVistas || {}, hoy = todayISO(); if (Object.keys(pv).some((k) => pv[k] === hoy)) return null;
+  let k = null;
+  if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy' && diasAlta() >= 1) k = 'agenda';
+  else if (S.tab === 'tu') k = 'tu';
+  else if (S.tab === 'movimientos' && movVistaAct() === 'lista' && (S.movimientos || []).length >= 3) k = 'deslizar';
+  else if (S.tab === 'juntos') { let hay = false; try { hay = juntosPersonas().some((x) => Math.abs(x.neto) >= 0.01); } catch (e) { /* sin datos */ } if (hay) k = 'persona'; }
+  if (!k || pv[k]) return null;
+  const el = $(PISTAS[k][0]); return el ? { k, el } : null;
+}
+function pintarPista() {
+  let h = $('#pistaHost'); if (!h) { h = document.createElement('div'); h.id = 'pistaHost'; document.body.appendChild(h); }
+  const p = pistaToca(); if (!p) { h.innerHTML = ''; return; }
+  h.innerHTML = '<div class="pista" role="status" data-pista="' + p.k + '"><span>' + PISTAS[p.k][1] + '</span><button type="button" class="link" ' + act('pistaOk', p.k) + '>Entendido</button></div>';
+  const g = h.firstChild, r = p.el.getBoundingClientRect(), W = window.innerWidth || 375, ancho = Math.min(280, W - 24);
+  const izq = Math.max(12, Math.min(W - ancho - 12, r.left + r.width / 2 - ancho / 2));
+  g.style.width = ancho + 'px'; g.style.left = izq + 'px'; g.style.top = Math.round(r.bottom + 10) + 'px'; g.style.setProperty('--pf', Math.round(Math.max(14, Math.min(ancho - 14, r.left + r.width / 2 - izq))) + 'px');
+}
+
 /* ---- Hoja «Editar Inicio»: flechas, quitar, opciones y «Añadir a Inicio» ---- */
 function iwEdHtml() {
   const F = FORM, L = F.lista;
@@ -5409,6 +5591,7 @@ function renderJuntosV2() {
   const ficha = (k, t, v, n, cls) => '<button type="button" class="jv-ficha ' + cls + (f === k ? ' on' : '') + '" ' + act('juntosFiltro', f === k ? '' : k) + '><span>' + t + '</span><b class="tnum">' + money(v) + '</b><i>' + (n ? n + (n === 1 ? ' persona' : ' personas') : 'nadie') + '</i></button>';
   if (!gs.length && !hayComp) return '<div class="card jv-vacio"><span class="jv-vacio-ic">' + ic('users') + '</span><h2>Comparte gastos con quien quieras</h2>' +
     '<p>Divide una cena, un viaje o la casa: aquí verás quién debe a quién y lo saldáis en un toque.</p>' +
+    (basico() ? '<p class="jv-sin-app">¿Tus amigos no tienen PalomApp? No pasa nada: añádelos por su nombre.</p>' : '') +
     '<button class="btn accent block" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button>' +
     '<button class="btn ghost block" ' + act('openGrupos') + '>' + ic('users') + ' Crear un grupo</button></div>';
   if (juntosV3()) return juntosV3Html(ps, gs, frase, debes, teDeben, hayComp);
@@ -5517,6 +5700,7 @@ function grupoHtmlV2(g) {
     h += porTemasHtml(g, F);
     const lista = cs.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.createdAt || '').localeCompare(a.createdAt || '')), n = F.verTodos ? lista.length : 8;
     h += lista.length ? '<div class="list">' + lista.slice(0, n).map(compRowGrupo).join('') + '</div>' + (lista.length > n ? '<button type="button" class="link" style="margin-top:8px;" ' + act('compVerTodos', g.id) + '>Ver todos (' + lista.length + ')</button>' : '') : '';
+    if (basico() && !descubierta('trayecto') && gastos.some((c) => c.categoria === 'Transporte' || /gasolina/.test(normDesc(c.descripcion || '')))) h += '<button type="button" class="link jv-tray" ' + act('descProbar', 'trayecto') + '>' + ic('coche2') + ' ¿Ibais en coche? Calcula la gasolina ' + ic('chevR') + '</button>'; // docs/38 §3.2: una vez (al tocarla queda descubierta)
     if (g.miembros.length >= 2) h += objetivosGrupoHtml(g);
   } else if (tab === 'planes') {
     return h + planesGrupoHtml(g) + '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('planGrupoNuevo', g.id, 'tarea') + '>' + ic('check') + ' Tarea</button><button class="btn accent block" ' + act('planGrupoNuevo', g.id, 'plan') + '>' + ic('plus') + ' Plan</button></div>';
@@ -7030,6 +7214,8 @@ const BUSCAR_ACCIONES = [
   ['Calendario', 'agenda mes semana', 'irAgenda', ['calendario']], ['Tareas', 'pendientes', 'irAgenda', ['tareas']],
   ['Análisis del año', 'anual resumen', 'verAnio', []], ['Copia de seguridad', 'exportar backup json', 'exportBackup', []],
   ['Tema oscuro o claro', 'apariencia', 'goTab', ['tu']], ['Aspecto y sensaciones', 'color paleta tipografia cifras vibracion sonido clasico nuevo estilo', 'openAspecto', []], ['Moneda', 'euro dolar', 'openMoneda', []], ['Qué hay de nuevo', 'novedades parche', 'verNovedades', ['1']],
+  ['Descubre PalomApp', 'herramientas funciones que puedo hacer ayuda', 'descAbrir', []], ['Calculadora de trayecto', 'trayecto gasolina coche viaje carga', 'trAbrir', []],
+  ['Informes', 'informe resumen mes frases', 'infAbrir', []], ['Inicio a tu gusto', 'editar inicio piezas', 'iwEditar', []], ['Qué ves en la app', 'basico sencillo todo completo modo', 'nivelAbrir', []],
 ];
 function buscarHtml() {
   return '<div class="handle"></div><div class="field buscar-campo"><input type="search" id="qBuscar" placeholder="Buscar: Mercadona, luz, 42,50, metas…" aria-label="Buscar en la app" autocomplete="off" ' + onInput('buscarGlobal') + '></div>' +
@@ -10325,7 +10511,13 @@ function freshOnboardingState(manual) {
   };
 }
 // los pasos que tocan: con invitación válida, 3; si no, 4
-function obPasos(ob) { return ob.invite && !ob.invite.aplazada ? ['invite', 'banco', 'listo'] : ['hola', 'banco', 'mes', 'listo']; }
+// docs/38 §6: la bienvenida de un usuario nuevo son 2 pantallas (Hola y ¿Por dónde empiezas?) o 1 con invitación. Repetida desde Tú, la de 4 pasos de siempre
+function bienvNueva(ob) { return !ob.manual && versionDe('bienvenida') === 'nueva'; }
+function obPasos(ob) {
+  const inv = ob.invite && !ob.invite.aplazada;
+  if (bienvNueva(ob)) return inv ? ['invite'] : ['hola', 'empieza'];
+  return inv ? ['invite', 'banco', 'listo'] : ['hola', 'banco', 'mes', 'listo'];
+}
 async function checkOnboarding() {
   S._onboardPending = false;
   try {
@@ -10414,7 +10606,9 @@ async function doObFinish(despues) {
     // a un usuario nuevo no se le enseñan novedades ni etiquetas de cosas que no ha vivido, ni el botón de pruebas «Antes»
     const vistos = Object.assign({}, cfg().badgesVistos || {}); Object.keys(BADGES).forEach((k) => { if (!vistos[k]) vistos[k] = todayISO(); });
     // por la misma cola que el resto de guardados: así no se pisan (en el servidor, guardar es leer y luego escribir)
-    await saveConfig({ novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '', badgesVistos: vistos, compararVersiones: false, altaApp: todayISO() });
+    const alta = { novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '', badgesVistos: vistos, compararVersiones: false, altaApp: todayISO() };
+    if (bienvNueva(ob)) Object.assign(alta, { nivel: 'basico', nivelCambio: { d: todayISO(), por: 'alta' } }); // docs/38 §6.1: las cuentas nuevas empiezan en «Lo básico» (en el mismo guardado)
+    await saveConfig(alta);
     ok = await write(() => S.db.doc('config/meta').update({ onboarded: true, onboardedAt: new Date().toISOString() }));
   }
   if (!ok) { ob.saving = false; return; }
@@ -10425,6 +10619,8 @@ async function doObFinish(despues) {
   renderShell(); render(); window.scrollTo(0, 0);
   if (despues === 'grupo' && gid) { S._introJuntos = cfg().introJuntosVisto ? null : gid; S.tab = 'juntos'; render(); cargarGrupos().then(() => abrirGrupo(gid)); }
   else if (despues === 'gasto' && !lsGet('soy')) setTimeout(() => H.crearIr(['gasto']), 250); // con un sitio guardado, primero sale eso
+  else if (despues === 'compartido' && !lsGet('soy')) setTimeout(() => H.crearIr(['compartido']), 250);
+  else if (despues === 'banco' && !lsGet('soy')) setTimeout(() => abrirCuentaNueva(), 250);
   else if (!ob.manual) sentir('ok');
 }
 
@@ -10432,18 +10628,32 @@ async function doObFinish(despues) {
 function obBarra(ob) {
   const ps = obPasos(ob), i = ob.step;
   return '<div class="ob2-top">' + (i > 0 && !(ps[i - 1] === 'invite' && ob.grupoId) ? '<button type="button" class="ob2-ic" aria-label="Atrás" ' + act('obBack') + '>' + ic('chevL') + '</button>' : '<span class="ob2-ic"></span>') +
-    '<div class="ob2-prog" aria-label="Paso ' + (i + 1) + ' de ' + ps.length + '">' + ps.map((_, k) => '<i class="' + (k <= i ? 'on' : '') + '"></i>').join('') + '</div>' +
+    (ps.length > 1 ? '<div class="ob2-prog" aria-label="Paso ' + (i + 1) + ' de ' + ps.length + '">' + ps.map((_, k) => '<i class="' + (k <= i ? 'on' : '') + '"></i>').join('') + '</div>' : '<span class="ob2-prog"></span>') +
     (ps[i] !== 'listo' ? '<button type="button" class="ob2-saltar" ' + act(ps[i] === 'invite' ? 'obInvAplazar' : 'obFinish', '') + '>' + (ps[i] === 'invite' ? 'Ahora no' : 'Saltar') + '</button>' : '<span class="ob2-ic"></span>') + '</div>' +
-    '<div class="ob2-paso">Paso ' + (i + 1) + ' de ' + ps.length + '</div>';
+    (ps.length > 1 ? '<div class="ob2-paso">Paso ' + (i + 1) + ' de ' + ps.length + '</div>' : '');
 }
 function obFila(icono, cls, t, d) { return '<div class="ob2-fila"><span class="ob2-fic ' + cls + '">' + ic(icono) + '</span><span><b>' + t + '</b><span>' + d + '</span></span></div>'; }
 function obHolaHtml(ob) {
+  if (bienvNueva(ob)) return '<h1 class="ob2-h">¡Hola!</h1><p class="ob2-p">Esto es PalomApp: tus gastos y lo que compartes, en un solo sitio.</p>' +
+    '<div class="ob2-filas">' + obFila('plus', 'a', 'Apunta un gasto en dos toques', ticketsDisponible() ? 'o hazle una foto al ticket' : 'o trae el extracto de tu banco') +
+    obFila('users', 'b', 'Comparte gastos en Juntos', 'aunque los demás no tengan la app') +
+    obFila('sparkle', 'v', 'Y mucho más, cuando quieras', 'cuentas, metas, presupuestos, agenda… te lo iremos enseñando') + '</div>' +
+    '<div class="field"><label for="obNombre">¿Cómo te llamas?</label><input id="obNombre" type="text" maxlength="40" autocomplete="given-name" placeholder="' + escapeHtml(nombreSugerido()) + '" value="' + escapeHtml(ob.nombre || '') + '" ' + onInput('obSet', 'nombre') + '>' +
+    '<div class="ob2-ayuda">Así te verán las personas con las que compartas gastos.</div></div>';
   return '<h1 class="ob2-h">' + (ob.manual ? 'Así es PalomApp' : '¡Hola!') + '</h1><p class="ob2-p">Esto es PalomApp: tu dinero, tus gastos y lo que compartes, en un solo sitio. ' + (ob.manual ? 'Repasa lo básico; aquí no se borra nada.' : 'Lo dejamos listo en un minuto.') + '</p>' +
     '<div class="ob2-filas">' + obFila('plus', 'a', 'Apunta un gasto en dos toques', ticketsDisponible() ? 'o hazle una foto al ticket' : 'o trae el extracto de tu banco') +
     obFila('chart', 'v', 'Mira cuánto te queda este mes', 'y en qué se te va el dinero') + obFila('users', 'b', 'Comparte gastos en Juntos', 'quién debe a quién, y saldar con un toque') +
     obFila('wallet', 'r', 'Tus cuentas, metas y deudas', 'todo en Dinero, de un vistazo') + '</div>' +
     '<div class="field"><label for="obNombre">¿Cómo te llamas?</label><input id="obNombre" type="text" maxlength="40" autocomplete="given-name" placeholder="' + escapeHtml(nombreSugerido()) + '" value="' + escapeHtml(ob.nombre || '') + '" ' + onInput('obSet', 'nombre') + '>' +
     '<div class="ob2-ayuda">Así te verán las personas con las que compartas gastos.</div></div>';
+}
+// docs/38 §6.1, pantalla 2: tres puertas grandes; cada una termina la bienvenida y abre lo suyo
+function obEmpiezaHtml() {
+  const op = (k, icono, cls, t, d) => '<button type="button" class="ob2-puerta tappable" ' + act('obFinish', k) + '><span class="ob2-fic ' + cls + '">' + ic(icono) + '</span><span><b>' + t + '</b><span>' + d + '</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
+  return '<h1 class="ob2-h">¿Por dónde empiezas?</h1><div class="ob2-puertas">' + op('gasto', 'plus', 'a', 'Apuntar un gasto', 'Lo que te has gastado hoy') +
+    (compartidosDisponible() ? op('compartido', 'users', 'b', 'Compartir gastos con alguien', 'Una cena, la casa, un viaje') : '') +
+    op('banco', 'bank', 'r', 'Poner mi banco al día', 'Copia el saldo de la app de tu banco') + '</div>' +
+    '<div class="ob2-ayuda">Lo demás lo encuentras en <b>Descubre PalomApp</b>, en Inicio y en Tú.</div>';
 }
 function obBancoHtml(ob) {
   const ya = cuentasCfg(), unido = ob.grupoId ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Ya estás en <b>' + escapeHtml(ob.grupoNombre || 'el grupo') + '</b></span></div>' : '';
@@ -10509,13 +10719,14 @@ function obBoton(ob) {
   const p = obPasos(ob)[ob.step];
   if (p === 'invite') { const I = ob.invite; if (I.cargando) return ''; return I.info && I.info.valida ? '<button class="btn accent block" ' + act('obUnirse') + '>' + (I.info.tipo === 'directo' ? 'Aceptar' : 'Unirme al grupo') + '</button>' : '<button class="btn accent block" ' + act('obInvAplazar', I.info && I.info.motivo === 'red' ? '' : 'mal') + '>Seguir sin unirme</button>'; }
   if (p === 'hola') return '<button class="btn accent block" ' + act('obNext') + '>' + (ob.manual ? 'Siguiente' : 'Empezar') + '</button>';
+  if (p === 'empieza') return '<button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>';
   if (p === 'listo') return ob.grupoId ? '<button class="btn accent block" ' + act('obFinish', 'grupo') + '>Ver ' + escapeHtml(ob.grupoNombre || 'el grupo') + '</button><button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>'
     : (ob.manual ? '<button class="btn accent block" ' + act('obFinish', '') + '>Volver a la app</button>' : '<button class="btn accent block" ' + act('obFinish', 'gasto') + '>' + ic('plus') + ' Apuntar mi primer gasto</button><button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>');
   return '<div class="ob2-dos"><button class="btn ghost" ' + act('obNext', 'no') + '>Ahora no</button><button class="btn accent block" ' + act('obNext') + '>Siguiente</button></div>';
 }
 function renderOnboarding() {
   const ob = S.onboarding, p = obPasos(ob)[ob.step];
-  const body = p === 'invite' ? obInviteHtml(ob) : p === 'hola' ? obHolaHtml(ob) : p === 'banco' ? obBancoHtml(ob) : p === 'mes' ? obMesHtml(ob) : obListoHtml(ob);
+  const body = p === 'invite' ? obInviteHtml(ob) : p === 'hola' ? obHolaHtml(ob) : p === 'empieza' ? obEmpiezaHtml() : p === 'banco' ? obBancoHtml(ob) : p === 'mes' ? obMesHtml(ob) : obListoHtml(ob);
   $('#app').innerHTML = '<div class="ob2"><div class="ob2-in">' + obBarra(ob) + '<div class="ob2-body ob2-p-' + p + '">' + body + '</div><div class="ob2-pie">' + obBoton(ob) + '</div></div></div>';
   window.scrollTo(0, 0);
   if (p === 'listo' && !ob.confeti && !ob.manual) { ob.confeti = true; setTimeout(() => { confeti(30, null); sentir('ok'); }, 250); }
@@ -10687,6 +10898,7 @@ function vincularEtiquetas(raiz) {
 }
 function openSheet(html) {
   const host = $('#sheetHost'); if (!host) return;
+  const ph = $('#pistaHost'); if (ph) ph.innerHTML = ''; // nunca una pista con una hoja abierta
   _sheetGen++;
   host.innerHTML = '<div class="sheet-backdrop" id="sheetBackdrop" role="dialog" aria-modal="true"><div class="sheet">' + SHEET_X() + html + '</div></div>';
   activarArrastreSheet(host.querySelector('.sheet'));
@@ -10782,6 +10994,39 @@ const H = {
   buscarGlobal: (_a, el) => { clearTimeout(S._buscarT); const pintar = () => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); }; if (S.movimientos.length > 800) S._buscarT = setTimeout(pintar, 140); else pintar(); },
   buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
   tuMasToggle: () => { S.tuMas = !S.tuMas; sentir('tic'); render(); },
+  /* ---- «Lo básico» y «Descubre PalomApp» (docs/38) ---- */
+  descAbrir: () => { FORM = { kind: 'descubre' }; if ($('#sheetBackdrop')) updateSheet(descubreHtml()); else openSheet(descubreHtml()); },
+  descProbar: ([k]) => {
+    const d = DESCUBRE.find((x) => x.k === k); if (!d) return;
+    if (!(cfg().descubierto || {})[k]) saveConfig({ descubierto: Object.assign({}, cfg().descubierto || {}, { [k]: todayISO() }) });
+    sentir('tic');
+    if (k === 'ticket') { closeSheet(); elegirFotoTicket(); return; } // en el mismo toque, para que el móvil deje abrir la cámara
+    closeSheet(); if (H[d.a[0]]) H[d.a[0]](d.a[1].slice());
+  },
+  descTodo: () => { nivelPoner('todo', 'catalogo'); closeSheet(); sentir('ok'); toast('Ya lo ves todo'); render(); },
+  nivelAbrir: () => { FORM = { kind: 'nivel', v: nivel() }; openSheet(nivelHtml()); },
+  nivelElegir: ([v]) => { if (!FORM || FORM.kind !== 'nivel') return; FORM.v = v === 'basico' ? 'basico' : 'todo'; sentir('tic'); updateSheet(nivelHtml()); },
+  nivelGuardar: () => { if (!FORM || FORM.kind !== 'nivel') return; const v = FORM.v; closeSheet(); if (v !== nivel() || !cfg().nivel) nivelPoner(v, 'tu'); S.crearMas = false; toast('Listo'); render(); },
+  aviso30Ver: () => { S._aviso30Fuera = true; render(); H.descAbrir([]); },
+  aviso30Basico: () => { S._aviso30Fuera = true; nivelPoner('basico', 'tu'); toast('Vuelves a lo básico'); render(); },
+  crearMasToggle: () => { S.crearMas = !S.crearMas; sentir('tic'); if (FORM && FORM.kind === 'crear') updateSheet(crearElegido()); },
+  ppAbrir: () => { FORM = { kind: 'pp' }; openSheet('<div class="handle"></div>' + ppTarjetaHtml(true)); },
+  ppIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
+  sugSi: ([k]) => {
+    const s = sugCandidatas().find((x) => x.k === k), sg = Object.assign({}, cfg().sugerencias || {}), e = sg[k] || {};
+    sg[k] = Object.assign({}, e, { hecha: todayISO() });
+    saveConfig({ sugerencias: sg, descubierto: Object.assign({}, cfg().descubierto || {}, { [k]: todayISO() }) });
+    sentir('tic'); render();
+    if (!s) return;
+    if (k === 'ticket') { elegirFotoTicket(); return; }
+    if (H[s.a[0]]) H[s.a[0]](s.a[1].slice());
+  },
+  sugNo: ([k]) => { // «Ahora no»: 7 días; a la segunda, nunca más
+    const sg = Object.assign({}, cfg().sugerencias || {}), n = num((sg[k] || {}).n) + 1;
+    sg[k] = { n, hasta: n >= 2 ? 'nunca' : addDaysISO(todayISO(), 7) };
+    saveConfig({ sugerencias: sg }); sentir('tic'); render();
+  },
+  pistaOk: ([k]) => { saveConfig({ pistasVistas: Object.assign({}, cfg().pistasVistas || {}, { [k]: todayISO() }) }); const h = $('#pistaHost'); if (h) h.innerHTML = ''; },
   tuNombreAbrir: () => { verBadge('perfil'); const p = perfilCfg(); FORM = { kind: 'perfil', avatar: p.avatar, icono: p.icono, color: p.color, nombre: String(cfg().nombre || '').trim() || nombreSugerido() }; openSheet(perfilHtml()); },
   perfilModo: ([k]) => { if (!FORM || FORM.kind !== 'perfil') return; FORM.nombre = ($('#tuNombreIn') || {}).value || FORM.nombre; FORM.avatar = k === 'dibujo' ? 'dibujo' : 'iniciales'; sentir('tic'); updateSheet(perfilHtml()); },
   perfilIcono: ([k]) => { if (!FORM || FORM.kind !== 'perfil') return; FORM.nombre = ($('#tuNombreIn') || {}).value || FORM.nombre; FORM.icono = k; sentir('tic'); updateSheet(perfilHtml()); },
@@ -10807,7 +11052,7 @@ const H = {
   logoutPreguntar: () => { FORM = { kind: 'logout' }; openSheet(logoutHtml()); },
   tuFiltrar: (_a, el) => {
     const q = normDesc(el.value); let n = 0;
-    $$('#content .tu-grupo').forEach((g) => { if (g.classList.contains('tu-mas-btn')) { g.style.display = q ? 'none' : ''; return; } let vis = 0; g.querySelectorAll('.menu-item').forEach((b) => { const ok = !q || (b.getAttribute('data-k') || '').indexOf(q) >= 0; b.style.display = ok ? '' : 'none'; if (ok) vis++; }); g.style.display = vis && (q || !g.classList.contains('tu-mas') || S.tuMas) ? '' : 'none'; n += vis; });
+    $$('#content .tu-grupo').forEach((g) => { if (g.classList.contains('tu-mas-btn')) { g.style.display = q ? 'none' : ''; return; } let vis = 0; g.querySelectorAll('[data-k]').forEach((b) => { const ok = !q || (b.getAttribute('data-k') || '').indexOf(q) >= 0; b.style.display = ok ? '' : 'none'; if (ok) vis++; }); g.style.display = vis && (q || !g.classList.contains('tu-mas') || S.tuMas) ? '' : 'none'; n += vis; });
     const z = $('#tuNada'); if (z) z.style.display = n ? 'none' : '';
   },
   trAbrir: () => { S._volverGrupo = null; verBadge('trayecto'); trAbrir(null); },
@@ -12166,6 +12411,7 @@ const H = {
     lsSet('unirse', '');
     ob.grupoId = id; ob.grupoNombre = i.tipo === 'directo' ? (i.invita || i.nombre || '') : (i.nombre || '');
     saveConfig({ nombre, unidoA: { gid: id, nombre: ob.grupoNombre, invita: i.invita || '', fecha: todayISO() } });
+    if (obPasos(ob).length === 1) return doObFinish('grupo'); // docs/38 §6.2: al grupo directamente, sin banco ni «Todo listo»
     ob.step = 1; render();
   },
   obInvAplazar: ([mal]) => { const ob = S.onboarding; if (!ob || !ob.invite) return; ob.invite.aplazada = true; if (mal === 'mal') lsSet('unirse', ''); ob.step = 0; render(); },
@@ -12384,6 +12630,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();

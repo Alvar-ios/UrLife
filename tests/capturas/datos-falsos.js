@@ -37,6 +37,18 @@
     { id: 2, grupo_id: G1, compartido_id: 'k9', accion: 'borrado', hecho_por: ANA, hecho_por_nombre: 'Ana', hecho_en: ts(1.5), antes: null, despues: null, descripcion: 'Taxi al aeropuerto de madrugada', tipo: 'Gasto', importe: 48, pagado_por: YO, reparto: { [YO]: 16, [ANA]: 16, [BEA]: 16 }, borrado: ts(1.5), puede_recuperar: true, nombres: {} },
     { id: 1, grupo_id: G1, compartido_id: 'k1', accion: 'creado', hecho_por: ANA, hecho_por_nombre: 'Ana', hecho_en: ts(2), antes: null, despues: { importe: 90, pagado_por: ANA, reparto: { [YO]: 30, [ANA]: 30, [BEA]: 30 } }, descripcion: comp[0].descripcion, tipo: 'Gasto', importe: 96, pagado_por: ANA, reparto: comp[0].reparto, borrado: null, puede_recuperar: false, nombres: {} },
   ];
+  // 10/11 (docs/38, C1): variantes de «Lo básico» con #basico (nuevo, sin nada), #invitado (unido a un grupo, 49 € de Juntos) y #bienvenida (cuenta recién creada)
+  var modo = (location.hash || '').slice(1);
+  if (modo === 'basico' || modo === 'invitado' || modo === 'bienvenida') {
+    movs = {}; tareas = {};
+    cfg = modo === 'bienvenida' ? {} : { app: { nombre: 'Álex', novedadesVistas: '9999-12-31', compararVersiones: false, nivel: 'basico', nivelCambio: { d: dia(0), por: 'alta' }, altaApp: dia(0) }, meta: { onboarded: true } };
+    if (modo === 'invitado') {
+      cfg.app.unidoA = { gid: G1, nombre: 'Piso compartido de la calle Mayor', invita: 'Ana', fecha: dia(0), visto: true };
+      miembros = miembros.filter(function (m) { return m.grupo_id === G1; }).map(function (m) { return m.user_id === YO ? Object.assign({}, m, { rol: 'miembro' }) : m; });
+      grupos = grupos.filter(function (g) { return g.id === G1; });
+      comp = [{ id: 'k1', grupoId: G1, fecha: dia(0), tipo: 'Gasto', categoria: 'Restaurantes', descripcion: 'Cena de bienvenida', importe: 147, pagadoPor: ANA, reparto: { [YO]: 49, [ANA]: 49, [BEA]: 49 }, modo: 'igual', creadoPor: ANA, createdAt: ts(0) }];
+    } else { grupos = []; miembros = []; comp = []; }
+  }
   var store = { movimientos: movs, tareas: tareas, golf: {} };
   var vacio = function (next) { setTimeout(function () { next([]); }, 0); return function () {}; };
   var lista = function (o) { return Object.keys(o).map(function (id) { return { id: id, data: function () { return o[id]; } }; }); };

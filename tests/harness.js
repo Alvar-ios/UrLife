@@ -16,7 +16,7 @@ function makeEnv(seed){ // seed: {config:{app,meta}, movs:[]}
   if(process.env.FECHA_MAS){const off=Number(process.env.FECHA_MAS)*864e5,D=w.Date;class FD extends D{constructor(...a){if(a.length)super(...a);else super(D.now()+off);}static now(){return D.now()+off;}}w.Date=FD;} // 08/11 (Calidad): FECHA_MAS=14 npm test → la app cree que es dentro de 14 días (para ver qué pruebas caducan)
   if(seed.pre)seed.pre(w);
   w.eval(fs.readFileSync(require('path').join(__dirname,'..','app.js'),'utf8'));
-  w.__APP__.S.verAnterior=Object.assign({tu:1,agenda:1,crear:1,importe:1,movResumen:0,dinero:4,balance:1},w.__APP__.S.verAnterior||{}); // 22/10: las pruebas antiguas miran Tú, Agenda y + de antes (las nuevas pasan version:{tu:0,…})
+  w.__APP__.S.verAnterior=Object.assign({tu:1,agenda:1,crear:1,importe:1,movResumen:0,dinero:4,balance:1,bienvenida:1},w.__APP__.S.verAnterior||{}); // 22/10: las pruebas antiguas miran Tú, Agenda y + de antes (las nuevas pasan version:{tu:0,…}). 10/11 (docs/38): y la bienvenida de 4 pasos (las nuevas, bienvenida:0)
   if(seed.abrirVersiones)Object.values(w.__APP__.VERSIONES).forEach(v=>{delete v.cerrada;}); // pruebas del propio botón «Antes»
   if(seed.version)w.__APP__.S.verAnterior=Object.assign(w.__APP__.S.verAnterior||{},seed.version); // p. ej. {movResumen:2}
   if(seed.verAnteriorInicio)w.__APP__.S.verAnterior=Object.assign(w.__APP__.S.verAnterior,{inicio:2}); // pruebas de la versión anterior de Inicio (botón «Antes»)
