@@ -31,6 +31,8 @@ const ICONS = {
   manoMoneda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15h3l4.5 1.5h3.2a1.5 1.5 0 0 0 0-3H11"/><path d="M6 20.5h7l6.2-3.7a1.6 1.6 0 0 0-1.6-2.8L14 15.8"/><path d="M3 13v8"/><circle cx="15.5" cy="6.5" r="3.5"/></svg>',
   comparar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M12 4v16"/><path d="m7 10-2 2 2 2M17 10l2 2-2 2"/></svg>',
   sonrisa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c.9 1.4 2.1 2 3.5 2s2.6-.6 3.5-2"/><circle cx="9" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r=".9" fill="currentColor" stroke="none"/></svg>',
+  ojo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  ojoNo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.6 5.6A9.7 9.7 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.2 6.9C3.9 8.5 2.5 12 2.5 12S6 18.5 12 18.5c1.6 0 3-.4 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>',
   candado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/></svg>',
   estrella: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>',
   play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12.5" rx="2.5"/><path d="M10.3 8.8v5l4.2-2.5z"/><path d="M8 20.5h8"/></svg>',
@@ -298,7 +300,7 @@ function toast(msg, opts) {
   const el = $('#toast'); if (!el) return;
   opts = opts || {};
   const aviso = opts.aviso || TOAST_AVISO.test(msg);
-  el.innerHTML = '<span class="toast-ic ' + (aviso ? 'aviso' : 'ok') + '">' + ic(aviso ? 'alert' : 'check') + '</span><span class="toast-txt"></span>' + (opts.deshacer ? '<button type="button" class="toast-btn">Deshacer</button>' : '');
+  el.innerHTML = '<span class="toast-ic ' + (aviso ? 'aviso' : 'ok') + '">' + ic(aviso ? 'alert' : 'check') + '</span><span class="toast-txt"></span>' + (opts.deshacer ? '<button type="button" class="toast-btn">' + escapeHtml(opts.boton || 'Deshacer') + '</button>' : '');
   el.querySelector('.toast-txt').textContent = msg;
   if (opts.deshacer) el.querySelector('.toast-btn').onclick = (ev) => { if (ev && ev.currentTarget) ev.currentTarget.onclick = null; else el.querySelector('.toast-btn').onclick = null; el.classList.remove('show'); clearTimeout(toast._t); opts.deshacer(); };
   el.classList.toggle('con-accion', !!opts.deshacer);
@@ -562,6 +564,17 @@ function marcarCampo(sel) {
 function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function cifrasOcultas() { const v = lsGet('cifrasOcultas'); return v == null ? !!(typeof S !== 'undefined' && S._ocultas) : v === '1'; } // sin almacenamiento: dura mientras la app esté abierta
+// Importes dentro de frases («−2,00 € a tu saldo»): se envuelven para poder taparlos (Calidad 10/11)
+function taparCifrasTexto() {
+  const c = $('#content'); if (!c || !cifrasOcultas()) return;
+  const re = /[−+-]?\s?\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?\s?[€$£]/g;
+  const w = document.createTreeWalker(c, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentNode && n.parentNode.closest && n.parentNode.closest('.tnum,.num,.cifra-txt,input,textarea,script,style') ? NodeFilter.FILTER_REJECT : re.test(n.nodeValue) ? (re.lastIndex = 0, NodeFilter.FILTER_ACCEPT) : NodeFilter.FILTER_REJECT) });
+  const ns = []; let n; while ((n = w.nextNode())) ns.push(n);
+  ns.forEach((t) => { const span = document.createElement('span'); span.innerHTML = escapeHtml(t.nodeValue).replace(re, (m) => '<span class="cifra-txt">' + m + '</span>'); t.parentNode.replaceChild(span, t); });
+}
+function aplicarOcultar() { document.documentElement.classList.toggle('cifras-ocultas', cifrasOcultas()); if (cifrasOcultas()) setTimeout(taparCifrasTexto, 0); }
+function ojoBtnHtml() { const o = cifrasOcultas(); return '<button type="button" class="icon-btn sm ojo-btn" aria-pressed="' + o + '" aria-label="' + (o ? 'Mostrar cifras' : 'Ocultar cifras') + '" ' + act('ocultarCifras') + '>' + ic(o ? 'ojoNo' : 'ojo') + '</button>'; }
 function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* sin almacenamiento local */ } }
 
 /* Atributos de eventos delegados: data-click="nombre|arg1|arg2" (args codificados) */
@@ -885,6 +898,8 @@ const TABS = [
 const TITULOS = { inicio: 'Inicio', movimientos: 'Movimientos', dinero: 'Dinero', agenda: 'Agenda', juntos: 'Juntos', tu: 'Tú' };
 // Nombres antiguos de pestañas → dónde están ahora
 const TAB_ALIAS = { analisis: 'inicio', mas: 'tu', tareas: 'agenda', calendario: 'agenda' };
+// «domingo, 8 nov» (docs/32 A8)
+function fechaCabecera() { const d = new Date(); return d.toLocaleDateString('es-ES', { weekday: 'long' }) + ', ' + d.getDate() + ' ' + MESES_CORTO[d.getMonth()]; }
 function tabBtn(t) {
   return '<button class="tab" data-tab="' + t.id + '" ' + act('goTab', t.id) + '><span class="ic">' + ic(t.icon) + '</span><span>' + t.label + '</span></button>';
 }
@@ -908,20 +923,22 @@ function perfilHtml() {
 }
 function renderShell() {
   $('#app').innerHTML =
-    '<nav class="rail" aria-label="Secciones"><div class="brand">Mis Finanzas<span class="sub">y Tareas</span></div>' +
+    '<nav class="rail" aria-label="Secciones"><div class="brand">PalomApp<span class="sub">Tu dinero y tus planes</span></div>' +
     tabsNav().map(tabBtn).join('') +
     '<button class="rail-fab" ' + act('onFab') + '>' + ic('plus') + ' Añadir</button>' +
     '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
-    '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('goTab', 'inicio') + '>' + ic('chevL') + '</button>' +
-    '<div><h1 id="pageTitle"></h1><div class="sub">' + fmtDateLong(todayISO()) + '</div></div></div>' +
-    '<div class="tb-r"><span id="compararHost"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda" ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
+    '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('tbVolver') + '>' + ic('chevL') + '</button>' +
+    '<div><h1 id="pageTitle"></h1><div class="sub" id="pageSub"></div></div></div>' +
+    '<div class="tb-r"><span id="compararHost"></span><span id="ojoTb"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda" ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
     '<nav class="tabbar" aria-label="Secciones">' + tabBtn(tabsNav()[0]) + tabBtn(tabsNav()[1]) +
     '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabBtn(tabsNav()[2]) + tabBtn(tabsNav()[3]) + '</nav>' +
-    '<div id="sheetHost"></div><div class="toast" id="toast" role="status"></div>';
+    '<div id="sheetHost"></div><div class="toast" id="toast" role="status"></div>' +
+    '<div class="bloqueo" aria-live="polite">' + ic('candado') + '<b>PalomApp está bloqueada</b><button class="btn accent" ' + act('desbloquear') + '>Desbloquear</button></div>';
 }
 
 function loadingHtml() {
+  clearTimeout(S._sinRedT); S._sinRedT = setTimeout(() => { if (allLoaded()) return; const m = $('#loadingMsg'); if (m) m.innerHTML = (navigator.onLine === false ? 'No hay conexión. En cuanto vuelva, verás tus datos.' : 'Está tardando más de lo normal. Comprueba tu conexión.') + '<br><button class="btn ghost" style="margin-top:12px;" ' + act('reintentarCarga') + '>Reintentar</button>'; }, 8000);
   return '<div class="esqueleto" aria-busy="true"><div class="sk sk-hero"></div><div class="sk sk-t"></div><div class="sk-fila"><div class="sk sk-card"></div><div class="sk sk-card"></div></div><div class="sk sk-t"></div><div class="sk sk-lista"></div>' +
     '<div class="loading-txt" id="loadingMsg">' + escapeHtml(S.loadingMsg) + '</div></div>';
 }
@@ -929,17 +946,58 @@ function loadingHtml() {
 /* ============================================================
    LOGIN (pantalla completa, sin navegación)
    ============================================================ */
+// 08/11: pedir la contraseña nueva al volver del correo (antes el enlace entraba en la app sin cambiarla)
+/* ---- Borrar mi cuenta (obligatorio en Google Play; docs/33). La función «borrar-cuenta» usa SIEMPRE el id de tu sesión. ---- */
+function abrirExterno(url) { const w = window.open(url, '_blank', 'noopener'); if (!w) location.href = url; }
+function borrarCuentaHtml(msg) {
+  const F = FORM || {};
+  return '<div class="handle"></div><h2>¿Borrar tu cuenta y tus datos?</h2>' +
+    '<p class="sheet-sub">Se borran tus movimientos, cuentas, metas, deudas, tareas y ajustes. En tus grupos seguirás saliendo como «baja» para que sus cuentas cuadren. <b>No se puede deshacer.</b></p>' +
+    (msg ? '<div class="alert" style="margin-bottom:12px;">' + ic('alert') + '<div>' + msg + '</div></div>' : '') +
+    '<div class="field"><label for="bcPass">Tu contraseña</label><input id="bcPass" type="password" autocomplete="current-password"></div>' +
+    '<div class="field"><label for="bcConf">Escribe BORRAR para confirmar</label><input id="bcConf" type="text" autocapitalize="characters" autocomplete="off"></div>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn danger block" ' + act('borrarCuentaOk') + (F.borrando ? ' disabled' : '') + '>' + (F.borrando ? 'Borrando…' : 'Borrar mi cuenta') + '</button></div>' +
+    '<button type="button" class="link" style="display:block;margin:12px auto 0;font-size:12.5px;" ' + act('abrirPrivacidad') + '>Qué se borra y qué se conserva</button>';
+}
+async function borrarCuentaOk() {
+  const F = FORM; if (!F || F.kind !== 'borrarCuenta' || F.borrando) return;
+  const pass = ($('#bcPass') || {}).value || '', conf = (($('#bcConf') || {}).value || '').trim().toUpperCase();
+  if (conf !== 'BORRAR') return updateSheet(borrarCuentaHtml('Escribe BORRAR para confirmar.'));
+  const email = S.user && S.user.email;
+  try { await window.Auth.signIn(email, pass); } catch (e) { return updateSheet(borrarCuentaHtml('La contraseña no es correcta.')); }
+  F.borrando = true; updateSheet(borrarCuentaHtml());
+  let j = null;
+  try {
+    const c = window.SUPABASE_CONFIG, ses = await window.Auth.getSession();
+    const r0 = await fetch(c.url + '/functions/v1/borrar-cuenta', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ses.access_token, apikey: c.anonKey }, body: JSON.stringify({ confirmar: 'BORRAR' }) });
+    try { j = await r0.json(); } catch (e) { j = { error: 'http_' + r0.status }; }
+  } catch (e) { j = { error: 'red' }; }
+  F.borrando = false;
+  if (j && j.ok) { closeSheet(); toast('Tu cuenta se ha borrado'); try { await window.Auth.signOut(); } catch (e) { /* */ } return; }
+  if (j && j.error === 'saldo_pendiente') return updateSheet(borrarCuentaHtml('Antes tienes que estar en paz en ' + escapeHtml((j.grupos || []).map((g) => (typeof g === 'string' ? g : (grupoDe(g.grupo) ? nombreDestino(grupoDe(g.grupo)) : g.nombre))).filter(Boolean).join(', ') || 'tus grupos') + '. Salda lo pendiente en Juntos y vuelve aquí.'));
+  updateSheet(borrarCuentaHtml('Ahora no se puede borrar desde aquí. Escríbenos a <a href="mailto:' + CONTACTO.correo + '?subject=Borrar%20mi%20cuenta">' + escapeHtml(CONTACTO.correo) + '</a> y lo hacemos nosotros en menos de 30 días.'));
+}
+function renderNuevaContrasena(msg) {
+  $('#app').innerHTML = '<div style="min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;"><div class="card" style="width:100%;max-width:360px;">' +
+    '<h2 style="margin:0 0 6px;">Pon tu contraseña nueva</h2><p class="rec-hint" style="margin:0 0 14px;">Al menos 8 caracteres. Con ella entrarás a partir de ahora.</p>' +
+    (msg ? '<div class="alert" style="margin-bottom:12px;">' + ic('alert') + '<div>' + escapeHtml(msg) + '</div></div>' : '') +
+    '<div class="field"><label for="ncPass">Contraseña nueva</label><input id="ncPass" type="password" autocomplete="new-password" minlength="8"></div>' +
+    '<div class="field"><label for="ncPass2">Repítela</label><input id="ncPass2" type="password" autocomplete="new-password" minlength="8"></div>' +
+    '<button class="btn accent block" ' + act('nuevaContrasenaOk') + '>Guardar y entrar</button></div></div>';
+  setTimeout(() => { const el = $('#ncPass'); if (el) el.focus(); }, 80);
+}
 function renderLoginScreen(msg) {
   $('#app').innerHTML =
     '<div style="min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;">' +
     '<div class="card" style="width:100%;max-width:360px;">' +
     '<div style="text-align:center;margin-bottom:22px;">' +
-    '<div class="num" style="font-size:26px;font-weight:600;color:var(--ink);">Mis Finanzas<span style="display:block;font-family:var(--font-ui);font-size:13px;font-weight:400;color:var(--text-faint);margin-top:2px;">y Tareas</span></div></div>' +
+    '<div class="num" style="font-size:26px;font-weight:600;color:var(--ink);">PalomApp<span style="display:block;font-family:var(--font-ui);font-size:13px;font-weight:400;color:var(--text-faint);margin-top:2px;">Tu dinero, tus planes y tu gente</span></div></div>' +
     '<div class="field"><label>Correo</label><input id="loginEmail" type="email" autocomplete="username" placeholder="tu@correo.com"></div>' +
     '<div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password"></div>' +
     (msg ? '<div class="alert" style="margin-top:2px;">' + ic('alert') + '<div>' + escapeHtml(msg) + '</div></div>' : '') +
     '<button class="btn accent block" style="margin-top:6px;" ' + act('doLogin') + '>Iniciar sesión</button>' +
     '<button class="section-title link" style="width:100%;text-align:center;margin-top:16px;justify-content:center;" ' + act('doForgotPassword') + '>¿Olvidaste tu contraseña?</button>' +
+    '<button class="link" style="display:block;margin:10px auto 0;font-size:12.5px;" ' + act('abrirPrivacidad') + '>Privacidad</button>' +
     '</div></div>';
   setTimeout(() => { const el = $('#loginEmail'); if (el) el.focus(); }, 60);
 }
@@ -1024,6 +1082,12 @@ function render() {
   const tbA = $('#tbAgenda'); if (tbA) { const enAg = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0); tbA.classList.toggle('on', enAg); tbA.setAttribute('aria-current', enAg ? 'page' : 'false'); const n = allLoaded() ? agendaHoyN() : 0, nb = $('#tbAgendaN'); if (nb) { nb.hidden = !n; nb.textContent = n > 9 ? '9+' : String(n); } tbA.setAttribute('aria-label', 'Agenda' + (n ? ', ' + n + (n === 1 ? ' cosa hoy' : ' cosas hoy') : '')); }
   document.body.classList.toggle('en-movlista', S.tab === 'movimientos' && movVistaAct() === 'lista'); // allí ya hay una lupa que busca en la lista
   document.body.classList.toggle('en-tu2', S.tab === 'tu' && !verAnterior('tu'));
+  const enAgenda = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0);
+  const sub = $('#pageSub'); if (sub) { const enHoy = S.tab === 'inicio' && !enAgenda; sub.textContent = enHoy ? fechaCabecera() : ''; sub.hidden = !enHoy; }
+  document.body.classList.toggle('en-agenda', enAgenda); // docs/32 A6/A7: en la Agenda, flecha para volver y ninguna pestaña marcada
+  if (enAgenda) $$('.tabbar [data-tab], .rail [data-tab]').forEach((b) => b.classList.remove('active'));
+  const ojo = $('#ojoTb'); if (ojo) ojo.innerHTML = cifrasOcultas() && S.tab !== 'inicio' ? ojoBtnHtml() : ''; // Calidad 10/11: volver a ver las cifras desde cualquier pestaña
+  if (cifrasOcultas()) setTimeout(taparCifrasTexto, 0);
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : TITULOS[S.tab];
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
   const _agEl = document.activeElement && document.activeElement.id === 'agRapida' ? document.activeElement : null, _agV = _agEl ? _agEl.value : null;
@@ -1231,7 +1295,7 @@ function casaImporte(m, q) {
 }
 function movsFiltrados() {
   let movs = movsEfectivos().filter(inPeriodo);
-  if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta)).concat(flujosJuntosFilas(S.movCuenta).filter(inPeriodo));
+  if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta) || (esAporteLigado(m) && (cuentaIdDe(m) === S.movCuenta || m.cuentaDestinoId === S.movCuenta))).concat(flujosJuntosFilas(S.movCuenta).filter(inPeriodo));
   if (S.movFiltroTipo === '_tras') movs = [];
   else if (S.movFiltroTipo === '_comp') movs = movs.filter((m) => m.comp);
   else if (S.movFiltroTipo === '_ticket') movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
@@ -1263,11 +1327,16 @@ function movVistaSegHtml() {
   const v = movVistaAct();
   return '<div class="segmented mov-vista">' + MOV_VISTAS.map(([id, l]) => '<button class="' + (v === id ? 'active' : '') + '" ' + act('setMovVista', id) + '>' + l + '</button>').join('') + '</div>';
 }
+function movVacioHtml() {
+  return '<div class="card mov-vacio"><span class="mov-vacio-ic">' + ic('list') + '</span><b>Aquí verás en qué se va tu dinero</b><p>Apunta tu primer gasto o trae el extracto de tu banco.</p>' +
+    '<button class="btn accent block" ' + act('crearIr', 'gasto') + '>' + ic('plus') + ' Apuntar un gasto</button><button class="btn ghost block" ' + act('impAbrir') + '>' + ic('fileIn') + ' Importar extracto</button></div>';
+}
 function renderMovTab() {
   const v = movVistaAct(), dir = S._movDir || 0; S._movDir = 0;
   if (v !== 'lista') { const p = movPerNorm(S.movPeriodo); if (!/^m:/.test(p) && !(v === 'resumen' && /^y:/.test(p))) S.movPeriodo = mesHoyClave(); }
   const cuerpo = v === 'resumen' ? renderMovResumen() : v === 'calendario' ? (agendaV2() ? calCapasHtml('dinero') : '') + renderMovCal() : renderMovimientos();
-  return movVistaSegHtml() + (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
+  const vacio = v === 'resumen' && !S.movimientos.length && !(S.traspasos || []).length && !(S.compartidos || []).length && movPerNorm(S.movPeriodo) === mesHoyClave() ? movVacioHtml() : ''; // docs/32 A10
+  return movVistaSegHtml() + vacio + (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
     movCabHtml(dir) + '<div class="mov-marco"><div id="movCuerpo" class="mov-cuerpo-' + v + '">' + cuerpo + '</div></div>';
 }
 function movLimpiarFiltros() { S.movFiltroTipo = 'Todos'; S.movQuery = ''; S.movSub = ''; S.movSoloTicket = false; S.movSoloComp = false; S._movBuscando = false; S.movLimit = 120; }
@@ -1379,7 +1448,7 @@ function movFiltrosHtml() {
 function movCalMovs(y, m) {
   const k = y + '-' + pad2(m);
   let movs = movsEfectivos().filter((x) => mesDe(x.fecha || '') === k);
-  if (movCuentaActiva()) movs = movs.filter((x) => x.comp ? compSaleDeCuenta(x.comp, S.movCuenta) : (tocaCuenta(x) && cuentaIdDe(x) === S.movCuenta));
+  if (movCuentaActiva()) movs = movs.filter((x) => x.comp ? compSaleDeCuenta(x.comp, S.movCuenta) : (tocaCuenta(x) && cuentaIdDe(x) === S.movCuenta) || (esAporteLigado(x) && (cuentaIdDe(x) === S.movCuenta || x.cuentaDestinoId === S.movCuenta)));
   return movs;
 }
 function renderMovCal() {
@@ -1845,7 +1914,7 @@ function openMovForm(id, pre) {
     '<div id="cuentaField">' + cuentaFieldHtml() + '</div>' +
     '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>' +
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
-    metodos.map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' +
+    metodos.concat(ex && ex.metodoPago && metodos.indexOf(ex.metodoPago) < 0 ? [ex.metodoPago] : []).map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' + // barrido 08/11: no se pierde la que ya no está en tu lista
     '<div id="artField">' + artFieldHtml(comp || ex) + '</div></div>' +
     '<div class="actions"' + (corta ? ' hidden' : '') + '><button class="btn ghost block" ' + (S._volverGrupo ? act('grupoVer', S._volverGrupo) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
     (comp ? (puedeEditarComp(comp) ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>' : '<div class="rec-hint" style="margin-top:10px;">' + AVISO_PERMISO + '</div>')
@@ -1932,7 +2001,13 @@ async function saveMov() {
       const validas = metaOpciones().map((o) => o.k), l = (FORM.metaSels || []).filter((k) => validas.indexOf(k) >= 0);
       const unaComp = []; let lista = l.filter((k) => { if (k.indexOf('g:') !== 0) return true; if (unaComp.length) return false; unaComp.push(k); return true; });
       data.metaIds = lista; data.metaId = lista[0] || null;
-    } else if (FORM.tipo === 'Ahorro') { data.metaId = FORM.metaSel && metaOpciones().some((o) => o.k === FORM.metaSel) ? FORM.metaSel : null; if ('metaIds' in data) data.metaIds = null; }
+    } else if (FORM.tipo === 'Ahorro') { data.metaId = FORM.metaSel && metaOpciones().some((o) => o.k === FORM.metaSel) ? FORM.metaSel : null; if ('metaIds' in data) data.metaIds = null;
+      // tanda 6: aportar a una meta ligada desde aquí también mueve el dinero (desde tu cuenta principal); si dejas de ligarla, deja de moverlo
+      const dest = data.metaId ? cuentaDeMeta(data.metaId) : null;
+      const previo = FORM.id ? S.movimientos.find((x) => x.id === FORM.id) : null;
+      if (dest && (!previo || previo.metaId !== data.metaId)) { if (!data.cuentaId || data.cuentaId === dest || !conSaldo(cuentaPorId(data.cuentaId))) data.cuentaId = cuentaDesdeDefecto(dest); if (data.cuentaId) data.cuentaDestinoId = dest; }
+      // Calidad 08/11: si desligas la meta o editas la nota, lo que ya se movió se queda donde está (no se toca cuentaDestinoId)
+    }
     else { if ('metaId' in data) data.metaId = null; if ('metaIds' in data) data.metaIds = null; }
     const reglaNueva = FORM.recordar && FORM.tipo !== 'Inversión' ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
     let movId = FORM.id;
@@ -3598,7 +3673,7 @@ function renderAgendaSemanaV2() {
   const plegH = (adelante.length || hechas.length || encargadas.length) ? '<div class="ag-plegs">' + pleg('adelante', sel > hoy ? 'Otros días' : 'Más adelante', adelante) + plegE + pleg('hechas', 'Hechas', hechas) + '</div>' : '';
   setTimeout(agendaMarcarVista, 0); // al abrir la Agenda, lo que te encargaron deja de ser «nuevo» en Inicio
   const otrosH = otrosDia.length ? '<div class="list agc-list">' + otrosDia.map(agcFilaHtml).join('') + '</div>' : '';
-  return cab + tira + agcCarasHtml() + rapida + vencH + diaH + otrosH + proxH + sinFH + plegH;
+  return cab + tira + agcCarasHtml() + rapida + vencH + diaH + otrosH + proxH + sinFH + plegH + agcEnlaceFinalHtml();
 }
 // Calendario v2: solo el mes; la leyenda de colores de abajo es el filtro
 // Un solo calendario con dos capas: «Planes y tareas» (Agenda) y «Dinero» (Movimientos → Calendario)
@@ -3628,7 +3703,7 @@ function renderCalendarioV2() {
     '<div class="cal2-ley" role="group" aria-label="Qué se ve en el calendario">' + ley.map(([k, l, c]) => '<button type="button" class="cal2-ley-i' + (f[k] ? ' on' : '') + '" aria-pressed="' + !!f[k] + '" ' + act('calToggle', k) + '><i style="' + (f[k] ? 'background:' : 'border-color:') + c + '"></i>' + l + '</button>').join('') + '</div></div>' +
     '<div class="section-title">' + DIAS_LARGO[dowMon(dsel)] + ' ' + dsel.getDate() + ' de ' + MESES[dsel.getMonth()].toLowerCase() + '<button class="link" ' + act('tareaEnDia', anchor) + '>' + ic('plus') + ' Tarea</button></div>' +
     (evsSel.length ? '<div class="list">' + evsSel.map(calEventRow).join('') + '</div>' : (agcOn() && agcDelDia(anchor).length ? '' : '<div class="card empty-mini">Nada este día.</div>')) +
-    (agcOn() && agcDelDia(anchor).length ? '<div class="list agc-list">' + agcDelDia(anchor).map(agcFilaHtml).join('') + '</div>' : '') + (agcOn() ? (agcAsegurar(), agcCarasHtml()) : '');
+    (agcOn() && agcDelDia(anchor).length ? '<div class="list agc-list">' + agcDelDia(anchor).map(agcFilaHtml).join('') + '</div>' : '') + (agcOn() ? (agcAsegurar(), agcCarasHtml() + agcEnlaceFinalHtml()) : '');
 }
 /* Formulario de tarea v2: qué, para cuándo y categoría; lo demás en «Más opciones» */
 function finde(hoy) { const d = dowMon(parseISO(hoy)); return d >= 5 ? hoy : uAdd(hoy, 5 - d); }
@@ -3971,6 +4046,7 @@ function renderTuV2() {
     grupo('Traer y guardar', [it('impAbrir', [], 'fileIn', 'Importar extracto o Excel', badge('importar'), 'banco csv'),
       ticketsDisponible() ? it('ticketsInfo', [], 'receipt', 'Fotos de tickets', ticketsFilaExtra(), 'tickets lecturas foto camara recibo quedan') : '',
       it('openPapelera', [], 'trash', 'Papelera', badge('papelera') + '<span class="menu-extra">' + (papeleraItems().length ? papeleraItems().length + ' dentro' : 'vacía') + '</span>', 'borrados recuperar eliminados'),
+      it('exportCsv', [], 'download', 'Descargar mis movimientos (Excel)', '', 'exportar excel csv hoja de calculo'),
       it('exportBackup', [], 'archive', 'Copia de seguridad', '<span class="menu-extra">Descargar</span>', 'exportar backup json')]) +
     grupo('La app', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', badge('aspecto') + '<span class="menu-extra">' + (PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1] + '</span>', 'aspecto color paleta tipografia cifras fuente vibracion sonido estilo'),
       '<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
@@ -3981,7 +4057,10 @@ function renderTuV2() {
     '<div class="tu-grupo tu-mas-btn"><div class="card menu"><button type="button" class="menu-item" aria-expanded="' + (S.tuMas ? 'true' : 'false') + '" ' + act('tuMasToggle') + '><span class="ic">' + ic('sliders') + '</span>Más ajustes<span class="menu-extra">' + mas.length + '</span><span class="chev">' + ic(S.tuMas ? 'chevD' : 'chevR') + '</span></button></div></div>' +
     '<div class="tu-grupo tu-mas"' + (S.tuMas ? '' : ' style="display:none"') + '><div class="card menu">' + mas.join('') + '</div></div>' +
     grupo('Tu cuenta', [mfaDisponible() ? it('openSeguridad', [], 'candado', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
-      '<button class="menu-item tu2-salir" data-k="cerrar sesion salir" ' + act('logoutPreguntar') + '><span class="ic">' + ic('salir') + '</span>Cerrar sesión</button>']) +
+      window.__nativo && window.__nativo.huella ? '<button class="menu-item" data-k="huella bloqueo pin seguridad" ' + act('huellaCambiar') + '><span class="ic">' + ic('candado') + '</span>Pedir huella al abrir<span class="menu-extra">' + (lsGet('huella') === '1' ? 'Sí' : 'No') + '</span></button>' : '',
+      it('abrirPrivacidad', [], 'shield', 'Privacidad', '', 'datos privacidad politica rgpd'),
+      '<button class="menu-item tu2-salir" data-k="cerrar sesion salir" ' + act('logoutPreguntar') + '><span class="ic">' + ic('salir') + '</span>Cerrar sesión</button>',
+      '<button class="menu-item tu2-borrar" data-k="borrar cuenta eliminar baja datos" ' + act('borrarCuentaAbrir') + '><span class="ic">' + ic('trash') + '</span>Borrar mi cuenta</button>']) +
     '<div class="empty-mini" id="tuNada" style="display:none;">No hay ningún ajuste con ese nombre.</div>' +
     '<p class="tu2-pie">PalomApp' + (parche ? ' · ' + escapeHtml(parche) : '') + '</p>';
 }
@@ -4040,8 +4119,7 @@ function renderInicioNuevo() {
   if (vista !== 'hoy') {
     // la Agenda vive detrás de «Agenda ›»: se vuelve a Inicio con un toque
     S.agendaSub = vista;
-    return '<button class="link volver" ' + act('setInicioVista', 'hoy') + '>' + ic('chevL') + ' Inicio</button>' +
-      '<div class="segmented inicio-seg">' + [['tareas', agendaV2() ? 'Tareas' : 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (vista === id ? 'active' : '') + '" ' + act('setInicioVista', id) + '>' + l + '</button>').join('') + '</div>' +
+    return '<div class="segmented inicio-seg">' + [['tareas', agendaV2() ? 'Tareas' : 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (vista === id ? 'active' : '') + '" ' + act('setInicioVista', id) + '>' + l + '</button>').join('') + '</div>' +
       (vista === 'calendario' ? (agendaV2() ? renderCalendarioV2() : renderCalendario()) : (agendaV2() ? renderAgendaSemanaV2() : renderAgendaSemana()));
   }
   // los primeros pasos solo para quien empieza: a quien ya usa la app no le quitan sitio en Inicio
@@ -4064,7 +4142,7 @@ function heroMesHtml() {
   const anim = dir && !reduceMotion() ? ' ' + (dir > 0 ? 'desde-der' : 'desde-izq') : '';
   return '<section class="hero hero2" aria-label="Cómo vas este mes">' +
     '<div class="hero2-top"><button type="button" class="mes-pill' + anim + '" ' + act('tuMesAbrir') + '><b>' + MESES[m - 1] + (y !== mesActual().y ? ' ' + y : '') + '</b><span>· ' + mesPillTxt(y, m) + '</span><span class="mes-pill-ic">' + ic('chevR') + '</span></button>' +
-    '<span class="hero2-flechas"><button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
+    '<span class="hero2-flechas">' + ojoBtnHtml() + '<button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
     '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
     '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (disp < 0 ? ' neg' : '') + (nuevo ? ' vacio' : '') + '">' + cifraHtml(disp) + '</span></button>' +
     (nuevo ? '<p class="hero-nuevo">Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.</p>' : heroBarraHtml(k)) +
@@ -4176,7 +4254,7 @@ function heroMesHtmlV2() {
   const pr = pv ? '<button type="button" class="h2-dato prev tappable" ' + act('previstoAbrir') + '><span><i class="prev-tag">Previsto</i> fin de mes</span><b class="tnum">' + moneyShort(pv.total) + '</b></button>' : '';
   return '<section class="hero hero2 hero2v2" aria-label="Cómo vas este mes">' +
     '<div class="hero2-top"><button type="button" class="mes-pill' + anim + '" ' + act('tuMesAbrir') + '><b>' + MESES[m - 1] + (y !== mesActual().y ? ' ' + y : '') + '</b><span>· ' + mesPillTxt(y, m) + '</span><span class="mes-pill-ic">' + ic('chevR') + '</span></button>' +
-    '<span class="hero2-flechas"><button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
+    '<span class="hero2-flechas">' + ojoBtnHtml() + '<button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
     '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
     '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (banco ? 'En tu banco hoy' : actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (!banco && disp < 0 ? ' neg' : '') + (nuevo && !banco ? ' vacio' : '') + '">' + cifraHtml(banco ? enTusCuentas() : disp) + '</span></button>' +
     (nuevo ? '<p class="hero-nuevo">' + (banco ? 'Apunta lo que gastas y aquí verás cuánto te queda este mes.' : 'Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.') + '</p>' : (inicioV3() ? heroCifrasHtml(k, y, m) : heroBarraHtml(k))) +
@@ -4347,7 +4425,7 @@ function avisosInicioFilas() {
   const ha = histAvisos();
   if (ha.length) { const f = ha[0], ef = histEfecto(f), g = grupoDe(f.gid);
     filas.push({ cls: 'juntos-nov', caras: caraHtml(aliasDe(f.gid, f.por), histQuien(f), 'mini'), t: histFraseHtml(f),
-      d: escapeHtml((ha.length > 1 ? 'Y ' + (ha.length - 1) + (ha.length === 2 ? ' cambio más' : ' cambios más') + ' · ' : '') + 'a tu saldo ' + (ef > 0 ? '+' : '−') + money(Math.abs(ef)) + ' · ' + nombreDestino(g)), a: act('histVer', f.gid) }); }
+      d: escapeHtml((ef > 0 ? '+' : '−') + money(Math.abs(ef)) + ' a tu saldo' + (ha.length > 1 ? ' · y ' + (ha.length - 1) + (ha.length === 2 ? ' cambio más' : ' cambios más') : '') + ' · ' + nombreDestino(g)), a: act('histVer', f.gid) }); }
   if (nov.length) {
     const c = nov[0], quien = nombreEnGrupo(c.grupoId, c.creadoPor), liq = c.tipo === 'Liquidación', rec = Object.keys(c.reparto || {})[0];
     const que = liq ? (esMio(c.grupoId, c.pagadoPor) ? 'Pagaste ' + money(c.importe) + ' a ' + nombreEnGrupo(c.grupoId, rec) : nombreEnGrupo(c.grupoId, c.pagadoPor) + (esMio(c.grupoId, rec) ? ' te pagó ' + money(c.importe) : ' pagó a ' + nombreEnGrupo(c.grupoId, rec))) : quien + ' apuntó «' + (c.descripcion || c.categoria || 'un gasto') + '»', parteTxt = liq || miParte(c) < 0.005 ? '' : ' · tu parte ' + money(miParte(c));
@@ -5054,8 +5132,8 @@ function infPendientes() {
 // el aviso en Inicio: siempre que haya un informe nuevo (un solo aviso a la vez, después de la invitación de Juntos)
 function infAvisoHtml() {
   const c = infPendientes()[0]; if (!c) return '';
-  const D = infDatos(c), P = D.P;
-  return '<div class="card inf-ini"><span class="inf-ini-ic">' + ic('sparkle') + '</span><button type="button" class="inf-ini-x tappable" ' + act('infVer', c) + '><b>Tu informe ' + (P.tipo === 'semana' ? 'de la semana' : P.tipo === 'anio' ? 'de ' + P.y : P.tipo === 'trimestre' ? 'del trimestre' : 'de ' + MESES[P.m - 1].toLowerCase()) + '</b><span>' + escapeHtml(D.titular) + '</span></button>' +
+  const P = infDatos(c).P;
+  return '<div class="card inf-ini inf-ini-1"><span class="inf-ini-ic">' + ic('sparkle') + '</span><button type="button" class="inf-ini-x tappable" ' + act('infVer', c) + '><b>Tu informe ' + (P.tipo === 'semana' ? 'de la semana' : P.tipo === 'anio' ? 'de ' + P.y : P.tipo === 'trimestre' ? 'del trimestre' : 'de ' + MESES[P.m - 1].toLowerCase()) + ' está listo</b>' + ic('chevR') + '</button>' +
     '<button type="button" class="icon-btn sm" aria-label="Cerrar el aviso" ' + act('infDescartar', c) + '>' + ic('close') + '</button></div>';
 }
 function infMarcarVisto(c) { const C = cfg().informes || {}; if ((C.vistos || {})[c]) return; const vistos = Object.assign({}, C.vistos || {}, { [c]: todayISO() }); Object.keys(vistos).sort((a, b) => String(vistos[a]).localeCompare(String(vistos[b]))).slice(0, -60).forEach((x) => delete vistos[x]); saveConfig({ informes: Object.assign({}, C, { vistos }) }); }
@@ -5113,13 +5191,17 @@ function agcVerHtml(uid, clave) {
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
 }
 // la fila de caras de la Agenda: Yo + quien me enseña la suya (tocar enciende o apaga)
+function agcEnlaceFinalHtml() {
+  if (!agcOn() || !S._agcTs || S.agcError || !amigos().length || (S.agcPermisos || []).length) return '';
+  return '<button type="button" class="link agc-fin agc-compartir" ' + act('agcAbrir') + '>' + ic('users') + ' Compartir mi agenda ›</button>';
+}
 function agcCarasHtml() {
   if (!agcOn()) return ''; const cm = S.agcConmigo || [], la = (S.agcPermisos || []);
   const ven = la.map((p) => p.aUsuario ? agcPersonaNombre(p.aUsuario) : (grupoDe(p.aGrupo) ? nombreDestino(grupoDe(p.aGrupo)) : 'un grupo'));
   const caras = cm.length ? '<div class="agc-caras" role="group" aria-label="Agendas que ves">' + '<span class="agc-cara on yo">' + caraHtml(miUid(), miNombreAlguno(), 'mini') + '<span>Yo</span></span>' +
     cm.map((p) => { const on = agcCapaOn(p.uid), n = agcPersonaNombre(p.uid); return '<button type="button" class="agc-cara' + (on ? ' on' : '') + '" aria-pressed="' + on + '" style="--pc:' + colorPersona(p.uid) + '" ' + act('agcCapa', p.uid) + '>' + caraHtml(p.uid, n, 'mini') + '<span>' + escapeHtml(n.split(' ')[0]) + '</span></button>'; }).join('') + '</div>' : '';
   const laVen = ven.length ? '<button type="button" class="agc-laven" ' + act('agcAbrir') + '>' + ic('users') + '<span>La ven ' + escapeHtml(ven.length > 2 ? ven.slice(0, 2).join(', ') + ' y ' + (ven.length - 2) + ' más' : ven.join(' y ')) + '</span>' + ic('chevR') + '</button>'
-    : S._agcTs && !S.agcError && amigos().length ? '<button type="button" class="agc-laven agc-compartir" ' + act('agcAbrir') + '>' + ic('users') + '<span>Compartir mi agenda' + badge('agendaComp') + '</span>' + ic('chevR') + '</button>' : ''; // también desde la propia Agenda
+    : ''; // 08/11 (docs/32 A6): «Compartir mi agenda» ya no ocupa la mejor fila; va como enlace al final (agcEnlaceFinalHtml)
   return caras + laVen;
 }
 /* ---- hoja «Compartir mi agenda» ---- */
@@ -6222,6 +6304,7 @@ function metaVerHtml(k) {
     '<div class="dm-hring">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132, { color: metaColor(r), grande: true }) : anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132)) +
     '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
     (consejo ? '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(consejo) + '</div>' : '') +
+    (!vos && cuentaDeMeta(r.id) ? '<div class="rec-hint dm-meta-cuenta">' + ic('bank') + ' Guardado en ' + escapeHtml(nombreCuenta(cuentaDeMeta(r.id))) + (metaCuentaAviso(cuentaDeMeta(r.id)) ? '<br><span style="color:var(--warn)">' + escapeHtml(metaCuentaAviso(cuentaDeMeta(r.id))) + '</span>' : '') + '</div>' : '') +
     (r.conseguida ? '' : '<button class="btn accent block" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>') +
     '<div class="dm-hbtns"><button class="btn ghost block" ' + act('usoAbrir', r.key) + '>He usado dinero</button><button class="btn ghost block" ' + act('metaMas') + '>' + (mas ? 'Menos' : 'Más') + '</button></div>' +
     (mas ? '<div class="card dm-hmas">' + (vos ? '' : '<button type="button" class="dm-hmas-b" ' + act('metaAsignar', r.key) + '>' + ic('list') + '<span><b>Elegir movimientos</b><span>Qué apartados e inversiones cuentan para esta meta</span></span></button>') +
@@ -6248,7 +6331,10 @@ function aportarRHtml() {
     '<div class="chips dm-ap-chips">' + chips + '</div>' +
     '<div class="cr-res" id="apPrev">' + escapeHtml(prev) + '</div>' +
     '<div class="field jv-fecha"><label>Fecha</label><button type="button" class="chip active" id="apFechaChip" ' + act('apFechaVer') + '>' + ic('calendar') + ' Hoy</button><input id="apFecha" type="date" value="' + todayISO() + '" hidden></div>' +
-    '<div class="rec-hint">Apartar no saca dinero del banco: es para que sepas que ese dinero tiene dueño.</div>' +
+    (() => { const dest = cuentaDeMeta(F.key); if (!dest) return '<div class="rec-hint">Apartar no saca dinero del banco: es para que sepas que ese dinero tiene dueño.</div>';
+      if (!F.desde || !cuentaPorId(F.desde) || F.desde === dest) F.desde = cuentaDesdeDefecto(dest);
+      return '<div class="field"><label>Desde</label><div class="chips">' + cuentasCfg().filter((c) => c.id !== dest && conSaldo(c)).map((c) => '<button type="button" class="chip' + (F.desde === c.id ? ' active' : '') + '" aria-pressed="' + (F.desde === c.id) + '" ' + act('aportarRDesde', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' +
+        '<div class="rec-hint">El dinero pasará de ' + escapeHtml(nombreCuenta(F.desde)) + ' a ' + escapeHtml(nombreCuenta(dest)) + ', donde guardas esta meta. En tu mes cuenta como apartado, igual que siempre.</div>'; })() +
     '<button class="btn accent block" id="apGuardar" ' + act('aportarRGuardar') + '>' + (imp > 0 ? 'Aportar ' + money(imp) : 'Aportar') + '</button>' +
     (tec ? tecladoHtml(F.tec) : '');
 }
@@ -6269,6 +6355,7 @@ async function aportarRGuardar() {
   F.guardando = true;
   try {
     const data = { creadoEn: Date.now(), tipo: 'Ahorro', importe: imp, categoria: r.nombre, fecha, descripcion: '', metodoPago: '', metaId: F.key };
+    const dest = cuentaDeMeta(F.key); if (dest && F.desde && cuentaPorId(F.desde) && F.desde !== dest) { data.cuentaId = F.desde; data.cuentaDestinoId = dest; }
     let movId = null;
     const ok = await write(async () => { const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || null; return r0; });
     if (!ok) return;
@@ -6974,6 +7061,19 @@ function buscarResHtml(q0) {
    ============================================================ */
 const RENT_DEFECTO = 4; // % anual: estimación prudente cuando no hay histórico suficiente
 function nuevoIdMeta() { return 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+/* ---- docs/30 tanda 6: meta ligada a una cuenta. Aportar sigue siendo un Ahorro, pero además mueve el dinero
+   de la cuenta «Desde» (cuentaId) a la de la meta (cuentaDestinoId). Lo de antes de ligarla no se toca. ---- */
+const conSaldo = (c) => !!c && c.saldo != null && c.saldo !== '' && isFinite(Number(c.saldo));
+function cuentaDeMeta(id) { const m = (cfg().ahorro || []).find((x) => x && x.id === id); return m && m.cuentaId && conSaldo(cuentaPorId(m.cuentaId)) && cuentasCfg().filter(conSaldo).length >= 2 ? m.cuentaId : null; } // Calidad 08/11: sin saldo puesto, mover descuadraría «Lo que tienes»
+const esAporteLigado = (m) => m && m.tipo === 'Ahorro' && m.cuentaDestinoId && !!cuentaPorId(m.cuentaDestinoId);
+function cuentaDesdeDefecto(destino) { const pc = cuentaPrincipal(); if (pc && pc.id !== destino && conSaldo(pc)) return pc.id; const ok = cuentasCfg().filter((c) => c.id !== destino && conSaldo(c)); const o = ok.find((c) => c.tipo !== 'efectivo' && c.tipo !== 'ahorro') || ok[0]; return o ? o.id : null; }
+// Si lo que llevan las metas ligadas a esa cuenta supera su saldo, un aviso suave (no corrige nada)
+function metaCuentaAviso(cuentaId) {
+  const c = cuentaPorId(cuentaId); if (!c) return '';
+  const sal = saldoCuenta(c); if (sal == null) return '';
+  const ligadas = metasCfg().filter((m) => m.id && m.cuentaId === cuentaId), tot = ligadas.reduce((a, m) => { const r = metaPorKey(m.id); return a + (r ? Math.max(0, r.valor) : 0); }, 0);
+  return tot > sal + 0.5 ? (ligadas.length > 1 ? 'Tus metas en ' : 'Esta meta en ') + c.nombre + (ligadas.length > 1 ? ' suman ' : ' lleva ') + money(tot) + ', pero la cuenta tiene ' + money(sal) + '.' : '';
+}
 function metasCfg() { return (cfg().ahorro || []).filter((m) => m && m.nombre); }
 function tipoMeta(m) { return m && m.tipo === 'inversion' ? 'inversion' : 'ahorro'; }
 // Da un identificador a las metas que aún no lo tienen (una vez por sesión). Los movimientos antiguos siguen contando por nombre.
@@ -7378,6 +7478,7 @@ function metaEditorHtml() {
   return '<div class="handle"></div><h2>' + (F.id ? 'Editar meta' : 'Nueva meta') + '</h2>' +
     '<div class="rec-hint" style="margin:-8px 0 12px;">Una meta junta lo que apartas y lo que inviertes para ella. Al apuntar un movimiento eliges «¿Para qué meta?».</div>' +
     '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '" ' + onInput('metaNombreIn') + '></div>' + (metasVariante() === 'formas' ? formaElegirHtml(F.forma, F.nombre) + metaColoresHtml(F.color || metaColor({ id: F.id }), 'metaColorElegir') : '') +
+    metaCuentaCampoHtml() +
     '<div class="field"><label>Objetivo (' + sym() + ')</label><input id="mObjetivo" type="number" step="0.01" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="mFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
     '<div class="field"><label>Lo que ya tenías antes (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"></div>' +
@@ -7386,9 +7487,19 @@ function metaEditorHtml() {
     '<div class="actions"><button class="btn ghost block" ' + act('openMetas') + '>Cancelar</button><button class="btn accent block" ' + act('metaGuardar') + '>Guardar</button></div>' +
     (F.id ? '<button class="btn danger block" style="margin-top:10px;" ' + act('metaEliminar') + '>' + ic('trash') + ' Eliminar meta</button><div class="rec-hint" style="text-align:center;">Eliminar la meta no borra ningún movimiento.</div>' : '');
 }
+function metaCuentaCampoHtml() {
+  if (!hayVariasCuentas()) return '';
+  const F = FORM, cs = cuentasCfg().slice().sort((a, b) => (b.tipo === 'ahorro') - (a.tipo === 'ahorro'));
+  const sinS = cs.filter((c) => !conSaldo(c));
+  const ch = (id, txt, dot) => '<button type="button" class="chip' + ((F.cuentaMeta || '') === id ? ' active' : '') + '" aria-pressed="' + ((F.cuentaMeta || '') === id) + '" ' + act('metaCuentaElegir', id) + '>' + (dot ? '<span class="dot" style="background:' + dot + '"></span>' : '') + escapeHtml(txt) + '</button>';
+  return '<div class="field"><label>¿Dónde guardas este dinero? <span class="hint">· opcional</span></label><div class="chips">' + ch('', 'En ninguna cuenta concreta') + cs.map((c) => ch(c.id, c.nombre, colorCuenta(c))).join('') + '</div>' +
+    (F.cuentaMeta && cuentaPorId(F.cuentaMeta) && !conSaldo(cuentaPorId(F.cuentaMeta)) ? '<div class="rec-hint" style="color:var(--warn)">' + escapeHtml(nombreCuenta(F.cuentaMeta)) + ' no tiene saldo puesto: hasta que se lo pongas (Tú → Cuentas), aportar no moverá dinero.</div>' : '') +
+    (F.cuentaMeta && conSaldo(cuentaPorId(F.cuentaMeta)) ? '<div class="rec-hint">' + (F.cuentaMeta !== F.cuentaMetaOrig ? 'A partir de ahora, al aportar, el dinero pasará de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '. Lo que ya llevabas no cambia.' : 'Al aportar, el dinero pasa de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '.') + '</div>' : '') + '</div>';
+}
 function metaAbrirEditor(id) {
   const m = id ? metasCfg().find((x) => x.id === id) : null;
   FORM = { kind: 'meta', hitos: m && m.hitos ? m.hitos.map((h) => Object.assign({}, h)) : [], id: m ? m.id : null, nombreOrig: m ? m.nombre : '', tipoMeta: m ? tipoMeta(m) : 'ahorro', nombre: m ? m.nombre : '', objetivo: m ? m.objetivo : null, fechaObjetivo: m ? m.fechaObjetivo : '', yaAhorrado: m ? m.yaAhorrado : null, rentabilidad: m ? m.rentabilidad : null, forma: m && FORMAS[m.forma] ? m.forma : null, color: m && META_COLORES[m.color] ? m.color : null };
+  FORM.cuentaMeta = m && m.cuentaId && cuentaPorId(m.cuentaId) ? m.cuentaId : ''; FORM.cuentaMetaOrig = FORM.cuentaMeta;
   if ($('#sheetBackdrop')) updateSheet(metaEditorHtml()); else openSheet(metaEditorHtml());
 }
 function metaLeerForm() {
@@ -7406,6 +7517,7 @@ async function metaGuardar() {
   const prev = idx >= 0 ? arr[idx] : {};
   const item = Object.assign({}, prev, F.forma ? { forma: F.forma } : {}, META_COLORES[F.color] ? { color: F.color } : !prev || !META_COLORES[prev.color] ? { color: metaColor({ id: F.id }) } : {}, { id: F.id || nuevoIdMeta(), nombre: F.nombre, objetivo: numOrNull(F.objetivo), fechaObjetivo: F.fechaObjetivo || null, yaAhorrado: numOrNull(F.yaAhorrado), rentabilidad: numOrNull(F.rentabilidad), hitos: limpiarHitos(F.hitos, prev.hitos) });
   delete item.tipo; // todas las metas son híbridas
+  if (F.cuentaMeta && cuentaPorId(F.cuentaMeta)) item.cuentaId = F.cuentaMeta; else delete item.cuentaId;
   if (!F.forma) delete item.forma; // sin elegir: la que sale del nombre
   // renombrar: los movimientos de Ahorro que se enlazaban por el nombre antiguo pasan a enlazarse por el identificador
   if (F.id && F.nombreOrig && normName(F.nombreOrig) !== normName(F.nombre)) {
@@ -7609,6 +7721,7 @@ function saldoCuenta(c) {
   let s = num(c.saldo);
   S.movimientos.forEach((m) => {
     if (m.compartidoId && vivos.has(m.compartidoId)) return; // tu parte de un compartido: cuenta el compartido entero (abajo)
+    if (esAporteLigado(m)) { if (!posteriorA(m, c)) return; if (cuentaIdDe(m) === c.id) s -= num(m.importe); if (m.cuentaDestinoId === c.id) s += num(m.importe); return; } // tanda 6: mueve entre cuentas
     if (cuentaIdDe(m) === c.id && posteriorA(m, c)) s += num(m.importe) * (SIGNO_CUENTA[m.tipo] || 0);
   });
   flujosCompartidos().forEach((f) => { if (f.cuentaId === c.id && posteriorA(f, c)) s += f.v; });
@@ -7679,7 +7792,7 @@ function renderCuentasDinero() {
 }
 function movsDeCuenta(id) {
   const vivos = new Set((S.compartidos || []).map((x) => x.id));
-  const propios = S.movimientos.filter((m) => tocaCuenta(m) && cuentaIdDe(m) === id && !(m.compartidoId && vivos.has(m.compartidoId)));
+  const propios = S.movimientos.filter((m) => ((tocaCuenta(m) && cuentaIdDe(m) === id) || (esAporteLigado(m) && (cuentaIdDe(m) === id || m.cuentaDestinoId === id))) && !(m.compartidoId && vivos.has(m.compartidoId)));
   const juntos = movsEfectivos().filter((m) => m.comp && compSaleDeCuenta(m.comp, id)).concat(flujosJuntosFilas(id));
   return propios.concat(juntos).concat((S.traspasos || []).filter((t) => t.cuentaId === id || t.cuentaDestinoId === id)).sort(cmpMov);
 }
@@ -9148,7 +9261,8 @@ function impHtml() {
   if (I.paso === 'revisar') {
     const F = I.filas, ok = F.filter((r) => r.id), err = F.filter((r) => !r.id);
     const nImp = ok.filter((r) => r.estado === 'importado').length, nDup = ok.filter((r) => r.estado === 'dup' || r.estado === 'juntos').length, nQ = ok.filter((r) => r.estado === 'quizas').length;
-    const sel = ok.filter((r) => r.incluir && r.estado !== 'importado'), cuenta0 = hayVariasCuentas() ? I.cuenta : null;
+    const sel = ok.filter((r) => r.incluir && !['importado', 'sinCuenta', 'convertir'].includes(r.estado)), cuenta0 = hayVariasCuentas() ? I.cuenta : null;
+    const nArr = cuenta0 && cuentaPorId(cuenta0) ? impCambiosDe(I, cuenta0).length : 0, nSinC = ok.filter((r) => r.estado === 'sinCuenta').length, nConv = ok.filter((r) => r.estado === 'convertir').length;
     const tot = (t) => sel.filter((r) => !r.comoTras && (t === 'in' ? r.tipo === 'Ingreso' : r.tipo !== 'Ingreso')).reduce((a, r) => a + r.importe, 0), nTras = sel.filter((r) => r.comoTras).length;
     const sinCat = sel.filter((r) => !r.categoria).length;
     const LIM = I.verTodo ? 2000 : 150;
@@ -9159,24 +9273,30 @@ function impHtml() {
       const cats = categoriasPorTipo(r.tipo);
       const opts = '<option value="">Sin categoría</option>' + [...new Set(cats.concat(r.categoria ? [r.categoria] : []))].map((c) => '<option' + (c === r.categoria ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('');
       return '<div class="imp-row' + (r.incluir ? '' : ' off') + '">' +
-        '<input type="checkbox" ' + (r.incluir ? 'checked' : '') + ' ' + onChange('impIncluir', k) + '>' +
+        (r.estado === 'convertir' ? '<span class="imp-cb-hueco"></span>' : '<input type="checkbox" aria-label="Incluir esta fila" ' + (r.incluir ? 'checked' : '') + ' ' + onChange('impIncluir', k) + '>') +
         '<div class="imp-main"><div class="imp-top"><span class="imp-desc">' + escapeHtml(r.desc || '(sin descripción)') + '</span><span class="imp-amt tnum" style="color:' + ((r.importe >= 0) ? (r.tipo === 'Ingreso' ? 'var(--income)' : 'var(--expense)') : 'var(--text-muted)') + '">' + ((r.importe >= 0) ? (r.tipo === 'Ingreso' ? '+' : '−') : (r.tipo === 'Ingreso' ? '−' : '+')) + fmt2(Math.abs(r.importe)) + (r.tipo !== 'Ingreso' && r.importe < 0 ? ' <small>devolución</small>' : '') + '</span></div>' +
         '<div class="imp-sub">' + fechaCortaU(r.fecha) + ' ' + r.fecha.slice(0, 4) +
         (r.estado === 'dup' ? ' · <b style="color:var(--accent)">ya lo tenías' + (r.con ? ': ' + escapeHtml(r.con.que) : '') + '</b>' : '') +
         (r.estado === 'quizas' ? ' · <b style="color:var(--accent)">¿es el mismo que apuntaste el ' + escapeHtml(fmtDateShort(r.con.fecha)) + ' (' + escapeHtml(r.con.que) + ')?</b>' : '') +
         (r.estado === 'juntos' ? ' · <b style="color:var(--accent)">ya está en Juntos: ' + escapeHtml(r.con.que) + '</b>' : '') +
         (r.estado === 'otraCuenta' ? ' · <b style="color:var(--accent)">ya importado en ' + escapeHtml(r.con.que) + ': márcalo si es otro</b>' : '') +
+        (r.estado === 'sinCuenta' ? ' · <b style="color:var(--accent)">ya lo tenías, sin cuenta: márcalo para ponerlo en ' + escapeHtml(nombreCuenta(IMP.cuenta)) + '</b>' : '') +
+        (r.estado === 'convertir' ? ' · <b style="color:var(--accent)">¿es el ' + escapeHtml(r.con.tipo === 'Ingreso' ? 'ingreso' : 'gasto') + ' de ' + escapeHtml(nombreCuenta(r.otra)) + ' del ' + escapeHtml(fmtDateShort(r.con.fecha)) + ' (' + escapeHtml(r.con.que) + ')? Lo convertiremos en un traspaso ' + escapeHtml(r.con.tipo === 'Ingreso' ? nombreCuenta(IMP.cuenta) + ' → ' + nombreCuenta(r.otra) : nombreCuenta(r.otra) + ' → ' + nombreCuenta(IMP.cuenta)) + '</b>' : '') +
         (r.estado === 'traspaso' && !r.comoTras ? ' · <b style="color:var(--accent)">traspaso entre cuentas: apúntalo con «Traspaso»</b>' : '') +
         (r.estado === 'traspaso' && r.comoTras ? ' · <b style="color:var(--accent)">' + (r.otra ? 'parece un traspaso ' + (r.sig < 0 ? 'a ' : 'desde ') + escapeHtml(nombreCuenta(r.otra)) : 'traspaso: ¿con qué cuenta?') + '</b>' : '') +
         (r.estado === 'traspaso' && !r.comoTras && r.otra !== undefined ? ' · <b style="color:var(--accent)">lo guardas como ' + escapeHtml(r.tipo === 'Ingreso' ? 'ingreso' : 'gasto') + '</b>' : '') +
         (r.estado === 'otraMitad' ? ' · <b style="color:var(--accent)">ya está como traspaso ' + escapeHtml(r.con.que) + ' (' + escapeHtml(fmtDateShort(r.con.fecha)) + '): no se importa</b>' : '') +
         (r.origenCat === 'regla' ? ' · por tu regla' : r.origenCat === 'historial' ? ' · sugerida' : r.origenCat === 'factura' ? ' · pago fijo' : '') + '</div>' +
-        (r.comoTras ? '<div class="imp-sels"><select aria-label="Con qué cuenta" ' + onChange('impTrasCon', k) + '><option value="">' + (r.sig < 0 ? 'A…' : 'Desde…') + '</option>' + cuentasCfg().filter((c) => c.id !== IMP.cuenta).map((c) => '<option value="' + escapeHtml(c.id) + '"' + (r.otra === c.id ? ' selected' : '') + '>' + (r.sig < 0 ? 'A ' : 'Desde ') + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>' +
+        (r.estado === 'convertir' ? '<div class="imp-mismo"><button type="button" class="chip' + (r.convertir ? ' active' : '') + '" ' + act('impConvertir', k, '1') + '>Sí, convertir</button><button type="button" class="chip" ' + act('impConvertir', k, '0') + '>No, son distintos</button></div>'
+        : r.estado === 'sinCuenta' ? ''
+        : r.comoTras ? '<div class="imp-sels"><select aria-label="Con qué cuenta" ' + onChange('impTrasCon', k) + '><option value="">' + (r.sig < 0 ? 'A…' : 'Desde…') + '</option>' + cuentasCfg().filter((c) => c.id !== IMP.cuenta).map((c) => '<option value="' + escapeHtml(c.id) + '"' + (r.otra === c.id ? ' selected' : '') + '>' + (r.sig < 0 ? 'A ' : 'Desde ') + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>' +
           (r.ofrecerTras && r.otra ? '<button type="button" class="link" style="font-size:12px;" ' + act('impReglaTras', k) + '>Recordar: «' + escapeHtml(r.ofrecerTras) + '» en ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ' → traspaso con ' + escapeHtml(nombreCuenta(r.otra)) + '</button>' : '') +
           '<div class="imp-mismo"><button type="button" class="chip active" ' + act('impTras', k, '1') + '>Es un traspaso</button><button type="button" class="chip" ' + act('impTras', k, '0') + '>No, es un ' + (r.sig < 0 ? 'gasto' : 'ingreso') + '</button></div>'
         : '<div class="imp-sels"><select ' + onChange('impTipo', k) + '>' + tipos.map((t) => '<option' + (t === r.tipo ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
         '<select ' + onChange('impCat', k) + '>' + opts + '</select></div>' +
         (r.otra !== undefined && hayVariasCuentas() && IMP.cuenta ? '<button type="button" class="link imp-volver-tras" ' + act('impTras', k, '1') + '>Es un traspaso</button>' : '')) +
+        (r.estado === 'dup' && r.con && r.con.sinCuentaId ? '<label class="imp-asig"><input type="checkbox" ' + (r.asignar ? 'checked' : '') + ' ' + onChange('impAsignar', k) + '> Ponerle la cuenta ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ' (no la tenía)</label>' : '') +
+        (r.estado === 'quizas' && r.con && r.con.sinCuentaId && r.respondido && !r.incluir ? '<div class="rec-hint">Le pondremos la cuenta ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ', que no tenía.</div>' : '') +
         (r.estado === 'quizas' ? '<div class="imp-mismo"><button type="button" class="chip' + (r.respondido && !r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '1') + '>Es el mismo</button><button type="button" class="chip' + (r.respondido && r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '0') + '>Son distintos</button></div>' : '') +
         (r.ofrecerRegla ? '<button type="button" class="link" style="font-size:12px;" ' + act('impRegla', k) + '>Recordar: «' + escapeHtml(r.ofrecerRegla) + '» → ' + escapeHtml(r.categoria) + '</button>' : '') +
         '</div></div>';
@@ -9191,6 +9311,9 @@ function impHtml() {
         : '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> Los importes no cuadran con la columna Saldo (cuadran ' + I.saldoChk.ok + ' de ' + I.saldoChk.total + ' filas). Puede que el signo o la columna de importe no sean los correctos. <button type="button" class="link" ' + act('impVolver', 'columnas') + '>Revisar columnas</button></div>') : '') +
       (nTras ? '<div class="imp-note">' + ic('swap') + ' ' + nTras + (nTras === 1 ? ' traspaso entre tus cuentas: no cuenta como gasto ni ingreso.' : ' traspasos entre tus cuentas: no cuentan como gasto ni ingreso.') + '</div>' : '') +
       (ok.some((r) => r.estado === 'otraMitad') ? '<div class="imp-note">✓ ' + ok.filter((r) => r.estado === 'otraMitad').length + ' ya estaban como traspaso desde tu otra cuenta: se omiten.</div>' : '') +
+      (nSinC ? '<div class="imp-note">' + ic('fileIn') + ' ' + nSinC + (nSinC === 1 ? ' fila ya estaba importada, pero sin cuenta' : ' filas ya estaban importadas, pero sin cuenta') + '. Van desmarcadas: marca las que quieras poner en ' + escapeHtml(nombreCuenta(cuenta0)) + '. <button type="button" class="link" ' + act('impSinCuentaTodas') + '>Marcar las ' + nSinC + '</button></div>' : '') +
+      (nConv ? '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> ' + nConv + (nConv === 1 ? ' fila parece un traspaso que ya tenías apuntado como gasto o ingreso en tu otra cuenta' : ' filas parecen traspasos que ya tenías apuntados como gasto o ingreso en tu otra cuenta') + '. Dinos si lo convertimos; si no contestas, esa fila no se importa.</div>' : '') +
+      (nArr ? '<div class="imp-note">' + ic('swap') + ' Además se ' + (nArr === 1 ? 'arreglará 1 movimiento' : 'arreglarán ' + nArr + ' movimientos') + ' que ya tenías. Se puede deshacer.</div>' : '') +
       (nImp ? '<div class="imp-note">✓ ' + nImp + (nImp === 1 ? ' fila ya estaba importada' : ' filas ya estaban importadas') + ': se omiten.</div>' : '') +
       (nDup ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nDup + (nDup === 1 ? ' fila ya la tenías' : ' filas ya las tenías') + ' (mismo importe y fecha' + (cuenta0 ? ' en ' + escapeHtml(nombreCuenta(cuenta0)) : '') + ', o ya está en Juntos). Van desmarcadas; márcalas si son distintas.</div>' : '') +
       (nQ ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nQ + (nQ === 1 ? ' fila se parece' : ' filas se parecen') + ' a algo que apuntaste unos días antes o después. Dinos si es lo mismo.</div>' : '') +
@@ -9203,15 +9326,15 @@ function impHtml() {
       '<div class="imp-bulk"><button type="button" class="link" ' + act('impTodas', '1') + '>Marcar las nuevas</button> · <button type="button" class="link" ' + act('impTodas', '0') + '>Desmarcar todas</button></div>' +
       '<div class="imp-list">' + visibles.slice(0, LIM).map(filaHtml).join('') + '</div>' +
       (visibles.length > LIM ? '<button class="btn ghost block" style="margin-top:8px;" ' + act('impVerTodo') + '>Ver las ' + visibles.length + ' filas</button>' : '') +
-      '<div class="actions"><button class="btn ghost block" ' + act('impVolver', 'columnas') + '>Atrás</button>' + (sel.length ? '<button class="btn accent block" ' + act('impEjecutar') + '>' + (I.saldoChk && !impSaldoOk(I) ? 'Importar igualmente (' + sel.length + ')' : 'Importar ' + sel.length) + '</button>' : '<button class="btn accent block" ' + act('closeSheet') + '>Cerrar: no hay nada nuevo</button>') + '</div>';
+      '<div class="actions"><button class="btn ghost block" ' + act('impVolver', 'columnas') + '>Atrás</button>' + (sel.length || nArr ? '<button class="btn accent block" ' + act('impEjecutar') + '>' + (!sel.length ? 'Arreglar ' + nArr : I.saldoChk && !impSaldoOk(I) ? 'Importar igualmente (' + sel.length + ')' : 'Importar ' + sel.length) + '</button>' : '<button class="btn accent block" ' + act('closeSheet') + '>Cerrar: no hay nada nuevo</button>') + '</div>';
   }
   if (I.paso === 'importando') return h2('Importando…') + '<div style="color:var(--text-muted);font-size:14px;">Guardando ' + I.total + ' movimientos. No cierres la app.</div>';
   if (I.paso === 'hecho') {
     return h2(I.fallo ? 'Importación incompleta' : '¡Importado!') +
-      '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '<span class="ic-warn">' + ic('alert') + '</span> ' + 'No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '<span class="ic-ok">' + ic('checkCircle') + '</span> ' + (I.hechos ? 'Se han guardado <b>' + I.hechos + '</b> ' + (I.hechos === 1 ? 'movimiento' : 'movimientos') + (hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? ' en <b>' + escapeHtml(nombreCuenta(I.cuenta)) + '</b>.' : '.') : 'No había nada nuevo: ya tenías todo lo de este archivo.') + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.' : '')) + '</div>' +
+      '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '<span class="ic-warn">' + ic('alert') + '</span> ' + 'No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '<span class="ic-ok">' + ic('checkCircle') + '</span> ' + (I.hechos ? 'Se han guardado <b>' + I.hechos + '</b> ' + (I.hechos === 1 ? 'movimiento' : 'movimientos') + (hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? ' en <b>' + escapeHtml(nombreCuenta(I.cuenta)) + '</b>.' : '.') : I.arreglados ? '' : 'No había nada nuevo: ya tenías todo lo de este archivo.') + (I.arreglados ? ' Se ' + (I.arreglados === 1 ? 'ha arreglado <b>1</b> movimiento' : 'han arreglado <b>' + I.arreglados + '</b> movimientos') + ' que ya tenías.' : '') + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.' : '')) + '</div>' +
       impSaldoTarjetaHtml(I) +
-      (I.hechos ? '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Tú → Importaciones.</div>' : '') +
-      '<div class="actions">' + (I.hechos ? '<button class="btn ghost block" ' + act('impDeshacer', I.lote) + '>Deshacer</button>' : '') + '<button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+      (I.hechos || I.arreglados ? '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Tú → Importaciones.</div>' : '') +
+      '<div class="actions">' + (I.hechos || I.arreglados ? '<button class="btn ghost block" ' + act('impDeshacer', I.lote) + '>Deshacer</button>' : '') + '<button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
   }
   return '';
 }
@@ -9286,7 +9409,9 @@ function saldoCuentaEn(c, dia, extra) {
   const vivos = new Set((S.compartidos || []).map((x) => x.id)), en = (x) => posteriorA(x, c) && (x.fecha || '') <= dia;
   let s = num(c.saldo);
   const ids = new Set(S.movimientos.map((m) => m.id)), todos = S.movimientos.concat((extra || []).filter((m) => !ids.has(m.id))); // lo recién importado aún no ha llegado del servidor
-  todos.forEach((m) => { if (m.compartidoId && vivos.has(m.compartidoId)) return; if (cuentaIdDe(m) === c.id && en(m)) s += num(m.importe) * (SIGNO_CUENTA[m.tipo] || 0); });
+  todos.forEach((m) => { if (m.compartidoId && vivos.has(m.compartidoId)) return;
+    if (esAporteLigado(m)) { if (!en(m)) return; if (cuentaIdDe(m) === c.id) s -= num(m.importe); if (m.cuentaDestinoId === c.id) s += num(m.importe); return; }
+    if (cuentaIdDe(m) === c.id && en(m)) s += num(m.importe) * (SIGNO_CUENTA[m.tipo] || 0); });
   flujosCompartidos().forEach((f) => { if (f.cuentaId === c.id && en(f)) s += f.v; });
   const idsT = new Set((S.traspasos || []).map((t) => t.id)), tras = (S.traspasos || []).concat((extra || []).filter((m) => m.tipo === 'Traspaso' && !idsT.has(m.id)));
   tras.forEach((t) => { if (!en(t)) return; if (t.cuentaId === c.id) s -= num(t.importe); if (t.cuentaDestinoId === c.id) s += num(t.importe); });
@@ -9343,6 +9468,32 @@ function impPropTras(r) {
   return tk.length > 1 && d.indexOf(dos) >= 0 ? dos : (d.indexOf(tk[0]) >= 0 ? tk[0] : '');
 }
 function impTrasDir(r, cuenta) { return r.sig < 0 ? { de: cuenta, a: r.otra } : { de: r.otra, a: cuenta }; }
+/* ---- docs/30b · tanda 5: arreglar lo que ya tenías al importar (cuenta que faltaba, gasto que era un traspaso). Se guarda una copia
+   de SOLO los campos que cambian en el lote (cfg().importLotes[].cambios) para que «Deshacer» lo devuelva como estaba. Nunca se toca el lote. */
+const IMP_CAMBIOS_LOTE = 200, IMP_CAMBIOS_TOTAL = 500;
+function impCambiosPendientes() { const s = new Set(); (cfg().importLotes || []).forEach((l) => (l.cambios || []).forEach((c) => s.add(c.id))); return s; }
+const impMismoValor = (a, b) => { const v = (x) => (x == null || x === '' ? null : typeof x === 'number' || (typeof x === 'string' && /^-?\d+(\.\d+)?$/.test(x)) ? String(Math.round(Number(x) * 100) / 100) : String(x)); return v(a) === v(b); };
+function impCambiosDe(I, cuenta) {
+  const raw = new Map((S._movsRaw || []).map((m) => [m.id, m])), out = [], vistos = new Set();
+  const add = (id, despues) => { const m = raw.get(id); if (!m || vistos.has(id)) return; vistos.add(id); const campos = Object.keys(despues), antes = {}; campos.forEach((k) => { antes[k] = m[k] == null ? null : m[k]; }); out.push({ id, campos, antes, despues, ts: Date.now() }); };
+  I.filas.forEach((r) => {
+    if (!r.id) return;
+    if (r.estado === 'sinCuenta' && r.incluir && r.con) add(r.con.id, { cuentaId: cuenta });
+    if ((r.estado === 'dup' || r.estado === 'quizas') && r.asignar && r.con && r.con.sinCuentaId) add(r.con.sinCuentaId, { cuentaId: cuenta });
+    if (r.estado === 'convertir' && r.convertir && r.con && cuentaPorId(r.otra)) {
+      const m = raw.get(r.con.id); if (!m || !convertibleATraspaso(m)) return;
+      const sale = m.tipo !== 'Ingreso'; // el gasto salió de la otra cuenta → traspaso otra → esta
+      add(r.con.id, { tipo: 'Traspaso', categoria: 'Traspaso', importe: Math.round(Math.abs(num(m.importe)) * 100) / 100, cuentaId: sale ? r.otra : cuenta, cuentaDestinoId: sale ? cuenta : r.otra });
+    }
+  });
+  return out;
+}
+// Recorta a 50 lotes sin perder copias: primero salen los viejos sin cambios
+function impRecortarLotes(lotes) {
+  const ls = lotes.slice();
+  while (ls.length > 50) { const i = ls.findIndex((l) => !(l.cambios && l.cambios.length)); if (i < 0) break; ls.splice(i, 1); }
+  return ls;
+}
 function impProcesar() {
   const I = IMP, m = I.map, filas = I.hoja.filas.slice(I.cab + 1);
   const uid = (S.user && S.user.id) || '';
@@ -9351,7 +9502,7 @@ function impProcesar() {
   const existentes = new Set(yaApuntados.map((x) => x.id));
   const cuenta = hayVariasCuentas() ? I.cuenta || null : null;
   const porId = {}; yaApuntados.forEach((x) => { porId[x.id] = x; });
-  const cands = impCandidatos(cuenta), usadosC = new Set();
+  const cands = impCandidatos(cuenta), usadosC = new Set(), pendientes = impCambiosPendientes();
   const buscar = (fecha, abs, maxDias) => { let mejor = null, md = 99; cands.forEach((c) => { if (usadosC.has(c.k) || Math.abs(c.abs - abs) > 0.004) return; const d = impDias(c.fecha, fecha); if (d <= maxDias && d < md) { mejor = c; md = d; } }); return mejor; };
   const ocurr = {}, out = [];
   const col = (f, k) => (k == null || k === '' ? '' : f[k]);
@@ -9401,26 +9552,38 @@ function impProcesar() {
       const otra = cuenta && previo.cuentaId && cuentaPorId(previo.cuentaId) && previo.cuentaId !== cuenta;
       if (otra) { idF = 'imp-' + hash53(base + '|' + o.oc + '|' + cuenta); if (existentes.has(idF)) estado = 'importado'; else { estado = 'otraCuenta'; con = { que: nombreCuenta(previo.cuentaId) }; } }
       else estado = 'importado';
-      if (estado === 'importado') { const k = (previo.tipo === 'Traspaso' ? 't:' : 'm:') + previo.id; usadosC.add(k); }
+      // docs/30b · tanda 5: ya importado antes de las cuentas (sin cuenta): se ofrece ponerle esta, desmarcado
+      if (estado === 'importado' && cuenta && previo.tipo !== 'Traspaso' && !(previo.cuentaId && cuentaPorId(previo.cuentaId)) && !pendientes.has(previo.id)) { estado = 'sinCuenta'; con = { id: previo.id }; }
+      if (estado === 'importado' || estado === 'sinCuenta') { const k = (previo.tipo === 'Traspaso' ? 't:' : 'm:') + previo.id; usadosC.add(k); }
     }
     let otraT = null;
     if (estado === 'nuevo' && cuenta) otraT = impTrasOtra(o.desc, cuenta, o.sig, esTras);
     if (estado === 'nuevo' && otraT != null) {
       // ¿ya está ese traspaso (la otra mitad, apuntada desde la otra cuenta o a mano)? mismo importe, misma dirección, 0-3 días
       const dir = o.sig < 0 ? { de: cuenta, a: otraT } : { de: otraT, a: cuenta };
-      const mitad = (S.traspasos || []).find((t) => !usadosC.has('t:' + t.id) && Math.abs(Math.abs(num(t.importe)) - imp) < 0.005 && impDias(t.fecha, fecha) <= 3 &&
+      const comoTras = (S.traspasos || []).map((t) => Object.assign({ _k: 't:' + t.id }, t)).concat(S.movimientos.filter(esAporteLigado).map((m) => Object.assign({}, m, { _k: 'm:' + m.id, cuentaId: cuentaIdDe(m) })));
+      const mitad = comoTras.find((t) => !usadosC.has(t._k) && Math.abs(Math.abs(num(t.importe)) - imp) < 0.005 && impDias(t.fecha, fecha) <= 3 &&
         (otraT ? t.cuentaId === dir.de && t.cuentaDestinoId === dir.a : (o.sig < 0 ? t.cuentaId === cuenta : t.cuentaDestinoId === cuenta)));
-      if (mitad) { usadosC.add('t:' + mitad.id); estado = 'otraMitad'; con = { que: nombreCuenta(mitad.cuentaId) + ' → ' + nombreCuenta(mitad.cuentaDestinoId), fecha: mitad.fecha }; }
+      if (mitad) { usadosC.add(mitad._k); estado = 'otraMitad'; con = { que: nombreCuenta(mitad.cuentaId) + ' → ' + nombreCuenta(mitad.cuentaDestinoId), fecha: mitad.fecha }; }
+      // docs/30b · tanda 5 (caso antiguo): la otra mitad entró como gasto (o ingreso) en la otra cuenta → se ofrece convertirlo
+      if (!mitad && otraT) {
+        const quiero = o.sig > 0 ? ['Gasto', 'Factura'] : ['Ingreso'];
+        const viejo = S.movimientos.filter((m) => !usadosC.has('m:' + m.id) && !pendientes.has(m.id) && m.cuentaId === otraT && quiero.includes(m.tipo) && Math.abs(Math.abs(num(m.importe)) - imp) < 0.005 && impDias(m.fecha, fecha) <= 3 && convertibleATraspaso(m))
+          .sort((a, b) => impDias(a.fecha, fecha) - impDias(b.fecha, fecha))[0];
+        if (viejo) { usadosC.add('m:' + viejo.id); estado = 'convertir'; o.otra = otraT; con = { id: viejo.id, que: viejo.descripcion || viejo.categoria || viejo.tipo, fecha: viejo.fecha, tipo: viejo.tipo }; }
+      }
     }
     if (estado === 'nuevo') {
       // lo ya apuntado a mano (también si lo apuntaste como gasto) se mira antes de proponer un traspaso: si no, se restaría dos veces
       const igual = buscar(fecha, Math.abs(imp), 0);
       if (igual) { estado = igual.donde === 'juntos' ? 'juntos' : 'dup'; con = igual; usadosC.add(igual.k); }
       else { const cerca = buscar(fecha, Math.abs(imp), 3); if (cerca) { estado = cerca.donde === 'juntos' ? 'juntos' : 'quizas'; con = cerca; usadosC.add(cerca.k); } }
+      // tanda 5: si «lo que ya tenías» no tiene cuenta, se puede poner la de este extracto (desmarcado: lo decides tú)
+      if (con && cuenta && con.donde === 'mov' && con.k) { const mid = con.k.slice(2), mv = porId[mid]; if (mv && mv.tipo !== 'Traspaso' && !(mv.cuentaId && cuentaPorId(mv.cuentaId)) && !pendientes.has(mid)) con.sinCuentaId = mid; }
     }
     if (estado === 'nuevo' && otraT != null) { estado = 'traspaso'; o.comoTras = true; o.otra = otraT || ''; }
     if (esTras && estado === 'nuevo') estado = 'traspaso';
-    Object.assign(o, { id: idF, estado, con, incluir: estado === 'nuevo' || (estado === 'traspaso' && !!o.comoTras && !!o.otra) }); delete o.base; delete o.oc; delete o.esTras; delete o.abs;
+    Object.assign(o, { id: idF, estado, con, incluir: estado === 'nuevo' || (estado === 'traspaso' && !!o.comoTras && !!o.otra), asignar: false }); delete o.base; delete o.oc; delete o.esTras; delete o.abs;
   });
   impSaldoComprobar(I, out);
   I.filas = out;
@@ -9472,10 +9635,15 @@ function impPatchConfig(filas) {
 }
 async function impEjecutar() {
   const I = IMP;
-  const sel = I.filas.filter((r) => r.id && r.incluir && r.estado !== 'importado');
-  if (!sel.length) return toast('No hay filas marcadas');
+  const sel = I.filas.filter((r) => r.id && r.incluir && !['importado', 'sinCuenta', 'convertir'].includes(r.estado));
+  const cuentaArr = hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? I.cuenta : null;
+  const cambios = cuentaArr ? impCambiosDe(I, cuentaArr) : [];
+  if (!sel.length && !cambios.length) return toast('No hay filas marcadas');
+  if (cambios.length > IMP_CAMBIOS_LOTE) return toast('Son muchos cambios de una vez (' + cambios.length + '). Marca como máximo ' + IMP_CAMBIOS_LOTE + ' e importa el resto después');
+  const yaCambios = (cfg().importLotes || []).reduce((a, l) => a + ((l.cambios || []).length), 0);
+  if (cambios.length && yaCambios + cambios.length > IMP_CAMBIOS_TOTAL) return toast('Tienes muchos arreglos guardados para deshacer. En Tú → Importaciones, pulsa «Dar por bueno» en las que ya revisaste');
   const lote = 'L' + Date.now().toString(36);
-  Object.assign(I, { paso: 'importando', total: sel.length, lote });
+  Object.assign(I, { paso: 'importando', total: sel.length + cambios.length, lote });
   updateSheet(impHtml());
   const ahora = Date.now();
   const items = sel.map((r, i) => { const cn = catNorm(r.tipo, r.categoria || (r.tipo === 'Gasto' || r.tipo === 'Factura' ? 'Otros' : 'Sin categoría')); const d = { creadoEn: ahora + i, tipo: r.tipo, importe: Math.round(r.importe * 100) / 100, categoria: cn.categoria, fecha: r.fecha, descripcion: r.desc, metodoPago: '', lote }; if (cn.subcategoria) d.subcategoria = cn.subcategoria; return { id: r.id, data: d }; });
@@ -9485,28 +9653,69 @@ async function impEjecutar() {
   if (cuentaImp) items.forEach((it) => { it.data.cuentaId = cuentaImp; });
   if (cuentaImp) sel.forEach((r, i) => { if (!r.comoTras || !r.otra || !cuentaPorId(r.otra)) return; const d = impTrasDir(r, cuentaImp);
     items[i].data = { creadoEn: items[i].data.creadoEn, tipo: 'Traspaso', categoria: 'Traspaso', importe: Math.round(Math.abs(r.importe) * 100) / 100, fecha: r.fecha, descripcion: r.desc, lote, cuentaId: d.de, cuentaDestinoId: d.a }; });
+  // tanda 5: primero se guarda la copia en el lote (si se corta, al deshacer se ve que no cambió y no se hace nada); luego se cambia
+  let arreglados = 0, fallosArr = 0;
+  if (cambios.length) {
+    const c0 = cfg();
+    await saveConfig({ importLotes: impRecortarLotes((c0.importLotes || []).filter((l) => l.id !== lote).concat([Object.assign({ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: 0, cambios }, cuentaImp ? { cuenta: cuentaImp } : {})])) });
+    const raw = new Map((S._movsRaw || []).map((m) => [m.id, m])), malos = new Set();
+    for (const cb of cambios) {
+      const m = raw.get(cb.id); if (!m) { malos.add(cb.id); continue; }
+      try { await withRetry(() => S.db.collection('movimientos').doc(cb.id).set(Object.assign(stripId(m), cb.despues))); arreglados++; } catch (e) { console.error(e); malos.add(cb.id); fallosArr++; }
+    }
+    if (malos.size) { const ls = (cfg().importLotes || []).map((l) => l.id === lote ? Object.assign({}, l, { cambios: (l.cambios || []).filter((x) => !malos.has(x.id)) }) : l); await saveConfig({ importLotes: ls }); }
+  }
   try {
     const col = S.db.collection('movimientos');
-    if (typeof col.bulkInsert === 'function') hechos = await col.bulkInsert(items); // reintenta cada bloque por dentro
+    if (!items.length) hechos = 0;
+    else if (typeof col.bulkInsert === 'function') hechos = await col.bulkInsert(items); // reintenta cada bloque por dentro
     else { for (const it of items) { await withRetry(() => col.doc(it.id).set(it.data)); hechos++; } }
   } catch (e) { console.error(e); fallo = errMsg(e); }
   const c = cfg();
-  const lotes = hechos ? (c.importLotes || []).concat([Object.assign({ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: hechos }, cuentaImp ? { cuenta: cuentaImp } : {})]).slice(-50) : (c.importLotes || []); // sin nada nuevo, no se apunta un lote vacío
+  const yaLote = (c.importLotes || []).find((l) => l.id === lote);
+  const lotes = yaLote ? (c.importLotes || []).map((l) => l.id === lote ? Object.assign({}, l, { n: hechos }) : l).filter((l) => l.id !== lote || hechos || (l.cambios && l.cambios.length))
+    : hechos ? impRecortarLotes((c.importLotes || []).concat([Object.assign({ id: lote, fecha: new Date().toISOString(), archivo: I.archivo, n: hechos }, cuentaImp ? { cuenta: cuentaImp } : {})])) : (c.importLotes || []); // sin nada nuevo, no se apunta un lote vacío
   const perfiles = Object.assign({}, c.importPerfiles || {}, { [firmaArchivo(I)]: Object.assign({ map: Object.assign({ saldo: null }, I.map), modoImporte: I.modoImporte, signo: I.signo, fmtFecha: I.fmtFecha, usado: todayISO() }, cuentaImp ? { cuenta: cuentaImp } : {}) });
   const extra = hechos && I.anadirConfig !== false ? impPatchConfig(sel.filter((r) => !r.comoTras)).patch : {};
   saveConfig(Object.assign({ importLotes: lotes, importPerfiles: perfiles }, extra));
-  Object.assign(I, { paso: 'hecho', hechos, fallo, configNuevos: Object.keys(extra).length, recien: items.map((it) => Object.assign({ id: it.id }, it.data)) });
+  if (fallosArr && !fallo) fallo = fallosArr + (fallosArr === 1 ? ' arreglo no se pudo guardar' : ' arreglos no se pudieron guardar');
+  const rawM = new Map((S._movsRaw || []).map((m) => [m.id, m]));
+  const convertidos = cambios.filter((cb) => cb.campos.indexOf('tipo') >= 0 && rawM.get(cb.id)).map((cb) => Object.assign({}, rawM.get(cb.id), cb.despues, { id: cb.id })); // mismo id: cuenta hasta que llegue del servidor y luego no se repite
+  Object.assign(I, { paso: 'hecho', hechos, arreglados, fallo, configNuevos: Object.keys(extra).length, recien: items.map((it) => Object.assign({ id: it.id }, it.data)).concat(convertidos) });
   updateSheet(impHtml());
-  if (!fallo) toast(hechos ? hechos + (hechos === 1 ? ' movimiento importado' : ' movimientos importados') : 'No había nada nuevo: ya lo tenías todo');
+  if (!fallo) toast(hechos || arreglados ? [hechos ? hechos + (hechos === 1 ? ' movimiento importado' : ' movimientos importados') : '', arreglados ? arreglados + (arreglados === 1 ? ' arreglo en lo que ya tenías' : ' arreglos en lo que ya tenías') : ''].filter(Boolean).join(' y ') : 'No había nada nuevo: ya lo tenías todo');
+}
+// tanda 5: devuelve lo que la importación cambió en movimientos que ya tenías. Nunca crea ni pisa: si no existe o lo cambiaste después, se salta
+function impDeshacerPlan(lote) {
+  const l = (cfg().importLotes || []).find((x) => x.id === lote), raw = new Map((S._movsRaw || []).map((m) => [m.id, m]));
+  const plan = { devolver: [], saltar: [], nada: [], borrados: [] };
+  ((l && l.cambios) || []).slice().reverse().forEach((cb) => {
+    const m = raw.get(cb.id);
+    if (!m) { plan.nada.push(cb); return; }
+    const igualDespues = cb.campos.every((k) => impMismoValor(m[k], cb.despues[k])), igualAntes = cb.campos.every((k) => impMismoValor(m[k], cb.antes[k]));
+    const enlazado = !!(m.compartidoId || m.metaId || (m.metaIds && m.metaIds.length) || m.activoId);
+    if (igualAntes) plan.nada.push(cb);
+    else if (!igualDespues || (enlazado && cb.campos.indexOf('tipo') >= 0)) plan.saltar.push(cb); // devolver solo la cuenta no rompe ningún enlace
+    else plan.devolver.push(Object.assign({ m }, cb));
+  });
+  return plan;
 }
 async function deshacerLote(lote) {
   const col = S.db.collection('movimientos');
+  const plan = impDeshacerPlan(lote);
+  if (plan.devolver.length) {
+    const hechos = new Set();
+    for (const cb of plan.devolver) {
+      try { await withRetry(() => col.doc(cb.id).set(Object.assign(stripId(cb.m), cb.antes))); hechos.add(cb.id); }
+      catch (e) { console.error(e); const ls = (cfg().importLotes || []).map((l) => l.id === lote ? Object.assign({}, l, { cambios: (l.cambios || []).filter((x) => !hechos.has(x.id)) }) : l); await saveConfig({ importLotes: ls }); toast('No se pudo deshacer todo (' + errMsg(e) + '). Vuelve a intentarlo: no se repetirá nada'); return false; }
+    }
+  }
   let ok;
   if (typeof col.deleteWhere === 'function') ok = await write(() => col.deleteWhere('lote', lote));
   else { ok = true; for (const m of S.movimientos.concat(S.traspasos || []).filter((x) => x.lote === lote)) { if (!(await write(() => col.doc(m.id).delete()))) { ok = false; break; } } }
   if (!ok) return false;
   saveConfig({ importLotes: (cfg().importLotes || []).filter((l) => l.id !== lote) });
-  toast('Importación deshecha');
+  toast('Importación deshecha' + (plan.devolver.length ? ': ' + plan.devolver.length + (plan.devolver.length === 1 ? ' movimiento volvió' : ' movimientos volvieron') + ' a como estaban' : '') + (plan.saltar.length ? '. ' + plan.saltar.length + ' lo cambiaste después y se queda como está' : ''), { ms: plan.saltar.length ? 8000 : 4000 });
   return true;
 }
 function lotesHtml() {
@@ -9514,11 +9723,12 @@ function lotesHtml() {
   const cuenta = (id) => S.movimientos.filter((m) => m.lote === id).length + (S.traspasos || []).filter((t) => t.lote === id).length; // también los convertidos en traspaso
   return '<div class="handle"></div><h2>Importaciones</h2>' +
     (lotes.length ? '<div class="list">' + lotes.map((l) => {
-      const n = cuenta(l.id), f = new Date(l.fecha);
-      return '<div class="row static"><div class="main"><div class="ttl">' + escapeHtml(l.archivo || 'Archivo') + '</div><div class="meta">' + f.getDate() + ' ' + MESES_CORTO[f.getMonth()] + ' ' + f.getFullYear() + ' · ' + (l.cuenta && cuentaPorId(l.cuenta) ? escapeHtml(nombreCuenta(l.cuenta)) + ' · ' : '') + n + ' movimientos</div></div>' +
+      const n = cuenta(l.id), f = new Date(l.fecha), nc = (l.cambios || []).length;
+      return '<div class="row static"><div class="main"><div class="ttl">' + escapeHtml(l.archivo || 'Archivo') + '</div><div class="meta">' + f.getDate() + ' ' + MESES_CORTO[f.getMonth()] + ' ' + f.getFullYear() + ' · ' + (l.cuenta && cuentaPorId(l.cuenta) ? escapeHtml(nombreCuenta(l.cuenta)) + ' · ' : '') + n + ' movimientos' + (nc ? ' y ' + nc + (nc === 1 ? ' arreglo' : ' arreglos') + ' en lo que ya tenías' : '') + '</div>' +
+        (nc ? '<button type="button" class="link" style="font-size:12.5px;" ' + act('loteBueno', l.id) + '>Dar por bueno</button>' : '') + '</div>' +
         '<button class="btn sm danger" ' + act('loteDeshacer', l.id) + '>Deshacer</button></div>';
     }).join('') + '</div>' : '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Aún no has importado nada.</div>') +
-    '<div style="font-size:12.5px;color:var(--text-faint);margin-top:10px;line-height:1.45;">Deshacer borra todos los movimientos de esa importación (también los que hayas editado después).</div>' +
+    '<div style="font-size:12.5px;color:var(--text-faint);margin-top:10px;line-height:1.45;">Deshacer borra todos los movimientos de esa importación (también los que hayas editado después). Lo que arregló en lo que ya tenías (la cuenta, o un gasto que era un traspaso) vuelve a como estaba, salvo que lo hayas cambiado tú después. «Dar por bueno» deja los arreglos como están y ya no se podrán deshacer.</div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 function reglasHtml() {
@@ -10022,12 +10232,12 @@ function recGuardar() {
 }
 function recEliminar() {
   const F = FORM, key = F.origKind === 'cobro' ? 'cobros' : 'facturas';
-  const arr = (cfg()[key] || []).slice(); arr.splice(F.idx, 1);
+  const arr = (cfg()[key] || []).slice(), quitado = arr[F.idx], idx = F.idx; arr.splice(F.idx, 1);
   saveConfig({ [key]: arr });
   FORM = { kind: 'recLista' };
   updateSheet(recListaHtml());
   render();
-  toast('Eliminado');
+  toast('Eliminado', { deshacer: () => { const a2 = (cfg()[key] || []).slice(); a2.splice(Math.min(idx, a2.length), 0, quitado); saveConfig({ [key]: a2 }); if (FORM && FORM.kind === 'recLista') updateSheet(recListaHtml()); render(); toast('Recuperado'); } });
 }
 /* ---- Tareas recurrentes ---- */
 const REP_UNIDADES = { dia: ['día', 'días'], semana: ['semana', 'semanas'], mes: ['mes', 'meses'], anio: ['año', 'años'] };
@@ -10331,7 +10541,7 @@ function introJuntosHtml(gid) {
 function renderMas() {
   const item = (key) => '<button class="menu-item" ' + act('openListEditor', key) + '><span class="ic">' + ic(LIST_META[key].icon) + '</span>' + LIST_META[key].title + '<span class="chev">' + ic('chevR') + '</span></button>';
   return '<button class="btn accent block" style="margin-bottom:18px;" ' + act('startOnboardingManually') + '>' + ic('flag') + ' Volver a ver la bienvenida</button>' +
-    '<div class="profile-tile"><div class="av">' + sym() + '</div><div><div class="t">Mis Finanzas y Tareas</div>' +
+    '<div class="profile-tile"><div class="av">' + sym() + '</div><div><div class="t">PalomApp</div>' +
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · datos privados, sincronizados entre tus dispositivos.</div></div></div>' +
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
     item('categoriasGasto') +
@@ -10357,13 +10567,28 @@ function renderMas() {
     '<div class="menu-item static"><span class="ic">' + ic('bank') + '</span>Conexión con tu banco<span class="future-badge">Pronto</span></div></div>' +
     '<div class="section-title">Cuenta</div><div class="card menu"><button class="menu-item" ' + act('doLogout') + '><span class="ic">' + ic('close') + '</span>Cerrar sesión</button></div>';
 }
+// docs/32 B8: «Descargar mis movimientos (Excel)» — CSV con punto y coma e importes con coma, que Excel abre bien
+function exportCsv() {
+  const q = (x) => { let t = String(x == null ? '' : x); if (/^[=+\-@]/.test(t) && !/^-?\d+(,\d+)?$/.test(t)) t = "'" + t; return /[;"\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const filas = S.movimientos.concat(S.traspasos || []).slice().sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''));
+  const signo = (m) => (m.tipo === 'Ingreso' ? 1 : m.tipo === 'Traspaso' ? 0 : -1); // devoluciones (gasto en negativo) salen en positivo
+  const lineas = [['Fecha', 'Tipo', 'Concepto', 'Categoría', 'Subcategoría', 'Cuenta', 'Importe'].join(';')].concat(filas.map((m) => [m.fecha, m.tipo === 'Factura' ? 'Pago fijo' : m.tipo === 'Ahorro' ? 'Apartar' : m.tipo, m.descripcion || '', m.tipo === 'Traspaso' ? '' : m.categoria || '', m.subcategoria || '',
+    m.tipo === 'Traspaso' ? nombreCuenta(m.cuentaId) + ' → ' + nombreCuenta(m.cuentaDestinoId) : (hayVariasCuentas() ? nombreCuenta(cuentaIdDe(m)) : ''), (signo(m) ? signo(m) * num(m.importe) : Math.abs(num(m.importe))).toFixed(2).replace('.', ',')].map(q).join(';')));
+  try {
+    const blob = new Blob(['\ufeff' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = 'palomapp-movimientos-' + todayISO() + '.csv';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast(filas.length + (filas.length === 1 ? ' movimiento descargado' : ' movimientos descargados'));
+  } catch (e) { console.error(e); toast('No se pudo descargar'); }
+}
 function exportBackup() {
-  const payload = { exportadoEl: new Date().toISOString(), movimientos: S.movimientos.concat(S.traspasos || []), tareas: S.tareas, golf: S.golf, config: S.config, compartidos: S.compartidos || [], objetivosCompartidos: S.objetivos || [] };
+  const payload = { exportadoEl: new Date().toISOString(), movimientos: S.movimientos.concat(S.traspasos || []), tareas: S.tareas, golf: S.golf, config: S.config, compartidos: S.compartidos || [], objetivosCompartidos: S.objetivos || [], carpetas: S.carpetas || [], aportes: S.aportes || [] }; // barrido 08/11: también viajes/temas y aportes
   try {
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'mis-finanzas-backup-' + todayISO() + '.json';
+    a.href = url; a.download = 'palomapp-copia-' + todayISO() + '.json';
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
     toast('Copia de seguridad descargada');
@@ -10393,6 +10618,14 @@ function catsEditorHtml() {
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 // Guarda: de las estándar solo el presupuesto (si lo tienen); las personalizadas, enteras
+// Pasa a la categoría nueva los gastos que llevaban el nombre de antes (lo pide el usuario; con «Deshacer»)
+async function catPasarMovs(ids, de, a) {
+  const raw = new Map((S._movsRaw || []).map((m) => [m.id, m])), movs = ids.map((id) => raw.get(id)).filter((m) => m && m.categoria === de);
+  const hechos = [];
+  for (let k = 0; k < movs.length; k += 20) { const g = movs.slice(k, k + 20); const res = await Promise.allSettled(g.map((m) => withRetry(() => S.db.collection('movimientos').doc(m.id).set(Object.assign(stripId(m), { categoria: a }))))); res.forEach((x, j) => { if (x.status === 'fulfilled') hechos.push(g[j]); }); }
+  if (!hechos.length) return toast('No se pudieron cambiar');
+  toast(hechos.length + (hechos.length === 1 ? ' gasto pasado' : ' gastos pasados') + ' a «' + a + '»', { deshacer: async () => { for (const m of hechos) await withRetry(() => S.db.collection('movimientos').doc(m.id).set(Object.assign(stripId(m), { categoria: de }))); toast('Deshecho'); } });
+}
 function guardarCats(lista) {
   saveConfig({ categoriasGasto: lista.filter((c) => !c.std || (c.presupuesto != null && c.presupuesto !== '')).map((c) => ({ nombre: c.nombre, presupuesto: c.presupuesto == null || c.presupuesto === '' ? null : Number(c.presupuesto) })) });
 }
@@ -10462,6 +10695,32 @@ function openSheet(html) {
   document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear'));
 }
 function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; limitarBadges(s); fijarAcciones(s); vincularEtiquetas(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
+/* ---- App de Android: botón y gesto de atrás (docs/32 A1). Devuelve true si la app lo ha resuelto; false = salir ---- */
+function hojaConAlgoEscrito() {
+  if (!FORM || ['mov', 'compRapido', 'traspaso', 'aportarR', 'tarea', 'trayecto'].indexOf(FORM.kind) < 0) return false;
+  const imp = FORM.tec ? String(FORM.tec.txt || '') : (($('#fImporte') || {}).value || ($('#apImporte') || {}).value || '');
+  const imp2 = (($('#crImporte') || {}).value || '');
+  const desc = ((($('#fDesc') || {}).value || ($('#crDesc') || {}).value) || '').trim(), tit = (($('#tNombre') || {}).value || '').trim();
+  if (!FORM.id && imp2.replace(/[0,.\s]/g, '')) return true;
+  return (!FORM.id && !!imp.replace(/[0,.\s]/g, '')) || (!FORM.id && (!!desc || !!tit));
+}
+function preguntarDescartar() {
+  if ($('#descartarHoja')) return;
+  const d = document.createElement('div'); d.id = 'descartarHoja'; d.className = 'descartar';
+  d.innerHTML = '<div class="descartar-c" role="alertdialog" aria-labelledby="descTit"><b id="descTit">¿Descartar este ' + (FORM && FORM.kind === 'tarea' ? 'plan' : 'gasto') + '?</b><p>Lo que has escrito no se guardará.</p>' +
+    '<div class="actions"><button class="btn ghost block" data-click="descartarNo">Seguir editando</button><button class="btn danger block" data-click="descartarSi">Descartar</button></div></div>';
+  document.body.appendChild(d);
+}
+function atrasAndroid() {
+  const dsc = $('#descartarHoja'); if (dsc) { dsc.remove(); return true; }
+  const b = $('#sheetBackdrop');
+  if (b && !b.dataset.cerrando) { if (hojaConAlgoEscrito()) preguntarDescartar(); else closeSheet(); return true; }
+  if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
+  if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
+  if (S.tab !== 'inicio') { H.goTab(['inicio']); return true; }
+  return false;
+}
+window.__atras = atrasAndroid;
 function closeSheet() {
   document.body.classList.remove('crear-abierto');
   if (FORM && FORM.tec) FORM.tec.on = false; // el teclado de la app deja de escuchar
@@ -11319,9 +11578,15 @@ const H = {
   impSaldoNo: () => { if (!IMP) return; IMP.saldoFin = null; updateSheet(impHtml()); },
   impCuenta: ([id]) => { if (!IMP) return; IMP.cuenta = id; IMP.cuentaRecordada = false; sentir('tic'); updateSheet(impHtml()); },
   impCuentaSel: (_a, el) => { if (!IMP) return; IMP.cuenta = el.value || null; IMP.cuentaRecordada = false; updateSheet(impHtml()); },
-  impMismo: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.incluir = v !== '1'; r.respondido = true; sentir('tic'); updateSheet(impHtml()); },
+  impConvertir: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return;
+    if (v === '1') { r.convertir = true; r.incluir = false; }
+    else { r.convertir = false; r.estado = 'traspaso'; r.comoTras = true; r.incluir = !!r.otra; r.con = null; }
+    sentir('tic'); updateSheet(impHtml()); },
+  impAsignar: ([k], el) => { const r = IMP && IMP.filas[Number(k)]; if (r) { r.asignar = !!el.checked; updateSheet(impHtml()); } },
+  impSinCuentaTodas: () => { const fs = IMP.filas.filter((r) => r.estado === 'sinCuenta'); fs.forEach((r) => { r.incluir = true; }); toast(fs.length + (fs.length === 1 ? ' fila marcada' : ' filas marcadas') + ': se pondrán en ' + nombreCuenta(IMP.cuenta)); updateSheet(impHtml()); },
+  impMismo: ([k, v]) => { const r = IMP && IMP.filas[Number(k)]; if (!r) return; r.incluir = v !== '1'; r.asignar = v === '1' && !!(r.con && r.con.sinCuentaId); r.respondido = true; sentir('tic'); updateSheet(impHtml()); },
   impEnCuenta: ([id]) => { verBadge('importar'); IMP = { paso: 'archivo', cuentaFija: id }; if ($('#sheetBackdrop')) updateSheet(impHtml()); else openSheet(impHtml()); },
-  impTodas: ([v]) => { IMP.filas.forEach((r) => { if (r.id && r.estado !== 'importado' && (v !== '1' || r.estado === 'nuevo' || !r.estado)) r.incluir = v === '1'; }); updateSheet(impHtml()); }, // «Marcar todas» no marca lo dudoso (riesgo 2)
+  impTodas: ([v]) => { IMP.filas.forEach((r) => { if (r.id && r.estado !== 'importado' && (v !== '1' || r.estado === 'nuevo' || !r.estado)) r.incluir = v === '1'; if (v !== '1') { r.convertir = false; r.asignar = false; } }); updateSheet(impHtml()); }, // «Marcar todas» no marca lo dudoso (riesgo 2)
   impVerTodo: () => { IMP.verTodo = true; updateSheet(impHtml()); },
   impTipo: ([k], el) => { const r = IMP.filas[Number(k)]; if (!r) return; r.tipo = el.value; if (r.origenCat !== 'archivo') { const rg = reglaPara(r.desc, r.tipo, hayVariasCuentas() ? IMP.cuenta : null); r.categoria = rg ? rg.categoria : sugerirCategoria(r.desc, r.tipo); r.origenCat = rg ? 'regla' : r.categoria ? 'historial' : ''; } updateSheet(impHtml()); },
   impCat: ([k], el) => {
@@ -11347,6 +11612,7 @@ const H = {
   openPapelera: () => { verBadge('papelera'); FORM = { kind: 'papelera' }; openSheet(papeleraHtml()); },
   papeleraRecuperar: ([k, id]) => papeleraRecuperar(k, id),
   openLotes: () => { FORM = { kind: 'lotes' }; openSheet(lotesHtml()); },
+  loteBueno: ([id], el) => confirmDelete(el, () => { saveConfig({ importLotes: (cfg().importLotes || []).map((l) => l.id === id ? Object.assign({}, l, { cambios: [] }) : l) }); toast('Hecho: esos arreglos se quedan como están'); setTimeout(() => updateSheet(lotesHtml()), 300); }, 'Dar por bueno'),
   loteDeshacer: ([id], el) => confirmDelete(el, async () => { if (await deshacerLote(id)) setTimeout(() => updateSheet(lotesHtml()), 400); }),
   openReglas: () => { verBadge('reglas'); FORM = { kind: 'reglas' }; openSheet(reglasHtml()); },
   reglaQuitar: ([i]) => { const rs = (cfg().reglasCat || []).slice(); rs.splice(Number(i), 1); saveConfig({ reglasCat: rs }); updateSheet(reglasHtml()); },
@@ -11474,7 +11740,32 @@ const H = {
   usoGuardar: () => usoGuardar(),
   usoQuitar: ([k, id], el) => confirmDelete(el, () => usoQuitar(k, id)),
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
+  exportCsv: () => exportCsv(),
+  descartarNo: () => { const d = $('#descartarHoja'); if (d) d.remove(); },
+  descartarSi: () => { const d = $('#descartarHoja'); if (d) d.remove(); closeSheet(); },
+  huellaCambiar: async () => {
+    const N = window.__nativo; if (!N || !N.huella) return toast('Este móvil no tiene huella ni PIN configurado');
+    const on = lsGet('huella') === '1';
+    if (!on) { try { await N.probarHuella(); } catch (e) { return toast('No se ha podido confirmar'); } }
+    lsSet('huella', on ? '0' : '1'); toast(on ? 'Ya no se pedirá la huella' : 'Se pedirá la huella al abrir'); render();
+  },
+  desbloquear: () => { if (window.__nativo && window.__nativo.desbloquear) { document.documentElement.classList.remove('bloqueada'); window.__nativo.desbloquear(); } },
+  abrirPrivacidad: () => abrirExterno(APP_URL + 'privacidad.html'),
+  borrarCuentaAbrir: () => { FORM = { kind: 'borrarCuenta' }; openSheet(borrarCuentaHtml()); },
+  borrarCuentaOk: () => borrarCuentaOk(),
+  nuevaContrasenaOk: async () => {
+    const a = ($('#ncPass') || {}).value || '', b = ($('#ncPass2') || {}).value || '';
+    if (a.length < 8) return renderNuevaContrasena('Tiene que tener al menos 8 caracteres.');
+    if (a !== b) return renderNuevaContrasena('Las dos contraseñas no coinciden.');
+    try { await window.Auth.cambiarContrasena(a); toast('Contraseña cambiada'); const s0 = await window.Auth.getSession(); if (s0) { if (needsMfa(s0)) renderMfaScreen(); else enterApp(s0); } else renderLoginScreen('Contraseña cambiada. Ya puedes entrar.'); }
+    catch (e) { renderNuevaContrasena('No se pudo cambiar: ' + errMsg(e)); }
+  },
+  ocultarCifras: () => { const v = !cifrasOcultas(); S._ocultas = v; lsSet('cifrasOcultas', v ? '1' : '0'); aplicarOcultar(); sentir('tic'); toast(v ? 'Cifras ocultas' : 'Cifras a la vista'); render(); },
+  reintentarCarga: () => location.reload(),
+  tbVolver: () => { if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) H.setInicioVista(['hoy']); else H.goTab(['inicio']); },
   metaGuardar: () => metaGuardar(),
+  metaCuentaElegir: ([id]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.cuentaMeta = id || ''; updateSheet(metaEditorHtml()); sentir('tic'); },
+  aportarRDesde: ([id]) => { if (!FORM || FORM.kind !== 'aportarR' || !cuentaPorId(id)) return; FORM.desde = id; const t = FORM.tec, imp = FORM.importe; updateSheet(aportarRHtml()); FORM.importe = imp; if (t) tecSync(); sentir('tic'); },
   metaColorElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta' || !META_COLORES[k]) return; metaLeerForm(); FORM.color = k; sentir('tic'); updateSheet(metaEditorHtml()); },
   metaFormaElegir: ([k]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.forma = FORMAS[k] ? k : null; sentir('tic'); updateSheet(metaEditorHtml()); },
   metaNombreIn: () => { if (!FORM || FORM.kind !== 'meta' || FORM.forma) return; const el = $('#mNombre'), sug = formaSugerida(el ? el.value : ''); const g = $('.fm-grid'); if (!g || ((g.querySelector('.fm-op.sug') || {}).dataset || {}).k === sug) return; const campo = g.closest('.field'); if (campo) campo.outerHTML = formaElegirHtml(FORM.forma, el ? el.value : ''); },
@@ -11547,8 +11838,11 @@ const H = {
       Object.values(cfg().cuentaJuntos || {}).filter((x) => x === c.id).length + (cfg().cobros || []).concat(cfg().facturas || []).filter((x) => x && x.cuentaId === c.id).length : 0;
     // si tiene movimientos, pide un segundo toque: esos movimientos pasan a contar como de la principal
     if (n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Tiene ' + n + (n === 1 ? ' movimiento' : ' movimientos') + '. Los movimientos pasarán a la cuenta principal y los traspasos dirán «Cuenta quitada». Toca «Quitar» otra vez para quitarla.'); }
+    if (!n && el && el.getAttribute('data-armed') !== '1') { el.setAttribute('data-armed', '1'); setTimeout(() => { if (el.isConnected) el.setAttribute('data-armed', '0'); }, 3500); return toast('Toca otra vez para quitar ' + (c.nombre || 'la cuenta'), { aviso: true }); } // barrido 08/11
     const fijas = cs.map((x) => (x && x.id && !x.color ? Object.assign({}, x, { color: colorCuenta(x) }) : x)); // que las demás no cambien de color
+    const antes = cs.slice();
     fijas.splice(Number(i), 1); saveConfig({ cuentas: fijas }); FORM = { kind: 'cuentas' }; updateSheet(cuentasHtml()); render();
+    toast('Cuenta quitada', { deshacer: () => { saveConfig({ cuentas: antes }); if (FORM && FORM.kind === 'cuentas') updateSheet(cuentasHtml()); render(); toast('Recuperada'); } });
   },
   cuentaCampo: ([i, f], el) => {
     const cs = (cfg().cuentas || []).slice(), c = Object.assign({}, cs[Number(i)] || {});
@@ -11770,7 +12064,11 @@ const H = {
   catRenombrar: ([n], el) => {
     const v = el.value.trim(); if (!v || v === n) return;
     if (esCatStd(v) || ALIAS_STD[normName(v)]) { el.value = n; return toast('«' + v + '» ya es una categoría estándar'); }
+    if (catsGasto().some((c) => c.nombre !== n && normName(c.nombre) === normName(v))) { el.value = n; return toast('Ya tienes una categoría «' + v + '»'); } // barrido 08/11
     guardarCats(catsGasto().map((c) => (c.nombre === n ? Object.assign({}, c, { nombre: v }) : c)));
+    setTimeout(() => { if (FORM && $('#sheetBackdrop')) updateSheet(catsEditorHtml()); }, 50); // el siguiente cambio ya parte del nombre nuevo
+    const viejos = S.movimientos.filter((m) => (m.tipo === 'Gasto' || m.tipo === 'Factura') && m.categoria === n);
+    if (viejos.length) toast('Renombrada. ' + viejos.length + (viejos.length === 1 ? ' gasto sigue' : ' gastos siguen') + ' como «' + n + '»', { boton: 'Pasarlos', ms: 10000, deshacer: () => catPasarMovs(viejos.map((m) => m.id), n, v) });
   },
   catQuitar: ([n], el) => confirmDelete(el, () => { guardarCats(catsGasto().filter((c) => c.nombre !== n)); setTimeout(() => updateSheet(catsEditorHtml()), 50); }),
   catNueva: () => {
@@ -11888,7 +12186,7 @@ const H = {
       const api = mfaApi();
       const l = await api.listFactors();
       for (const f of (l.data && l.data.all) || []) { if (f.status !== 'verified') await api.unenroll({ factorId: f.id }); } // limpia intentos abandonados
-      const r = await api.enroll({ factorType: 'totp', friendlyName: 'Mis Finanzas ' + Date.now() });
+      const r = await api.enroll({ factorType: 'totp', friendlyName: 'PalomApp ' + Date.now() });
       if (r.error) throw r.error;
       const t = r.data.totp;
       updateSheet('<div class="handle"></div><h2>Escanea el código QR</h2>' +
@@ -12023,6 +12321,7 @@ document.addEventListener('keydown', (e) => { if (tecTeclaFisica(e)) return; if 
 async function enterApp(session) {
   S.user = session.user;
   S.db = window.Data;
+  if (/[?&]borrar-cuenta/.test(location.search || '')) setTimeout(() => { if (!S.onboarding) H.borrarCuentaAbrir([]); }, 1800); // enlace de Google Play
   S.appStarted = true; S._inicioApp = Date.now(); S._novRevisado = false;
   S.movimientos = []; S.traspasos = []; S.tareas = []; S.golf = []; S.config = null; S.compartidos = null; S.objetivos = null; S.carpetas = null; S.agenda = null; S._gruposVistos = {};
   S.loaded = { mov: false, tar: false, golf: false, cfg: false };
@@ -12065,7 +12364,7 @@ function ajustarAlTeclado() {
   else { bd.style.top = ''; bd.style.height = ''; bd.style.bottom = ''; }
 }
 async function main() {
-  applyTheme(); applyLook();
+  applyTheme(); applyLook(); aplicarOcultar();
   window.addEventListener('scroll', () => { const t = $('.topbar'); if (t) t.classList.toggle('scrolled', window.scrollY > 4); }, { passive: true });
   ['pointerdown', 'touchend', 'keydown'].forEach((ev) => document.addEventListener(ev, () => { if (sonidoOn()) audioCtx(); }, { passive: true, once: true })); // el navegador solo deja sonar tras un toque
   if (window.visualViewport) { window.visualViewport.addEventListener('resize', ajustarAlTeclado); window.visualViewport.addEventListener('scroll', ajustarAlTeclado); }
@@ -12077,12 +12376,13 @@ async function main() {
     return;
   }
   window.Auth.onChange((session) => {
+    if (session && window.Auth.recuperando && window.Auth.recuperando()) { renderNuevaContrasena(); return; } // 08/11: vuelta del correo de «¿Olvidaste tu contraseña?»
     if (session && needsMfa(session)) { if (!S.appStarted) renderMfaScreen(); return; }
     if (session) { if (!S.appStarted) enterApp(session); }
     else { leaveApp(); }
   });
 }
 
-window.__APP__ = { trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();

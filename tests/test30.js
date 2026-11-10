@@ -35,7 +35,7 @@ const tabs=e=>[...e.doc.querySelectorAll('.tabbar [data-tab]')].map(b=>b.getAttr
  click(e,'setInicioVista','tareas');await sleep(10);
  ok(/Pedir cita médico/.test(txt()),'Inicio → Semana y tareas muestra las tareas');
  click(e,'setInicioVista','calendario');await sleep(10);ok(!!doc.querySelector('[data-click^="calSelDia"]'),'Inicio → Calendario');
- click(e,'setInicioVista','hoy');await sleep(10);
+ e.w.__APP__.H.tbVolver([]);await sleep(10);
  // Movimientos: lista y resumen; volver desde el resumen
  H.goTab(['movimientos']);await sleep(10);
  ok(/En qué gastas/.test(txt())&&doc.querySelectorAll('.mov-vista button').length===3,'Movimientos abre en el Resumen, con Resumen | Lista | Calendario');

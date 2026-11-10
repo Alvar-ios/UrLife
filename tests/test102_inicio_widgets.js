@@ -15,7 +15,7 @@ const movs = [{ id: 'g1', tipo: 'Gasto', categoria: 'Comida', importe: 90, fecha
   let e = makeEnv({ movs, version: { inicio: 0 }, cfg: { app: base(), meta: { onboarded: true } } }); await sleep(200);
   let H = e.w.__APP__.H, doc = e.doc, S = () => e.w.__APP__.S;
   ok(doc.querySelector('.ins-circ') && doc.querySelector('.dias-tit') && !doc.querySelector('.iw'), 'sin lista: Así vas y Estos días, sin piezas nuevas');
-  ok(doc.querySelector('.iw-editar') && /Editar Inicio/.test(doc.querySelector('.iw-editar').textContent) && doc.querySelector('.iw-editar .badge-new'), 'botón «Editar Inicio» con NUEVO');
+  ok(doc.querySelector('.iw-editar') && /Editar Inicio/.test(doc.querySelector('.iw-editar').textContent) && (!!doc.querySelector('.iw-editar .badge-new') === e.w.__APP__.badgeActivo('inicioEd')), 'botón «Editar Inicio» con NUEVO (mientras no caduque)'); // 08/11 (Calidad): caduca el 19/11
   H.iwEditar([]); await sleep(10);
   ok(doc.querySelectorAll('.iw-ed-f').length === 3 && /Tarjeta del mes/.test(doc.querySelector('.iw-ed-f.fija').textContent), 'la hoja: tarjeta fija + 2 piezas');
   ok(/Recomendada/.test(doc.querySelectorAll('.iw-ed-f')[1].textContent), 'Así vas sale como recomendada');

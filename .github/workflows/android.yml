@@ -1,0 +1,66 @@
+# Compila la app de Android (PalomApp). Solo se lanza a mano (Actions → «App de Android» → Run workflow).
+# - Siempre sale un APK de prueba (debug) para instalar en un móvil.
+# - Si están los secretos de firma, sale también el AAB firmado para subir a Google Play.
+# La clave de firma NUNCA va en el repositorio (es público): solo en los secretos de GitHub.
+name: App de Android
+on:
+  # al subir cambios de la app de Android a una rama de trabajo, se comprueba que compila (solo el APK de prueba)
+  push:
+    branches: ['fase*']
+    paths: ['movil/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión que verá el usuario (por ejemplo 1.0.0)'
+        required: true
+        default: '1.0.0'
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      TIENE_FIRMA: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && 'si' || 'no' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Preparar la web dentro de la app
+        working-directory: movil
+        run: npm ci && npm run sync
+      - name: APK de prueba (debug)
+        working-directory: movil/android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: ${{ inputs.version || '1.0.0' }}
+        run: ./gradlew assembleDebug --no-daemon
+      - name: AAB firmado para Google Play
+        if: ${{ env.TIENE_FIRMA == 'si' && github.event_name == 'workflow_dispatch' }}
+        working-directory: movil/android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: ${{ inputs.version || '1.0.0' }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/subida.jks"
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/subida.jks"
+          ./gradlew bundleRelease --no-daemon
+          rm -f "$RUNNER_TEMP/subida.jks"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: palomapp-${{ inputs.version || '1.0.0' }}
+          path: |
+            movil/android/app/build/outputs/apk/debug/*.apk
+            movil/android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: warn
+          retention-days: 30

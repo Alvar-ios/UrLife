@@ -39,13 +39,13 @@ const html = (e) => e.doc.querySelector('#content').innerHTML;
 
   /* 3. Tú: «Tu mes» y «Cuentas y saldos» con NUEVO */
   H.goTab(['tu']); await sleep(10);
-  ok(/Tu mes <span class="badge-new mejor">MEJORADO/.test(html(e)) && /Cuentas y saldos <span class="badge-new ">NUEVO/.test(html(e)), 'Tú: MEJORADO en «Tu mes» (Parche 8) y NUEVO en «Cuentas y saldos»');
+  ok((!A.badgeActivo('tumes') || /Tu mes <span class="badge-new mejor">MEJORADO/.test(html(e))) && (!A.badgeActivo('cuentas') || /Cuentas y saldos <span class="badge-new ">NUEVO/.test(html(e))), 'Tú: MEJORADO en «Tu mes» (Parche 8) y NUEVO en «Cuentas y saldos»');
   ok(e.doc.querySelector('#tbAvatar').classList.contains('con-novedad'), 'punto en tu inicial mientras haya algo nuevo en Tú');
   click(e, 'tuMesAbrir'); await sleep(20);
-  ok(vistos().tumes, 'al abrir «Tu mes» se quita su etiqueta');
+  ok(!A.badgeActivo('tumes') || vistos().tumes, 'al abrir «Tu mes» se quita su etiqueta');
   H.closeSheet([]); await sleep(300);
   click(e, 'openCuentas'); await sleep(20);
-  ok(vistos().cuentas, 'al abrir «Cuentas y saldos» se quita su etiqueta');
+  ok(!A.badgeActivo('cuentas') || vistos().cuentas, 'al abrir «Cuentas y saldos» se quita su etiqueta');
   H.closeSheet([]); await sleep(300);
   H.goTab(['tu']); await sleep(10);
   ok(!/Tu mes <span class="badge-new/.test(html(e)) && !/Cuentas y saldos <span class="badge-new/.test(html(e)), 'Tú: ya sin esas etiquetas');

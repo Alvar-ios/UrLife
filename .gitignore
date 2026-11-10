@@ -1,3 +1,11 @@
 node_modules/
 tests/node_modules
 tests/capturas/salida/
+movil/node_modules/
+movil/www/
+movil/android/app/build/
+movil/android/build/
+movil/android/.gradle/
+*.jks
+*.keystore
+keystore.properties

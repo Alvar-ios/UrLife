@@ -35,7 +35,7 @@ const V = { inicio: 0, balance: 0, tu: 0 };
   { const movs = [mv('a', 'Ingreso', 'Nómina', 1000, '2026-08-25'), mv('b', 'Gasto', 'Comida', 100, '2026-09-20'), mv('c', 'Gasto', 'Comida', 999, '2026-09-26'), mv('d', 'Ingreso', 'Nómina', 1000, '2026-09-25')];
     const e = makeEnv({ movs, version: V, pre: fijaFecha('2026-10-15'), cfg: { app: { categoriasGasto: [{ nombre: 'Comida' }], mesInicio: { modo: 'cobro', dia: 25 } }, meta: { onboarded: true } } }); await sleep(200);
     const doc = e.doc, av = (doc.querySelector('.inf-ini') || {}).textContent || '';
-    ok(/de septiembre/.test(av) && /\+900/.test(av), 'cobro el 25: aviso de septiembre con +900 (lo del 26 sep ya es octubre) (' + av.slice(0, 70) + ')'); }
+    ok(/de septiembre está listo/.test(av), 'cobro el 25: aviso del informe de septiembre (08/11: la cifra va dentro del informe) (' + av.slice(0, 70) + ')'); }
   // 4) nómina: octubre aún «previsto» → no sale su mensual
   { const movs = [mv('n1', 'Ingreso', 'Nómina', 1500, '2026-08-28'), mv('n2', 'Ingreso', 'Nómina', 1500, '2026-09-30'), mv('g', 'Gasto', 'Otros', 10, '2026-10-02')];
     const e = makeEnv({ movs, version: V, pre: fijaFecha('2026-10-29'), cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], ingresos: ['Nómina'], cobros: [{ nombre: 'Nómina', importe: 1500, regla: { t: 'ultHabil' }, desde: '2026-06-01' }], mesInicio: { modo: 'cobro', dia: 28, nomina: 'Nómina' } }, meta: { onboarded: true } } }); await sleep(200);

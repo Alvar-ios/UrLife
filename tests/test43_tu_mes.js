@@ -40,8 +40,8 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
   ok(!e.doc.querySelector('.hero-tile') && !!e.doc.querySelector('.hero-bar') && !e.doc.querySelector('.inicio-seg') && !e.doc.querySelector('.prox-scroll'), 'Inicio: sin las tres cifras ni el selector de arriba; la barra vuelve (lo pidió Paloma, 17/10)');
   ok(/Estos días/.test(txt(e)) && !!e.doc.querySelector('.dias-tit [data-click="setInicioVista|tareas"]'), '«Estos días» con «Agenda ›»');
   click(e, 'setInicioVista', 'tareas'); await sleep(10);
-  ok(!!e.doc.querySelector('[data-click="setInicioVista|hoy"]') && /Semana y tareas/.test(txt(e)), 'la Agenda se abre y tiene «‹ Inicio» para volver');
-  click(e, 'setInicioVista', 'hoy'); await sleep(10);
+  ok(!!e.doc.querySelector('#tbVolver') && e.doc.body.classList.contains('en-agenda') && /Semana y tareas/.test(txt(e)), 'la Agenda se abre y tiene la flecha de volver arriba (desde el 08/11, docs/32 A7)');
+  e.w.__APP__.H.tbVolver([]); await sleep(10);
 
   /* 4. La hoja «Tu mes» */
   click(e, 'tuMesAbrir'); await sleep(10);
