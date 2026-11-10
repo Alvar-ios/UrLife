@@ -4,6 +4,8 @@ Lo lleva el departamento de Marketing y Comunicación, **un paso por semana**. C
 
 > **Ya no está en pausa (10-11-2026).** El dueño quiere publicar la app en Google Play y ha pedido el plan completo. Está en [`10-plan-lanzamiento.md`](10-plan-lanzamiento.md): marca, competencia, ficha de la tienda, canales, calendario hasta noviembre de 2027, objetivos y tareas. Es una **primera versión** de los pasos 8, 10, 12, 13, 17, 18 y 19; se irán afinando con datos reales. Siguen pendientes de hacer a fondo: 3 (mercado), 5 (reseñas), 6–7 (entrevistas), 11 (precios), 14 (web), 15 (confianza), 16 (medir) y 20 (revisión mensual, desde el primer mes tras publicar).
 >
+> **10-11-2026, segunda entrega:** [`11-marca-y-comunidad.md`](11-marca-y-comunidad.md) revisa el nombre (veredicto y 4 plataformas de marca para elegir), el plan de probadores, los vídeos con IA, la comunidad y cómo convivir con Tricount y Splitwise. Avanza los pasos 9, 10, 18 y 19 (aún no se dan por hechos: faltan las decisiones del dueño y mirar marcas en la EUIPO).
+>
 > *El archivo `10-plan-lanzamiento.md` no es el paso 10 de la lista (identidad de marca): es el plan entero. La numeración de los archivos sigue el orden de entrega.*
 
 ## Cómo se trabaja este plan (leer antes de cada paso)
@@ -113,4 +115,9 @@ Se apuntan aquí según se van tomando. Las pendientes bloquean los pasos que se
 | Objetivo del primer año | **Decidido (10-11-2026):** que la use mucha gente, no ingresos. | — |
 | Modelo | **Decidido (10-11-2026):** gratis, y un plan de pago más adelante. Sigue en pie no prometer «gratis y sin límites» (18-10-2026). | — |
 | Presupuesto y tiempo | **Decidido (10-11-2026):** 0–30 € al mes en total y 5–8 horas a la semana del dueño. | — |
-| Camino de identidad (icono y colores), lema, dominio propio | **Pendiente** (preguntas de `10-plan-lanzamiento.md`). | Icono, capturas y ficha de la tienda |
+| Camino de identidad (icono y colores) | **Decidido (10-11-2026):** camino B, dos círculos que se cruzan. | — |
+| Lema | **Provisional (10-11-2026):** «Lo tuyo, lo nuestro, todo claro»; el dueño quiere ver opciones (`11-marca-y-comunidad.md`). | Ficha |
+| ¿Confirmar «PalomApp»? | **Pendiente:** OEPM sin nada registrado (lo miró el dueño); Marketing le da un 6/10 y recomienda seguir (`11`, apartado 1). | Icono y ficha |
+| Vídeos | **Decidido (10-11-2026):** el dueño no sale; vídeos de la app con IA (voz o subtítulos) o UGC con IA. | — |
+| iPhone | **Deseo del dueño (10-11-2026):** salir en iPhone casi a la vez que en Android. Lo estudia Producto con Desarrollo. | Calendario |
+| Dominio propio, redes, LinkedIn, probadores de pago | **Pendiente** (`11`, apartado 8). | Ficha y probadores |
