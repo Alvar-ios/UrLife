@@ -35,6 +35,14 @@ async function arranca(e) { await e.A().main(); await sleep(140); }
   ok(e.A().ticketsUso().limite === 60, 'A · si la sesión no trae fecha de alta, 60 (como antes)');
   e = env({ ticketsUso: { mes: mesUTC(), usados: 3, limite: 60 } }, { created_at: '2026-11-20T10:00:00Z' }); await arranca(e);
   ok(e.A().ticketsUso().limite === 60 && e.A().ticketsUso().quedan === 57, 'A · manda lo último que dijo el servidor (no se inventa otro límite)');
+  e = env({ ticketsUso: { mes: mesUTC(), usados: 5, limite: 10 } }, { created_at: '2026-11-20T10:00:00Z' }); await arranca(e);
+  ok(!e.A().ticketsPocos(), 'A · cuenta de 10 con 5 lecturas: sin aviso naranja');
+  e = env({ ticketsUso: { mes: mesUTC(), usados: 8, limite: 10 } }, { created_at: '2026-11-20T10:00:00Z' }); await arranca(e);
+  ok(e.A().ticketsPocos(), 'A · cuenta de 10 con 2 que quedan: aviso');
+  e = env({ ticketsUso: { mes: mesUTC(), usados: 50, limite: 60 } }); await arranca(e);
+  ok(e.A().ticketsPocos(), 'A · cuenta de 60 con 10 que quedan: aviso, como antes');
+  e = env({ ticketsUso: { mes: mesUTC(), usados: 49, limite: 60 } }); await arranca(e);
+  ok(!e.A().ticketsPocos(), 'A · cuenta de 60 con 11 que quedan: sin aviso, como antes');
   e = env({}, { created_at: '2026-11-20T10:00:00Z' }); await arranca(e);
   await e.A().guardarTicketsUso({ usados: 1, limite: 10 }); await sleep(30);
   const tk = e.store.cfg.app.ticketsUso;
