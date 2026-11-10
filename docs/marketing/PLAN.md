@@ -2,11 +2,15 @@
 
 Lo lleva el departamento de Marketing y Comunicación, **un paso por semana**. Cada paso se entrega como un documento en esta carpeta siguiendo `docs/FORMATO_INFORMES.md`. Marca `[x]` al terminar y enlaza el documento.
 
-> **En pausa desde el 16-10-2026, por decisión del dueño.** Hasta que la app esté funcionando no se avanza ningún paso. Cuando se reanude, se sigue por el paso 3.
+> **Ya no está en pausa (10-11-2026).** El dueño quiere publicar la app en Google Play y ha pedido el plan completo. Está en [`10-plan-lanzamiento.md`](10-plan-lanzamiento.md): marca, competencia, ficha de la tienda, canales, calendario hasta noviembre de 2027, objetivos y tareas. Es una **primera versión** de los pasos 8, 10, 12, 13, 17, 18 y 19; se irán afinando con datos reales. Siguen pendientes de hacer a fondo: 3 (mercado), 5 (reseñas), 6–7 (entrevistas), 11 (precios), 14 (web), 15 (confianza), 16 (medir) y 20 (revisión mensual, desde el primer mes tras publicar).
+>
+> *El archivo `10-plan-lanzamiento.md` no es el paso 10 de la lista (identidad de marca): es el plan entero. La numeración de los archivos sigue el orden de entrega.*
 
 ## Cómo se trabaja este plan (leer antes de cada paso)
 
-**La app no sale mañana.** Todavía no hay app en las tiendas, ni conexión con el banco, y seguimos puliendo pantallas. El lanzamiento está a meses vista. Por eso:
+**Nota del 10-11-2026:** lo que sigue se escribió cuando el lanzamiento estaba lejos. Ahora hay app de Android y fecha probable (diciembre de 2026 – enero de 2027), así que el bloque C y el D ya están en marcha. Las reglas de «nada inventado» y «propones, no decides» siguen igual.
+
+**(Texto original)** La app no sale mañana. Todavía no hay app en las tiendas, ni conexión con el banco, y seguimos puliendo pantallas. El lanzamiento está a meses vista. Por eso:
 
 - **Ahora toca entender, no vender.** Nada de campañas, calendarios de contenido, anuncios ni textos de lanzamiento hasta el bloque C. Si un paso te pide algo que todavía no se puede hacer, dilo y para.
 - **Un paso por semana, bien hecho.** Mejor un paso con fuentes de verdad que tres por encima. Si un paso necesita dos semanas, se toman.
@@ -105,3 +109,8 @@ Se apuntan aquí según se van tomando. Las pendientes bloquean los pasos que se
 | ¿Primer público? | **Decidido (16-10-2026):** primero una persona sola; después la pareja como centro de Juntos; luego los grupos de amigos; y explorar los viajes. | — |
 | ¿Hacemos las entrevistas del paso 6? | **Aparcado (16-10-2026):** más adelante. Los pasos 6 y 7 esperan. | Pasos 6 y 7 |
 | ¿La lectura de tickets es gratis, con límite o de pago? | **Aparcado (16-10-2026):** el estudio de costes y el modelo de negocio, cuando la app esté funcionando. | Paso 11 |
+| Nombre | **Decidido (10-11-2026):** PalomApp. *Pendiente de comprobar marcas; el identificador de Android hay que cambiarlo (ver `10-plan-lanzamiento.md`, 1.5).* | — |
+| Objetivo del primer año | **Decidido (10-11-2026):** que la use mucha gente, no ingresos. | — |
+| Modelo | **Decidido (10-11-2026):** gratis, y un plan de pago más adelante. Sigue en pie no prometer «gratis y sin límites» (18-10-2026). | — |
+| Presupuesto y tiempo | **Decidido (10-11-2026):** 0–30 € al mes en total y 5–8 horas a la semana del dueño. | — |
+| Camino de identidad (icono y colores), lema, dominio propio | **Pendiente** (preguntas de `10-plan-lanzamiento.md`). | Icono, capturas y ficha de la tienda |
