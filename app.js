@@ -8142,6 +8142,17 @@ function confirmarPrincipalHtml(i) {
     '<p>' + (n ? (n === 1 ? 'Un movimiento sin cuenta pasará a esta cuenta' : n + ' movimientos sin cuenta pasarán a esta cuenta') + ', y los saldos cambiarán.' : 'Ningún movimiento cambia de cuenta, pero los saldos pueden cambiar.') + ' Para deshacerlo, vuelve a marcar la anterior.</p>' +
     '<div class="popup-btns"><button class="btn ghost block" ' + act('cuentaPrincipalNo') + '>Cancelar</button><button class="btn accent block" ' + act('cuentaPrincipalSi', i) + '>Sí, cambiar</button></div>';
 }
+function bancoPoner(k, iFijo) {
+  const nueva = iFijo == null && !!(FORM && FORM.kind === 'banco' && FORM.nueva), cs = (cfg().cuentas || []).slice();
+  let i = iFijo != null ? iFijo : FORM && FORM.kind === 'banco' ? FORM.i : -1;
+  if (nueva) { cs.push({ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }); i = cs.length - 1; }
+  if (i < 0) return;
+  const c = Object.assign({}, cs[i] || {}), b = BANCOS.find((x) => x.k === k);
+  if (b) { c.banco = b.k; if (!c.nombre) c.nombre = b.n; if (nueva && b.tipo === 'broker') c.tipo = 'broker'; } else delete c.banco;
+  cs[i] = c; saveConfig({ cuentas: cs }); sentir('tic');
+  FORM = { kind: 'cuentaEd', i }; updateSheet(cuentaEdHtml(i)); render();
+  if (nueva && !b) setTimeout(() => { const el = $('#fCuentaNombre'); if (el) el.focus(); }, 60);
+}
 /* ---- Cuentas y saldos: lista limpia; cada cuenta se edita en su propia hoja ---- */
 function cuentasHtml() {
   const cs = cfg().cuentas || [];
@@ -12079,18 +12090,8 @@ const H = {
   bancoVolver: () => { const F = FORM; if (F && F.kind === 'banco' && !F.nueva && F.i >= 0) { FORM = { kind: 'cuentaEd', i: F.i }; updateSheet(cuentaEdHtml(F.i)); } else { FORM = { kind: 'cuentas' }; updateSheet(cuentasHtml()); } },
   bancoAbrir: ([i]) => { FORM = { kind: 'banco', i: Number(i), q: '' }; updateSheet(bancoElegirHtml()); },
   bancoBuscar: (_a, el) => { if (!FORM || FORM.kind !== 'banco') return; FORM.q = el.value; const t = document.createElement('div'); t.innerHTML = bancoElegirHtml(); const r = $('#bcoRes'), n = t.querySelector('#bcoRes'); if (r && n) r.innerHTML = n.innerHTML; },
-  bancoSugerir: ([i, k]) => H.bancoElegir([k], null, Number(i)),
-  bancoElegir: ([k], _el, iFijo) => {
-    const nueva = iFijo == null && !!(FORM && FORM.kind === 'banco' && FORM.nueva), cs = (cfg().cuentas || []).slice();
-    let i = iFijo != null ? iFijo : FORM && FORM.kind === 'banco' ? FORM.i : -1;
-    if (nueva) { cs.push({ id: nuevoIdMeta(), nombre: '', saldo: null, fecha: null }); i = cs.length - 1; }
-    if (i < 0) return;
-    const c = Object.assign({}, cs[i] || {}), b = BANCOS.find((x) => x.k === k);
-    if (b) { c.banco = b.k; if (!c.nombre) c.nombre = b.n; if (nueva && b.tipo === 'broker') c.tipo = 'broker'; } else delete c.banco;
-    cs[i] = c; saveConfig({ cuentas: cs }); sentir('tic');
-    FORM = { kind: 'cuentaEd', i }; updateSheet(cuentaEdHtml(i)); render();
-    if (nueva && !b) setTimeout(() => { const el = $('#fCuentaNombre'); if (el) el.focus(); }, 60);
-  },
+  bancoSugerir: ([i, k]) => bancoPoner(k, Number(i)),
+  bancoElegir: ([k]) => bancoPoner(k, null), // 10/11: el tercer dato que llega al tocar es el evento, no un número de cuenta (por eso las cuentas no se creaban)
   cuentaQuitar: ([i], el) => {
     const cs = (cfg().cuentas || []).slice(), c = cs[Number(i)] || {};
     const n = c.id ? S.movimientos.filter((m) => m.cuentaId === c.id).length + (S.traspasos || []).filter((t) => t.cuentaId === c.id || t.cuentaDestinoId === c.id).length +
