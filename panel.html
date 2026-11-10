@@ -197,13 +197,16 @@
       filas([['Tickets que fallan', v(Q.tickets_fallidos)], ['Nota Google Play · App Store', v(play.nota) + ' · ' + v(ios.nota)]]) +
       '<div class="sec">Tareas programadas (ejecuciones · fallos)</div>' + filas(Object.entries(Q.tareas_programadas || {}).map(([k, x]) => [k, v(x.ejecuciones) + ' · ' + (x.fallos ? '<span class="err">' + v(x.fallos) + '</span>' : '0')])));
 
-    const deps = [bP, bM, bD, bQ], general = peor(deps.map((d) => d.l));
+    const deps = [bP, bM, bD, bQ];
+    const lucesArriba = [luz(P.activas.mes, OBJ.activas), luz(P.altas, OBJ.altasMes), luz(P.grupos.activos_7_dias, OBJ.grupos), luz(ultRet ? ultRet.ret_30d_pct : null, OBJ.ret30)];
+    const todas = deps.map((d) => d.l).concat(lucesArriba), general = peor(todas), hayGris = deps.some((d) => d.l === 'gris') || lucesArriba.indexOf('gris') >= 0;
     const avisos = [];
     deps.forEach((d) => { if (d.l === 'rojo' || d.l === 'ambar') avisos.push([d.l, d.titulo + ': ' + d.malos.join(', ')]); });
     if (activas != null && activas > 220) avisos.push(['ambar', 'Más de 220 activas: prepara el paso a Supabase Pro.']);
     if (activas != null && activas < 40 && new Date() >= new Date('2027-04-01')) avisos.push(['rojo', 'Menos de 40 activas en abril: revisa la ficha y los primeros pasos antes que el marketing.']);
-    const titular = general === 'verde' ? 'Todo en orden' : general === 'ambar' ? 'Hay cosas que vigilar' : general === 'rojo' ? 'Hay cosas que necesitan atención' : 'Todavía hay muy poca gente para medir';
-    const sub = general === 'gris' ? 'Con menos de 5 personas las cifras salen como «<5» y el semáforo se queda en gris. Se encenderá solo cuando llegue gente.' : avisos.length ? '' : 'Ningún indicador está por debajo de lo esperado.';
+    lucesArriba.forEach((l, i) => { if ((l === 'rojo' || l === 'ambar') && !avisos.some((x) => x[1].indexOf(['Activas al mes', 'Altas', 'Grupos activos', 'Vuelven a los 30 días'][i]) >= 0)) avisos.push([l, ['Activas al mes', 'Altas del periodo', 'Grupos activos', 'Vuelven a los 30 días'][i] + ' por debajo del objetivo']); });
+    const titular = general === 'verde' && hayGris ? 'Lo que se puede medir va bien, pero aún hay pocos datos' : general === 'verde' ? 'Todo en orden' : general === 'ambar' ? 'Hay cosas que vigilar' : general === 'rojo' ? 'Hay cosas que necesitan atención' : 'Todavía hay muy poca gente para medir';
+    const sub = general === 'gris' ? 'Con menos de 5 personas las cifras salen como «<5» y el semáforo se queda en gris. Se encenderá solo cuando llegue gente.' : avisos.length ? '' : hayGris ? 'Los indicadores en gris tienen menos de 5 personas y aún no cuentan.' : 'Ningún indicador está por debajo de lo esperado.';
 
     $('#app').innerHTML =
       '<div class="top"><div><h1>Panel de PalomApp</h1><div class="faint">Calculado ' + esc(new Date(R.periodo.calculado).toLocaleString('es-ES')) + ' · del ' + esc(desde) + ' al ' + esc(hasta) + '</div></div>' +
@@ -244,7 +247,7 @@
   function grafica() {
     const cv = $('#g'); if (!cv) return; const g = cv.getContext('2d'), W = cv.width, H = cv.height;
     const pts = HIST.map((x) => { const s = ((x.datos.marketing || {}).crecimiento_semanal || []).slice(-1)[0] || {}; return { s: x.semana, a: typeof s.activas === 'number' ? s.activas : null, n: typeof s.altas === 'number' ? s.altas : null }; });
-    g.clearRect(0, 0, W, H); g.font = '13px system-ui'; g.fillStyle = '#6E6E85';
+    g.clearRect(0, 0, W, H); g.font = Math.round(13 * W / Math.max(200, cv.clientWidth || W)) + 'px system-ui'; // que se lea también en el móvil g.fillStyle = '#6E6E85';
     if (pts.length < 2) { g.fillText('Hacen falta al menos 2 lunes de fotos para dibujar la evolución.', 12, H / 2); return; }
     const max = Math.max(5, ...pts.map((p) => Math.max(p.a || 0, p.n || 0)));
     const X = (i) => 30 + i * (W - 50) / (pts.length - 1), Y = (y) => H - 24 - (y / max) * (H - 40);

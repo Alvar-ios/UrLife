@@ -207,23 +207,27 @@
       },
       onSnapshot: function (next, errCb) {
         var channel = null, stopped = false;
-        var reintentos = 0;
-        function refresh() {
+        var esperando = false, otraVez = false;
+        function refresh(intento) {
           if (!currentUid) return;
+          intento = typeof intento === 'number' ? intento : 0;
+          if (!intento) { if (esperando) { otraVez = true; return; } esperando = true; } // una sola lectura a la vez; si llega otro aviso, se lee otra vez al acabar
           var st = escCfg(key), seq0 = st.seq, durante = st.enCurso > 0;
           fetchOne().then(function (res) {
-            if (stopped) return;
-            if (res.error) { if (errCb) errCb(pgError(res.error)); return; }
-            // salió antes de terminar un guardado: puede traer lo de antes → se vuelve a leer (como mucho 5 veces seguidas)
-            if ((durante || st.enCurso > 0 || st.seq !== seq0) && reintentos < 5) { reintentos++; setTimeout(refresh, 250); return; }
-            reintentos = 0;
+            if (stopped) { esperando = false; return; }
+            if (res.error) { esperando = false; if (errCb) errCb(pgError(res.error)); return; }
+            // salió antes de terminar un guardado: puede traer lo de antes → se vuelve a leer. Nunca se entrega una lectura
+            // así; el tope (unos 30 s) solo evita esperar para siempre si un guardado no acaba nunca.
+            if ((durante || st.enCurso > 0 || st.seq !== seq0) && intento < 120) { setTimeout(function () { refresh(intento + 1); }, 250); return; }
+            esperando = false;
+            if (otraVez) { otraVez = false; setTimeout(refresh, 0); }
             next({ exists: !!res.data, data: function () { return res.data ? res.data.value : undefined; } });
-          });
+          }, function (e) { esperando = false; if (errCb) errCb(e); }); // sin red: que el siguiente aviso pueda volver a leer
         }
         refresh();
         if (currentUid) {
           channel = sb.channel('config-' + key + '-' + currentUid)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'config', filter: 'user_id=eq.' + currentUid }, refresh)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'config', filter: 'user_id=eq.' + currentUid }, function () { refresh(); })
             .subscribe();
         }
         return function unsubscribe() { stopped = true; if (channel) sb.removeChannel(channel); };

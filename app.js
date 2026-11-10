@@ -12592,7 +12592,7 @@ async function enterApp(session) {
   checkOnboarding();
 }
 function leaveApp() {
-  S.appStarted = false;
+  S.appStarted = false; _cfgRecientes = []; // nada pendiente de la cuenta anterior se pone encima de la siguiente
   S.grupos = null; S.aportes = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S.carpetas = null; S.agenda = null; S._volverGrupo = null;
   S.user = null; S.db = null;
   S.onboarding = null; S._onboardPending = false;
