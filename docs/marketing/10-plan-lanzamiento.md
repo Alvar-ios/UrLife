@@ -383,8 +383,8 @@ Los vídeos: grabación de pantalla con datos inventados y voz encima, 15–30 s
 3. **(Bloquea la ficha)** ¿Cuántas lecturas de tickets gratis tiene quien llega de la tienda, y qué decimos del precio? Producto propone 20 al mes para los nuevos (`docs/34`) y escribe «gratis para siempre: todo lo que hay hoy». Eso choca con tu decisión del 18/10 de no prometer por escrito «gratis y sin límites». *Recomendamos: en la ficha y en los textos públicos, «Sin anuncios» y «Incluye N lecturas de tickets al mes», sin la palabra «siempre»; la promesa de Producto, si la apruebas, como regla interna («nada que hoy es gratis pasa a ser de pago») y, como mucho, dicha dentro de la app.*
 4. ¿Sales tú en los vídeos o solo pantalla y voz? *Recomendamos pantalla y voz para empezar: es más rápido y no te expone.*
 5. ¿Compramos un dominio propio antes de publicar? *Recomendamos que sí: los enlaces de la app y de la ficha no dependerían de `vercel.app` (`docs/33`).*
-7. ¿Usamos como compromiso del año la meta de Producto (1.000 altas, 300 activas, 100 grupos activos) y la nuestra (1.500 · 500 · 150) como objetivo de trabajo? *Recomendamos que sí.*
-6. ¿Nos dejas pedir a Datos y Seguridad los recuentos sumados y sin nombres para medir el plan? *Recomendamos que sí.*
+6. ¿Usamos como compromiso del año la meta de Producto (1.000 altas, 300 activas, 100 grupos activos) y la nuestra (1.500 · 500 · 150) como objetivo de trabajo? *Recomendamos que sí.*
+7. ¿Nos dejas pedir a Datos y Seguridad los recuentos sumados y sin nombres para medir el plan? *Recomendamos que sí.*
 
 ## 10. Lo que no hemos podido averiguar o confirmar
 
