@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Panel · PalomApp</title>
+<!-- Panel del dueño (docs/37 §C). Solo números: lo calcula kpis_resumen() en Supabase y solo lo ve quien está en kpis_admins.
+     Sin claves secretas: usa la clave pública de config.js y la sesión del dueño. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root { --bg:#0B0B10; --card:#15151D; --card2:#1C1C27; --line:#2A2A38; --text:#EEEEF5; --muted:#A3A3B8; --faint:#6E6E85;
+    --vio:#8B6CFF; --vio2:#B9A8FF; --amar:#FFD166; --verde:#4ADE80; --rojo:#FF6B6B; --turq:#2DD4BF; --azul:#60A5FA; --rosa:#F472B6; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width:1180px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:24px; margin:0; } h2 { font-size:16px; margin:0 0 10px; display:flex; align-items:center; gap:8px; }
+  .top { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .muted { color:var(--muted); } .faint { color:var(--faint); font-size:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-bottom:16px; }
+  .kpi .v { font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; } .kpi .l { color:var(--muted); font-size:12.5px; }
+  .deps { display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:12px; }
+  .dep { border-top:4px solid var(--c); }
+  .dot { width:10px; height:10px; border-radius:50%; background:var(--c); display:inline-block; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  td { padding:5px 4px; border-bottom:1px solid var(--line); } td:last-child { text-align:right; font-variant-numeric:tabular-nums; }
+  tr:last-child td { border-bottom:none; }
+  .sec { color:var(--vio2); font-size:12px; text-transform:uppercase; letter-spacing:1px; margin:12px 0 4px; }
+  input, select, button { font:inherit; color:var(--text); background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:9px 11px; }
+  button { background:var(--vio); border-color:var(--vio); color:#fff; cursor:pointer; font-weight:600; } button.ghost { background:transparent; color:var(--text); border-color:var(--line); }
+  .fila { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .login { max-width:360px; margin:12vh auto; display:grid; gap:10px; }
+  .sem { display:inline-block; padding:2px 10px; border-radius:99px; font-weight:600; font-size:12px; }
+  .sem.verde { background:rgba(74,222,128,.15); color:var(--verde); } .sem.ambar { background:rgba(255,209,102,.15); color:var(--amar); } .sem.rojo { background:rgba(255,107,107,.15); color:var(--rojo); }
+  canvas { width:100%; height:180px; }
+  .err { color:var(--rojo); }
+</style>
+</head>
+<body>
+<main id="app"><p class="muted">Cargando…</p></main>
+<script>
+(function () {
+  'use strict';
+  const C = window.SUPABASE_CONFIG, sb = window.supabase.createClient(C.url, C.anonKey);
+  const $ = (s) => document.querySelector(s);
+  const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const nf = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
+  const v = (x, suf) => (x == null ? '—' : typeof x === 'string' ? esc(x) : nf.format(x) + (suf || ''));
+  const hoy = () => new Date().toISOString().slice(0, 10);
+  const haceDias = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+  let R = null, HIST = [], desde = haceDias(29), hasta = hoy();
+
+  function login(msg) {
+    $('#app').innerHTML = '<div class="login card"><h1>Panel de PalomApp</h1><p class="muted">Solo para el dueño. Entra con tu cuenta de la app.</p>' +
+      (msg ? '<p class="err">' + esc(msg) + '</p>' : '') +
+      '<input id="em" type="email" placeholder="Correo" autocomplete="username"><input id="pw" type="password" placeholder="Contraseña" autocomplete="current-password">' +
+      '<button id="go">Entrar</button></div>';
+    $('#go').onclick = async () => {
+      const { error } = await sb.auth.signInWithPassword({ email: $('#em').value.trim(), password: $('#pw').value });
+      if (error) return login('No se pudo entrar: ' + error.message);
+      cargar();
+    };
+  }
+
+  async function cargar() {
+    const { data: s } = await sb.auth.getSession();
+    if (!s.session) return login();
+    $('#app').innerHTML = '<p class="muted">Calculando cifras…</p>';
+    const [r, h] = await Promise.all([
+      sb.rpc('kpis_resumen', { p_desde: desde, p_hasta: hasta }),
+      sb.from('kpis_historial').select('semana,datos').order('semana', { ascending: true }).limit(60),
+    ]);
+    if (r.error) return login(/no_autorizado/.test(r.error.message) ? 'Esta cuenta no tiene acceso al panel.' : 'Error: ' + r.error.message);
+    R = r.data; HIST = h.data || [];
+    pintar();
+  }
+
+  const filas = (pares) => '<table>' + pares.map(([l, x]) => '<tr><td>' + esc(l) + '</td><td>' + x + '</td></tr>').join('') + '</table>';
+  const dep = (color, titulo, cuerpo) => '<section class="card dep" style="--c:' + color + '"><h2><span class="dot"></span>' + titulo + '</h2>' + cuerpo + '</section>';
+
+  function pintar() {
+    const P = R.producto, M = R.marketing, D = R.datos_seguridad, Q = R.calidad, A = R.a_mano || {};
+    const play = A.play || {}, ios = A.app_store || {};
+    const ret = (P.retencion_por_semana_de_alta || []).slice(-6);
+    const ultRet = ret.filter((x) => x.ret_30d_pct != null).slice(-1)[0];
+    const herr = Object.assign({}, P.herramientas_configuradas_hoy, P.herramientas_usadas_en_periodo);
+    const NOMB = { cuentas_bancarias: 'Cuentas del banco', varias_cuentas: 'Varias cuentas', metas: 'Metas', deudas: 'Deudas', importar_extracto: 'Importar extracto',
+      pagos_fijos: 'Pagos fijos', cobros_fijos: 'Cobros fijos', trayecto: 'Trayecto', informes: 'Informes', inicio_a_su_gusto: 'Inicio a su gusto', con_configuracion: 'Con la app configurada',
+      tickets: 'Tickets con foto', inversiones: 'Inversiones', traspasos: 'Traspasos', apartar_ahorro: 'Apartar', tareas: 'Tareas', agenda_compartida_y_planes: 'Planes y agenda de grupo',
+      juntos_apuntan: 'Apuntan en Juntos', en_algun_grupo_hoy: 'Están en algún grupo', comparten_su_agenda_hoy: 'Comparten su agenda', aportan_a_metas_compartidas_alguna_vez: 'Aportan a metas compartidas' };
+    $('#app').innerHTML =
+      '<div class="top"><div><h1>Panel de PalomApp</h1><div class="faint">Calculado ' + esc(new Date(R.periodo.calculado).toLocaleString('es-ES')) + ' · «&lt;5» = de 1 a 4 personas (no se muestra por privacidad)</div></div>' +
+      '<div class="fila"><input id="d" type="date" value="' + desde + '"><input id="h" type="date" value="' + hasta + '"><button id="ok">Ver</button><button class="ghost" id="salir">Salir</button></div></div>' +
+      '<div class="kpis">' +
+        [['Activas al mes', P.activas.mes], ['Altas del periodo', P.altas], ['Grupos activos (7 días)', P.grupos.activos_7_dias],
+         ['Retención a 30 días', ultRet ? ultRet.ret_30d_pct : null, ' %'], ['Coste del mes', D.coste_mes.total_usd, ' $']]
+          .map(([l, x, s]) => '<div class="card kpi"><div class="l">' + l + '</div><div class="v">' + v(x, s) + '</div></div>').join('') +
+      '</div>' +
+      '<section class="card" style="margin-bottom:12px"><h2>Evolución semanal</h2><canvas id="g" width="1100" height="180"></canvas><div class="faint">Activas por semana (morado) y altas (amarillo). Se guarda una foto cada lunes.</div></section>' +
+      '<div class="deps">' +
+      dep('var(--turq)', 'Producto', filas([
+          ['Altas', v(P.altas)], ['Apuntan algo en 24 h', v(P.apuntan_en_24h.pct, ' %') + ' <span class="faint">de ' + v(P.apuntan_en_24h.base) + '</span>'],
+          ['Entran en un grupo en 7 días', v(P.grupo_en_7_dias.pct, ' %') + ' <span class="faint">de ' + v(P.grupo_en_7_dias.base) + '</span>'],
+          ['Activas hoy · semana · mes', v(P.activas.ultimo_dia) + ' · ' + v(P.activas.semana) + ' · ' + v(P.activas.mes)],
+          ['Activas al día ÷ al mes', v(P.activas.dia_entre_mes_pct, ' %')],
+          ['Grupos creados · abiertos · activos', v(P.grupos.creados) + ' · ' + v(P.grupos.abiertos) + ' · ' + v(P.grupos.activos_periodo)],
+          ['Personas por grupo (media)', v(P.personas_por_grupo.media)]]) +
+        '<div class="sec">Retención por semana de alta (7 / 30 días)</div>' +
+        filas(ret.map((x) => [x.semana + ' (' + (typeof x.altas === 'string' ? x.altas : x.altas) + ' altas)', v(x.ret_7d_pct, ' %') + ' / ' + v(x.ret_30d_pct, ' %')])) +
+        '<div class="sec">Herramientas (personas)</div>' + filas(Object.keys(herr).map((k) => [NOMB[k] || k, v(herr[k])]))) +
+      dep('var(--rosa)', 'Marketing', filas([
+          ['Invitaciones creadas · usadas', v(M.invitaciones.creadas) + ' · ' + v(M.invitaciones.usadas_de_esas) + ' (' + v(M.invitaciones.usadas_pct, ' %') + ')'],
+          ['Enlaces para personas sin cuenta', v(M.enlaces_sin_cuenta.creados) + ' · usados ' + v(M.enlaces_sin_cuenta.usados)],
+          ['Altas por invitación · directas', v(M.altas_por_invitacion) + ' · ' + v(M.altas_directas)],
+          ['Invitación ÷ directa', v(M.invitacion_entre_directa)],
+          ['Google Play: visitas · instalaciones', v(play.visitas) + ' · ' + v(play.instalaciones)],
+          ['App Store: visitas · instalaciones', v(ios.visitas) + ' · ' + v(ios.instalaciones)],
+          ['TikTok · Instagram (seguidores)', v((A.tiktok || {}).seguidores) + ' · ' + v((A.instagram || {}).seguidores)]]) +
+        '<div class="sec">Crecimiento por semana</div>' +
+        filas((M.crecimiento_semanal || []).slice(-6).map((x) => [x.semana, v(x.altas) + ' altas · ' + v(x.cuentas_al_acabar) + ' cuentas · ' + v(x.activas) + ' activas']))) +
+      dep('var(--azul)', 'Datos y Seguridad', filas([
+          ['Plan gratis', '<span class="sem ' + esc(D.plan_gratis_aviso) + '">' + esc(D.plan_gratis_aviso) + '</span>'],
+          ['Base de datos', v(D.base_de_datos_mb, ' MB') + ' <span class="faint">(' + v(D.base_de_datos_pct_de_500mb, ' % de 500)') + '</span>'],
+          ['Cuentas vivas · entraron en 30 días', v(D.usuarios_auth.cuentas_vivas) + ' · ' + v(D.usuarios_auth.entraron_30_dias)],
+          ['Cuentas borradas (periodo · total)', v(D.cuentas_borradas.en_periodo) + ' · ' + v(D.cuentas_borradas.total)],
+          ['Coste del mes: tickets · Supabase · a mano', v(D.coste_mes.tickets_usd, ' $') + ' · ' + v(D.coste_mes.supabase_usd, ' $') + ' · ' + v(D.coste_mes.apuntado_a_mano_usd, ' $')],
+          ['Coste por persona activa', v(D.coste_mes.por_activa_usd, ' $')]]) +
+        '<div class="sec">Tickets por modelo</div>' +
+        filas(Object.keys(D.tickets_por_modelo || {}).map((k) => [k, v(D.tickets_por_modelo[k].lecturas) + ' lecturas · ' + v(D.tickets_por_modelo[k].personas) + ' personas'])) +
+        '<div class="sec">Tablas más grandes</div>' +
+        filas(Object.entries(D.filas_por_tabla || {}).sort((a, b) => b[1].mb - a[1].mb).slice(0, 6).map(([k, x]) => [k, nf.format(x.filas) + ' filas · ' + v(x.mb, ' MB')]))) +
+      dep('var(--verde)', 'Calidad', filas([
+          ['Tickets que fallan', v(Q.tickets_fallidos) + ' (' + v(Q.tickets_fallidos_pct, ' %') + ')'],
+          ['Cierres inesperados Android', v((A.play || {}).cierres_pct, ' %')],
+          ['Cierres inesperados iPhone', v((A.app_store || {}).cierres_pct, ' %')],
+          ['Nota Google Play · App Store', v((A.play || {}).nota) + ' · ' + v((A.app_store || {}).nota)]]) +
+        '<div class="sec">Tareas programadas (ejecuciones · fallos)</div>' +
+        filas(Object.entries(Q.tareas_programadas || {}).map(([k, x]) => [k, x.ejecuciones + ' · ' + (x.fallos ? '<span class="err">' + x.fallos + '</span>' : '0')]))) +
+      '</div>' +
+      '<section class="card" style="margin-top:12px"><h2>Apuntar cifras de fuera (5 minutos a la semana)</h2>' +
+        '<div class="fila"><input id="mf" type="date" value="' + hoy() + '"><select id="ms">' +
+        [['play', 'Google Play'], ['app_store', 'App Store'], ['tiktok', 'TikTok'], ['instagram', 'Instagram'], ['youtube', 'YouTube'], ['coste', 'Factura (USD)']]
+          .map(([k, l]) => '<option value="' + k + '">' + l + '</option>').join('') + '</select>' +
+        '<select id="mc">' + [['visitas', 'Visitas a la ficha'], ['instalaciones', 'Instalaciones'], ['nota', 'Nota'], ['resenas', 'Reseñas'], ['cierres_pct', '% cierres inesperados'],
+          ['seguidores', 'Seguidores'], ['visualizaciones', 'Visualizaciones'], ['usd', 'Importe (USD)']].map(([k, l]) => '<option value="' + k + '">' + l + '</option>').join('') + '</select>' +
+        '<input id="mv" type="number" step="any" placeholder="Valor" style="width:120px"><button id="mg">Guardar</button><span id="mm" class="faint"></span></div></section>';
+    $('#ok').onclick = () => { desde = $('#d').value || desde; hasta = $('#h').value || hasta; cargar(); };
+    $('#salir').onclick = async () => { await sb.auth.signOut(); login(); };
+    $('#mg').onclick = async () => {
+      const fila = { fecha: $('#mf').value, fuente: $('#ms').value, clave: $('#mc').value, valor: Number($('#mv').value) };
+      if (!isFinite(fila.valor) || $('#mv').value === '') return ($('#mm').textContent = 'Pon un número');
+      const { error } = await sb.from('kpis_manual').upsert(fila, { onConflict: 'fecha,fuente,clave' });
+      $('#mm').textContent = error ? 'No se guardó: ' + error.message : 'Guardado ✓';
+      if (!error) setTimeout(cargar, 600);
+    };
+    grafica();
+  }
+
+  function grafica() {
+    const cv = $('#g'); if (!cv) return; const g = cv.getContext('2d'), W = cv.width, H = cv.height;
+    const pts = HIST.map((x) => { const s = ((x.datos.marketing || {}).crecimiento_semanal || []).slice(-1)[0] || {}; return { s: x.semana, a: typeof s.activas === 'number' ? s.activas : null, n: typeof s.altas === 'number' ? s.altas : null }; });
+    g.clearRect(0, 0, W, H); g.font = '13px system-ui'; g.fillStyle = '#6E6E85';
+    if (pts.length < 2) { g.fillText('Hacen falta al menos 2 lunes de fotos para dibujar la evolución.', 12, H / 2); return; }
+    const max = Math.max(5, ...pts.map((p) => Math.max(p.a || 0, p.n || 0)));
+    const X = (i) => 30 + i * (W - 50) / (pts.length - 1), Y = (y) => H - 24 - (y / max) * (H - 40);
+    [['a', '#8B6CFF'], ['n', '#FFD166']].forEach(([k, c]) => { g.strokeStyle = c; g.lineWidth = 2.5; g.beginPath(); let on = false;
+      pts.forEach((p, i) => { if (p[k] == null) { on = false; return; } if (!on) { g.moveTo(X(i), Y(p[k])); on = true; } else g.lineTo(X(i), Y(p[k])); }); g.stroke(); });
+    g.fillStyle = '#6E6E85'; pts.forEach((p, i) => { if (i % Math.ceil(pts.length / 8) === 0) g.fillText(p.s.slice(5), X(i) - 14, H - 6); });
+  }
+
+  cargar();
+})();
+</script>
+</body>
+</html>

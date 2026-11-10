@@ -152,3 +152,8 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - `precios_carburante` (aplicada): tabla pública de precios medianos por provincia y día (Ministerio + PVPC de Red Eléctrica). Solo lectura con sesión; la escribe la función `trayecto`, que guarda 60 días.
 - `poner_carpeta_permisos` (aplicada): `poner_carpeta` exige `puede_editar_compartido` en cada gasto (en grupos «solo el autor», solo el autor o un administrador).
 - `precios_carburante_cron` (aplicada 08/11): pg_cron pide a las 05:20 UTC (`carburantes_pedir`, pg_net) y guarda a las 05:35 (`carburantes_guardar`) los precios del Ministerio; solo vale una descarga de las últimas 2 h.
+
+## 10/11/2026
+- `borrar_cuenta` (aplicada): `borrar_cuenta_datos(uuid)` solo service_role, y freno `frenar_borrado_miembro` (grupo_miembros nunca se borra). Función `borrar-cuenta` desplegada (borrado suave en Auth). NUNCA usar «Delete user» normal en el panel.
+- `kpis` (aplicada): `kpis_admins`, `kpis_excluidas`, `kpis_historial`, `kpis_manual`, `kpis_resumen(desde, hasta)` (solo números, «<5»), tarea `kpis-semana` los lunes 06:00 UTC. Deshacer: ver cabecera del SQL.
+- `tickets-ia`: 60 lecturas al mes para cuentas anteriores al 11/11/2026; 10 para las nuevas.
