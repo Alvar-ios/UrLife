@@ -11,13 +11,13 @@ const RAIZ = path.join(__dirname, '..');
   // menú lateral (en pantalla ancha) y bienvenida nueva
   let e = makeEnv({ cfg: { app: { compararVersiones: false }, meta: { onboarded: true } }, movs: [], version: { tu: 0, agenda: 0, crear: 0 } });
   await e.w.__APP__.main(); await sleep(150);
-  const rail = e.doc.querySelector('.rail .brand img.marca-ico');
-  ok(!!rail && rail.getAttribute('src') === 'marca/icono.svg' && rail.getAttribute('alt') === '', 'el menú lateral lleva el logo (decorativo, sin texto alternativo)');
+  const rail = e.doc.querySelector('.rail .brand svg.marca-ico');
+  ok(!!rail && rail.getAttribute('aria-hidden') === 'true' && /PalomApp/.test(e.doc.querySelector('.rail .brand').textContent), 'el menú lateral lleva el logo (alas y moneda, decorativo; el nombre sigue en texto)');
   e = makeEnv({ cfg: { app: { compararVersiones: false } }, movs: [] });
   await e.w.__APP__.main(); await sleep(150);
-  ok(!!e.doc.querySelector('img.marca-ob'), 'la bienvenida muestra el logo encima de «¡Hola!»');
+  ok(!!e.doc.querySelector('svg.marca-ob'), 'la bienvenida muestra el logo encima de «¡Hola!»');
   // pantalla de entrada
   e.w.__APP__.H.doMfaCancel([]); await sleep(80);
-  ok(!!e.doc.querySelector('#loginEmail') && !!e.doc.querySelector('img.marca-login'), 'la pantalla de entrada muestra el logo');
+  ok(!!e.doc.querySelector('#loginEmail') && !!e.doc.querySelector('svg.marca-login'), 'la pantalla de entrada muestra el logo');
   console.log(fails ? fails + ' FALLOS' : 'TODO OK'); process.exit(fails ? 1 : 0);
 })();
