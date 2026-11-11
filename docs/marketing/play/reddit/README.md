@@ -47,3 +47,16 @@ Heads-up: the app is in Spanish for now — English is coming in the next update
 - **Gente que hable español** (más útil para opinar mientras la app esté en español): amigos y familia, grupos de Telegram o WhatsApp de desarrolladores españoles, y tus propios usuarios.
 
 Antes de publicar en cada subreddit, lee sus normas: algunos piden un formato de título concreto.
+
+## Grupo de Google (textos)
+
+- **Nombre:** PalomApp testers
+- **Correo del grupo:** `palomapp-testers`
+- **Descripción:**
+  > Testers group for PalomApp (Android) — personal finance & shared expenses with your partner, flatmates or friends. Join here, then opt in at https://play.google.com/apps/testing/es.palomapp.finanzas and keep the app installed for 14 days. Thank you! · Grupo de probadores de PalomApp: únete, apúntate en el enlace y mantén la app 14 días. ¡Gracias!
+- **Mensaje de bienvenida** (en «Configuración del grupo» → «Mensaje de bienvenida»):
+  > Thanks for joining! 🙌
+  > 1) Opt in: https://play.google.com/apps/testing/es.palomapp.finanzas
+  > 2) Install: https://play.google.com/store/apps/details?id=es.palomapp.finanzas
+  > 3) Keep it installed for 14 days and open it now and then. The app is in Spanish for now; English is coming soon.
+  > Feedback is very welcome at the email on the Play Store page. If you also need testers, reply on my Reddit post with your link and I'll test back.
