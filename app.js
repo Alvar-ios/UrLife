@@ -10995,7 +10995,7 @@ function renderOnboarding() {
    Si en los 2 últimos meses entró una nómina entre el día 20 y el 31 y nunca eligió «Tu mes», se le ofrece una vez. */
 function tuMesSugDia() {
   const c = cfg(); if (c.mesInicio || c.tuMesSug) return null;
-  const desde = new Date(); desde.setDate(desde.getDate() - 70); const d0 = desde.toISOString().slice(0, 10);
+  const d0 = uAdd(todayISO(), -70);
   const nom = (m) => /nomina|sueldo|salario/.test(normName(m.categoria || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
   const dias = S.movimientos.filter((m) => m.tipo === 'Ingreso' && (m.fecha || '') >= d0 && nom(m)).map((m) => Number(String(m.fecha).slice(8, 10)));
   if (!dias.length || dias.some((d) => d < 20)) return null;

@@ -2,6 +2,6 @@
   "name": "palomapp-tests",
   "private": true,
   "description": "Pruebas automáticas de PalomApp (jsdom). Ejecutar: npm install && npm test",
-  "scripts": { "test": "node run.js" },
+  "scripts": { "test": "node run.js", "test:rapido": "node run.js --j=4" },
   "devDependencies": { "jsdom": "^29.1.1", "xlsx": "^0.18.5" }
 }

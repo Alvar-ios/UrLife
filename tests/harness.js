@@ -1,3 +1,5 @@
+// 12/11: las pruebas corren en hora UTC (salvo que se pida otra con TZ=…): muchas calculan fechas con toISOString() y entre las 00:00 y la 01:00 (02:00 en verano) de Madrid daban el día anterior y fallaban sin motivo.
+if (!process.env.TZ) process.env.TZ = 'UTC';
 const {JSDOM}=require('jsdom'),fs=require('fs');
 function makeEnv(seed){ // seed: {config:{app,meta}, movs:[]}
   const store={movimientos:{},tareas:{},golf:{},cfg:Object.assign({},seed.cfg||{})};
