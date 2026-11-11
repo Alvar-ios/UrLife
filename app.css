@@ -1303,8 +1303,8 @@ html.cambiando *, html.cambiando *::before, html.cambiando *::after { transition
 .tr-pers-f .tr-paso-t { margin: 0; }
 .tr-pers-f .tr-pers { margin: 0; }
 
-/* Logo de PalomApp (11/11, opción 7DA). Decorativo: el nombre va siempre al lado en texto. */
-.marca-ico { display: block; border-radius: 22.5%; user-select: none; -webkit-user-drag: none; }
-.marca-login { margin: 0 auto 14px; box-shadow: 0 8px 22px rgba(10, 10, 20, .18); }
-.marca-ob { margin: 0 0 14px; box-shadow: 0 6px 16px rgba(10, 10, 20, .14); }
-.rail .brand .marca-rail { float: left; margin: 1px 10px 0 0; }
+/* Logo de PalomApp (11/11, opción 7DA): alas y moneda sin el cuadrado; las alas toman el color del texto. */
+.marca-ico { display: block; color: var(--text, #16205A); overflow: visible; }
+.marca-login { margin: 4px auto 16px; }
+.marca-ob { margin: 2px 0 18px; }
+.rail .brand .marca-rail { margin: 0 0 10px; }

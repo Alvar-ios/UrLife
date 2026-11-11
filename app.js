@@ -944,7 +944,7 @@ function perfilHtml() {
 }
 function renderShell() {
   $('#app').innerHTML =
-    '<nav class="rail" aria-label="Secciones"><div class="brand">' + marcaHtml(34, 'marca-rail') + 'PalomApp<span class="sub">Tu dinero y tus planes</span></div>' +
+    '<nav class="rail" aria-label="Secciones"><div class="brand">' + marcaHtml(40, 'marca-rail') + 'PalomApp<span class="sub">Tu dinero y tus planes</span></div>' +
     tabsNav().map(tabBtn).join('') +
     '<button class="rail-fab" ' + act('onFab') + '>' + ic('plus') + ' Añadir</button>' +
     '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
@@ -1008,13 +1008,14 @@ function renderNuevaContrasena(msg) {
     '<button class="btn accent block" ' + act('nuevaContrasenaOk') + '>Guardar y entrar</button></div></div>';
   setTimeout(() => { const el = $('#ncPass'); if (el) el.focus(); }, 80);
 }
-/* Logo de PalomApp (11/11, opción 7DA: paloma de un trazo con moneda). Decorativo: el nombre va siempre al lado en texto. */
-function marcaHtml(px, cls) { return '<img class="marca-ico ' + (cls || '') + '" src="marca/icono.svg" width="' + px + '" height="' + px + '" alt="" aria-hidden="true" draggable="false">'; }
+/* Logo de PalomApp (11/11, opción 7DA): las alas de un trazo y la moneda, sin el cuadrado del icono, para que quede integrado.
+   Las alas toman el color del texto (marino en claro, blanco en oscuro). Decorativo: el nombre va siempre al lado en texto. */
+function marcaHtml(px, cls) { return '<svg class="marca-ico ' + (cls || '') + '" viewBox="70 180 374 206" width="' + px + '" height="' + Math.round(px * 206 / 374) + '" aria-hidden="true" focusable="false"><path d="M84 238 Q112 202 172 198 Q224 196 256 246 Q288 196 340 194 Q402 194 430 214" fill="none" stroke="currentColor" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><circle cx="256" cy="334" r="48" fill="#FFC93C"/></svg>'; }
 function renderLoginScreen(msg) {
   $('#app').innerHTML =
     '<div style="min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;">' +
     '<div class="card" style="width:100%;max-width:360px;">' +
-    '<div style="text-align:center;margin-bottom:22px;">' + marcaHtml(64, 'marca-login') +
+    '<div style="text-align:center;margin-bottom:22px;">' + marcaHtml(92, 'marca-login') +
     '<div class="num" style="font-size:26px;font-weight:600;color:var(--ink);">PalomApp<span style="display:block;font-family:var(--font-ui);font-size:13px;font-weight:400;color:var(--text-faint);margin-top:2px;">Tu dinero, tus planes y tu gente</span></div></div>' +
     '<div class="field"><label>Correo</label><input id="loginEmail" type="email" autocomplete="username" placeholder="tu@correo.com"></div>' +
     '<div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password"></div>' +
@@ -10721,13 +10722,13 @@ function obBarra(ob) {
 }
 function obFila(icono, cls, t, d) { return '<div class="ob2-fila"><span class="ob2-fic ' + cls + '">' + ic(icono) + '</span><span><b>' + t + '</b><span>' + d + '</span></span></div>'; }
 function obHolaHtml(ob) {
-  if (bienvNueva(ob)) return marcaHtml(56, 'marca-ob') + '<h1 class="ob2-h">¡Hola!</h1><p class="ob2-p">Esto es PalomApp: tus gastos y lo que compartes, en un solo sitio.</p>' +
+  if (bienvNueva(ob)) return marcaHtml(72, 'marca-ob') + '<h1 class="ob2-h">¡Hola!</h1><p class="ob2-p">Esto es PalomApp: tus gastos y lo que compartes, en un solo sitio.</p>' +
     '<div class="ob2-filas">' + obFila('plus', 'a', 'Apunta un gasto en dos toques', ticketsDisponible() ? 'o hazle una foto al ticket' : 'o trae el extracto de tu banco') +
     obFila('users', 'b', 'Comparte gastos en Juntos', 'aunque los demás no tengan la app') +
     obFila('sparkle', 'v', 'Y mucho más, cuando quieras', 'cuentas, metas, presupuestos, agenda… te lo iremos enseñando') + '</div>' +
     '<div class="field"><label for="obNombre">¿Cómo te llamas?</label><input id="obNombre" type="text" maxlength="40" autocomplete="given-name" placeholder="' + escapeHtml(nombreSugerido()) + '" value="' + escapeHtml(ob.nombre || '') + '" ' + onInput('obSet', 'nombre') + '>' +
     '<div class="ob2-ayuda">Así te verán las personas con las que compartas gastos.</div></div>';
-  return marcaHtml(56, 'marca-ob') + '<h1 class="ob2-h">' + (ob.manual ? 'Así es PalomApp' : '¡Hola!') + '</h1><p class="ob2-p">Esto es PalomApp: tu dinero, tus gastos y lo que compartes, en un solo sitio. ' + (ob.manual ? 'Repasa lo básico; aquí no se borra nada.' : 'Lo dejamos listo en un minuto.') + '</p>' +
+  return marcaHtml(72, 'marca-ob') + '<h1 class="ob2-h">' + (ob.manual ? 'Así es PalomApp' : '¡Hola!') + '</h1><p class="ob2-p">Esto es PalomApp: tu dinero, tus gastos y lo que compartes, en un solo sitio. ' + (ob.manual ? 'Repasa lo básico; aquí no se borra nada.' : 'Lo dejamos listo en un minuto.') + '</p>' +
     '<div class="ob2-filas">' + obFila('plus', 'a', 'Apunta un gasto en dos toques', ticketsDisponible() ? 'o hazle una foto al ticket' : 'o trae el extracto de tu banco') +
     obFila('chart', 'v', 'Mira cuánto te queda este mes', 'y en qué se te va el dinero') + obFila('users', 'b', 'Comparte gastos en Juntos', 'quién debe a quién, y saldar con un toque') +
     obFila('wallet', 'r', 'Tus cuentas, metas y deudas', 'todo en Dinero, de un vistazo') + '</div>' +
