@@ -212,3 +212,13 @@ Los objetivos son de Producto, para la prueba cerrada; no vienen de ningún estu
 - Código de la app: `DESCUBRE`, `BANCOS`, `reglaPara`, `reglaTras`, `sugerirCategoria`, `impCandidatos`, `numCampo`, grupos de `renderTuV2`.
 
 Para el PDF: un boceto de móvil en tres pasos (aviso del banco → aviso de PalomApp «3 gastos por apuntar» → bandeja con una fila «Mercadona −12,50 € · Apuntar»), y la tabla del §3 como dos columnas, «Te lo proponemos» y «Nunca lo leemos».
+
+## Decisiones del dueño (11/11/2026, noche) y lo hecho en la rama `fase12/avisos`
+
+- **Cualquier banco:** lector general (`movil/android/.../LectorAvisos.java`, con pruebas JUnit) y, de serie, Santander, Trade Republic, Sabadell, N26 y los bancos más usados (`PAQ_BANCOS` en `app.js`). Si una app no marcada avisa de algo con pinta de pago, se anota solo su nombre y se propone en Tú → Avisos.
+- **Se apuntan solos** (en vez de «¿Apuntar…?»): Android avisa «Apuntado en PalomApp: 12,50 € en Mercadona» (sin cifras con el móvil bloqueado) y en Inicio sale «Apuntados de tus avisos» con borrar en un toque y «Están bien». Datos y Seguridad recomendaba confirmar; el dueño prefiere apuntar solo y borrar fácil.
+- **Primera fase:** el aviso se lee al momento, pero se guarda en la cuenta al abrir PalomApp (al tocar el aviso o al volver a la app). Guardar con la app cerrada del todo es la fase 2 (servidor).
+- **Columna `movimientos.origen`** aplicada con su «sí» (`supabase/migrations/2026-11-11_movimientos_origen.sql`).
+- En Bizum y transferencias no se guarda el nombre de la otra persona: la descripción es «Bizum recibido», «Transferencia enviada»…
+- **Recordatorios en el móvil** (Tú → Avisos): cobros y pagos fijos el día antes y tareas de la Agenda el mismo día, a las 9:00 (`@capacitor/local-notifications`).
+- La versión de prueba (APK) se instala al lado de la de Google Play como «PalomApp prueba» (`es.palomapp.finanzas.prueba`).

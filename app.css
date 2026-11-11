@@ -1308,3 +1308,26 @@ html.cambiando *, html.cambiando *::before, html.cambiando *::after { transition
 .marca-login { margin: 4px auto 16px; }
 .marca-ob { margin: 2px 0 18px; }
 .rail .brand .marca-rail { margin: 0 0 10px; }
+
+/* 11/11 · Avisos (docs/39): tarjeta de Inicio y hoja de Tú */
+.av-card { padding: 14px 16px; margin-bottom: 14px; }
+.av-cab { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 8px; }
+.av-cab .ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--accent, #6D3FE0) 14%, transparent); color: var(--accent, #6D3FE0); flex: none; }
+.av-cab b { display: block; font-size: 15px; }
+.av-cab span { display: block; font-size: 12.5px; color: var(--text-faint); line-height: 1.35; }
+.av-fila { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line, rgba(127,127,127,.18)); }
+.av-txt { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 0; color: inherit; font: inherit; }
+.av-txt b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.av-txt span { display: block; font-size: 12px; color: var(--text-faint); }
+.av-imp { font-size: 14px; white-space: nowrap; }
+.av-imp.neg { color: var(--expense, #D93B3B); } .av-imp.pos { color: var(--income, #1E9E62); }
+.av-borrar { flex: none; min-width: 40px; min-height: 40px; }
+.av-mas { font-size: 12.5px; color: var(--text-faint); padding: 6px 0 2px; }
+.av-card .btn.block { margin-top: 10px; }
+.av-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
+.av-opt + .av-opt { border-top: 1px solid var(--line, rgba(127,127,127,.18)); }
+.av-opt b { display: block; font-size: 14.5px; } .av-opt span { display: block; font-size: 12.5px; color: var(--text-faint); }
+.av-explica b:first-child { display: block; font-size: 15px; line-height: 1.35; margin-bottom: 8px; }
+.av-explica ul { margin: 0 0 10px; padding-left: 18px; font-size: 13.5px; line-height: 1.5; }
+.av-explica li { margin-bottom: 4px; }
+.av-nota { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0 10px; color: var(--text-faint); }

@@ -8,7 +8,18 @@
     "webContentsDebuggingEnabled": false
   },
   "plugins": {
-    "SplashScreen": { "launchShowDuration": 600, "launchAutoHide": true, "backgroundColor": "#0A0A0C", "showSpinner": false },
-    "StatusBar": { "overlaysWebView": true }
+    "SplashScreen": {
+      "launchShowDuration": 600,
+      "launchAutoHide": true,
+      "backgroundColor": "#0A0A0C",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "overlaysWebView": true
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_paloma",
+      "iconColor": "#FFC93C"
+    }
   }
 }

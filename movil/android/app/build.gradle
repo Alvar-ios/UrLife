@@ -30,6 +30,10 @@ android {
         }
     }
     buildTypes {
+        // 11/11: la versión de prueba (APK) se instala al lado de la de Google Play, sin pisarla
+        debug {
+            applicationIdSuffix ".prueba"
+        }
         release {
             if (System.getenv("ANDROID_KEYSTORE_PATH")) signingConfig signingConfigs.release
             minifyEnabled false

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icono pequeño de los avisos de PalomApp (una sola tinta, como pide Android): alas y moneda -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="374" android:viewportHeight="374">
+    <group android:translateX="-70" android:translateY="-96">
+        <path android:pathData="M84,238 Q112,202 172,198 Q224,196 256,246 Q288,196 340,194 Q402,194 430,214" android:strokeColor="#FFFFFFFF" android:strokeWidth="26" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000"/>
+        <path android:pathData="M256,334 m-52,0 a52,52 0 1,0 104,0 a52,52 0 1,0 -104,0" android:fillColor="#FFFFFFFF"/>
+    </group>
+</vector>

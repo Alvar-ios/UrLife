@@ -157,3 +157,6 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - `borrar_cuenta` (aplicada): `borrar_cuenta_datos(uuid)` solo service_role, y freno `frenar_borrado_miembro` (grupo_miembros nunca se borra). Función `borrar-cuenta` desplegada (borrado suave en Auth). NUNCA usar «Delete user» normal en el panel.
 - `kpis` (aplicada): `kpis_admins`, `kpis_excluidas`, `kpis_historial`, `kpis_manual`, `kpis_resumen(desde, hasta)` (solo números, «<5»), tarea `kpis-semana` los lunes 06:00 UTC. Deshacer: ver cabecera del SQL.
 - `tickets-ia`: 60 lecturas al mes para cuentas anteriores al 11/11/2026; 10 para las nuevas.
+
+## 11/11/2026
+- `movimientos_origen` (aplicada con el «sí» del dueño): columna opcional `movimientos.origen` (texto corto, p. ej. `aviso`) para los gastos apuntados desde los avisos del banco. Deshacer: `alter table public.movimientos drop column origen;`

@@ -7,6 +7,8 @@ import { SplashScreen } from '@capacitor/splash-screen';
 import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { registerPlugin } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 if (Capacitor.isNativePlatform()) {
   document.documentElement.classList.add('nativo');
@@ -57,6 +59,39 @@ if (Capacitor.isNativePlatform()) {
     await Share.share({ title: nombre, files: [r.uri], dialogTitle: 'Guardar o enviar ' + nombre });
     return true;
   };
+
+  // 11/11 · «Avisos del banco» (docs/39): el lector vive en Android (AvisosBancoService); aquí solo se habla con él.
+  if (N.android) {
+    const AB = registerPlugin('AvisosBanco');
+    N.avisosBanco = {
+      estado: () => AB.estado(),
+      abrirAjustes: () => AB.abrirAjustes(),
+      configurar: (o) => AB.configurar(o),
+      pendientes: () => AB.pendientes().then((r) => (r && r.lista) || []),
+      quitar: (ids) => AB.quitar({ ids }),
+      vaciar: (apagar) => AB.vaciar({ apagar: !!apagar }),
+      abiertoDesdeAviso: () => AB.abiertoDesdeAviso().then((r) => !!(r && r.si)).catch(() => false),
+      alAbrirDesdeAviso: (fn) => AB.addListener('abiertoDesdeAviso', fn),
+    };
+    // al volver a la app, la web recoge lo leído
+    App.addListener('appStateChange', ({ isActive }) => { if (isActive && window.__avisosVolver) { try { window.__avisosVolver(); } catch (e) { /* */ } } });
+  }
+
+  // 11/11 · Avisos de PalomApp que calcula el propio móvil (cobros y pagos fijos, Agenda): se programan en el teléfono
+  N.notif = {
+    permiso: () => LocalNotifications.checkPermissions().then((r) => r.display),
+    pedir: () => LocalNotifications.requestPermissions().then((r) => r.display),
+    // lista: [{ id (número), titulo, texto, cuando (ms), tab }]; borra los programados antes y pone estos
+    programar: async (lista) => {
+      const prev = await LocalNotifications.getPending().catch(() => ({ notifications: [] }));
+      if (prev.notifications && prev.notifications.length) await LocalNotifications.cancel({ notifications: prev.notifications.map((x) => ({ id: x.id })) }).catch(() => {});
+      if (!lista || !lista.length) return 0;
+      await LocalNotifications.createChannel({ id: 'recordatorios', name: 'Cobros, pagos y Agenda', description: 'Recordatorios de PalomApp', importance: 3 }).catch(() => {});
+      await LocalNotifications.schedule({ notifications: lista.slice(0, 60).map((x) => ({ id: x.id, title: x.titulo, body: x.texto, schedule: { at: new Date(x.cuando), allowWhileIdle: true }, channelId: 'recordatorios', smallIcon: 'ic_stat_paloma', iconColor: '#FFC93C', extra: { tab: x.tab || '' } })) });
+      return lista.length;
+    },
+  };
+  LocalNotifications.addListener('localNotificationActionPerformed', (a) => { const tab = a && a.notification && a.notification.extra && a.notification.extra.tab; if (tab && window.__irA) { try { window.__irA(tab); } catch (e) { /* */ } } });
 
   // Invitaciones: https://urlife-zeta.vercel.app/?unirse=… abre la app (App Links) y se pasa a la web de dentro
   App.addListener('appUrlOpen', ({ url }) => {
