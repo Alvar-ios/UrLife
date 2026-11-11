@@ -10241,7 +10241,9 @@ function avisoAMov(it) {
   const tipo = it.entra ? 'Ingreso' : 'Gasto', importe = Math.round(Number(it.importe) * 100) / 100;
   // en un Bizum o una transferencia no se guarda el nombre de la otra persona (docs/39b)
   const persona = it.tipo === 'bizum' || it.tipo === 'transferencia';
-  const desc = persona ? (it.tipo === 'bizum' ? 'Bizum' : 'Transferencia') + (it.entra ? ' recibido' : ' enviado').replace(/o$/, it.tipo === 'bizum' ? 'o' : 'a') : (String(it.comercio || '').trim() || nombreDePaquete(it.pkg, it.app));
+  const GEN = { nomina: 'Nómina', devolucion: 'Devolución', intereses: 'Intereses', dividendo: 'Dividendo', cajero: 'Cajero', recibo: 'Recibo' };
+  const desc = persona ? (it.tipo === 'bizum' ? 'Bizum' + (it.entra ? ' recibido' : ' enviado') : 'Transferencia' + (it.entra ? ' recibida' : ' enviada'))
+    : ((it.entra ? '' : String(it.comercio || '').trim()) || GEN[it.tipo] || (it.entra ? 'Ingreso' : 'Pago') + ' · ' + nombreDePaquete(it.pkg, it.app)); // en lo que entra no se guarda quién (suele ser una persona)
   const kb = bancoDePaquete(it.pkg), cta = kb && kb !== 'wallet' ? cuentasCfg().find((c) => c.banco === kb) : null;
   const regla = reglaPara(desc, tipo, cta ? cta.id : undefined), cats = categoriasPorTipo(tipo);
   let categoria = (regla && regla.categoria) || sugerirCategoria(desc, tipo) || '';
@@ -10253,8 +10255,15 @@ function avisoAMov(it) {
   return data;
 }
 // ¿ya estaba apuntado (a mano o importado)? mismo tipo e importe, ±1 día
+// (Calidad 11/11: no se mira otro aviso, que ya se distingue por su número; y hace falta que coincida el comercio)
 function avisoYaEsta(data, id) {
-  return S.movimientos.some((m) => m.id !== id && m.tipo === data.tipo && Math.abs(num(m.importe) - data.importe) < 0.005 && m.fecha && Math.abs(daysBetweenISO(m.fecha, data.fecha)) <= 1);
+  const tk = new Set(tokensDesc(data.descripcion));
+  return S.movimientos.some((m) => {
+    if (m.id === id || m.origen === 'aviso' || m.tipo !== data.tipo || Math.abs(num(m.importe) - data.importe) >= 0.005 || !m.fecha || Math.abs(daysBetweenISO(m.fecha, data.fecha)) > 1) return false;
+    const t2 = tokensDesc(m.descripcion || '');
+    if (t2.some((w) => tk.has(w))) return true; // «Mercadona» y «MERCADONA 1234 MADRID»
+    return !String(m.descripcion || '').trim() && m.categoria === data.categoria; // apuntado a mano sin descripción, misma categoría
+  });
 }
 function daysBetweenISO(a, b) { return Math.round((new Date(a + 'T12:00:00') - new Date(b + 'T12:00:00')) / 864e5); }
 let _avRecogiendo = false;
@@ -10264,15 +10273,19 @@ async function avisosRecoger() {
   try {
     const lista = await n.pendientes().catch(() => []); if (!lista.length) return 0;
     const hechos = []; let nuevos = 0;
+    const yo = miUid(); let yaEstaban = 0;
     for (const it of lista) {
       if (!it || !it.id || !(Number(it.importe) > 0)) { if (it && it.id) hechos.push(it.id); continue; }
+      if (it.uid && it.uid !== yo) { hechos.push(it.id); continue; } // leído con otra cuenta en este móvil: no se pasa a esta
       if (S.movimientos.some((m) => m.id === it.id)) { hechos.push(it.id); continue; } // ya guardado otra vez
       const data = avisoAMov(it);
-      if (avisoYaEsta(data, it.id)) { hechos.push(it.id); continue; } // ya lo tenías: no se duplica
+      if (avisoYaEsta(data, it.id)) { hechos.push(it.id); yaEstaban++; continue; } // ya lo tenías: no se duplica
       if (await guardarMovAlInstante(it.id, data, null, true)) { hechos.push(it.id); nuevos++; }
     }
     if (hechos.length) await n.quitar(hechos).catch(() => {});
-    if (nuevos) { toast(nuevos === 1 ? 'Apuntado 1 movimiento de tus avisos' : 'Apuntados ' + nuevos + ' movimientos de tus avisos', { sens: 'ok' }); render(); }
+    if (nuevos || yaEstaban) toast((nuevos === 1 ? 'Apuntado 1 movimiento de tus avisos' : nuevos ? 'Apuntados ' + nuevos + ' movimientos de tus avisos' : '') +
+      (yaEstaban ? (nuevos ? ' · ' : '') + (yaEstaban === 1 ? '1 ya lo tenías apuntado' : yaEstaban + ' ya los tenías apuntados') : ''), { sens: 'ok' });
+    if (nuevos) render();
     return nuevos;
   } finally { _avRecogiendo = false; }
 }
@@ -10317,8 +10330,10 @@ function programarRecordatoriosPronto() {
 function avisosTrasCargar() {
   if (!S.loaded || !S.loaded.mov || !S.loaded.cfg) return;
   if (!S._avIni) {
-    S._avIni = true; avisosRecoger();
+    S._avIni = true;
     const n = avNat();
+    if (n && S.user) n.configurar({ uid: miUid() }).catch(() => {});
+    avisosRecoger();
     if (n) { // al tocar «Apuntado en PalomApp», a Inicio
       n.abiertoDesdeAviso().then((si) => { if (si) window.__irA('inicio'); });
       if (!S._avEsc) { S._avEsc = true; n.alAbrirDesdeAviso(() => { avisosRecoger(); window.__irA('inicio'); }); }
@@ -10346,7 +10361,7 @@ function avisosHtml() {
   h += '<div class="section-title">Avisos del banco</div>';
   if (!e.activo || !e.permiso) {
     return h + '<div class="card av-explica"><b>PalomApp puede leer los avisos de tus apps de banco y apuntar solo cada gasto o ingreso.</b>' +
-      '<ul><li><b>Tú decides:</b> viene apagado y lo apagas cuando quieras.</li><li><b>Solo tus apps de banco:</b> no lee mensajes, WhatsApp ni otras apps.</li>' +
+      '<ul><li><b>Tú decides:</b> viene apagado y lo apagas cuando quieras.</li><li><b>Solo tus apps de banco y de pagos:</b> no lee mensajes, WhatsApp ni redes sociales. Para proponerte un banco que falte, solo apunta el nombre de la app que avisa de un pago, nunca lo que dice.</li>' +
       '<li><b>Se queda en tu móvil:</b> el texto del aviso se lee y se descarta. A tu cuenta solo pasa el movimiento (importe, comercio y fecha).</li>' +
       '<li><b>Nunca</b> lee códigos de verificación ni tus claves, y no se conecta con tu banco.</li>' +
       '<li>Cada vez que apunte algo te avisará, y en Inicio podrás borrarlo con un toque.</li></ul>' +
@@ -12859,7 +12874,7 @@ async function enterApp(session) {
 }
 function leaveApp() {
   S.appStarted = false; _cfgRecientes = []; _movsPend.clear(); // nada pendiente de la cuenta anterior se pone encima de la siguiente
-  S._avIni = false; try { if (avNat()) avNat().vaciar(false); if (notifNat()) notifNat().programar([]); } catch (e) { /* */ } // docs/39b: lo leído no pasa a otra cuenta
+  S._avIni = false; try { if (avNat()) avNat().configurar({ uid: '' }); if (notifNat()) notifNat().programar([]); } catch (e) { /* */ } // docs/39b: sin sesión no se lee; lo leído no pasa a otra cuenta
   S.grupos = null; S.aportes = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S.carpetas = null; S.agenda = null; S._volverGrupo = null;
   S.user = null; S.db = null;
   S.onboarding = null; S._onboardPending = false;

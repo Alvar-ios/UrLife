@@ -25,7 +25,7 @@ const hoyISO = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0
   };
   const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre,
     cfg: { app: { compararVersiones: false, categoriasGasto: [{ nombre: 'Supermercado' }, { nombre: 'Otros' }], ingresos: ['Nómina', 'Otros ingresos'], cuentas: [{ id: 'c1', nombre: 'Cuenta Santander', banco: 'santander' }] }, meta: { onboarded: true } },
-    movs: [{ id: 'm0', tipo: 'Gasto', categoria: 'Otros', importe: 40, fecha: hoyISO(), descripcion: 'Repsol' }] });
+    movs: [{ id: 'm0', tipo: 'Gasto', categoria: 'Otros', importe: 40, fecha: hoyISO(), descripcion: 'Gasolinera Repsol' }] });
   e.store.tareas.t1 = { nombre: 'Llamar al seguro', estado: 'Pendiente', fechaLimite: manana, prioridad: 'Media' };
   await e.w.__APP__.main(); await sleep(2200);
   const M = e.store.movimientos;
@@ -47,9 +47,9 @@ const hoyISO = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0
   ok(!!e.doc.querySelector('[data-click="avAbrir"]'), 'en Tú está la fila «Avisos»');
   click(e, 'avAbrir'); await sleep(80);
   const sh = () => (e.doc.querySelector('#sheetHost') || {}).textContent || '';
-  ok(/no lee mensajes, WhatsApp ni otras apps/.test(sh()) && /Nunca/.test(sh()), 'antes de pedir el permiso se explica qué hace');
+  ok(/no lee mensajes, WhatsApp ni redes sociales/.test(sh()) && /Nunca/.test(sh()), 'antes de pedir el permiso se explica qué hace');
   click(e, 'avActivar'); await sleep(120);
-  const c = llamadas.configurar[0] || {};
+  const c = llamadas.configurar.find((o) => 'activo' in o) || {};
   ok(c.activo === true && (c.bancos || []).includes('es.bancosantander.apps') && (c.bancos || []).includes('de.traderepublic.app') && llamadas.ajustes === 1, '«Aceptar y activar» marca los bancos de serie y abre los ajustes de Android');
   est.permiso = true; e.w.__avisosVolver(); await sleep(120);
   ok(/Qué apps se leen/.test(sh()) && /Trade Republic/.test(sh()), 'con el permiso dado, se ven las apps que se leen');

@@ -25,11 +25,11 @@ public class LectorAvisosTest {
         es("x", "Compra", "1.234,56 € en El Corte Inglés el 11/11", 1234.56, false, "El Corte Inglés");
     }
     @Test public void bizumYTransferencias() {
-        es("x", "Bizum enviado", "Has enviado un Bizum de 15,00 € a Ana García", 15, false, "Ana García");
-        es("x", "Bizum", "Ana te ha enviado 15 € por Bizum", 15, true, "Ana");
-        es("x", "Transferencia recibida", "Has recibido una transferencia de 250,00 € de JUAN PEREZ", 250, true, "Juan Perez");
+        es("x", "Bizum enviado", "Has enviado un Bizum de 15,00 € a Ana García", 15, false, "");
+        es("x", "Bizum", "Ana te ha enviado 15 € por Bizum", 15, true, "");
+        es("x", "Transferencia recibida", "Has recibido una transferencia de 250,00 € de JUAN PEREZ", 250, true, "");
         es("x", "Nómina", "Te han ingresado la nómina: 1.850,00 €", 1850, true, null);
-        es("x", "Devolución", "Devolución de 19,99 € de Zalando", 19.99, true, "Zalando");
+        es("x", "Devolución", "Devolución de 19,99 € de Zalando", 19.99, true, "");
         es("x", "Cajero", "Retirada de efectivo de 50 € en cajero", 50, false, null);
     }
     @Test public void walletTituloEsComercio() {

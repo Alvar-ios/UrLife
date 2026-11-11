@@ -39,9 +39,17 @@ public class AvisosBancoService extends NotificationListenerService {
     static final int ID_AVISO = 4201;
     static final long SIETE_DIAS = 7L * 24 * 3600 * 1000, DIEZ_MIN = 10L * 60 * 1000;
 
+    static final Object CANDADO = new Object(); // el servicio y el plugin tocan la misma cola
+
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        try { procesar(this, sbn); } catch (Throwable t) { /* nunca romper el servicio por un aviso raro */ }
+        try { synchronized (CANDADO) { procesar(this, sbn); } } catch (Throwable t) { /* nunca romper el servicio por un aviso raro */ }
+    }
+
+    // Para proponer apps que faltan solo se miran apps con pinta de banco o de pagos (nunca WhatsApp, SMS, redes…)
+    static boolean pareceBanco(String pkg) {
+        return pkg.matches("(?i).*(bank|banco|banca|bancaria|caixa|caja|kutxa|rural|ibercaja|unicaja|abanca|bbva|santander|sabadell|bankinter|ingdirect|openbank|evobanco|n26|number26|revolut|bunq|wise|transferwise|paypal|wallet|pay|finanz|finance|money|cartera|trade|broker|invest|card|tarjeta|vivid|myinvestor|selfbank|deutsche|cetelem|cofidis|wizink).*")
+            && !pkg.matches("(?i).*(whatsapp|telegram|messag|mms|sms|gmail|mail|facebook|instagram|twitter|tiktok|snapchat|discord|signal|slack|teams|outlook).*");
     }
 
     static void procesar(Context ctx, StatusBarNotification sbn) throws Exception {
@@ -50,6 +58,8 @@ public class AvisosBancoService extends NotificationListenerService {
         if (pkg == null || pkg.equals(ctx.getPackageName())) return;
         SharedPreferences p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
         if (!p.getBoolean("activo", false)) return;
+        String uid = p.getString("uid", "");
+        if (uid.isEmpty()) return; // sin sesión en PalomApp no se lee nada (así no pasa a la cuenta de otro)
         Notification n = sbn.getNotification();
         if ((n.flags & Notification.FLAG_GROUP_SUMMARY) != 0) return; // el resumen de grupo repite los avisos
         Bundle ex = n.extras;
@@ -62,7 +72,8 @@ public class AvisosBancoService extends NotificationListenerService {
         if (m == null) return;
 
         Set<String> bancos = p.getStringSet("bancos", new HashSet<>());
-        if (!bancos.contains(pkg)) { // app no marcada: solo se anota su nombre para proponerla
+        if (!bancos.contains(pkg)) { // app no marcada: solo se anota su nombre para proponerla (si tiene pinta de banco)
+            if (!pareceBanco(pkg)) return;
             Set<String> cand = new HashSet<>(p.getStringSet("candidatos", new HashSet<>()));
             if (cand.add(pkg)) p.edit().putStringSet("candidatos", cand).apply();
             JSONObject nombres = new JSONObject(p.getString("nombres", "{}"));
@@ -73,21 +84,24 @@ public class AvisosBancoService extends NotificationListenerService {
         long ahora = System.currentTimeMillis();
         JSONArray cola = new JSONArray(p.getString("cola", "[]")), viva = new JSONArray();
         for (int i = 0; i < cola.length(); i++) { JSONObject o = cola.getJSONObject(i); if (ahora - o.optLong("ts") < SIETE_DIAS) viva.put(o); }
-        // el mismo movimiento repetido (el banco y Google Wallet, o el aviso que se actualiza) cuenta una vez
+        // repetidos: el mismo aviso que se actualiza (misma clave), o el mismo pago avisado por dos apps (banco + Google Wallet)
+        // en 10 minutos. Dos pagos iguales de la misma app sí cuentan los dos (dos cafés).
+        String clave = sbn.getKey() == null ? "" : sbn.getKey();
         JSONArray rec = new JSONArray(p.getString("recientes", "[]")), recViva = new JSONArray();
         boolean repe = false;
         for (int i = 0; i < rec.length(); i++) {
             JSONObject o = rec.getJSONObject(i);
             if (ahora - o.optLong("ts") > DIEZ_MIN) continue;
             recViva.put(o);
-            if (Math.abs(o.optDouble("importe") - m.importe) < 0.005 && o.optBoolean("entra") == m.entra) repe = true;
+            boolean igual = Math.abs(o.optDouble("importe") - m.importe) < 0.005 && o.optBoolean("entra") == m.entra;
+            if (igual && (clave.equals(o.optString("clave")) || !pkg.equals(o.optString("pkg")))) repe = true;
         }
         if (repe) { p.edit().putString("recientes", recViva.toString()).apply(); return; }
-        recViva.put(new JSONObject().put("importe", m.importe).put("entra", m.entra).put("ts", ahora));
+        recViva.put(new JSONObject().put("importe", m.importe).put("entra", m.entra).put("ts", ahora).put("pkg", pkg).put("clave", clave));
 
         JSONObject it = new JSONObject()
             .put("id", UUID.randomUUID().toString()).put("pkg", pkg).put("app", etiqueta(ctx, ex, pkg))
-            .put("importe", m.importe).put("entra", m.entra).put("comercio", personaNo(m)).put("tipo", m.tipo).put("ts", ahora);
+            .put("importe", m.importe).put("entra", m.entra).put("comercio", personaNo(m)).put("tipo", m.tipo).put("ts", ahora).put("uid", uid);
         viva.put(it);
         while (viva.length() > 100) viva.remove(0);
         int sinVer = p.getInt("sinVer", 0) + 1;

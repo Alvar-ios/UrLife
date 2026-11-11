@@ -69,6 +69,7 @@ public class AvisosBancoPlugin extends Plugin {
         SharedPreferences.Editor ed = prefs().edit();
         if (call.hasOption("activo")) ed.putBoolean("activo", Boolean.TRUE.equals(call.getBoolean("activo")));
         if (call.hasOption("avisarme")) ed.putBoolean("avisarme", Boolean.TRUE.equals(call.getBoolean("avisarme")));
+        if (call.hasOption("uid")) ed.putString("uid", call.getString("uid", "")); // la cuenta con sesión ("" = nadie: no se lee)
         JSArray b = call.getArray("bancos");
         if (b != null) {
             Set<String> s = new HashSet<>();
@@ -98,13 +99,16 @@ public class AvisosBancoPlugin extends Plugin {
     /** Quita de la cola los ya guardados (o descartados). { ids: [...] } */
     @PluginMethod
     public void quitar(PluginCall call) {
+        synchronized (AvisosBancoService.CANDADO) { quitarYa(call); }
+    }
+    private void quitarYa(PluginCall call) {
         try {
             Set<String> ids = new HashSet<>();
             JSArray a = call.getArray("ids"); if (a != null) for (Object o : a.toList()) ids.add(String.valueOf(o));
             JSONArray cola = new JSONArray(prefs().getString("cola", "[]")), queda = new JSONArray();
             for (int i = 0; i < cola.length(); i++) { JSONObject o = cola.getJSONObject(i); if (!ids.contains(o.optString("id"))) queda.put(o); }
-            prefs().edit().putString("cola", queda.toString()).putInt("sinVer", 0).apply();
-            NotificationManagerCompat.from(getContext()).cancel(AvisosBancoService.ID_AVISO);
+            prefs().edit().putString("cola", queda.toString()).putInt("sinVer", queda.length()).apply();
+            if (queda.length() == 0) NotificationManagerCompat.from(getContext()).cancel(AvisosBancoService.ID_AVISO);
             call.resolve();
         } catch (Exception e) { call.reject(e.getMessage()); }
     }
@@ -112,6 +116,9 @@ public class AvisosBancoPlugin extends Plugin {
     /** Apagar del todo: borra la cola, las propuestas y lo reciente (también al cerrar sesión). */
     @PluginMethod
     public void vaciar(PluginCall call) {
+        synchronized (AvisosBancoService.CANDADO) { vaciarYa(call); }
+    }
+    private void vaciarYa(PluginCall call) {
         SharedPreferences.Editor ed = prefs().edit();
         ed.remove("cola").remove("recientes").remove("candidatos").remove("nombres").putInt("sinVer", 0);
         if (Boolean.TRUE.equals(call.getBoolean("apagar", false))) ed.putBoolean("activo", false);

@@ -86,7 +86,7 @@ if (Capacitor.isNativePlatform()) {
       const prev = await LocalNotifications.getPending().catch(() => ({ notifications: [] }));
       if (prev.notifications && prev.notifications.length) await LocalNotifications.cancel({ notifications: prev.notifications.map((x) => ({ id: x.id })) }).catch(() => {});
       if (!lista || !lista.length) return 0;
-      await LocalNotifications.createChannel({ id: 'recordatorios', name: 'Cobros, pagos y Agenda', description: 'Recordatorios de PalomApp', importance: 3 }).catch(() => {});
+      await LocalNotifications.createChannel({ id: 'recordatorios', name: 'Cobros, pagos y Agenda', description: 'Recordatorios de PalomApp', importance: 3, visibility: 0 }).catch(() => {});
       await LocalNotifications.schedule({ notifications: lista.slice(0, 60).map((x) => ({ id: x.id, title: x.titulo, body: x.texto, schedule: { at: new Date(x.cuando), allowWhileIdle: true }, channelId: 'recordatorios', smallIcon: 'ic_stat_paloma', iconColor: '#FFC93C', extra: { tab: x.tab || '' } })) });
       return lista.length;
     },
