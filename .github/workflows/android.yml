@@ -31,7 +31,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-      - uses: android-actions/setup-android@v3
+      # 11/11: sin android-actions/setup-android (fallaba con las herramientas nuevas); las máquinas de GitHub ya traen Android (ANDROID_HOME)
       - name: Preparar la web dentro de la app
         working-directory: movil
         run: npm ci && npm run sync

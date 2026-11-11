@@ -1302,3 +1302,9 @@ html.cambiando *, html.cambiando *::before, html.cambiando *::after { transition
 .tr-pers-f { display: flex; justify-content: space-between; align-items: center; }
 .tr-pers-f .tr-paso-t { margin: 0; }
 .tr-pers-f .tr-pers { margin: 0; }
+
+/* Logo de PalomApp (11/11, opción 7DA). Decorativo: el nombre va siempre al lado en texto. */
+.marca-ico { display: block; border-radius: 22.5%; user-select: none; -webkit-user-drag: none; }
+.marca-login { margin: 0 auto 14px; box-shadow: 0 8px 22px rgba(10, 10, 20, .18); }
+.marca-ob { margin: 0 0 14px; box-shadow: 0 6px 16px rgba(10, 10, 20, .14); }
+.rail .brand .marca-rail { float: left; margin: 1px 10px 0 0; }
