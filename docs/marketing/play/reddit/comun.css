@@ -1,11 +1,11 @@
 @font-face{font-family:Brico;src:url(file:///home/claude/urlife/fonts/bricolage-grotesque.woff2)}
 *{box-sizing:border-box}
 body{margin:0;color:#fff;font-family:'Work Sans';overflow:hidden;position:relative;background:#0b0a12}
-.fondo{position:absolute;inset:0;background:
+.fondo{position:fixed;inset:0;background:
  radial-gradient(700px 520px at var(--gx,72%) var(--gy,55%),rgba(124,82,240,.55),transparent 70%),
  radial-gradient(420px 320px at var(--ox,80%) var(--oy,85%),rgba(255,201,60,.22),transparent 70%),
  linear-gradient(160deg,#16132a 0%,#0b0a12 60%)}
-.grano{position:absolute;inset:0;opacity:.06;background-image:radial-gradient(#fff 1px,transparent 1px);background-size:4px 4px}
+.grano{position:fixed;inset:0;opacity:.06;background-image:radial-gradient(#fff 1px,transparent 1px);background-size:4px 4px}
 .tel{position:absolute;border-radius:58px;padding:11px;background:linear-gradient(145deg,#4a4a5c,#15151d 40%,#2b2b38);
  box-shadow:0 0 0 2px #0a0a0f,0 50px 90px rgba(0,0,0,.65),0 10px 30px rgba(80,50,200,.25)}
 .tel img{display:block;width:100%;border-radius:48px}
