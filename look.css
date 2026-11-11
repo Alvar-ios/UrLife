@@ -2516,4 +2516,4 @@ html[data-look="nuevo"] .tec-cat-n { white-space: normal; text-overflow: clip; d
 /* 11/11 (A7): zona de toque más alta en enlaces de texto, chips y selectores pequeños, sin cambiar cómo se ven.
    Solo hacia arriba y hacia abajo, para no pisar al de al lado. */
 html[data-look="nuevo"] button.link, html[data-look="nuevo"] .chip, html[data-look="nuevo"] .mes-sel, html[data-look="nuevo"] .mov-cuentas-btn { position: relative; }
-html[data-look="nuevo"] button.link::after, html[data-look="nuevo"] .chip::after { content: ''; position: absolute; left: 0; right: 0; top: -8px; bottom: -8px; }
+html[data-look="nuevo"] .chip::after { content: ''; position: absolute; left: 0; right: 0; top: -8px; bottom: -8px; } /* los enlaces ya tienen la suya, más grande (app.css) */

@@ -147,8 +147,8 @@ const CATS = [{ nombre: 'Supermercado' }, { nombre: 'Restaurantes' }, { nombre: 
   ok(!e.S.movimientos.some((m) => m.importe === 7), 'si no se pudo guardar, desaparece de la pantalla (no queda un gasto que no existe)');
   ok(/No se ha guardado/.test(aviso(e)) && !!e.doc.querySelector('#toast .toast-btn'), 'aviso «No se ha guardado» con botón (' + aviso(e) + ')');
   e.srv.fallarEscritura = false;
-  e.doc.querySelector('#toast .toast-btn').click(); await sleep(80);
-  ok(hojaAbierta(e) && /7/.test((e.doc.querySelector('#fImporte') || {}).value || ''), '«Reintentar» vuelve a abrir el gasto con lo escrito');
+  e.doc.querySelector('#toast .toast-btn').click(); await sleep(150);
+  ok(movs(e).filter((m) => m.importe === 7).length === 1 && e.S.movimientos.filter((m) => m.importe === 7).length === 1, '«Reintentar» vuelve a guardar el mismo gasto (una vez)');
 
   // ---------- 3) Ticket (sin IA real) ----------
   paso('Ticket hasta la llamada');

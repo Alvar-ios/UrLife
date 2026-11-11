@@ -2037,31 +2037,36 @@ async function saveMov() {
     // corta la respuesta y se reintenta, no se duplica), sale ya en pantalla, la hoja se cierra y se guarda por detrás.
     // Si al final no se puede guardar, se quita de la pantalla y el aviso ofrece «Reintentar» con lo escrito.
     const movId = FORM.id || nuevoIdMov(), cuentaElegida = FORM.cuenta, esNuevo = !FORM.id;
-    const previo = ex ? Object.assign({}, ex) : null;
-    movPendiente(movId, data);
-    if (reglaNueva && guardarRegla(reglaNueva, categoria, FORM.tipo)) toast('Guardado. Regla creada: «' + normDesc(reglaNueva) + '» → ' + categoria);
-    else toast(FORM.compQuitado ? 'Ya no está compartido: cuenta entero como tuyo' : FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido');
+    const previo = ex ? Object.assign({}, ex) : null, tipoForm = FORM.tipo;
+    toast(FORM.compQuitado ? 'Ya no está compartido: cuenta entero como tuyo' : FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido');
     S._aterriza = movId;
-    FORM.guardando = false; terminarForm(); render();
-    let ok = false;
-    try { await withRetry(() => S.db.collection('movimientos').doc(movId).set(data)); ok = true; } catch (e) { console.error(e); }
-    movPendienteFin(movId, ok ? null : (previo || false));
-    if (!ok) {
-      render();
-      toast('No se ha guardado ' + (esNuevo ? 'el movimiento' : 'el cambio') + '. Revisa tu conexión.', { aviso: true, boton: 'Reintentar', ms: 9000,
-        deshacer: () => esNuevo ? openMovForm(null, { tipo: data.tipo, importe: data.importe, categoria: data.categoria, fecha: data.fecha, cuentaId: data.cuentaId, descripcion: data.descripcion }) : openMovForm(movId) });
-      return;
-    }
+    FORM.guardando = false; terminarForm();
+    // Calidad 11/11: «Reintentar» vuelve a guardar exactamente lo mismo (todos los campos y el mismo número: nunca duplica)
+    const ok = await guardarMovAlInstante(movId, data, previo, esNuevo);
+    if (!ok) return;
+    if (reglaNueva && guardarRegla(reglaNueva, categoria, tipoForm)) toast('Guardado. Regla creada: «' + normDesc(reglaNueva) + '» → ' + categoria); // solo si se guardó
     if (data.metaId || (data.metaIds && data.metaIds.length) || (S.aportes || []).some((a) => a.movId === movId)) sincronizarAporte(Object.assign({ id: movId }, data));
     if (ponCuenta && categoria) { const pc = cfg().cuentaPorCat || {}, k = normName(categoria); if (pc[k] !== cuentaElegida) saveConfig({ cuentaPorCat: Object.assign({}, pc, { [k]: cuentaElegida }) }); }
   } finally { if (FORM) FORM.guardando = false; }
 }
-// 11/11 (auditoría de Calidad): crear con el número puesto en el móvil. Si la red corta la respuesta y se reintenta
-// (withRetry o tocando otra vez), se guarda la misma fila en vez de otra nueva: no hay duplicados.
+// 11/11 (auditoría de Calidad): crear con el número puesto en el móvil. Si la red corta la respuesta y withRetry
+// reintenta, se guarda la misma fila en vez de otra nueva: no hay duplicados en los reintentos automáticos.
 const _idCreado = new WeakMap();
 function anadir(col, data) {
   let id = _idCreado.get(data); if (!id) { id = nuevoIdMov(); _idCreado.set(data, id); }
   return S.db.collection(col).doc(id).set(data).then(() => ({ id }));
+}
+async function guardarMovAlInstante(movId, data, previo, esNuevo) {
+  movPendiente(movId, data); render();
+  let ok = false;
+  try { await withRetry(() => S.db.collection('movimientos').doc(movId).set(data)); ok = true; } catch (e) { console.error(e); }
+  movPendienteFin(movId, ok ? null : (previo || false));
+  if (!ok && S.user) {
+    render();
+    toast('No se ha guardado ' + (esNuevo ? 'el movimiento' : 'el cambio') + '. Revisa tu conexión.', { aviso: true, boton: 'Reintentar', ms: 9000,
+      deshacer: () => { if (S.user) guardarMovAlInstante(movId, data, previo, esNuevo).then((b) => { if (b) toast(esNuevo ? 'Movimiento añadido' : 'Movimiento actualizado'); }); } });
+  }
+  return ok;
 }
 // ---- 11/11: movimientos que se están guardando (se ven ya; lo que llega del servidor no los quita hasta que terminan) ----
 function nuevoIdMov() { try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) { /* sin crypto */ } return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
@@ -12594,7 +12599,7 @@ const H = {
     try { await window.Auth.resetPassword(email); renderLoginScreen('Te hemos enviado un correo con instrucciones para cambiar tu contraseña.'); }
     catch (e) { renderLoginScreen('No se pudo enviar el correo. Inténtalo de nuevo en unos minutos.'); }
   },
-  doLogout: async () => { closeSheet(); await window.Auth.signOut(); },
+  doLogout: async () => { if (_movsPend.size) return toast('Espera un momento: aún se está guardando lo último', { aviso: true }); closeSheet(); await window.Auth.signOut(); }, // Calidad 11/11
 };
 const debouncedSearch = debounce((v) => { S.movQuery = v; S.movLimit = 120; const l = $('#movList'); if (l) l.innerHTML = renderMovList(); }, 160);
 
@@ -12675,7 +12680,7 @@ async function enterApp(session) {
   checkOnboarding();
 }
 function leaveApp() {
-  S.appStarted = false; _cfgRecientes = []; // nada pendiente de la cuenta anterior se pone encima de la siguiente
+  S.appStarted = false; _cfgRecientes = []; _movsPend.clear(); // nada pendiente de la cuenta anterior se pone encima de la siguiente
   S.grupos = null; S.aportes = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S.carpetas = null; S.agenda = null; S._volverGrupo = null;
   S.user = null; S.db = null;
   S.onboarding = null; S._onboardPending = false;

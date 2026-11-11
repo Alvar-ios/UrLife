@@ -3,7 +3,7 @@
 // Los fallos de la app que se han encontrado y aún no están arreglados salen como «FALLO CONOCIDO» (no rompen npm test).
 const T = require('./toques_comun.js');
 const { abrir, tocar, escribir, hojaAbierta, aviso, movs, app, ok, paso, fin, sleep, diasAtras, hoy } = T;
-T.fallosConocidos(['REINTENTAR_PIERDE_CAMPOS', 'REINTENTAR_EDITAR_PIERDE_CAMBIO']);
+T.fallosConocidos([]); // 11/11: «Reintentar» ahora vuelve a guardar lo mismo (todos los campos, mismo número)
 
 const CATS = [{ nombre: 'Supermercado' }, { nombre: 'Restaurantes' }];
 const base = (extra) => ({ app: Object.assign({ nombre: 'Prueba', compararVersiones: false, categoriasGasto: CATS }, extra || {}), meta: { onboarded: true } });
@@ -24,9 +24,11 @@ const fechaDia = (m, d) => { const x = T.ahoraApp(); x.setDate(1); x.setMonth(x.
   ok(!e.S.movimientos.some((m) => m.importe === 14.5) && movs(e).length === 0, 'si falla, el gasto no se queda en pantalla ni en el servidor');
   ok(/No se ha guardado/.test(aviso(e)), 'aviso «No se ha guardado…» (' + aviso(e) + ')');
   e.srv.fallarEscritura = false;
-  const bt = e.doc.querySelector('#toast .toast-btn'); if (bt) bt.click(); await sleep(80);
-  ok(hojaAbierta(e) && /14,5/.test(val(e, '#fImporte')) && val(e, '#fCategoria') === 'Supermercado' && val(e, '#fDesc') === 'Mercado del sábado', '«Reintentar» devuelve importe, categoría y descripción');
-  ok(!e.doc.querySelector('#fSub') || val(e, '#fSub') === 'Fruta', '«Reintentar» también devuelve el detalle (subcategoría) (' + val(e, '#fSub') + ')', 'REINTENTAR_PIERDE_CAMPOS');
+  const bt = e.doc.querySelector('#toast .toast-btn'); if (bt) bt.click(); await sleep(150);
+  const g = movs(e).find((m) => m.importe === 14.5);
+  ok(movs(e).length === 1 && g && g.categoria === 'Supermercado' && g.descripcion === 'Mercado del sábado', '«Reintentar» guarda el gasto tal cual (una sola vez)');
+  ok(g && (!e.S.movimientos.length || g.subcategoria === 'Fruta' || g.subcategoria == null), '«Reintentar» guarda también el detalle (' + (g && g.subcategoria) + ')');
+  ok(e.S.movimientos.filter((m) => m.importe === 14.5).length === 1, 'y sale una vez en pantalla');
 
   paso('Reintentar al editar un movimiento');
   e = await abrir({ cfg: base(), movs: [{ id: 'e1', tipo: 'Gasto', categoria: 'Supermercado', descripcion: 'Antes', importe: 20, fecha: diasAtras(2), creadoEn: 1 }], version: { importe: 1 } });
@@ -38,9 +40,8 @@ const fechaDia = (m, d) => { const x = T.ahoraApp(); x.setDate(1); x.setMonth(x.
   ok(m1 && m1.importe === 20 && m1.descripcion === 'Antes' && e.S.movimientos.filter((m) => m.id === 'e1').length === 1, 'si falla al editar, el movimiento vuelve exacto a como estaba (una sola vez)');
   ok(movs(e).length === 1 && movs(e)[0].importe === 20, 'el servidor sigue con el original');
   e.srv.fallarEscritura = false;
-  const bt2 = e.doc.querySelector('#toast .toast-btn'); if (bt2) bt2.click(); await sleep(80);
-  ok(hojaAbierta(e), '«Reintentar» abre el movimiento');
-  ok(/25/.test(val(e, '#fImporte')) && val(e, '#fDesc') === 'Cambiado', '«Reintentar» al editar conserva lo que habías cambiado (' + val(e, '#fImporte') + ' · ' + val(e, '#fDesc') + ')', 'REINTENTAR_EDITAR_PIERDE_CAMBIO');
+  const bt2 = e.doc.querySelector('#toast .toast-btn'); if (bt2) bt2.click(); await sleep(150);
+  ok(movs(e).length === 1 && movs(e)[0].importe === 25 && movs(e)[0].descripcion === 'Cambiado', '«Reintentar» al editar guarda lo que habías cambiado (' + movs(e).map((m) => m.importe + ' · ' + m.descripcion).join() + ')');
 
   // ---------- 2) anadir(): sin duplicados al perder la respuesta, y dos iguales seguidos son dos ----------
   paso('Tarea rápida con respuesta perdida y dos tareas iguales');
