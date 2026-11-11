@@ -28,9 +28,9 @@ const m = (u, nm) => ({ user_id: u, nombre: nm, rol: 'miembro' });
 
   /* 2. Tú: NUEVO en tu perfil y MEJORADO en cobros y Tu mes (como mucho 3) */
   H.goTab(['tu']); await sleep(20);
-  ok(/badge-new ">NUEVO/.test(doc.querySelector('.tu2-quien').innerHTML), 'Tú: tu nombre lleva NUEVO (tu perfil)');
+  ok(!doc.querySelector('.tu2-quien .badge-new') && !!doc.querySelector('.tu2-editar .badge-dot'), 'Tú: la novedad del perfil va en «Editar» (punto), no junto al nombre (11/11, B8)');
   ok(/Cobros y pagos fijos <span class="badge-new mejor">MEJORADO/.test(html()) && /Tu mes <span class="badge-new mejor">MEJORADO/.test(html()), 'Tú: MEJORADO en cobros y pagos fijos y en Tu mes');
-  ok(doc.querySelectorAll('#content .badge-new').length === 3, 'Tú: no más de 3 etiquetas a la vez');
+  ok(doc.querySelectorAll('#content .badge-new').length <= 3, 'Tú: no más de 3 etiquetas a la vez');
   ok(doc.querySelector('#tbAvatar').classList.contains('con-novedad'), 'punto en tu inicial');
   click(e, 'tuNombreAbrir'); await sleep(20);
   ok(/Tu perfil/.test(sh().textContent) && vistos().perfil === '2026-10-24', 'abrir tu perfil quita su etiqueta');
