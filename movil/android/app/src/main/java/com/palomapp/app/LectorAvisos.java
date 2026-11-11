@@ -30,10 +30,12 @@ public final class LectorAvisos {
     private static final Pattern IGNORAR = Pattern.compile(
         "c[oó]digo|\\bclave\\b|\\botp\\b|contrase[nñ]a|verificaci|verification|\\bcode\\b|"
         + "confirma (tu|la|esta|el)|confirm (your|the)|pendiente|autoriza (la|esta|tu)|approve|preautoriz|retenci[oó]n|"
-        + "rechazad|denegad|declined|fallid|no se ha podido|cancelad|anulad|"
-        + "llegar[aá]|se (cargar|cobrar|abonar|pagar)[aá]|pr[oó]ximo (recibo|cargo|pago)|vence|ma[nñ]ana se|"
+        + "rechazad|denegad|declined|fallid|failed|no se ha podido|cancelad|anulad|revertid|retrocedid|reversed|insufficient|fondos insuficientes|caducad|expirad|expired|"
+        + "llegar[aá] (ma[nñ]ana|pronto|hoy|el d[ií]a)|se (cargar|cobrar|abonar|pagar)[aá]|cargaremos|cobraremos|abonaremos|pr[oó]ximo (recibo|cargo|pago)|vence|ma[nñ]ana se|recuerda|"
+        + "resumen|este mes has|esta semana has|en lo que va de|semanal|mensual|"
+        + "a tu (espacio|hucha|cuenta|ahorro|bolsillo|pocket|vault|meta)|entre tus cuentas|traspaso|to your (savings|space|pocket|vault)|"
         + "te (ha|han) (solicitado|pedido)|te pide|solicitud de|"
-        + "orden de (compra|venta)|plan de inversi|ejecutad|acciones|\\betf\\b|participaciones|has cambiado|cambio de divisa|"
+        + "orden de (compra|venta)|plan de inversi|acciones|\\betf\\b|participaciones|has cambiado|cambio de divisa|"
         + "promoci[oó]n|sorteo|gana hasta|consigue|por cada amigo|invita a|cashback de hasta|descuento de|"
         + "l[ií]mite de (gasto|tu tarjeta|cr[eé]dito)|inicio de sesi[oó]n|has iniciado|nuevo dispositivo",
         F);
@@ -41,7 +43,7 @@ public final class LectorAvisos {
     private static final Pattern SALDO = Pattern.compile("(tu saldo|saldo( disponible| actual)?|balance)\\b[^.!\\n]*", F);
 
     // Importe con € o EUR al lado. Miles con punto (o espacio duro); nunca pegado a otra cifra, «/» o «*» (tarjeta, fecha).
-    private static final String NUM = "(\\d{1,3}(?:[.\\u00a0\\u202f]\\d{3})+(?:,\\d{1,2})?|\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)";
+    private static final String NUM = "(\\d{1,3}(?: \\d{3})+,\\d{2}|\\d{1,3}(?:[.\\u00a0\\u202f]\\d{3})+(?:,\\d{1,2})?|\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)";
     // signo solo si va pegado a la cifra («-12,50 €»); « - 15 €» es un guion que separa
     private static final String SIG = "(?:(?<![\\p{L}\\d])([-−+])(?=€?\\d))?";
     private static final Pattern IMP_DESPUES = Pattern.compile(SIG + "(?<![\\d/*.,])" + NUM + "\\s?(?:€|eur(?:os?)?\\b)", F);
@@ -50,15 +52,16 @@ public final class LectorAvisos {
     private static final Pattern ENTRA = Pattern.compile(
         "ingreso|ingresad|has recibido|te (han|ha) (enviado|transferido|pagado|devuelto|ingresado|hecho)|"
         + "recibid[oa]s?|abono|abonad|devoluci[oó]n|devuelto|reembolso|n[oó]mina|intereses|dividendo|"
-        + "you (have )?received|received|refund|incoming|deposit|interest",
+        + "you (have )?received|received|refund|incoming|deposit|interest|paid you|been paid|sent you|has cobrado",
         F);
     private static final Pattern SALE = Pattern.compile(
-        "compra|pago|has pagado|pagado|cargo|cargad|adeudo|recibo|retirada|has retirado|reintegro|cajero|has enviado|enviaste|"
-        + "con tarjeta|operaci[oó]n con|movimiento en tu tarjeta|autorizada|transferencia (enviada|realizada|emitida)|has (hecho|realizado|transferido)|"
+        "compra|pago|has pagado|pagado|pagaste|has gastado|gastaste|te han cobrado|cobro de|charged|cargo|cargad|adeudo|recibo|retirada|has retirado|reintegro|cajero|has enviado|enviaste|"
+        + "con tarjeta|operaci[oó]n con|movimiento en tu tarjeta|autorizada|transferencia (enviada|realizada|emitida|ejecutada)|has (hecho|realizado|transferido)|"
         + "you (spent|paid|sent)|spent|payment|paid|withdraw|purchase|card transaction",
         F);
     // si salen las dos cosas, manda lo concreto
-    private static final Pattern GANA_ENTRA = Pattern.compile("devoluci|reembolso|refund|devuelto|abono|te (ha|han) (enviado|transferido|pagado)|has recibido \\d|bizum recibido|transferencia recibida", F);
+    private static final Pattern GANA_ENTRA = Pattern.compile("devoluci|reembolso|refund|devuelto|abono|te (ha|han) (enviado|transferido|pagado|devuelto)|has recibido|recibid[oa]|received|paid you|been paid|sent you|has cobrado", F);
+    private static final Pattern RECIBO_RECIBIDO = Pattern.compile("recibid[oa]s? (un|el|tu|nuevo) (nuevo )?recibo", F);
     private static final Pattern GANA_SALE = Pattern.compile("\\brecibo\\b|adeudo|\\bcargo\\b|domiciliaci", F);
 
     /** Lee un aviso. paquete = la app que lo manda. Devuelve null si no es un movimiento claro. */
@@ -82,14 +85,15 @@ public final class LectorAvisos {
         else if (e && !s) entra = true;
         else if (s && !e) entra = false;
         else if (e && s) {
-            if (GANA_SALE.matcher(todo).find() && !Pattern.compile("devoluci|reembolso|refund|devuelto", F).matcher(todo).find()) entra = false;
-            else if (GANA_ENTRA.matcher(todo).find()) entra = true;
+            if (RECIBO_RECIBIDO.matcher(todo).find()) entra = false;          // «Has recibido un recibo de Iberdrola»
+            else if (GANA_ENTRA.matcher(todo).find()) entra = true;           // «Pago recibido», «Ana paid you», «Devolución de la compra»
+            else if (GANA_SALE.matcher(todo).find()) entra = false;
             else entra = ordenEntra(todo);
         } else if (paquete != null && paquete.startsWith("com.google.android.apps.walletnfcrel")) entra = false; // Google Wallet solo avisa de pagos
         if (entra == null) return null; // ante la duda, no
 
         String tipo = tipoDe(todo, entra);
-        String comercio = entra ? "" : comercioDe(paquete, todo, t, iniImp, finImp); // en lo que entra suele haber una persona: no se guarda
+        String comercio = entra ? "" : comercioDe(paquete, todo, t, iniImp, finImp, tipo); // en lo que entra suele haber una persona: no se guarda
         return new Movimiento(Math.round(imp * 100.0) / 100.0, entra, comercio, tipo);
     }
 
@@ -134,18 +138,18 @@ public final class LectorAvisos {
     private static final Pattern TRAS_EN = Pattern.compile("(?:\\ben|\\bat|\\bin)\\s+(.+)", F);
     private static final Pattern MAYUS_TRAS = Pattern.compile("^[\\s:·-]*([A-ZÁÉÍÓÚÑÜ0-9][A-ZÁÉÍÓÚÑÜ0-9 .&'*-]{2,40})");
     private static final Pattern CORTE = Pattern.compile(
-        "\\s+(con|el|la|de|del|on|with|using|mediante|desde tu|desde la|en tu|en la cuenta|a tu|por|via|vía|hoy|ayer|a las|at \\d|\\d{1,2}[/:]\\d{2}|tarjeta|card|terminada|acabada|\\*{2,}|•{2,}|x{3,}|concepto|ref)\\b.*|[.!·|(\\[,;].*",
+        "\\s+(con|el|la|de|del|on|with|using|mediante|desde tu|desde la|en tu|en la cuenta|a tu|por|via|vía|hoy|ayer|a las|at \\d|\\d{1,2}[/:]\\d{2}|tarjeta|card|terminada|acabada|\\*{2,}|•{2,}|x{3,}|concepto|ref|a|to|for|by|was|has been)\\b.*|[.!·|(\\[,;:].*",
         F);
     private static final Pattern GENERICO = Pattern.compile(
         "^(tu|su|tus|cuenta|tarjeta|card|compra|pago|bizum|transferencia|transfer|recibo|ingreso|nuevo|nueva|movimiento|operaci[oó]n|cajero|efectivo|un cajero|"
         + "aviso|alerta|notificaci[oó]n|santander|sabadell|n26|trade republic|bbva|caixabank|ing|revolut|openbank|bankinter|imagin|unicaja|abanca|paypal|google|wallet|euros?|eur)\\b.*",
         F);
 
-    private static String comercioDe(String paquete, String todo, String titulo, int ini, int fin) {
+    private static String comercioDe(String paquete, String todo, String titulo, int ini, int fin, String tipo) {
         String tras = fin >= 0 && fin <= todo.length() ? todo.substring(fin) : "";
         String antes = ini > 0 ? todo.substring(0, ini) : "";
         String c = primero(TRAS_EN, tras);
-        if (c == null) { // «-12,50 € MERCADONA», «45,20 € VODAFONE»
+        if (c == null && ("tarjeta".equals(tipo) || "recibo".equals(tipo))) { // «-12,50 € MERCADONA», «45,20 € VODAFONE» (solo en compras y recibos: si no, puede ser una persona)
             Matcher m = MAYUS_TRAS.matcher(tras);
             if (m.find()) { String k = pulir(CORTE.matcher(m.group(1)).replaceFirst("")); if (!k.isEmpty() && !GENERICO.matcher(k).matches() && k.matches(".*\\p{L}{2,}.*")) c = k; }
         }
