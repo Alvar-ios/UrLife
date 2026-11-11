@@ -1,0 +1,13 @@
+LOGO DE PALOMAPP (11/11/2026) · opción 7DA: paloma de un trazo con moneda
+
+svg/ = vectores (se pueden ampliar sin perder calidad; el texto ya va convertido en formas, no hace falta la letra)
+png/ = imágenes con fondo transparente (los iconos de app llevan su fondo negro)
+
+simbolo-*     solo las alas y la moneda
+horizontal-*  símbolo + «PalomApp» al lado
+vertical-*    símbolo encima de «PalomApp»
+icono-app     el icono de la app (cuadrado; «redondeado» con las esquinas curvas)
+
+Colores de las versiones: blanco (para fondos oscuros), marino #16205A y negro (para fondos claros).
+Colores de la marca: marino #16205A · dorado de la moneda #FFC93C · fondo del icono #2E2E3A → #08080C
+Letra del nombre: Bricolage Grotesque (licencia libre OFL)
