@@ -1658,8 +1658,9 @@ const TIPO_ACTIVO_MAP = { ETF: 'ETF', 'Acción': 'Acción', Criptomoneda: 'Cript
 function tipoActivoDe(a) { return TIPOS_ACTIVO.indexOf(a && a.tipo) >= 0 ? a.tipo : (TIPO_ACTIVO_MAP[a && a.tipo] || 'Otro'); }
 function errPrecioMsg(e) {
   if (e === 'limite') return 'Hoy se han agotado las consultas gratuitas de precios. Escribe tú las participaciones o inténtalo mañana.';
-  if (e === 'sin_precio') return 'No hay precio de ese activo para esa fecha. Escribe tú las participaciones.';
-  if (e === 'sin_divisa') return 'No hay tipo de cambio para esa fecha. Escribe tú las participaciones.';
+  // 11/11: los precios automáticos gratuitos solo llegan a un año atrás (más antiguo = sin precio). No se bloquea: se guarda igual.
+  if (e === 'sin_precio') return 'No tenemos el precio de ese día (los automáticos llegan hasta hace un año). Pon el precio al que compraste cada participación, o cuántas compraste. Si no lo sabes, se guarda igual y lo completas luego.';
+  if (e === 'sin_divisa') return 'No hay tipo de cambio para esa fecha. Pon el precio en euros de cada participación, o cuántas compraste. Si no lo sabes, se guarda igual.';
   return 'No se pudo consultar el precio. Revisa tu conexión o escribe tú las participaciones.';
 }
 function invAuto() { return FORM.tipo === 'Inversión' && FORM.invModo === 'auto' && activosDisponible(); }
@@ -1697,7 +1698,8 @@ function invFieldsBaseHtml(tipo, actual) {
   h += '</div>';
   if (a) {
     h += '<div id="previewPart" style="font-size:13px;color:var(--text-faint);margin:-4px 0 12px;line-height:1.5;"></div>' +
-      '<div class="field"><label>Participaciones <span class="hint">· opcional; vacío = se calculan solas</span></label><input id="fPart" type="number" step="any" inputmode="decimal" placeholder="Automático" value="' + (FORM.partOrig != null ? Math.abs(FORM.partOrig) : '') + '"></div>';
+      '<div class="field"><label>Participaciones <span class="hint">· opcional; vacío = se calculan solas</span></label><input id="fPart" type="number" step="any" inputmode="decimal" placeholder="Automático" value="' + (FORM.partOrig != null ? Math.abs(FORM.partOrig) : '') + '"></div>' +
+      '<div class="field"><label>Precio por participación (€) <span class="hint">· opcional; para fechas de hace más de un año</span></label><input id="fPrecioU" type="text" inputmode="decimal" placeholder="Al que compraste" autocomplete="off"></div>';
   }
   h += '<button type="button" class="link" style="margin:-4px 0 12px;" ' + act('invManual') + '>Escribirlo a mano (sin valoración automática)</button>';
   return h;
@@ -1993,15 +1995,18 @@ async function saveMov() {
       const manual = parseFloat((($('#fPart') || {}).value) || '');
       const orig = FORM.partOrig == null ? null : Math.abs(FORM.partOrig);
       const manualCambiada = isFinite(manual) && manual > 0 && (orig == null || Math.abs(manual - orig) > 1e-9);
+      const precioU = numCampo((($('#fPrecioU') || {}).value) || ''); // 11/11: precio de compra escrito a mano (fechas antiguas)
       if (manualCambiada) participaciones = sign * manual;
+      else if (isFinite(precioU) && precioU > 0) participaciones = importe / precioU;
       else if (ex && ex.participaciones != null && ex.activoId === activoId && Number(ex.importe) === importe && ex.fecha === fecha) participaciones = Number(ex.participaciones);
       else {
         let pr = FORM.precio && !FORM.precio.error && FORM.precio.activo_id === activoId && FORM.precio.fecha_solicitada === fecha ? FORM.precio : null;
         if (!pr) { try { pr = await activosApi('precio_en', { activo_id: activoId, fecha }); } catch (e) { pr = { error: 'red' }; } }
-        if (pr.error) return toast(errPrecioMsg(pr.error));
-        participaciones = importe / pr.cierre_eur;
+        if (pr.error === 'sin_precio' || pr.error === 'sin_divisa') { participaciones = null; FORM.sinPrecioAviso = true; } // se guarda sin participaciones; se completan luego en la hoja del activo
+        else if (pr.error) return toast(errPrecioMsg(pr.error));
+        else participaciones = importe / pr.cierre_eur;
       }
-      participaciones = Math.round(participaciones * 1e8) / 1e8;
+      if (participaciones != null) participaciones = Math.round(participaciones * 1e8) / 1e8;
     }
     const data = Object.assign(ex ? stripId(ex) : { creadoEn: Date.now() }, {
       tipo: FORM.tipo, importe, categoria, fecha,
@@ -2041,7 +2046,7 @@ async function saveMov() {
     // Si al final no se puede guardar, se quita de la pantalla y el aviso ofrece «Reintentar» con lo escrito.
     const movId = FORM.id || nuevoIdMov(), cuentaElegida = FORM.cuenta, esNuevo = !FORM.id;
     const previo = ex ? Object.assign({}, ex) : null, tipoForm = FORM.tipo;
-    toast(FORM.compQuitado ? 'Ya no está compartido: cuenta entero como tuyo' : FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido');
+    toast(FORM.sinPrecioAviso ? 'Guardado sin participaciones: no hay precio de ese día. Añádelas cuando las sepas para que se valore.' : FORM.compQuitado ? 'Ya no está compartido: cuenta entero como tuyo' : FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido');
     S._aterriza = movId;
     FORM.guardando = false; terminarForm();
     // Calidad 11/11: «Reintentar» vuelve a guardar exactamente lo mismo (todos los campos y el mismo número: nunca duplica)
