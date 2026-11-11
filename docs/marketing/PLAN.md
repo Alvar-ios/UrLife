@@ -6,6 +6,8 @@ Lo lleva el departamento de Marketing y Comunicación, **un paso por semana**. C
 >
 > **10-11-2026, segunda entrega:** [`11-marca-y-comunidad.md`](11-marca-y-comunidad.md) revisa el nombre (veredicto y 4 plataformas de marca para elegir), el plan de probadores, los vídeos con IA, la comunidad y cómo convivir con Tricount y Splitwise. Avanza los pasos 9, 10, 18 y 19 (aún no se dan por hechos: faltan las decisiones del dueño y mirar marcas en la EUIPO).
 >
+> **11-11-2026:** [`12-ficha-google-play.md`](12-ficha-google-play.md) deja lista la ficha de Google Play para la prueba cerrada (textos, icono, gráfico, capturas, cuestionarios y mensaje a probadores).
+>
 > *El archivo `10-plan-lanzamiento.md` no es el paso 10 de la lista (identidad de marca): es el plan entero. La numeración de los archivos sigue el orden de entrega.*
 
 ## Cómo se trabaja este plan (leer antes de cada paso)
@@ -71,7 +73,7 @@ Lo lleva el departamento de Marketing y Comunicación, **un paso por semana**. C
 - [ ] **12. Mensajes y textos base** → `12-mensajes.md`
   El mismo mensaje contado para cada público (parejas, pisos, viajes) y los textos que se van a necesitar: web, ficha de tienda, redes, el mensaje para invitar a un amigo.
 
-- [ ] **13. Ficha en las tiendas (ASO)** → `13-tiendas.md`
+- [x] **13. Ficha en las tiendas (ASO)** → Google Play hecho en [`12-ficha-google-play.md`](12-ficha-google-play.md) e imágenes en [`play/`](play/) (11-11-2026). *Falta la App Store cuando haya app de iPhone.*
   Qué busca la gente en Google Play y en la App Store, qué palabras nos interesan, título, descripción y qué deben enseñar las capturas. Es el canal más barato y el que más se descuida.
 
 - [ ] **14. Web de presentación** → `14-web.md`

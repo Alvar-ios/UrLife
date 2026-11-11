@@ -116,6 +116,8 @@ grant execute on function public.borrar_cuenta_datos(uuid) to service_role;
 
 ## 6. Borrador del formulario de seguridad de los datos
 
+> **Puesto al día el 11/11/2026 en [`marketing/12-ficha-google-play.md`](marketing/12-ficha-google-play.md) §5:** el borrado de cuenta ya existe, las letras de serie ya no se piden a Google, y se añaden «analíticas» por los recuentos del panel del dueño. Usar esa versión.
+
 | Tipo de dato (Google) | ¿Se recoge? | ¿Se comparte? | ¿Obligatorio? | Para qué |
 |---|---|---|---|---|
 | Información personal: correo | Sí | No | Sí | Gestión de la cuenta |
