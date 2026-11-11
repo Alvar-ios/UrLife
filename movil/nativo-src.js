@@ -5,6 +5,8 @@ import { App } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 if (Capacitor.isNativePlatform()) {
   document.documentElement.classList.add('nativo');
@@ -47,6 +49,14 @@ if (Capacitor.isNativePlatform()) {
     const h = a.getAttribute('href') || '';
     if (/^(https?:|mailto:|tel:)/.test(h) && !/^https?:\/\/localhost/.test(h)) { ev.preventDefault(); window.open(h, '_system'); }
   }, true);
+
+  // 11/11 (auditoría de Calidad): en la app, «descargar» un archivo (Excel, copia, .ics) no hace nada; se guarda en la
+  // caché de la app y se abre el menú de compartir de Android (Drive, correo, WhatsApp, Archivos…).
+  N.guardarArchivo = async (nombre, texto, mime) => {
+    const r = await Filesystem.writeFile({ path: nombre, data: texto, directory: Directory.Cache, encoding: Encoding.UTF8 });
+    await Share.share({ title: nombre, files: [r.uri], dialogTitle: 'Guardar o enviar ' + nombre });
+    return true;
+  };
 
   // Invitaciones: https://urlife-zeta.vercel.app/?unirse=… abre la app (App Links) y se pasa a la web de dentro
   App.addListener('appUrlOpen', ({ url }) => {

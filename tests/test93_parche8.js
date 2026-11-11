@@ -29,7 +29,7 @@ const m = (u, nm) => ({ user_id: u, nombre: nm, rol: 'miembro' });
   /* 2. Tú: NUEVO en tu perfil y MEJORADO en cobros y Tu mes (como mucho 3) */
   H.goTab(['tu']); await sleep(20);
   ok(/badge-new ">NUEVO/.test(doc.querySelector('.tu2-quien').innerHTML), 'Tú: tu nombre lleva NUEVO (tu perfil)');
-  ok(/Cobros y pagos recurrentes <span class="badge-new mejor">MEJORADO/.test(html()) && /Tu mes <span class="badge-new mejor">MEJORADO/.test(html()), 'Tú: MEJORADO en cobros y pagos fijos y en Tu mes');
+  ok(/Cobros y pagos fijos <span class="badge-new mejor">MEJORADO/.test(html()) && /Tu mes <span class="badge-new mejor">MEJORADO/.test(html()), 'Tú: MEJORADO en cobros y pagos fijos y en Tu mes');
   ok(doc.querySelectorAll('#content .badge-new').length === 3, 'Tú: no más de 3 etiquetas a la vez');
   ok(doc.querySelector('#tbAvatar').classList.contains('con-novedad'), 'punto en tu inicial');
   click(e, 'tuNombreAbrir'); await sleep(20);
@@ -40,7 +40,7 @@ const m = (u, nm) => ({ user_id: u, nombre: nm, rol: 'miembro' });
   H.closeSheet([]); await sleep(300);
   click(e, 'tuMesAbrir'); await sleep(20); H.closeSheet([]); await sleep(300);
   H.goTab(['tu']); await sleep(20);
-  ok(!doc.querySelector('.tu2-quien .badge-new') && !/Tu mes <span class="badge-new/.test(html()) && !/Cobros y pagos recurrentes <span class="badge-new/.test(html()), 'Tú: ya sin esas etiquetas');
+  ok(!doc.querySelector('.tu2-quien .badge-new') && !/Tu mes <span class="badge-new/.test(html()) && !/Cobros y pagos fijos <span class="badge-new/.test(html()), 'Tú: ya sin esas etiquetas');
 
   /* 3. Grupo: NUEVO en «Planes» y en los temas; se quitan al usarlos */
   S.user = Object.assign({}, S.user, { id: 'uYo' });
@@ -55,10 +55,10 @@ const m = (u, nm) => ({ user_id: u, nombre: nm, rol: 'miembro' });
     agenda: { suscribir: () => () => {}, crear: async (o) => o, editar: async (id, o) => o, borrar: async () => [], restaurar: async () => null } });
   H.grupoVer(['g1']); await sleep(30);
   const planesBtn = () => [...sh().querySelectorAll('.jv-tabs button')].find((b) => /^Planes/.test(b.textContent.trim()));
-  ok(planesBtn() && /NUEVO/.test(planesBtn().innerHTML), 'grupo: la pestaña «Planes» lleva NUEVO');
+  ok(planesBtn() && /badge-dot/.test(planesBtn().innerHTML), 'grupo: la pestaña «Planes» lleva el punto de novedad (11/11: punto en vez de NUEVO, que la partía en dos líneas)');
   ok(/Por temas <span class="badge-new ">NUEVO/.test(sh().innerHTML), 'grupo: «Por temas» lleva NUEVO');
   H.grupoTab(['planes']); await sleep(20);
-  ok(vistos().planes && !/NUEVO/.test(planesBtn().innerHTML), 'al entrar en «Planes» se quita su etiqueta');
+  ok(vistos().planes && !/badge-dot|NUEVO/.test(planesBtn().innerHTML), 'al entrar en «Planes» se quita su etiqueta');
   H.grupoTab(['gastos']); await sleep(20);
   H.temaVer(['t1']); await sleep(20);
   ok(vistos().temas, 'al abrir un tema se quita la etiqueta de los temas');

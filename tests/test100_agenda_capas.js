@@ -15,10 +15,9 @@ const _d = new Date(), hoy = _d.getFullYear() + '-' + String(_d.getMonth() + 1).
   b.click(); await sleep(20);
   ok(/Agenda/.test(doc.querySelector('#pageTitle').textContent) && doc.querySelector('#tbAgenda').classList.contains('on'), 'tocarlo abre la Agenda y queda marcado');
   H.irAgenda(['calendario']); await sleep(20);
-  ok(doc.querySelector('.cal-capas') && /Planes y tareas/.test(doc.querySelector('.cal-capas .active').textContent) && !/Movimientos/.test(doc.querySelector('.cal2-ley').textContent), 'calendario de la Agenda: capa «Planes y tareas» y sin el filtro «Movimientos»');
-  H.calCapa(['dinero']); await sleep(20);
-  ok(A.S.tab === 'movimientos' && A.S.movVista === 'calendario' && /Dinero/.test(doc.querySelector('.cal-capas .active').textContent), '«Dinero» lleva al calendario de Movimientos, con la capa marcada');
-  H.calCapa(['planes']); await sleep(20);
-  ok(/Agenda/.test(doc.querySelector('#pageTitle').textContent) && doc.querySelector('.cal2-grid'), 'y «Planes y tareas» vuelve a la Agenda');
+  // 11/11 (decisión del dueño): cada calendario va por su lado, sin el selector «Planes y tareas | Dinero»
+  ok(doc.querySelector('.cal2-grid') && !doc.querySelector('.cal-capas') && !/Movimientos/.test(doc.querySelector('.cal2-ley').textContent), 'calendario de la Agenda: sin selector de capas y sin el filtro «Movimientos»');
+  H.goTab(['movimientos']); H.setMovVista(['calendario']); await sleep(20);
+  ok(!doc.querySelector('.cal-capas'), 'Movimientos → Calendario tampoco lo enseña');
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.log(String(err && err.stack || err)); process.exit(1); });

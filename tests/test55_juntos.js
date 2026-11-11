@@ -81,7 +81,7 @@ const clicks = (e, pre) => [...e.doc.querySelectorAll('[data-click^="' + pre + '
   /* 1. La pestaña Juntos nueva: personas primero */
   A.S.tab = 'juntos'; A.render(); await sleep(30);
   ok(/Debes\s*35,00/.test(app()) && /Te deben\s*0,00/.test(app()), 'arriba: «Debes 35 €» y «Te deben 0 €» [' + app().slice(0, 160) + ']');
-  ok(/Bea/.test(app()) && /le debes/.test(app()) && /a solas y en Piso|en Piso y a solas/.test(app()), 'fila de Bea: 35 €, «le debes», «a solas y en Piso»');
+  ok(/Bea/.test(app()) && /le debes/.test(app()) && /entre vosotros dos y en Piso|en Piso y entre vosotros dos/.test(app()), 'fila de Bea: 35 €, «le debes», «a solas y en Piso»');
   ok(clicks(a, 'saldarTodo').includes('saldarTodo|uB'), 'al lado de Bea hay un botón «Saldar»');
   ok(/Compartir un gasto/.test(app()) && /Grupos/.test(app()) && /Actividad/.test(app()), 'se ven «Compartir un gasto», «Grupos» y «Actividad»');
   ok(/Bea apuntó «Café»/.test(app()), 'Actividad: «Bea apuntó «Café»»');
@@ -98,7 +98,7 @@ const clicks = (e, pre) => [...e.doc.querySelectorAll('[data-click^="' + pre + '
   /* 2. Bug 35/30: tocar a Bea enseña los 35 € y el desglose */
   A.H.juntosPersona(['uB']); await sleep(30);
   ok(/Le debes\s*35,00/.test(sh(a)), 'la hoja de Bea dice «Le debes 35 €» (antes abría el piso con 30 €) [' + sh(a).slice(0, 120) + ']');
-  ok(/A solas\s*−5,00/.test(sh(a)) && /Piso\s*−30,00/.test(sh(a)), 'desglose: a solas 5 € y Piso 30 €');
+  ok(/Solo vosotros dos\s*−5,00/.test(sh(a)) && /Piso\s*−30,00/.test(sh(a)), 'desglose: a solas 5 € y Piso 30 €');
   A.H.saldarTodo(['uB']); await sleep(30);
   ok(/Ya le he pagado 35,00/.test(sh(a)), 'Saldar: botón «Ya le he pagado 35 €»');
   await A.H.saldarTodoGuardar([]); await sleep(80);

@@ -76,7 +76,7 @@ const gasto = (id, gid, imp, pag, rep, desc, por) => ({ id, grupoId: gid, fecha:
   A.S.tab = 'juntos'; A.render(); await sleep(20);
   ok(/Te deben\s*35,00/.test(appTxt(a)) && /Debes\s*0,00/.test(appTxt(a)), 'dos sentidos: arriba «Te deben 35 €» y «Debes 0 €»');
   A.H.personaVer(['uB']); await sleep(20);
-  ok(/Te debe\s*35,00/.test(sh(a)) && /A solas\s*−5,00/.test(sh(a)) && /Piso\s*\+40,00/.test(sh(a)), 'hoja de Bea: «Te debe 35» con −5 a solas y +40 en el piso');
+  ok(/Te debe\s*35,00/.test(sh(a)) && /Solo vosotros dos\s*−5,00/.test(sh(a)) && /Piso\s*\+40,00/.test(sh(a)), 'hoja de Bea: «Te debe 35» con −5 a solas y +40 en el piso');
   A.H.saldarTodo(['uB']); await sleep(20);
   A.H.saldarCuenta(['cu2']);
   // doble toque en «Ya me ha pagado»

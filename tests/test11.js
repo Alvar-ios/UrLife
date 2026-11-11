@@ -28,7 +28,7 @@ let fails=0;const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m);if(!c)fails++};
  ok(e.doc.querySelector('#tbAvatar').classList.contains('con-novedad'),'punto en tu inicial (Tú) mientras haya algo nuevo');
  e.w.__APP__.H.goTab(['mas']);await sleep(20);
  let t=e.doc.querySelector('#content').innerHTML;
- ok(/Cobros y pagos recurrentes <span class="badge-new/.test(t),'Tú: cobros sigue con etiqueta hasta que entres');
+ ok(/Cobros y pagos fijos <span class="badge-new/.test(t),'Tú: cobros sigue con etiqueta hasta que entres');
  ok(e.doc.querySelectorAll('#content .badge-new').length===3,'Tú: como mucho 3 etiquetas a la vez (las de arriba)');
  { const v=Object.assign({},e.store.cfg.app.badgesVistos);['grupos','categorias','cobros','compartir','importar','reglas','fijo','detalle'].forEach(k=>v[k]='2026-10-13');delete v.cuentas;delete v.patrimonio;e.w.__APP__.S.config.badgesVistos=v;e.w.__APP__.render();await sleep(10);
    t=e.doc.querySelector('#content').innerHTML;ok(/Cuentas y saldos <span class="badge-new ">NUEVO/.test(t)&&/Metas <span class="badge-new mejor">MEJORADO/.test(t),'al ver las primeras, salen las siguientes (NUEVO en cuentas, MEJORADO en metas)');

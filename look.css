@@ -2504,3 +2504,16 @@ html[data-look="nuevo"] .hero-juntos { margin-top: 0; }
 html[data-look="nuevo"] .hero-cobras { margin-top: 0; min-height: 30px; }
 html[data-look="nuevo"] .crear-mas > span:nth-child(2) span { white-space: normal; line-height: 1.3; }
 html[data-look="nuevo"] .desc-todo { margin: 14px 0 6px; }
+
+/* 11/11 (auditoría A3): la barra de botones fija de las hojas llega hasta el borde de abajo (antes asomaba
+   contenido por debajo). El hueco del gesto del sistema queda dentro de la barra, con su fondo. */
+html[data-look="nuevo"] .sheet .actions.fija { bottom: calc(-1 * (var(--sp-6) + env(safe-area-inset-bottom, 0px))); margin: 18px calc(-1 * var(--sp-5)) calc(-1 * (var(--sp-6) + env(safe-area-inset-bottom, 0px))); padding: 12px var(--sp-5) calc(14px + var(--sp-2) + env(safe-area-inset-bottom, 0px)); border-radius: 0; }
+/* 11/11 (A5): el nombre del grupo cabe en dos líneas sin cortarse a la primera palabra */
+html[data-look="nuevo"] .jv-gcab-t h2 { font-size: 19px; line-height: 1.22; }
+/* 11/11 (A6): el nombre de la categoría en dos líneas, sin «…» («Supermercado», «Restaurantes» se leen enteros) */
+html[data-look="nuevo"] .tec-cat-n { white-space: normal; text-overflow: clip; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; hyphens: auto; text-align: center; font-size: 11px; line-height: 1.15; }
+@media (max-width: 375px) { html[data-look="nuevo"] .tec-cat-n { font-size: 10.5px; } }
+/* 11/11 (A7): zona de toque más alta en enlaces de texto, chips y selectores pequeños, sin cambiar cómo se ven.
+   Solo hacia arriba y hacia abajo, para no pisar al de al lado. */
+html[data-look="nuevo"] button.link, html[data-look="nuevo"] .chip, html[data-look="nuevo"] .mes-sel, html[data-look="nuevo"] .mov-cuentas-btn { position: relative; }
+html[data-look="nuevo"] button.link::after, html[data-look="nuevo"] .chip::after { content: ''; position: absolute; left: 0; right: 0; top: -8px; bottom: -8px; }

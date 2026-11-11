@@ -1357,7 +1357,7 @@ function movVacioHtml() {
 function renderMovTab() {
   const v = movVistaAct(), dir = S._movDir || 0; S._movDir = 0;
   if (v !== 'lista') { const p = movPerNorm(S.movPeriodo); if (!/^m:/.test(p) && !(v === 'resumen' && /^y:/.test(p))) S.movPeriodo = mesHoyClave(); }
-  const cuerpo = v === 'resumen' ? renderMovResumen() : v === 'calendario' ? (agendaV2() ? calCapasHtml('dinero') : '') + renderMovCal() : renderMovimientos();
+  const cuerpo = v === 'resumen' ? renderMovResumen() : v === 'calendario' ? renderMovCal() : renderMovimientos();
   const vacio = v === 'resumen' && !S.movimientos.length && !(S.traspasos || []).length && !(S.compartidos || []).length && movPerNorm(S.movPeriodo) === mesHoyClave() ? movVacioHtml() : ''; // docs/32 A10
   return movVistaSegHtml() + vacio + (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
     movCabHtml(dir) + '<div class="mov-marco"><div id="movCuerpo" class="mov-cuerpo-' + v + '">' + cuerpo + '</div></div>';
@@ -1816,7 +1816,7 @@ function tecSync(anunciar) {
   const n = $('#tec .tec-neg'); if (n) { n.classList.toggle('on', !!T.neg); n.setAttribute('aria-pressed', String(!!T.neg)); n.setAttribute('aria-label', tecNegLbl(F.tipo) + ': cambiar a negativo'); const sm = n.querySelector('small'); if (sm) sm.textContent = tecNegLbl(F.tipo); }
   const an = $('#sheetHost .tec-antes'); if (an) an.hidden = !!(F.articulos || (F.comp && F.comp.on));
   const ok = $('#tec .tec-ok'); if (ok) { const falta = !T.txt || !tecNum(T.txt) || !!(T.corta && !(($('#fCategoria') || {}).value || '').trim()); ok.classList.toggle('apagada', T.tecla === 'guardar' && falta); ok.setAttribute('aria-disabled', String(T.tecla === 'guardar' && falta)); }
-  const t = $('#tecOkTxt'); if (t) t.textContent = tecOkLbl(T);
+  const t = $('#tecOkTxt'); if (t) t.textContent = T.tecla === 'guardar' && T.corta && T.txt && tecNum(T.txt) && !(($('#fCategoria') || {}).value || '').trim() ? 'Elige categoría' : tecOkLbl(T); // 11/11 (B2): dice qué falta
   const sh = $('#sheetHost .sheet'); if (sh) sh.classList.toggle('tec-abierto', !!T.on);
   if (anunciar) { const v = $('#tecVoz'); if (v) v.textContent = tecTxtLeido(T); }
   if (T.alCambiar) { try { T.alCambiar(T); } catch (e) { console.error(e); } }
@@ -3735,7 +3735,7 @@ function renderAgendaSemanaV2() {
   return cab + tira + agcCarasHtml() + rapida + vencH + diaH + otrosH + proxH + sinFH + plegH + agcEnlaceFinalHtml();
 }
 // Calendario v2: solo el mes; la leyenda de colores de abajo es el filtro
-// Un solo calendario con dos capas: «Planes y tareas» (Agenda) y «Dinero» (Movimientos → Calendario)
+// 11/11 (decisión del dueño, auditoría B5): cada calendario va por su lado; el selector «Planes y tareas | Dinero» ya no sale (se deja la función)
 function calCapasHtml(capa) {
   return '<div class="segmented cal-capas" role="radiogroup" aria-label="Qué ver en el calendario">' + [['planes', 'Planes y tareas'], ['dinero', 'Dinero']].map(([k, l]) => '<button type="button" role="radio" aria-checked="' + (capa === k) + '" class="' + (capa === k ? 'active' : '') + '" ' + act('calCapa', k) + '>' + l + '</button>').join('') + '</div>';
 }
@@ -3756,7 +3756,7 @@ function renderCalendarioV2() {
   }
   const f = S.calFiltros, ley = [['tareas', 'Tareas y planes', 'var(--accent)'], ['facturas', 'Cobros y pagos', 'var(--bill, var(--accent))'], ['hitos', 'Metas y deudas', 'var(--warn, var(--savings))']];
   const dsel = parseISO(anchor), evsSel = map[anchor] || [];
-  return calCapasHtml('planes') + '<div class="month-nav cal2-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('calMove', -1) + '>' + ic('chevL') + '</button><div class="lbl">' + MESES[m] + ' ' + y + '</div>' +
+  return '<div class="month-nav cal2-nav"><button class="icon-btn" aria-label="Mes anterior" ' + act('calMove', -1) + '>' + ic('chevL') + '</button><div class="lbl">' + MESES[m] + ' ' + y + '</div>' +
       (esteMes ? '' : '<button type="button" class="chip cal2-hoy" ' + act('calHoy') + '>Hoy</button>') + '<button class="icon-btn" aria-label="Mes siguiente" ' + act('calMove', 1) + '>' + ic('chevR') + '</button></div>' +
     '<div class="card cal2-card"><div class="cal2-grid">' + cells + '</div>' +
     '<div class="cal2-ley" role="group" aria-label="Qué se ve en el calendario">' + ley.map(([k, l, c]) => '<button type="button" class="cal2-ley-i' + (f[k] ? ' on' : '') + '" aria-pressed="' + !!f[k] + '" ' + act('calToggle', k) + '><i style="' + (f[k] ? 'background:' : 'border-color:') + c + '"></i>' + l + '</button>').join('') + '</div></div>' +
@@ -4032,7 +4032,7 @@ function renderTuAntes() {
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' +
     grupo('Compartir', [it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir paloma invitar whatsapp')]) +
     grupo('Tu dinero', [it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
-      it('openRecurrentes', [], 'calendar', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recibos suscripciones'),
+      it('openRecurrentes', [], 'calendar', 'Cobros y pagos fijos', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recurrentes recibos suscripciones'),
       it('compararToggle', [], 'swap', 'Comparar con la versión anterior', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'pruebas version anterior comparar nueva'),
       it('tuMesAbrir', [], 'calendar', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().nomina && cortesNomina() ? 'desde tu nómina' : mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza'),
       it('openMetas', [], 'flag', 'Metas', badge('metas') + '<span class="menu-extra">ahorro e inversión</span>', 'objetivos hucha'),
@@ -4097,14 +4097,14 @@ function renderTuV2() {
     lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'arrowUp', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
     it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar')].concat(bas || Object.keys(VERSIONES).every((k) => VERSIONES[k].cerrada) ? [] : [
     it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', '<span class="menu-extra">' + (compararOn() ? 'sí' : 'no') + '</span>', 'comparar version anterior pruebas antes nueva')]);
-  return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t"><span class="t-n">' + escapeHtml(nombre) + '</span>' + badge('perfil') + '</div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
-      '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar</button></div>' +
+  return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t"><span class="t-n">' + escapeHtml(nombre) + '</span></div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
+      '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar' + badgeDot('perfil') + '</button></div>' + // 11/11 (B8): la novedad en «Editar», no junto al nombre
     '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tuFiltrar') + '></div>' + descTuHtml() +
     grupo('Tu dinero', [it('openCuentas', [], 'bank', 'Cuentas y saldos', (badge('cuentas') || badge('patrimonio')) + (nCu ? '<span class="menu-extra">' + nCu + (nCu === 1 ? ' cuenta' : ' cuentas') + '</span>' : ''), 'banco saldo patrimonio'),
       it('openListEditor', ['categoriasGasto'], 'tag', 'Categorías y presupuestos', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
       q(it('openReglas', [], 'autoTag', 'Reglas de categorías', badge('reglas'), 'automatico')),
       q(it('infAbrir', [], 'sparkle', 'Informes', badge('informes'), 'informe resumen semanal mensual trimestral anual asistente')),
-      it('openRecurrentes', [], 'repeat', 'Cobros y pagos recurrentes', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recibos suscripciones'),
+      it('openRecurrentes', [], 'repeat', 'Cobros y pagos fijos', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recurrentes recibos suscripciones'),
       q(it('tuMesAbrir', [], 'calRango', 'Tu mes', badge('tumes') + '<span class="menu-extra">' + (mesCfg().nomina && cortesNomina() ? 'desde tu nómina' : mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31') + '</span>', 'mes nomina cobro dia empieza')),
       ...(agcOn() ? [q(it('agcAbrir', [], 'calendar', 'Compartir mi agenda', badge('agendaComp') + (agcCompartoAlgo() ? '<span class="menu-extra">' + S.agcPermisos.length + (S.agcPermisos.length === 1 ? ' persona o grupo' : ' personas o grupos') + '</span>' : ''), 'compartir agenda ver calendario pareja familia privada'))] : []),
       it('openGrupos', [], 'users', 'Grupos y personas', badge('grupos') + '<span class="menu-extra">' + (nGr == null ? '' : nGr + (nGr === 1 ? ' grupo' : ' grupos')) + '</span>', 'compartir invitar whatsapp juntos')]) +
@@ -4195,11 +4195,11 @@ function renderInicioNuevo() {
   if (agcOn() && !S._agcTs && !S._agcCargando && S.grupos) setTimeout(() => agcCargar(), 0); // para que «Privada» esté a mano desde el +
   const piezas = () => (inicioV3() ? inicioPiezasHtml() : insightsHtmlV2() + estosDiasHtml(true));
   if (basico()) { // docs/38 §2.1: una sola tarjeta de ayuda; las piezas, cuando ya no se ve «Primeros pasos»; al final, «Descubre PalomApp»
-    const avisoB = inv || infAvisoHtml(), pp = avisoB ? '' : ppEstado();
+    const avisoB = inv || tuMesSugHtml() || infAvisoHtml(), pp = avisoB ? '' : ppEstado();
     const ayuda = avisoB || (pp === 'tarjeta' || pp === 'hecho' ? ppTarjetaHtml() : (pp === 'linea' ? ppLineaHtml() : '') + sugerenciaHtml());
     return heroMesHtmlV2() + ayuda + (pp === 'tarjeta' ? '' : piezas()) + descLineaHtml();
   }
-  return heroMesHtmlV2() + (inv || aviso30Html() || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + piezas();
+  return heroMesHtmlV2() + (inv || tuMesSugHtml() || aviso30Html() || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + piezas();
 }
 // la cifra grande, con los céntimos más pequeños
 function cifraHtml(v) { const t = money(v), i = t.lastIndexOf(','); return i < 0 ? escapeHtml(t) : escapeHtml(t.slice(0, i)) + '<small>' + escapeHtml(t.slice(i)) + '</small>'; }
@@ -5631,7 +5631,7 @@ function haceTxt(iso) {
 }
 // dónde está la deuda con una persona: «a solas», «en Pádel» o «a solas y en Pádel»
 function dondeTxt(deudas) {
-  const ns = [...new Set(deudas.map((d) => { const g = grupoDe(d.gid); return g && g.tipo === 'directo' ? 'a solas' : 'en ' + (g ? g.nombre : 'un grupo'); }))];
+  const ns = [...new Set(deudas.map((d) => { const g = grupoDe(d.gid); return g && g.tipo === 'directo' ? 'entre vosotros dos' : 'en ' + (g ? g.nombre : 'un grupo'); }))];
   return ns.length <= 1 ? (ns[0] || '') : ns.slice(0, -1).join(', ') + ' y ' + ns[ns.length - 1].replace(/^en /, 'en ');
 }
 function pedirMsg(x) {
@@ -5646,7 +5646,7 @@ function renderJuntosV2() {
   const deb = ps.filter((x) => x.neto < 0), te = ps.filter((x) => x.neto > 0);
   const debes = r2(deb.reduce((a, x) => a - x.neto, 0)), teDeben = r2(te.reduce((a, x) => a + x.neto, 0)), f = S._juntosFiltro || '';
   const nG = gs.filter((g) => g.tipo === 'grupo').length, conSolas = gs.some((g) => g.tipo === 'directo');
-  const frase = !gs.length ? 'Aún no compartes con nadie' : 'En ' + (nG ? (nG === 1 ? 'tu grupo' : 'tus ' + nG + ' grupos') : '') + (nG && conSolas ? ' y a solas' : !nG ? 'lo que compartes a solas' : '') + ', todo sumado';
+  const frase = !gs.length ? 'Aún no compartes con nadie' : 'En ' + (nG ? (nG === 1 ? 'tu grupo' : 'tus ' + nG + ' grupos') : '') + (nG && conSolas ? ' y con cada persona' : !nG ? 'lo que compartes con cada persona' : '') + ', todo sumado';
   const ficha = (k, t, v, n, cls) => '<button type="button" class="jv-ficha ' + cls + (f === k ? ' on' : '') + '" ' + act('juntosFiltro', f === k ? '' : k) + '><span>' + t + '</span><b class="tnum">' + money(v) + '</b><i>' + (n ? n + (n === 1 ? ' persona' : ' personas') : 'nadie') + '</i></button>';
   if (!gs.length && !hayComp) return '<div class="card jv-vacio"><span class="jv-vacio-ic">' + ic('users') + '</span><h2>Comparte gastos con quien quieras</h2>' +
     '<p>Divide una cena, un viaje o la casa: aquí verás quién debe a quién y lo saldáis en un toque.</p>' +
@@ -5677,7 +5677,7 @@ function renderJuntosV2() {
   h += gsL.length ? '<div class="card jv-grupos">' + gsL.map((g) => {
     const v = miSaldo(g.id), hay = (S.compartidos || []).some((c) => c.grupoId === g.id), sc = g.miembros.filter((m) => m.sinCuenta).length, o = g.tipo === 'directo' ? otroDe(g) : null;
     return '<button type="button" class="jv-g tappable" ' + act('grupoVer', g.id) + '>' + (o ? caraHtml(o.user_id, o.nombre) : '<span class="jv-g-ic">' + escapeHtml(iniciales(g.nombre)) + '</span>') +
-      '<span class="jv-g-n"><b>' + escapeHtml(nombreDestino(g)) + '</b><span class="jv-caras">' + (o ? '<span class="jv-g-meta">a solas</span>' : g.miembros.slice(0, 4).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '<span class="jv-g-meta">' + g.miembros.length + (sc ? ' · ' + sc + ' sin app' : '') + '</span>') + '</span></span>' +
+      '<span class="jv-g-n"><b>' + escapeHtml(nombreDestino(g)) + '</b><span class="jv-caras">' + (o ? '<span class="jv-g-meta">solo vosotros dos</span>' : g.miembros.slice(0, 4).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '<span class="jv-g-meta">' + g.miembros.length + (sc ? ' · ' + sc + ' sin app' : '') + '</span>') + '</span></span>' +
       '<span class="jv-p-v"><b class="tnum" style="color:' + saldoColor(v) + '">' + (hay && Math.abs(v) >= 0.005 ? money(Math.abs(v)) : hay ? 'En paz' : '—') + '</b><span>' + (hay && Math.abs(v) >= 0.005 ? (v > 0 ? 'te deben' : 'debes') : '') + '</span></span>' + ic('chevR') + '</button>';
   }).join('') + '</div>' : '<div class="card empty-mini">Crea un grupo (casa, viaje, pádel…) o invita a una persona por WhatsApp.</div>';
   // metas y deudas juntos
@@ -5700,7 +5700,7 @@ function personaVerHtml(uid, pedir) {
   const x = juntosPersonas().find((p) => p.uid === uid), yo = miUid();
   if (!x) return '<div class="handle"></div><h2>En paz</h2><div class="card jv-paz">' + ic('checkCircle') + '<span>Ya no hay nada pendiente con esta persona.</span></div><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
   const debo = x.neto < 0, tot = Math.abs(x.neto);
-  const desg = x.deudas.map((d) => { const g = grupoDe(d.gid), mia = d.de === yo; return '<div class="jv-desg tappable" role="button" ' + act('origenVer', d.gid, uid) + '><span>' + escapeHtml(g && g.tipo === 'directo' ? 'A solas' : g ? g.nombre : 'Grupo') + '</span><b class="tnum ' + (mia ? 'neg' : 'pos') + '">' + (mia ? '−' : '+') + money(d.importe) + '</b></div>'; }).join('');
+  const desg = x.deudas.map((d) => { const g = grupoDe(d.gid), mia = d.de === yo; return '<div class="jv-desg tappable" role="button" ' + act('origenVer', d.gid, uid) + '><span>' + escapeHtml(g && g.tipo === 'directo' ? 'Solo vosotros dos' : g ? g.nombre : 'Grupo') + '</span><b class="tnum ' + (mia ? 'neg' : 'pos') + '">' + (mia ? '−' : '+') + money(d.importe) + '</b></div>'; }).join('');
   const conElla = (c) => aliasDe(c.grupoId, c.pagadoPor) === uid || Object.keys(c.reparto || {}).some((u) => aliasDe(c.grupoId, u) === uid);
   const comps = (S.compartidos || []).filter((c) => x.deudas.some((d) => d.gid === c.grupoId) && c.tipo !== 'Liquidación' && conElla(c)).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).slice(0, 3);
   const dest = (() => { const d = (S.grupos || []).find((g) => g.tipo === 'directo' && g.miembros.some((m) => m.user_id === uid)); return d ? 'g:' + d.id : x.deudas.length ? 'g:' + x.deudas[0].gid : ''; })();
@@ -5721,7 +5721,7 @@ function saldarTodoHtml() {
   const debo = x.neto < 0, tot = Math.abs(x.neto), mias = x.deudas.filter((d) => d.de === yo || d.a === yo);
   return '<div class="handle"></div><h2>' + (debo ? 'Saldar con ' : 'Te paga ') + escapeHtml(String(x.nombre).split(' ')[0]) + '</h2>' +
     '<div class="jv-total ' + (debo ? 'de' : 'te') + '"><span>' + (debo ? 'Le pagas' : 'Te paga') + '</span><b class="tnum">' + money(tot) + '</b></div>' +
-    '<div class="card jv-desg-card">' + mias.map((d) => { const g = grupoDe(d.gid), mia = d.de === yo; return '<div class="jv-desg"><span>' + escapeHtml(g && g.tipo === 'directo' ? 'A solas' : g ? g.nombre : 'Grupo') + '</span><span class="tnum">' + (mia ? 'le pagas ' : 'te paga ') + '<b class="' + (mia ? 'neg' : 'pos') + '">' + money(d.importe) + '</b></span></div>'; }).join('') + '</div>' +
+    '<div class="card jv-desg-card">' + mias.map((d) => { const g = grupoDe(d.gid), mia = d.de === yo; return '<div class="jv-desg"><span>' + escapeHtml(g && g.tipo === 'directo' ? 'Solo vosotros dos' : g ? g.nombre : 'Grupo') + '</span><span class="tnum">' + (mia ? 'le pagas ' : 'te paga ') + '<b class="' + (mia ? 'neg' : 'pos') + '">' + money(d.importe) + '</b></span></div>'; }).join('') + '</div>' +
     (hayVariasCuentas() ? '<div class="field"><label>' + (debo ? 'Desde la cuenta' : 'A la cuenta') + '</label><div class="chips" id="saldarCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (F.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('saldarCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
     '<div class="field jv-fecha"><label>Fecha</label><button type="button" class="chip active" id="sFechaChip" ' + act('sFechaVer') + '>' + ic('calendar') + ' Hoy</button><input id="sFecha" type="date" value="' + todayISO() + '" hidden></div>' +
     '<div class="rec-hint" style="margin-bottom:10px;">Apúntalo cuando el dinero ya se haya enviado (Bizum, transferencia o en mano). No cuenta como gasto ni como ingreso: solo deja las cuentas a cero.</div>' +
@@ -5735,7 +5735,7 @@ function grupoHtmlV2(g) {
   const cs = (S.compartidos || []).filter((c) => c.grupoId === g.id), ds = deudasDe(g.id), mias = ds.filter((d) => esMio(g.id, d.de) || esMio(g.id, d.a));
   const sc = g.miembros.filter((m) => m.sinCuenta).length;
   let h = '<div class="handle"></div><div class="jv-gcab">' + (o ? caraHtml(o.user_id, o.nombre, 'grande') : '<span class="jv-g-ic grande">' + escapeHtml(iniciales(g.nombre)) + '</span>') +
-    '<div class="jv-gcab-t"><h2>' + escapeHtml(nombreDestino(g)) + '</h2><span class="jv-caras">' + (o ? '<span class="jv-g-meta">a solas</span>' : g.miembros.slice(0, 5).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '<span class="jv-g-meta">' + g.miembros.length + (g.miembros.length === 1 ? ' persona' : ' personas') + (sc ? ' · ' + sc + ' sin app' : '') + '</span>') + '</span></div>' +
+    '<div class="jv-gcab-t"><h2>' + escapeHtml(nombreDestino(g)) + '</h2><span class="jv-caras">' + (o ? '<span class="jv-g-meta">solo vosotros dos</span>' : g.miembros.slice(0, 5).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '<span class="jv-g-meta">' + g.miembros.length + (g.miembros.length === 1 ? ' persona' : ' personas') + (sc ? ' · ' + sc + ' sin app' : '') + '</span>') + '</span></div>' +
     '<button type="button" class="icon-btn jv-ajustes" aria-label="Ajustes del grupo" ' + act('grupoAjustes', g.id) + '>' + ic('gear') + '</button></div>';
   h += introJuntosHtml(g.id);
   // lo tuyo
@@ -5749,7 +5749,7 @@ function grupoHtmlV2(g) {
       (debo ? '<button type="button" class="jv-btn saldar" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Saldar</button>' : '<button type="button" class="jv-btn pedir" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Me ha pagado</button>') + '</div>'; }).join('');
   if (cs.length) h += '<div class="jv-enlaces"><button type="button" class="link jv-origen" ' + act('origenVer', g.id) + '>' + ic('info') + ' ¿De dónde sale?</button>' + (historialOn() ? histEnlaceHtml(g.id) : '') + '</div>';
   if (cs.length && historialOn()) { const st = histEstado(g.id); if (!st.cargando && (!st.t || Date.now() - st.t > 60000) && !(st.fallo && Date.now() - st.fallo < 60000)) setTimeout(() => histCargar(g.id), 0); }
-  h += '<div class="segmented jv-tabs">' + [['gastos', 'Gastos'], ['saldos', 'Saldos']].concat(agendaDisponible() ? [['planes', 'Planes']] : []).map(([k, l]) => '<button class="' + (tab === k ? 'active' : '') + '" ' + act('grupoTab', k) + '>' + l + (k === 'planes' ? badge('planes') : '') + '</button>').join('') + '</div>';
+  h += '<div class="segmented jv-tabs">' + [['gastos', 'Gastos'], ['saldos', 'Saldos']].concat(agendaDisponible() ? [['planes', 'Planes']] : []).map(([k, l]) => '<button class="' + (tab === k ? 'active' : '') + '" ' + act('grupoTab', k) + '>' + l + (k === 'planes' ? badgeDot('planes') : '') + '</button>').join('') + '</div>'; // 11/11 (A5): en el selector, un punto (la etiqueta partía «Planes» en dos líneas)
   if (tab === 'gastos') {
     const gastos = cs.filter((c) => c.tipo !== 'Liquidación'), tot = gastos.reduce((a, c) => a + num(c.importe), 0), mia = gastos.reduce((a, c) => a + miParte(c), 0);
     const temaAbierto = temasDisponible() && F.temaVer ? temaPorId(F.temaVer) : null;
@@ -7269,7 +7269,7 @@ const BUSCAR_ACCIONES = [
   ['Grupos y personas', 'compartir paloma invitar saldar deudas', 'openGrupos', []], ['Metas', 'ahorro objetivos hucha', 'irDinero', ['metas']],
   ['Inversiones', 'bolsa etf cartera fondos', 'irDinero', ['inversiones']], ['Deudas', 'prestamo hipoteca coche', 'irDinero', ['deudas']],
   ['Lo que tienes', 'patrimonio cuanto tengo total', 'irDinero', ['metas']], ['Cuentas y saldos', 'banco saldo', 'openCuentas', []],
-  ['Categorías de gasto', 'presupuestos', 'openListEditor', ['categoriasGasto']], ['Cobros y pagos recurrentes', 'nomina alquiler facturas fijas pagos fijos recibos suscripciones', 'openRecurrentes', []],
+  ['Categorías de gasto', 'presupuestos', 'openListEditor', ['categoriasGasto']], ['Cobros y pagos fijos', 'nomina alquiler facturas fijas pagos fijos recurrentes recibos suscripciones', 'openRecurrentes', []],
   ['Importar extracto o Excel', 'banco csv', 'impAbrir', []], ['Reglas de categorías', 'automatico', 'openReglas', []],
   ['Calendario', 'agenda mes semana', 'irAgenda', ['calendario']], ['Tareas', 'pendientes', 'irAgenda', ['tareas']],
   ['Análisis del año', 'anual resumen', 'verAnio', []], ['Copia de seguridad', 'exportar backup json', 'exportBackup', []],
@@ -9225,7 +9225,7 @@ const NOVEDADES = [
   { id: '2026-10-09', titulo: 'Parche 2', items: [
     ['📈', 'Gráfico de tu cartera', 'Estilo bróker: elige periodo y desliza el dedo para ver cada día.', 'inversiones'],
     ['🔥', '¿Le ganas a la inflación?', 'Tu rentabilidad anual comparada con la inflación.', 'inversiones'],
-    ['📅', 'Cobros y pagos recurrentes', 'Nómina, alquiler… con su fecha real (último día hábil, primer lunes…).', 'cobros'],
+    ['📅', 'Cobros y pagos fijos', 'Nómina, alquiler… con su fecha real (último día hábil, primer lunes…).', 'cobros'],
     ['🔔', 'Avisos en Inicio', 'Mañana, hoy (botón Confirmar) y «¿Se ha producido?».', ''],
     ['🔁', 'Tareas que se repiten', 'Al completarla se crea sola la siguiente.', 'tareas'],
     ['📥', 'Importar del banco o Excel', 'Vista previa, sin duplicados y se puede deshacer.', 'importar'],
@@ -10300,7 +10300,7 @@ function sugerenciaMejor(rc) {
   const actual = puntuarRegla(rc.regla, fechas);
   return best.hits > actual.hits ? best : null;
 }
-/* ---- Pantalla «Cobros y pagos recurrentes» ---- */
+/* ---- Pantalla «Cobros y pagos fijos» ---- */
 function recListaHtml() {
   const rs = recurrentes(), hoy = todayISO();
   const prox = (rc) => { const o = rc.regla ? ocurrencias(rc.regla, hoy, uAdd(hoy, 400))[0] : null; return o ? 'Próximo: ' + fechaDiaCorta(o) : ''; };
@@ -10310,7 +10310,7 @@ function recListaHtml() {
     '<div class="amt tnum">' + (rc.importe == null || rc.importe === '' ? '—' : money(rc.importe)) + '</div></div>';
   const cob = rs.filter((r) => r.kind === 'cobro'), fac = rs.filter((r) => r.kind === 'factura');
   const vacio = (t) => '<div class="card" style="color:var(--text-faint);font-size:13.5px;">' + t + '</div>';
-  return '<div class="handle"></div><h2>Cobros y pagos recurrentes</h2>' +
+  return '<div class="handle"></div><h2>Cobros y pagos fijos</h2>' +
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 6px;">Con cada uno te avisamos en Inicio el día anterior y el mismo día, y lo verás en el calendario.</div>' +
     '<div class="section-title">Ingresos fijos</div>' + (cob.length ? '<div class="list">' + cob.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade tu nómina u otro cobro fijo.')) +
     '<div class="section-title">Pagos fijos</div>' + (fac.length ? '<div class="list">' + fac.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade el alquiler, la luz o una suscripción.')) +
@@ -10755,7 +10755,7 @@ function obMesHtml(ob) {
   const elegidos = ob.fijos.map((f) => f.nombre);
   return '<h1 class="ob2-h">¿Qué se repite cada mes?</h1><p class="ob2-p">Así te avisamos de lo que toca y verás cómo acabarás el mes.</p>' +
     '<div class="ob2-sec">Lo que cobras</div>' +
-    (nominaYa ? '<div class="ob2-ayuda">' + ic('checkCircle') + ' Ya tienes apuntado: ' + escapeHtml(cobrosYa.map((x) => x.nombre).join(', ')) + '. Para cambiarlo: Tú → Cobros y pagos recurrentes.</div>'
+    (nominaYa ? '<div class="ob2-ayuda">' + ic('checkCircle') + ' Ya tienes apuntado: ' + escapeHtml(cobrosYa.map((x) => x.nombre).join(', ')) + '. Para cambiarlo: Tú → Cobros y pagos fijos.</div>'
       : '<div class="ob2-nom">' + chip('Nómina', ob.nomina.on, act('obNomina')) +
         (ob.nomina.on ? '<input id="obNomImp" type="text" inputmode="decimal" class="tnum" aria-label="Importe de la nómina" placeholder="importe" value="' + escapeHtml(ob.nomina.importe) + '" ' + onInput('obSet', 'nomina.importe') + '><input id="obNomDia" type="text" inputmode="numeric" class="tnum" aria-label="Día de cobro" placeholder="día" value="' + escapeHtml(ob.nomina.dia) + '" ' + onChange('obNomDia') + '>' : '') + '</div>' +
         (ob.nomina.on && d && d >= 20 ? '<div class="ob2-mes"><div><b>Cobras el ' + d + '.</b> ¿Quieres que tu mes vaya de nómina a nómina?</div><div class="chips">' +
@@ -10766,7 +10766,7 @@ function obMesHtml(ob) {
     (ob.otrosAbiertos ? '' : '<button type="button" class="chip" ' + act('obOtros') + '>' + ic('plus') + ' Otro</button>') + '</div>' +
     (ob.otrosAbiertos ? '<div class="ob2-otro"><input id="obOtroNombre" type="text" maxlength="30" placeholder="Otro (p. ej. Comunidad)"><button type="button" class="btn sm ghost" ' + act('obOtroAnadir') + '>Añadir</button></div>' : '') +
     (ob.fijos.length ? '<div class="ob2-fijos">' + ob.fijos.map(fila).join('') + '</div><div class="ob2-ayuda">El importe y el día son opcionales: puedes ponerlos después.</div>' : '') +
-    (ya.length ? '<div class="ob2-ayuda">Lo que ya tienes sale marcado. Para cambiar o quitar uno: Tú → Cobros y pagos recurrentes.</div>' : '');
+    (ya.length ? '<div class="ob2-ayuda">Lo que ya tienes sale marcado. Para cambiar o quitar uno: Tú → Cobros y pagos fijos.</div>' : '');
 }
 function obListoHtml(ob) {
   const n = String(cfg().nombre || ob.nombre || '').trim(), pc = cuentaPrincipal(), v = pc ? saldoCuenta(pc) : null, chips = [];
@@ -10812,6 +10812,22 @@ function renderOnboarding() {
   if (p === 'listo' && !ob.confeti && !ob.manual) { ob.confeti = true; setTimeout(() => { confeti(30, null); sentir('ok'); }, 250); }
 }
 /* ---- en Inicio: invitación pendiente o recién aceptada ---- */
+/* 11/11 (auditoría A4, decisión del dueño): quien cobra a final de mes veía «Te queda −321 €» casi todo el mes.
+   Si en los 2 últimos meses entró una nómina entre el día 20 y el 31 y nunca eligió «Tu mes», se le ofrece una vez. */
+function tuMesSugDia() {
+  const c = cfg(); if (c.mesInicio || c.tuMesSug) return null;
+  const desde = new Date(); desde.setDate(desde.getDate() - 70); const d0 = desde.toISOString().slice(0, 10);
+  const nom = (m) => /nomina|sueldo|salario/.test(normName(m.categoria || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+  const dias = S.movimientos.filter((m) => m.tipo === 'Ingreso' && (m.fecha || '') >= d0 && nom(m)).map((m) => Number(String(m.fecha).slice(8, 10)));
+  if (!dias.length || dias.some((d) => d < 20)) return null;
+  dias.sort((a, b) => a - b); return dias[Math.floor((dias.length - 1) / 2)];
+}
+function tuMesSugHtml() {
+  const d = tuMesSugDia(); if (!d) return '';
+  return '<div class="card inv-ini tumes-sug"><span class="ob2-fic b">' + ic('calendar') + '</span><div class="inv-ini-x"><b>Cobras hacia el día ' + d + '. ¿Empezamos tu mes ese día?</b>' +
+    '<span>Así «Te queda» cuenta desde que cobras hasta el siguiente cobro, y no sale en negativo a mitad de mes.</span>' +
+    '<div class="inv-ini-b"><button class="btn sm accent" ' + act('tuMesSugSi', d) + '>Sí, desde el ' + d + '</button><button class="btn sm ghost" ' + act('tuMesSugNo') + '>No</button></div></div></div>';
+}
 function invitacionInicioHtml() {
   const t = lsGet('unirse');
   if (t && gruposDisponible()) {
@@ -10837,7 +10853,7 @@ function renderMas() {
     '<div class="d">' + escapeHtml((S.user && S.user.email) || '') + ' · datos privados, sincronizados entre tus dispositivos.</div></div></div>' +
     '<div class="section-title">Categorías y presupuestos</div><div class="card menu">' +
     item('categoriasGasto') +
-    '<button class="menu-item" ' + act('openRecurrentes') + '><span class="ic">' + ic('calendar') + '</span>Cobros y pagos recurrentes' + badge('cobros') + '<span class="chev">' + ic('chevR') + '</span></button>' +
+    '<button class="menu-item" ' + act('openRecurrentes') + '><span class="ic">' + ic('calendar') + '</span>Cobros y pagos fijos' + badge('cobros') + '<span class="chev">' + ic('chevR') + '</span></button>' +
     '<button class="menu-item" ' + act('openMetas') + '><span class="ic">' + ic('flag') + '</span>Metas' + badge('metas') + '<span style="margin-left:auto;color:var(--text-faint);font-size:13px;">ahorro e inversión</span><span class="chev">' + ic('chevR') + '</span></button>' +
     ['deudas', 'ingresos', 'metodosPago', 'categoriasTareas'].map(item).join('') +
     '<button class="menu-item" ' + act('openReglas') + '><span class="ic">' + ic('tag') + '</span>Reglas de categorías' + badge('reglas') + '<span class="chev">' + ic('chevR') + '</span></button>' +
@@ -10866,25 +10882,27 @@ function exportCsv() {
   const signo = (m) => (m.tipo === 'Ingreso' ? 1 : m.tipo === 'Traspaso' ? 0 : -1); // devoluciones (gasto en negativo) salen en positivo
   const lineas = [['Fecha', 'Tipo', 'Concepto', 'Categoría', 'Subcategoría', 'Cuenta', 'Importe'].join(';')].concat(filas.map((m) => [m.fecha, m.tipo === 'Factura' ? 'Pago fijo' : m.tipo === 'Ahorro' ? 'Apartar' : m.tipo, m.descripcion || '', m.tipo === 'Traspaso' ? '' : m.categoria || '', m.subcategoria || '',
     m.tipo === 'Traspaso' ? nombreCuenta(m.cuentaId) + ' → ' + nombreCuenta(m.cuentaDestinoId) : (hayVariasCuentas() ? nombreCuenta(cuentaIdDe(m)) : ''), (signo(m) ? signo(m) * num(m.importe) : Math.abs(num(m.importe))).toFixed(2).replace('.', ',')].map(q).join(';')));
+  guardarArchivo('palomapp-movimientos-' + todayISO() + '.csv', '\ufeff' + lineas.join('\r\n'), 'text/csv;charset=utf-8', filas.length + (filas.length === 1 ? ' movimiento descargado' : ' movimientos descargados'));
+}
+// 11/11 (auditoría de Calidad): en la app de Android un enlace de descarga no hace nada; allí se abre el menú de compartir
+// (Drive, correo, Archivos…) con el puente nativo. En la web, descarga normal.
+async function guardarArchivo(nombre, texto, mime, ok) {
+  const N = window.__nativo;
+  if (N && N.guardarArchivo) {
+    try { await N.guardarArchivo(nombre, texto, mime); } // el propio menú de Android dice dónde se guarda o se envía
+    catch (e) { if (!/cancel/i.test(String(e && (e.message || e)))) { console.error(e); toast('No se pudo guardar el archivo'); } }
+    return;
+  }
   try {
-    const blob = new Blob(['\ufeff' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob), a = document.createElement('a');
-    a.href = url; a.download = 'palomapp-movimientos-' + todayISO() + '.csv';
+    const url = URL.createObjectURL(new Blob([texto], { type: mime })), a = document.createElement('a');
+    a.href = url; a.download = nombre;
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
-    toast(filas.length + (filas.length === 1 ? ' movimiento descargado' : ' movimientos descargados'));
+    if (ok) toast(ok);
   } catch (e) { console.error(e); toast('No se pudo descargar'); }
 }
 function exportBackup() {
   const payload = { exportadoEl: new Date().toISOString(), movimientos: S.movimientos.concat(S.traspasos || []), tareas: S.tareas, golf: S.golf, config: S.config, compartidos: S.compartidos || [], objetivosCompartidos: S.objetivos || [], carpetas: S.carpetas || [], aportes: S.aportes || [] }; // barrido 08/11: también viajes/temas y aportes
-  try {
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'palomapp-copia-' + todayISO() + '.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    toast('Copia de seguridad descargada');
-  } catch (e) { console.error(e); toast('No se pudo generar la copia'); }
+  guardarArchivo('palomapp-copia-' + todayISO() + '.json', JSON.stringify(payload, null, 2), 'application/json', 'Copia de seguridad descargada');
 }
 
 function extraFieldHtml(key, i, def, value) {
@@ -11212,6 +11230,8 @@ const H = {
   },
   closeSheet: () => closeSheet(),
   verPendiente: () => { S.pendTodos = !S.pendTodos; render(); },
+  tuMesSugSi: ([d]) => { const dia = Math.round(Number(d)); if (!(dia >= 2 && dia <= 31)) return; saveConfig({ mesInicio: { modo: 'cobro', dia }, tuMesSug: 'si' }); _cortes = null; sincronizarMes(); sentir('ok'); toast('Tu mes empieza el día ' + dia + '. Lo cambias en Tú → Tu mes'); render(); },
+  tuMesSugNo: () => { saveConfig({ tuMesSug: 'no' }); render(); },
   tuMesAbrir: () => { verBadge('tumes'); const mc = mesCfg(), t = cfg().mesInicio || {}, cobs = cobrosNomina(); FORM = { kind: 'tuMes', modo: mc.nomina ? 'nomina' : mc.modo, dia: mc.modo === 'cobro' ? mc.dia : (Number(t.dia) >= 2 ? Number(t.dia) : 28), nomina: mc.nomina || ((cobs.find((r) => /nomina|sueldo|salario/.test(normName(r.nombre).normalize('NFD').replace(/[\u0300-\u036f]/g, ''))) || cobs[0] || {}).nombre || '') }; if ($('#sheetBackdrop')) updateSheet(tuMesHtml()); else openSheet(tuMesHtml()); },
   tuMesModo: ([k]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.modo = k === 'cobro' || k === 'nomina' ? k : 'natural'; updateSheet(tuMesHtml()); },
   tuMesNomina: ([n]) => { if (!FORM || FORM.kind !== 'tuMes') return; FORM.nomina = n; sentir('tic'); updateSheet(tuMesHtml()); },
@@ -11679,7 +11699,7 @@ const H = {
   planVer: ([id]) => { FORM = { kind: 'planVer', id }; if ($('#sheetBackdrop')) updateSheet(planVerHtml(id)); else openSheet(planVerHtml(id)); },
   planEditar: ([id]) => planAbrirForm({ id }),
   planAvisoVer: ([id, k]) => { const av = Object.assign({}, cfg().agendaAvisos || {}); if (k === 'antes') delete av[id]; else av[id] = k; saveConfig({ agendaAvisos: av }); sentir('tic'); setTimeout(() => { if (FORM && FORM.kind === 'planVer') updateSheet(planVerHtml(id)); render(); }, 0); },
-  planIcs: ([id]) => { const a = agendaPorId(id); if (!a) return; try { const url = URL.createObjectURL(new Blob([planIcs(a)], { type: 'text/calendar' })), l = document.createElement('a'); l.href = url; l.download = String(a.titulo || 'plan').replace(/[^\wáéíóúñü -]/gi, '').slice(0, 40) + '.ics'; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); toast('Ábrelo para añadirlo a tu calendario'); } catch (e) { console.error(e); toast('No se ha podido preparar el archivo'); } },
+  planIcs: ([id]) => { const a = agendaPorId(id); if (!a) return; guardarArchivo((String(a.titulo || 'plan').replace(/[^\wáéíóúñü -]/gi, '').slice(0, 40) || 'plan') + '.ics', planIcs(a), 'text/calendar', 'Ábrelo para añadirlo a tu calendario'); },
   planOcultar: ([id]) => { const oc = Object.assign({}, cfg().agendaOcultos || {}); oc[id] = true; saveConfig({ agendaOcultos: oc }); closeSheet(); render();
     toast('Oculto de tu agenda (sigue en el grupo)', { deshacer: () => { const o2 = Object.assign({}, cfg().agendaOcultos || {}); delete o2[id]; saveConfig({ agendaOcultos: o2 }); render(); } }); },
   planBorrar: async ([id]) => { const a = agendaPorId(id); if (!a) return;

@@ -59,7 +59,7 @@ const hoy=loc(new Date()), dHoy=Number(hoy.slice(8));
  ok(Object.values(e.store.movimientos).some(m=>m.subcategoria==='Luz'&&m.categoria==='Suministros'&&m.fecha===add(hoy,-5)&&m.importe===60),'Sí registra en la fecha prevista (Suministros · Luz)');
  ok(!/Luz/.test(doc.querySelector('#content').textContent),'y deja de preguntar');
  // movimiento manual cercano cuenta como hecho
- // ---------- Más → Cobros y pagos recurrentes
+ // ---------- Más → Cobros y pagos fijos
  e.w.__APP__.H.goTab(['mas']);await sleep(20);
  click(e,'openRecurrentes');await sleep(20);
  let sh=doc.querySelector('#sheetHost').textContent;
