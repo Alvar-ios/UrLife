@@ -20,6 +20,11 @@ const PANTALLAS = [
   ['trayecto-sitios', 'A.S.tab="inicio";A.render();A.H.trAbrir([]);setTimeout(()=>{A.H.trModo(["sitios"]);A.H.trGrupo(["electrico"]);},150)'],
   ['trayecto-recogido', 'A.S.config=Object.assign({},A.S.config,{trayecto:{prod:"goA",consumo:5.8,provincia:"28",guardados:[{id:"tg1",nombre:"Casa – trabajo",km:23,vuelta:true}]}});A.S.preciosCarb={prov:"28",cuando:Date.now(),datos:{goA:{precio:1.459,provincia:"28",fecha:"2026-11-07"}}};A.S.tab="inicio";A.render();A.H.trAbrir([])'],
   ['mas', 'A.S.tab="inicio";A.S.inicioSub="";A.S.inicioVista="";A.render();A.openCrear()'],
+  // 11/11 (Calidad, tandas 1-3): gasto con el teclado propio, tarjeta «Tu mes» en Inicio y hojas largas con la barra fija
+  ['gasto-teclado', 'A.S.tab="inicio";A.render();A.openCrear();setTimeout(()=>{A.H.crearIr(["gasto"]);setTimeout(()=>{["1","2","3"].forEach((k)=>{const b=document.querySelector("#sheetHost [data-click=\\"tecK|"+k+"\\"]");if(b)b.click();});},150);},150)'],
+  ['inicio-tumes', 'const c=Object.assign({},A.S.config);delete c.mesInicio;delete c.tuMesSug;A.S.config=c;const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);const f=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-27";A.S.movimientos=A.S.movimientos.filter((m)=>m.categoria!=="Nómina").concat([{id:"cap-nom",tipo:"Ingreso",categoria:"Nómina",importe:1850,fecha:f}]);A.S.tab="inicio";A.render()'],
+  ['hoja-meta-nueva', 'A.S.tab="dinero";A.render();A.H.metaNueva([])'],
+  ['hoja-editar-mov', 'A.S.tab="movimientos";A.render();A.H.openMovForm([A.S.movimientos[0].id])'],
 ];
 // 10/11 (docs/38, C1): «Lo básico» a 375 × 667 y 390 × 844. [id, variante de datos-falsos.js, código]
 const PANTALLAS_BASICO = [
