@@ -3,7 +3,7 @@
 // Tú: nombre, renombrar categoría, ocultar cifras, Excel, borrar cuenta (hasta confirmar), cerrar sesión. Solo datos inventados.
 const T = require('./toques_comun.js');
 const { abrir, tocar, tocarSiHay, buscar, escribir, teclearImporte, hoja, hojaAbierta, pantalla, aviso, deshacerToast, atras, movs, app, ir, ok, paso, fin, sleep } = T;
-T.fallosConocidos(['BORRAR_PIERDE_CAMPOS']);
+T.fallosConocidos([]); // 11/11: arreglado
 const YO = 'u-yo', ANA = 'u-ana';
 const hoy = T.hoy;
 const tareas = (e) => Object.entries(e.store.tareas).map(([id, v]) => Object.assign({ id }, v));

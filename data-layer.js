@@ -317,9 +317,10 @@
         }
         function refreshSoon() { clearTimeout(timer); timer = setTimeout(refresh, 300); }
         refresh();
+        (recargas[tabla] = recargas[tabla] || []).push(refreshSoon); // 11/11 (Calidad): también se vuelve a leer al volver a la app o recuperar la red
         // sin filtro: las reglas de la base de datos solo envían lo que puedes ver
         if (currentUid) channel = sb.channel(tabla + '-' + currentUid).on('postgres_changes', { event: '*', schema: 'public', table: tabla }, refreshSoon).subscribe();
-        return function unsubscribe() { stopped = true; clearTimeout(timer); if (channel) sb.removeChannel(channel); };
+        return function unsubscribe() { stopped = true; clearTimeout(timer); recargas[tabla] = (recargas[tabla] || []).filter(function (f) { return f !== refreshSoon; }); if (channel) sb.removeChannel(channel); };
       },
       crear: function (o) {
         var row = aFila(o); delete row.id; // el id lo pone la base de datos
@@ -407,5 +408,5 @@
       });
     }
   };
-  window.Data = { collection: collection, divisas: divisas, carburantes: carburantes, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, agendaPermisos: agendaPermisos, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
+  window.Data = { recargar: function (t) { avisarCambio(t); }, collection: collection, divisas: divisas, carburantes: carburantes, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, agendaPermisos: agendaPermisos, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
 })();

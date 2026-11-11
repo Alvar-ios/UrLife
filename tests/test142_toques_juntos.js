@@ -3,7 +3,7 @@
 // historial del grupo, «Pedir por WhatsApp». El servidor de grupos es falso (toques_comun.js). Solo datos inventados.
 const T = require('./toques_comun.js');
 const { abrir, tocar, tocarSiHay, buscar, escribir, teclearImporte, hoja, hojaAbierta, pantalla, aviso, deshacerToast, atras, movs, app, ir, ok, paso, fin, sleep } = T;
-T.fallosConocidos(['RECUPERAR_ESPERA_AVISO']);
+T.fallosConocidos([]); // 11/11: arreglado
 const YO = 'u-yo', ANA = 'u-ana';
 const ahora = () => new Date().toISOString();
 // rpc del servidor de grupos (lo justo para estos procesos)

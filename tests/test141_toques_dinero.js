@@ -3,7 +3,7 @@
 // deudas (crear, pagar), inversiones (a mano) y cobros/pagos fijos. Solo datos inventados.
 const T = require('./toques_comun.js');
 const { abrir, tocar, tocarSiHay, buscar, escribir, teclearImporte, hoja, hojaAbierta, pantalla, aviso, deshacerToast, atras, movs, app, ir, ok, paso, fin, sleep } = T;
-T.fallosConocidos(['META_SIN_DESHACER', 'APARTADO_SIN_META', 'ATRAS_SIN_PREGUNTAR']);
+T.fallosConocidos([]); // 11/11: arreglados
 const hoy = T.hoy;
 const ayer = () => T.diasAtras(1);
 const CATS = [{ nombre: 'Supermercado' }, { nombre: 'Hogar' }, { nombre: 'Otros' }];

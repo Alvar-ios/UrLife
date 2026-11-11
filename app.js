@@ -699,10 +699,10 @@ function allLoaded() { const l = S.loaded; return l.mov && l.tar && l.cfg; } // 
 // Lo que llega del servidor pide un repintado y se pinta una sola vez por fotograma.
 let _renderPedido = 0;
 function pedirRender() {
+  if (/jsdom/i.test(navigator.userAgent || '')) return render(); // pruebas automáticas (navegador simulado): como antes, al momento
   if (_renderPedido) return;
   const f = () => { _renderPedido = 0; render(); };
-  const prueba = /jsdom/i.test(navigator.userAgent || ''); // en las pruebas automáticas (navegador simulado) se pinta en el siguiente turno, sin esperar fotograma
-  _renderPedido = (!prueba && typeof requestAnimationFrame === 'function' && !document.hidden) ? requestAnimationFrame(f) : setTimeout(f, 0);
+  _renderPedido = (typeof requestAnimationFrame === 'function' && !document.hidden) ? requestAnimationFrame(f) : setTimeout(f, 0);
 }
 
 function subscribeAll() {
@@ -976,13 +976,14 @@ function borrarCuentaHtml(msg) {
     '<p class="sheet-sub">Se borran tus movimientos, cuentas, metas, deudas, tareas y ajustes. En tus grupos seguirás saliendo como «baja» para que sus cuentas cuadren. <b>No se puede deshacer.</b></p>' +
     (msg ? '<div class="alert" style="margin-bottom:12px;">' + ic('alert') + '<div>' + msg + '</div></div>' : '') +
     '<div class="field"><label for="bcPass">Tu contraseña</label><input id="bcPass" type="password" autocomplete="current-password"></div>' +
-    '<div class="field"><label for="bcConf">Escribe BORRAR para confirmar</label><input id="bcConf" type="text" autocapitalize="characters" autocomplete="off"></div>' +
+    '<div class="field"><label for="bcConf">Escribe BORRAR para confirmar</label><input id="bcConf" type="text" autocapitalize="characters" autocomplete="off" value="' + escapeHtml(F.conf || '') + '"></div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn danger block" ' + act('borrarCuentaOk') + (F.borrando ? ' disabled' : '') + '>' + (F.borrando ? 'Borrando…' : 'Borrar mi cuenta') + '</button></div>' +
     '<button type="button" class="link" style="display:block;margin:12px auto 0;font-size:12.5px;" ' + act('abrirPrivacidad') + '>Qué se borra y qué se conserva</button>';
 }
 async function borrarCuentaOk() {
   const F = FORM; if (!F || F.kind !== 'borrarCuenta' || F.borrando) return;
   const pass = ($('#bcPass') || {}).value || '', conf = (($('#bcConf') || {}).value || '').trim().toUpperCase();
+  F.conf = conf; // 11/11 (Calidad): si la contraseña falla, «BORRAR» se queda escrito
   if (conf !== 'BORRAR') return updateSheet(borrarCuentaHtml('Escribe BORRAR para confirmar.'));
   const email = S.user && S.user.email;
   try { await window.Auth.signIn(email, pass); } catch (e) { return updateSheet(borrarCuentaHtml('La contraseña no es correcta.')); }
@@ -2054,6 +2055,13 @@ async function saveMov() {
     if (data.metaId || (data.metaIds && data.metaIds.length) || (S.aportes || []).some((a) => a.movId === movId)) sincronizarAporte(Object.assign({ id: movId }, data));
     if (ponCuenta && categoria) { const pc = cfg().cuentaPorCat || {}, k = normName(categoria); if (pc[k] !== cuentaElegida) saveConfig({ cuentaPorCat: Object.assign({}, pc, { [k]: cuentaElegida }) }); }
   } finally { if (FORM) FORM.guardando = false; }
+}
+// 11/11 (auditoría de Calidad): crear con el número puesto en el móvil. Si la red corta la respuesta y se reintenta
+// (withRetry o tocando otra vez), se guarda la misma fila en vez de otra nueva: no hay duplicados.
+const _idCreado = new WeakMap();
+function anadir(col, data) {
+  let id = _idCreado.get(data); if (!id) { id = nuevoIdMov(); _idCreado.set(data, id); }
+  return S.db.collection(col).doc(id).set(data).then(() => ({ id }));
 }
 // ---- 11/11: movimientos que se están guardando (se ven ya; lo que llega del servidor no los quita hasta que terminan) ----
 function nuevoIdMov() { try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) { /* sin crypto */ } return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
@@ -3811,7 +3819,7 @@ async function agRapidaCrear() {
   const hoy = todayISO(), lista = tCatLista(), cat = tCatSugerida(nombre, lista) || '';
   const data = { nombre, categoria: cat, prioridad: 'Media', estado: 'Pendiente', fechaLimite: S.agendaDia || hoy, fechaCreacion: hoy, fechaInicio: null, fechaFin: null, comentario: '', repetir: null };
   let r = null;
-  try { r = await withRetry(() => S.db.collection('tareas').add(data)); } catch (e) { console.error(e); toast(errMsg(e)); }
+  try { r = await withRetry(() => anadir('tareas', data)); } catch (e) { console.error(e); toast(errMsg(e)); }
   agRapidaCrear._ocupado = false;
   if (!r) return;
   el.value = ''; S._agFoco = true;
@@ -6367,7 +6375,7 @@ function lqtHtml(p) {
     ficha('i', 'Invertido', m0(p.inv), p.inv > 0.005 ? 'i' : 'i cero', act('dmIr', 'inversiones')) + ficha('d', 'Por pagar', p.deudas ? '−' + m0(p.deudas) : m0(0), p.deudas ? 'd' : 'd cero', act('dmIr', 'deudas')) + '</div>' +
     (p.ahorroDentro && p.ahorro > 0.005 ? (p.ahorro > p.banco + 0.005
       ? '<div class="dm-lqt-nota">Tus metas suman <b class="tnum">' + m0(p.ahorro) + '</b>, más de lo que hay en tus cuentas. ¿Lo tienes en otra cuenta? <button type="button" class="link" ' + act('openCuentas') + '>Añádela</button></div>'
-      : '<div class="dm-lqt-nota">De tus cuentas, <b class="tnum">' + m0(p.ahorro) + '</b> están apartados para tus metas.</div>') : '') +
+      : '<div class="dm-lqt-nota">De tus cuentas, <b class="tnum">' + m0(p.ahorro) + '</b> están apartados' + ((cfg().ahorro || []).some((m) => m && m.nombre) ? ' para tus metas' : '') + '.</div>') : '') + // 11/11: sin metas, no se habla de metas
     '<button type="button" class="link dm-como" ' + act('dmComo') + '>¿Cómo se calcula?</button></div>';
 }
 function dmComoHtml() {
@@ -6593,7 +6601,7 @@ async function aportarRGuardar() {
     const data = { creadoEn: Date.now(), tipo: 'Ahorro', importe: imp, categoria: r.nombre, fecha, descripcion: '', metodoPago: '', metaId: F.key };
     const dest = cuentaDeMeta(F.key); if (dest && F.desde && cuentaPorId(F.desde) && F.desde !== dest) { data.cuentaId = F.desde; data.cuentaDestinoId = dest; }
     let movId = null;
-    const ok = await write(async () => { const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || null; return r0; });
+    const ok = await write(async () => { const r0 = await anadir('movimientos', data); movId = (r0 && r0.id) || null; return r0; });
     if (!ok) return;
     if (movId) sincronizarAporte(Object.assign({ id: movId }, data));
     S._metaSube = { key: F.key, desde: r.obj > 0 ? Math.max(0, antes) / r.obj * 100 : 0, t: Date.now() };
@@ -7202,7 +7210,7 @@ function histDetalleHtml(gid, id) {
 }
 // Recuperar un gasto borrado (docs/27 tanda 2): vuelve tal cual estaba, para todo el grupo. Devuelve true si se pudo.
 async function recuperarComp(id, op) {
-  try { await S.db.rpc('recuperar_compartido', { p_id: id }); return true; }
+  try { await S.db.rpc('recuperar_compartido', { p_id: id }); if (S.db.recargar) S.db.recargar('compartidos'); return true; } // 11/11: que vuelva a leerse sin esperar al aviso en vivo
   catch (e) {
     console.error(e); const m = String((e && (e.message || e.code)) || e);
     if (op && op.yaVale && /no_borrado/.test(m)) return true; // otra persona lo recuperó antes: para «Deshacer» vale igual
@@ -7235,7 +7243,8 @@ async function deshacerBorradoComp(id, copia, cuenta, mio) {
   if (!grupoDe(copia.grupoId)) return toast('Ya no estás en ese grupo: no se puede recuperar');
   if (!(await recuperarComp(id, { yaVale: true }))) return;
   if (cuenta) guardarCuentaComp(id, cuenta);
-  if (mio) await write(() => S.db.collection('movimientos').doc(mio.id).set(Object.assign({}, mio.data, { compartidoId: id })));
+  const vuelve = Object.assign({}, copia, { id }); delete vuelve._hecho; compAplicarLocal(vuelve); // 11/11 (Calidad): se ve ya, sin esperar al aviso del servidor
+  if (mio) { const fila = Object.assign({}, mio.data, { compartidoId: id }); movPendiente(mio.id, fila); const okM = await write(() => S.db.collection('movimientos').doc(mio.id).set(fila)); movPendienteFin(mio.id, okM ? null : false); }
   render(); toast('Recuperado');
 }
 /* ---- botón + : todo lo que se puede crear ---- */
@@ -7612,7 +7621,7 @@ async function usoGuardar() {
     } else {
       saveConfig({ ahorro: (cfg().ahorro || []).map((m) => (m && m.id === ref.m.id ? Object.assign({}, m, { usos: (m.usos || []).concat([uso]) }, uso.para === 'objetivo' ? { conseguida: uso.fecha } : {}) : m)) });
     }
-    if (F.gasto) await write(() => S.db.collection('movimientos').add({ creadoEn: Date.now(), tipo: 'Gasto', importe: uso.importe, categoria: F.cat || catsGasto()[0].nombre, fecha: uso.fecha, descripcion: 'De la meta «' + ref.nombre + '»' + (uso.nota ? ' · ' + uso.nota : ''), metodoPago: '' }));
+    if (F.gasto) { const g = { creadoEn: Date.now(), tipo: 'Gasto', importe: uso.importe, categoria: F.cat || catsGasto()[0].nombre, fecha: uso.fecha, descripcion: 'De la meta «' + ref.nombre + '»' + (uso.nota ? ' · ' + uso.nota : ''), metodoPago: '' }; await write(() => anadir('movimientos', g)); }
     closeSheet(); render();
     if (uso.para === 'objetivo') { confeti(); toast('¡Meta conseguida: ' + ref.nombre + '! 🎉'); }
     else toast('Apuntado: ' + money(uso.importe) + ' usados de «' + ref.nombre + '»');
@@ -7772,12 +7781,14 @@ async function metaGuardar() {
   toast('Meta guardada');
 }
 function metaEliminar() {
-  const arr = (cfg().ahorro || []).filter((m) => !(m && m.id === FORM.id));
+  const todas = cfg().ahorro || [], i = todas.findIndex((m) => m && m.id === FORM.id), quitada = i >= 0 ? todas[i] : null;
+  const arr = todas.filter((m) => !(m && m.id === FORM.id));
   saveConfig({ ahorro: arr });
   FORM = { kind: 'metas' };
   updateSheet(metasListaHtml());
   render();
-  toast('Meta eliminada');
+  // 11/11 (Calidad): como cuentas y deudas, con «Deshacer» (vuelve igual, en su sitio y con su id)
+  toast('Meta eliminada', quitada ? { deshacer: () => { const ya = cfg().ahorro || []; if (ya.some((m) => m && m.id === quitada.id)) return; const n = ya.slice(); n.splice(Math.min(i, n.length), 0, quitada); saveConfig({ ahorro: n }); if (FORM && FORM.kind === 'metas' && $('#sheetBackdrop')) updateSheet(metasListaHtml()); render(); toast('Meta recuperada'); } } : {});
 }
 /* ---- asignar aportaciones a una meta de inversión ---- */
 function asignarHtml() {
@@ -8159,7 +8170,7 @@ async function saveTraspaso() {
   FORM.guardando = true;
   try {
     let movId = idGuardar;
-    const ok = await write(async () => { if (idGuardar) return S.db.collection('movimientos').doc(idGuardar).set(data); const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || movId; return r0; });
+    const ok = await write(async () => { if (idGuardar) return S.db.collection('movimientos').doc(idGuardar).set(data); const r0 = await anadir('movimientos', data); movId = (r0 && r0.id) || movId; return r0; });
     if (ok) { toast(FORM.convertir ? 'Convertido en traspaso' : FORM.id ? 'Traspaso actualizado' : 'Traspaso apuntado'); S._aterriza = movId || null; terminarForm(); }
   } finally { if (FORM) FORM.guardando = false; }
 }
@@ -8805,7 +8816,7 @@ async function saveGolf() {
   const data = Object.assign(ex ? stripId(ex) : {}, {
     articulo, fecha: $('#gFecha').value || todayISO(), invertido, venta: ventaRaw === '' ? null : parseFloat(ventaRaw),
   });
-  const ok = await write(() => FORM.id ? S.db.collection('golf').doc(FORM.id).set(data) : S.db.collection('golf').add(data));
+  const ok = await write(() => FORM.id ? S.db.collection('golf').doc(FORM.id).set(data) : anadir('golf', data));
   if (ok) { closeSheet(); toast(FORM.id ? 'Artículo actualizado' : 'Artículo añadido'); }
 }
 async function doDeleteGolf() {
@@ -9089,7 +9100,7 @@ async function saveTarea() {
     if (!sig) return;
     data.repetir = null; // la repetición pasa a la tarea nueva
   }
-  const ok = await write(() => FORM.id ? S.db.collection('tareas').doc(FORM.id).set(data) : S.db.collection('tareas').add(data));
+  const ok = await write(() => FORM.id ? S.db.collection('tareas').doc(FORM.id).set(data) : anadir('tareas', data));
   if (ok && data.categoria) {
     const propias = (cfg().categoriasTareas || []).filter(Boolean);
     if (!propias.some((c) => tCatNorm(c) === tCatNorm(data.categoria))) saveConfig({ categoriasTareas: propias.concat([data.categoria]) });
@@ -10248,7 +10259,7 @@ async function recConfirmar(kind, idx, iso) {
   const lock = 'rec|' + rc.key + '|' + iso;
   if (_busy.has(lock)) return; _busy.add(lock);
   const data = Object.assign({ creadoEn: Date.now(), importe, fecha: iso, descripcion: '', metodoPago: '' }, preRec(rc, {}));
-  const ok = await write(() => S.db.collection('movimientos').add(data));
+  const ok = await write(() => anadir('movimientos', data));
   _busy.delete(lock);
   if (ok) { marcarRec(rc.key, iso, 'ok'); render(); toast((rc.kind === 'cobro' ? 'Cobro' : 'Pago') + ' registrado: ' + money(importe) + '. Puedes editarlo en Movimientos.'); }
 }
@@ -10525,7 +10536,7 @@ async function crearSiguienteTarea(t) {
   const nueva = { nombre: t.nombre, categoria: t.categoria || '', prioridad: t.prioridad || 'Media', estado: 'Pendiente', fechaLimite: sig, comentario: t.comentario || '',
     fechaCreacion: todayISO(), fechaInicio: null, fechaFin: null, repetir: t.repetir };
   if (t.privada) nueva.privada = true; // una tarea privada que se repite sigue privada (docs/24b, riesgo 1)
-  const ok = await write(() => S.db.collection('tareas').add(nueva));
+  const ok = await write(() => anadir('tareas', nueva));
   return ok ? sig : null;
 }
 function leerRepetir() {
@@ -10979,6 +10990,12 @@ function openSheet(html) {
 function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; limitarBadges(s); fijarAcciones(s); vincularEtiquetas(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
 /* ---- App de Android: botón y gesto de atrás (docs/32 A1). Devuelve true si la app lo ha resuelto; false = salir ---- */
 function hojaConAlgoEscrito() {
+  // 11/11 (Calidad): una meta, una deuda o un cobro o pago fijo NUEVOS a medio escribir también preguntan antes de descartarse
+  if (FORM && ['meta', 'deudaForm', 'rec'].indexOf(FORM.kind) >= 0) {
+    const nueva = FORM.kind === 'meta' ? !FORM.id : FORM.kind === 'deudaForm' ? !FORM.orig : FORM.idx == null;
+    const nom = String(($('#mNombre') || {}).value || ($('#recNombre') || {}).value || FORM.nombre || '').trim();
+    return nueva && !!nom;
+  }
   if (!FORM || ['mov', 'compRapido', 'traspaso', 'aportarR', 'tarea', 'trayecto'].indexOf(FORM.kind) < 0) return false;
   const imp = FORM.tec ? String(FORM.tec.txt || '') : (($('#fImporte') || {}).value || ($('#apImporte') || {}).value || '');
   const imp2 = (($('#crImporte') || {}).value || '');
@@ -10989,7 +11006,7 @@ function hojaConAlgoEscrito() {
 function preguntarDescartar() {
   if ($('#descartarHoja')) return;
   const d = document.createElement('div'); d.id = 'descartarHoja'; d.className = 'descartar';
-  d.innerHTML = '<div class="descartar-c" role="alertdialog" aria-labelledby="descTit"><b id="descTit">¿Descartar este ' + (FORM && FORM.kind === 'tarea' ? 'plan' : 'gasto') + '?</b><p>Lo que has escrito no se guardará.</p>' +
+  d.innerHTML = '<div class="descartar-c" role="alertdialog" aria-labelledby="descTit"><b id="descTit">¿Descartar ' + ({ tarea: 'este plan', meta: 'esta meta', deudaForm: 'esta deuda', rec: 'este pago fijo' }[FORM && FORM.kind] || 'este gasto') + '?</b><p>Lo que has escrito no se guardará.</p>' +
     '<div class="actions"><button class="btn ghost block" data-click="descartarNo">Seguir editando</button><button class="btn danger block" data-click="descartarSi">Descartar</button></div></div>';
   document.body.appendChild(d);
 }
