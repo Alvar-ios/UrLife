@@ -749,9 +749,9 @@ button, .row, .tappable, .chip, .pill, .dia, .prox-card { -webkit-tap-highlight-
 body.crear-abierto .tab-crear { transform: rotate(135deg); background: var(--ink); color: var(--paper); box-shadow: none; }
 
 /* entrada de cada sección: la página sube un poco y las barras se llenan */
-main#content.entra > * { animation: entra .5s cubic-bezier(.22,1,.36,1) both; }
-main#content.entra > *:nth-child(2) { animation-delay: .035s; } main#content.entra > *:nth-child(3) { animation-delay: .07s; }
-main#content.entra > *:nth-child(4) { animation-delay: .1s; } main#content.entra > *:nth-child(n+5) { animation-delay: .13s; }
+main#content.entra > * { animation: entra .26s cubic-bezier(.22,1,.36,1) both; } /* 11/11: de .5 s a .26 s (más ágil) */
+main#content.entra > *:nth-child(2) { animation-delay: .02s; } main#content.entra > *:nth-child(3) { animation-delay: .04s; }
+main#content.entra > *:nth-child(4) { animation-delay: .06s; } main#content.entra > *:nth-child(n+5) { animation-delay: .07s; }
 @keyframes entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes aparece { from { opacity: 0; } }
 @keyframes crece { from { transform: scaleX(0); } to { transform: none; } }

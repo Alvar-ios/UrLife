@@ -616,7 +616,7 @@ function applyTheme() {
 const PALETAS = [['violeta', 'Violeta', '#6D3FE0', '#A98BFF'], ['cobalto', 'Cobalto', '#1F63E0', '#6FA2FF'], ['turquesa', 'Turquesa', '#07797C', '#34D1C8'], ['frambuesa', 'Frambuesa', '#CC2065', '#FF6B9F'], ['esmeralda', 'Esmeralda', '#0A7A42', '#3EE08C']];
 const TIPOS_CIFRA = [
   ['bricolage', 'Con carácter', "'Bricolage Grotesque', sans-serif", 'Bricolage+Grotesque:opsz,wght@12..96,500..800'],
-  ['fraunces', 'Clásica', "'Fraunces', serif", null],
+  ['fraunces', 'Clásica', "'Fraunces', serif", 'Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700'], // 11/11: ya no se descarga siempre; solo si se elige
   ['space', 'Técnica', "'Space Grotesk', sans-serif", 'Space+Grotesk:wght@500..700'],
   ['outfit', 'Geométrica', "'Outfit', sans-serif", 'Outfit:wght@500..700'],
   ['nunito', 'Redondeada', "'Nunito', sans-serif", 'Nunito:wght@600..900'],
@@ -694,20 +694,29 @@ async function write(fn) {
 }
 
 // La sesión (login) determina si hay datos que cargar. Ver data-layer.js (window.Auth / window.Data).
-function allLoaded() { const l = S.loaded; return l.mov && l.tar && l.golf && l.cfg; }
+function allLoaded() { const l = S.loaded; return l.mov && l.tar && l.cfg; } // 11/11: Golf ya no frena Inicio
+// 11/11 (auditoría B1): al abrir llegan movimientos, tareas, configuración… casi a la vez y cada uno repintaba.
+// Lo que llega del servidor pide un repintado y se pinta una sola vez por fotograma.
+let _renderPedido = 0;
+function pedirRender() {
+  if (_renderPedido) return;
+  const f = () => { _renderPedido = 0; render(); };
+  const prueba = /jsdom/i.test(navigator.userAgent || ''); // en las pruebas automáticas (navegador simulado) se pinta en el siguiente turno, sin esperar fotograma
+  _renderPedido = (!prueba && typeof requestAnimationFrame === 'function' && !document.hidden) ? requestAnimationFrame(f) : setTimeout(f, 0);
+}
 
 function subscribeAll() {
   _unsubs.forEach((u) => { try { u(); } catch (e) { /* noop */ } });
   _unsubs = [];
   const fail = (key, msg) => () => { S.loaded[key] = true; toast(msg); render(); };
   _unsubs.push(S.db.collection('movimientos').onSnapshot((snap) => {
-    S._movsRaw = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); aplicarMovs(); S.loaded.mov = true; render();
+    S._movsRaw = conMovsPendientes(snap.docs.map((d) => Object.assign({ id: d.id }, d.data()))); aplicarMovs(); S.loaded.mov = true; pedirRender();
   }, fail('mov', 'No se pudieron cargar los movimientos')));
   _unsubs.push(S.db.collection('tareas').onSnapshot((snap) => {
-    S.tareas = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); S.loaded.tar = true; render();
+    S.tareas = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); S.loaded.tar = true; pedirRender();
   }, fail('tar', 'No se pudieron cargar las tareas')));
   _unsubs.push(S.db.collection('golf').onSnapshot((snap) => {
-    S.golf = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); S.loaded.golf = true; render();
+    S.golf = snap.docs.map((d) => Object.assign({ id: d.id }, d.data())); S.loaded.golf = true; pedirRender();
   }, fail('golf', 'No se pudo cargar Golf Reventa')));
   if (S.db.compartidos) _unsubs.push(S.db.compartidos.suscribir((rows) => {
     S.compartidos = rows;
@@ -726,7 +735,7 @@ function subscribeAll() {
   if (S.db.carpetas) _unsubs.push(S.db.carpetas.suscribir((rows) => { S.carpetas = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.carpetas = S.carpetas || []; }));
   if (S.db.objetivos) _unsubs.push(S.db.objetivos.suscribir((rows) => { S.objetivos = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.objetivos = S.objetivos || []; }));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
-    S.config = cfgConPendientes(snap.exists ? snap.data() : null); S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); render(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); setTimeout(revisarNivel30, 0); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
+    S.config = cfgConPendientes(snap.exists ? snap.data() : null); S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); pedirRender(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); setTimeout(revisarNivel30, 0); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
   }, fail('cfg', 'No se pudo cargar la configuración')));
 }
 
@@ -2023,17 +2032,46 @@ async function saveMov() {
     }
     else { if ('metaId' in data) data.metaId = null; if ('metaIds' in data) data.metaIds = null; }
     const reglaNueva = FORM.recordar && FORM.tipo !== 'Inversión' ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
-    let movId = FORM.id;
-    const ok = await write(async () => { if (FORM.id) return S.db.collection('movimientos').doc(FORM.id).set(data); const r0 = await S.db.collection('movimientos').add(data); movId = (r0 && r0.id) || movId; return r0; });
-    if (ok && movId && (data.metaId || (data.metaIds && data.metaIds.length) || (S.aportes || []).some((a) => a.movId === movId))) sincronizarAporte(Object.assign({ id: movId }, data));
-    if (ok && ponCuenta && categoria) { const pc = cfg().cuentaPorCat || {}, k = normName(categoria); if (pc[k] !== FORM.cuenta) saveConfig({ cuentaPorCat: Object.assign({}, pc, { [k]: FORM.cuenta }) }); }
-    if (ok) {
-      if (reglaNueva && guardarRegla(reglaNueva, categoria, FORM.tipo)) toast('Guardado. Regla creada: «' + normDesc(reglaNueva) + '» → ' + categoria);
-      else toast(FORM.compQuitado ? 'Ya no está compartido: cuenta entero como tuyo' : FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido');
-      S._aterriza = movId || null;
-      terminarForm();
+    // 11/11 (auditoría A2, decisión del dueño): se guarda «al instante». El número del movimiento se pone aquí (así, si la red
+    // corta la respuesta y se reintenta, no se duplica), sale ya en pantalla, la hoja se cierra y se guarda por detrás.
+    // Si al final no se puede guardar, se quita de la pantalla y el aviso ofrece «Reintentar» con lo escrito.
+    const movId = FORM.id || nuevoIdMov(), cuentaElegida = FORM.cuenta, esNuevo = !FORM.id;
+    const previo = ex ? Object.assign({}, ex) : null;
+    movPendiente(movId, data);
+    if (reglaNueva && guardarRegla(reglaNueva, categoria, FORM.tipo)) toast('Guardado. Regla creada: «' + normDesc(reglaNueva) + '» → ' + categoria);
+    else toast(FORM.compQuitado ? 'Ya no está compartido: cuenta entero como tuyo' : FORM.id ? 'Movimiento actualizado' : 'Movimiento añadido');
+    S._aterriza = movId;
+    FORM.guardando = false; terminarForm(); render();
+    let ok = false;
+    try { await withRetry(() => S.db.collection('movimientos').doc(movId).set(data)); ok = true; } catch (e) { console.error(e); }
+    movPendienteFin(movId, ok ? null : (previo || false));
+    if (!ok) {
+      render();
+      toast('No se ha guardado ' + (esNuevo ? 'el movimiento' : 'el cambio') + '. Revisa tu conexión.', { aviso: true, boton: 'Reintentar', ms: 9000,
+        deshacer: () => esNuevo ? openMovForm(null, { tipo: data.tipo, importe: data.importe, categoria: data.categoria, fecha: data.fecha, cuentaId: data.cuentaId, descripcion: data.descripcion }) : openMovForm(movId) });
+      return;
     }
-  } finally { FORM.guardando = false; }
+    if (data.metaId || (data.metaIds && data.metaIds.length) || (S.aportes || []).some((a) => a.movId === movId)) sincronizarAporte(Object.assign({ id: movId }, data));
+    if (ponCuenta && categoria) { const pc = cfg().cuentaPorCat || {}, k = normName(categoria); if (pc[k] !== cuentaElegida) saveConfig({ cuentaPorCat: Object.assign({}, pc, { [k]: cuentaElegida }) }); }
+  } finally { if (FORM) FORM.guardando = false; }
+}
+// ---- 11/11: movimientos que se están guardando (se ven ya; lo que llega del servidor no los quita hasta que terminan) ----
+function nuevoIdMov() { try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) { /* sin crypto */ } return 'id' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
+const _movsPend = new Map();
+function movPendiente(id, data) {
+  const fila = Object.assign({ id }, data); _movsPend.set(id, fila);
+  S._movsRaw = (S._movsRaw || []).filter((m) => m.id !== id).concat([fila]); aplicarMovs();
+}
+// al terminar: si falló, se deja como estaba (previo = la versión anterior al editar, false = no existía)
+function movPendienteFin(id, previo) {
+  _movsPend.delete(id);
+  if (previo === null) return;
+  S._movsRaw = (S._movsRaw || []).filter((m) => m.id !== id).concat(previo ? [previo] : []); aplicarMovs();
+}
+function conMovsPendientes(filas) {
+  if (!_movsPend.size) return filas;
+  const ids = new Set(_movsPend.keys());
+  return filas.filter((m) => !ids.has(m.id)).concat(Array.from(_movsPend.values()));
 }
 async function doDeleteMov() {
   const id = FORM.id; closeSheet();
@@ -7896,7 +7934,7 @@ function cuentaRecordada(cat) { const id = (cfg().cuentaPorCat || {})[normName(c
 /* Saldo calculado: el saldo que pusiste (en su fecha) más lo que entra y menos lo que sale de esa cuenta después.
    Cuenta lo apuntado con fecha posterior (hasta hoy), o del mismo día pero apuntado después de poner el saldo. */
 // lo apuntado con fecha futura (p. ej. la nómina de fin de mes) cuenta cuando llega ese día
-function posteriorA(m, c) { const f = m.fecha || ''; return !!c.fecha && f <= todayISO() && (f > c.fecha || (f === c.fecha && c.ts != null && num(m.creadoEn) > c.ts)); }
+function posteriorA(m, c, hoy) { const f = m.fecha || ''; return !!c.fecha && f <= (hoy || todayISO()) && (f > c.fecha || (f === c.fecha && c.ts != null && num(m.creadoEn) > c.ts)); }
 // Apartar no saca dinero del banco (es ahorro «de cabeza»); invertir sí
 const SIGNO_CUENTA = Object.assign({}, TIPO_SIGNO, { Ahorro: 0 });
 function tocaCuenta(m) { return !!SIGNO_CUENTA[m.tipo]; }
@@ -7918,11 +7956,11 @@ function saldoCuenta(c) {
   if (!c || c.saldo == null || !isFinite(Number(c.saldo))) return null;
   const pc = cuentaPrincipal(), esPrincipal = !!pc && pc.id === c.id;
   const vivos = new Set((S.compartidos || []).map((x) => x.id));
-  let s = num(c.saldo);
+  let s = num(c.saldo); const hoy = todayISO();
   S.movimientos.forEach((m) => {
     if (m.compartidoId && vivos.has(m.compartidoId)) return; // tu parte de un compartido: cuenta el compartido entero (abajo)
-    if (esAporteLigado(m)) { if (!posteriorA(m, c)) return; if (cuentaIdDe(m) === c.id) s -= num(m.importe); if (m.cuentaDestinoId === c.id) s += num(m.importe); return; } // tanda 6: mueve entre cuentas
-    if (cuentaIdDe(m) === c.id && posteriorA(m, c)) s += num(m.importe) * (SIGNO_CUENTA[m.tipo] || 0);
+    if (esAporteLigado(m)) { if (!posteriorA(m, c, hoy)) return; if (cuentaIdDe(m) === c.id) s -= num(m.importe); if (m.cuentaDestinoId === c.id) s += num(m.importe); return; } // tanda 6: mueve entre cuentas
+    if (SIGNO_CUENTA[m.tipo] && cuentaIdDe(m) === c.id && posteriorA(m, c, hoy)) s += num(m.importe) * SIGNO_CUENTA[m.tipo];
   });
   flujosCompartidos().forEach((f) => { if (f.cuentaId === c.id && posteriorA(f, c)) s += f.v; });
   (S.traspasos || []).forEach((t) => { if (!posteriorA(t, c)) return; if (t.cuentaId === c.id) s -= num(t.importe); if (t.cuentaDestinoId === c.id) s += num(t.importe); });
@@ -8192,7 +8230,14 @@ function cuentaEdHtml(i) {
 // repinta la hoja que esté abierta: la lista o la cuenta que se está editando
 function cuentasRefrescar() { updateSheet(FORM && FORM.kind === 'cuentaEd' ? cuentaEdHtml(FORM.i) : cuentasHtml()); }
 /* ---- patrimonio (solo informativo) ---- */
-function cuentasCfg() { return (cfg().cuentas || []).filter((c) => c && c.nombre); }
+// 11/11 (auditoría, Dinero lento con muchos movimientos): se pedía miles de veces por pintado y cada vez copiaba toda la
+// configuración. Se recuerda mientras la configuración (y su lista de cuentas) sea la misma; se devuelve una copia.
+let _ccMemo = { src: undefined, lista: undefined, arr: null };
+function cuentasCfg() {
+  const src = S.config, lista = src ? src.cuentas : undefined;
+  if (!_ccMemo.arr || _ccMemo.src !== src || _ccMemo.lista !== lista) _ccMemo = { src, lista, arr: (cfg().cuentas || []).filter((c) => c && c.nombre) };
+  return _ccMemo.arr.slice();
+}
 function patrimonio() {
   let inv = 0, sinValor = 0;
   const banco = cuentasCfg().reduce((a, c) => { const v = saldoCuenta(c); return a + (v == null ? num(c.saldo) : v); }, 0);

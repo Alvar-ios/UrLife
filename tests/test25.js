@@ -67,10 +67,11 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  click(e,'presTodas');await sleep(5);ok([...doc.querySelectorAll('.budget-row .cat')].some(x=>x.textContent==='Mascotas'),'y se pueden ver');
  // movimientos: Gastos incluye fijos; dentro de una categoría, chips de detalle
  H.goTab(['movimientos']);H.setMovVista(['lista']);await sleep(5);click(e,'setMovFiltro','_gastos');await sleep(5);
- ok(/4 movimientos/.test(doc.querySelector('#content').textContent),'«Gastos» incluye los fijos');
- click(e,'movFiltrosAbrir');await sleep(5);click(e,'setMovFiltro','Factura');await sleep(5);ok(/1 movimiento\b/.test(doc.querySelector('#content').textContent)&&/Ver 1 movimiento\b/.test(doc.querySelector('#sheetHost').textContent),'«Fijos» (en Filtros) solo los fijos, y el botón cuenta en vivo');H.closeSheet([]);await sleep(250);
+ // 11/11: con «guardar al instante», los 3 gastos apuntados arriba (Uñas, Spotify y Cosas raras) ya cuentan: 4 + 3
+ ok(/7 movimientos/.test(doc.querySelector('#content').textContent),'«Gastos» incluye los fijos');
+ click(e,'movFiltrosAbrir');await sleep(5);click(e,'setMovFiltro','Factura');await sleep(5);ok(/2 movimientos\b/.test(doc.querySelector('#content').textContent)&&/Ver 2 movimientos\b/.test(doc.querySelector('#sheetHost').textContent),'«Fijos» (en Filtros) solo los fijos, y el botón cuenta en vivo');H.closeSheet([]);await sleep(250);
  click(e,'setMovFiltro','Todos');H.irMovs(['_gastos',ym.replace(/^/,'m:'),'Salud y cuidado personal']);await sleep(5);
  ok(!!doc.querySelector('[data-click="setMovSub|U%C3%B1as"]'),'dentro de la categoría, chips de detalle');
- click(e,'setMovSub','Uñas');await sleep(5);ok(/1 movimiento\b/.test(doc.querySelector('#content').textContent),'filtrar por «Uñas»');
+ click(e,'setMovSub','Uñas');await sleep(5);ok(/2 movimientos\b/.test(doc.querySelector('#content').textContent),'filtrar por «Uñas»');
  console.log(fails?'FAILS '+fails:'ALL PASS');process.exit(fails?1:0);
 })().catch(err=>{console.error(err);process.exit(1)});

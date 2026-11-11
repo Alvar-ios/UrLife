@@ -1,0 +1,7 @@
+/* 11/11/2026 (auditoría A1): las letras van dentro de la app; así nunca se queda en blanco esperando a Google.
+   Work Sans (texto) y Bricolage Grotesque (cifras y títulos), solo alfabeto latino. Licencia SIL OFL 1.1 (LICENSE-*.txt). */
+@font-face { font-family: 'Work Sans'; font-style: normal; font-weight: 400; font-display: swap; src: url(work-sans-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Work Sans'; font-style: normal; font-weight: 500; font-display: swap; src: url(work-sans-latin-500-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Work Sans'; font-style: normal; font-weight: 600; font-display: swap; src: url(work-sans-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Work Sans'; font-style: normal; font-weight: 700; font-display: swap; src: url(work-sans-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Bricolage Grotesque'; font-style: normal; font-weight: 200 800; font-stretch: 75% 100%; font-display: swap; src: url(bricolage-grotesque.woff2) format('woff2'); }

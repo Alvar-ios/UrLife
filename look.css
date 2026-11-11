@@ -167,7 +167,7 @@ html[data-look="nuevo"] .field input:focus, html[data-look="nuevo"] .field selec
 html[data-look="nuevo"] .type-toggle button { border-radius: var(--r-m); min-height: 44px; font-size: var(--fs-s); transition: transform .4s var(--ease-spring), background-color .2s ease, color .2s ease; }
 
 html[data-look="nuevo"] .sheet-backdrop { z-index: var(--z-sheet); background: rgba(10,12,28,.48); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); transition: opacity .25s ease; }
-html[data-look="nuevo"] .sheet { border-radius: var(--r-xl) var(--r-xl) 0 0; padding: 12px var(--sp-5) calc(var(--sp-6) + env(safe-area-inset-bottom, 0px)); transform: translateY(46px); transition: transform .5s var(--ease-out); box-shadow: var(--shadow-2); }
+html[data-look="nuevo"] .sheet { border-radius: var(--r-xl) var(--r-xl) 0 0; padding: 12px var(--sp-5) calc(var(--sp-6) + env(safe-area-inset-bottom, 0px)); transform: translateY(46px); transition: transform .28s var(--ease-out); /* 11/11: de .5 s a .28 s */ box-shadow: var(--shadow-2); }
 html[data-look="nuevo"] .sheet-backdrop.open .sheet { transform: none; }
 html[data-look="nuevo"] .sheet .handle { width: 40px; height: 5px; border-radius: 3px; margin-bottom: var(--sp-4); }
 html[data-look="nuevo"] .sheet h2 { font-size: var(--fs-xl); font-weight: var(--num-peso); letter-spacing: -.01em; }

@@ -40,7 +40,7 @@ const hoyD = new Date(), d = (n) => { const x = new Date(hoyD); x.setDate(x.getD
   // 3) Quitar una cuenta con movimientos pide un segundo toque
   const el1 = doc.createElement('button'); doc.body.appendChild(el1);
   H.cuentaQuitar(['0'], el1); await sleep(30);
-  ok((A.cfg().cuentas || []).length === 2 && /Tiene 1 movimiento/.test(doc.querySelector('#toast').textContent), 'Quitar cuenta con movimientos: avisa y pide otro toque');
+  ok((A.cfg().cuentas || []).length === 2 && /Tiene 2 movimientos/.test(doc.querySelector('#toast').textContent), 'Quitar cuenta con movimientos: avisa y pide otro toque');
   // 4) Quitar una cuenta SIN movimientos (pero con 5.200 € de saldo): se va al primer toque y sin «Deshacer»
   await sleep(300);
   const el2 = doc.createElement('button'); doc.body.appendChild(el2);
