@@ -9360,12 +9360,63 @@ function parseCSV(text) {
   if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
   return rows.map((r) => r.map((c) => c.trim()));
 }
+/* ---- 12/11/2026 · C4: qué es el archivo se mira por su contenido (un «.xls» puede ser una tabla HTML; un .txt, Norma 43) ---- */
+function impTipoBytes(u8) {
+  if (u8.length >= 2 && u8[0] === 0x50 && u8[1] === 0x4b) return 'excel'; // .xlsx (zip)
+  if (u8.length >= 4 && u8[0] === 0xd0 && u8[1] === 0xcf && u8[2] === 0x11 && u8[3] === 0xe0) return 'excel'; // .xls de Excel 97
+  return 'texto';
+}
 async function leerArchivoImport(file) {
-  const buf = await file.arrayBuffer();
-  if (/\.(csv|txt)$/i.test(file.name || '')) return [{ nombre: 'CSV', filas: parseCSV(decodificarTexto(buf)) }];
+  const buf = await file.arrayBuffer(), u8 = new Uint8Array(buf);
+  if (impTipoBytes(u8) === 'texto') {
+    const txt = decodificarTexto(buf);
+    if (esNorma43(txt)) return parseN43(txt);
+    if (!/^\s*<(\?xml|!doctype html|html|table|meta|head|body)/i.test(txt.slice(0, 600))) return [{ nombre: 'CSV', filas: parseCSV(txt) }];
+    // tabla HTML con extensión .xls (Sabadell y otros): se lee sin convertir nada, si no «01/10/2026» sale como fecha americana y «1.890,50» como 1,89
+    const X = await cargarXLSX();
+    const wb = X.read(txt, { type: 'string', raw: true, cellDates: false });
+    return wb.SheetNames.map((n) => ({ nombre: n, filas: X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }) }));
+  }
   const X = await cargarXLSX();
-  const wb = X.read(new Uint8Array(buf), { type: 'array', cellDates: false });
+  const wb = X.read(u8, { type: 'array', cellDates: false });
   return wb.SheetNames.map((n) => ({ nombre: n, filas: X.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }) }));
+}
+/* ---- Norma 43 (AEB 43, «Cuaderno 43»): registros de 80 caracteres. 11 cabecera de cuenta (saldo inicial), 22 movimiento,
+   23 conceptos, 33 final de cuenta (saldo final), 88 fin de fichero. Se convierte en una hoja por cuenta con sus columnas ya puestas. ---- */
+const N43_COMUN = { '01': 'Talón', '02': 'Abonaré', '03': 'Recibo', '04': 'Transferencia', '05': 'Préstamo', '06': 'Remesa de efectos', '07': 'Suscripción', '08': 'Dividendos', '09': 'Valores', '10': 'Cheque gasolina', '11': 'Cajero', '12': 'Tarjeta', '13': 'Operación en el extranjero', '14': 'Devolución', '15': 'Nómina', '16': 'Timbres', '17': 'Intereses y comisiones', '98': 'Anulación', '99': 'Varios' };
+const N43_ENTIDAD = { '0049': 'santander', '0081': 'sabadell', '0182': 'bbva', '2100': 'caixabank', '1465': 'ing', '0073': 'openbank', '0128': 'bankinter', '2103': 'unicaja', '2085': 'ibercaja', '2080': 'abanca', '2095': 'kutxabank', '3058': 'cajamar', '0239': 'evo', '3035': 'laboral', '1491': 'selfbank', '0019': 'deutschebank' };
+function n43Lineas(text) {
+  let ls = String(text || '').split(/\r\n|\n|\r/);
+  if (ls.filter((l) => l.trim()).length <= 1 && text.trim().length >= 160) ls = text.trim().match(/.{1,80}/g) || []; // todo seguido, sin saltos de línea
+  return ls.map((l) => l.replace(/\s+$/, '')).filter(Boolean).map((l) => l.padEnd(80, ' '));
+}
+function esNorma43(text) {
+  const ls = n43Lineas(String(text || '').slice(0, 20000));
+  return ls.length >= 2 && /^11\d{30}[12]\d{14}/.test(ls[0]) && ls.some((l) => /^22/.test(l));
+}
+function n43Fecha(t) { if (!/^\d{6}$/.test(t)) return null; const y = Number(t.slice(0, 2)); return (y < 80 ? 2000 + y : 1900 + y) + '-' + t.slice(2, 4) + '-' + t.slice(4, 6); }
+function n43Num(t) { return /^\d+$/.test(t) ? Number(t) / 100 : null; }
+function parseN43(text) {
+  const cuentas = []; let cur = null, ult = null;
+  n43Lineas(text).forEach((l) => {
+    const t = l.slice(0, 2);
+    if (t === '11') { cur = { ent: l.slice(2, 6), ofi: l.slice(6, 10), cta: l.slice(10, 20), inicial: (l[32] === '1' ? -1 : 1) * (n43Num(l.slice(33, 47)) || 0), nombre: l.slice(51, 77).trim(), movs: [], final: null }; cuentas.push(cur); ult = null; }
+    else if (t === '22' && cur) { const imp = n43Num(l.slice(28, 42)); ult = { fecha: n43Fecha(l.slice(10, 16)), valor: n43Fecha(l.slice(16, 22)), comun: l.slice(22, 24), imp: imp == null ? null : (l[27] === '1' ? -imp : imp), ref: l.slice(64, 80).trim() || l.slice(52, 64).trim(), textos: [] }; cur.movs.push(ult); }
+    else if (t === '23' && ult) ult.textos.push(l.slice(4, 42).trim(), l.slice(42, 80).trim());
+    else if (t === '33' && cur) { const f = n43Num(l.slice(59, 73)); cur.final = f == null ? null : (l[58] === '1' ? -f : f); ult = null; }
+  });
+  return cuentas.map((c) => {
+    let s = c.inicial;
+    const filas = [['Fecha', 'Fecha valor', 'Concepto', 'Importe', 'Saldo']].concat(c.movs.map((m) => {
+      if (m.imp != null) s = Math.round((s + m.imp) * 100) / 100;
+      const desc = m.textos.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim() || [N43_COMUN[m.comun] || 'Movimiento', m.ref].filter(Boolean).join(' ');
+      return [m.fecha || '', m.valor || '', desc, m.imp == null ? '' : m.imp, m.imp == null ? '' : s];
+    }));
+    const cuadra = c.final == null ? null : Math.abs(s - c.final) < 0.005;
+    return { nombre: 'Cuenta ···' + c.cta.slice(-4), filas, firma: 'n43 ' + hash53(c.ent + c.ofi + c.cta), bancoK: N43_ENTIDAD[c.ent] || null,
+      formato: { nombre: 'Norma 43', map: { fecha: 0, desc: 2, importe: 3, saldo: 4 }, modoImporte: 'uno', signo: 'signo', fmtFecha: 'dmy' },
+      n43: { inicial: c.inicial, final: c.final, calculado: s, cuadra, n: c.movs.length } };
+  });
 }
 function parseNum(v) {
   if (typeof v === 'number') return isFinite(v) ? v : null;
@@ -9398,8 +9449,14 @@ function parseFechaImp(v, fmt) {
   if (m) return mk(m[1], m[2], m[3]);
   m = t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})\b/);
   if (m) { const y = m[3].length === 2 ? '20' + m[3] : m[3]; return fmt === 'mdy' ? mk(y, m[1], m[2]) : mk(y, m[2], m[1]); }
+  // 12/11 · C4: «01 oct 2026», «1 de octubre de 2026», «01-Oct-26» (Trade Republic, Revolut en PDF, algunos Excel)
+  m = sinAcentos(t).toLowerCase().match(/^(\d{1,2})(?:\s+de)?[\s.\-\/]+([a-z]{3,10})\.?(?:\s+de)?[\s.\-\/,]+(\d{4}|\d{2})\b/);
+  if (m && IMP_MESES[m[2].slice(0, 3)]) return mk(m[3].length === 2 ? '20' + m[3] : m[3], IMP_MESES[m[2].slice(0, 3)], m[1]);
   return null;
 }
+const IMP_MESES = { ene: 1, jan: 1, feb: 2, mar: 3, abr: 4, apr: 4, may: 5, jun: 6, jul: 7, ago: 8, aug: 8, sep: 9, set: 9, oct: 10, nov: 11, dic: 12, dec: 12 };
+const IMP_SALDO_RE = /saldo|balance|disponible/; // BBVA llama «Disponible» al saldo
+const IMP_ANULADA_RE = /^(revert|declin|fail|cancel|anulad|rechazad|devuelt)/; // Revolut y otros: filas que el banco anuló
 function tipoDesdeTexto(v) {
   const t = normDesc(v);
   if (!t) return null;
@@ -9415,16 +9472,17 @@ function tipoDesdeTexto(v) {
 const IMP_ROLES = [
   ['fecha', 'Fecha', ['fecha', 'date', 'f valor', 'f operacion', 'dia']],
   ['importe', 'Importe', ['importe', 'amount', 'cantidad', 'monto', 'euros']],
-  ['cargo', 'Cargos (gastos)', ['cargo', 'debe', 'debit', 'salida']],
-  ['abono', 'Abonos (ingresos)', ['abono', 'haber', 'credit', 'entrada']],
+  ['cargo', 'Cargos (gastos)', ['cargo', 'debe', 'debit', 'salida', '^gasto', '^debito', '^retirada']],
+  ['abono', 'Abonos (ingresos)', ['abono', 'haber', 'credit', 'entrada', '^ingreso', '^credito']],
   ['desc', 'Descripción', ['concepto', 'descripcion', 'description', 'detalle', 'movimiento', 'operacion', 'referencia', 'nota', 'comercio', 'beneficiario', 'establecimiento']],
   ['desc2', 'Más detalle (opcional)', []],
   ['cat', 'Categoría', ['categoria', 'category', 'subcategoria']],
   ['tipo', 'Tipo', ['tipo', 'type', 'clase']],
 ];
+const impClave = (c, cl) => (cl[0] === '^' ? c.indexOf(cl.slice(1)) === 0 : c.indexOf(cl) >= 0);
 function puntuarCabecera(fila) {
   let n = 0;
-  (fila || []).forEach((c) => { const t = normDesc(c); if (t && IMP_ROLES.some((r) => r[2].some((k) => t.indexOf(k) >= 0)) || /saldo|balance/.test(t)) n++; });
+  (fila || []).forEach((c) => { const t = normDesc(c); if (t && IMP_ROLES.some((r) => r[2].some((k) => impClave(t, k))) || IMP_SALDO_RE.test(t)) n++; });
   return n;
 }
 function detectarCabecera(filas) {
@@ -9442,15 +9500,16 @@ function adivinarColumnas(I) {
   const cab = cabecerasDe(I).map(normDesc), map = {}, usadas = new Set();
   IMP_ROLES.forEach(([rol, , claves]) => {
     if (!claves.length) return;
-    const i = cab.findIndex((c, k) => !usadas.has(k) && !/saldo|balance/.test(c) && claves.some((cl) => c.indexOf(cl) >= 0));
+    const i = cab.findIndex((c, k) => !usadas.has(k) && !IMP_SALDO_RE.test(c) && claves.some((cl) => impClave(c, cl)));
     if (i >= 0) { map[rol] = i; usadas.add(i); }
   });
   const datos = I.hoja.filas.slice(I.cab + 1, I.cab + 40);
   const cuenta = (k, fn) => datos.filter((f) => f && fn(f[k])).length;
   if (map.fecha == null) { let b = -1; cab.forEach((_, k) => { if (usadas.has(k)) return; const n = cuenta(k, (v) => parseFechaImp(v, 'dmy')); if (n > b && n >= 2) { b = n; map.fecha = k; } }); if (map.fecha != null) usadas.add(map.fecha); }
-  if (map.importe == null && map.cargo == null) { let b = -1; cab.forEach((c, k) => { if (usadas.has(k) || /saldo|balance/.test(c)) return; const n = cuenta(k, (v) => parseNum(v) != null && parseFechaImp(v, 'dmy') == null); if (n > b && n >= 2) { b = n; map.importe = k; } }); if (map.importe != null) usadas.add(map.importe); }
+  if (map.importe == null && map.cargo == null) { let b = -1; cab.forEach((c, k) => { if (usadas.has(k) || IMP_SALDO_RE.test(c)) return; const n = cuenta(k, (v) => parseNum(v) != null && parseFechaImp(v, 'dmy') == null); if (n > b && n >= 2) { b = n; map.importe = k; } }); if (map.importe != null) usadas.add(map.importe); }
   if (map.desc == null) { let b = -1; cab.forEach((_, k) => { if (usadas.has(k)) return; const n = cuenta(k, (v) => typeof v === 'string' && /[a-z]{3}/i.test(v) && parseNum(v) == null); if (n > b && n >= 2) { b = n; map.desc = k; } }); }
-  { const ks = cab.findIndex((c, k) => !usadas.has(k) && /saldo|balance/.test(c)); if (ks >= 0) map.saldo = ks; } // docs/30 tanda 2
+  { const ks = cab.findIndex((c, k) => !usadas.has(k) && IMP_SALDO_RE.test(c)); if (ks >= 0) map.saldo = ks; } // docs/30 tanda 2
+  { const ke = cab.findIndex((c, k) => !usadas.has(k) && /^(state|estado|status)$/.test(c)); if (ke >= 0) map.estado = ke; } // C4: para saltar lo anulado (REVERTED)
   I.map = map;
   I.modoImporte = map.importe == null && (map.cargo != null || map.abono != null) ? 'dos' : 'uno';
   // formato de fecha: si algún primer número pasa de 12, es día/mes
@@ -9461,7 +9520,7 @@ function adivinarColumnas(I) {
   const hayNeg = map.importe != null && datos.some((f) => (parseNum(f[map.importe]) || 0) < 0);
   I.signo = hayNeg || map.tipo != null ? 'signo' : 'gastos';
 }
-function firmaArchivo(I) { return normDesc(cabecerasDe(I).join('|')); }
+function firmaArchivo(I) { return (I.hoja && I.hoja.firma) || normDesc(cabecerasDe(I).join('|')); } // Norma 43: una firma por cuenta del banco
 /* ---- reglas y sugerencias de categoría ---- */
 // docs/30 tanda 4: una regla puede valer «solo en» una cuenta y puede decir «es un traspaso a/desde» otra cuenta
 function reglaMejor(desc, cuenta, fn) {
@@ -9513,8 +9572,9 @@ function impHtml() {
   const h2 = (t) => '<div class="handle"></div><h2>' + t + '</h2>';
   if (I.paso === 'archivo') {
     return h2('Importar movimientos') +
-      '<div style="font-size:13.5px;color:var(--text-muted);line-height:1.5;margin:-6px 0 12px;">Sirve para el extracto de tu banco y para tu Excel de gastos: <b>.xlsx, .xls o .csv</b>. Antes de guardar verás una vista previa, y si importas dos veces el mismo archivo no se duplica nada.</div>' +
-      '<label class="imp-drop"><input type="file" id="impFile" accept=".xlsx,.xls,.csv,.txt" ' + onChange('impArchivo') + '><span>' + ic('fileIn') + ' Elegir archivo</span></label>' +
+      '<div style="font-size:13.5px;color:var(--text-muted);line-height:1.5;margin:-6px 0 12px;">Sirve para el extracto de tu banco y para tu Excel de gastos. Antes de guardar verás una vista previa, y si importas dos veces el mismo archivo no se duplica nada.</div>' +
+      '<div class="imp-note imp-formatos">' + ic('fileIn') + ' <span>Formatos: Excel, CSV y Norma 43 de tu banco' + (esAndroidApp() ? '.<br>También puedes compartir el extracto desde la app de tu banco con PalomApp.' : '.') + '</span></div>' +
+      '<label class="imp-drop"><input type="file" id="impFile" accept="' + IMP_ACCEPT + '" ' + onChange('impArchivo') + '><span>' + ic('fileIn') + ' Elegir archivo</span></label>' +
       (I.error ? '<div class="alert" style="margin-top:12px;">' + ic('alert') + '<div>' + escapeHtml(I.error) + '</div></div>' : '') +
       (I.cargando ? '<div style="margin-top:12px;color:var(--text-faint);font-size:13.5px;">Leyendo el archivo…</div>' : '') +
       '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button></div>';
@@ -9540,7 +9600,7 @@ function impHtml() {
       '<div class="actions"><button class="btn ghost block" ' + act('impVolver', 'archivo') + '>Atrás</button><button class="btn accent block" ' + act('impRevisar') + (hayVariasCuentas() && !I.cuenta ? ' disabled' : '') + '>' + (hayVariasCuentas() && !I.cuenta ? 'Elige la cuenta' : 'Ver vista previa') + '</button></div>';
   }
   if (I.paso === 'revisar') {
-    const F = I.filas, ok = F.filter((r) => r.id), err = F.filter((r) => !r.id);
+    const F = I.filas, ok = F.filter((r) => r.id), err = F.filter((r) => !r.id && !r.anulada), nAnul = F.filter((r) => r.anulada).length, n43 = I.hoja && I.hoja.n43;
     const nImp = ok.filter((r) => r.estado === 'importado').length, nDup = ok.filter((r) => r.estado === 'dup' || r.estado === 'juntos').length, nQ = ok.filter((r) => r.estado === 'quizas').length;
     const sel = ok.filter((r) => r.incluir && !['importado', 'sinCuenta', 'convertir'].includes(r.estado)), cuenta0 = hayVariasCuentas() ? I.cuenta : null;
     const nArr = cuenta0 && cuentaPorId(cuenta0) ? impCambiosDe(I, cuenta0).length : 0, nSinC = ok.filter((r) => r.estado === 'sinCuenta').length, nConv = ok.filter((r) => r.estado === 'convertir').length;
@@ -9585,6 +9645,9 @@ function impHtml() {
     const visibles = ok.filter((r) => r.estado !== 'importado');
     return h2('Vista previa') +
       '<div class="imp-file">' + escapeHtml(I.archivo) + (cuenta0 && cuentaPorId(cuenta0) ? ' · en <span class="dot" style="background:' + colorCuenta(cuentaPorId(cuenta0)) + '"></span><b>' + escapeHtml(nombreCuenta(cuenta0)) + '</b> <button type="button" class="link" ' + act('impVolver', 'columnas') + '>Cambiar</button>' : '') + '</div>' +
+      impAtajoHtml(I) +
+      (n43 && n43.cuadra === false ? '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> El saldo final del archivo (' + escapeHtml(money(n43.final)) + ') no coincide con el inicial más los movimientos (' + escapeHtml(money(n43.calculado)) + '). Puede que el archivo esté cortado.</div>'
+        : n43 && n43.cuadra ? '<div class="imp-note ok"><span class="ic-ok">' + ic('checkCircle') + '</span> Norma 43: saldo inicial + movimientos = saldo final del banco (' + escapeHtml(money(n43.final)) + ').</div>' : '') +
       '<div class="kpi-row" style="margin-bottom:10px;"><div class="kpi"><div class="v tnum">' + sel.length + '</div><div class="l">A importar</div></div>' +
       '<div class="kpi income"><div class="v tnum">' + moneyShort(tot('in')) + '</div><div class="l">Ingresos</div></div>' +
       '<div class="kpi expense"><div class="v tnum">' + moneyShort(tot('out')) + '</div><div class="l">Gastos</div></div></div>' +
@@ -9598,6 +9661,7 @@ function impHtml() {
       (nImp ? '<div class="imp-note">✓ ' + nImp + (nImp === 1 ? ' fila ya estaba importada' : ' filas ya estaban importadas') + ': se omiten.</div>' : '') +
       (nDup ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nDup + (nDup === 1 ? ' fila ya la tenías' : ' filas ya las tenías') + ' (mismo importe y fecha' + (cuenta0 ? ' en ' + escapeHtml(nombreCuenta(cuenta0)) : '') + ', o ya está en Juntos). Van desmarcadas; márcalas si son distintas.</div>' : '') +
       (nQ ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nQ + (nQ === 1 ? ' fila se parece' : ' filas se parecen') + ' a algo que apuntaste unos días antes o después. Dinos si es lo mismo.</div>' : '') +
+      (nAnul ? '<div class="imp-note">' + nAnul + (nAnul === 1 ? ' fila anulada por el banco se omite.' : ' filas anuladas por el banco se omiten.') + '</div>' : '') +
       (err.length ? '<div class="imp-note">' + err.length + (err.length === 1 ? ' fila no se ha podido leer' : ' filas no se han podido leer') + ' (sin fecha o importe válidos) y se omiten.</div>' : '') +
       (sinCat ? '<div class="imp-note">' + sinCat + ' sin categoría: se guardarán como «Sin categoría» y podrás cambiarlas luego.</div>' : '') +
       (() => {
@@ -9619,15 +9683,37 @@ function impHtml() {
   }
   return '';
 }
+const IMP_ACCEPT = '.xlsx,.xls,.csv,.txt,.tsv,.n43,.aeb,.csb,.43,text/csv,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+function esAndroidApp() { return !!(window.__nativo && window.__nativo.android); }
+// C4: la segunda vez (formato recordado) o con Norma 43, se salta «¿Qué es cada columna?» y se va directo a la vista previa
+function impAtajo() {
+  const I = IMP; if (!I || !I.hoja || I.hojas.length !== 1) return false;
+  if (!I.perfil && !I.hoja.formato) return false;
+  if (hayVariasCuentas() && !I.cuenta) return false; // hay que elegir la cuenta: esa pantalla sí hace falta
+  const m = I.map || {};
+  if (m.fecha == null || (I.modoImporte === 'uno' ? m.importe == null : m.cargo == null && m.abono == null)) return false;
+  impProcesar();
+  if (!I.filas.some((r) => r.id)) return false;
+  I.paso = 'revisar'; I.verTodo = false; I.atajo = true;
+  return true;
+}
+function impAtajoHtml(I) {
+  if (!I.atajo) return '';
+  const fx = I.hoja && I.hoja.formato, que = fx ? 'Formato ' + fx.nombre + ' reconocido.' : 'Formato reconocido: el mismo que la última vez.';
+  const cta = I.cuentaRecordada && I.cuenta && cuentaPorId(I.cuenta) ? ' La última vez importaste este formato en ' + escapeHtml(nombreCuenta(I.cuenta)) + '.' : '';
+  return '<div class="rec-learn"><span class="ic-ok">' + ic('checkCircle') + '</span> ' + que + cta + ' <button type="button" class="link" ' + act('impVolver', 'columnas') + '>Ver columnas</button></div>';
+}
 function impPrepararHoja(i) {
   const I = IMP;
   I.hojaIdx = i; I.hoja = I.hojas[i];
   I.hoja.filas = (I.hoja.filas || []).filter((f) => Array.isArray(f) && f.some((c) => String(c == null ? '' : c).trim() !== ''));
-  I.cab = detectarCabecera(I.hoja.filas);
+  const fx = I.hoja.formato; // C4: formatos que ya traen sus columnas (Norma 43)
+  I.cab = fx ? 0 : detectarCabecera(I.hoja.filas);
   const perfil = (cfg().importPerfiles || {})[firmaArchivo(I)];
-  if (perfil) { Object.assign(I, { map: Object.assign({}, perfil.map), modoImporte: perfil.modoImporte, signo: perfil.signo, fmtFecha: perfil.fmtFecha }); I.perfil = true; }
+  if (fx && !perfil) { Object.assign(I, { map: Object.assign({}, fx.map), modoImporte: fx.modoImporte, signo: fx.signo, fmtFecha: fx.fmtFecha }); I.perfil = false; }
+  else if (perfil) { Object.assign(I, { map: Object.assign({}, perfil.map), modoImporte: perfil.modoImporte, signo: perfil.signo, fmtFecha: perfil.fmtFecha }); I.perfil = true; }
   else { adivinarColumnas(I); I.perfil = false; }
-  if (perfil && !('saldo' in (perfil.map || {}))) { const ks = cabecerasDe(I).map(normDesc).findIndex((c) => /saldo|balance/.test(c)); if (ks >= 0) I.map.saldo = ks; } // formatos guardados antes de la columna Saldo
+  if (perfil && !('saldo' in (perfil.map || {}))) { const ks = cabecerasDe(I).map(normDesc).findIndex((c) => IMP_SALDO_RE.test(c)); if (ks >= 0) I.map.saldo = ks; } // formatos guardados antes de la columna Saldo
   impCuentaInicial(I, perfil);
 }
 
@@ -9637,7 +9723,9 @@ function impCuentaInicial(I, perfil) {
   if (I.cuentaFija && cuentaPorId(I.cuentaFija)) { I.cuenta = I.cuentaFija; I.cuentaRecordada = false; return; }
   const rec = perfil && perfil.cuenta && cuentaPorId(perfil.cuenta) ? perfil.cuenta : null;
   if (rec) { I.cuenta = rec; I.cuentaRecordada = true; return; }
-  const nom = normDesc(I.archivo || ''), cs = cuentasCfg();
+  const cs = cuentasCfg();
+  if (I.hoja && I.hoja.bancoK) { const deB = cs.filter((c) => { const b = bancoDe(c); return b && b.k === I.hoja.bancoK; }); if (deB.length === 1) { I.cuenta = deB[0].id; I.cuentaRecordada = false; return; } } // C4: Norma 43 dice el banco
+  const nom = normDesc(I.archivo || '');
   const pal = ' ' + nom.replace(/[^a-z0-9]+/g, ' ') + ' ', esta = (t) => { const w = normDesc(t).replace(/[^a-z0-9]+/g, ' ').trim(); return w.length >= 3 && pal.indexOf(' ' + w + ' ') >= 0; }; // palabras enteras: «ingresos» no es ING
   const porNombre = cs.find((c) => { const b = bancoDe(c); return (b && esta(b.k)) || esta(c.nombre); });
   I.cuenta = porNombre ? porNombre.id : null; I.cuentaRecordada = false; // sin pista: hay que elegirla
@@ -9788,13 +9876,14 @@ function impProcesar() {
   const ocurr = {}, out = [];
   const col = (f, k) => (k == null || k === '' ? '' : f[k]);
   // Con columna Tipo: ¿los gastos vienen en negativo (extracto) o en positivo (tu Excel)? Lo contrario es una devolución.
-  let gastosNeg = false;
+  let gastosNeg = I.modoImporte === 'dos'; // 12/11 · C4: con cargos y abonos separados, el cargo ya sale en negativo (antes un «Pago con tarjeta» con Tipo quedaba como devolución)
   if (m.tipo != null && m.tipo !== '' && I.modoImporte !== 'dos') {
     let neg = 0, pos = 0;
     filas.forEach((f) => { const t = tipoDesdeTexto(f[m.tipo]), v = parseNum(col(f, m.importe)); if (t && t !== 'Ingreso' && t !== 'Traspaso' && v) { if (v < 0) neg++; else pos++; } });
     gastosNeg = neg > pos;
   }
   filas.forEach((f, i) => {
+    if (m.estado != null && m.estado !== '' && IMP_ANULADA_RE.test(normDesc(f[m.estado]))) { out.push({ n: i, anulada: true }); return; } // C4: anulada por el banco
     const fecha = parseFechaImp(col(f, m.fecha), I.fmtFecha);
     let imp = null;
     if (I.modoImporte === 'dos') { const c = parseNum(col(f, m.cargo)), a = parseNum(col(f, m.abono)); if (c) imp = -Math.abs(c); else if (a) imp = Math.abs(a); }
@@ -12169,11 +12258,12 @@ const H = {
       const hojas = await leerArchivoImport(f);
       const buenas = hojas.filter((h) => (h.filas || []).some((r) => Array.isArray(r) && r.some((c) => String(c).trim())));
       if (!buenas.length) throw new Error('vacío');
-      Object.assign(IMP, { archivo: f.name, hojas: buenas, cargando: false, paso: 'columnas' });
+      Object.assign(IMP, { archivo: f.name, hojas: buenas, cargando: false, paso: 'columnas', atajo: false });
       impPrepararHoja(0);
+      impAtajo();
     } catch (e) {
       console.error(e);
-      Object.assign(IMP, { cargando: false, error: e && e.message === 'xlsx' ? 'No se pudo cargar el lector de Excel. Revisa tu conexión e inténtalo de nuevo.' : 'No he podido leer ese archivo. Prueba a exportarlo de nuevo como .xlsx o .csv.' });
+      Object.assign(IMP, { cargando: false, error: e && e.message === 'xlsx' ? 'No se pudo cargar el lector de Excel. Revisa tu conexión e inténtalo de nuevo.' : 'No he podido leer ese archivo. Prueba a exportarlo de nuevo como Excel, CSV o Norma 43.' });
     }
     updateSheet(impHtml());
   },
