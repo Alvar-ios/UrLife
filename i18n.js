@@ -174,7 +174,13 @@
     if (!LETRA.test(d) && d.indexOf('€') < 0 && d.indexOf('%') < 0) { hecho.set(n, d); return; }
     if (saltar(n.parentNode)) { hecho.set(n, d); return; }
     var t = I.tr(d);
-    if (t !== d) { orig.set(n, d); hecho.set(n, t); n.data = t; } else hecho.set(n, d);
+    if (t !== d) {
+      // 12/11 (Calidad): una <option> sin value="…" vale lo que dice su texto. Antes de traducirlo se le pone de value
+      // el texto en español, para que lo que se guarda (método de pago, tipo, categoría) siga en español
+      var p = n.parentNode;
+      if (p && p.nodeName === 'OPTION' && !p.hasAttribute('value')) p.setAttribute('value', p.textContent);
+      orig.set(n, d); hecho.set(n, t); n.data = t;
+    } else hecho.set(n, d);
   }
   function trAtr(el, a) {
     if (!I.en) return;

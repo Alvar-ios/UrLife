@@ -25,7 +25,8 @@ if (Capacitor.isNativePlatform()) {
   // Botón y gesto de atrás (docs/32 A1): la app decide; si no queda nada que cerrar, se sale
   App.addListener('backButton', () => {
     let hecho = false;
-    try { hecho = !!(window.__atras && window.__atras()); } catch (e) { hecho = false; }
+    // 12/11 (Calidad): si algo falla con una hoja o ventanita abierta, no se cierra la app (se perdería lo escrito)
+    try { hecho = !!(window.__atras && window.__atras()); } catch (e) { hecho = !!document.querySelector('#sheetBackdrop, #popupBackdrop'); }
     if (!hecho) App.exitApp();
   });
 
