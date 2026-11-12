@@ -765,13 +765,32 @@ function saveConfig(partial) {
 /* ============================================================
    CÁLCULOS
    ============================================================ */
+/* 12/11 (diagnóstico de rendimiento): Inicio pedía las cifras del mes ~20 veces y cada vez miraba el mes de todos los
+   movimientos. Ahora se agrupan por «tu mes» (mesDe) una sola vez y se recuerdan mientras sean los mismos movimientos
+   efectivos, la misma configuración (y su «tu mes») y el mismo día. Mismo orden que antes, así que las sumas son idénticas.
+   Se devuelven copias: quien ordene o cambie la lista no estropea lo recordado. */
+let _porMes = null;
+function movsPorMes() {
+  const ef = movsEfectivos(), hoy = todayISO(), mc = JSON.stringify(mesCfg()), P = _porMes;
+  if (P && P.ef === ef && P.movs === S.movimientos && P.conf === S.config && P.mc === mc && P.hoy === hoy) return P;
+  const mapa = new Map();
+  ef.forEach((m) => { const k = mesDe(m.fecha || ''); let l = mapa.get(k); if (!l) mapa.set(k, (l = [])); l.push(m); });
+  const r = { ef, movs: S.movimientos, conf: S.config, mc, hoy, mapa, kpis: new Map() };
+  if (!_cortesCalc) _porMes = r; // a mitad de calcular los cortes de la nómina los meses aún no son los buenos: no se recuerda
+  return r;
+}
 function movsDelMes(anio, mes) {
   const k = anio + '-' + pad2(mes);
-  return movsEfectivos().filter((m) => mesDe(m.fecha || '') === k);
+  return (movsPorMes().mapa.get(k) || []).slice();
 }
 function sumTipo(movs, tipo) { return movs.filter((m) => m.tipo === tipo).reduce((a, m) => a + num(m.importe), 0); }
 function kpisMes(anio, mes) {
-  const movs = movsDelMes(anio, mes);
+  const P = movsPorMes(), k = anio + '-' + pad2(mes);
+  let r = P.kpis.get(k);
+  if (!r) { r = kpisCalc(P.mapa.get(k) || []); P.kpis.set(k, r); }
+  return Object.assign({}, r, { movs: r.movs.slice() });
+}
+function kpisCalc(movs) {
   const ingresos = sumTipo(movs, 'Ingreso'), facturas = sumTipo(movs, 'Factura'), gastos = sumTipo(movs, 'Gasto');
   const ahorro = sumTipo(movs, 'Ahorro'), deuda = sumTipo(movs, 'Deuda'), inversion = sumTipo(movs, 'Inversión');
   return { ingresos, facturas, gastos, ahorro, inversion, deuda, disponible: ingresos - facturas - gastos - ahorro - inversion - deuda, movs };
@@ -1290,6 +1309,22 @@ function movMesHtml() {
     '<div class="mm-tumes">' + ic('calendar') + '<span>' + (mc.modo === 'cobro' ? 'Tu mes va del día ' + mc.dia + ' al ' + (mc.dia - 1) + ' (desde que cobras)' : 'Tu mes va del 1 al último día') + '</span><button type="button" class="link" ' + act('tuMesAbrir') + '>Cambiar</button></div>';
 }
 function movVistaAct() { return S.movVista === 'resumen' ? 'resumen' : S.movVista === 'calendario' ? 'calendario' : 'lista'; }
+// 12/11 (diagnóstico de rendimiento): el periodo, «hoy» y «tu mes» se miran una vez por filtrado, no una vez por movimiento.
+// Uso: lista.filter(filtroPeriodo()). Da lo mismo que inPeriodo (que se queda para quien mire un solo movimiento).
+function filtroPeriodo() {
+  const p = movPerNorm(S.movPeriodo);
+  if (p === 'todo') return () => true;
+  if (p === 'mes' || p === 'anterior' || p === 'anio') return inPeriodo; // movPerNorm ya no los devuelve; por si acaso, como antes
+  if (/^m:\d{4}-\d{2}$/.test(p)) { const k = p.slice(2); return (m) => mesDe(m.fecha || '') === k; }
+  if (/^y:\d{4}$/.test(p)) { const a = p.slice(2); return (m) => mesDe(m.fecha || '').slice(0, 4) === a; }
+  return () => true;
+}
+// tus movimientos efectivos del periodo elegido (copia nueva: se puede ordenar). Un mes sale ya agrupado de movsPorMes
+function movsEfPeriodo() {
+  const p = movPerNorm(S.movPeriodo);
+  if (/^m:\d{4}-\d{2}$/.test(p)) return (movsPorMes().mapa.get(p.slice(2)) || []).slice();
+  return movsEfectivos().filter(filtroPeriodo());
+}
 function inPeriodo(m) {
   const p = movPerNorm(S.movPeriodo);
   if (p === 'todo') return true;
@@ -1330,9 +1365,18 @@ function casaImporte(m, q) {
   if (dec == null || dec === '') return Math.floor(v) === Number(ent);
   return Math.abs(v - Number(n)) < 0.005 || v.toFixed(2).indexOf(n) === 0;
 }
+// 12/11 (buscador): los textos de cada movimiento en minúsculas se recuerdan; si alguno cambia, se vuelven a calcular
+const _textosBusca = new WeakMap();
+function textosBusca(m) {
+  const t = _textosBusca.get(m);
+  if (t && t.c === m.categoria && t.s === m.subcategoria && t.d === m.descripcion && t.p === m.metodoPago) return t.low;
+  const low = [m.categoria, m.subcategoria, m.descripcion, m.metodoPago].map((x) => String(x || '').toLowerCase());
+  _textosBusca.set(m, { c: m.categoria, s: m.subcategoria, d: m.descripcion, p: m.metodoPago, low });
+  return low;
+}
 function movsFiltrados() {
-  let movs = movsEfectivos().filter(inPeriodo);
-  if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta) || (esAporteLigado(m) && (cuentaIdDe(m) === S.movCuenta || m.cuentaDestinoId === S.movCuenta))).concat(flujosJuntosFilas(S.movCuenta).filter(inPeriodo));
+  let movs = movsEfPeriodo();
+  if (movCuentaActiva()) movs = movs.filter((m) => m.comp ? compSaleDeCuenta(m.comp, S.movCuenta) : (tocaCuenta(m) && cuentaIdDe(m) === S.movCuenta) || (esAporteLigado(m) && (cuentaIdDe(m) === S.movCuenta || m.cuentaDestinoId === S.movCuenta))).concat(flujosJuntosFilas(S.movCuenta).filter(filtroPeriodo()));
   if (S.movFiltroTipo === '_tras') movs = [];
   else if (S.movFiltroTipo === '_comp') movs = movs.filter((m) => m.comp);
   else if (S.movFiltroTipo === '_ticket') movs = movs.filter((m) => m.articulos || (m.comp && m.comp.articulos));
@@ -1343,7 +1387,7 @@ function movsFiltrados() {
   if (S.movCat) { const al = S.movCatAlias && normName(S.movCatAlias.cat) === normName(S.movCat) ? S.movCatAlias.nombres.map(normName) : []; movs = movs.filter((m) => normName(m.categoria) === normName(S.movCat) || al.indexOf(normName(m.categoria)) >= 0); }
   if (S.movCat && S.movSub) movs = movs.filter((m) => S.movSub === SIN_DETALLE ? !String(m.subcategoria || '').trim() : normName(m.subcategoria) === normName(S.movSub));
   const q = S.movQuery.trim().toLowerCase();
-  if (q) movs = movs.filter((m) => [m.categoria, m.subcategoria, m.descripcion, m.metodoPago].some((x) => (x || '').toLowerCase().includes(q)) || casaImporte(m, q));
+  if (q) movs = movs.filter((m) => textosBusca(m).some((x) => x.includes(q)) || casaImporte(m, q));
   return movs.sort(cmpMov);
 }
 // Dentro de una categoría: chips con sus detalles (Uñas, Pelu…) para afinar
@@ -1469,7 +1513,7 @@ function movFiltrosHtml() {
   if (!tipos.some((t) => t[0] === tAct)) tipos.splice(4, 0, [tAct, { _ahorro: 'Apartado e invertido' }[tAct] || tipoTxt(tAct)]);
   const soloT = !!S.movSoloTicket || S.movFiltroTipo === '_ticket', soloC = !!S.movSoloComp || S.movFiltroTipo === '_comp';
   const sw = (on, a, t, d) => '<div class="filt-sw"><div><b>' + t + '</b><span>' + d + '</span></div><button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + t + '" ' + act(a) + '></button></div>';
-  const gasto = {}; movsEfectivos().filter(inPeriodo).forEach((m) => { if ((m.tipo === 'Gasto' || m.tipo === 'Factura') && m.categoria) gasto[m.categoria] = (gasto[m.categoria] || 0) + Math.abs(num(m.importe)); });
+  const gasto = {}; movsEfPeriodo().forEach((m) => { if ((m.tipo === 'Gasto' || m.tipo === 'Factura') && m.categoria) gasto[m.categoria] = (gasto[m.categoria] || 0) + Math.abs(num(m.importe)); });
   const cats = Object.keys(gasto).sort((a, b) => gasto[b] - gasto[a]);
   if (S.movCat && !cats.some((c) => normName(c) === normName(S.movCat))) cats.unshift(S.movCat);
   return '<div class="handle"></div><div class="filt-cab"><h2>Filtros</h2><button type="button" class="link" ' + act('movFiltrosQuitar') + '>Quitar todos</button></div>' +
@@ -1551,7 +1595,7 @@ function movCuentaActiva() { return !!S.movCuenta && hayVariasCuentas() && !!cue
 function traspasosFiltrados() {
   if ((S.movFiltroTipo !== 'Todos' && S.movFiltroTipo !== '_tras') || S.movCat || S.movSoloTicket || S.movSoloComp) return [];
   const q = S.movQuery.trim().toLowerCase(), cu = movCuentaActiva() ? S.movCuenta : null;
-  return (S.traspasos || []).filter(inPeriodo).filter((t) => !cu || t.cuentaId === cu || t.cuentaDestinoId === cu).filter((t) => !q || [t.descripcion, 'traspaso', nombreCuenta(t.cuentaId), nombreCuenta(t.cuentaDestinoId)].some((x) => (x || '').toLowerCase().includes(q)));
+  return (S.traspasos || []).filter(filtroPeriodo()).filter((t) => !cu || t.cuentaId === cu || t.cuentaDestinoId === cu).filter((t) => !q || [t.descripcion, 'traspaso', nombreCuenta(t.cuentaId), nombreCuenta(t.cuentaDestinoId)].some((x) => (x || '').toLowerCase().includes(q)));
 }
 function renderTraspasoRow(t, sinSwipe) {
   const fila = '<div class="row traspaso' + (S._aterriza && S._aterriza === t.id ? ' aterriza' : '') + '" ' + act('openTraspaso', t.id) + '><span class="mov-ic t-tras" aria-hidden="true">' + ic('swap') + '</span>' +
@@ -7951,9 +7995,9 @@ function tipoCuenta(c) { return c && TIPOS_CUENTA.some((t) => t[0] === c.tipo) ?
 // por defecto suman las corrientes y el efectivo; cada cuenta tiene su interruptor
 function cuentaEnTengo(c) { return c.enTengo != null ? !!c.enTengo : ['corriente', 'efectivo'].indexOf(tipoCuenta(c)) >= 0; }
 function colorCuenta(c) { if (c.color) return c.color; const i = (cfg().cuentas || []).findIndex((x) => x && x.id === c.id); return COLORES_CUENTA[Math.max(0, i) % COLORES_CUENTA.length]; }
-function cuentaPorId(id) { return id ? cuentasCfg().find((c) => c.id === id) || null : null; }
+function cuentaPorId(id) { return id ? cuentasMemo().porId.get(id) || null : null; }
 // la marcada como principal o, si no hay ninguna, la primera
-function cuentaPrincipal() { const cs = cuentasCfg(); return cs.find((c) => c.principal) || cs[0] || null; }
+function cuentaPrincipal() { return cuentasMemo().principal; }
 // Juntos (fase 2 de cuentas): de qué cuenta TUYA salió (o a cuál entró) un gasto compartido o un pago al saldar.
 // Se guarda en tu configuración (nadie más lo ve); si no lo elegiste, la principal.
 function cuentaDeComp(c) { const id = c ? (cfg().cuentaJuntos || {})[c.id] : null; if (id && cuentaPorId(id)) return id; const pc = cuentaPrincipal(); return pc ? pc.id : null; }
@@ -7988,9 +8032,45 @@ function flujosCompartidos() {
   });
   return out;
 }
+/* 12/11 (diagnóstico de rendimiento): los saldos de todas las cuentas se calculan en una sola pasada y se recuerdan
+   mientras sean los mismos movimientos, compartidos, traspasos, objetivos, configuración, usuario y día.
+   Suman en el mismo orden que saldoCuentaUna (abajo), así que dan exactamente lo mismo. Una cuenta que no sea
+   de la configuración actual (p. ej. la copia que se está editando) se calcula aparte, como siempre. */
+let _saldosMemo = null;
+function saldosTodas() {
+  const hoy = todayISO(), yo = miUid(), M = _saldosMemo;
+  if (M && M.movs === S.movimientos && M.comp === S.compartidos && M.tras === S.traspasos && M.obj === S.objetivos && M.conf === S.config && M.hoy === hoy && M.yo === yo) return M.v;
+  const cs = cuentasCfg(), v = new Map(), porId = new Map();
+  cs.forEach((c) => { if (v.has(c) || c.saldo == null || !isFinite(Number(c.saldo))) return; const e = { c, s: num(c.saldo) }; v.set(c, e); if (!porId.has(c.id)) porId.set(c.id, []); porId.get(c.id).push(e); });
+  if (v.size) {
+    const vivos = new Set((S.compartidos || []).map((x) => x.id)), lista = (id) => porId.get(id) || []; // mismo id que compara saldoCuentaUna (también undefined)
+    (S.movimientos || []).forEach((m) => {
+      if (m.compartidoId && vivos.has(m.compartidoId)) return;
+      if (esAporteLigado(m)) {
+        // el orden de las dos líneas es el de antes: primero sale de su cuenta, luego entra en la de destino
+        lista(cuentaIdDe(m)).forEach((e) => { if (posteriorA(m, e.c, hoy)) e.s -= num(m.importe); });
+        lista(m.cuentaDestinoId).forEach((e) => { if (posteriorA(m, e.c, hoy)) e.s += num(m.importe); });
+        return;
+      }
+      if (SIGNO_CUENTA[m.tipo]) lista(cuentaIdDe(m)).forEach((e) => { if (posteriorA(m, e.c, hoy)) e.s += num(m.importe) * SIGNO_CUENTA[m.tipo]; });
+    });
+    flujosCompartidos().forEach((f) => lista(f.cuentaId).forEach((e) => { if (posteriorA(f, e.c)) e.s += f.v; }));
+    (S.traspasos || []).forEach((t) => {
+      lista(t.cuentaId).forEach((e) => { if (posteriorA(t, e.c)) e.s -= num(t.importe); });
+      lista(t.cuentaDestinoId).forEach((e) => { if (posteriorA(t, e.c)) e.s += num(t.importe); });
+    });
+  }
+  const out = new Map(); v.forEach((e, c) => out.set(c, Math.round(e.s * 100) / 100));
+  _saldosMemo = { movs: S.movimientos, comp: S.compartidos, tras: S.traspasos, obj: S.objetivos, conf: S.config, hoy, yo, v: out };
+  return out;
+}
 function saldoCuenta(c) {
   if (!c || c.saldo == null || !isFinite(Number(c.saldo))) return null;
-  const pc = cuentaPrincipal(), esPrincipal = !!pc && pc.id === c.id;
+  const v = saldosTodas();
+  return v.has(c) ? v.get(c) : saldoCuentaUna(c);
+}
+function saldoCuentaUna(c) {
+  if (!c || c.saldo == null || !isFinite(Number(c.saldo))) return null;
   const vivos = new Set((S.compartidos || []).map((x) => x.id));
   let s = num(c.saldo); const hoy = todayISO();
   S.movimientos.forEach((m) => {
@@ -8268,12 +8348,19 @@ function cuentasRefrescar() { updateSheet(FORM && FORM.kind === 'cuentaEd' ? cue
 /* ---- patrimonio (solo informativo) ---- */
 // 11/11 (auditoría, Dinero lento con muchos movimientos): se pedía miles de veces por pintado y cada vez copiaba toda la
 // configuración. Se recuerda mientras la configuración (y su lista de cuentas) sea la misma; se devuelve una copia.
-let _ccMemo = { src: undefined, lista: undefined, arr: null };
-function cuentasCfg() {
+// 12/11 (docs/salud/2026-11-12-diag-rendimiento): ya no se copia en cada llamada (se pedía 339.000 veces en Dinero).
+// Nadie la modifica: quien necesite cambiarla, que haga antes .slice(). Junto a ella se recuerdan el mapa id → cuenta y la principal.
+let _ccMemo = { src: undefined, lista: undefined, arr: null, porId: null, principal: null };
+function cuentasMemo() {
   const src = S.config, lista = src ? src.cuentas : undefined;
-  if (!_ccMemo.arr || _ccMemo.src !== src || _ccMemo.lista !== lista) _ccMemo = { src, lista, arr: (cfg().cuentas || []).filter((c) => c && c.nombre) };
-  return _ccMemo.arr.slice();
+  if (!_ccMemo.arr || _ccMemo.src !== src || _ccMemo.lista !== lista) {
+    const arr = (cfg().cuentas || []).filter((c) => c && c.nombre), porId = new Map();
+    arr.forEach((c) => { if (c.id && !porId.has(c.id)) porId.set(c.id, c); }); // como find(): la primera con ese id
+    _ccMemo = { src, lista, arr, porId, principal: arr.find((c) => c.principal) || arr[0] || null };
+  }
+  return _ccMemo;
 }
+function cuentasCfg() { return cuentasMemo().arr; }
 function patrimonio() {
   let inv = 0, sinValor = 0;
   const banco = cuentasCfg().reduce((a, c) => { const v = saldoCuenta(c); return a + (v == null ? num(c.saldo) : v); }, 0);
