@@ -10494,7 +10494,7 @@ function recordatoriosLista() {
     });
   });
   Object.keys(porDia).forEach((iso) => {
-    const l = porDia[iso], cuando = cuandoFijo(iso), marca = cuando < a9(uAdd(iso, -1)) ? 'fm|' + iso : null;
+    const l = porDia[iso], cuando = cuandoFijo(iso), marca = cuando !== a9(uAdd(iso, -1)) ? 'fm|' + iso : null;
     if (ac.saldo) l.filter((rc) => rc.kind !== 'cobro' && rc.cuentaId).forEach((rc) => {
       const c = cuentaPorId(rc.cuentaId), sal = c ? saldoCuenta(c) : null, imp = importePrevisto(rc, iso);
       if (sal != null && imp != null && imp > 0 && sal < imp) out.push({ nivel: 'importante', titulo: 'Mañana se paga ' + rc.nombre, texto: 'En ' + (c.nombre || 'esa cuenta') + ' ahora no hay bastante. Toca para verlo.', cuando, marca, tab: 'dinero' });
