@@ -85,6 +85,12 @@ if (Capacitor.isNativePlatform()) {
       abrirCon: () => PW.abrirCon().then((r) => (r && r.que) || '').catch(() => ''), // 'gasto', 'inicio' o ''
       alAbrir: (fn) => PW.addListener('abiertoDesdeWidget', fn),
     };
+    // 12/11 · «Compartir con PalomApp» (C4 de docs/40): extracto compartido o abierto desde otra app → { nombre, base64, tam } o { error: 'grande'|'leer' }
+    const AE = registerPlugin('ArchivoEntrante');
+    N.archivoEntrante = {
+      pendiente: () => AE.pendiente().then((r) => (r && (r.base64 || r.error) ? r : null)).catch(() => null),
+      alLlegar: (fn) => AE.addListener('archivoEntrante', fn),
+    };
   }
 
   // 12/11 · tres canales: importantes (suenan), normales (sin sonido) y resumen. Android oculta el texto con el móvil bloqueado.

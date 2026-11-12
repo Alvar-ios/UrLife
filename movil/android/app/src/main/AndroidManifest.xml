@@ -32,6 +32,34 @@
                 <data android:scheme="https" android:host="urlife-zeta.vercel.app" />
             </intent-filter>
 
+            <!-- «Compartir con PalomApp» (C4 de docs/40): extractos del banco (CSV, Excel, Norma 43 .txt/.n43) desde la app del banco o Archivos.
+                 Lo lee ArchivoEntrantePlugin en memoria y la web lo abre en Importar. -->
+            <intent-filter android:label="Importar en PalomApp">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="application/csv" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/tab-separated-values" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+            <intent-filter android:label="Importar en PalomApp">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="application/csv" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/tab-separated-values" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+
         </activity>
 
         <provider
