@@ -4,4 +4,8 @@
     <string name="title_activity_main">PalomApp</string>
     <string name="package_name">com.palomapp.app</string>
     <string name="custom_url_scheme">com.palomapp.app</string>
+    <string name="widget_queda_nombre">Te queda este mes</string>
+    <string name="widget_queda_desc">Lo que te queda este mes y cuánto mes ha pasado</string>
+    <string name="widget_gasto_nombre">Apuntar gasto</string>
+    <string name="widget_gasto_desc">Apunta un gasto en dos toques</string>
 </resources>

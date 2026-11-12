@@ -54,6 +54,15 @@
             </intent-filter>
         </service>
         <receiver android:name=".AvisosDeshacerReceiver" android:exported="false" />
+        <!-- Widgets de la pantalla de inicio (docs/40 C5): solo leen el resumen que deja la app -->
+        <receiver android:name=".WidgetQueda" android:label="@string/widget_queda_nombre" android:exported="false">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_queda_info" />
+        </receiver>
+        <receiver android:name=".WidgetGasto" android:label="@string/widget_gasto_nombre" android:exported="false">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_gasto_info" />
+        </receiver>
     </application>
 
     <!-- Permissions -->

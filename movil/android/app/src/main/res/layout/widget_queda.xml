@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget «Te queda este mes» (docs/40 C5) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/wq_raiz"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:background="@drawable/widget_fondo"
+    android:paddingStart="14dp"
+    android:paddingEnd="14dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/wq_texto"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Te queda este mes"
+            android:textColor="#FFB4B4C4"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end"/>
+        <TextView
+            android:id="@+id/wq_mes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:text=""
+            android:textColor="#FFFFC93C"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:maxLines="1"/>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/wq_cifra"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:minHeight="26dp"
+        android:gravity="center_vertical|start"
+        android:text="Abre PalomApp"
+        android:textColor="#FFFFFFFF"
+        android:textStyle="bold"
+        android:textSize="28sp"
+        android:maxLines="1"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="14sp"
+        android:autoSizeMaxTextSize="40sp"/>
+
+    <ProgressBar
+        android:id="@+id/wq_barra"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:max="1000"
+        android:progress="0"
+        android:progressDrawable="@drawable/widget_barra"
+        android:visibility="gone"/>
+</LinearLayout>
