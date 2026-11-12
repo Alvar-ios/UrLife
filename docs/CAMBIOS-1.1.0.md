@@ -30,11 +30,26 @@ Rama `fase13/integracion` (sin publicar). Cada punto lleva cómo se ha probado:
   - Lo que ya llegó por un aviso del banco sale como «ya lo tenías».
   - [auto, con 12 extractos inventados] [sin extractos reales]
 - **«Compartir con PalomApp» en Android.** Desde la app del banco o desde Archivos, el extracto se abre directamente en Importar. [auto, con el puente simulado] [sin móvil]
-- **Idioma inglés.** _(se completa al integrar la rama `fase13/idiomas`)_
+- **Idioma inglés.**
+  - Tú → La app → «Idioma / Language». La primera vez se usa el idioma del móvil; las cuentas que ya existían siguen en español.
+  - En inglés el dinero sale «€1,234.56». También van en inglés los avisos del móvil, los mensajes de WhatsApp, la pantalla de entrada, privacidad y borrar cuenta.
+  - Lo que escribe el usuario no se traduce.
+  - Calculo un 95 % traducido. Queda en español: frases raras del importador, algunos textos de inversiones, el Excel descargado y las invitaciones de WhatsApp con nombre de grupo.
+  - [auto, test165 + capturas en inglés] [sin móvil]
 
 ## Mejorado
-- **Rendimiento con muchos movimientos.** _(se completa al integrar `fase13/fix-rendimiento`)_
-- **Interfaz en el móvil.** _(se completa al integrar `fase13/fix-interfaz`)_
+- **Mucho más rápida con muchos movimientos.** Con 10.000 movimientos:
+  - Dinero pasa de 375 a ~70 ms e Inicio de 285 a ~95 ms.
+  - La Lista pasa de 510 a ~40 ms: enseña 40 filas y trae más sola al bajar.
+  - Cambiar de pestaña, en el peor caso, de 414 a 157 ms.
+  - Las cifras no cambian ni un céntimo.
+  - [auto, test163 + medidor]
+- **Interfaz en el móvil.**
+  - El teclado ya no tapa el campo que escribes en las hojas.
+  - El botón atrás de Android vuelve un paso en las subpantallas (grupo, persona, importar, cobro fijo, cuentas…). Ya no cierra la app con «Así vas» abierto, y en Importar pregunta antes de perder lo preparado.
+  - A 320 px y con letra al 130 % ya no se cortan «Borrar mi cuenta», «Cerrar sesión», «Movimientos», la barra de abajo ni la tarjeta de Inicio. El «€» no se separa de la cifra.
+  - Los interruptores de Avisos tienen nombre para lectores de pantalla, y «Pedir por WhatsApp» se lee bien (contraste 7,5).
+  - [auto, test164 + capturas] [sin móvil]
 - **Privacidad.** La web de privacidad explica el guardado con la app cerrada y el identificador del móvil.
 
 ## Arreglado
@@ -46,6 +61,7 @@ Rama `fase13/integracion` (sin publicar). Cada punto lleva cómo se ha probado:
   - al editar sin tocar el importe, se queda como estaba.
   - [auto, test160]
 - **Al cerrar sesión o borrar la cuenta**, los avisos del banco se apagan y se borra lo pendiente en el móvil. Antes, la siguiente cuenta que entraba en el mismo móvil los heredaba encendidos. [auto, test149] [sin móvil]
+- **El aviso de «mañana se paga…»** ya no se pierde si abres la app después de las 9:00 del día antes: sale enseguida, una sola vez. [auto, test152]
 - **Las pruebas no fallan pasada la medianoche** (iban con la hora de España). [auto]
 
 ## Pendiente
