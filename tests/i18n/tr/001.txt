@@ -1,0 +1,405 @@
+1	! PalomApp shows me that
+2	! I saved you a spot in «
+3	# # · # transaction
+4	# # · # transactions
+5	# #, # thing
+6	# #, # events
+7	# (or set your own)
+8	# = # · ECB #
+9	# a month
+10	# a year
+11	# set aside
+12	# fixes to what you already had
+13	# item from the receipt
+14	# year
+15	# closed with # in your favour.
+16	#1 closed with #2, #3 less than #4.
+17	#1 closed with #2, #3 more than #4.
+18	# closed with #.
+19	# thing
+20	# account
+21	# accounts
+22	# of
+23	# of #
+24	# of # budget
+25	# of spending
+26	# over
+27	# of spending
+28	# inside
+29	# days
+30	# days without spending
+31	# will start when your salary arrives
+32	# euros
+33	# row cancelled by the bank is skipped.
+34	# spent
+35	# expense
+36	# expenses
+37	# group
+38	# groups
+39	# milestone
+40	# km
+41	# km · # kWh
+42	# km · # kg
+43	# km · # litres
+44	# l/# km · #/l
+45	# month
+46	# goal
+47	# goals
+48	# members
+49	# transaction downloaded
+50	# transaction imported
+51	# transactions downloaded
+52	# transactions imported
+53	# transactions without an account
+54	# more than in # by this point
+55	# new in Together
+56	# new
+57	# new
+58	# new
+59	# or #, depending on the month
+60	# paid
+61	# fixed payment
+62	# units
+63	# units · you put in #
+64	# person
+65	# person or group
+66	# people
+67	# to add
+68	# percent
+69	# over its budget
+70	# to do
+71	# points
+72	# week before
+73	# without a category: they will be saved as «Uncategorised» and you can change them later.
+74	# overdue task
+75	# new tasks for you
+76	# overdue tasks
+77	# transfer between your accounts: it doesn't count as spending or income.
+78	# transfers between your accounts: they don't count as spending or income.
+79	# units · split the units
+80	# is at # in your favour.
+81	# is at #.
+82	# you already had it added
+83	# · # transactions
+84	# · # without the app
+85	# · # · deleted for good in # days
+86	# · #:# · # to your balance
+87	# · set aside
+88	# · you put in # · your share #
+89	# · of #
+90	# · what's due
+91	# · you paid # · your share #
+92	# · you paid
+93	# · payment
+94	# · fixed payment
+95	# · to settle up
+96	# · by your rule
+97	# · suggested
+98	# · your share # · #:#
+99	# · worth #
+100	# → worth #
+101	#, # thing
+102	#, # things
+103	#. Open your authenticator app and add an account by scanning this QR code.
+104	#. Type here the #-digit code it shows you.
+105	#/month
+106	#: # came in, you spent #
+107	#: no spending
+112	#–# · # expense
+113	#–# · # expenses
+114	% of spending
+115	% of what came in.
+116	% of what you received.
+117	% of spending
+118	% in
+119	% this week
+120	(matches in
+121	(with less than a year of data it's a rough guide)
+122	(with bonus pay)
+123	(since you get paid)
+124	(difference #). Check the amounts.
+125	(in # you spent nothing).
+126	(average of chargers)
+127	(same amount and date
+128	(more than came in: some came from before)
+129	(it didn't have it)
+130	(or set your own)
+131	(rough guide: less than a year)
+132	(for
+133	(for today)
+134	(for tomorrow)
+135	(if it falls on a weekend or holiday, the working day before)
+136	(if it falls on a weekend or holiday, the working day after)
+137	(if it falls on a weekend, the # before)
+138	(if it falls on a weekend, the # after)
+139	(no asset)
+140	(no description)
+141	(no detail)
+142	(without a valid date or amount) and are skipped.
+143	(you)
+144	) is not supported yet
+145	) doesn't match the opening balance plus the transactions (
+146	) to learn the rule. Now there are
+147	) is already in your accounts: setting aside doesn't take money out of the bank, so it isn't counted twice. Is your savings in another account? Add it in You → Accounts and balances.
+148	). It's a
+149	). It's an estimate.
+150	). It's an estimate: investments go up and down.
+151	). What was saved is in the batch and you can undo it.
+152	). Pick at most
+153	). The file may be cut off.
+154	). Check the amounts.
+155	). Tap each figure to see its transactions.
+156	). Try again: nothing will be repeated
+157	): not imported
+158	)? We'll turn it into a transfer
+159	+ New
+160	+ New
+161	+ Another person
+162	, kept between # and #
+163	, so we don't compare the two years.
+164	, with the whole group together.
+165	, will count from
+166	, after a
+167	, refund
+168	, where you keep this goal. In your month it counts as set aside, as always.
+169	, the
+170	, on day
+171	, in Home and in You.
+172	, the one that rose most
+173	, the
+174	, more than you have in your accounts. Is it in another account?
+175	, but the account has
+176	, but so far from the previous one that the expected day counts
+177	, which closed at
+178	, which it didn't have.
+179	, fill in your URL and your public key, and reload the page.
+180	, not counting fixed ones
+181	, no group.
+182	, adding up all your groups.
+183	, adding and subtracting what you enter.
+184	, reminder:
+185	, all added up
+186	, only once and for # days. When opened it takes their place and keeps their expenses.
+187	, and the balances will change.
+188	. It matches # of # transactions.
+189	. Difference:
+190	. For that your phone has its own key, which is only for this and is deleted when you log out.
+191	. If it matches, the app will use the bank balance from that day.
+192	. How much is left according to your bank? We adjust «Already paid» so it matches; no transaction is created or changed.
+193	/month
+194	: # months before.
+195	: change to negative
+196	: change to negative"
+197	: the
+198	: came in
+199	: that year only weekends are skipped.
+200	: investments go up and down and there is no guarantee.
+201	: you're at #
+202	: tick it if it's another one
+203	: it can't be split by items.
+204	: you can send it to the WhatsApp group.
+205	: check the rule
+206	: skipped.
+207	: will be set to
+208	: no spending
+209	: no amount saved, not counted
+210	: you've gone over
+211	: you have left
+212	: you had left over
+213	: your initial, top right.
+214	: your purchasing power drops
+215	: your purchasing power drops # a year.
+216	: your purchasing power grows
+217	: your purchasing power grows # a year.
+218	: version «
+220	Someone gets a negative amount: check the discounts
+221	Each person pays
+222	At this pace (# a month) you'd get there in #. Set a date and we'll tell you how much to set aside.
+223	At this pace, you'll end at
+224	At this pace, in
+225	To import
+226	To the account
+227	Split equally
+228	From now on, when you add money, it will move from your account to
+229	To your balance in the group
+230	At a time
+233	I'll pay in
+234	Credit
+235	Credits (income)
+236	Apr
+237	Opening your invitation…
+238	Open
+239	Open in Maps
+240	End at
+241	You end at
+242	Share
+243	Share #
+244	OK
+245	Accept and turn on
+246	On
+247	Turn on
+248	Activity
+249	Asset
+250	Assets
+251	Assets in the chart
+252	Updated
+253	Also
+254	Admin
+255	Admins
+257	Agenda with your week and all your tasks
+258	Agenda and tasks
+259	Aug
+260	Water
+261	Now
+262	They now count as the main one's. You can move to «
+263	Now an admin
+264	Right now there's no fixed income left to arrive this month.
+265	Not now
+266	It can't be deleted from here right now. Write to us at
+267	Km can't be calculated right now. Enter the km by hand.
+268	We all now have the same # categories, so a shared expense lands in the same one for everyone. We've moved yours to the new ones without losing anything.
+269	Now, discover the rest
+270	Savings
+271	Savings #
+272	Savings set aside
+273	When they open it, each person joins with their own account.
+274	When you add money, it moves from your account to
+275	When you add an expense you choose «Day to day» or «Fixed · bill». Rent, electricity or Spotify count in their category and in your budgets.
+276	A year
+277	A year #
+278	Per year, based on when you put in each euro
+279	Per year, based on when you put in each euro (like the total).
+280	When deleted, to your balance
+281	Once closed it no longer shows up when adding expenses. It can be reopened.
+282	When you complete it, the next one is created automatically.
+283	A day
+284	When saved it will stop being shared and will count fully as yours
+285	When importing, anything containing that text is saved as a transfer between your accounts (the direction comes from the sign).
+286	When you log in we'll ask for the code from your authenticator app.
+287	When you reach # and when you go over
+288	At least # characters. You'll use it to log in from now on.
+289	At least one person has to take it
+290	A month
+291	A month (
+292	When restored, your balance in the group
+293	At the current pace you won't make it
+294	At the current pace you won't make it in time
+295	At the current pace you won't make it
+296	At the current pace you won't make it in time
+298	Something
+299	Something's wrong
+300	Someone
+301	Someone close
+302	Some salaries arrive like this
+303	Some asset doesn't have price history yet; it will be filled in at the next update.
+306	Rent
+307	Rent or mortgage, community fees
+308	High
+309	Friend
+310	Friends
+312	Andalusia
+314	Ring
+315	Rings
+316	Noted: it didn't happen
+317	Third to last
+318	Before
+319	First you need to be settled up in
+320	Yearly
+321	Cancellation
+322	Cancel the invitation
+323	Cancel them
+324	Analysis
+325	Year analysis
+326	Gadgets
+327	Appearance
+328	Set aside for a trip or a cushion and see how much you're missing.
+329	Set aside
+330	Set aside / income
+331	Set aside and invested
+332	Set aside for goals
+333	Set aside
+334	Set aside
+335	Set money aside
+336	Setting aside means moving money to your savings (it's not an expense). If it's for something specific (the house, a trip), create a goal.
+337	Setting aside means moving money to your savings: it doesn't count as spending.
+338	Setting aside doesn't take money out of the bank: it's so you know that money has an owner.
+339	You set aside
+340	You set aside and invested
+341	You set aside and invested
+342	You set aside and invested # of what came in.
+343	You set aside more than you had left over:
+344	You set aside more than you had left over: # came from what you already had.
+345	Add money
+346	Contributions
+347	Contribution added to «
+348	Added
+349	Add money
+350	Add money #
+351	Add money to a shared goal
+352	Add money to a goal in a moment
+353	You put in
+354	You put in #
+356	Apps that have notified a payment
+357	Learn from my history
+358	Add the first one with the + button or take a photo of a receipt.
+359	Add your salary and bills and you'll see how you'll end the month.
+360	Add what you earn and what you spend, and you'll see how you're doing here.
+361	Add what you earn and you'll see how much you have left
+362	Add what you spend and you'll see here how much you have left this month.
+363	Add what you pay for the group and the app does the maths.
+364	Add your first expense
+365	Add your first expense or bring in your bank statement.
+366	Add your first investment
+367	Add an expense in two taps
+368	Add an expense of yours
+369	Add a debt
+370	Add a task for
+371	Add a task for # #…
+372	Add a task for today…
+373	Add a task for tomorrow…
+374	Added # transaction from your notifications
+375	Added by
+376	Added
+377	Added # transactions from your notifications
+378	Added from your notifications
+379	Add
+380	Add by hand
+381	Add debt
+382	Add amount
+383	Add my first expense
+384	Add an expense
+385	Add an expense in
+386	Add an expense on this day
+387	Add a fixed expense
+388	Add income
+389	Add a payment
+390	Add a debt payment
+391	Add a fixed payment
+392	Add an investment
+393	Add a new one just like it
+394	Add, faster
+395	Also add it as this month's expense
+396	You added
+397	Add it by hand: readings come back on
+398	Add it as a debt and you'll see how much is left and when you'll finish.
+399	Add it once the money has been sent (Bizum, transfer or cash). It doesn't count as spending or income: it just settles the accounts.
+400	Transactions without an account and shared ones where you don't choose another would go here.
+401	Here are all the tools
+402	Here you'll see where your money goes
+404	File
+405	Fix
+406	Fix #
+407	Car repair
+408	At the top you see each person in a circle, with what you owe each other, and what's new in your groups marked. You can settle everything with someone at once or ask them on WhatsApp.
+409	At the top, «What you have»: your accounts and investments minus what you owe. Below, four cards to move between Accounts, Goals, Investments or Debts.
+410	Item
+411	Item updated
+412	Item added
+413	Item deleted
+414	Items
+415	Items (
+416	Items (#)
+417	Assign your contributions to a goal and see if you'll make it in time.
+418	Assign
+419	Assign #
+420	Assign transactions

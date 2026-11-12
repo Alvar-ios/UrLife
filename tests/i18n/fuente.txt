@@ -1,0 +1,3816 @@
+! En PalomApp me sale que
+! Te he guardado un sitio en «
+# # · # movimiento
+# # · # movimientos
+# #, # cosa
+# #, # eventos
+# (o pon el tuyo)
+# = # · BCE #
+# al mes
+# anual
+# apartados
+# arreglos en lo que ya tenías
+# artículo del ticket
+# año
+# cerró con # a tu favor.
+# cerró con #, # menos que #.
+# cerró con #, # más que #.
+# cerró con #.
+# cosa
+# cuenta
+# cuentas
+# de
+# de #
+# de # de presupuesto
+# de gasto
+# de más
+# del gasto
+# dentro
+# días
+# días sin gastos
+# empezará cuando llegue tu nómina
+# euros
+# fila anulada por el banco se omite.
+# gastados
+# gasto
+# gastos
+# grupo
+# grupos
+# hito
+# km
+# km · # kWh
+# km · # kg
+# km · # litros
+# l/# km · #/l
+# mes
+# meta
+# metas
+# miembros
+# movimiento descargado
+# movimiento importado
+# movimientos descargados
+# movimientos importados
+# movimientos sin cuenta
+# más que en # a estas alturas
+# novedades en Juntos
+# nueva
+# nuevas
+# nuevo
+# o #, según el mes
+# pagado
+# pago fijo
+# part.
+# part. · aportaste #
+# persona
+# persona o grupo
+# personas
+# por apuntar
+# por ciento
+# por encima de su presupuesto
+# por hacer
+# puntos
+# semana antes
+# sin categoría: se guardarán como «Sin categoría» y podrás cambiarlas luego.
+# tarea vencida
+# tareas nuevas para ti
+# tareas vencidas
+# traspaso entre tus cuentas: no cuenta como gasto ni ingreso.
+# traspasos entre tus cuentas: no cuentan como gasto ni ingreso.
+# uds. · reparte las unidades
+# va con # a tu favor.
+# va con #.
+# ya lo tenías apuntado
+# · # movimientos
+# · # sin app
+# · # · se borra del todo en # días
+# · #:# · # a tu saldo
+# · apartado
+# · aportaste # · tu parte #
+# · de #
+# · lo que toca
+# · pagaste # · tu parte #
+# · pagaste tú
+# · pago
+# · pago fijo
+# · para saldar cuentas
+# · por tu regla
+# · sugerida
+# · tu parte # · #:#
+# · valen #
+# → vale #
+#, # cosa
+#, # cosas
+#. Abre tu app autenticadora y añade una cuenta escaneando este QR.
+#. Escribe aquí el código de # cifras que te muestre.
+#/mes
+#: entró #, gastaste #
+#: sin gastos
+#content .tu#-desc
+#content .tu-grupo
+#tbAvatar, .rail-tu
+#tec .tec-del
+#–# · # gasto
+#–# · # gastos
+% de gasto
+% de lo que entró.
+% de lo que te ha entrado.
+% del gasto
+% en
+% esta semana
+(coincide en
+(con menos de un año de datos es orientativo)
+(con paga extra)
+(desde que cobras)
+(diferencia #). Revisa los importes.
+(en # no gastaste nada).
+(media de los cargadores)
+(mismo importe y fecha
+(más de lo que ha entrado: parte venía de antes)
+(no la tenía)
+(o pon el tuyo)
+(orientativo: menos de un año)
+(para el
+(para hoy)
+(para mañana)
+(si cae en finde o festivo, el día hábil antes)
+(si cae en finde o festivo, el día hábil después)
+(si cae en finde, el # antes)
+(si cae en finde, el # después)
+(sin activo)
+(sin descripción)
+(sin detalle)
+(sin fecha o importe válidos) y se omiten.
+(tú)
+) aún no está soportada
+) no coincide con el inicial más los movimientos (
+) para aprender la regla. Ahora hay
+) ya está dentro de tus cuentas: apartar no saca dinero del banco, así que no se suma dos veces. ¿Tienes el ahorro en otra cuenta? Añádela en Tú → Cuentas y saldos.
+). Es una
+). Es una estimación.
+). Es una estimación: las inversiones suben y bajan.
+). Lo que sí se guardó está en el lote y puedes deshacerlo.
+). Marca como máximo
+). Puede que el archivo esté cortado.
+). Revisa los importes.
+). Toca cada cifra para ver sus movimientos.
+). Vuelve a intentarlo: no se repetirá nada
+): no se importa
+)? Lo convertiremos en un traspaso
++ Nueva
++ Nuevo
++ Otra persona
+, acotada entre # y #
+, así que no comparamos los dos años.
+, con todo el grupo junto.
+, contará desde el
+, después de un
+, devolución
+, donde guardas esta meta. En tu mes cuenta como apartado, igual que siempre.
+, el
+, el día
+, en Inicio y en Tú.
+, la que más subió
+, los
+, más de lo que hay en tus cuentas. ¿Lo tienes en otra cuenta?
+, pero la cuenta tiene
+, pero tan lejos de la anterior que cuenta el día previsto
+, que cerró en
+, que no tenía.
+, rellena tu URL y tu clave pública, y recarga la página.
+, sin contar los fijos
+, sin grupo.
+, sumando todos tus grupos.
+, sumando y restando lo que apuntas.
+, te recuerdo:
+, todo sumado
+, una sola vez y durante # días. Al abrirlo ocupa su sitio y se queda con sus gastos.
+, y los saldos cambiarán.
+. Coincide en # de # movimientos.
+. Diferencia:
+. Para eso tu móvil tiene una clave propia, que solo sirve para esto y se borra al cerrar sesión.
+. Si cuadras, la app usará el saldo del banco desde ese día.
+. ¿Cuánto te queda según tu banco? Ajustamos «Ya pagado» para que cuadre; no se crea ni se cambia ningún movimiento.
+/mes
+: # meses antes.
+: cambiar a negativo
+: cambiar a negativo"
+: el
+: entró
+: ese año solo se saltan los fines de semana.
+: las inversiones suben y bajan y no hay ninguna garantía.
+: llevas el #
+: márcalo si es otro
+: no se puede repartir por artículos.
+: puedes mandarlo al grupo de WhatsApp.
+: revisa la regla
+: se omiten.
+: se pondrán en
+: sin gastos
+: sin importe guardado, no se cuenta
+: te has pasado
+: te quedan
+: te sobraron
+: tu inicial, arriba a la derecha.
+: tu poder de compra baja un
+: tu poder de compra baja un # al año.
+: tu poder de compra crece un
+: tu poder de compra crece un # al año.
+: versión «
+A Coruña
+A alguien le sale un importe negativo: revisa los descuentos
+A cada uno le toca
+A este ritmo (# al mes) llegarías en #. Ponle una fecha y te diremos cuánto apartar.
+A este ritmo, acabas en
+A este ritmo, en
+A importar
+A la cuenta
+A partes iguales
+A partir de ahora, al aportar, el dinero pasará de tu cuenta a
+A tu saldo en el grupo
+A una hora
+AR
+Abanca
+Abonaré
+Abono
+Abonos (ingresos)
+Abr
+Abriendo tu invitación…
+Abrir
+Abrir en Mapas
+Acabar en
+Acabas en
+Acción
+Acción #
+Aceptar
+Aceptar y activar
+Activado
+Activar
+Actividad
+Activo
+Activos
+Activos en la gráfica
+Actualizado
+Además se
+Administrador
+Administradores
+Agenda
+Agenda con tu semana y todas tus tareas
+Agenda y tareas
+Ago
+Agua
+Ahora
+Ahora cuentan como de la principal. Puedes pasar a «
+Ahora es administrador
+Ahora mismo no queda ningún cobro fijo por llegar en tu mes.
+Ahora no
+Ahora no se puede borrar desde aquí. Escríbenos a
+Ahora no se pueden calcular los km. Pon los km a mano.
+Ahora todos tenemos las mismas # categorías, así un gasto compartido cae en la misma para cada uno. Hemos pasado las tuyas a las nuevas sin perder nada.
+Ahora, descubre lo demás
+Ahorro
+Ahorro #
+Ahorro apartado
+Al abrirlo, cada uno se une con su cuenta.
+Al aportar, el dinero pasa de tu cuenta a
+Al apuntar un gasto eliges «Del día a día» o «Fijo · recibo». El alquiler, la luz o Spotify cuentan en su categoría y en tus presupuestos.
+Al año
+Al año #
+Al año, según cuándo metiste cada euro
+Al año, según cuándo metiste cada euro (como la del total).
+Al borrarlo, a tu saldo
+Al cerrarlo ya no sale al apuntar gastos. Se puede volver a abrir.
+Al completarla se crea sola la siguiente.
+Al día
+Al guardar dejará de estar compartido y contará entero como tuyo
+Al importar, lo que contenga ese texto se guarda como traspaso entre tus cuentas (la dirección sale del signo).
+Al iniciar sesión te pediremos el código de tu app autenticadora.
+Al llegar al # y al pasarte
+Al menos # caracteres. Con ella entrarás a partir de ahora.
+Al menos una persona tiene que tomarlo
+Al mes
+Al mes (
+Al recuperarlo, tu saldo en el grupo
+Al ritmo actual no llegaríais
+Al ritmo actual no llegaríais a tiempo
+Al ritmo actual no llegarías
+Al ritmo actual no llegarías a tiempo
+Albacete
+Algo
+Algo falla
+Alguien
+Alguien cercano
+Algunas nóminas llegan así
+Algún activo aún no tiene histórico de precios; se completará en la próxima actualización.
+Alicante
+Almería
+Alquiler
+Alquiler o hipoteca, comunidad
+Alta
+Amigo
+Amigos
+Ana
+Andalucía
+Android
+Anillo
+Anillos
+Anotado: no ha ocurrido
+Antepenúltimo
+Antes
+Antes tienes que estar en paz en
+Anual
+Anulación
+Anular la invitación
+Anularlos
+Análisis
+Análisis del año
+Aparatos
+Apariencia
+Aparta para un viaje o un colchón y mira cuánto te falta.
+Apartado
+Apartado / ingresos
+Apartado e invertido
+Apartado para metas
+Apartados
+Apartar
+Apartar dinero
+Apartar es pasar dinero a tu ahorro (no es un gasto). Si es para algo concreto (la casa, un viaje), crea una meta.
+Apartar es pasar dinero a tu ahorro: no cuenta como gasto.
+Apartar no saca dinero del banco: es para que sepas que ese dinero tiene dueño.
+Apartas
+Apartaste e invertiste
+Apartaste e invertiste el
+Apartaste e invertiste el # de lo que entró.
+Apartaste más de lo que te sobraba:
+Apartaste más de lo que te sobraba: # salieron de lo que ya tenías.
+Aporta
+Aportaciones
+Aportación añadida a «
+Aportado
+Aportar
+Aportar #
+Aportar a una meta compartida
+Aportar a una meta en un momento
+Aportaste
+Aportaste #
+App
+Apps que han avisado de un pago
+Aprender de mi historial
+Apunta el primero con el botón + o haz una foto a un ticket.
+Apunta la nómina y los recibos y verás cómo acabarás el mes.
+Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.
+Apunta lo que cobras y verás cuánto te queda
+Apunta lo que gastas y aquí verás cuánto te queda este mes.
+Apunta lo que pagues para el grupo y la app hace las cuentas.
+Apunta tu primer gasto
+Apunta tu primer gasto o trae el extracto de tu banco.
+Apunta tu primera inversión
+Apunta un gasto en dos toques
+Apunta un gasto tuyo
+Apunta una deuda
+Apunta una tarea para el
+Apunta una tarea para el # #…
+Apunta una tarea para hoy…
+Apunta una tarea para mañana…
+Apuntado # movimiento de tus avisos
+Apuntado por
+Apuntados
+Apuntados # movimientos de tus avisos
+Apuntados de tus avisos
+Apuntar
+Apuntar a mano
+Apuntar deuda
+Apuntar importe
+Apuntar mi primer gasto
+Apuntar un gasto
+Apuntar un gasto en
+Apuntar un gasto este día
+Apuntar un gasto fijo
+Apuntar un ingreso
+Apuntar un pago
+Apuntar un pago de deuda
+Apuntar un pago fijo
+Apuntar una inversión
+Apuntar uno nuevo igual
+Apuntar, más rápido
+Apuntarlo también como gasto del mes
+Apuntaste
+Apúntalo a mano: las lecturas vuelven el
+Apúntalo como deuda y verás cuánto te queda y cuándo acabas.
+Apúntalo cuando el dinero ya se haya enviado (Bizum, transferencia o en mano). No cuenta como gasto ni como ingreso: solo deja las cuentas a cero.
+Aquí irían los movimientos sin cuenta y los compartidos en los que no elijas otra.
+Aquí tienes todas las herramientas
+Aquí verás en qué se va tu dinero
+Aragón
+Archivo
+Arreglar
+Arreglar #
+Arreglo del coche
+Arriba ves a cada persona en un círculo, con lo que os debéis, y lo nuevo de tus grupos marcado. Puedes saldar todo con alguien de una vez o pedírselo por WhatsApp.
+Arriba, «Lo que tienes»: tus cuentas e inversiones menos lo que debes. Debajo, cuatro fichas para pasar de Cuentas a Metas, Inversiones o Deudas.
+Artículo
+Artículo actualizado
+Artículo añadido
+Artículo eliminado
+Artículos
+Artículos (
+Artículos (#)
+Asigna tus aportaciones a una meta y mira si llegas a tiempo.
+Asignar
+Asignar #
+Asignar movimientos
+Aspecto y sensaciones
+Asturias
+Así cambian tus fechas
+Así es PalomApp
+Así funciona Juntos
+Así sabrás lo que te queda de verdad.
+Así sabrás lo que tienes de verdad
+Así sabrás lo que tienes de verdad.
+Así sale «Te queda este mes»
+Así se mueve uno por la app
+Así te avisamos de lo que toca y verás cómo acabarás el mes.
+Así te verán las personas con las que compartas gastos.
+Así te verán las personas con las que compartas gastos. En los grupos que ya tienes, tu nombre se cambia dentro de cada grupo.
+Así vas
+Así «Te queda» cuenta desde que cobras hasta el siguiente cobro, y no sale en negativo a mitad de mes.
+Atajos
+Atajos en Inicio
+Atrás
+Auto
+Autogás (GLP)
+Automático
+Avisarme
+Avisarme cuando apunte algo
+Avisos
+Avisos del banco
+Avisos del banco apagados. Lo pendiente se ha borrado del móvil.
+Avisos en Inicio
+Avión
+Ayer
+Ayer, # #
+Añade a alguien solo con su nombre. Si un día se la instala, con un enlace se queda su sitio.
+Añade a tus amigos y comparte con ellos sin crear un grupo.
+Añade categorías en Tú → Categorías de gasto.
+Añade lo que pagues en «
+Añade una capa extra de seguridad: además de la contraseña, se pedirá un código de # cifras de una app como Google Authenticator, Microsoft Authenticator o Authy. Es opcional.
+Añadir
+Añadir #
+Añadir a Inicio
+Añadir a mi calendario
+Añadir a tu configuración lo nuevo del archivo:
+Añadir a tus amigos
+Añadir artículo
+Añadir cobro fijo
+Añadir cuenta
+Añadir efectivo u otra cuenta
+Añadir gasto
+Añadir gasto compartido
+Añadir gastos ya apuntados
+Añadir hito
+Añadir movimiento
+Añadir otra cuenta
+Añadir regla
+Añadir saldo
+Añadir una
+Añadir ya a tus amigos
+Año
+Año anterior
+Año cerrado
+Año entero
+Año siguiente
+Añádela
+Aún
+Aún estás solo en este grupo. Invita a alguien para empezar a compartir.
+Aún no compartes con nadie
+Aún no compartes con nadie. Invita a una persona por WhatsApp o crea un grupo y, cuando acepten, podréis compartir gastos.
+Aún no compartes con nadie. Invita a una persona por WhatsApp y, cuando acepte, podréis compartir gastos.
+Aún no compartes gastos
+Aún no compartes gastos con nadie.
+Aún no compartes nada. Crea un grupo (casa, viaje…) o invita a una persona por WhatsApp.
+Aún no estás en ningún grupo. Crea uno e invita por WhatsApp.
+Aún no habéis compartido gastos
+Aún no has apuntado nada.
+Aún no has añadido ninguna cuenta.
+Aún no has completado ninguna
+Aún no has completado ninguna.
+Aún no has gastado nada aquí este mes.
+Aún no has importado nada.
+Aún no hay aportaciones recientes. Con un poco cada mes, la verás avanzar.
+Aún no hay cambios. Aquí verás quién apunta, cambia o borra cada gasto.
+Aún no hay datos para esto este mes.
+Aún no hay gastos aquí. Apunta el primero.
+Aún no hay gastos compartidos aquí.
+Aún no hay gastos en
+Aún no hay gastos en #.
+Aún no hay gastos en este tema.
+Aún no hay informes.
+Aún no hay inversiones. Añade un movimiento de tipo
+Aún no hay movimientos en estos meses.
+Aún no hay nada tuyo en este grupo.
+Aún no hay nadie. Invita a alguien por WhatsApp.
+Aún no hay piezas para esto.
+Aún no hay planes. Apunta el primero: una cena, un viaje, el cumple de alguien.
+Aún no hay precios de todos tus activos.
+Aún no hay suficientes días para la gráfica.
+Aún no la ha aceptado. El enlace caduca el
+Aún no tenemos los festivos de
+Aún no tienes
+Aún no tienes cobros ni pagos fijos.
+Aún no tienes cuentas.
+Aún no tienes deudas.
+Aún no tienes grupos. Crea uno para la casa, un viaje o el pádel.
+Aún no tienes inversiones.
+Aún no tienes metas.
+Aún no tienes movimientos de Apartar ni de Inversión.
+Aún no tienes ninguno. Añade el alquiler, la luz o una suscripción.
+Aún no tienes ninguno. Añade tu nómina u otro cobro fijo.
+Aún no tienes ninguno. Toca «Añadir».
+Aún no tienes presupuestos.
+Aún no tienes reglas. Se crean al apuntar un movimiento con descripción («Recordar…») o al importar.
+Aún sin aportar
+Aún sin pagos
+BBVA
+Backspace
+Badajoz
+Baja
+Baja lo que tiene la meta y sigue activa (por ejemplo, una urgencia).
+Balance
+Balance con tus personas
+Balance de
+Balance de #
+Balance de # #
+Baleares
+Balón
+Banco
+Banco #
+Banco + inversiones + ahorro − deudas, en Inicio.
+Banco Sabadell
+Bankinter
+Barcelona
+Barra con lo que debes y lo que te deben
+Barras
+Barras más anchas, se leen mejor
+Basta con su nombre: no hace falta que tenga la app.
+Bea
+Bearer
+Bebé
+Beneficio
+Bienvenida
+Binance
+Biodiésel
+Bioetanol (E#)
+Bizkaia
+Bizum
+Blanco
+Boda
+Bombilla
+Bono
+Borrado
+Borrados
+Borrando…
+Borrar
+Borrar mi cuenta
+Borrar tema
+Borrar, mantén pulsado para borrar todo
+Borraste
+Botones más fáciles de tocar
+Botón +
+Botón de comparar oculto
+Botón «Antes» (pruebas)
+Botón «Saldar» para quedar en paz
+Bróker
+Brókers e inversión
+Burgos
+Busca movimientos por tienda, categoría o importe, tus tareas y cualquier ajuste.
+Busca y elige el activo
+Buscador
+Buscando el cambio del día…
+Buscando…
+Buscar
+Buscar el activo
+Buscar en todo el historial
+Buscar lo que falta en sus movimientos
+Buscarlo
+CADA MES
+CHF
+CM
+CR
+Cada
+Cada # días…
+Cada # meses (semestral)
+Cada # meses (trimestral)
+Cada #, la semana anterior
+Cada año
+Cada cierto número de días
+Cada cierto número de meses (trimestral, anual…)
+Cada cierto número de semanas
+Cada cuántas semanas
+Cada cuántos días
+Cada cuántos meses
+Cada día
+Cada franja es lo que vale ese activo; lo gris, el resto. El borde de arriba es el total.
+Cada gasto solo lo puede cambiar o borrar quien lo apuntó, y también los administradores.
+Cada grupo se cierra por su cuenta, con los menos pagos posibles.
+Cada grupo tiene sus administradores, que eligen quién puede cambiar los gastos.
+Cada mes
+Cada meta con su forma y su nombre dentro
+Cada meta junta lo que apartas y lo que inviertes para ella. Puedes ponerle hitos y, cuando uses el dinero, apuntarlo.
+Cada meta tiene sus hitos con fecha y su ritmo para llegar.
+Cada municipio tiene #. Pon las de tu sitio de trabajo.
+Cada semana
+Cada semana, cada # semanas…
+Cada tres meses
+Cada vez que apunte algo te avisará con un botón «Deshacer», y en Inicio podrás borrarlo con un toque.
+CaixaBank
+Caja Rural
+Cajamar
+Cajero
+Calculada según cuándo metiste cada euro (rentabilidad ponderada por dinero), desde el
+Calculado desde el saldo del
+Calculado desde el saldo del # ·
+Calculadora de trayecto
+Calculando…
+Calcular km
+Calendario
+Calendario con lo que gastas cada día y «Dónde más gastas»
+Calendario de gastos
+Cambia de mes con las flechas o mira todo tu historial.
+Cambia el filtro o añade uno nuevo.
+Cambia el símbolo y el formato de todos los importes.
+Cambia solo según tu mes
+Cambiar
+Cambiar de versión (#, # de #)
+Cambiar este círculo
+Cambiar nombre, icono o fechas
+Cambiar tema
+Cambiaste
+Cambio del día
+Cambios
+Campo
+Canarias
+Cancelar
+Cantabria
+Cara sonriente
+Carga del coche
+Carga rápida
+Cargando evolución…
+Cargando precios…
+Cargando tus datos…
+Cargando…
+Cargo
+Cargos (gastos)
+Cargos y abonos separados
+Carrito
+Casa
+Castellón
+Castilla y León
+Castilla-La Mancha
+Cataluña
+Categoría
+Categoría del gasto
+Categoría personalizada añadida
+Categoría puesta por tu regla «
+Categorías
+Categorías automáticas
+Categorías de gasto
+Categorías de tareas
+Categorías iguales para todos
+Categorías y presupuestos
+Cen
+Cena
+Cenas y salidas
+Cerrados · #
+Cerrar
+Cerrar deslizando
+Cerrar el grupo para todos
+Cerrar el viaje
+Cerrar sesión
+Cerrar tema
+Cerrar «
+Cerrar: no hay nada nuevo
+Cerraste a tu favor
+Ceuta
+Cielo
+Cifras a la vista
+Cifras ocultas
+Cifras y titulares
+Cine
+Cine, conciertos, planes
+Ciudad Real
+Claro
+Clásica
+Clásico
+Cobalto
+Cobrado
+Cobras el
+Cobras el #.
+Cobras hacia el día
+Cobras hacia el día #. ¿Empezamos tu mes ese día?
+Cobro
+Cobro el día
+Cobros y facturas
+Cobros y pagos
+Cobros y pagos fijos
+Cobros y pagos fijos hasta fin de mes
+Coche
+Coche, hogar, salud
+Coinbase
+Colchón
+Color
+Color #
+Color en gráficos
+Columna
+Coma decimal
+Comentario
+Comer fuera, cañas, cafés
+Comercio
+Comida
+Comida y cosas de casa
+Comida, veterinario
+Como al principio
+Como mucho # a la vez.
+Como mucho # activos a la vez
+Como mucho # avisos al día (los importantes aparte), sin cifras y sin publicidad.
+Comparar con la versión anterior
+Comparte gastos con alguien
+Comparte gastos con quien quieras
+Comparte gastos en Juntos
+Comparte un gasto con alguien
+Comparte un gasto con tu pareja, la familia o un viaje. En tus números cuenta solo tu parte y la app lleva quién debe a quién.
+Compartida
+Compartida con
+Compartidas
+Compartido
+Compartido guardado, pero no se pudo guardar tu copia
+Compartidos
+Compartir
+Compartir con
+Compartir con alguien
+Compartir este gasto
+Compartir gastos
+Compartir gastos con alguien
+Compartir mi agenda
+Compartir mi agenda ›
+Compartir no está disponible aquí.
+Compartir tarea
+Compartir un gasto
+Compartir un gasto con
+Completadas (#)
+Completado
+Completar tarea
+Compra
+Compras
+Comunidad de Madrid
+Comunitat Valenciana
+Con
+Con artículos o un reparto no se puede cambiar de versión aquí
+Con cada uno te avisamos en Inicio el día anterior y el mismo día, y lo verás en el calendario.
+Con carácter
+Con el botón + del centro, cuando quieras.
+Con foto y artículos
+Con lo que hay llegaríais sin aportar más
+Con lo que te queda hoy (
+Con lo que vale hoy llegarías sin aportar más
+Con menos de un año de datos es orientativo.
+Con menos de un año de datos la cifra anual es orientativa: extrapola lo ocurrido hasta ahora.
+Con qué cuenta
+Con qué cuenta…
+Con ticket
+Con tu color
+Con tu nómina y tus pagos fijos, a fin de
+Con tu nómina y tus pagos fijos, a fin de # te quedarían unos #. Es una previsión, no un dato.
+Concepto
+Conexión con tu banco
+Confeti cuando cumples una meta 🎉
+Confirmar
+Conseguida el
+Conseguida el # 🎉
+Consultando el precio de ese día…
+Continuar
+Contraseña
+Contraseña cambiada
+Contraseña cambiada. Ya puedes entrar.
+Contraseña nueva
+Convertido en traspaso
+Convertir
+Convertir en traspaso
+Copia de seguridad
+Copia de seguridad (.json)
+Copia de seguridad descargada
+Copia el saldo de la app de tu banco
+Copia lista: revisa y guarda
+Copiar enlace
+Cora
+Corazón
+Correo
+Correo o contraseña incorrectos.
+Corriente
+Crea tu primera meta
+Crea tu propio grupo
+Crea tus cuentas (banco, efectivo…) y elige en cuál va cada movimiento. Tu saldo real es el mismo que ves en el banco: si pagas tú un gasto compartido baja entero, y sube cuando te hacen el Bizum al saldar. El saldo virtual cuenta además lo que te deben y lo que debes en Juntos.
+Crea un grupo (casa, viaje, pádel…) o invita a una persona por WhatsApp.
+Crea una meta
+Crear
+Crear deuda compartida
+Crear enlace
+Crear enlace de invitación
+Crear grupo
+Crear grupo o invitar
+Crear meta
+Crear meta compartida
+Crear mi primera meta
+Crear mis cuentas
+Crear otro enlace (para una persona)
+Crear tema
+Crear un grupo
+Crear una
+Cripto
+Cripto #
+Criptomoneda
+Cuadra: la app y el banco dicen lo mismo el
+Cuadra: la app y el banco dicen lo mismo el # (#).
+Cuadra: la app y el banco dicen lo mismo.
+Cuadrada con tu banco
+Cuadrado con el banco. Ajuste de
+Cuadrado con el banco. Ajuste de #.
+Cuadrado el
+Cuadrado el # ·
+Cuadrado. Ajuste de
+Cuadrado. Ajuste de #
+Cuadrado: todo coincide
+Cuadrado: todo coincide.
+Cuadrar
+Cuadrar con el banco
+Cualquier cuenta
+Cualquier miembro puede cambiar o borrar cualquier gasto del grupo.
+Cualquier tipo
+Cualquiera
+Cuando acaba el año
+Cuando acaba tu mes
+Cuando queráis, «Saldar» y listo.
+Cuarto
+Cuatro
+Cuatro #
+Cuatro secciones claras: Inicio, Movimientos, Dinero y Agenda. Con el botón + del centro apuntas cualquier cosa, y tus ajustes están en «Tú», tu inicial arriba a la derecha.
+Cubiertos
+Cuenca
+Cuenta
+Cuenta nueva
+Cuenta principal
+Cuenta quitada
+Cuenta sin nombre
+Cuenta y seguridad
+Cuenta ·
+Cuenta ···
+Cuentas
+Cuentas e inversiones menos deudas
+Cuentas y saldos
+Cumpleaños, detalles
+Cuota necesaria:
+Cursos, libros, academia
+Curvas suaves y sin líneas a # en los meses que aún no han llegado.
+Cuál
+Cuándo tienes algo, sin decir qué
+Cuánto cuesta un viaje en coche, con el precio de hoy.
+Cuánto queda y lo pagado
+Cuánto quieres gastar al mes en cada cosa.
+Cuánto valen y cuánto ganas
+Cáceres
+Cádiz
+Círculo
+Círculo #
+Código incorrecto o caducado. Prueba con el siguiente código de tu app.
+Cómo quedó el viaje
+Cómo se han movido esta semana
+Cómo se reparte
+Cómo va la meta que elijas
+Cómo va y un + para aportar
+Córdoba
+DEGIRO
+Dar por bueno
+Dashboard
+De
+De dónde salen los precios
+De ello, apartado para metas
+De ellos,
+De ellos, # son tu parte en Juntos.
+De la agenda de
+De la meta «
+De lo compartido cuenta tu parte: lo que has aportado y, en las deudas, tu parte de lo pendiente según el reparto habitual.
+De lo que más gastas a lo que menos, con una marca donde está tu presupuesto.
+De tus cuentas,
+Debes
+Debes #
+Decimal
+Deja que quien tú elijas vea tu agenda. Nadie la ve si no la compartes, y lo que marques como Privada solo lo ves tú.
+Dejar de compartir con
+Del
+Del # al #
+Del # al # o desde el día que cobras. Lo previsto a fin de mes sale aparte, como previsión.
+Del archivo también salen categorías, nóminas, facturas, metas y deudas.
+Del día a día
+Del presupuesto de este mes.
+Dentro de tus presupuestos
+Dentro de una categoría, toca Uñas, Golf, Pelu…
+Deporte
+Desactivar
+Desbloquear
+Descargar
+Descargar mis movimientos (Excel)
+Descartar
+Descripción
+Descubre PalomApp
+Descubre para qué sirve cada una
+Descubre todo lo que puede hacer PalomApp
+Desde
+Desde el inicio
+Desde hoy ves todas las herramientas en el + y en Tú.
+Desde la cuenta
+Desde que empezaste
+Desde que llega mi nómina
+Desde un día fijo
+Desde…
+Deshacer
+Deshacer borra todos los movimientos de esa importación (también los que hayas editado después). Lo que arregló en lo que ya tenías (la cuenta, o un gasto que era un traspaso) vuelve a como estaba, salvo que lo hayas cambiado tú después. «Dar por bueno» deja los arreglos como están y ya no se podrán deshacer.
+Deshaciendo
+Deshaciendo #…
+Deshecho
+Desliza a la izquierda para duplicar o borrar
+Desliza un movimiento para duplicarlo o borrarlo
+Desmarcar todas
+Destellos
+Detalle
+Deuda
+Deuda compartida
+Deuda compartida creada
+Deuda eliminada. Sus pagos siguen en Movimientos.
+Deuda guardada
+Deuda recuperada
+Deuda saldada
+Deudas
+Deudas, lo que queda
+Deutsche Bank
+Devolución
+Devolución · te devuelven este dinero
+Dia
+Dibujo
+Dic
+Diferencia
+Dinero
+Dinero en el banco
+Dinero, de un vistazo
+Divide una cena, un viaje o la casa con quien quieras; aquí verás quién debe a quién y lo saldáis en un toque.
+Divide una cena, un viaje o la casa: aquí verás quién debe a quién y lo saldáis en un toque.
+Dividendo
+Dividendos
+Diésel
+Diésel renovable (HVO)
+Do
+Dos
+Dos #
+Dos días al mes
+Dos veces al mes (el # y el último)
+Duplicar
+Día
+Día a día este mes:
+Día del mes
+Día despejado.
+Días sin gastos
+Dólar
+Dólar australiano
+Dólar canadiense
+Dólar de Hong Kong
+Dólar de Singapur
+Dólar estadounidense
+Dólar neozelandés
+Dónde más gastas
+ETF
+EVO
+EVO Banco
+Editar
+Editar Inicio
+Editar artículo
+Editar cuentas
+Editar deuda
+Editar meta
+Editar movimiento
+Editar plan
+Editar presupuestos
+Editar tarea
+Editar traspaso
+Editar, fecha e hitos
+Educación
+Efectivo
+Efectivo #
+El
+El # a las #:# y cuando se cierra tu mes
+El #.º día hábil, el antepenúltimo…
+El Banco Central Europeo no publica esa moneda. Escribe el cambio que te den o lo que te cobraron en euros.
+El archivo es demasiado grande (máx. # MB)
+El archivo es demasiado grande (máx. # MB).
+El aspecto Clásico se ha ido: queda solo el nuevo.
+El año
+El año entero, más apretado
+El banco dice
+El botón Guardar ya no se esconde detrás del teclado.
+El buscador suma
+El cálculo de km aún no está activado. Pon los km a mano.
+El de antes
+El dinero pasará de
+El día
+El día # de cada mes
+El día antes
+El día antes, a las #:#
+El día antes, si en esa cuenta no hay bastante
+El día de cobro tiene que ser un número del # al #
+El día de más gasto fue el
+El día de más gasto fue el #: #.
+El día tiene que estar entre # y #
+El enlace ha caducado o ya no es válido. Anula esta invitación y crea otra.
+El extracto dice que el
+El extracto dice que el # tenías
+El grupo está cerrado: no se puede recuperar
+El grupo necesita al menos un administrador. Haz administrador a otra persona antes.
+El hábil antes
+El hábil después
+El importe y el día son opcionales: puedes ponerlos después.
+El mes
+El mes del calendario.
+El mes del calendario. #: # – #
+El mismo balance que en
+El mismo balance que en #.
+El mismo día, a las #:#
+El más justo,
+El objetivo no puede ser negativo
+El penúltimo día hábil
+El precio
+El primer #, el último #…
+El primer día hábil
+El primer día hábil del mes
+El reparto está vacío
+El reparto no suma el total.
+El saldo final del archivo (
+El saldo real es lo que pone tu app del banco: un gasto compartido que pagas tú baja entero, y sube cuando te lo devuelven al saldar (Bizum). El virtual es lo que tendrías si saldarais ahora.
+El tema se ha creado, pero no se han podido meter los gastos:
+El trimestre
+El trimestre cerró con
+El trimestre va con
+El último
+El último # de cada mes
+El último día
+El último día de cada mes
+El último día del mes
+El último día hábil
+El último día hábil del mes
+Elegida a mano.
+Elegida por el nombre:
+Elegido por la fecha:
+Elegido porque es el último que usaste:
+Elegir
+Elegir archivo
+Elegir banco
+Elegir mes
+Elegir mi aspecto
+Elegir movimientos
+Elegir otra
+Elegir otro
+Elegir pestañas
+Elegir…
+Elige categoría
+Elige columna…
+Elige con quién compartes la cuenta.
+Elige con quién la compartes
+Elige con quién lo compartes
+Elige con quién lo compartes.
+Elige con quién repartes la cuenta
+Elige cuándo
+Elige cuándo empieza tu mes. Solo cambia cómo se agrupan tus números: no se mueve ni se borra nada.
+Elige cuándo es
+Elige cuánto
+Elige cuánto quieres gastar al mes en cada cosa.
+Elige dos cuentas distintas
+Elige dónde trabajas
+Elige el día más temprano en que sueles cobrar. Si cae en fin de semana, tu mes empieza el # anterior; si el mes no tiene ese día, el último.
+Elige el grupo de la tarea
+Elige el tipo de activo
+Elige gastos
+Elige la columna de cargos o de abonos
+Elige la columna de la fecha
+Elige la columna del importe
+Elige la cuenta
+Elige la cuenta…
+Elige la deuda compartida
+Elige la fecha
+Elige la meta compartida
+Elige las dos cuentas
+Elige los dos días del mes
+Elige los gastos del grupo que van en «
+Elige o escribe una categoría
+Elige qué deuda ver.
+Elige qué enseña cada círculo. Los «Auto» cambian solos según tu mes.
+Elige qué meta ver.
+Elige qué pestañas quieres ver. General (con las vistas Mensual y Anual) siempre está visible. Tus datos no se tocan: solo cambia lo que se muestra.
+Elige qué ves debajo de la tarjeta del mes y en qué orden.
+Elige qué ves en Inicio: metas, cuentas, calendario…
+Elige una categoría
+Elige una fecha
+Elige una meta o deuda de ese grupo.
+Elige una opción para ver las fechas.
+Eliminada
+Eliminado
+Eliminar
+Eliminar artículo
+Eliminar deuda
+Eliminar este pago
+Eliminar gasto compartido
+Eliminar la meta no borra ningún movimiento.
+Eliminar meta
+Eliminar movimiento
+Eliminar tarea
+Eliminar traspaso
+Eléctrico
+Elígela para que cada movimiento vaya a su cuenta y no se repita lo que ya tenías.
+Empezar
+Empieza aquí
+Empieza el día que te llega de verdad, aunque se adelante o se retrase.
+Empieza por aquí
+En
+En # apartaste más de lo que te quedaba
+En # gastaste más de lo que entró
+En # meses:
+En # no apuntaste nada.
+En # tuviste # días sin gastos del día a día (sin contar los fijos).
+En #, sin contar los fijos
+En Juntos debes
+En Juntos debes #, sumando todos tus grupos.
+En Juntos te deben
+En Juntos, sumando tus grupos
+En cada artículo, marca quién lo toma (lo que marquéis varios se divide a partes iguales). Si hay varias unidades, pon cuántas toma cada uno.
+En cartera
+En casa
+En cuentas
+En curso
+En este grupo solo quien lo apuntó o un administrador puede cambiarlo.
+En las cuentas del grupo cuentan siempre. Aquí decides si también salen en tu Inicio y tus Movimientos, en los meses en que se hicieron.
+En las gráficas saldrá «
+En lo que compartes
+En lo que va de
+En lo que va de # no apuntaste nada.
+En lo que va de # te han sobrado #.
+En negativo
+En ninguna cuenta concreta
+En orden
+En paz
+En qué gastas
+En qué gastaste
+En qué se fue
+En todas las categorías con presupuesto
+En tu banco hoy
+En tu cuenta
+En tus cuentas
+En tus números cuenta solo tu parte.
+En un grupo lo ven todos los del grupo
+En un par de minutos tendrás tus números al día.
+En una frase
+En una hucha, normalmente cada uno aporta lo suyo: marca solo a quien aporta.
+Encargadas a otros · #
+Ene
+Enlace copiado
+Enlace listo
+Enlace para una persona
+Enlace para varios (grupo de WhatsApp)
+Enseñar a quien ve mi agenda
+Entendido
+Enter
+Entonces es
+Entra
+Entrada del piso
+Entrar
+Entrarás como
+Entrarás con la cuenta
+Entre los dos
+Entre todos
+Entró
+Entró justo lo que salió.
+Enviar por WhatsApp
+Enviar por correo
+Es como te verá la otra persona.
+Es como te verán los demás.
+Es el mismo
+Es lo que sale por defecto al compartir un gasto en este grupo; en cada gasto se puede cambiar.
+Es más de lo que se debe (
+Es más de lo que se debe (#)
+Es posible que otras personas no la tengan y no podrás compartir gastos con ella. Si encaja en una estándar, mejor usa esa y apunta esto como detalle.
+Es tu cuenta principal: aquí van los movimientos sin cuenta y los compartidos en los que no elegiste otra.
+Es un traspaso
+Es una previsión, no un dato real.
+Esa cuenta ya no existe: elige otra
+Esa forma no vale
+Esa meta o deuda la ha eliminado alguien del grupo
+Esa meta o deuda ya no existe: la ha eliminado alguien del grupo
+Esa meta o deuda ya se había eliminado.
+Esa meta ya no existe
+Esa persona ya no está en el grupo
+Esa semana no gastaste nada.
+Escanea el código QR
+Escape
+Esconder a quien ve mi agenda
+Escondido a quien ve tu agenda
+Escribe BORRAR para confirmar
+Escribe BORRAR para confirmar.
+Escribe al menos # letras.
+Escribe cuánto apartas
+Escribe cuánto ha sido
+Escribe cuánto pasas
+Escribe de dónde sales y adónde vas.
+Escribe el código de # cifras de tu app autenticadora.
+Escribe el importe
+Escribe el nombre
+Escribe lo que dice el banco
+Escribe lo que tienes hoy en esta cuenta. Desde ahí la app suma y resta sus movimientos.
+Escribe los # dígitos.
+Escribe o elige el activo
+Escribe primero el nombre
+Escribe su nombre
+Escribe tu correo arriba y vuelve a tocar el enlace.
+Escribe tu correo y tu contraseña.
+Escribe tu nombre
+Escribe «Mercadona», marca Recordar y la próxima vez se pone sola.
+Escribe «super» y verás lo que llevas este mes.
+Escribirlo a mano (sin valoración automática)
+Escríbenos
+Escudo
+Ese activo aún no tiene precios para la gráfica
+Ese día
+Ese día llegó tu nómina (
+Ese día llegó tu nómina (#)
+Ese enlace ya no es válido (caducado o ya usado). Pide uno nuevo.
+Ese gasto compartido ya no existe
+Ese gasto ya se había eliminado.
+Ese plan ya está borrado
+Ese tema está borrado
+Ese tema ya no existe o es de otro grupo
+Esloti
+Esmeralda
+Eso no parece un importe
+España
+Espera un momento: aún se está guardando lo último
+Esperando a que la acepte
+Esta cuenta ya no existe.
+Esta deuda ya no existe
+Esta deuda ya no existe (¿la cambiaste en otro dispositivo?)
+Esta deuda ya no existe.
+Esta fecha es del viaje «
+Esta invitación ha caducado. Pide un enlace nuevo a quien te invitó.
+Esta meta en
+Esta meta ya no existe
+Esta meta ya no existe.
+Esta semana
+Esta semana aún no has gastado nada.
+Estado
+Este año aún no ha empezado
+Este año vas por encima de tus ingresos
+Este cambio ya no está.
+Este dispositivo no deja que las páginas web vibren (pasa en iPhone). Probamos un truco de iOS # o más que puede funcionar o no. En Android, y en la app instalada, sí funciona.
+Este día aún no ha llegado.
+Este enlace ha caducado. Pide uno nuevo a quien te invitó.
+Este enlace ha caducado. Pide uno nuevo a quien te lo mandó.
+Este enlace no es válido.
+Este enlace vale para
+Este enlace ya se ha usado.
+Este enlace ya se ha usado. Cada enlace vale para una persona: pide uno nuevo.
+Este finde
+Este grupo está cerrado: ya no se puede añadir nada
+Este grupo ya está completo.
+Este grupo ya no está disponible.
+Este grupo ya no existe.
+Este grupo ya tiene # temas: cierra o borra alguno
+Este mes
+Este mes apartas o inviertes
+Este mes apartas o inviertes #: el # de lo que te ha entrado.
+Este mes llevas
+Este mes llevas # días sin gastos del día a día (sin contar los fijos).
+Este mes llevas #. Déjalo vacío para quitar el presupuesto.
+Este mes vas por encima de tus ingresos
+Este mes, sin contar los fijos
+Este mes:
+Este movimiento dejará de contar como gasto o ingreso y pasará a ser un traspaso entre tus cuentas. No se duplica: es el mismo movimiento.
+Este móvil no tiene huella ni PIN configurado
+Este plan se ha borrado.
+Estilo bróker: elige periodo y desliza el dedo para ver cada día.
+Esto es PalomApp: tu dinero, tus gastos y lo que compartes, en un solo sitio.
+Esto es PalomApp: tus gastos y lo que compartes, en un solo sitio.
+Estos días
+Estrella
+Estudios
+Está tardando más de lo normal. Comprueba tu conexión.
+Está vacía
+Estáis en paz en el grupo.
+Estáis en paz: nadie debe nada.
+Están bien
+Estándar
+Estás cambiando un movimiento que ya existe.
+Estás en paz
+Estás en paz con todos
+Estás en paz con todos.
+Estás en paz en este grupo
+Etiqueta
+Euro
+Eurostat, publicado el #/#/#
+Evolución del precio de
+Evolución del valor de
+Extremadura
+FMI, World Economic Outlook Update de #
+Factura
+Falta configurar la app
+Falta el permiso en los ajustes del móvil.
+Faltan
+Faltan #
+Farmacia
+Farmacia, médico, pelu, uñas
+Feb
+Fecha
+Fecha límite
+Fecha objetivo
+Fecha valor
+Fechas
+Festivos
+Festivos guardados
+Fiestas de tu pueblo
+Fijo
+Fijos
+Fila
+Fila de títulos
+Fila entera
+Filtra por detalle
+Filtro «Fijos» en Movimientos
+Filtros
+Fondo
+Fondo #
+Fondo cotizado (ETF)
+Fondo negro y textos que se leen mejor.
+Fondos, acciones o cripto: verás cuánto valen cada día
+Forinto
+Formas
+Formato
+Formato de fecha
+Formato reconocido: el mismo que la última vez.
+Formato reconocido: ya importaste un archivo así. He puesto las mismas columnas.
+Formatos: Excel, CSV y Norma # de tu banco
+Formatos: Excel, CSV y Norma # de tu banco.
+Foto de ticket
+Foto de ticket → gasto automático
+Foto del ticket
+Fotos de tickets
+Frambuesa
+Frente a #
+Frente a #: #
+Ft
+Fuentes de ingreso
+Galicia
+Ganas
+Ganas # · #
+Gas
+Gas natural (GNC)
+Gas natural licuado (GNL)
+Gasolina
+Gasolina #
+Gasolina # E#
+Gasolina # premium
+Gasolina, parking, coche, transporte público
+Gastado
+Gastado en
+Gastado en #: #
+Gastas
+Gastaste
+Gastaste # esta semana.
+Gastaste # más.
+Gastaste lo mismo.
+Gastaste más de lo que entró:
+Gastaste más de lo que entró: # salieron de lo que ya tenías.
+Gasto
+Gasto compartido
+Gasto compartido añadido
+Gasto compartido eliminado
+Gasto estimado
+Gasto frente al mes pasado
+Gastos
+Gastos compartidos
+Gastos de este mes
+Gastos que compartes solo con
+Gastos y pagos fijos
+Gasóleo A
+Gasóleo premium
+General
+Gente sin la app en Juntos
+Geométrica
+Gestionar
+Gestionar metas
+Gimnasio
+Gimnasio, golf, pádel
+Gipuzkoa
+Girona
+Golf
+Google Wallet
+Gracias por escribirnos
+Granada
+Grupo
+Grupo anterior
+Grupo cerrado
+Grupo creado
+Grupo creado con
+Grupo creado con # amigos
+Grupos
+Grupos y personas
+Gráfico de tu cartera
+Guadalajara
+Guardado
+Guardado en
+Guardado sin participaciones: no hay precio de ese día. Añádelas cuando las sepas para que se valore.
+Guardado, pero no se pudo actualizar la meta compartida. Vuelve a guardarlo.
+Guardando
+Guardando # de #…
+Guardando # movimientos. No cierres la app.
+Guardar
+Guardar deuda
+Guardar este trayecto para repetirlo
+Guardar siempre a mano
+Guardar y entrar
+HOY
+Ha avisado de un pago: ¿la leemos?
+Hacer admin
+Hacer principal
+Han pasado más de # meses: ya no se puede recuperar
+Has apartado e invertido el
+Has creado muchos grupos hoy. Prueba mañana.
+Has descubierto # de # herramientas
+Has descubierto # de # herramientas.
+Has ganado #
+Has metido
+Has repartido # y solo hay # unidades.
+Has salido del grupo
+Has usado las
+Has usado las # lecturas de este mes. Vuelven el #.
+Has usado todas las lecturas de tickets de este mes. Se renuevan el día #.
+Hasta
+Hasta #, a lo ancho
+Hasta el
+Hasta el #
+Hay
+Hay cuentas pendientes. Saldadlas antes (botón «Saldar»).
+Hay demasiados enlaces pendientes. Anula alguno.
+Haz una foto a un ticket y la app lee los artículos y el total por ti. La foto no se guarda en ningún sitio.
+Haz una foto al ticket y la app lee cada artículo, el total, la fecha y la tienda. Tú solo revisas y guardas.
+Haz una foto y la app apunta el total por ti.
+Hazle una foto y la app apunta el total por ti.
+Hazme uno
+Hazme uno ahora
+He usado dinero
+Hecha
+Hecha el
+Hecha el #
+Hecha por
+Hecha. La siguiente:
+Hechas
+Hecho
+Hecho en tu móvil con lo que has apuntado en la app. Describe tus números; no es asesoramiento financiero.
+Hecho: esos arreglos se quedan como están
+Herramientas
+Hidrógeno
+Hipoteca
+Historial
+Hitos
+Hola
+Hola, te invito a compartir gastos conmigo en PalomApp. Ábrelo aquí (vale # días y para una sola persona):
+Hora
+Hotel
+Hoteles, vuelos, escapadas
+Hoy
+Hoy en tu Agenda
+Hoy se han agotado las consultas gratuitas de precios. Escribe tú las participaciones o inténtalo mañana.
+Hoy se han agotado los cálculos gratuitos. Pon los km a mano.
+Hoy tienes
+Hoy ·
+Hoy · #:#
+Hoy · Tarea
+Hoy, # #
+Hoy:
+Hucha
+Huchas y deudas comunes (una hipoteca a medias)
+Hueco ocupado
+Huella
+Huelva
+Huesca
+INE, publicado el #/#/#
+ING
+IPC, variación anual (indicador adelantado)
+IPCA, variación anual (estimación preliminar)
+Ibercaja
+Icono
+Ida y vuelta
+Igual que en
+Iguales
+Illes Balears
+Importa el extracto o un Excel, sin duplicados.
+Importaciones
+Importación deshecha
+Importación incompleta
+Importando…
+Importantes · suenan
+Importar
+Importar #
+Importar del banco
+Importar del banco o Excel
+Importar extracto
+Importar extracto en esta cuenta
+Importar extracto o Excel
+Importar igualmente (#)
+Importar movimientos
+Importar más completo
+Importe
+Importe total
+Incluye
+Incluye # que pagaste antes de usar la app. Sin intereses.
+Indexa Capital
+Indica cuánto invertiste
+Inflación
+Inflación anual
+Inflación de
+Inflación general media anual, previsión
+Informes
+Ingreso
+Ingreso fijo
+Ingresos
+Ingresos fijos
+Ingresos y gastos
+Ingresos y gastos por mes
+Inicia sesión con la otra cuenta y se completará la invitación
+Iniciado
+Iniciales
+Iniciar sesión
+Inicio
+Inicio a tu gusto
+Inicio nuevo
+Inicio sin scroll
+Inicio: lo que te queda este mes, de un vistazo
+Interactive Brokers
+Intereses
+Intereses y comisiones
+Internet y móvil
+Inversiones
+Inversiones (valor de mercado)
+Inversiones, lo que valen hoy
+Inversiones: la última semana («#S») y una línea por cada una
+Inversión
+Invertido
+Invertido #
+Invertir
+Invertir más
+Invita a alguien que aún no tienes: le llega un enlace por WhatsApp. Lo que estás creando no se pierde.
+Invita a alguien una vez y ya será tu amigo aquí: podrás compartir gastos con él y meterlo en cualquier grupo sin volver a invitarle.
+Invita por WhatsApp a tu pareja o amigos.
+Invitación
+Invitación descartada. Si cambias de idea, vuelve a abrir el enlace.
+Invitación pendiente
+Invitar
+Invitar a gente nueva
+Invitar a una persona
+Invitarle a la app
+Ir a
+Ir a Dinero
+Ir a Inicio
+Ir a Juntos
+Japón #
+Jaén
+Ju
+Jul
+Jun
+Juntos
+Juntos, más claro y con planes
+Juntos: quién debe a quién
+Kutxabank
+LK
+LP
+La Rioja
+La app
+La app calcula
+La app dice que quedan
+La app lee el total y los artículos por ti.
+La app lo reparte entre todos.
+La app reparte entre todos.
+La app, a tu gusto
+La app, rediseñada
+La categoría que más crece
+La contraseña no es correcta.
+La entrada de la casa, un viaje, un colchón…
+La fecha es opcional: con ella verás si llegas a tiempo a ese hito.
+La fecha final va después de la primera
+La fecha pasó · faltan
+La fecha pasó · faltan #
+La fecha siguiente es una previsión. Si tu nómina se retrasa, tu mes no cambia hasta que llegue; si pasan más de # días, cuenta desde el día previsto. Si se adelanta, empieza ese mismo día.
+La fecha ya pasó y
+La fecha ya pasó y falta
+La fecha ya pasó y faltan
+La fecha ya pasó y quedan
+La forma es la misma para todo el grupo.
+La foto es demasiado grande. Prueba con otra.
+La foto no se guarda
+La foto no se guarda: se lee y se descarta.
+La frase de tu último informe
+La inflación te gana por
+La lectura de tickets aún no está activada. Mientras tanto puedes apuntar el gasto a mano.
+La lectura de tickets no está disponible ahora mismo. Apunta el gasto a mano.
+La lectura de tickets no está disponible aquí
+La lupa de arriba busca movimientos, tareas y ajustes.
+La línea gruesa es el total; las finas, cada activo.
+La línea y lo que has ganado en ese tiempo
+La meta quedará como
+La nómina y los recibos, para ver cómo acabarás el mes.
+La parte invertida se proyecta al
+La semana
+La suma de los artículos cuadra con el total.
+La ven
+La última vez importaste este formato en
+Laboral Kutxa
+Las # con más saldo, a lo ancho
+Las Palmas
+Las animaciones salen cuando llegas a verlas
+Las cifras
+Las dos contraseñas no coinciden.
+Las estándar son iguales para todos y no se pueden borrar: así un gasto compartido cae en la misma categoría para cada uno. Ponles un presupuesto al mes si quieres.
+Las facturas ya son gastos
+Las inversiones sin precio automático cuentan por lo aportado.
+Las inversiones sin precio automático cuentan por lo que aportaste.
+Las personalizadas son solo tuyas: es posible que otras personas no las tengan y no podrás compartir gastos con ellas. Si encaja en una estándar, usa esa y apunta el detalle (p. ej. «Salud y cuidado personal · Uñas»).
+Las tareas compartidas son de un grupo. Las tuyas, apúntalas como siempre.
+Las ventanas se cierran deslizando hacia abajo o con la ✕.
+Le debes
+Le ganas a la inflación por
+Le ganas por
+Le ganas por # puntos.
+Le pagas
+Le pondremos la cuenta
+Lectura precisa: tarda un poco más.
+Lecturas este mes:
+Lecturas este mes: # de #. La foto no se ha guardado.
+Lee los artículos y el total por ti
+Leer con más precisión
+Leer los avisos del banco
+Leer un ticket
+Leer un ticket con una foto
+Leyendo el archivo…
+Leyendo el ticket…
+León
+Libra
+Libro
+Liquidación
+Lista
+Lista más limpia, botón «Filtros» y lupa que busca también por importe
+Listo
+Listo: así verás tu «Así vas»
+Listo: ya ve tu agenda
+Listo: ya ven tu agenda
+Llega a la cuenta
+Lleida
+Llevan signo: − gasto, + ingreso
+Llevas
+Llevas # gastados: # más que en #.
+Lo apartado para metas ya está dentro de tus cuentas, así que no se suma dos veces.
+Lo apartado para tus metas (
+Lo apunta en tu cuenta
+Lo apuntado hasta ahora
+Lo apuntaste tú
+Lo añadiste tú
+Lo añadió
+Lo básico
+Lo de Juntos no cuenta hasta que se paga.
+Lo deciden los administradores.
+Lo dejamos listo en un minuto.
+Lo demás lo encuentras en
+Lo destacado de
+Lo destacado de #
+Lo has logrado. Toca para verla.
+Lo justo para apuntar y compartir. Lo demás, plegado y en Descubre PalomApp.
+Lo más habitual: entre el # y el #, entre el # y el #, o el último día hábil. Si dudas, usa «Aprender de mi historial».
+Lo más importante de esta versión:
+Lo nuevo lleva la etiqueta
+Lo pagado sale de tus movimientos de tipo Deuda con el nombre de cada deuda. Esta versión no calcula intereses.
+Lo pagaste desde
+Lo próximo
+Lo que apartas
+Lo que borres (movimientos y tareas) aparecerá aquí durante
+Lo que borres (movimientos y tareas) aparecerá aquí durante # días.
+Lo que cambió
+Lo que cobras
+Lo que debes o te deben
+Lo que debes y te deben con cada persona
+Lo que debes y te deben, por persona
+Lo que dice tu banco o la tarjeta, con la comisión.
+Lo que entra y lo que gastas, mes a mes
+Lo que ganas o pierdes sobre lo que metiste.
+Lo que gasta cada # km
+Lo que has escrito no se guardará.
+Lo que has ingresado menos lo que has gastado, apartado, invertido y pagado de deudas en tu mes (
+Lo que has ingresado menos lo que has gastado, apartado, invertido y pagado de deudas en tu mes (# – #). Toca cada cifra para ver sus movimientos.
+Lo que has metido
+Lo que llegue de noche, a las #:#
+Lo que llevas de
+Lo que llevas de #
+Lo que llevas de año
+Lo que llevas en la que elijas
+Lo que me cobraron
+Lo que más bajó:
+Lo que más compras · según tus tickets
+Lo que más pesó:
+Lo que más sube
+Lo que más subió:
+Lo que no encaja en ninguna
+Lo que no sale aquí no cambió.
+Lo que pagas fijo
+Lo que pone cada uno:
+Lo que puedes gastar cada día que queda
+Lo que sube
+Lo que te has gastado hoy
+Lo que te queda este mes con sus cifras, y «Así vas» con los círculos que tú elijas en «Cambiar».
+Lo que te queda este mes y lo próximo, de un vistazo. La Agenda ahora está dentro.
+Lo que te queda este mes, en qué se va lo que entra y flechas para ver otros meses.
+Lo que tienes
+Lo que tienes invertido y cuánto ganas.
+Lo que tienes que hacer o pagar
+Lo que tienes que hacer, con su día, y aviso en Inicio.
+Lo que ya
+Lo que ya tenías antes (
+Lo que ya tienes sale marcado. Para cambiar o quitar uno: Tú → Cobros y pagos fijos.
+Lo verá quien ve tu agenda, según lo que le dejes ver.
+Lo último que apuntaste
+Lo último que habéis compartido
+Logrado el
+Logrado el # ✓
+Los artículos suman
+Los avisos de recibos siguen igual
+Los avisos del banco solo están en la app de Android.
+Los bancos y las nóminas siguen el calendario del sitio de trabajo.
+Los días
+Los días # y # de cada mes
+Los días # y último de cada mes
+Los días que no has gastado nada
+Los importes cuadran con la columna Saldo del banco.
+Los importes no cuadran con la columna Saldo (cuadran
+Los importes no cuadran con la columna Saldo (cuadran # de # filas). Puede que el signo o la columna de importe no sean los correctos.
+Los importes suman
+Los importes suman # y el total es #
+Los importes…
+Los movimientos sin cuenta cuentan como de la principal.
+Los más usados
+Los nombres y logos son de cada banco; solo sirven para que reconozcas tu cuenta.
+Los planes y tareas de tus grupos salen en la Agenda y en «Estos días». Y puedes añadirlos a tu calendario.
+Los porcentajes suman
+Los porcentajes suman # y tienen que sumar #
+Los que van más justos este mes
+Los tramos que vienen de movimientos de «Ajuste» son aproximados: se cuentan desde la fecha del ajuste.
+Los últimos
+Lu
+Lugo
+Lun #
+Lupa arriba para encontrar cualquier cosa
+Luz
+Luz, agua, gas, internet, móvil
+MAR
+MEJORADO
+Ma
+Madrid
+Maleta
+Mantén pulsado el enlace de abajo para copiarlo
+Mar
+Mar #
+Marca al menos a una persona
+Marca lo que apartaste o invertiste para esta meta.
+Marca los movimientos que salieron de (o entraron en) esta cuenta. Los que no marques siguen contando como de la principal.
+Marcar hecha
+Marcar las
+Marcar las #
+Marcar las nuevas
+Marcar los
+Marcar los # de esas fechas
+Marcar sin hacer
+Mascota
+Mascotas
+May
+Mañana
+Mañana se paga
+Mañana,
+Mañana, # #
+Mañana, hoy (botón Confirmar) y «¿Se ha producido?».
+Mañana:
+Mañana: cobro de
+Mañana: pago de
+Me cobraron
+Me gusta
+Me ha pagado
+Media
+Media de España
+Medio ancho
+Mejor en iPhone
+Melilla
+Menos
+Mensual
+Mercado
+Mercadona
+Mes
+Mes anterior
+Mes cerrado
+Mes siguiente
+Meta
+Meta #
+Meta compartida
+Meta compartida creada
+Meta completa
+Meta completa:
+Meta creada:
+Meta eliminada
+Meta guardada
+Meta lograda
+Meta o deuda
+Meta recuperada
+Meta ·
+Metas
+Metas con hitos
+Metas conseguidas
+Metas de ahorro
+Metas de inversión
+Metas y deudas
+Metas y deudas compartidas
+Metas y deudas juntos
+Meter
+Mi
+Miembro
+Miembro quitado
+Miembros (#)
+Mientras tanto, tu mes empieza el día
+Mira cuánto te queda este mes
+Mira cómo te ha ido.
+Mira en qué se ha ido esta semana.
+Mira la app de tu banco y copia el saldo de tu cuenta principal. Desde aquí, PalomApp suma y resta lo que apuntes.
+Modo oscuro en negro
+Moneda
+Mosaico
+Mostrar cifras
+Mostrar más (
+Mostrar más (#)
+Movimiento
+Movimiento actualizado
+Movimiento añadido
+Movimiento eliminado
+Movimiento recuperado
+Movimientos
+Movimientos mes a mes
+Movimientos mes a mes con flechas, gráficos suaves y pequeños detalles que hacen la app más agradable de usar.
+Movimientos, más claro
+Mucho
+Mundo
+Murcia
+Muy habitual en nóminas
+MyInvestor
+Málaga
+Mándaselo por WhatsApp. Cuando lo acepte, aparecerá aquí en «Con» y podrás repartir con esa persona.
+Más
+Más (
+Más (#)
+Más adelante
+Más ajustes
+Más cómoda y más agradable
+Más detalle
+Más detalle (opcional)
+Más detalles
+Más opciones
+Máx
+Método de pago
+Métodos de pago
+Míralas en Agenda.
+Móvil
+NUEVO
+Nada con este filtro.
+Nada con «
+Nada en las próximas dos semanas.
+Nada este día.
+Nada más hasta fin de mes.
+Nada para este día.
+Nada pendiente
+Nada pendiente para estos días.
+Nada pendiente. ¡Bien!
+Nadie debe nada a nadie.
+Nadie en este filtro.
+Nadie. Tu agenda es solo tuya.
+Navarra
+Necesitas al menos un mes de historia para calcular la rentabilidad anual.
+Necesitas al menos un mes de historia para compararlo con la inflación (
+Necesitas aportar aprox.
+Necesitas un mes de historia
+Necesito al menos # movimientos de «
+Necesitáis ahorrar entre todos aprox.
+Necesitáis aportar entre todos aprox.
+Negro puro
+Netflix
+Neutro
+Ninguno
+Ningún movimiento cambia de cuenta, pero los saldos pueden cambiar.
+No
+No apuntaste ingresos en
+No apuntaste ingresos en #.
+No compartir
+No convierte
+No cuenta como gasto ni como ingreso: solo deja las cuentas a cero.
+No encuentro el movimiento
+No encuentro el sitio de llegada. Prueba a escribirlo con la ciudad.
+No encuentro el sitio de salida. Prueba a escribirlo con la ciudad.
+No es este: buscar en el mercado
+No ha ocurrido
+No había nada nuevo: ya lo tenías todo
+No había nada nuevo: ya tenías todo lo de este archivo.
+No hay conexión. En cuanto vuelva, verás tus datos.
+No hay filas marcadas
+No hay movimientos con estos filtros
+No hay ningún ajuste con ese nombre.
+No hay ruta en coche entre esos dos sitios.
+No hay tipo de cambio para esa fecha. Pon el precio en euros de cada participación, o cuántas compraste. Si no lo sabes, se guarda igual.
+No hay un patrón claro: revísala.
+No he podido abrir ese archivo
+No he podido leer ese archivo. Prueba a exportarlo de nuevo como Excel, CSV o Norma #.
+No he podido leer ninguna fila: revisa las columnas y el formato de fecha
+No hemos podido abrir esta invitación.
+No hemos podido abrir la invitación: parece que no hay conexión. Sigue con la bienvenida y la tendrás esperando en Inicio.
+No hemos podido cargar los precios.
+No llegó: cuenta el día previsto
+No lo sé: calcular entre dos sitios
+No lo tenemos. Elige «Otro, o sin banco» y ponle tú el nombre.
+No nos conectamos a tu banco. Solo tú ves tus cifras.
+No ocurrió
+No parece un ticket o no se lee bien. Prueba con otra foto: con buena luz, el ticket entero y sin arrugas.
+No queda ningún movimiento sin cuenta.
+No repartir
+No se borra ni se pierde nada: solo cambia lo que ves. Lo puedes cambiar cuando quieras.
+No se encontró la conexión con Supabase. Copia
+No se ha guardado
+No se ha podido cargar con quién la compartes.
+No se ha podido cargar el historial. Comprueba la conexión.
+No se ha podido cargar la evolución. Se volverá a intentar en un momento.
+No se ha podido compartir con esa persona
+No se ha podido confirmar
+No se ha podido guardar todo (
+No se pudieron cambiar
+No se pudieron cargar las tareas
+No se pudieron cargar los movimientos
+No se pudo buscar. Revisa tu conexión.
+No se pudo cambiar:
+No se pudo cambiar: en este grupo puede que solo quien lo apuntó o un administrador pueda hacerlo.
+No se pudo cargar Golf Reventa
+No se pudo cargar el lector de Excel. Revisa tu conexión e inténtalo de nuevo.
+No se pudo cargar la configuración
+No se pudo completar. Revisa tu conexión e inténtalo de nuevo.
+No se pudo completar. Revisa tu conexión.
+No se pudo conectar. Revisa tu conexión a internet.
+No se pudo consultar el precio. Revisa tu conexión o escribe tú las participaciones.
+No se pudo consultar. Revisa tu conexión.
+No se pudo copiar
+No se pudo desactivar. Cierra sesión, vuelve a entrar con tu código e inténtalo otra vez.
+No se pudo descargar
+No se pudo deshacer todo (
+No se pudo enviar el correo. Inténtalo de nuevo en unos minutos.
+No se pudo guardar el archivo
+No se pudo guardar. Revisa tu conexión.
+No se pudo iniciar sesión. Revisa tu conexión.
+No se pudo iniciar. Inténtalo de nuevo.
+No se pudo leer el ticket. Revisa tu conexión e inténtalo de nuevo.
+No se pudo preparar el activo. Inténtalo de nuevo.
+No se pudo recuperar tu tarea. Sigue compartida y la tuya está en la papelera
+No se pudo usar esa imagen. Prueba con otra foto.
+No se puede deshacer.
+No se repite
+No te quedan lecturas
+No tenemos el precio de ese día (los automáticos llegan hasta hace un año). Pon el precio al que compraste cada participación, o cuántas compraste. Si no lo sabes, se guarda igual y lo completas luego.
+No tienes permiso para cambiar eso en este grupo
+No tienes permiso para esto.
+No tienes permiso para guardar este cambio (revisa tu sesión).
+No, es un
+No, solo en el grupo
+No, son distintos
+Nombre
+Nombre cambiado
+Nombre de la cuenta
+Nombre del grupo
+Nombre del recibo
+Nombre en las gráficas
+Nombre, dibujo, cantidad, fecha y etapas
+Nombre, dibujo, total, ya pagado, al mes y fecha
+Norma #: saldo inicial + movimientos = saldo final del banco (#).
+Normal
+Nota
+Nota de la lectura:
+Nov
+Novedades
+Nueva
+Nueva deuda
+Nueva deuda compartida
+Nueva inversión
+Nueva meta
+Nueva meta compartida
+Nueva opción: tu mes empieza el día que te llega la nómina de verdad. Si se retrasa, espera hasta # días.
+Nueva tarea
+Nueva tarea compartida
+Nueva:
+Nuevo
+Nuevo artículo de golf
+Nuevo gasto
+Nuevo grupo
+Nuevo ingreso
+Nuevo ingreso fijo
+Nuevo modo «Rentabilidad»: solo lo que ganan tus inversiones, sin contar lo que metes.
+Nuevo pago fijo
+Nuevo plan
+Nuevo tema
+Nunca
+Nómina
+Nómina el
+Nómina el #
+Nómina, alquiler… con su fecha real (último día hábil, primer #…).
+O elige uno que ya tienes:
+O hazle una foto a un ticket
+O hazle una foto al ticket.
+OB
+OTRO RITMO
+Objetivo
+Ocio
+Oct
+Ocultar
+Ocultar cifras
+Ocultar de mi agenda
+Ocultar las que están a #
+Oculto de tu agenda (sigue en el grupo)
+Oculto. Lo tienes todo en Tú.
+Openbank
+Operación en el extranjero
+Ordenador
+Os invito a mi grupo «
+Oscuro
+Otra
+Otra (a mano)
+Otra cuenta
+Otra foto
+Otra moneda
+Otras
+Otras categorías
+Otras · # categorías
+Otro
+Otro #
+Otro día hábil
+Otro día…
+Otro, o sin banco
+Otros
+Otros #
+Otros # movimiento
+Otros # movimientos
+Otros bancos
+Otros días
+Otros ingresos
+Ourense
+PC
+PI
+Pa
+Pagada
+Pagado
+Pagado # de # · pendiente #
+Pagado # de # · pendiente # · hasta #
+Pagar solo una parte
+Pagar una deuda compartida
+Pagas
+Pagas extra
+Pagaste
+Pagaste de deudas
+Pago
+Pago añadido a «
+Pago de deuda
+Pago deshecho
+Pago eliminado
+Pago fijo
+Pago para saldar cuentas
+Pago registrado
+Pago registrado: #. Puedes editarlo en Movimientos.
+Pago registrado: ¡cuentas a cero!
+Pago registrado: ¡en paz con
+Pagos cada varios meses
+Pagos de deudas
+Pagos fijos
+Pagos fijos, a tu medida
+Pagó
+Palencia
+PalomApp
+PalomApp está bloqueada
+PalomApp puede leer los avisos de tus apps de banco y apuntar solo cada gasto o ingreso.
+Papeleo
+Papelera
+Papelera de # días
+Para
+Para #:
+Para #: #/mes
+Para acabar en
+Para acabar en #: # al mes.
+Para cambiar el saldo, escribe una cantidad
+Para compartir gastos con alguien sin crear un grupo (una cena, un regalo…). Le llega un enlace por WhatsApp y, cuando lo acepte, podréis compartir gastos.
+Para compartir gastos, metas y deudas con otras personas (por ejemplo, «Casa» o «Viaje»). Lo tuyo sigue siendo privado: solo se ve lo que compartas en cada grupo.
+Para compartir, elige una categoría estándar (pon «
+Para deshacerlo, vuelve a marcar la anterior.
+Para el
+Para el #
+Para el objetivo
+Para estar al día · sin sonido
+Para funcionar, Android te pedirá dar a PalomApp «Acceso a notificaciones». Al tocar «Aceptar» se abren los ajustes del móvil: busca PalomApp y actívalo.
+Para irte tú, usa «Salir del grupo».
+Para la casa, la pareja o el próximo viaje.
+Para las cuentas del día a día. El ahorro y el bróker, mejor fuera.
+Para llegar a tiempo necesitas aportar aprox.
+Para llegar en
+Para otra cosa
+Para quedar en paz ·
+Para quedar en paz · # pago
+Para quedar en paz, la app junta los saldos de todo el grupo y propone los menos pagos posibles. Por eso puede que pagues a alguien que no pagó justo tus gastos: al final, las cuentas cuadran igual.
+Para quién
+Para recibirlos, PalomApp necesita permiso para mandarte avisos.
+Para repartir por artículos, la suma tiene que cuadrar con el total
+Para saldar cuentas
+Para separar un viaje, la compra o la casa.
+Parche #
+Parche # · #
+Parche # · Categorías para todos
+Parche # · Juntos con planes y un Dinero nuevo
+Parche # · Juntos y nuevo aspecto
+Parche # · Nuevo diseño
+Parche # · Tus cuentas y un Inicio nuevo
+Parte de
+Parte de cada uno:
+Participaciones
+Pasa de un mes a otro con las flechas, o mira el año entero o todo.
+Pasados
+Pasados # días se borra para siempre. Lo que quitas al deshacer una importación no pasa por aquí.
+Pasar dinero de una cuenta tuya a otra (también sacar del cajero). No es gasto ni ingreso: no cambia «Te queda este mes».
+Pasarlos
+Paso
+Paso # de #
+PayPal
+País Vasco
+Pedir
+Pedir huella al abrir
+Pedir por WhatsApp
+Pelu
+Pendiente
+Pendientes (#)
+Penúltimo
+Perfil guardado
+Periodo
+Persona
+Personal
+Personalizado…
+Personas
+Pestañas de Análisis
+Pierdes
+Pierdes # · #
+Plan
+Plan apuntado
+Planes
+Planes en tu Agenda
+Planes y tareas
+Planes y tareas del grupo, en su pestaña «Planes»
+Plegar
+Poco
+Pon antes la distancia
+Pon arriba el importe total del gasto.
+Pon cada cuántas semanas (# a #)
+Pon cada cuánto se repite (# a #)
+Pon cada cuántos días (# a #)
+Pon cada cuántos meses (# a #)
+Pon cuánto apartas
+Pon cuánto fue
+Pon cuánto has usado
+Pon el importe de la nómina con números
+Pon el importe total
+Pon el saldo
+Pon el saldo con números, por ejemplo #
+Pon el saldo de tu banco
+Pon el saldo de tu banco para verlo
+Pon el saldo de tu banco.
+Pon el texto y la categoría
+Pon el texto y la otra cuenta
+Pon el total del ticket
+Pon el total que debías (un número mayor que #)
+Pon en Inicio lo que más miras
+Pon hasta qué día (después del primero)
+Pon la distancia y verás aquí lo que cuesta.
+Pon la hora
+Pon las participaciones de tus compras para ver la gráfica.
+Pon lo que te queda (un número)
+Pon lo que tienes en el banco y la app lo lleva al día.
+Pon qué hay que hacer
+Pon qué plan es
+Pon tu contraseña nueva
+Pon tus presupuestos
+Pon un importe
+Pon un importe válido
+Pon un nombre
+Pon una fecha de referencia
+Pon «Pagas al mes» en «Editar» y te diremos cuándo acabas.
+Poner el cambio
+Poner el saldo
+Poner mi banco al día
+Poner tope
+Ponerle la cuenta
+Ponerle presupuesto
+Ponerle uno
+Ponerlos
+Ponle el total en «Editar»
+Ponle su logo
+Ponle un nombre
+Ponle un nombre a la meta
+Ponle un nombre a la tarea
+Ponle un nombre al artículo
+Ponle un nombre al grupo
+Ponle un nombre al tema
+Pontevedra
+Por %
+Por carretera. Las direcciones no se guardan.
+Por defecto no cuenta como gasto: es dinero que ya tenías apartado o invertido.
+Por ejemplo, el # o el # de cada mes
+Por ejemplo, el # y el #
+Por ejemplo: cena de cumple de Ana, vuelo a Roma…
+Por ejemplo: llamar al casero, renovar el DNI…
+Por importe
+Por meses o años
+Por pagar
+Por semanas
+Por temas
+Por tipo de activo
+Porcentaje de cada uno en los gastos de «
+Portátil
+Precio
+Precio medio en
+Precio medio en España
+Precio orientativo:
+Precio por participación (€)
+Precios
+Prefiero lo básico
+Preparando el activo…
+Presupuesto
+Presupuesto # · Cambiar
+Presupuesto de
+Presupuesto:
+Presupuesto: #
+Presupuestos
+Presupuestos más claros
+Presupuestos por categoría, como siempre
+Previsto
+Previsto a fin de mes
+Primer
+Primer día hábil del mes
+Primera
+Primera fila:
+Primero añade tu nómina como cobro fijo
+Primero añade tu nómina como cobro fijo, con cuándo te suele llegar.
+Primero crea un grupo o invita a una persona (Tú → Grupos y personas).
+Primero los de las fechas del viaje (
+Primero los de las fechas del viaje (#–#).
+Primeros #
+Primeros #k
+Primeros pasos
+Primeros pasos · # de #
+Principal
+Prioridad
+Privacidad
+Privada
+Privada · solo tú
+Privada: solo la ves tú. Quien ve tu agenda no verá ni que tienes algo.
+Probar
+Probar con un ticket
+Probar el botón +
+Probar otra vez
+Pronto
+Proyección con una rentabilidad del
+Proyectos
+Prueba
+Préstamo
+Próximamente
+Próximas fechas:
+Próximo:
+Próximos
+Próximos # días
+Próximos días
+Próximos fijos
+Próximos:
+Puedes crear las tuyas (te avisa si no sirven para compartir)
+Puedes poner menos si es un pago parcial.
+Puedes poner tu banco y lo de cada mes cuando quieras desde Dinero y Tú.
+Puesto en euros:
+Puesto en euros: # · «#» en la descripción
+Punto de carga normal
+Pusiste
+Que la elija el nombre
+Quedan
+Quedan #
+Quedan # sin asignar: se reparten a partes iguales entre quienes no han puesto nada.
+Quien entre después en el grupo también la verá.
+Quien lo apuntó
+Quien paga lo apunta, la app reparte y siempre sabéis quién debe a quién.
+Quien paga, lo apunta con
+Quien pagó tiene que ser del grupo.
+Quien pueda
+Quien ve tu agenda lo verá como hueco ocupado
+Quiero verlo todo ya
+Quitado
+Quitado del grupo
+Quitar
+Quitar admin
+Quitar esta cuenta
+Quitar la selección
+Quitar todos
+Quitaste
+Quién debe a quién se ve en
+Quién pagó qué
+Quién puede cambiar los gastos
+Qué apartados e inversiones cuentan para esta meta
+Qué apps se leen
+Qué cambió
+Qué días gastas más este mes
+Qué hay de nuevo
+Qué movimientos
+Qué parte de lo que entra apartas
+Qué se borra y qué se conserva
+Qué tal va cada uno
+Qué ves en la app
+Qué y cuándo
+Rand
+Reabrir tarea
+Real
+Recibo
+Recomendada
+Recordar: lo que contenga
+Recordárselo a
+Recuperada
+Recuperado
+Recuperar
+Recuperar devuelve el gasto tal cual estaba, para todo el grupo. Todo el grupo verá que lo has recuperado tú.
+Recuperaste
+Recurrencia (ej. mensual)
+Redondeada
+Reenviar por WhatsApp
+Regalo
+Regalos
+Registrado
+Registrar pago
+Región de Murcia
+Regla aprendida:
+Regla añadida
+Reglas de categorías
+Reglas, Informes, Tu mes, Papelera, Copia…
+Reintentar
+Remesa de efectos
+Rentabilidad
+Rentabilidad al año e inflación
+Rentabilidad anual
+Rentabilidad anual esperada de lo invertido (%)
+Rentabilidad de tus inversiones
+Reparte a medias, por % o artículo a artículo del ticket
+Repartir la cuenta por artículos
+Repartir por artículos
+Reparto
+Reparto guardado
+Reparto habitual
+Repetir
+Repítela
+Restaurantes
+Restaurantes #
+Restaurantes y bares
+Resultado
+Resultados
+Resumen
+Resumen del año
+Revisa el importe
+Revisa el presupuesto
+Revisa el reparto: solo puede incluir a miembros.
+Revisa el ticket
+Revisa la regla: no sale ninguna fecha.
+Revisar
+Revisar columnas
+Revolut
+Ritmo (últimos # meses):
+Ritmo justo: conviene aportar algo más
+Ritmo justo: conviene pagar algo más
+Roma
+Roma #
+Ropa
+Ropa y cosas
+Rupia
+Sa
+Sabrás cuántas te quedan después de leer el primero.
+Sacar dinero
+Salamanca
+Saldada
+Saldar
+Saldar #
+Saldar con
+Saldar cuentas
+Saldar deudas
+Saldar en un toque, y ¡cuentas a cero! con confeti
+Saldo
+Saldo (opcional)
+Saldo de
+Saldo de hoy
+Saldo hoy
+Saldo real · lo que dice tu banco
+Saldo virtual
+Saldos
+Sale de la cuenta
+Salir del grupo
+Saltar
+Saltar festivos
+Saltar festivos en los días hábiles
+Saltar también festivos
+Salud
+Salud y cuidado personal
+Santa Cruz de Tenerife
+Santander
+Scalable Capital
+Se
+Se abre en un resumen de tu mes. Arriba eliges Resumen, Lista o Calendario, y cada categoría tiene siempre el mismo color. Ya no hay pantallazo negro al cambiar de vista.
+Se adelanta al #
+Se borran tus movimientos, cuentas, metas, deudas, tareas y ajustes. En tus grupos seguirás saliendo como «baja» para que sus cuentas cuadren.
+Se calcula con el importe de tus cobros y pagos fijos, y tu nómina puede variar de un mes a otro. Sirve para planificarte.
+Se creará vuestro espacio para compartir (como en Juntos).
+Se debe
+Se debe #
+Se encarga
+Se guarda # meses. Lo ven todos los del grupo.
+Se guarda en euros, y la cifra en esa moneda se apunta en la descripción.
+Se hacen en tu móvil, sin coste y sin que salga ningún dato. Cuando hay uno nuevo, te avisamos en Inicio.
+Se han guardado
+Se pasa al #
+Se pedirá la huella al abrir
+Se queda en tu móvil:
+Se queda ese día
+Se quita para todos. Lo ya aportado o pagado no se borra.
+Segovia
+Seguir editando
+Seguir sin unirme
+Segundo
+Seguro
+Seguros
+Seleccionados:
+Seleccionar todos (#)
+Self Bank
+Semana
+Semana del
+Semana del # al #
+Semana y tareas
+Semanal
+Semestral
+Sensaciones
+Sep
+Sevilla
+Si algo no cuadra, te avisa
+Si algo no te cuadra, puedes deshacer esta importación entera desde Tú → Importaciones.
+Si alguien empieza de cero, Inicio le guía paso a paso.
+Si alguno no es correcto, bórralo o tócalo para cambiarlo.
+Si borras un movimiento o tarea sin querer, puedes recuperarlo.
+Si cae en
+Si cae en fin de semana
+Si el mes tiene menos días, se usa el último.
+Si falta algún movimiento, apúntalo antes y vuelve a cuadrar. Si no, al guardar la diferencia se queda como ajuste (no cuenta como gasto ni como ingreso).
+Si gastas más o menos que el mes anterior
+Si gastas más o menos que el mes pasado, lo que más sube, tus presupuestos, lo que te deben y los días sin gastos.
+Si hay # colas, decide cuántas toma cada uno.
+Si la descripción contiene
+Si la descripción de un movimiento contiene el texto, se le pone la categoría sola (al apuntarlo y al importar).
+Si lo dejas vacío se calcula con tu histórico (o un # prudente).
+Si lo enciendes, «día hábil» y «si cae en fin de semana» también se saltan los festivos de tu zona.
+Si tu banco no está, déjalo activado: cuando avise de un pago, aparecerá arriba para que lo marques.
+Si vas dentro de tus presupuestos
+Si ya los habías apuntado tú en la app, elige «No»
+Siempre arriba
+Sigue borrado.
+Siguiente
+Siguiente hito:
+Silencio de #:# a #:#
+Sin activo
+Sin aportar desde
+Sin artículos todavía
+Sin cantidad
+Sin cantidad que juntar
+Sin categoría
+Sin cifras con el móvil bloqueado
+Sin clasificar
+Sin conexión: es el último cambio que usaste.
+Sin conexión: escribe el cambio o lo que te cobraron.
+Sin contar fines de semana
+Sin contar intereses. Solo es una cuenta: no se guarda nada.
+Sin contar intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».
+Sin detalle
+Sin eventos
+Sin eventos este día.
+Sin fecha
+Sin fecha de partida: toca «Cuadrar» para que empiece a calcular
+Sin fecha objetivo
+Sin fecha para este hito
+Sin fecha ·
+Sin fecha · #
+Sin fecha · a este ritmo,
+Sin fecha · aporta cuando quieras
+Sin fecha: tócalo para elegir cuándo
+Sin gastos
+Sin gastos apuntados en
+Sin gastos apuntados en #.
+Sin gastos registrados en
+Sin gastos registrados en #.
+Sin grupo
+Sin importe
+Sin intereses.
+Sin lecturas hasta el
+Sin meta
+Sin movimientos
+Sin movimientos este día.
+Sin objetivo
+Sin objetivo definido
+Sin pagos desde
+Sin precio todavía
+Sin precio:
+Sin presupuesto
+Sin registrar
+Sin resultados.
+Sin saldo
+Sin saldos todavía.
+Sin teclear nada
+Sin tema
+Sin tocar nada: a partes iguales. Pon las unidades de cada uno si no es así.
+Sin total
+Sin total definido
+Sirve para el extracto de tu banco y para tu Excel de gastos. Antes de guardar verás una vista previa, y si importas dos veces el mismo archivo no se duplica nada.
+Sobró
+Solo cuenta cómo se movió el precio: aportar no cambia la línea. Los puntos son tus compras.
+Solo en
+Solo informativo. El dinero en el banco se calcula desde el saldo que pusiste en Tú → Cuentas y saldos
+Solo lo ves tú.
+Solo los huecos ocupados
+Solo los que…
+Solo los títulos
+Solo puedes añadir a gente con la que ya compartes. Invítale con un enlace.
+Solo puedes compartirla con personas que ya están contigo en un grupo de Juntos.
+Solo puedes compartirla con quien está contigo en un grupo
+Solo quien lo apuntó (y los administradores) podrá cambiar cada gasto
+Solo quien lo pagó puede dejar de compartirlo. Si no se hizo, elimínalo.
+Solo se añade la versión de la app y el tipo de móvil. Nada de tus cifras.
+Solo se comparten gastos, facturas, ahorro y deudas: si lo guardas así, dejará de estar compartido.
+Solo se guardaron
+Solo se ha apuntado una parte:
+Solo se ha deshecho una parte:
+Solo se saltan los fines de semana
+Solo tus apps de banco y de pagos:
+Solo vosotros dos
+Solo yo
+Son demasiados de una vez: prueba con menos
+Son distintos
+Son muchos cambios de una vez (
+Son muchos cambios de una vez (#). Marca como máximo # e importa el resto después
+Son todos gastos
+Son todos ingresos
+Sonido
+Sonido y vibración suaves (los puedes apagar)
+Sonidos cortos y suaves. Se pueden apagar aquí en cualquier momento.
+Soria
+Spotify
+Spotify, Netflix, apps
+Su color
+Su forma
+Su icono
+Subcategoría
+Subtract
+Suma las cuentas que tienen activado «Sumar». Lo cambias en Editar cuentas.
+Sumamos lo que has pagado y restamos tu parte de cada gasto. Lo que queda es tu saldo.
+Suman
+Sumar en En tus cuentas
+Sumar en «En tus cuentas»
+Suministros
+Super
+Supermercado
+Supermercado #
+Sus pagos siguen en Movimientos
+Suscripciones
+Suscripción
+Sácale más partido
+Sí
+Sí, cambiar
+Sí, convertir
+Sí, cuadrar así
+Sí, desde el
+Sí, desde el #
+Sí, que cuenten
+Sí, va en el viaje
+TR
+Talón
+También puedes compartir el extracto desde la app de tu banco con PalomApp.
+También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.
+Tarda unos segundos.
+Tarea
+Tarea #
+Tarea actualizada
+Tarea apuntada
+Tarea añadida
+Tarea eliminada
+Tarea reabierta
+Tarea recuperada
+Tarea · venció
+Tareas
+Tareas de la Agenda
+Tareas que se repiten
+Tareas y planes
+Tareas ·
+Tareas · # por hacer
+Tareas, planes y fijos de la semana
+Tarjeta
+Tarjeta crédito
+Tarjeta del mes
+Tarjeta débito
+Tarragona
+Tarro
+Tarros
+Te costó de media
+Te debe
+Te deben
+Te deben #
+Te enseñan la suya
+Te han guardado un sitio
+Te han invitado a un grupo
+Te has pasado en
+Te has unido a
+Te hemos enviado un correo con instrucciones para cambiar tu contraseña.
+Te invita
+Te invitan a compartir gastos
+Te invito a mi grupo «
+Te invitó
+Te las han encargado
+Te lo encarga
+Te lo recordamos en Inicio al abrir la app.
+Te paga
+Te pasaste
+Te queda
+Te queda este año
+Te queda este mes
+Te queda hoy
+Te quedan
+Te quedan # de #
+Te quedan #. Vuelven el #.
+Te quedó en
+Te quedó en #
+Te sobraron
+Te sobraron # más que en #, que cerró en #.
+Te sobraron después de gastar, apartar y pagar deudas.
+Teclado
+Tema
+Tema abierto otra vez
+Tema borrado: sus gastos quedan «Sin tema»
+Tema cerrado: ya no sale al apuntar gastos
+Tema creado
+Tema oscuro o claro
+Temas en los grupos: Viaje a Roma, Casa… y cuánto lleváis en cada uno
+Tendrás
+Tenías que acabar en
+Tenías que acabar en #
+Tercer
+Teruel
+Ticket por unidades
+Ticket por unidades con una barra que se mueve al repartir
+Tiene
+Tiene que tener al menos # caracteres.
+Tienen ticket
+Tienes
+Tienes muchos arreglos guardados para deshacer. En Tú → Importaciones, pulsa «Dar por bueno» en las que ya revisaste
+Tienes que iniciar sesión.
+Timbres
+Tipo
+Tipo (gasto, ingreso…)
+Tipo de activo
+Toca a una persona para saldar o pedírselo por WhatsApp
+Toca la cifra para cambiarla
+Toca los dos días
+Toca otra vez para asignar
+Toca otra vez para asignar #
+Toca otra vez para confirmar
+Toca otra vez para quitar
+Toca para elegir
+Toca para escribir el importe
+Toca para verlo en PalomApp.
+Toca un activo para verlo en la gráfica.
+Toca un día para ver sus movimientos.
+Toca un grupo para ver de dónde sale.
+Toca un mes para ver su detalle.
+Toca una cifra o una categoría y verás esos movimientos.
+Toca una cuenta para cambiar su saldo, su tipo o su color.
+Toca una ficha para ver en qué se va
+Toca uno para abrir su hoja.
+Tocaba el
+Todas
+Todas las categorías
+Todas las cuentas
+Todas las herramientas a la vista, en el + y en Tú.
+Todas las inversiones (
+Todas las inversiones (#)
+Todas tus cuentas
+Todas tus tareas
+Todavía no tienes deudas. Créalas en Tú → Deudas (con el total y, si quieres, una fecha objetivo).
+Todavía no tienes metas. Una meta junta lo que apartas y lo que inviertes para algo: la casa, un viaje, un colchón.
+Todo
+Todo automático
+Todo el día
+Todo es tu parte en Juntos.
+Todos
+Todos los de ahora y quien entre después
+Todos pueden cambiar los gastos
+Todos tus grupos
+Todos tus movimientos, del primero al último.
+Toledo
+Total
+Total #
+Total de la deuda
+Total invertido
+Total que debías
+Trabajo
+Trade Republic
+Trading #
+Trae el extracto de tu banco y lo colocamos solo.
+Trae el extracto o un Excel y lo colocamos solo, sin duplicados.
+Trae tus movimientos del banco
+Traer y guardar
+Transferencia
+Transferencias
+Transporte
+Traspaso
+Traspaso actualizado
+Traspaso apuntado
+Traspaso eliminado
+Traspaso entre cuentas
+Traspasos
+Traspasos entre cuentas y «Convertir en traspaso»
+Trayecto
+Trayecto en coche
+Trayecto guardado
+Trimestral
+Trimestrales, semestrales o anuales, con su fecha.
+Trimestre
+Tu agenda y tus tareas están aquí
+Tu balance
+Tu banco dice que queda más de lo que calcula la app (seguramente por los intereses). Para cuadrar, subiremos el total de la deuda a
+Tu banco dice que queda más de lo que calcula la app (seguramente por los intereses). Para cuadrar, subiremos el total de la deuda a # y dejaremos «Ya pagado» a #.
+Tu cartera
+Tu coche
+Tu contraseña
+Tu cuenta
+Tu cuenta se ha borrado
+Tu detalle se guarda: «Salud y cuidado personal · Uñas»
+Tu dinero
+Tu dinero compra un
+Tu dinero compra un # más cada año.
+Tu dinero y tus planes
+Tu dinero, tus planes y tu gente
+Tu informe
+Tu mejor mes fue
+Tu mejor mes fue #: te sobraron #.
+Tu mensaje
+Tu mes
+Tu mes de
+Tu mes empieza cuando llega «
+Tu mes empieza el día
+Tu mes empieza el día #
+Tu mes empieza el día #. Lo cambias en Tú → Tu mes
+Tu mes va de un día fijo al siguiente.
+Tu mes va de un día fijo al siguiente. #: # – #
+Tu mes va del # al #
+Tu mes va del # al último día
+Tu mes va del día
+Tu mes va del día # al # (desde que cobras)
+Tu mes, desde tu nómina
+Tu mes:
+Tu mes: # – #
+Tu nombre
+Tu nombre aquí
+Tu nombre en el grupo
+Tu nombre en este grupo
+Tu nombre lo ven las personas con las que compartes. El dibujo y el color, de momento, solo tú.
+Tu nómina llegó el
+Tu nómina tiene que llegar una vez al mes
+Tu nómina tiene que llegarte una vez al mes. Tus cobros fijos llegan con otro ritmo (cada semana, dos veces al mes…), así que para esto no sirven.
+Tu parte
+Tu parte # · te deben #
+Tu parte:
+Tu patrimonio
+Tu perfil
+Tu rentabilidad
+Tu rentabilidad anual comparada con la inflación.
+Tu ritmo (últimos # meses):
+Tu saldo
+Tu semana
+Tu semana en PalomApp
+Tu semana y tu mes
+Tu semana, lo próximo y todas tus tareas, juntas.
+Tu tarea ha vuelto, pero no se pudo quitar la compartida: bórrala tú
+Tu tarea pasa a ser compartida. La prioridad, la categoría y «Repetir» no se pasan.
+Tu «Así vas»
+Turquesa
+Tus activos
+Tus ajustes, categorías y esta bienvenida están en
+Tus aportaciones
+Tus categorías del mes en un anillo
+Tus categorías personalizadas
+Tus cuentas
+Tus cuentas con su saldo, o solo una
+Tus cuentas, como en el banco
+Tus cuentas, metas y deudas
+Tus círculos del mes
+Tus datos
+Tus datos siguen guardados en tu cuenta. Para volver, entra con tu correo.
+Tus informes
+Tus iniciales o un dibujo, con tu color. Y en Aspecto, el fondo de la app.
+Tus inversiones
+Tus inversiones:
+Tus inversiones: # esta semana
+Tus metas
+Tus metas en
+Tus metas suman
+Tus metas y deudas
+Tus movimientos siguen siendo privados: el grupo solo verá lo que compartas en él.
+Tus últimos movimientos encajan mejor con
+Tus últimos movimientos encajan mejor con otra
+Tus últimos movimientos encajan mejor con «
+Tuviste
+Tuviste # día sin gastos.
+Tuviste # días sin gastos.
+Type
+Técnica
+Título, hora, lugar y nota
+Tú
+Tú decides:
+Tú pagas a
+Tú y ajustes
+Uds.
+Ultrarrápida
+Un aspecto nuevo con # colores y # tipos de letra para las cifras. Y si lo prefieres, vuelves al de siempre con un toque.
+Un dibujo
+Un día de la semana
+Un día de la semana concreto (p. ej. el primer #)
+Un día en que ocurrió u ocurrirá
+Un día fijo
+Un día fijo del mes
+Un enlace vale para
+Un gasto compartido no puede ser negativo
+Un gráfico grande que se toca y se abre en uñas, pelo, perfume…
+Un momento.
+Un movimiento sin cuenta pasará a esta cuenta
+Un pago fijo sin saldo
+Un préstamo o la tarjeta: cuánto queda y cuándo acabas.
+Un préstamo, el coche, la tarjeta…
+Un préstamo, el coche, la tarjeta… y ve cuándo acabas
+Un resumen de tu mes en frases sencillas.
+Un solo aspecto
+Un teclado propio para el importe y «Repetir» en el + para lo que apuntas a menudo.
+Un tema
+Un toque suave al guardar, completar o conseguir una meta.
+Un traspaso
+Un viaje, la casa, un colchón…
+Un viaje, la casa, un colchón… y ve cómo se llena
+Un viaje, la entrada de la casa, un colchón…
+Una categoría
+Una cena, la casa, un viaje
+Una columna de importe
+Una cuenta
+Una deuda
+Una fecha en la que ocurrió u ocurrirá
+Una hucha para un viaje, la hipoteca… Cada uno apunta lo que aporta o paga y veis el progreso juntos.
+Una idea
+Una inversión puede contar para varias metas a la vez. Aparece siempre en Inversiones.
+Una inversión puede estar en varias metas a la vez.
+Una meta
+Una meta junta lo que apartas y lo que inviertes para ella. Al apuntar un movimiento eliges «¿Para qué meta?».
+Una meta suma lo que apartas y lo que inviertes para ella (a lo que vale hoy), lo que tuvieras antes, y resta lo que hayas usado.
+Una meta, tus cuentas, el calendario de gastos…
+Una pestaña propia para los gastos compartidos. Arriba ves de un vistazo cuánto debes y cuánto te deben, y puedes saldar con una persona en un toque.
+Unicaja
+Unirme
+Unirme al grupo
+Uno
+Uno #
+Unos
+Usado
+Usando tu precio:
+Usar
+Usar #
+Usar dinero de «
+Usar esta
+Usar este saldo
+Usar la suma como total
+Uñas
+VA
+VWCE
+Vais bien: ritmo suficiente
+Vale hoy
+Vale para
+Vale para una persona y caduca en # días.
+Valen hoy
+Valencia
+Valladolid
+Valor
+Valor actual
+Valor de tu cartera
+Valores
+Valores de cierre del último día de mercado, en euros (los activos en otras monedas se convierten al cambio del Banco Central Europeo). «Has metido» es lo que aportaste. Las inversiones sin activo elegido cuentan por lo aportado.
+Valores de cierre del último día de mercado, en euros (los activos en otras monedas se convierten al cambio del Banco Central Europeo). «Invertido» es lo que aportaste.
+Varios
+Varios días
+Vas al mismo ritmo
+Vas bien para
+Vas bien: ritmo suficiente
+Vas bien: tu ritmo es suficiente
+Vas dentro de todos tus presupuestos este mes.
+Vencida el
+Vencida el #
+Vencidas · #
+Venció el
+Venta
+Ver
+Ver # categorías sin gasto
+Ver # movimiento
+Ver # movimientos
+Ver agenda
+Ver columnas
+Ver cuentas
+Ver el gasto
+Ver el grupo
+Ver el informe de
+Ver el informe de #
+Ver invitación
+Ver la versión anterior
+Ver la versión nueva
+Ver las
+Ver las # filas
+Ver las # metas
+Ver los
+Ver los #
+Ver los # movimientos
+Ver los movimientos
+Ver menos
+Ver metas
+Ver mi dinero
+Ver mis categorías
+Ver mis cobros fijos
+Ver mis fijos
+Ver mis movimientos
+Ver movimientos
+Ver más
+Ver novedades anteriores
+Ver nueva
+Ver pagos
+Ver qué hay
+Ver saldos
+Ver sus movimientos
+Ver también otros
+Ver también otros # gastos
+Ver todas
+Ver todo
+Ver todo el historial
+Ver todo tu historial
+Ver todos
+Ver todos (
+Ver vista previa
+Verificación en dos pasos
+Verificación en dos pasos activada
+Verificación en dos pasos desactivada
+Verificar
+Verás un botón para comparar con la versión anterior
+Vi
+Viaje
+Viaje a Japón
+Viaje a Roma
+Viaje a…
+Viaje cerrado: ya no sale al apuntar gastos
+Viajes
+Vibración
+Viendo la versión anterior de
+Vienen de Juntos
+Vinculado
+Vincular
+Vincular a un activo con valoración automática
+Violeta
+Violeta, Cobalto, Turquesa, Frambuesa o Esmeralda
+Visible
+Vista previa
+Vista previa, sin duplicados y se puede deshacer.
+Vivienda
+Volver
+Volver a la app
+Volver a partes iguales
+Volver a ver la bienvenida
+Vs mes pasado
+Vuelve el nombre automático
+Vuelven el
+Vuelves a la versión nueva
+Vuelves a lo básico
+Wallapop/Vinted
+Wise
+Won
+XTB
+Y además
+Y en Tú también: Reglas de categorías, Tu mes, Compartir mi agenda, Ocultar cifras, Copia de seguridad, Aspecto.
+Y mucho más, cuando quieras
+Y todo cabe bien en móviles pequeños.
+Ya ahorrado antes
+Ya compartes con ellos: entran al momento, sin enlace.
+Ya eres miembro de este grupo.
+Ya eres miembro de «
+Ya estaba recuperado
+Ya está en el círculo
+Ya está en el círculo #
+Ya estás en
+Ya existe un registro con ese identificador.
+Ya has gastado más de lo que pensabas este mes.
+Ya hay otra deuda llamada «
+Ya hay un tema con ese nombre
+Ya hay una con ese nombre ahí
+Ya la compartes con esa persona o grupo
+Ya la tienes
+Ya le he pagado
+Ya le he pagado #
+Ya llevas un mes con PalomApp
+Ya lo has probado todo
+Ya lo ves todo
+Ya me ha pagado
+Ya me ha pagado #
+Ya no encuentro «
+Ya no es administrador
+Ya no está
+Ya no está compartido: cuenta entero como tuyo
+Ya no estás en ese grupo: no se puede recuperar
+Ya no estás en este grupo, así que no puedes cambiarlo.
+Ya no existe
+Ya no hay movimientos de este activo.
+Ya no hay nada pendiente con esta persona.
+Ya no la ve
+Ya no la ven
+Ya no se hace zoom al escribir en los campos.
+Ya no se pedirá la huella
+Ya pagado
+Ya pagado antes
+Ya resta
+Ya se ha recuperado.
+Ya tienes
+Ya tienes # piezas: quita una para añadir otra.
+Ya tienes apuntado:
+Ya tienes estas. Aquí no se borra nada: solo puedes añadir.
+Ya tienes una categoría «
+Ya tienes una deuda con ese nombre: elige otro para no mezclar sus pagos
+Ya tienes una meta con ese nombre
+Yen
+Yen japonés
+Yo
+Yuan
+Zamora
+Zara
+Zaragoza
+Zona euro
+^gasto
+a Pa
+a algo que apuntaste unos días antes o después. Dinos si es lo mismo.
+a alguna aportación le faltan las participaciones.
+a fin de mes
+a tu favor
+a tu favor.
+a tu saldo
+abr
+acabarías en
+activo no se valora
+activos no se valoran
+actualízalo
+agenda mes semana
+ago
+ahora en «
+ahora no hay bastante. Toca para verlo.
+ahorro e inversión
+al
+al año
+al año ·
+al año.
+al día ·
+al día. No cuenta los pagos fijos que aún no han llegado.
+al mes
+al mes (lo de los últimos # meses).
+al mes) llegarías en
+al mes.
+al viaje
+alimentación
+antepenúltimo
+antes de lo previsto
+apartados
+apartaste más de lo que te quedaba
+apartáis
+aporta cada uno
+aportaciones sin precio automático cuentan
+aportación
+aportación sin precio automático cuenta
+aportaste tú
+aportó
+aprox. €
+apuntar añadir
+apuntó
+apuntó «
+aquí
+arreglará # movimiento
+arreglarán
+arreglo en lo que ya tenías
+arreglo no se pudo guardar
+arreglos en lo que ya tenías
+arreglos no se pudieron guardar
+artículo
+artículos
+atrás
+aunque PalomApp esté cerrada
+aunque los demás no tengan la app
+auto
+avisos al día (los importantes aparte), sin cifras y sin publicidad.
+avisos notificaciones banco recordatorios apuntar solo automatico
+año
+año #
+años
+aún nada
+aún no ha terminado: cuenta lo apuntado hasta hoy.
+bajó a
+basico sencillo todo completo modo
+basico sencillo todo completo modo herramientas
+bk
+borró
+bunq
+cada uno
+cambiado por
+cambiado por ti
+cambio más
+cambios más
+cambió
+categorías
+categorías sin gasto
+cerró con
+cobro
+comparte su agenda contigo
+compartir agenda ver calendario pareja familia privada
+compra
+con apuntes
+con este nombre en Movimientos: se contarán en esta deuda.
+con los títulos
+con otros
+con todos
+conseguida
+cortex.studio.mkt@gmail.com
+cosa hoy
+cosa más
+cosas hoy
+cosas más
+cuentas + invertido − lo que debes
+cuentas y metas
+cuentas, metas, presupuestos, agenda… te lo iremos enseñando
+cuota #
+cómo vas
+de
+de #
+de # presupuestados ·
+de # ·
+de # · #
+de # · hasta #
+de # · llevas pagado el #
+de # · pendiente # ·
+de cada mes
+de devoluciones (
+de esa moneda
+de esas fechas
+de esos días
+de la semana
+de lo que entra
+de lo que te ha entrado este año
+de los próximos # días. Lo que marques como
+de más
+de presupuesto
+de tu presupuesto de
+debes
+debes #
+del # al
+del # al #
+del banco y recordatorios
+del tema
+del ticket
+del trimestre
+dentro de la app. Puedes volver a ver esto en Tú → Novedades.
+descubre palomapp herramientas funciones que puedo hacer ayuda
+desde el
+desde el # · #
+desde el # · # gasto
+desde el día
+desde el día #
+desde el inicio
+desde que empezaste
+desde tu nómina
+después de lo previsto
+deudas compartidas (como una hipoteca)
+devolución
+dic
+doble
+durante
+día
+día hábil del mes
+día sin gastos
+día/mes/año
+días
+días se borra para siempre. Lo que quitas al deshacer una importación no pasa por aquí.
+días sin gastos
+días sin gastos del día a día (sin contar los fijos).
+días sin gastos.
+días.
+e importa el resto después
+eToro
+el # La app calcula
+el año entero
+el cambio
+el gasto
+el grupo
+el grupo solo ve lo que compartas en él.
+el grupo solo verá lo que compartas en él.
+el mismo balance.
+el movimiento
+el texto del aviso se lee y se descarta. A tu cuenta solo pasa el movimiento (importe, comercio y fecha).
+el trimestre de
+empeoró
+empezará cuando llegue tu nómina
+empezará el
+empezó el
+en # año
+en # días
+en # mes
+en # meses
+en #, #
+en Juntos
+en Movimientos
+en camino…
+en este grupo
+en lo que ya tenías
+en negativo.
+en paz
+en paz:
+en positivo.
+en «
+ene
+entre los dos
+entre todos antes de apuntarlo aquí.
+entre vosotros dos
+es lo que más sube:
+esa cuenta
+esperando tu nómina
+esta meta
+esta semana.
+esta semana: valen
+este gasto
+este mes
+este mes.
+estimación
+estimación prudente: aún no hay # meses de histórico
+está en el grupo
+está listo
+estáis en paz
+están apartados
+exportar excel csv hoja de calculo
+f#.csv
+falta elegir el activo en sus aportaciones.
+feb
+fijo
+fila anulada por el banco se omite.
+fila no se ha podido leer
+fila parece un traspaso que ya tenías apuntado como gasto o ingreso en tu otra cuenta
+fila se parece
+fila ya estaba importada
+fila ya estaba importada, pero sin cuenta
+fila ya la tenías
+filas anuladas por el banco se omiten.
+filas no se han podido leer
+filas parecen traspasos que ya tenías apuntados como gasto o ingreso en tu otra cuenta
+filas se parecen
+filas ya estaban importadas
+filas ya estaban importadas, pero sin cuenta
+filas ya las tenías
+filas). Puede que el signo o la columna de importe no sean los correctos.
+fin de mes
+fin de semana
+fin de semana o festivo
+gasolina o carga de un viaje
+gastado
+gastaste más de lo ingresado
+gastaste más de lo que entró
+gasto apuntado a tu nombre
+gasto añadido a «
+gasto pasado
+gasto sigue
+gasto, ticket…
+gastos apuntados a tu nombre
+gastos añadidos a «
+gastos pasados
+gastos siguen
+habíais pagado
+harían falta
+hasta # personas
+hasta el
+hasta fin de mes
+hay # pago
+hecha por
+herramientas funciones que puedo hacer ayuda
+igual que en
+igual que en #
+imagin
+importe
+informe resumen mes frases
+ing direct,cuenta naranja
+jue #
+jul
+jun
+km
+l/# km
+la caixa
+la cuenta
+la inflación te gana
+la que has indicado
+la semana del
+le debes
+le ganas a la inflación
+le pagas
+lecturas al mes
+lecturas de este mes. Vuelven el
+lee códigos de verificación ni tus claves, y no se conecta con tu banco.
+llegaríais
+llegarías
+llevas
+lo cambiaste después y se queda como está
+lo guardas como
+lo mismo
+lo mismo de
+lo que compartes con cada persona
+lo que va de
+lo verá arriba en su Inicio.
+lo verán todos
+lo veréis los dos
+lun
+mar
+may
+mañana
+mejoró
+menos cada año.
+menos de un mes
+menos que
+mes antes.
+mes nomina cobro dia empieza
+mes/día/año
+meses
+metas compartidas (una hucha para un viaje…)
+metido: #
+mié #
+movimiento sin cuenta
+movimiento volvió
+movimiento.
+movimientos de tus avisos
+movimientos en
+movimientos sin cuenta
+movimientos sin cuenta pasarán a esta cuenta
+movimientos.
+movimientos. No cierres la app.
+multiple (or no) rows
+más
+más cada año.
+más de #
+más en Movimientos
+más que
+más que en
+más.
+n#.csv
+nadie
+necesita un mes de historia
+no
+no apuntaste nada.
+no cambia al meter o sacar dinero
+no gastaste nada).
+no lee mensajes, WhatsApp ni redes sociales. Para proponerte un banco que falte, solo apunta el nombre de la app que avisa de un pago, nunca lo que dice.
+no se pudieron guardar: vuelve a intentarlo
+no suma
+no tiene
+no tiene precio porque falta elegir el activo.
+no tiene saldo puesto: hasta que se lo pongas (Tú → Cuentas), aportar no moverá dinero.
+no tienen
+norma#.n#
+nov
+novedades en Juntos
+o hazle una foto al ticket
+o trae el extracto de tu banco
+oct
+p. ej. Santander
+pagaste al saldar
+pagaste tú
+pagaste tú · tu parte
+pagaste tú · tu parte #
+pagáis
+pagó
+pagó a
+para el objetivo
+para este hito.
+para gastar
+para no contarlos dos veces.
+para otra cosa
+para quedar en paz en el grupo.
+para saldar cuentas
+para tus metas
+parece un traspaso
+penúltimo
+persona o grupo
+personas o grupos
+piezas: quita una para añadir otra.
+por apuntar
+por carretera
+por ciento
+por ciento.
+por delante, salen
+por encima de su presupuesto
+por encima del presupuesto
+por hacer
+por importe
+por lo aportado.
+porque no está vinculado: edita sus movimientos y elige el activo en el buscador.
+precio medio de hoy en
+precio medio de los cargadores
+previsto el
+previsto para hoy
+que en
+que la semana anterior.
+que pagaste antes de usar la app. Sin intereses.
+que ya tenías.
+que ya tenías. Se puede deshacer.
+quedan #
+quedan # de #
+quedarán
+quien pagó
+quiere compartir gastos contigo
+quiere compartir gastos contigo (sin grupo)
+quitó
+quién apuntó, cambió o borró
+quién debe a quién, y saldar con un toque
+raro
+recibos, facturas y suscripciones
+recuperó
+saldo puesto: de momento no
+salieron de lo que ya tenías.
+salió más de lo que entró:
+se encarga
+se paga
+seguridad contraseña
+según cuándo metiste cada euro
+según tu histórico (
+según tu histórico de
+semanas
+sep
+sin app
+sin asignar: se reparten a partes iguales entre quienes no han puesto nada.
+sin cambio
+sin categoria
+sin categoría
+sin categoría: se guardarán como «Sin categoría» y podrás cambiarlas luego.
+sin cuenta
+sin datos
+sin gastos
+sin grupo, solo vosotros dos
+sin pasarte
+sin precio
+sin presup.
+solo con los huecos ocupados
+solo fines de semana
+solo lo ves tú: ni siquiera sale como hueco ocupado.
+solo se verá lo que compartas con esta persona.
+solo vosotros dos
+son tu parte en Juntos.
+sube más
+sáb
+sí
+también en «
+tareas nuevas para ti
+tareas vencidas
+te debe
+te deben
+te deben #
+te ha invitado a
+te han sobrado
+te has pasado
+te has pasado #
+te invita a compartir gastos
+te paga
+te pagaron al saldar
+te pagó
+te pasas
+te quedarían unos
+te sobraron
+te suele llegar
+tele
+teníais ahorrado
+tenías
+toca el gráfico
+toca un color
+todo en Dinero, de un vistazo
+todo lo apuntado
+traspaso con
+traspaso entre cuentas: apúntalo con «Traspaso»
+traspaso entre tus cuentas: no cuenta como gasto ni ingreso.
+traspaso: ¿con qué cuenta?
+traspasos entre tus cuentas: no cuentan como gasto ni ingreso.
+tu grupo
+tu historial completo
+tu parte
+tu parte #
+tu parte de
+tu parte de #
+tu precio
+tu saldo
+tus datos: un importe de # pasará de «#» a «#». Úsalo si llevas tus cuentas en esa moneda.
+tus grupos
+tú
+uds. · reparte las unidades
+un año
+un gasto
+un grupo
+un mes
+un miembro
+un pago
+un tema
+una persona
+unos #
+usados de «
+va con
+va justo
+vacía
+vacío
+verá
+vie
+vie #
+vie # · igual
+viene apagado y lo apagas cuando quieras.
+vuelven el
+vuelven el #
+y busca el activo (por nombre, ticker o ISIN).
+y caduca en
+y con cada persona
+y dejaremos «Ya pagado» a #.
+y el importe es
+y el total del ticket es
+y el total es
+y el último día
+y en qué se te va el dinero
+y lo hacemos nosotros en menos de # días.
+y quedan
+y solo hay
+y tienen que sumar #
+ya estaban como traspaso desde tu otra cuenta: se omiten.
+ya está como traspaso
+ya está en Juntos:
+ya está en el grupo
+ya importado en
+ya lo tenías
+ya lo tenías, sin cuenta: márcalo para ponerlo en
+ya los tenías apuntados
+ya no te enseña esto.
+¡Conseguida!
+¡Día despejado!
+¡Entendido!
+¡Hecha!
+¡Hecha! La siguiente:
+¡Hecha! La siguiente: #
+¡Hito conseguido:
+¡Hola
+¡Hola!
+¡Hola,
+¡Importado!
+¡Meta conseguida! 🎉
+¡Meta conseguida:
+¡Objetivo alcanzado:
+¡PalomApp se ha actualizado!
+¡Saldada!
+¡Saldada! Ya no debes nada de esta deuda.
+¡Tarea completada!
+¡Te has unido al grupo!
+¡Todo listo
+¡Ya compartís gastos!
+¡Ya estás en el grupo!
+¡Ya lo tienes!
+¡la consigues!
+«Cuadrar» con lo que dice tu banco
+«Día hábil» cuenta solo los fines de semana.
+«En tus cuentas» en Inicio y filtro por cuenta
+«Pago fijo» en el +. Elige cuándo: último día hábil, dos días al mes, cada X días… y salta festivos.
+«Vivienda · Alquiler», «Suscripciones · Spotify»
+«Ya pagado» es lo que pagaste antes de usar la app. No contamos intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».
+«Ya pagado» no puede ser más que el total
+«Ya pagado» y «Pagas al mes» tienen que ser números (o dejarse vacíos)
+«¿De dónde sale?» te explica cada saldo
+· # = # · BCE #
+· # gasto apuntado a tu nombre
+· # gastos apuntados a tu nombre
+· # veces
+· # vez
+· Alquiler, Spotify, luz…
+· Cambiar
+· Dato obtenido el
+· a este ritmo llegaríais en
+· a este ritmo llegarías hacia
+· a este ritmo, en
+· a partes iguales
+· ahora en «
+· antes de la app
+· antes de la app #
+· apartado e invertido
+· aún no has puesto su saldo
+· cambiar reparto
+· cierre del
+· compartirla
+· datos privados, sincronizados entre tus dispositivos.
+· debes
+· ej. VWCE, S&P # ETF
+· en
+· en negativo si es una devolución
+· era el
+· este mes
+· faltan
+· hito # de #
+· hoy
+· la próxima,
+· llevas pagado el
+· lo que toca
+· lo ven todos
+· los fijos van aparte
+· meses en que cobras el doble
+· opcional
+· opcional: Uñas, Golf, Mercadona…
+· opcional: «Primeros #», «La entrada»… Cada uno funciona como una meta dentro de la meta
+· opcional; para fechas de hace más de un año
+· opcional; vacío = se calculan solas
+· pagaste tú
+· pagó
+· para el
+· para qué es esta inversión
+· para saldar cuentas
+· ponte presupuestos con «Editar»
+· por tu regla
+· por un aviso del banco
+· ritmo (últimos # meses):
+· sale en tu Agenda
+· se borra del todo en
+· se elige sola por el nombre
+· se elige solo por el nombre
+· sin aportaciones recientes para estimar
+· sin confirmar
+· sin precio disponible todavía
+· sin volver a invitarles
+· solo en
+· sugerida
+· te deben
+· te encargas tú
+· todo el día
+· tu parte
+· tu parte,
+· tu ritmo (últimos # meses):
+· tus datos son privados.
+· vacío si aún no lo has vendido
+· ver todos sus movimientos
+· ¡conseguida!
+· ¡saldada!
+· ¿Se ha producido?
+· última
+» en
+» en PalomApp para compartir gastos. Entrad aquí (vale # días, para hasta # personas):
+» en PalomApp para compartir gastos. Ábrelo aquí (vale # días y para una sola persona):
+» en PalomApp, con los gastos que llevamos. Entra aquí (vale # días):
+» en la descripción
+» es una categoría personalizada tuya.
+» es una categoría personalizada y no sirve para compartir gastos: elige una de las estándar y pon «
+» los que sean suyos.
+» no llega una vez al mes, así que no sirve para empezar tu mes.
+» será una categoría personalizada nueva.
+» ya es una categoría estándar
+» ya está entre las estándar
+». Prueba con otra palabra.
+». Te recomendamos tenerla: puedes volver a añadirla cuando quieras.
+». Tienen que sumar #.
+». ¿Va en el viaje?
+»: el importe con números y el día del # al #
+»: no la recupero para no mezclar sus pagos
+¿A qué hora?
+¿Ahorras para algo más? Una meta para cada cosa.
+¿Ahorras para algo?
+¿Algo falla o tienes una idea? Lo lee quien hace la app.
+¿Algo falla, echas algo de menos o hay algo que te encanta? Cuéntanoslo: lo lee quien hace PalomApp.
+¿Alguien no tiene la app? Añádelo solo con su nombre y apúntale gastos como a cualquiera. Si un día se la instala, se queda con todo lo suyo.
+¿Borrar tu cuenta y tus datos?
+¿Cerrar sesión en este móvil?
+¿Cobrado?
+¿Con quién?
+¿Cuál?
+¿Cuándo
+¿Cuándo se paga?
+¿Cuándo te suele llegar?
+¿Cuándo?
+¿Cuánto dice el banco hoy?
+¿Cuánto te queda según tu banco?
+¿Cuánto tienes hoy en el banco?
+¿Cuánto? (
+¿Cuántos km?
+¿Cuántos meses?
+¿Cuántos vais?
+¿Cómo se calcula?
+¿Cómo te llamas?
+¿De dónde sale?
+¿De qué banco es?
+¿De qué cuenta es este extracto?
+¿De qué tema?
+¿Desactivar la verificación en dos pasos? Tu cuenta quedará protegida solo por la contraseña.
+¿Descartar
+¿Dónde guardas este dinero?
+¿Dónde trabajas?
+¿Dónde?
+¿Es de
+¿Esos gastos cuentan también en tus números?
+¿Estás pagando algo a plazos?
+¿Hacer principal «
+¿Ibais en coche? Calcula la gasolina
+¿Le ganas a la inflación?
+¿No coincide con tu banco? Usa «Cuadrar» en la cuenta (en Dinero): ajusta el saldo y no toca tus movimientos.
+¿No es tu cuenta?
+¿No puedes escanear? Clave manual:
+¿Olvidaste tu contraseña?
+¿Pagado?
+¿Pagaste en otra moneda?
+¿Para cuándo?
+¿Para qué meta?
+¿Para qué?
+¿Ponemos un tope a lo que más gastas?
+¿Por dónde empiezas?
+¿Quieres que tu mes vaya de nómina a nómina?
+¿Quién lo ve?
+¿Quién se encarga?
+¿Qué cuenta?
+¿Qué cuentas?
+¿Qué deuda?
+¿Qué es cada columna?
+¿Qué hay que hacer?
+¿Qué meta?
+¿Qué periodo?
+¿Qué plan es?
+¿Qué quieres apuntar?
+¿Qué quieres ver?
+¿Qué recibo es?
+¿Qué se repite cada mes?
+¿Qué verá?
+¿Te cansas de apuntar?
+¿Te equivocas? Botón «Deshacer»
+¿Tienes el ticket a mano?
+¿Tus amigos no tienen PalomApp? No pasa nada: añádelos por su nombre.
+¿Un gasto tuyo que no compartiste? Ábrelo, pulsa «Compartir» y elige este viaje.
+¿Usamos ese saldo como punto de partida? Desde ahí la app suma y resta lo que apuntes.
+¿Va en el viaje?
+¿Y si pagas más cada mes?
+¿es el
+¿es el mismo que apuntaste el
+Ábrelo para añadirlo a tu calendario
+Álava
+Ámbar
+Ávila
+Índice
+Últimas aportaciones
+Último
+Último año
+Último día hábil del mes
+Último informe
+Último mes
+Último precio
+Últimos # meses
+Últimos gastos compartidos
+Últimos gastos y pagos
+Últimos movimientos
+Últimos pagos
+Únete y llevad juntos las cuentas: quién paga, quién debe y saldar con un toque.
+último
+últimos
+últimos # meses
+— Ninguna —
+€ al día
+→ traspaso con
+✓ # ya estaban como traspaso desde tu otra cuenta: se omiten.
+✓ Conseguidas (#)
+✓ Saldadas (#)
+✓ Todas
+🎉 (por ejemplo, la entrada de la casa).
+🎯 Hito
