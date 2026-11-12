@@ -1,0 +1,6 @@
+"Fecha","Tipo","Descripción","Entrada de dinero","Salida de dinero","Saldo"
+"01 oct 2026","Transferencia","Ingreso aceptado: ES00 INVENTADA","1.000,00 €","","6.000,00 €"
+"02 oct 2026","Operar","Savings plan execution ETF EJEMPLO","","500,00 €","5.500,00 €"
+"05 oct 2026","Pago con tarjeta","Restaurante Ejemplo","","23,40 €","5.476,60 €"
+"15 oct 2026","Operar","Buy trade ACCION EJEMPLO","","1.250,00 €","4.226,60 €"
+"31 oct 2026","Interés","Your interest payment","8,42 €","","4.235,02 €"

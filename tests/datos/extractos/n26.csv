@@ -1,0 +1,6 @@
+"Booking Date","Value Date","Partner Name","Partner Iban","Type","Payment Reference","Account Name","Amount (EUR)","Original Amount","Original Currency","Exchange Rate"
+"2026-10-02","2026-10-02","Cafeteria Ejemplo","","Presentment","","Main Account","-12.5","","",""
+"2026-10-03","2026-10-03","Persona Inventada","","Credit Transfer","Concepto inventado","Main Account","250","","",""
+"2026-10-07","2026-10-07","Aerolinea Ejemplo","","Presentment","","Main Account","-1234.56","","",""
+"2026-10-11","2026-10-11","Metro Ejemplo","","Presentment","","Main Account","-7.8","","",""
+"2026-10-19","2026-10-19","Empresa Ejemplo SL","","Credit Transfer","Concepto inventado","Main Account","1500","","",""
