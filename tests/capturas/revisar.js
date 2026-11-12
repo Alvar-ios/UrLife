@@ -89,7 +89,7 @@ async function revisarTeclado() {
   const out = [], sh = document.querySelector('#sheetBackdrop .sheet'); if (!sh) return out;
   const campos = Array.from(sh.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]), textarea, select')).filter((e) => e.getBoundingClientRect().width > 0);
   for (const c of campos) {
-    c.focus(); await new Promise((r) => setTimeout(r, 60));
+    c.focus(); await new Promise((r) => setTimeout(r, 350)); // 12/11: la app pone el campo a la vista 250 ms después de enfocarlo (verCampoEnHoja)
     const r = c.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, t = y >= 0 && y <= window.innerHeight ? document.elementFromPoint(x, y) : null;
     const quien = c.id || c.name || c.placeholder || c.tagName;
     if (r.bottom > window.innerHeight + 1 || r.top < 0) out.push({ tipo: 'campo fuera de la vista con el teclado', donde: quien, txt: 'de ' + Math.round(r.top) + ' a ' + Math.round(r.bottom) + ' px (se ven ' + window.innerHeight + ')' });
@@ -166,6 +166,12 @@ function revisarPagina() {
     const recorta = () => { for (let q = el.parentElement; q && q !== document.body; q = q.parentElement) if (getComputedStyle(q).overflowX !== 'visible' && q.getBoundingClientRect().right <= W + 1) return true; return false; };
     if (propio && r.right > W + 1 && s.position !== 'fixed' && !recorta()) out.push({ tipo: 'se sale por la derecha', donde: nombre(el), txt: txt.slice(0, 60) });
   });
+  // 12/11: importes partidos en dos líneas («381,09 / €»)
+  document.querySelectorAll(SEL).forEach((el) => { if (!vis(el)) return; el.childNodes.forEach((n) => { if (n.nodeType !== 3) return;
+    const re = /[−+-]?\d[\d.,]*\s(€|\$|£)/g; let m; while ((m = re.exec(n.textContent))) {
+      const rg = document.createRange(); rg.setStart(n, m.index); rg.setEnd(n, m.index + m[0].length);
+      const rs = Array.from(rg.getClientRects()).filter((r) => r.width > 0); if (rs.length > 1 && Math.abs(rs[rs.length - 1].top - rs[0].top) > 4) out.push({ tipo: 'importe partido en dos líneas', donde: nombre(el), txt: m[0] });
+    } }); });
   // textos que se pisan entre sí (dos textos distintos, ninguno dentro del otro)
   const arriba = (el, r) => { const x = r.left + r.width / 2, y = r.top + r.height / 2; if (x < 0 || y < 0 || x > W || y > window.innerHeight) return false; const t = document.elementFromPoint(x, y); return !!t && (t === el || el.contains(t)); };
   const T = [];

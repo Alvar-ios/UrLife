@@ -2517,3 +2517,42 @@ html[data-look="nuevo"] .tec-cat-n { white-space: normal; text-overflow: clip; d
    Solo hacia arriba y hacia abajo, para no pisar al de al lado. */
 html[data-look="nuevo"] button.link, html[data-look="nuevo"] .chip, html[data-look="nuevo"] .mes-sel, html[data-look="nuevo"] .mov-cuentas-btn { position: relative; }
 html[data-look="nuevo"] .chip::after { content: ''; position: absolute; left: 0; right: 0; top: -8px; bottom: -8px; } /* los enlaces ya tienen la suya, más grande (app.css) */
+
+/* ===== 12/11 · arreglos P1 de interfaz y móvil (docs/salud/2026-11-12-diag-interfaz.md, tabla 2.1) ===== */
+/* Con el teclado del móvil abierto, el campo enfocado no queda debajo de la barra «Cancelar · Guardar» (app.js: verCampoEnHoja) */
+html[data-look="nuevo"] .sheet { scroll-padding-bottom: 110px; scroll-padding-top: 12px; }
+/* Botones de las hojas: si no caben, el texto pasa a dos líneas en vez de cortarse; el botón rojo («Borrar mi cuenta»,
+   «Cerrar sesión») tiene más sitio que «Cancelar» y ya no se sale por la derecha (app.css le ponía flex: none) */
+html[data-look="nuevo"] .sheet .actions .btn { white-space: normal; line-height: 1.15; min-width: 0; text-align: center; }
+html[data-look="nuevo"] .sheet .actions .btn.danger.block { flex: 1.6 1 0; }
+/* El título de la pestaña nunca se parte («Movimiento / s»): en una línea y, si no cabe (letra grande), «…».
+   A 320 px, un poco más pequeño para que «Movimientos» quepa entero */
+html[data-look="nuevo"] .tb-l > div { min-width: 0; }
+html[data-look="nuevo"] .topbar h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 340px) {
+  html[data-look="nuevo"] .topbar h1 { font-size: 20px; overflow-wrap: normal; }
+  html[data-look="nuevo"] .mes-pill > span:not(.mes-pill-ic) { display: none; } /* solo «Noviembre ▾» */
+}
+/* Con letra grande, la píldora del mes deja solo «Noviembre ▾» si no cabe con las flechas (medido en «em»: crece con la letra) */
+html[data-look="nuevo"] .hero2-top { container-type: inline-size; gap: 4px; } /* con menos de ~306 px (20,4 em) el periodo no cabe entero junto a las flechas: solo «Noviembre ▾» */
+@container (max-width: 20.4em) { html[data-look="nuevo"] .mes-pill > span:not(.mes-pill-ic) { display: none; } }
+/* Importes: el «€» no se separa de la cifra (salvo textos largos con varias cosas dentro) */
+html[data-look="nuevo"] .tnum { white-space: nowrap; }
+html[data-look="nuevo"] .tr-res-d, html[data-look="nuevo"] .tr-chg, html[data-look="nuevo"] .meta-cant, html[data-look="nuevo"] .tr-coche-t .tnum { white-space: normal; }
+/* Letra grande (130 %): la barra de abajo no junta «InicioMovimientos» */
+html[data-look="nuevo"] .tab > span:not(.ic) { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -.01em; padding: 0 1px; }
+/* Píldora del mes en una línea: si no cabe, «Noviembre · del 1…» */
+html[data-look="nuevo"] .mes-pill { white-space: nowrap; min-width: 0; max-width: 100%; overflow: hidden; }
+html[data-look="nuevo"] .mes-pill > span:not(.mes-pill-ic) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+html[data-look="nuevo"] .mes-pill b, html[data-look="nuevo"] .mes-pill-ic { flex: none; }
+html[data-look="nuevo"] .hero2-top > .mes-pill { flex: 0 1 auto; }
+/* Tarjeta de Inicio: si las cifras no caben en una fila (letra grande o pantalla muy estrecha), en 2 × 2.
+   Medido en «em» de la tarjeta: con la letra del sistema más grande, el corte llega antes. */
+html[data-look="nuevo"] .hero-barra { container-type: inline-size; font-size: 11px; }
+@container (max-width: 23em) {
+  html[data-look="nuevo"] .hk-cels { flex-wrap: wrap; row-gap: 2px; }
+  html[data-look="nuevo"] .hk-cel { flex: 1 1 calc(50% - 4px); }
+  html[data-look="nuevo"] .hk-cels.cinco .hk-cel { flex-basis: calc(33% - 4px); }
+}
+/* «Pedir por WhatsApp»: texto oscuro sobre el verde (contraste 7,6; antes blanco, 1,98) */
+html[data-look="nuevo"] .wa-btn { color: #0B2E18 !important; }

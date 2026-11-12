@@ -10585,7 +10585,8 @@ async function avisosAbrir() {
 function avisosHtml() {
   const e = S._avEst, ac = avisosCfg(), nok = S._avNotif === 'granted';
   const sw = (on, accion, arg) => '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" ' + act(accion, arg || '') + '></button>';
-  const fila = (t, sub, derecha) => '<div class="av-opt"><div><b>' + t + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>' + derecha + '</div>';
+  // 12/11: cada interruptor se llama como su fila (un lector de pantalla decía solo «interruptor»). `t` ya viene escapado
+  const fila = (t, sub, derecha) => '<div class="av-opt"><div><b>' + t + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>' + derecha.replace('role="switch"', 'role="switch" aria-label="' + t + '"') + '</div>';
   let h = '<div class="handle"></div><h2>Avisos</h2>';
   h += (nok ? '' : '<div class="card"><div class="av-nota">' + ic('bell') + ' Para recibirlos, PalomApp necesita permiso para mandarte avisos. <button type="button" class="btn sm accent" ' + act('avPermisoNotif') + '>Permitir avisos</button></div></div>') +
     '<div class="section-title">Importantes · suenan</div><div class="card">' +
@@ -11429,6 +11430,7 @@ function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.
 function hojaConAlgoEscrito() {
   // 11/11 (Calidad): una meta, una deuda o un cobro o pago fijo NUEVOS a medio escribir también preguntan antes de descartarse
   if (FORM && ['meta', 'deudaForm', 'rec'].indexOf(FORM.kind) >= 0) {
+    if (!$('#sheetHost #mNombre, #sheetHost #dNombre, #sheetHost #recNombre') && !(FORM.kind === 'rec' && FORM.paso)) return false; // 12/11: FORM se queda de una hoja anterior (p. ej. Importar no lo cambia): la hoja abierta es otra
     const nueva = FORM.kind === 'meta' ? !FORM.id : FORM.kind === 'deudaForm' ? !FORM.orig : FORM.idx == null;
     const nom = String(($('#mNombre') || {}).value || ($('#recNombre') || {}).value || FORM.nombre || '').trim();
     return nueva && !!nom;
@@ -11447,10 +11449,45 @@ function preguntarDescartar() {
     '<div class="actions"><button class="btn ghost block" data-click="descartarNo">Seguir editando</button><button class="btn danger block" data-click="descartarSi">Descartar</button></div></div>';
   document.body.appendChild(d);
 }
+// 12/11 (docs/salud/2026-11-12-diag-interfaz.md 2.2): en una subpantalla de una hoja, atrás pulsa su «Volver»
+// (vuelve a la pantalla anterior) en vez de cerrar todo. Lista cerrada de botones: si se añade una subpantalla nueva, añadir aquí su «Volver».
+const ATRAS_VOLVER = [
+  '[data-click^="grupoAjustesSalir|"]', // Grupo / Persona → Ajustes
+  '[data-click^="histVolver|"]', // Grupo → Historial
+  '[data-click="temaFormCerrar"]', '.tema-cab [data-click="temaVer|"]', // Grupo → nuevo tema / un tema
+  '[data-click^="impVolver|"]', // Importar → Columnas / Revisar
+  '[data-click="recCuandoVolver"]', // Cobro o pago fijo → «Cuándo»
+  '[data-click="festivosCerrar"]',
+  '.volver[data-click="cuentasVolver"]', '[data-click="bancoVolver"]', // Cuentas → una cuenta / su banco
+  '.av-volver', // Inicio a tu gusto, «Así vas», compartir mi agenda
+];
+// Estos solo cuentan si el botón dice «Volver» (los mismos nombres se usan para otras cosas)
+const ATRAS_VOLVER_TXT = ['.actions [data-click^="grupoVer|"]', '.actions [data-click^="personaVer|"]', '.actions [data-click^="histVer|"]', '.actions [data-click^="deudaVer|"]', '.link[data-click^="grupoVer|"]'];
+function botonVolverHoja(sh) {
+  if (!sh) return null;
+  const a = sh.querySelector(ATRAS_VOLVER.join(','));
+  if (a) return a;
+  return [...sh.querySelectorAll(ATRAS_VOLVER_TXT.join(','))].find((x) => /^(volver|entendido)$/i.test((x.textContent || '').trim())) || null; // «Entendido»: Historial → un cambio
+}
+function impHayRevision() { return !!(IMP && IMP.paso === 'revisar' && (IMP.filas || []).some((r) => r.id && (r.incluir || r.convertir || r.asignar))); }
+function atrasEnHoja(b) {
+  const sh = b.querySelector('.sheet');
+  if (sh && sh.querySelector('[data-click="impVolver|columnas"]') && impHayRevision()) {
+    abrirPopup('<h3>¿Volver al paso anterior?</h3><p>Se pierde lo que has preparado en la revisión. El archivo sigue elegido.</p>' +
+      '<div class="popup-btns"><button class="btn ghost block" ' + act('popupCerrar') + '>Seguir revisando</button><button class="btn accent block" ' + act('impVolverSi') + '>Volver</button></div>');
+    return true;
+  }
+  const v = botonVolverHoja(sh);
+  if (v) { v.click(); return true; }
+  // Persona → Saldar (sin botón «Volver»): a la persona, si se llegó desde ella
+  if (FORM && FORM.kind === 'saldarTodo' && FORM.dePersona && sh && sh.querySelector('[data-click="saldarTodoGuardar"]')) { H.personaVer([FORM.uid]); return true; }
+  return false;
+}
 function atrasAndroid() {
+  if ($('#popupBackdrop')) { cerrarPopup(); return true; } // la ventanita primero (sobre Inicio o sobre una hoja)
   const dsc = $('#descartarHoja'); if (dsc) { dsc.remove(); return true; }
   const b = $('#sheetBackdrop');
-  if (b && !b.dataset.cerrando) { if (hojaConAlgoEscrito()) preguntarDescartar(); else closeSheet(); return true; }
+  if (b && !b.dataset.cerrando) { if (atrasEnHoja(b)) return true; if (hojaConAlgoEscrito()) preguntarDescartar(); else closeSheet(); return true; }
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
   if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
   if (S.tab !== 'inicio') { H.goTab(['inicio']); return true; }
@@ -12095,7 +12132,7 @@ const H = {
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
   juntosVer: ([k]) => { S.juntosVer = k === 'grupos' ? 'grupos' : 'personas'; sentir('tic'); render(); },
   personaVer: ([uid]) => { FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid)); },
-  saldarTodo: ([uid]) => { const pc = cuentaPrincipal(); FORM = { kind: 'saldarTodo', uid, cuenta: pc ? pc.id : null }; if ($('#sheetBackdrop')) updateSheet(saldarTodoHtml()); else openSheet(saldarTodoHtml()); },
+  saldarTodo: ([uid]) => { const pc = cuentaPrincipal(), dePersona = !!(FORM && FORM.kind === 'persona' && FORM.uid === uid && $('#sheetBackdrop')); FORM = { kind: 'saldarTodo', uid, cuenta: pc ? pc.id : null, dePersona }; if ($('#sheetBackdrop')) updateSheet(saldarTodoHtml()); else openSheet(saldarTodoHtml()); },
   saldarTodoGuardar: async () => {
     const f = FORM, yo = miUid(), x = juntosPersonas().find((p) => p.uid === f.uid), fecha = ($('#sFecha') || {}).value || todayISO();
     if (!x || f.guardando) return; f.guardando = true;
@@ -12350,6 +12387,7 @@ const H = {
   impSigno: (_, el) => { IMP.signo = el.value; },
   impFmt: (_, el) => { IMP.fmtFecha = el.value; updateSheet(impHtml()); },
   impVolver: ([p]) => { IMP.paso = p; updateSheet(impHtml()); },
+  impVolverSi: () => { cerrarPopup(); if (IMP) H.impVolver(['columnas']); }, // atrás de Android en Revisar, tras confirmar
   impRevisar: () => {
     const m = IMP.map;
     if (m.fecha == null) return toast('Elige la columna de la fecha');
@@ -13056,6 +13094,18 @@ document.addEventListener('input', (e) => dispatch('input', e));
 document.addEventListener('paste', (e) => tecPegar(e));
 // al escribir en un campo de texto se cierra el teclado de la app (nunca dos teclados a la vez)
 document.addEventListener('focusin', (e) => { const T = FORM && FORM.tec; if (T && T.on && e.target && e.target.matches && e.target.matches('#sheetHost input:not([type=hidden]):not([type=date]), #sheetHost textarea, #sheetHost select')) tecCerrar(); });
+// 12/11 (docs/salud/2026-11-12-diag-interfaz.md): con el teclado del móvil abierto, el campo que escribes no se queda debajo de la barra «Cancelar · Guardar».
+// Solo campos que abren el teclado del sistema (el teclado propio del importe son botones: no se mueve nada).
+const CAMPO_TECLADO = '#sheetHost input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]):not([readonly]), #sheetHost textarea';
+function verCampoEnHoja(el) {
+  if (!el || !el.isConnected || document.activeElement !== el || !el.matches(CAMPO_TECLADO)) return;
+  const b = $('#sheetBackdrop'); if (!b || b.dataset.cerrando) return;
+  const vv = window.visualViewport, fondo = vv ? vv.offsetTop + vv.height : window.innerHeight;
+  const barra = b.querySelector('.sheet .actions.fija'), alto = barra && !(FORM && FORM.tec && FORM.tec.on) ? barra.getBoundingClientRect().height : 0;
+  const r = el.getBoundingClientRect(); if (!r.height) return; // sin dibujar (pruebas) o escondido
+  if (r.bottom > fondo - alto - 12 || r.top < (vv ? vv.offsetTop : 0) + 8) el.scrollIntoView({ block: 'center' });
+}
+document.addEventListener('focusin', (e) => { const el = e.target; if (el && el.matches && el.matches(CAMPO_TECLADO)) setTimeout(() => verCampoEnHoja(el), 250); }); // 250 ms: cuando el teclado ya ha subido
 // mantener pulsado «Borrar» medio segundo borra todo
 (function () { let t = null; const fin = () => { clearTimeout(t); t = null; if (H.tecK._largo) setTimeout(() => { H.tecK._largo = false; }, 350); };
   document.addEventListener('pointerdown', (e) => { H.tecK._largo = false; const b = e.target.closest && e.target.closest('#tec .tec-del'); if (!b) return; fin(); t = setTimeout(() => { H.tecK._largo = true; tecPulsar('clear'); }, 500); });
@@ -13197,8 +13247,9 @@ function vigilarVersion() {
 function ajustarAlTeclado() {
   const vv = window.visualViewport, bd = document.getElementById('sheetBackdrop'); if (!vv || !bd) return;
   const tapado = window.innerHeight - vv.height;
-  if (tapado > 80) { bd.style.top = vv.offsetTop + 'px'; bd.style.height = vv.height + 'px'; bd.style.bottom = 'auto'; }
+  if (tapado > 80) { bd.style.top = vv.offsetTop + 'px'; bd.style.height = vv.height + 'px'; bd.style.bottom = 'auto'; const el = document.activeElement; if (el && bd.contains(el) && ajustarAlTeclado._h !== vv.height) setTimeout(() => verCampoEnHoja(el), 60); } // el teclado acaba de subir (o cambia de alto): que se vea el campo
   else { bd.style.top = ''; bd.style.height = ''; bd.style.bottom = ''; }
+  ajustarAlTeclado._h = vv.height;
 }
 async function main() {
   applyTheme(); applyLook(); aplicarOcultar();
