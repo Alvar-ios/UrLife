@@ -10,16 +10,17 @@ Plan: `docs/40-plan-sesion-potente.md`. Empezó el 12/11/2026 a las 00:57 por or
 - Decisiones de §6: las recomendadas.
 
 ## Ramas
-- `fase13/integracion` (sale de `fase12/avisos` + docs de main): de aquí sale la APK.
+- `fase13/integracion` (sale de `fase12/avisos` + docs de main): de aquí sale la APK. Ya lleva diagnóstico (pruebas y medidores), avisos por niveles, widgets, importar y avisos del banco fase 2.
+- En curso, por separado: `fase13/fix-rendimiento`, `fase13/fix-interfaz`, `fase13/idiomas`.
 
 ## Fases
 | Fase | Estado | Notas |
 |---|---|---|
-| A · Diagnóstico | En curso | |
-| B · Arreglos P0/P1 | Pendiente | |
-| C2 · Avisos de la app | Pendiente | |
-| C5 · Widgets | Pendiente | |
-| C4 · Importar | Pendiente | |
-| C3 · Avisos del banco 2 | Pendiente | |
-| C1 · Idiomas | Pendiente | |
+| A · Diagnóstico | Hecho | Informes en `docs/salud/2026-11-12-diag-*.md` (rendimiento, interfaz, lógica, datos, importar). Sin P0. |
+| B · Arreglos P0/P1 | En curso | Importe escrito a mano: hecho. Rendimiento e interfaz: en curso. |
+| C2 · Avisos de la app | Hecho | Importantes / normales / resumen, máx. 3 al día, silencio 22–9. test152. |
+| C5 · Widgets | Hecho | «Te queda este mes» (2×1) y «Apuntar gasto» (1×1). test151_widgets + JUnit. Sin probar en móvil real. |
+| C4 · Importar | Hecho | Norma 43, Sabadell/CaixaBank/BBVA/Revolut/Trade Republic, compartir con PalomApp. test154–155. |
+| C3 · Avisos del banco 2 | Hecho | Se guardan con la app cerrada, «Deshacer» en el aviso. Migración `avisos_dispositivos` y función `avisos-guardar` aplicadas. **Falta permiso para redesplegar `borrar-cuenta`** (la web ya quita los móviles antes de borrar). |
+| C1 · Idiomas | En curso | |
 | Integración, Calidad, APK/AAB, CAMBIOS | Pendiente | |
