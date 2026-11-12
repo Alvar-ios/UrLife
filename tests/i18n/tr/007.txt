@@ -1,0 +1,419 @@
+2581	Soft sound and vibration (you can turn them off)
+2582	Short, soft sounds. You can turn them off here at any time.
+2586	Their colour
+2587	Their method
+2588	Their icon
+2589	Subcategory
+2591	Adds up the accounts with «Add up» turned on. You change it in Edit accounts.
+2592	We add what you've paid and subtract your share of each expense. What's left is your balance.
+2593	They add up to
+2594	Add up in In your accounts
+2595	Add up in «In your accounts»
+2596	Utilities
+2598	Groceries
+2599	Groceries #
+2600	Its payments stay in Transactions
+2601	Subscriptions
+2602	Subscription
+2603	Get more out of it
+2604	Yes
+2605	Yes, change
+2606	Yes, convert
+2607	Yes, match like this
+2608	Yes, from
+2609	Yes, from #
+2610	Yes, let them count
+2611	Yes, it's for the trip
+2613	Cheque
+2614	You can also share the statement from your bank's app with PalomApp.
+2615	The new things (categories, bills, goals…) have also been added to your settings: check them in More.
+2616	It takes a few seconds.
+2617	Task
+2618	Task #
+2619	Task updated
+2620	Task added
+2621	Task added
+2622	Task deleted
+2623	Task reopened
+2624	Task restored
+2625	Task · overdue
+2626	Tasks
+2627	Agenda tasks
+2628	Repeating tasks
+2629	Tasks and plans
+2630	Tasks ·
+2631	Tasks · # to do
+2632	The week's tasks, plans and fixed payments
+2633	Card
+2634	Credit card
+2635	Month card
+2636	Debit card
+2638	Jar
+2639	Jars
+2640	It cost you on average
+2641	Owes you
+2642	You're owed
+2643	You're owed #
+2644	They show you theirs
+2645	They saved you a spot
+2646	You've been invited to a group
+2647	You went over in
+2648	You've joined
+2649	We've sent you an email with instructions to change your password.
+2650	Invites you
+2651	You're invited to share expenses
+2652	I'm inviting you to my group «
+2653	Invited you
+2654	Assigned to you
+2655	Assigns it to you
+2656	We'll remind you on Home when you open the app.
+2657	Pays you
+2658	You went over
+2659	Left
+2660	Left this year
+2661	Left this month
+2662	Left today
+2663	You have left
+2664	You have # of # left
+2665	You have # left. They come back on #.
+2666	You had left in
+2667	You had left in #
+2668	You had left over
+2669	You had # more left over than in #, which closed at #.
+2670	Left over after spending, setting aside and paying debts.
+2671	Keypad
+2672	Theme
+2673	Topic reopened
+2674	Topic deleted: its expenses are left «No topic»
+2675	Topic closed: it no longer shows up when adding expenses
+2676	Topic created
+2677	Dark or light theme
+2678	Topics in groups: Trip to Rome, Home… and how much you've spent on each
+2679	You'll have
+2680	You were due to finish in
+2681	You were due to finish in #
+2682	Third
+2684	Receipt by units
+2685	Receipt by units with a bar that moves as you split
+2686	Has
+2687	It must have at least # characters.
+2688	They have a receipt
+2689	You have
+2690	You have many saved fixes to undo. In You → Imports, press «Mark as fine» on the ones you've already checked
+2691	You need to log in.
+2692	Stamps
+2693	Type
+2694	Type (expense, income…)
+2695	Asset type
+2696	Tap a person to settle or ask them on WhatsApp
+2697	Tap the figure to change it
+2698	Tap the two days
+2699	Tap again to assign
+2700	Tap again to assign #
+2701	Tap again to confirm
+2702	Tap again to remove
+2703	Tap to choose
+2704	Tap to type the amount
+2705	Tap to see it in PalomApp.
+2706	Tap an asset to see it in the chart.
+2707	Tap a day to see its transactions.
+2708	Tap a group to see where it comes from.
+2709	Tap a month to see its detail.
+2710	Tap a figure or a category and you'll see those transactions.
+2711	Tap an account to change its balance, type or colour.
+2712	Tap a card to see where it goes
+2713	Tap one to open its sheet.
+2714	It was due on
+2715	All
+2716	All categories
+2717	All accounts
+2718	All the tools in view, in + and in You.
+2719	All investments (
+2720	All investments (#)
+2721	All your accounts
+2722	All your tasks
+2723	You don't have debts yet. Create them in You → Debts (with the total and, if you want, a target date).
+2724	You don't have goals yet. A goal gathers what you set aside and invest for something: the house, a trip, a cushion.
+2725	All
+2726	All automatic
+2727	All day
+2728	It's all your share in Together.
+2729	Everyone
+2730	Everyone now and whoever joins later
+2731	Everyone can change the expenses
+2732	All your groups
+2733	All your transactions, from first to last.
+2736	Total #
+2737	Total debt
+2738	Total invested
+2739	Total you owed
+2740	Work
+2743	Bring your bank statement and we'll sort it out for you.
+2744	Bring your statement or an Excel file and we'll sort it out for you, without duplicates.
+2745	Bring your transactions from the bank
+2746	Import and save
+2747	Transfer
+2748	Transfers
+2749	Transport
+2750	Transfer
+2751	Transfer updated
+2752	Transfer added
+2753	Transfer deleted
+2754	Transfer between accounts
+2755	Transfers
+2756	Transfers between accounts and «Turn into a transfer»
+2757	Trip
+2758	Car trip
+2759	Trip saved
+2760	Quarterly
+2761	Quarterly, half-yearly or yearly, with their date.
+2762	Quarter
+2763	Your agenda and your tasks are here
+2764	Your balance
+2765	Your bank says there's more left than the app works out (probably because of interest). To match, we'll raise the debt total to
+2766	Your bank says there's more left than the app works out (probably because of interest). To match, we'll raise the debt total to # and leave «Already paid» at #.
+2767	Your portfolio
+2768	Your car
+2769	Your password
+2770	Your account
+2771	Your account has been deleted
+2772	Your detail is saved: «Health and personal care · Nails»
+2773	Your money
+2774	Your money buys
+2775	Your money buys # more every year.
+2776	Your money and your plans
+2777	Your money, your plans and your people
+2778	Your report
+2779	Your best month was
+2780	Your best month was #: you had # left over.
+2781	Your message
+2782	Your month
+2783	Your month of
+2784	Your month starts when «
+2785	Your month starts on day
+2786	Your month starts on day #
+2787	Your month starts on day #. You change it in You → Your month
+2788	Your month runs from a fixed day to the next.
+2789	Your month runs from a fixed day to the next. #: # – #
+2790	Your month runs from the # to the #
+2791	Your month runs from the # to the last day
+2792	Your month runs from day
+2793	Your month runs from day # to # (from when you get paid)
+2794	Your month, from your salary
+2795	Your month:
+2796	Your month: # – #
+2797	Your name
+2798	Your name here
+2799	Your name in the group
+2800	Your name in this group
+2801	Your name is seen by the people you share with. The drawing and colour, for now, only you.
+2802	Your salary arrived on
+2803	Your salary has to arrive once a month
+2804	Your salary has to arrive once a month. Your fixed income arrives at a different pace (every week, twice a month…), so it doesn't work for this.
+2805	Your share
+2806	Your share # · you're owed #
+2807	Your share:
+2808	Your net worth
+2809	Your profile
+2810	Your return
+2811	Your yearly return compared with inflation.
+2812	Your pace (last # months):
+2813	Your balance
+2814	Your week
+2815	Your week in PalomApp
+2816	Your week and your month
+2817	Your week, what's coming and all your tasks, together.
+2818	Your task is back, but the shared one couldn't be removed: delete it yourself
+2819	Your task becomes shared. Priority, category and «Repeat» aren't carried over.
+2820	Your «How you're doing»
+2821	Turquoise
+2822	Your assets
+2823	Your settings, categories and this welcome are in
+2824	Your contributions
+2825	Your month's categories in a ring
+2826	Your custom categories
+2827	Your accounts
+2828	Your accounts with their balance, or just one
+2829	Your accounts, like at the bank
+2830	Your accounts, goals and debts
+2831	Your month's circles
+2832	Your data
+2833	Your data stays saved in your account. To come back, log in with your email.
+2834	Your reports
+2835	Your initials or a drawing, with your colour. And in Look, the app background.
+2836	Your investments
+2837	Your investments:
+2838	Your investments: # this week
+2839	Your goals
+2840	Your goals in
+2841	Your goals add up to
+2842	Your goals and debts
+2843	Your transactions stay private: the group will only see what you share in it.
+2844	Your latest transactions fit better with
+2845	Your latest transactions fit better with another
+2846	Your latest transactions fit better with «
+2847	You had
+2848	You had # day without spending.
+2849	You had # days without spending.
+2851	Technical
+2852	Title, time, place and note
+2853	You
+2854	You decide:
+2855	You pay
+2856	You and settings
+2857	Units
+2858	Ultra-fast
+2859	A new look with # colours and # typefaces for figures. And if you prefer, you go back to the usual one with a tap.
+2860	A drawing
+2861	A day of the week
+2862	A specific day of the week (e.g. the first #)
+2863	A day when it happened or will happen
+2864	A fixed day
+2865	A fixed day of the month
+2866	A link is valid for
+2867	A shared expense can't be negative
+2868	A big chart you can tap that opens into nails, hair, perfume…
+2869	One moment.
+2870	A transaction without an account will move to this account
+2871	A fixed payment without balance
+2872	A loan or the card: how much is left and when you'll finish.
+2873	A loan, the car, the card…
+2874	A loan, the car, the card… and see when you'll finish
+2875	A summary of your month in simple sentences.
+2876	A single look
+2877	A keypad of its own for the amount and «Repeat» in + for what you add often.
+2878	A topic
+2879	A soft tap when you save, complete or reach a goal.
+2880	A transfer
+2881	A trip, the house, a cushion…
+2882	A trip, the house, a cushion… and see it fill up
+2883	A trip, a house deposit, a cushion…
+2884	A category
+2885	A dinner, the house, a trip
+2886	An amount column
+2887	An account
+2888	A debt
+2889	A date when it happened or will happen
+2890	A kitty for a trip, the mortgage… Each person adds what they put in or pay and you see the progress together.
+2891	An idea
+2892	An investment can count for several goals at once. It always shows up in Investments.
+2893	An investment can be in several goals at once.
+2894	A goal
+2895	A goal gathers what you set aside and invest for it. When adding a transaction you choose «For which goal?».
+2896	A goal adds what you set aside and invest for it (at today's value), what you had before, and subtracts what you've used.
+2897	A goal, your accounts, the spending calendar…
+2898	A tab of its own for shared expenses. At the top you see at a glance how much you owe and are owed, and you can settle with a person in one tap.
+2900	Join
+2901	Join the group
+2902	One
+2903	One #
+2904	About
+2905	Used
+2906	Using your price:
+2907	Use
+2908	Use #
+2909	Use money from «
+2910	Use this one
+2911	Use this balance
+2912	Use the sum as total
+2913	Nails
+2916	You're on track: enough pace
+2917	Worth today
+2918	Valid for
+2919	It's valid for one person and expires in # days.
+2920	Worth today
+2923	Value
+2924	Current value
+2925	Your portfolio value
+2926	Securities
+2927	Closing values from the last market day, in euros (assets in other currencies are converted at the European Central Bank rate). «You've put in» is what you contributed. Investments with no asset chosen count by what was put in.
+2928	Closing values from the last market day, in euros (assets in other currencies are converted at the European Central Bank rate). «Invested» is what you contributed.
+2929	Several
+2930	Several days
+2931	You're at the same pace
+2932	You're on track for
+2933	You're on track: enough pace
+2934	You're on track: your pace is enough
+2935	You're within all your budgets this month.
+2936	Overdue since
+2937	Overdue since #
+2938	Overdue · #
+2939	It was due on
+2940	Sale
+2941	See
+2942	See # categories with no spending
+2943	See # transaction
+2944	See # transactions
+2945	See agenda
+2946	See columns
+2947	See accounts
+2948	See the expense
+2949	See the group
+2950	See the report for
+2951	See the report for #
+2952	See invitation
+2953	See the previous version
+2954	See the new version
+2955	See the
+2956	See the # rows
+2957	See the # goals
+2958	See the
+2959	See the #
+2960	See the # transactions
+2961	See the transactions
+2962	See less
+2963	See goals
+2964	See my money
+2965	See my categories
+2966	See my fixed income
+2967	See my fixed payments
+2968	See my transactions
+2969	See transactions
+2970	See more
+2971	See earlier news
+2972	See new
+2973	See payments
+2974	See what's there
+2975	See balances
+2976	See their transactions
+2977	Also see others
+2978	Also see # other expenses
+2979	See all
+2980	See everything
+2981	See the whole history
+2982	See all your history
+2983	See all
+2984	See all (
+2985	See preview
+2986	Two-step verification
+2987	Two-step verification turned on
+2988	Two-step verification turned off
+2989	Verify
+2990	You'll see a button to compare with the previous version
+2991	Fr
+2992	Trip
+2993	Trip to Japan
+2994	Trip to Rome
+2995	Trip to…
+2996	Trip closed: it no longer shows up when adding expenses
+2997	Travel
+2998	Vibration
+2999	Viewing the previous version of
+3000	They come from Together
+3001	Linked
+3002	Link
+3003	Link to an asset with automatic valuation
+3004	Violet
+3005	Violet, Cobalt, Turquoise, Raspberry or Emerald
+3007	Preview
+3008	Preview, no duplicates and it can be undone.
+3009	Housing
+3010	Back
+3011	Back to the app
+3012	Back to equal shares
+3013	See the welcome again
+3014	Vs last month
+3015	The automatic name is back
+3016	They come back on
+3017	You're back to the new version
+3018	You're back to the basics

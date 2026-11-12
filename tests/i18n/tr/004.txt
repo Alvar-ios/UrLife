@@ -318,7 +318,7 @@
 1605	A house deposit, a trip, a cushion…
 1606	The date is optional: with it you'll see if you reach that milestone in time.
 1607	The end date goes after the first
-1608	The date has passed · # to go
+1608	The date has passed · missing
 1609	The date has passed · # to go
 1610	The next date is a forecast. If your salary is late, your month doesn't change until it arrives; if more than # days pass, it counts from the expected day. If it comes early, it starts that same day.
 1611	The date has passed and

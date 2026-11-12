@@ -1,0 +1,427 @@
+2141	Patch #
+2142	Patch # · #
+2143	Patch # · Categories for everyone
+2144	Patch # · Together with plans and a new Money
+2145	Patch # · Together and a new look
+2146	Patch # · New design
+2147	Patch # · Your accounts and a new Home
+2148	Share of
+2149	Each person's share:
+2150	Units
+2151	Move from one month to another with the arrows, or look at the whole year or everything.
+2152	After
+2153	After # days it's deleted for good. What you remove when undoing an import doesn't go through here.
+2154	Move money from one of your accounts to another (also cash withdrawals). It's not spending or income: it doesn't change «Left this month».
+2155	Move them
+2156	Step
+2157	Step # of #
+2159	Basque Country
+2160	Ask
+2161	Ask for fingerprint when opening
+2162	Ask on WhatsApp
+2163	Hairdresser
+2164	Pending
+2165	Pending (#)
+2166	Second to last
+2167	Profile saved
+2168	Period
+2169	Person
+2171	Custom…
+2172	People
+2173	Analysis tabs
+2174	You lose
+2175	You lose # · #
+2177	Plan added
+2178	Plans
+2179	Plans in your Agenda
+2180	Plans and tasks
+2181	The group's plans and tasks, in its «Plans» tab
+2182	Fold
+2183	A little
+2184	Enter the distance first
+2185	Enter the expense's total amount above.
+2186	Enter how many weeks apart (# to #)
+2187	Enter how often it repeats (# to #)
+2188	Enter how many days apart (# to #)
+2189	Enter how many months apart (# to #)
+2190	Enter how much you set aside
+2191	Enter how much it was
+2192	Enter how much you've used
+2193	Enter the salary amount in numbers
+2194	Enter the total amount
+2195	Enter the balance
+2196	Enter the balance in numbers, for example #
+2197	Enter your bank balance
+2198	Enter your bank balance to see it
+2199	Enter your bank balance.
+2200	Enter the text and the category
+2201	Enter the text and the other account
+2202	Enter the receipt total
+2203	Enter the total you owed (a number greater than #)
+2204	Put what you look at most on Home
+2205	Enter the end day (after the first one)
+2206	Enter the distance and you'll see here what it costs.
+2207	Enter the time
+2208	Enter the units of your purchases to see the chart.
+2209	Enter what you have left (a number)
+2210	Enter what you have in the bank and the app keeps it up to date.
+2211	Enter what needs doing
+2212	Enter what the plan is
+2213	Enter your new password
+2214	Set your budgets
+2215	Enter an amount
+2216	Enter a valid amount
+2217	Enter a name
+2218	Enter a reference date
+2219	Set «Payments per month» in «Edit» and we'll tell you when you'll finish.
+2220	Set the rate
+2221	Set the balance
+2222	Bring my bank up to date
+2223	Set a limit
+2224	Give it the account
+2225	Give it a budget
+2226	Give it one
+2227	Set them
+2228	Set its total in «Edit»
+2229	Give it its logo
+2230	Give it a name
+2231	Give the goal a name
+2232	Give the task a name
+2233	Give the item a name
+2234	Give the group a name
+2235	Give the topic a name
+2237	By %
+2238	By road. Addresses aren't saved.
+2239	By default it doesn't count as spending: it's money you already had set aside or invested.
+2240	For example, the # or the # of every month
+2241	For example, the # and the #
+2242	For example: Ana's birthday dinner, flight to Rome…
+2243	For example: call the landlord, renew my ID…
+2244	By amount
+2245	By months or years
+2246	To pay
+2247	By weeks
+2248	By topic
+2249	By asset type
+2250	Each person's percentage of the expenses in «
+2251	Laptop
+2252	Price
+2253	Average price in
+2254	Average price in Spain
+2255	Rough price:
+2256	Price per unit (€)
+2257	Prices
+2258	I prefer the basics
+2259	Preparing the asset…
+2260	Budget
+2261	Budget # · Change
+2262	Budget for
+2263	Budget:
+2264	Budget: #
+2265	Budgets
+2266	Clearer budgets
+2267	Budgets by category, as always
+2268	Expected
+2269	Expected at the end of the month
+2270	First
+2271	First working day of the month
+2272	First
+2273	First row:
+2274	First add your salary as fixed income
+2275	First add your salary as fixed income, with when it usually arrives.
+2276	First create a group or invite someone (You → Groups and people).
+2277	First the ones from the trip dates (
+2278	First the ones from the trip dates (#–#).
+2279	First #
+2280	First #k
+2281	First steps
+2282	First steps · # of #
+2283	Main
+2284	Priority
+2285	Privacy
+2286	Private
+2287	Private · only you
+2288	Private: only you see it. Whoever sees your agenda won't even see you have something.
+2289	Try
+2290	Try with a receipt
+2291	Try the + button
+2292	Try again
+2293	Soon
+2294	Projection with a return of
+2295	Projects
+2296	Test
+2297	Loan
+2298	Coming soon
+2299	Next dates:
+2300	Next:
+2301	Upcoming
+2302	Next # days
+2303	Next days
+2304	Upcoming fixed
+2305	Next:
+2306	You can create your own (it warns you if they can't be used for sharing)
+2307	You can enter less if it's a partial payment.
+2308	You can add your bank and your monthly stuff whenever you want from Money and You.
+2309	Entered in euros:
+2310	Entered in euros: # · «#» in the description
+2311	Normal charging point
+2312	You entered
+2313	Let the name choose it
+2314	Left
+2315	# left
+2316	# left unassigned: split equally among those who haven't entered anything.
+2317	Whoever joins the group later will also see it.
+2318	Whoever added it
+2319	Whoever pays adds it, the app splits it and you always know who owes whom.
+2320	Whoever pays adds it with
+2321	The payer has to be in the group.
+2322	Whoever can
+2323	Whoever sees your agenda will see it as a busy slot
+2324	I want to see everything now
+2325	Removed
+2326	Removed from the group
+2327	Remove
+2328	Remove admin
+2329	Remove this account
+2330	Clear selection
+2331	Remove all
+2332	You removed
+2333	Who owes whom is shown in
+2334	Who paid what
+2335	Who can change the expenses
+2336	Which savings and investments count for this goal
+2337	Which apps are read
+2338	What changed
+2339	Which days you spend most this month
+2340	What's new
+2341	Which transactions
+2342	How much of what comes in you set aside
+2343	What's deleted and what's kept
+2344	How each one is doing
+2345	What you see in the app
+2346	What and when
+2348	Reopen task
+2350	Bill
+2351	Recommended
+2352	Remember: anything containing
+2353	Remind
+2354	Restored
+2355	Restored
+2356	Restore
+2357	Restoring brings the expense back exactly as it was, for the whole group. Everyone in the group will see you restored it.
+2358	You restored
+2359	Recurrence (e.g. monthly)
+2360	Rounded
+2361	Resend on WhatsApp
+2362	Present
+2363	Presents
+2364	Recorded
+2365	Record payment
+2366	Region of Murcia
+2367	Rule learned:
+2368	Rule added
+2369	Category rules
+2370	Rules, Reports, Your month, Bin, Backup…
+2371	Retry
+2372	Bill remittance
+2373	Return
+2374	Yearly return and inflation
+2375	Yearly return
+2376	Expected yearly return on what's invested (%)
+2377	Return on your investments
+2378	Split in half, by % or item by item from the receipt
+2379	Split the bill by items
+2380	Split by items
+2381	Split
+2382	Split saved
+2383	Usual split
+2384	Repeat
+2385	Repeat it
+2386	Restaurants
+2387	Restaurants #
+2388	Restaurants and bars
+2389	Result
+2390	Results
+2391	Summary
+2392	Year summary
+2393	Check the amount
+2394	Check the budget
+2395	Check the split: it can only include members.
+2396	Check the receipt
+2397	Check the rule: no date comes out.
+2398	Review
+2399	Check columns
+2401	Pace (last # months):
+2402	Tight pace: better put in a bit more
+2403	Tight pace: better pay a bit more
+2404	Rome
+2405	Rome #
+2406	Clothes
+2407	Clothes and things
+2408	Rupee
+2409	Sa
+2410	You'll know how many you have left after reading the first one.
+2411	Withdraw money
+2413	Paid off
+2414	Settle
+2415	Settle #
+2416	Settle with
+2417	Settle up
+2418	Settle debts
+2419	Settle in one tap, and all square! with confetti
+2420	Balance
+2421	Balance (optional)
+2422	Balance of
+2423	Today's balance
+2424	Balance today
+2425	Real balance · what your bank says
+2426	Virtual balance
+2427	Balances
+2428	Leaves the account
+2429	Leave the group
+2430	Skip
+2431	Skip holidays
+2432	Skip holidays on working days
+2433	Also skip holidays
+2434	Health
+2435	Health and personal care
+2439	It
+2440	It opens on a summary of your month. At the top you choose Summary, List or Calendar, and each category always has the same colour. No more black flash when changing view.
+2441	Moved earlier to the #
+2442	Your transactions, accounts, goals, debts, tasks and settings are deleted. In your groups you'll still show up as «left» so their accounts add up.
+2443	It's worked out with the amounts of your fixed income and payments, and your salary may vary from month to month. It's for planning.
+2444	Your space for sharing will be created (like in Together).
+2445	Owed
+2446	# owed
+2447	In charge
+2448	It's kept for # months. Everyone in the group sees it.
+2449	It's saved in euros, and the figure in that currency goes in the description.
+2450	They're made on your phone, at no cost and without any data leaving it. When there's a new one, we tell you on Home.
+2451	Saved
+2452	Moved to the #
+2453	Fingerprint will be asked when opening
+2454	It stays on your phone:
+2455	It stays on that day
+2456	It's removed for everyone. What's already been put in or paid isn't deleted.
+2458	Keep editing
+2459	Continue without joining
+2460	Second
+2461	Insurance
+2462	Insurance
+2463	Selected:
+2464	Select all (#)
+2466	Week
+2467	Week of
+2468	Week of # to #
+2469	Week and tasks
+2470	Weekly
+2471	Half-yearly
+2472	Feel
+2473	Sep
+2474	Seville
+2475	If something doesn't add up, it warns you
+2476	If something doesn't add up, you can undo this whole import from You → Imports.
+2477	If someone starts from scratch, Home guides them step by step.
+2478	If any isn't right, delete it or tap it to change it.
+2479	If you delete a transaction or task by accident, you can restore it.
+2480	If it falls on
+2481	If it falls on a weekend
+2482	If the month has fewer days, the last one is used.
+2483	If a transaction is missing, add it first and match again. Otherwise, when saving, the difference stays as an adjustment (it doesn't count as spending or income).
+2484	If you spend more or less than the previous month
+2485	If you spend more or less than last month, what rises most, your budgets, what you're owed and days without spending.
+2486	If there are # drinks, decide how many each person has.
+2487	If the description contains
+2488	If a transaction's description contains the text, it gets the category automatically (when adding and importing).
+2489	If you leave it empty it's worked out from your history (or a cautious #).
+2490	If you turn it on, «working day» and «if it falls on a weekend» also skip your area's holidays.
+2491	If your bank isn't there, leave it on: when it notifies a payment, it'll appear at the top for you to tick.
+2492	If you're within your budgets
+2493	If you'd already added them yourself in the app, choose «No»
+2494	Always at the top
+2495	Still deleted.
+2496	Next
+2497	Next milestone:
+2498	Quiet from #:# to #:#
+2499	No asset
+2500	Nothing added since
+2501	No items yet
+2502	No amount
+2503	No amount to gather
+2504	Uncategorised
+2505	No figures with the phone locked
+2506	Unclassified
+2507	Offline: it's the last rate you used.
+2508	Offline: type the rate or what you were charged.
+2509	Not counting weekends
+2510	Not counting interest. It's just a calculation: nothing is saved.
+2511	Not counting interest: if your bank says a different figure, use «Match with the bank».
+2512	No detail
+2513	No events
+2514	No events this day.
+2515	No date
+2516	No start date: tap «Match» so it starts calculating
+2517	No target date
+2518	No date for this milestone
+2519	No date ·
+2520	No date · #
+2521	No date · at this pace,
+2522	No date · add money whenever you want
+2523	No date: tap it to choose when
+2524	No spending
+2525	No expenses added in
+2526	No expenses added in #.
+2527	No expenses recorded in
+2528	No expenses recorded in #.
+2529	No group
+2530	No amount
+2531	No interest.
+2532	No readings until
+2533	No goal
+2534	No transactions
+2535	No transactions this day.
+2536	No target
+2537	No target set
+2538	No payments since
+2539	No price yet
+2540	No price:
+2541	No budget
+2542	Not recorded
+2543	No results.
+2544	No balance
+2545	No balances yet.
+2546	Without typing anything
+2547	No topic
+2548	Without touching anything: split equally. Enter each person's units if not.
+2549	No total
+2550	No total set
+2551	It works for your bank statement and your spending Excel. Before saving you'll see a preview, and if you import the same file twice nothing is duplicated.
+2552	Left over
+2553	It only counts how the price moved: adding money doesn't change the line. The dots are your purchases.
+2554	Only in
+2555	For information only. The money in the bank is worked out from the balance you set in You → Accounts and balances
+2556	Only you see it.
+2557	Only the busy slots
+2558	Only the ones that…
+2559	Only the titles
+2560	You can only add people you already share with. Invite them with a link.
+2561	You can only share it with people already in a Together group with you.
+2562	You can only share it with people in a group with you
+2563	Only whoever added it (and the admins) can change each expense
+2564	Only whoever paid can stop sharing it. If it didn't happen, delete it.
+2565	Only the app version and the type of phone are added. None of your figures.
+2566	Only expenses, bills, savings and debts can be shared: if you save it like this, it will stop being shared.
+2567	Only saved
+2568	Only part was added:
+2569	Only part was undone:
+2570	Only weekends are skipped
+2571	Only your bank and payment apps:
+2572	Just the two of you
+2573	Only me
+2574	That's too many at once: try fewer
+2575	They're different
+2576	That's a lot of changes at once (
+2577	That's a lot of changes at once (#). Tick at most # and import the rest later
+2578	They're all expenses
+2579	They're all income
+2580	Sound

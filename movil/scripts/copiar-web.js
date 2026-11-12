@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path');
 const raiz = path.join(__dirname, '..', '..'), www = path.join(__dirname, '..', 'www');
 fs.rmSync(www, { recursive: true, force: true }); fs.mkdirSync(path.join(www, 'vendor'), { recursive: true });
-const archivos = ['app.js', 'app.css', 'look.css', 'data-layer.js', 'auth-signup.js', 'config.js', 'privacidad.html', 'borrar-cuenta.html'];
+const archivos = ['i18n.js', 'i18n-en.js', 'app.js', 'app.css', 'look.css', 'data-layer.js', 'auth-signup.js', 'config.js', 'privacidad.html', 'borrar-cuenta.html'];
 archivos.forEach((f) => fs.copyFileSync(path.join(raiz, f), path.join(www, f)));
 fs.cpSync(path.join(raiz, 'logos'), path.join(www, 'logos'), { recursive: true });
 fs.cpSync(path.join(raiz, 'marca'), path.join(www, 'marca'), { recursive: true }); // 11/11: logo de PalomApp (pestaña, entrada, bienvenida)

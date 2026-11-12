@@ -12,7 +12,7 @@ function cargar(conDic) {
   if (conDic) w.eval(fs.readFileSync(path.join(RAIZ, 'i18n-en.js'), 'utf8'));
   return w.I18N;
 }
-const ES = /[áéíóúñ¿¡ÁÉÍÓÚÑ]|\b(de|el|la|los|las|tu|tus|que|en|con|para|por|sin|hoy|mes|año|gasto|gastos|cuenta|aquí|más|una|un|del|al|se|y|o|no|es|lo|ya|te|mi|sus|su|hay|ver|toca|quitar|poner|cambiar|apuntar|guardar|cerrar|elige|cuentas|grupo|meta|metas|tareas|ingresos|todo|nada|otra|otro|cada|semana|días|día)\b/i;
+const ES = /[áéíóúñ¿¡ÁÉÍÓÚÑ]|\b(de|el|la|los|las|tu|tus|que|en|con|para|por|sin|hoy|mes|año|gasto|gastos|cuenta|aquí|más|una|un|del|al|se|y|o|es|lo|ya|te|mi|sus|su|hay|ver|toca|quitar|poner|cambiar|apuntar|guardar|cerrar|elige|cuentas|grupo|meta|metas|tareas|ingresos|todo|nada|otra|otro|cada|semana|días|día)\b/i;
 const pareceEspanol = (k) => ES.test(k);
 const cmd = process.argv[2];
 if (cmd === 'candidatos') {

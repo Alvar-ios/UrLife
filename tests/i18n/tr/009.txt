@@ -1,0 +1,353 @@
+3461	wants to share expenses with you
+3462	wants to share expenses with you (no group)
+3463	removed
+3464	who added, changed or deleted
+3465	who owes whom, and settle in one tap
+3466	odd
+3467	bills, invoices and subscriptions
+3468	restored
+3469	balance set: for now no
+3470	came from what you already had.
+3471	more went out than came in:
+3472	is in charge
+3473	is paid
+3475	based on when you put in each euro
+3476	based on your history (
+3477	based on your history of
+3478	weeks
+3479	sep
+3480	without the app
+3481	unassigned: split equally among those who haven't entered anything.
+3482	no change
+3483	uncategorised
+3484	uncategorised
+3485	without a category: they'll be saved as «Uncategorised» and you can change them later.
+3486	no account
+3487	no data
+3488	no spending
+3489	no group, just the two of you
+3490	without going over
+3491	no price
+3492	no budget
+3493	only with the busy slots
+3494	weekends only
+3495	only you see it: it doesn't even show as a busy slot.
+3496	only what you share with this person will be seen.
+3497	just the two of you
+3498	are your share in Together.
+3499	rises most
+3500	sat
+3501	yes
+3502	also in «
+3503	new tasks for you
+3504	overdue tasks
+3505	owes you
+3506	you're owed
+3507	you're owed #
+3508	has invited you to
+3509	you've had left over
+3510	you've gone over
+3511	you've gone over by #
+3512	invites you to share expenses
+3513	pays you
+3514	they paid you when settling
+3515	paid you
+3516	you go over
+3517	you'd have about
+3518	you had left over
+3519	it usually arrives
+3520	TV
+3521	you had saved
+3522	you had
+3523	tap the chart
+3524	tap a colour
+3525	everything in Money, at a glance
+3526	everything added
+3527	transfer with
+3528	transfer between accounts: add it with «Transfer»
+3529	transfer between your accounts: it doesn't count as spending or income.
+3530	transfer: with which account?
+3531	transfers between your accounts: they don't count as spending or income.
+3532	your group
+3533	your full history
+3534	your share
+3535	your share #
+3536	your share of
+3537	your share of #
+3538	your price
+3539	your balance
+3540	your data: an amount of # will go from «#» to «#». Use it if you keep your accounts in that currency.
+3541	your groups
+3542	you
+3543	units · split the units
+3544	a year
+3545	an expense
+3546	a group
+3547	a month
+3548	a member
+3549	a payment
+3550	a topic
+3551	one person
+3552	about #
+3553	used from «
+3554	is at
+3555	tight
+3556	empty
+3557	empty
+3558	will see
+3559	fri
+3560	fri #
+3561	fri # · same
+3562	it comes off and you turn it off whenever you want.
+3563	they come back on
+3564	they come back on #
+3565	and search for the asset (by name, ticker or ISIN).
+3566	and expires in
+3567	and with each person
+3568	and we'll leave «Already paid» at #.
+3569	and the amount is
+3570	and the receipt total is
+3571	and the total is
+3572	and the last day
+3573	and where your money goes
+3574	and we'll do it in less than # days.
+3575	and there are left
+3576	and there are only
+3577	and they must add up to #
+3578	were already a transfer from your other account: skipped.
+3579	is already a transfer
+3580	is already in Together:
+3581	is already in the group
+3582	already imported in
+3583	you already had it
+3584	you already had it, without an account: tick it to put it in
+3585	you already had them added
+3586	won't show you this anymore.
+3587	Reached!
+3588	Clear day!
+3589	Got it!
+3590	Done!
+3591	Done! The next one:
+3592	Done! The next one: #
+3593	Milestone reached:
+3594	Hi
+3595	Hi!
+3596	Hi,
+3597	Imported!
+3598	Goal reached! 🎉
+3599	Goal reached:
+3600	Target reached:
+3601	PalomApp has been updated!
+3602	Paid off!
+3603	Paid off! You don't owe anything on this debt anymore.
+3604	Task completed!
+3605	You've joined the group!
+3606	All set
+3607	You're now sharing expenses!
+3608	You're in the group!
+3609	You've got it!
+3610	you'll reach it!
+3611	«Match» with what your bank says
+3612	«Working day» only counts weekends.
+3613	«In your accounts» on Home and filter by account
+3614	«Fixed payment» in +. Choose when: last working day, two days a month, every X days… and skip holidays.
+3615	«Housing · Rent», «Subscriptions · Spotify»
+3616	«Already paid» is what you paid before using the app. We don't count interest: if your bank says a different figure, use «Match with the bank».
+3617	«Already paid» can't be more than the total
+3618	«Already paid» and «Payments per month» must be numbers (or left empty)
+3619	«Where does it come from?» explains each balance
+3620	· # = # · ECB #
+3621	· # expense added in your name
+3622	· # expenses added in your name
+3623	· # times
+3624	· # time
+3625	· Rent, Spotify, electricity…
+3626	· Change
+3627	· Data obtained on
+3628	· at this pace you'd get there in
+3629	· at this pace you'd get there around
+3630	· at this pace, in
+3631	· split equally
+3632	· now in «
+3633	· before the app
+3634	· before the app #
+3635	· set aside and invested
+3636	· you haven't set its balance yet
+3637	· change split
+3638	· close of
+3639	· share it
+3640	· private data, synced across your devices.
+3641	· you owe
+3642	· e.g. VWCE, S&P # ETF
+3643	· in
+3644	· negative if it's a refund
+3645	· it was
+3646	· this month
+3647	· to go
+3648	· milestone # of #
+3649	· today
+3650	· the next one,
+3651	· you've paid
+3652	· what's due
+3653	· everyone sees it
+3654	· fixed ones go separately
+3655	· months when you get paid double
+3656	· optional
+3657	· optional: Nails, Golf, Mercadona…
+3658	· optional: «First #», «The deposit»… Each one works like a goal within the goal
+3659	· optional; for dates more than a year ago
+3660	· optional; empty = worked out automatically
+3661	· you paid
+3662	· paid
+3663	· for
+3664	· what this investment is for
+3665	· to settle up
+3666	· set budgets with «Edit»
+3667	· by your rule
+3668	· from a bank notification
+3669	· pace (last # months):
+3670	· shows in your Agenda
+3671	· deleted for good in
+3672	· chosen automatically by name
+3673	· chosen automatically by name
+3674	· no recent contributions to estimate
+3675	· not confirmed
+3676	· no price available yet
+3677	· without inviting them again
+3678	· only in
+3679	· suggested
+3680	· you're owed
+3681	· you're in charge
+3682	· all day
+3683	· your share
+3684	· your share,
+3685	· your pace (last # months):
+3686	· your data is private.
+3687	· empty if you haven't sold it yet
+3688	· see all its transactions
+3689	· reached!
+3690	· paid off!
+3691	· Did it happen?
+3692	· last
+3693	» in
+3694	» on PalomApp to share expenses. Come in here (valid for # days, for up to # people):
+3695	» on PalomApp to share expenses. Open it here (valid for # days and for one person only):
+3696	» on PalomApp, with the expenses we have so far. Come in here (valid for # days):
+3697	» in the description
+3698	» is a custom category of yours.
+3699	» is a custom category and can't be used for sharing expenses: choose a standard one and put «
+3700	» the ones that are theirs.
+3701	» doesn't arrive once a month, so it can't be used to start your month.
+3702	» will be a new custom category.
+3703	» is already a standard category
+3704	» is already among the standard ones
+3705	». Try another word.
+3706	». We recommend keeping it: you can add it back whenever you want.
+3707	». They must add up to #.
+3708	». Is it for the trip?
+3709	»: the amount in numbers and the day from # to #
+3710	»: I won't restore it so its payments don't get mixed
+3711	At what time?
+3712	Saving for something else? One goal for each thing.
+3713	Saving for something?
+3714	Something wrong or got an idea? The person who makes the app reads it.
+3715	Something wrong, something you miss or something you love? Tell us: the person who makes PalomApp reads it.
+3716	Someone doesn't have the app? Add them with just their name and add expenses for them like anyone else. If they install it one day, they keep everything that's theirs.
+3717	Delete your account and your data?
+3718	Log out on this phone?
+3719	Received?
+3720	With whom?
+3721	Which one?
+3722	When
+3723	When is it paid?
+3724	When does it usually arrive?
+3725	When?
+3726	How much does the bank say today?
+3727	How much is left according to your bank?
+3728	How much do you have in the bank today?
+3729	How much? (
+3730	How many km?
+3731	How many months?
+3732	How many of you?
+3733	How is it worked out?
+3734	What's your name?
+3735	Where does it come from?
+3736	Which bank is it?
+3737	Which account is this statement for?
+3738	Which topic?
+3739	Turn off two-step verification? Your account will be protected only by the password.
+3740	Dismiss
+3741	Where do you keep this money?
+3742	Where do you work?
+3743	Where?
+3744	Is it from
+3745	Do those expenses also count in your numbers?
+3746	Are you paying something in instalments?
+3747	Make main «
+3748	Did you go by car? Work out the fuel
+3749	Do you beat inflation?
+3750	Doesn't match your bank? Use «Match» on the account (in Money): it adjusts the balance and doesn't touch your transactions.
+3751	Not your account?
+3752	Can't scan? Manual key:
+3753	Forgot your password?
+3754	Paid?
+3755	Did you pay in another currency?
+3756	By when?
+3757	For which goal?
+3758	What for?
+3759	Shall we set a limit on what you spend most on?
+3760	Where do you start?
+3761	Do you want your month to run from payday to payday?
+3762	Who sees it?
+3763	Who's in charge?
+3764	Which account?
+3765	Which accounts?
+3766	Which debt?
+3767	What is each column?
+3768	What needs doing?
+3769	Which goal?
+3770	Which period?
+3771	What's the plan?
+3772	What do you want to add?
+3773	What do you want to see?
+3774	Which bill is it?
+3775	What repeats every month?
+3776	What will they see?
+3777	Tired of adding things?
+3778	Made a mistake? «Undo» button
+3779	Got the receipt handy?
+3780	Your friends don't have PalomApp? No problem: add them by name.
+3781	An expense of yours you didn't share? Open it, press «Share» and choose this trip.
+3782	Shall we use that balance as the starting point? From there the app adds and subtracts what you enter.
+3783	Is it for the trip?
+3784	What if you pay more each month?
+3785	is it the
+3786	is it the same one you added on
+3787	Open it to add it to your calendar
+3789	Amber
+3791	Index
+3792	Latest contributions
+3793	Last
+3794	Last year
+3795	Last working day of the month
+3796	Latest report
+3797	Last month
+3798	Last price
+3799	Last # months
+3800	Latest shared expenses
+3801	Latest expenses and payments
+3802	Latest transactions
+3803	Latest payments
+3804	Join and keep the accounts together: who pays, who owes, and settle in one tap.
+3805	last
+3806	last
+3807	last # months
+3808	— None —
+3809	€ a day
+3810	→ transfer with
+3811	✓ # were already a transfer from your other account: skipped.
+3812	✓ Reached (#)
+3813	✓ Paid off (#)
+3814	✓ All
+3815	🎉 (for example, the house deposit).
+3816	🎯 Milestone

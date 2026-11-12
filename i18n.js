@@ -102,27 +102,34 @@
       if (SOLO_HUECOS.test(kv.k)) return rellenar(kv.k, kv.vals);
       e = exacto(kv.k); if (e != null) return rellenar(e, kv.vals);
     }
+    var h = hondo || 0;
+    // «A · B · C»: cada trozo es una cosa (vale que solo se traduzcan algunos)
+    if (h < 3 && c.indexOf(' · ') > 0) { var r1 = partes(c, ' · ', h, false); if (r1 != null) return r1; }
     var R = (I.en && I.en.reglas) || [];
     for (var i = 0; i < R.length; i++) {
       var m = R[i][0].exec(c);
       if (m) {
-        var g = m.slice(1).map(function (x) { if (x == null) return ''; var t = hondo > 2 ? null : nucleo(x, (hondo || 0) + 1); return t == null ? x : t; });
-        return R[i][1].replace(/\$(\d)/g, function (z, n) { return g[Number(n) - 1] || ''; });
+        var g = m.slice(1).map(function (x) { if (x == null) return ''; var t = h > 3 ? null : nucleo(x, h + 1); return t == null ? x : t; });
+        return R[i][1].replace(/\$(\d)/g, function (z, n) { return g[Number(n) - 1] || ''; }).replace(/\s+$/, '');
       }
     }
-    if ((hondo || 0) < 2) {
+    if (h < 3) {
+      var seps = [': ', ' — ', ' – ', ', ', ' / ', ' → '];
+      for (var s = 0; s < seps.length; s++) { if (c.indexOf(seps[s]) > 0) { var r2 = partes(c, seps[s], h, seps[s] !== ' → '); if (r2 != null) return r2; } }
+      var dp = c.indexOf(': '); // «Título: frase que también lleva dos puntos»
+      if (dp > 0 && c.indexOf(': ', dp + 2) > 0) { var a1 = nucleo(c.slice(0, dp), h + 1), a2 = a1 == null ? null : nucleo(c.slice(dp + 2), h + 1); if (a2 != null) return a1 + ': ' + a2; }
+      // varias frases seguidas («Hecho. Ya puedes entrar.»): todas o ninguna
+      if (/[.!?…] \S/.test(c)) { var fr = c.split(/(?<=[.!?…]) (?=\S)/); if (fr.length > 1) { var ok = true, out = fr.map(function (p) { if (!LETRA.test(p)) return p; var t = nucleo(p, h + 1); if (t == null) ok = false; return t; }); if (ok) return out.join(' '); } }
       var b = BORDE.exec(c);
-      if (b && (b[1] || b[3]) && b[2] && LETRA.test(b[2])) { var t2 = nucleo(b[2], (hondo || 0) + 1); if (t2 != null) return b[1] + t2 + b[3]; }
-      var seps = [' · ', ' — ', ': ', ' – ', ', ', ' / ', ' → '];
-      for (var s = 0; s < seps.length; s++) {
-        if (c.indexOf(seps[s]) <= 0) continue;
-        var partes = c.split(seps[s]), alguna = false, sin = false;
-        var tr = partes.map(function (p) { if (!LETRA.test(p)) return p; var t = nucleo(p.trim(), (hondo || 0) + 1); if (t == null) { sin = true; return p; } alguna = true; return t; });
-        // con « · » vale que solo se traduzca una parte (cada una es una cosa); con los demás, todas o ninguna
-        if (alguna && (seps[s] === ' · ' || seps[s] === ' → ' || !sin)) return tr.join(seps[s]);
-      }
+      if (b && (b[1] || b[3]) && b[2] && LETRA.test(b[2])) { var t2 = nucleo(b[2], h + 1); if (t2 != null) return b[1] + t2 + b[3]; }
     }
     return null;
+  }
+  // Traduce los trozos de un texto partido por sep. todas = tienen que traducirse todos los trozos con letras
+  function partes(c, sep, h, todas) {
+    var ps = c.split(sep), alguna = false, sin = false;
+    var tr = ps.map(function (p) { if (!LETRA.test(p)) return p; var t = nucleo(p.trim(), h + 1); if (t == null) { sin = true; return p; } alguna = true; return t; });
+    return alguna && (!todas || !sin) ? tr.join(sep) : null;
   }
   var CACHE = new Map();
   I.tr = function (s) {
@@ -142,6 +149,7 @@
 
   /* ---------- La capa sobre la página ---------- */
   var ATR = ['placeholder', 'title', 'aria-label', 'alt', 'data-c'];
+  var OBS_ATR = ATR.concat(['href']);
   var hecho = new WeakMap();   // nodo de texto → lo que tiene ahora (ya mirado)
   var orig = new WeakMap();    // nodo de texto → el texto en español (para volver al español)
   var origA = new WeakMap();   // elemento → { atributo: [español, inglés] }
@@ -172,7 +180,7 @@
     if (!raiz) return;
     if (raiz.nodeType === 3) { trTexto(raiz); return; }
     if (raiz.nodeType !== 1 && raiz.nodeType !== 9 && raiz.nodeType !== 11) return;
-    if (raiz.nodeType === 1) { if (saltar(raiz)) return; ATR.forEach(function (a) { if (raiz.hasAttribute(a)) trAtr(raiz, a); }); if (raiz.nodeName === 'INPUT' && /^(button|submit)$/i.test(raiz.type)) trBoton(raiz); }
+    if (raiz.nodeType === 1) { if (saltar(raiz)) return; tratarEl(raiz); }
     var doc = raiz.ownerDocument || raiz;
     var w = doc.createTreeWalker(raiz, 5 /* elementos y textos */, { acceptNode: filtro }), n;
     while ((n = w.nextNode())) { if (n.nodeType === 3) trTexto(n); else tratarEl(n); }
@@ -186,13 +194,31 @@
     if (n.nodeType !== 1) return;
     for (var i = 0; i < ATR.length; i++) if (n.hasAttribute(ATR[i])) trAtr(n, ATR[i]);
     if (n.nodeName === 'INPUT' && /^(button|submit)$/i.test(n.type)) trBoton(n);
+    if (n.nodeName === 'A') trWa(n);
+  }
+  // Mensajes de WhatsApp que prepara la app (enlaces wa.me/?text=…): cada línea, si se sabe traducir; los enlaces, tal cual
+  I.trMensaje = function (txt) {
+    if (I.lang === 'es' || !txt) return txt;
+    return String(txt).split('\n').map(function (l) {
+      var m = /^([\s\S]*?)(\s*https?:\/\/\S+\s*)$/.exec(l);
+      return m && m[1] ? I.tr(m[1]) + m[2] : I.tr(l);
+    }).join('\n');
+  };
+  function trWa(el) {
+    var h = el.getAttribute && el.getAttribute('href'); if (!h || h.indexOf('https://wa.me/') !== 0 || h.indexOf('text=') < 0) return;
+    var mem = origA.get(el); if (mem && mem.href && mem.href[1] === h) return;
+    var i = h.indexOf('text=') + 5, j = h.indexOf('&', i), txt; if (j < 0) j = h.length;
+    try { txt = decodeURIComponent(h.slice(i, j)); } catch (e) { return; }
+    var t = I.trMensaje(txt); if (t === txt) return;
+    var nh = h.slice(0, i) + encodeURIComponent(t) + h.slice(j);
+    if (!mem) origA.set(el, mem = {}); mem.href = [h, nh]; el.setAttribute('href', nh);
   }
   function trBoton(el) { var v = el.value, t = I.tr(v); if (t !== v) { var mem = origA.get(el) || {}; mem.value = [v, t]; origA.set(el, mem); el.value = t; } }
   function alCambiar(ms) {
     for (var i = 0; i < ms.length; i++) {
       var m = ms[i];
       if (m.type === 'characterData') trTexto(m.target);
-      else if (m.type === 'attributes') trAtr(m.target, m.attributeName);
+      else if (m.type === 'attributes') { if (m.attributeName === 'href') trWa(m.target); else trAtr(m.target, m.attributeName); }
       else for (var j = 0; j < m.addedNodes.length; j++) { var n = m.addedNodes[j]; if (n.isConnected !== false) trArbol(n); }
     }
   }
@@ -200,7 +226,7 @@
   function vigilar() {
     if (obs || typeof MutationObserver === 'undefined' || !document.documentElement) return;
     obs = new MutationObserver(alCambiar);
-    obs.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATR });
+    obs.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: OBS_ATR });
   }
   function dejarDeVigilar() { if (obs) { alCambiar(obs.takeRecords()); obs.disconnect(); obs = null; } }
   // vuelve a poner el español en lo que se tradujo (al cambiar a español sin recargar)
