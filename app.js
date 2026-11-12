@@ -1970,7 +1970,9 @@ async function saveMov() {
   if (FORM.guardando) return;
   const obSel = FORM.comp && FORM.comp.on && TIPO_OBJ[FORM.tipo] && FORM.comp.objetivo ? objPorId(FORM.comp.objetivo) : null;
   if (obSel && obSel.tipo === TIPO_OBJ[FORM.tipo] && FORM.comp.dest === 'g:' + obSel.grupoId) { const c = $('#fCategoria'); if (c) c.value = obSel.nombre; }
-  const importe = numCampo($('#fImporte').value);
+  // 12/11: nunca más de 2 decimales («12,345» → 12,35), salvo al editar sin tocar el importe (se deja como estaba)
+  const impLeido = numCampo($('#fImporte').value), impAntes = FORM.id ? (S.movimientos.find((m) => m.id === FORM.id) || {}).importe : null;
+  const importe = impAntes != null && Math.abs(num(impAntes) - impLeido) < 1e-9 ? impLeido : r2(impLeido);
   const fecha = $('#fFecha').value;
   const auto = invAuto();
   if (auto) { if (!FORM.activo) return toast('Busca y elige el activo'); const c = $('#fCategoria'); if (c) c.value = FORM.activo.nombre; }
@@ -2676,10 +2678,12 @@ function r2(x) { return Math.round(num(x) * 100) / 100; }
 // Importe para un campo de texto, con coma decimal («7,08»): en España «7.08» se lee como setecientos ocho
 function importeCampo(v) { if (v == null || v === '') return ''; if (typeof v === 'string') return escapeHtml(v); /* un borrador ya viene escrito («1.500»): tal cual */ const n = Number(v); return isFinite(n) ? String(n).replace('.', ',') : escapeHtml(String(v)); }
 function numCampo(v) {
-  let t = String(v == null ? '' : v).replace(/[\s€]/g, '');
+  // 12/11 (docs/salud/2026-11-12-diag-logica): «−3» (el menos que pinta la app) vale; «1,2,3» no es un importe; «0.500» es 0,5
+  let t = String(v == null ? '' : v).replace(/[\s€\u00a0]/g, '').replace(/[\u2212\u2013]/g, '-');
   if (t.indexOf(',') >= 0 && t.indexOf('.') >= 0 && t.lastIndexOf('.') > t.lastIndexOf(',')) t = t.replace(/,/g, ''); // «1,240.50» (formato inglés)
-  else if (t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');
-  else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  else if (t.indexOf(',') >= 0) { if (t.indexOf(',') !== t.lastIndexOf(',')) return 0; t = t.replace(/\./g, '').replace(',', '.'); }
+  else if (/^-?[1-9]\d{0,2}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  if (!/^-?(\d+\.?\d*|\.\d+)$/.test(t)) return 0;
   const n = parseFloat(t); return isFinite(n) ? n : 0;
 }
 function fmtPct(x) { return num(x).toLocaleString('es-ES', { maximumFractionDigits: 2 }) + ' %'; }
@@ -8181,7 +8185,7 @@ function openTraspasoForm(id, pre) {
 }
 async function saveTraspaso() {
   if (!FORM || FORM.kind !== 'traspaso' || FORM.guardando) return;
-  const importe = numCampo($('#fImporte').value), fecha = $('#fFecha').value;
+  const importe = r2(numCampo($('#fImporte').value)), fecha = $('#fFecha').value;
   if (!isFinite(importe) || importe <= 0) { marcarCampo('#fImporte'); return toast('Pon un importe válido'); }
   if (!cuentaPorId(FORM.desde) || !cuentaPorId(FORM.a)) return toast('Elige las dos cuentas');
   if (FORM.desde === FORM.a) return toast('Elige dos cuentas distintas');

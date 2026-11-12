@@ -3,7 +3,7 @@
 console.error = () => {};
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0, conocidos = 0;
-const CONOCIDOS = new Set(['IMP-3DEC', 'IMP-123', 'IMP-0500', 'IMP-MENOS']);
+const CONOCIDOS = new Set([]); // 12/11: los 4 del importe, arreglados en numCampo y al guardar
 const ok = (c, m, clave) => {
   if (clave && CONOCIDOS.has(clave)) { console.log(c ? 'PASS ' + m + '  (el fallo conocido ' + clave + ' parece arreglado: quítalo de la lista)' : 'FALLO CONOCIDO [' + clave + '] ' + m); if (!c) conocidos++; return; }
   console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++;
