@@ -43,6 +43,8 @@
     [new RegExp(ANT + '(\\d{1,2}) de (' + M + ')(?: de (\\d{4}))?' + NO_L, 'gi'), function (m, d, me, y) { return d + ' ' + MONTHS[mesN(me)] + (y ? ' ' + y : ''); }],
     [new RegExp(ANT + '(' + M + ') de (\\d{4})' + NO_L, 'gi'), function (m, me, y) { return MONTHS[mesN(me)] + ' ' + y; }],
     [new RegExp(ANT + '(\\d{1,2}) (' + A + ')' + NO_L + '\\.?(?: (\\d{4}))?', 'gi'), function (m, d, me, y) { return d + ' ' + ABR_EN[abrN(me)] + (y ? ' ' + y : ''); }],
+    [new RegExp(ANT + '(' + A + ')' + NO_L + '\\.? (\\d{4})' + NO_L, 'gi'), function (m, me, y) { return ABR_EN[abrN(me)] + ' ' + y; }],
+    [new RegExp(ANT + '(lun|mar|mié|jue|vie|sáb|dom)' + NO_L + '\\.? (\\d{1,2})(?!\\d)', 'gi'), function (m, d, n) { var i = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'].indexOf(d.toLowerCase()); var w = DAYS[i].slice(0, 3); return (d.charAt(0) === d.charAt(0).toUpperCase() ? w : w.toLowerCase()) + ' ' + n; }],
     [new RegExp(ANT + '(' + M + '|' + D + ')' + NO_L, 'gi'), function (m, w) { var i = mesN(w); return i >= 0 ? MONTHS[i] : DAYS[DIAS.indexOf(w.toLowerCase())]; }],
     [/[−+\-]?[€$£]?\d(?:[\d.,]*\d)?(?:\s?[€$£%])?/g, function (m) { return m; }],
   ];
@@ -114,10 +116,10 @@
       }
     }
     if (h < 3) {
-      var seps = [': ', ' — ', ' – ', ', ', ' / ', ' → '];
-      for (var s = 0; s < seps.length; s++) { if (c.indexOf(seps[s]) > 0) { var r2 = partes(c, seps[s], h, seps[s] !== ' → '); if (r2 != null) return r2; } }
       var dp = c.indexOf(': '); // «Título: frase que también lleva dos puntos»
       if (dp > 0 && c.indexOf(': ', dp + 2) > 0) { var a1 = nucleo(c.slice(0, dp), h + 1), a2 = a1 == null ? null : nucleo(c.slice(dp + 2), h + 1); if (a2 != null) return a1 + ': ' + a2; }
+      var seps = [': ', ' — ', ' – ', ', ', ' / ', ' → '];
+      for (var s = 0; s < seps.length; s++) { if (c.indexOf(seps[s]) > 0) { var r2 = partes(c, seps[s], h, seps[s] !== ' → ' && seps[s] !== ': '); if (r2 != null) return r2; } }
       // varias frases seguidas («Hecho. Ya puedes entrar.»): todas o ninguna
       if (/[.!?…] \S/.test(c)) { var fr = c.split(/(?<=[.!?…]) (?=\S)/); if (fr.length > 1) { var ok = true, out = fr.map(function (p) { if (!LETRA.test(p)) return p; var t = nucleo(p, h + 1); if (t == null) ok = false; return t; }); if (ok) return out.join(' '); } }
       var b = BORDE.exec(c);

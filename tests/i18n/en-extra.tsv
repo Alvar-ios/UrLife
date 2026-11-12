@@ -162,3 +162,166 @@ Ver el movimiento	See the transaction
 balance #	balance #
 apartado e invertido #	set aside and invested #
 ¡Hola, #! En PalomApp me sale que de # me debes #. Cuando puedas, ¿me haces un Bizum? 🙌	Hi, #! PalomApp shows me that from # you owe me #. When you can, could you send me a Bizum? 🙌
+¿No tienes cuenta? Crear una	Don't have an account? Create one
+Crear cuenta	Create account
+Repite la contraseña	Repeat the password
+Mínimo # caracteres	At least # characters
+Repite tu contraseña	Repeat your password
+Completa todos los campos.	Fill in all the fields.
+La contraseña debe tener al menos # caracteres.	The password must have at least # characters.
+Las contraseñas no coinciden.	The passwords don't match.
+Creando cuenta…	Creating account…
+Cuenta creada	Account created
+Revisa tu correo para confirmar la cuenta y después inicia sesión.	Check your email to confirm the account and then log in.
+No se pudo crear la cuenta. Inténtalo de nuevo.	The account couldn't be created. Try again.
+Ese correo ya tiene una cuenta. Prueba a iniciar sesión.	That email already has an account. Try logging in.
+La contraseña no cumple los requisitos.	The password doesn't meet the requirements.
+Introduce un correo electrónico válido.	Enter a valid email address.
+¿Ya tienes cuenta? Iniciar sesión	Already have an account? Log in
+tu@correo.com	you@email.com
+Entrando…	Logging in…
+lun #	Mon #
+mar #	Tue #
+mié #	Wed #
+jue #	Thu #
+vie #	Fri #
+sáb #	Sat #
+dom #	Sun #
+Próximo	Next
+Próximos	Upcoming
+te encargas tú	you're in charge
+Se encarga tú	You're in charge
+hecha por ti	done by you
+lo ven todos	everyone sees it
+sale en tu Agenda	shows in your Agenda
+↻ cada semana	↻ every week
+↻ cada # semanas	↻ every # weeks
+↻ cada mes	↻ every month
+↻ cada # meses	↻ every # months
+↻ cada día	↻ every day
+↻ cada # días	↻ every # days
+↻ cada año	↻ every year
+Tarea de hoy	Task for today
+Tarea pasado mañana	Task for the day after tomorrow
+Tarea sin fecha	Task with no date
+se borra del todo en # días	deleted for good in # days
+Ver todas las cuentas	See all accounts
+Vista de la meta	Goal view
+Tipo de cuenta	Account type
+Sin movimientos aquí	No transactions here
+Sin movimientos en #	No transactions in #
+Sin movimientos en # #	No transactions in # #
+Qué se ve en el calendario	What shows in the calendar
+Reparto del gasto por categoría	Spending split by category
+Restaurante, dirección…	Restaurant, address…
+Revisión	Check-up
+¿Qué fue? (cena, súper, gasolina…)	What was it? (dinner, groceries, fuel…)
+Total de la deuda (€)	Total debt (€)
+Ya ahorrado antes (€)	Already saved before (€)
+Ya pagado antes (€)	Already paid before (€)
+¿Cuánto? (€)	How much? (€)
+Uno más	One more
+Recuperaste un pago	You restored a payment
+Borraste un pago	You deleted a payment
+Cambiaste un pago	You changed a payment
+Se han arreglado	Fixed
+Se ha arreglado	Fixed
+Te quedan # lecturas este mes	You have # readings left this month
+Tu informe de la semana está listo	Your weekly report is ready
+Tu informe de # está listo	Your report for # is ready
+Tu balance mejoró # frente a #, que cerró en #.	Your balance improved by # compared with #, which closed at #.
+Tu balance empeoró # frente a #, que cerró en #.	Your balance got worse by # compared with #, which closed at #.
+Te sobraron # menos que en #, que cerró en #.	You had # less left over than in #, which closed at #.
+# aportaciones	# contributions
+# aportación	# contribution
+última #	last #
+valorando…	valuing…
+Calculado desde el saldo del #	Worked out from the balance on #
+Cuadrado el #	Matched on #
+aún no has puesto su saldo	you haven't set its balance yet
+A este ritmo, acabas en #	At this pace, you'll finish in #
+A este ritmo, en #	At this pace, in #
+a este ritmo llegaríais en #.	at this pace you'd get there in #.
+a este ritmo llegaríais hacia #.	at this pace you'd get there around #.
+a este ritmo llegarías en #.	at this pace you'd get there in #.
+a este ritmo llegarías hacia #.	at this pace you'd get there around #.
+a este ritmo, en #.	at this pace, in #.
+a tiempo ✓	on time ✓
+Acabas en #. Pagas # al mes.	You finish in #. You pay # a month.
+Acabas en #, # meses antes de lo previsto. Pagas # al mes.	You finish in #, # months earlier than planned. You pay # a month.
+Acabas en #, # meses después de lo previsto. Pagas # al mes.	You finish in #, # months later than planned. You pay # a month.
+Acabas en #. Pagas unos # al mes (lo de los últimos # meses).	You finish in #. You pay about # a month (from the last # months).
+Acabas en #	You finish in #
+# cerró con # a tu favor, # menos que #.	#1 closed with #2 in your favour, #3 less than #4.
+# cerró con # a tu favor, # más que #.	#1 closed with #2 in your favour, #3 more than #4.
+# cerró con # a tu favor, como #.	# closed with # in your favour, like #.
+# cerró con # a tu favor, después de un # en negativo.	# closed with # in your favour, after a negative #.
+# cerró con # a tu favor: # de # meses en positivo.	# closed with # in your favour: # of # months positive.
+El trimestre cerró con # a tu favor: # #, # #, # #.	The quarter closed with # in your favour: # #, # #, # #.
+# empezará el #	# will start on #
+# empezó el #	# started on #
+Inversiones # días	Investments # days
+Tus inversiones han subido # esta semana: valen #. Meter dinero nuevo no cuenta.	Your investments went up # this week: they're worth #. Putting in new money doesn't count.
+Tus inversiones han bajado # esta semana: valen #. Meter dinero nuevo no cuenta.	Your investments went down # this week: they're worth #. Putting in new money doesn't count.
+Solo informativo. El dinero en el banco se calcula desde el saldo que pusiste en Tú → Cuentas y saldos, sumando y restando lo que apuntas.	For information only. The money in the bank is worked out from the balance you set in You → Accounts and balances, adding and subtracting what you enter.
+Solo informativo. El dinero en el banco se calcula desde el saldo que pusiste en Tú → Cuentas y saldos (el #), sumando y restando lo que apuntas.	For information only. The money in the bank is worked out from the balance you set in You → Accounts and balances (on #), adding and subtracting what you enter.
+Solo informativo.	For information only.
+El dinero en el banco se calcula desde el saldo que pusiste en Tú → Cuentas y saldos, sumando y restando lo que apuntas.	The money in the bank is worked out from the balance you set in You → Accounts and balances, adding and subtracting what you enter.
+El dinero en el banco se calcula desde el saldo que pusiste en Tú → Cuentas y saldos (el #), sumando y restando lo que apuntas.	The money in the bank is worked out from the balance you set in You → Accounts and balances (on #), adding and subtracting what you enter.
+Lo apartado para metas ya está dentro de tus cuentas, así que no se suma dos veces.	What's set aside for goals is already inside your accounts, so it isn't counted twice.
+Lo apartado para tus metas (#) ya está dentro de tus cuentas: apartar no saca dinero del banco, así que no se suma dos veces.	What's set aside for your goals (#) is already inside your accounts: setting aside doesn't take money out of the bank, so it isn't counted twice.
+¿Tienes el ahorro en otra cuenta?	Is your savings in another account?
+Añádela en Tú → Cuentas y saldos.	Add it in You → Accounts and balances.
+Lo verán los de la meta compartida; en tus números sigue contando como tuyo.	The people in the shared goal will see it; in your numbers it still counts as yours.
+Calculada según cuándo metiste cada euro (rentabilidad ponderada por dinero), desde el #.	Worked out by when you put in each euro (money-weighted return), since #.
+Tiene # movimiento. Los movimientos pasarán a la cuenta principal y los traspasos dirán «Cuenta quitada». Toca «Quitar» otra vez para quitarla.	It has # transaction. Transactions will move to the main account and transfers will say «Account removed». Tap «Remove» again to remove it.
+Tiene # movimientos. Los movimientos pasarán a la cuenta principal y los traspasos dirán «Cuenta quitada». Toca «Quitar» otra vez para quitarla.	It has # transactions. Transactions will move to the main account and transfers will say «Account removed». Tap «Remove» again to remove it.
+Un movimiento sin cuenta pasará a esta cuenta, y los saldos cambiarán.	A transaction without an account will move to this account, and the balances will change.
+# movimientos sin cuenta pasarán a esta cuenta, y los saldos cambiarán.	# transactions without an account will move to this account, and the balances will change.
+Para deshacerlo, vuelve a marcar la anterior.	To undo it, tick the previous one again.
+quedan (de #)	left (of #)
+te pasaste #	you went over by #
+de # presupuestados	of # budgeted
+te sobraron #	you had # left over
+contando Juntos: estáis en paz	counting Together: you're settled up
+tus datos son privados.	your data is private.
+No se pudo quitar tu tarea: bórrala tú	Your task couldn't be removed: delete it yourself
+Al recuperarlo, tu saldo en el grupo sube #.	When restored, your balance in the group goes up #.
+Al recuperarlo, tu saldo en el grupo baja #.	When restored, your balance in the group goes down #.
+Sigue borrado.	Still deleted.
+Periodo Máx	Period Max
+Categorías para todos	Categories for everyone
+Juntos y nuevo aspecto	Together and a new look
+Nuevo diseño	New design
+Tus cuentas y un Inicio nuevo	Your accounts and a new Home
+Juntos con planes y un Dinero nuevo	Together with plans and a new Money
+este plan	this plan
+precio # EUR	price # EUR
+precio # USD (≈ #)	price # USD (≈ #)
+cierre del #	close of #
+Antes de la app	Before the app
+antes de la app #	before the app #
+aún nada	nothing yet
+(estimación prudente: aún no hay # meses de histórico).	(cautious estimate: there aren't # months of history yet).
+(según tu histórico de # meses).	(based on your history of # months).
+Es una estimación: las inversiones suben y bajan.	It's an estimate: investments go up and down.
+Es una estimación.	It's an estimate.
+# aportaciones sin precio automático cuentan por lo aportado.	# contributions without an automatic price count by what was put in.
+# aportación sin precio automático cuenta por lo aportado.	# contribution without an automatic price counts by what was put in.
+Además se arreglará # movimiento que ya tenías. Se puede deshacer.	It will also fix # transaction you already had. It can be undone.
+Además se arreglarán # movimientos que ya tenías. Se puede deshacer.	It will also fix # transactions you already had. It can be undone.
+# artículos del ticket	# items from the receipt
+cambiar reparto	change split
+# entre los dos	# between the two of you
+unos # al día	about # a day
+tu parte, # al día	your share, # a day
+# días	# days
+y # cambio más	and # more change
+y # cambios más	and # more changes
+# a tu saldo	# to your balance
+# km · # litros · # cada uno	# km · # litres · # each
+# sin app	# without the app
+(con paga extra)	(with bonus pay)
+sin aportaciones recientes para estimar.	no recent contributions to estimate.
+desde el #	since #
+precio medio de hoy en #	today's average price in #

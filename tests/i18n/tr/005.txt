@@ -356,7 +356,6 @@
 2072	Other banks
 2073	Other days
 2074	Other income
-2078	Paid
 2079	Paid
 2080	Paid
 2081	Paid # of # · pending #

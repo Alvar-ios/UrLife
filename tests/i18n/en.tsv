@@ -1523,7 +1523,7 @@ La contraseña no es correcta.	The password isn't correct.
 La entrada de la casa, un viaje, un colchón…	A house deposit, a trip, a cushion…
 La fecha es opcional: con ella verás si llegas a tiempo a ese hito.	The date is optional: with it you'll see if you reach that milestone in time.
 La fecha final va después de la primera	The end date goes after the first
-La fecha pasó · faltan	The date has passed · # to go
+La fecha pasó · faltan	The date has passed · missing
 La fecha pasó · faltan #	The date has passed · # to go
 La fecha siguiente es una previsión. Si tu nómina se retrasa, tu mes no cambia hasta que llegue; si pasan más de # días, cuenta desde el día previsto. Si se adelanta, empieza ese mismo día.	The next date is a forecast. If your salary is late, your month doesn't change until it arrives; if more than # days pass, it counts from the expected day. If it comes early, it starts that same day.
 La fecha ya pasó y	The date has passed and
@@ -1970,7 +1970,6 @@ Otros # movimientos	# more transactions
 Otros bancos	Other banks
 Otros días	Other days
 Otros ingresos	Other income
-Pa	Paid
 Pagada	Paid
 Pagado	Paid
 Pagado # de # · pendiente #	Paid # of # · pending #

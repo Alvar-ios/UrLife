@@ -20,10 +20,13 @@
   th { font-weight: 600; }
   a { color: var(--accent); }
   .tabla { overflow-x: auto; }
+  .idioma { text-align: right; margin: 0 0 8px; font-size: 14px; } .idioma button { background: none; border: 0; color: var(--accent); font: inherit; cursor: pointer; padding: 4px; }
 </style>
 </head>
 <body>
 <main>
+<p class="idioma"><button type="button" data-l="es">Español</button> · <button type="button" data-l="en">English</button></p>
+<div data-version="es">
 <h1>Privacidad en PalomApp</h1>
 <p class="sub">Última actualización: 10 de noviembre de 2026</p>
 
@@ -68,6 +71,64 @@
 
 <h2>Cambios</h2>
 <p>Si cambiamos esta página, lo diremos en la app.</p>
+</div>
+<div data-version="en" lang="en" hidden>
+<h1>Privacy in PalomApp</h1>
+<p class="sub">Last updated: 10 November 2026</p>
+
+<p>PalomApp is an app to keep track of your money, your plans and the expenses you share with other people. This page explains what data it keeps, what for and what you can do with it. In short: <b>your data is yours, we don't sell it, there are no ads or tracking, and you can delete everything whenever you want.</b></p>
+
+<h2>Who is responsible</h2>
+<p>The controller of your data is the person who publishes PalomApp on Google Play (their name appears on the app's listing). For anything about your data, write to us at <a href="mailto:cortex.studio.mkt@gmail.com">cortex.studio.mkt@gmail.com</a>.</p>
+
+<h2>What data we keep</h2>
+<div class="tabla"><table>
+<tr><th>Data</th><th>What for</th><th>Who else sees it</th></tr>
+<tr><td>Your email and your password (encrypted)</td><td>Logging in to your account</td><td>Nobody</td></tr>
+<tr><td>Your name</td><td>So people in your groups recognise you</td><td>The people in your groups</td></tr>
+<tr><td>Transactions, accounts and balances, goals, debts, investments and settings</td><td>It's what the app does</td><td>Nobody</td></tr>
+<tr><td>Shared expenses, goals and plans and their history</td><td>Keeping accounts with other people</td><td>The people in that group</td></tr>
+<tr><td>Tasks and agenda</td><td>Getting organised</td><td>Only whoever you share it with</td></tr>
+</table></div>
+<p>We don't ask for your location or your contacts, and we don't access your bank. The statements you import are read on your phone and only the transactions you choose are saved.</p>
+<h2>Bank notifications (Android app only, optional)</h2>
+<p>It comes switched off. If you turn it on, PalomApp reads <b>on your phone</b> the notifications from the bank apps you choose, to add each expense or income. The notification text is read and discarded on the phone: only the transaction (amount, shop, date and account) goes to your account. For a Bizum or a transfer, the other person's name isn't saved. We don't look at messages, WhatsApp or social media: only bank and payment apps. To suggest a missing bank, from those apps we only note the name of the one that notifies a payment, never what it says. We never read verification codes and we don't connect to your bank. It's only read while you're logged in to PalomApp. What's been read and not yet added stays on your phone for 7 days at most and is deleted when you turn it off, log out or delete your account (logging out also turns it off). You can turn it off whenever you want in You → Notifications, and remove the permission in Android settings.</p>
+<p>To know whether the app works, we calculate <b>total usage figures</b> (for example, how many people used it this week or how many groups there are). They're only counts of everyone together: we don't track anyone, we don't look at what you enter and figures for fewer than 5 people aren't shown.</p>
+
+<h2>Services that help us</h2>
+<p>For the app to work we use these services, which process data only on our behalf:</p>
+<ul>
+<li><b>Supabase</b>: stores your account and your data.</li>
+<li><b>Vercel</b>: serves the web version.</li>
+<li><b>Anthropic</b>: if you use «Read a receipt with a photo», the photo is sent to be read. The photo isn't saved: only the items you confirm.</li>
+<li><b>OpenRouteService</b>: if you use «Work out km» in the trip calculator, it receives the two places you type. They aren't saved.</li>
+<li><b>EODHD and CoinGecko</b>: they only receive the name of an asset when you search for it, without any of your data.</li>
+<li><b>Google Fonts, jsDelivr and cdnjs</b>: in the web version, they serve typefaces and libraries, and may see your IP address.</li>
+</ul>
+
+<h2>How long we keep it</h2>
+<p>As long as you have the account. We make an encrypted backup every week, kept for 90 days: so, after you delete your account, your data may remain in those backups for up to 90 days and then disappears.</p>
+
+<h2>Your rights</h2>
+<p>You can see, correct and download your data from the app (You → Import and save). You can <b>delete your account and your data</b> from You → Your account → «Delete my account», or as explained on <a href="borrar-cuenta.html?lang=en">this page</a>. You can also write to us to exercise your rights of access, rectification, erasure, objection, restriction and portability, and complain to the Spanish Data Protection Agency (aepd.es).</p>
+
+<h2>Children</h2>
+<p>PalomApp isn't meant for children under 14.</p>
+
+<h2>Changes</h2>
+<p>If we change this page, we'll say so in the app.</p>
+</div>
 </main>
+<script>var TITULOS = { es: 'Privacidad · PalomApp', en: 'Privacy · PalomApp' };</script>
+<script>
+/* C1 (idiomas): español o inglés. ?lang=en|es, lo elegido en la app (localStorage «idioma») o el idioma del navegador */
+(function () {
+  var q = /[?&]lang=(es|en)/.exec(location.search), g = null; try { g = localStorage.getItem('idioma'); } catch (e) { /* */ }
+  var l = q ? q[1] : (g === 'es' || g === 'en') ? g : (/^es/i.test(navigator.language || 'es') ? 'es' : 'en');
+  function poner(x) { document.documentElement.lang = x; document.querySelectorAll('[data-version]').forEach(function (d) { d.hidden = d.getAttribute('data-version') !== x; }); document.title = TITULOS[x]; }
+  document.querySelectorAll('.idioma button').forEach(function (b) { b.onclick = function () { poner(b.getAttribute('data-l')); }; });
+  poner(l);
+})();
+</script>
 </body>
 </html>
