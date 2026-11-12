@@ -62,6 +62,8 @@ Rama `fase13/integracion` (sin publicar). Cada punto lleva cómo se ha probado:
   - [auto, test160]
 - **Al cerrar sesión o borrar la cuenta**, los avisos del banco se apagan y se borra lo pendiente en el móvil. Antes, la siguiente cuenta que entraba en el mismo móvil los heredaba encendidos. [auto, test149] [sin móvil]
 - **El aviso de «mañana se paga…»** ya no se pierde si abres la app después de las 9:00 del día antes: sale enseguida, una sola vez. [auto, test152]
+- **En inglés, lo que se guarda sigue en español** (método de pago, tipo al importar, categorías): lo encontró Calidad antes de entregar. [auto, test166]
+- **Botón atrás:** si algo falla con una hoja abierta, ya no se cierra la app. [sin móvil]
 - **Las pruebas no fallan pasada la medianoche** (iban con la hora de España). [auto]
 
 ## Pendiente
@@ -73,6 +75,10 @@ Rama `fase13/integracion` (sin publicar). Cada punto lleva cómo se ha probado:
   - CAPTCHA en las altas y tope de la IA de tickets;
   - protección de contraseñas filtradas.
 - **Google Play, «Seguridad de los datos»:** marcar «ID de dispositivo u otros» (recogido, no compartido, para funciones de la app, solo si se activan los avisos del banco).
+- **Conocido, menor (en inglés):**
+  - una descripción o cuenta del usuario que coincide justo con una palabra del diccionario («Comida», «Casa») se ve traducida; lo guardado no cambia;
+  - los widgets y los avisos del banco siguen en español;
+  - «1.500» escrito a mano se lee como mil quinientos.
 - **Pendiente de probar:**
   - Revolut con comisiones (columna Fee);
   - el widget opcional «Hoy» (2×2), que no está hecho;
