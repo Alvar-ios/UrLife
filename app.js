@@ -753,7 +753,7 @@ function cfgConPendientes(v) {
   return _cfgRecientes.reduce((acc, x) => Object.assign(acc, x.partial), Object.assign({}, v || {}));
 }
 function saveConfig(partial) {
-  S.config = Object.assign({}, cfg(), partial);
+  S.config = Object.assign({}, cfg(), partial); widgetsPronto();
   const rec = { partial, hasta: Infinity }; _cfgRecientes.push(rec);
   const job = _cfgChain.then(async () => {
     try { await write(() => S.db.doc('config/app').update(partial)); } finally { rec.hasta = 0; }
@@ -885,7 +885,7 @@ function normMov(m) {
 }
 // Los traspasos entre cuentas van aparte: no son gasto ni ingreso, así ninguna suma los ve
 function esTraspaso(m) { return !!m && m.tipo === 'Traspaso'; }
-function aplicarMovs() { const raw = S._movsRaw || []; S.traspasos = raw.filter(esTraspaso); S.movimientos = raw.filter((m) => !esTraspaso(m)).map(normMov); }
+function aplicarMovs() { const raw = S._movsRaw || []; S.traspasos = raw.filter(esTraspaso); S.movimientos = raw.filter((m) => !esTraspaso(m)).map(normMov); widgetsPronto(); }
 const tipoTxt = (t) => (t === 'Factura' ? 'Pago fijo' : t === 'Ahorro' ? 'Apartar' : t);
 // Subcategorías que ya has usado en una categoría (y los recibos de esa categoría si es un gasto fijo)
 function subcatsDe(cat, fijo) {
@@ -10409,6 +10409,7 @@ function avisosTrasCargar() {
     }
   }
   programarRecordatoriosPronto();
+  widgetsTrasCargar(); // docs/40 C5
 }
 // La hoja «Avisos» (Tú)
 async function avisosAbrir() {
@@ -12385,7 +12386,7 @@ const H = {
     try { await window.Auth.cambiarContrasena(a); toast('Contraseña cambiada'); const s0 = await window.Auth.getSession(); if (s0) { if (needsMfa(s0)) renderMfaScreen(); else enterApp(s0); } else renderLoginScreen('Contraseña cambiada. Ya puedes entrar.'); }
     catch (e) { renderNuevaContrasena('No se pudo cambiar: ' + errMsg(e)); }
   },
-  ocultarCifras: () => { const v = !cifrasOcultas(); S._ocultas = v; lsSet('cifrasOcultas', v ? '1' : '0'); aplicarOcultar(); sentir('tic'); toast(v ? 'Cifras ocultas' : 'Cifras a la vista'); render(); },
+  ocultarCifras: () => { const v = !cifrasOcultas(); S._ocultas = v; lsSet('cifrasOcultas', v ? '1' : '0'); aplicarOcultar(); sentir('tic'); toast(v ? 'Cifras ocultas' : 'Cifras a la vista'); render(); widgetsPronto(); },
   reintentarCarga: () => location.reload(),
   tbVolver: () => { if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) H.setInicioVista(['hoy']); else H.goTab(['inicio']); },
   metaGuardar: () => metaGuardar(),
@@ -12932,6 +12933,59 @@ document.addEventListener('change', (e) => dispatch('change', e));
 document.addEventListener('keydown', (e) => { if (tecTeclaFisica(e)) return; if (e.key === 'Enter' && e.target && e.target.id === 'agRapida') { e.preventDefault(); agRapidaCrear(); return; } if (e.key === 'Escape') { if ($('#popupBackdrop')) cerrarPopup(); else closeSheet(); } });
 
 /* ============================================================
+   WIDGETS (12/11, docs/40 C5)
+   La app deja en el móvil un resumen pequeño («Te queda este mes») y el widget lo lee.
+   Solo en la app de Android (window.__nativo.widgets); en la web no hace nada.
+   ============================================================ */
+function widNat() { return window.__nativo && window.__nativo.widgets ? window.__nativo.widgets : null; }
+// Lo mismo que enseña la tarjeta principal de Inicio en el mes actual (misma regla que heroMesHtmlV2; test151 comprueba que coinciden)
+function widgetResumen() {
+  const { y, m } = mesActual(), k = kpisMes(y, m), r = rangoMes(y, m), hoy = todayISO();
+  const nuevo = !S.movimientos.length && !(S.compartidos || []).length;
+  const banco = nuevo && cuentasCfg().some((c) => saldoCuenta(c) != null);
+  const gasMes = k.facturas + k.gastos, soloGastos = !banco && gasMes > 0.004 && !(S.movimientos || []).some((x) => x.tipo === 'Ingreso') && !cuentasCfg().some(conSaldo);
+  const valor = soloGastos ? gasMes : banco ? enTusCuentas() : k.disponible, oculto = cifrasOcultas();
+  const dias = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 86400000), total = dias(r.desde, r.hasta) + 1;
+  const pasados = Math.min(total, Math.max(0, dias(r.desde, hoy) + 1));
+  return { sesion: true, texto: soloGastos ? 'Gastos de este mes' : banco ? 'En tu banco hoy' : 'Te queda este mes', mes: MESES[m - 1],
+    queda: oculto ? '•••' : money(valor), negativo: !oculto && !soloGastos && !banco && valor < 0, oculto,
+    progreso: total > 0 ? Math.round(pasados / total * 1000) / 1000 : 0, desde: r.desde, hasta: r.hasta };
+}
+let _widT = null, _widUltimo = '';
+// Se pide tras cargar datos y tras cada cambio de movimientos o de configuración; se guarda como mucho una vez por segundo
+function widgetsPronto() {
+  if (!widNat()) return;
+  clearTimeout(_widT);
+  _widT = setTimeout(() => {
+    _widT = null; const w = widNat();
+    if (!w || !S.user || !S.loaded || !S.loaded.mov || !S.loaded.cfg) return;
+    let o; try { o = widgetResumen(); } catch (e) { return; }
+    const j = JSON.stringify(o); if (j === _widUltimo) return; _widUltimo = j;
+    Promise.resolve(w.guardar(o)).catch(() => { _widUltimo = ''; });
+  }, 1000);
+}
+function widgetsSalir() {
+  clearTimeout(_widT); _widT = null; _widUltimo = ''; S._widIni = false;
+  const w = widNat(); if (w) Promise.resolve(w.guardar({ sesion: false })).catch(() => {}); // el widget pasa a «Abre PalomApp» y se borra lo guardado
+}
+// Qué pidió el widget al abrir la app: «Apuntar gasto» abre el gasto nuevo con el teclado; «Te queda» lleva a Inicio
+function widgetsAbrir(que) {
+  if (!que || !S.user || S.onboarding) return;
+  window.__irA('inicio');
+  if (que === 'gasto') H.crearIr(['gasto']);
+}
+function widgetsTrasCargar() {
+  const w = widNat(); if (!w) return;
+  if (!S._widIni) {
+    S._widIni = true;
+    Promise.resolve(w.abrirCon()).then(widgetsAbrir).catch(() => {});
+    if (!S._widEsc) { S._widEsc = true; w.alAbrir(() => Promise.resolve(widNat().abrirCon()).then(widgetsAbrir).catch(() => {})); }
+  }
+  widgetsPronto();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) widgetsPronto(); }); // al volver a la app (puede haber empezado otro mes)
+
+/* ============================================================
    ARRANQUE
    ============================================================ */
 async function enterApp(session) {
@@ -12949,6 +13003,7 @@ async function enterApp(session) {
 }
 function leaveApp() {
   S.appStarted = false; _cfgRecientes = []; _movsPend.clear(); // nada pendiente de la cuenta anterior se pone encima de la siguiente
+  widgetsSalir(); // docs/40 C5: el widget deja de enseñar cifras
   S._avIni = false; try { if (avNat()) avNat().configurar({ uid: '' }); if (notifNat()) notifNat().programar([]); } catch (e) { /* */ } // docs/39b: sin sesión no se lee; lo leído no pasa a otra cuenta
   S.grupos = null; S.aportes = null; S._uniendo = false; S._gruposCargando = false; S.compartidos = null; S.objetivos = null; S.carpetas = null; S.agenda = null; S._volverGrupo = null;
   S.user = null; S.db = null;

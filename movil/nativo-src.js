@@ -75,6 +75,14 @@ if (Capacitor.isNativePlatform()) {
     };
     // al volver a la app, la web recoge lo leído
     App.addListener('appStateChange', ({ isActive }) => { if (isActive && window.__avisosVolver) { try { window.__avisosVolver(); } catch (e) { /* */ } } });
+
+    // 12/11 · Widgets de la pantalla de inicio (docs/40 C5): la web deja un resumen pequeño y el widget lo lee
+    const PW = registerPlugin('PalomaWidgets');
+    N.widgets = {
+      guardar: (o) => PW.guardar(o || { sesion: false }),
+      abrirCon: () => PW.abrirCon().then((r) => (r && r.que) || '').catch(() => ''), // 'gasto', 'inicio' o ''
+      alAbrir: (fn) => PW.addListener('abiertoDesdeWidget', fn),
+    };
   }
 
   // 12/11 · tres canales: importantes (suenan), normales (sin sonido) y resumen. Android oculta el texto con el móvil bloqueado.
