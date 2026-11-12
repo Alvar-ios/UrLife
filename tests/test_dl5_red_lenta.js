@@ -1,7 +1,7 @@
 // 10/11/2026 · Calidad: con red muy lenta (lectura 600 ms, guardado 4 s) tampoco se entrega una lectura sin lo recién guardado. Datos inventados.
 // 10/11/2026 · data-layer.js: una lectura de la configuración que salió antes de terminar un guardado no se entrega
 // (traería lo de antes); se vuelve a leer. Cliente de Supabase simulado, datos inventados.
-const { JSDOM } = require('/home/claude/urlife/tests/node_modules/jsdom'), fs = require('fs');
+const { JSDOM } = require('jsdom'), fs = require('fs');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let servidor = { cuentas: [] }, retrasoLectura = 0, retrasoEscritura = 0, lecturas = 0;
@@ -16,7 +16,7 @@ const fakeSb = { from: builder, channel() { const c = { on(_e, _f, cb) { avisos.
   auth: { onAuthStateChange(cb) { setTimeout(() => cb('SIGNED_IN', { user: { id: 'u1' } }), 0); }, getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }) } };
 const dom = new JSDOM('', { runScripts: 'outside-only', url: 'https://localhost/', pretendToBeVisual: true }); const w = dom.window;
 w.supabase = { createClient: () => fakeSb }; w.SUPABASE_CONFIG = { url: 'x', anonKey: 'y' };
-w.eval(fs.readFileSync('/home/claude/urlife/data-layer.js', 'utf8'));
+w.eval(fs.readFileSync(require('path').join(__dirname, '..', 'data-layer.js'), 'utf8'));
 (async () => {
   await sleep(10);
   const fotos = []; const d = w.Data.doc('config/app');
