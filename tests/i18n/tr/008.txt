@@ -1,0 +1,406 @@
+3023	And also
+3024	And in You too: Category rules, Your month, Share my agenda, Hide figures, Backup, Look.
+3025	And much more, whenever you want
+3026	And everything fits well on small phones.
+3027	Already saved before
+3028	You already share with them: they join right away, no link needed.
+3029	You're already a member of this group.
+3030	You're already a member of «
+3031	It was already restored
+3032	It's already in the circle
+3033	It's already in circle #
+3034	You're already in
+3035	A record with that identifier already exists.
+3036	You've already spent more than you planned this month.
+3037	There's already another debt called «
+3038	There's already a topic with that name
+3039	There's already one with that name there
+3040	You already share it with that person or group
+3041	You already have it
+3042	I've already paid them
+3043	I've already paid them #
+3044	You've now been with PalomApp for a month
+3045	You've tried everything
+3046	You see everything now
+3047	They've already paid me
+3048	They've already paid me #
+3049	I can no longer find «
+3050	No longer an admin
+3051	It's gone
+3052	It's no longer shared: it counts fully as yours
+3053	You're no longer in that group: it can't be restored
+3054	You're no longer in this group, so you can't change it.
+3055	It no longer exists
+3056	There are no more transactions for this asset.
+3057	There's nothing pending with this person anymore.
+3058	They no longer see it
+3059	They no longer see it
+3060	It no longer zooms in when typing in the fields.
+3061	Fingerprint will no longer be asked
+3062	Already paid
+3063	Already paid before
+3064	Already subtracted
+3065	It's been restored.
+3066	You already have
+3067	You already have # pieces: remove one to add another.
+3068	You already have added:
+3069	You already have these. Nothing is deleted here: you can only add.
+3070	You already have a category «
+3071	You already have a debt with that name: choose another so their payments don't get mixed
+3072	You already have a goal with that name
+3074	Japanese yen
+3075	Me
+3080	Euro area
+3083	something you added a few days before or after. Tell us if it's the same.
+3084	some contribution is missing its units.
+3085	at the end of the month
+3086	in your favour
+3087	in your favour.
+3088	to your balance
+3089	apr
+3090	you'd end at
+3091	asset isn't valued
+3092	assets aren't valued
+3093	update it
+3095	aug
+3096	now in «
+3097	there isn't enough right now. Tap to see it.
+3098	savings and investment
+3099	at
+3100	a year
+3101	a year ·
+3102	a year.
+3103	a day ·
+3104	a day. It doesn't count fixed payments that haven't arrived yet.
+3105	a month
+3106	a month (from the last # months).
+3107	a month) you'd get there in
+3108	a month.
+3109	to the trip
+3110	groceries
+3111	third to last
+3112	earlier than expected
+3113	set aside
+3114	you set aside more than you had left
+3115	you set aside
+3116	each person puts in
+3117	contributions without an automatic price count
+3118	contribution
+3119	contribution without an automatic price counts
+3120	you put in
+3121	put in
+3122	approx. €
+3124	added
+3125	added «
+3126	here
+3127	will fix # transaction
+3128	will fix
+3129	fix to what you already had
+3130	fix couldn't be saved
+3131	fixes to what you already had
+3132	fixes couldn't be saved
+3133	item
+3134	items
+3135	back
+3136	even when PalomApp is closed
+3137	even if the others don't have the app
+3141	year
+3142	year #
+3143	years
+3144	nothing yet
+3145	hasn't finished yet: it counts what's been added up to today.
+3146	dropped to
+3150	deleted
+3152	each
+3153	changed by
+3154	changed by you
+3155	more change
+3156	more changes
+3157	changed
+3158	categories
+3159	categories with no spending
+3160	closed with
+3161	income
+3162	shares their agenda with you
+3164	shopping
+3165	with entries
+3166	with this name in Transactions: they'll count towards this debt.
+3167	with the titles
+3168	with others
+3169	with everyone
+3170	reached
+3172	thing today
+3173	more thing
+3174	things today
+3175	more things
+3176	accounts + invested − what you owe
+3177	accounts and goals
+3178	accounts, goals, budgets, agenda… we'll show you as you go
+3179	instalment #
+3180	how you're doing
+3181	of
+3182	of #
+3183	of # budgeted ·
+3184	of # ·
+3185	of # · #
+3186	of # · until #
+3187	of # · you've paid #
+3188	of # · pending # ·
+3189	of every month
+3190	in refunds (
+3191	of that currency
+3192	from those dates
+3193	from those days
+3194	of the week
+3195	of what comes in
+3196	of what you've received this year
+3197	of the next # days. What you mark as
+3198	over
+3199	of budget
+3200	of your budget for
+3201	you owe
+3202	you owe #
+3203	from # to
+3204	# – #
+3205	from the bank and reminders
+3206	from the topic
+3207	from the receipt
+3208	of the quarter
+3209	inside the app. You can see this again in You → What's new.
+3211	since
+3212	since # · #
+3213	since # · # expense
+3214	from day
+3215	from day #
+3216	since the start
+3217	since you started
+3218	from your salary
+3219	later than expected
+3220	shared debts (like a mortgage)
+3221	refund
+3222	dec
+3223	double
+3224	for
+3225	day
+3226	working day of the month
+3227	day without spending
+3228	day/month/year
+3229	days
+3230	days it's deleted for good. What you remove when undoing an import doesn't go through here.
+3231	days without spending
+3232	days without day-to-day spending (not counting fixed ones).
+3233	days without spending.
+3234	days.
+3235	and import the rest later
+3237	the # The app works out
+3238	the whole year
+3239	the rate
+3240	the expense
+3241	the group
+3242	the group only sees what you share in it.
+3243	the group will only see what you share in it.
+3244	the same balance.
+3245	the transaction
+3246	the notification text is read and discarded. Only the transaction (amount, shop and date) goes to your account.
+3247	the quarter of
+3248	got worse
+3249	will start when your salary arrives
+3250	will start on
+3251	started on
+3252	in # year
+3253	in # days
+3254	in # month
+3255	in # months
+3256	in #, #
+3257	in Together
+3258	in Transactions
+3259	on the way…
+3260	in this group
+3261	in what you already had
+3262	negative.
+3263	settled up
+3264	settled up:
+3265	positive.
+3266	in «
+3267	jan
+3268	between the two of you
+3269	among everyone before adding it here.
+3270	between the two of you
+3271	is what rises most:
+3272	that account
+3273	waiting for your salary
+3274	this goal
+3275	this week.
+3276	this week: worth
+3277	this expense
+3278	this month
+3279	this month.
+3280	estimate
+3281	cautious estimate: there aren't # months of history yet
+3282	is in the group
+3283	is ready
+3284	you're settled up
+3285	are set aside
+3288	the asset still needs choosing in its contributions.
+3289	feb
+3290	fixed
+3291	row cancelled by the bank is skipped.
+3292	row couldn't be read
+3293	row looks like a transfer you already had added as spending or income in your other account
+3294	row looks similar
+3295	row was already imported
+3296	row was already imported, but without an account
+3297	row you already had
+3298	rows cancelled by the bank are skipped.
+3299	rows couldn't be read
+3300	rows look like transfers you already had added as spending or income in your other account
+3301	rows look similar
+3302	rows were already imported
+3303	rows were already imported, but without an account
+3304	rows you already had
+3305	rows). The sign or the amount column may not be right.
+3306	end of the month
+3307	weekend
+3308	weekend or holiday
+3309	fuel or charging for a trip
+3310	spent
+3311	you spent more than you earned
+3312	you spent more than came in
+3313	expense added in your name
+3314	expense added to «
+3315	expense moved
+3316	expense remains
+3317	expense, receipt…
+3318	expenses added in your name
+3319	expenses added to «
+3320	expenses moved
+3321	expenses remain
+3322	you had paid
+3323	would be needed
+3324	up to # people
+3325	until
+3326	until the end of the month
+3327	there's # payment
+3328	done by
+3330	same as in
+3331	same as in #
+3333	amount
+3336	thu #
+3337	jul
+3338	jun
+3341	la caixa
+3342	the account
+3343	inflation beats you
+3344	the one you entered
+3345	the week of
+3346	you owe them
+3347	you beat inflation
+3348	you pay them
+3349	readings a month
+3350	readings this month. They come back on
+3351	read verification codes or your passwords, and it doesn't connect to your bank.
+3352	you'd get there
+3353	you'd get there
+3354	so far
+3355	you changed it later and it stays as it is
+3356	you save it as
+3357	the same
+3358	the same as
+3359	what you share with each person
+3360	so far in
+3361	they'll see it at the top of their Home.
+3362	everyone will see it
+3363	you'll both see it
+3364	mon
+3365	tue
+3366	may
+3367	tomorrow
+3368	improved
+3369	less every year.
+3370	less than a month
+3371	less than
+3372	month before.
+3374	month/day/year
+3375	months
+3376	shared goals (a kitty for a trip…)
+3377	put in: #
+3378	wed #
+3379	transaction without an account
+3380	transaction came back
+3381	transaction.
+3382	transactions from your notifications
+3383	transactions in
+3384	transactions without an account
+3385	transactions without an account will move to this account
+3386	transactions.
+3387	transactions. Don't close the app.
+3389	more
+3390	more every year.
+3391	more than #
+3392	more in Transactions
+3393	more than
+3394	more than in
+3395	more.
+3397	nobody
+3398	needs a month of history
+3399	no
+3400	you didn't add anything.
+3401	doesn't change when you put money in or take it out
+3402	you didn't spend anything).
+3403	it doesn't read messages, WhatsApp or social media. To suggest a missing bank, it only notes the name of the app that notifies a payment, never what it says.
+3404	couldn't be saved: try again
+3405	doesn't add up
+3406	doesn't have
+3407	has no price because the asset still needs choosing.
+3408	has no balance set: until you set it (You → Accounts), adding money won't move money.
+3409	don't have
+3411	nov
+3412	new in Together
+3413	or take a photo of the receipt
+3414	or bring your bank statement
+3415	oct
+3416	e.g. Santander
+3417	you paid when settling
+3418	you paid
+3419	you paid · your share
+3420	you paid · your share #
+3421	you pay
+3422	paid
+3423	paid
+3424	for the target
+3425	for this milestone.
+3426	to spend
+3427	so they aren't counted twice.
+3428	for something else
+3429	to settle up in the group.
+3430	to settle up
+3431	for your goals
+3432	looks like a transfer
+3433	second to last
+3434	person or group
+3435	people or groups
+3436	pieces: remove one to add another.
+3437	to add
+3438	by road
+3439	percent
+3440	percent.
+3441	ahead, you get
+3442	over its budget
+3443	over budget
+3444	to do
+3445	by amount
+3446	by what was put in.
+3447	because it isn't linked: edit its transactions and choose the asset in the search.
+3448	today's average price in
+3449	average charger price
+3450	expected on
+3451	expected for today
+3452	than in
+3453	than the previous week.
+3454	that you paid before using the app. No interest.
+3455	that you already had.
+3456	that you already had. It can be undone.
+3457	# left
+3458	# of # left
+3459	will be left
+3460	whoever paid

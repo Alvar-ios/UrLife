@@ -20,10 +20,13 @@
   th { font-weight: 600; }
   a { color: var(--accent); }
   .tabla { overflow-x: auto; }
+  .idioma { text-align: right; margin: 0 0 8px; font-size: 14px; } .idioma button { background: none; border: 0; color: var(--accent); font: inherit; cursor: pointer; padding: 4px; }
 </style>
 </head>
 <body>
 <main>
+<p class="idioma"><button type="button" data-l="es">Español</button> · <button type="button" data-l="en">English</button></p>
+<div data-version="es">
 <h1>Borrar tu cuenta de PalomApp</h1>
 <p class="sub">Cómo borrar tu cuenta y tus datos</p>
 <h2>Desde la app</h2>
@@ -43,6 +46,39 @@
 </ul>
 <p>Antes de borrar la cuenta tienes que estar en paz en tus grupos (que nadie te deba ni debas nada). La app te dirá en qué grupos queda algo pendiente.</p>
 <p><a href="privacidad.html">Política de privacidad</a></p>
+</div>
+<div data-version="en" lang="en" hidden>
+<h1>Delete your PalomApp account</h1>
+<p class="sub">How to delete your account and your data</p>
+<h2>From the app</h2>
+<ol>
+<li>Open PalomApp and log in with your account.</li>
+<li>Tap your face at the top right (<b>You</b>).</li>
+<li>In <b>Your account</b>, tap <b>Delete my account</b> and confirm.</li>
+</ol>
+<p>You can also do it from the web: go to <a href="https://urlife-zeta.vercel.app/?borrar-cuenta">urlife-zeta.vercel.app/?borrar-cuenta</a>.</p>
+<h2>If you can't log in</h2>
+<p>Write to us from your account's email to <a href="mailto:cortex.studio.mkt@gmail.com?subject=Delete%20my%20account">cortex.studio.mkt@gmail.com</a> with the subject «Delete my account». We'll do it within 30 days at most.</p>
+<h2>What's deleted and what's kept</h2>
+<ul>
+<li><b>Deleted</b>: your account (email and password), your transactions, accounts, goals, debts, investments, tasks, agenda and settings.</li>
+<li><b>Kept</b>, so other people's accounts add up: the expenses you shared in groups, where you'll still show up with your name as «left».</li>
+<li>Encrypted backups are deleted automatically after 90 days.</li>
+</ul>
+<p>Before deleting the account you need to be settled up in your groups (nobody owes you and you owe nobody anything). The app will tell you which groups still have something pending.</p>
+<p><a href="privacidad.html?lang=en">Privacy policy</a></p>
+</div>
 </main>
+<script>var TITULOS = { es: 'Borrar tu cuenta · PalomApp', en: 'Delete your account · PalomApp' };</script>
+<script>
+/* C1 (idiomas): español o inglés. ?lang=en|es, lo elegido en la app (localStorage «idioma») o el idioma del navegador */
+(function () {
+  var q = /[?&]lang=(es|en)/.exec(location.search), g = null; try { g = localStorage.getItem('idioma'); } catch (e) { /* */ }
+  var l = q ? q[1] : (g === 'es' || g === 'en') ? g : (/^es/i.test(navigator.language || 'es') ? 'es' : 'en');
+  function poner(x) { document.documentElement.lang = x; document.querySelectorAll('[data-version]').forEach(function (d) { d.hidden = d.getAttribute('data-version') !== x; }); document.title = TITULOS[x]; }
+  document.querySelectorAll('.idioma button').forEach(function (b) { b.onclick = function () { poner(b.getAttribute('data-l')); }; });
+  poner(l);
+})();
+</script>
 </body>
 </html>

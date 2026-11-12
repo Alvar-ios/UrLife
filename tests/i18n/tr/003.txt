@@ -1,0 +1,406 @@
+841	Matched: everything agrees.
+842	Match
+843	Match with the bank
+844	Any account
+845	Any member can change or delete any expense in the group.
+846	Any type
+847	Anyone
+848	When the year ends
+849	When your month ends
+850	Whenever you want, «Settle» and done.
+851	Fourth
+852	Four
+853	Four #
+854	Four clear sections: Home, Transactions, Money and Agenda. With the + button in the middle you add anything, and your settings are in «You», your initial at the top right.
+855	Cutlery
+857	Account
+858	New account
+859	Main account
+860	Account removed
+861	Unnamed account
+862	Account and security
+863	Account ·
+864	Account ···
+865	Accounts
+866	Accounts and investments minus debts
+867	Accounts and balances
+868	Birthdays, small gifts
+869	Payment needed:
+870	Courses, books, classes
+871	Smooth curves and no lines at # in months that haven't arrived yet.
+872	Which
+873	When you have something, without saying what
+874	How much a car trip costs, with today's price.
+875	How much is left and what's paid
+876	How much you want to spend each month on each thing.
+877	What they're worth and what you earn
+880	Circle
+881	Circle #
+882	Wrong or expired code. Try the next code from your app.
+883	How the trip ended up
+884	How they moved this week
+885	How it's split
+886	How the goal you choose is going
+887	How it's going and a + to add money
+890	Mark as fine
+892	From
+893	Where the prices come from
+894	Of that, set aside for goals
+895	Of them,
+896	Of them, # are your share in Together.
+897	From the agenda of
+898	From the goal «
+899	For shared things your share counts: what you've put in and, for debts, your share of what's pending according to the usual split.
+900	From what you spend most on to least, with a mark where your budget is.
+901	From your accounts,
+902	You owe
+903	You owe #
+905	Let whoever you choose see your agenda. Nobody sees it unless you share it, and what you mark as Private only you see.
+906	Stop sharing with
+907	From
+908	# – #
+909	From # to # or from the day you get paid. The forecast for the end of the month is shown apart, as a forecast.
+910	Categories, salaries, bills, goals and debts also come from the file.
+911	Day to day
+912	Of this month's budget.
+913	Within your budgets
+914	Inside a category, tap Nails, Golf, Hairdresser…
+915	Sport
+916	Turn off
+917	Unlock
+918	Download
+919	Download my transactions (Excel)
+920	Dismiss
+921	Description
+922	Discover PalomApp
+923	Discover what each one is for
+924	Discover everything PalomApp can do
+925	Since
+926	Since the start
+927	From today you see all the tools in + and in You.
+928	From the account
+929	Since you started
+930	From when my salary arrives
+931	From a fixed day
+932	From…
+933	Undo
+934	Undo deletes all the transactions from that import (also those you edited afterwards). What it fixed in what you already had (the account, or an expense that was a transfer) goes back to how it was, unless you changed it yourself later. «Mark as fine» leaves the fixes as they are and they can no longer be undone.
+935	Undoing
+936	Undoing #…
+937	Undone
+938	Swipe left to duplicate or delete
+939	Swipe a transaction to duplicate or delete it
+940	Untick all
+941	Sparkles
+942	Detail
+943	Debt
+944	Shared debt
+945	Shared debt created
+946	Debt deleted. Its payments stay in Transactions.
+947	Debt saved
+948	Debt restored
+949	Debt paid off
+950	Debts
+951	Debts, what's left
+953	Refund
+954	Refund · this money comes back to you
+955	Day
+956	Drawing
+957	Dec
+958	Difference
+959	Money
+960	Money in the bank
+961	Money at a glance
+962	Split a dinner, a trip or the house with whoever you want; here you'll see who owes whom and you settle it in one tap.
+963	Split a dinner, a trip or the house: here you'll see who owes whom and you settle it in one tap.
+964	Dividend
+965	Dividends
+967	Renewable diesel (HVO)
+968	Su
+969	Two
+970	Two #
+971	Two days a month
+972	Twice a month (the # and the last)
+973	Duplicate
+974	Day
+975	Day by day this month:
+976	Day of the month
+977	Clear day.
+978	Days without spending
+979	Dollar
+980	Australian dollar
+981	Canadian dollar
+982	Hong Kong dollar
+983	Singapore dollar
+984	US dollar
+985	New Zealand dollar
+986	Where you spend most
+990	Edit
+991	Edit Home
+992	Edit item
+993	Edit accounts
+994	Edit debt
+995	Edit goal
+996	Edit transaction
+997	Edit plan
+998	Edit budgets
+999	Edit task
+1000	Edit transfer
+1001	Edit, date and milestones
+1002	Education
+1003	Cash
+1004	Cash #
+1005	The
+1006	On # at #:# and when your month closes
+1007	The #th working day, the third to last…
+1008	The European Central Bank doesn't publish that currency. Type the rate you were given or what you were charged in euros.
+1009	The file is too big (max. # MB)
+1010	The file is too big (max. # MB).
+1011	The Classic look is gone: only the new one remains.
+1012	The year
+1013	The whole year, more compact
+1014	The bank says
+1015	The Save button no longer hides behind the keyboard.
+1016	Search adds up
+1017	Km calculation isn't turned on yet. Enter the km by hand.
+1018	The previous one
+1019	The money will move from
+1020	On day
+1021	Day # of every month
+1022	The day before
+1023	The day before, at #:#
+1024	The day before, if that account doesn't have enough
+1025	Payday must be a number from # to #
+1026	The day you spent most was
+1027	The day you spent most was #: #.
+1028	The day must be between # and #
+1029	The link has expired or is no longer valid. Cancel this invitation and create another.
+1030	The statement says that on
+1031	The statement says that on # you had
+1032	The group is closed: it can't be restored
+1033	The group needs at least one admin. Make someone else admin first.
+1034	The working day before
+1035	The working day after
+1036	The amount and the day are optional: you can add them later.
+1037	The month
+1038	The calendar month.
+1039	The calendar month. #: # – #
+1040	The same balance as in
+1041	The same balance as in #.
+1042	On the day, at #:#
+1043	The tightest,
+1044	The target can't be negative
+1045	The second to last working day
+1046	The price
+1047	The first #, the last #…
+1048	The first working day
+1049	The first working day of the month
+1050	The split is empty
+1051	The split doesn't add up to the total.
+1052	The final balance in the file (
+1053	The real balance is what your bank app says: a shared expense you pay drops by the whole amount, and rises when they pay you back when settling (Bizum). The virtual one is what you'd have if you settled now.
+1054	The topic was created, but the expenses couldn't be added:
+1055	The quarter
+1056	The quarter closed with
+1057	The quarter is at
+1058	The last
+1059	The last # of every month
+1060	The last day
+1061	The last day of every month
+1062	The last day of the month
+1063	The last working day
+1064	The last working day of the month
+1065	Chosen by hand.
+1066	Chosen by name:
+1067	Chosen by date:
+1068	Chosen because it's the last one you used:
+1069	Choose
+1070	Choose file
+1071	Choose bank
+1072	Choose month
+1073	Choose my look
+1074	Choose transactions
+1075	Choose another
+1076	Choose another
+1077	Choose tabs
+1078	Choose…
+1079	Choose category
+1080	Choose column…
+1081	Choose who you share the bill with.
+1082	Choose who you share it with
+1083	Choose who you share it with
+1084	Choose who you share it with.
+1085	Choose who you split the bill with
+1086	Choose when
+1087	Choose when your month starts. It only changes how your numbers are grouped: nothing is moved or deleted.
+1088	Choose when it is
+1089	Choose how much
+1090	Choose how much you want to spend each month on each thing.
+1091	Choose two different accounts
+1092	Choose where you work
+1093	Choose the earliest day you usually get paid. If it falls on a weekend, your month starts the # before; if the month doesn't have that day, the last one.
+1094	Choose the task's group
+1095	Choose the asset type
+1096	Choose expenses
+1097	Choose the charges or credits column
+1098	Choose the date column
+1099	Choose the amount column
+1100	Choose the account
+1101	Choose the account…
+1102	Choose the shared debt
+1103	Choose the date
+1104	Choose the shared goal
+1105	Choose the two accounts
+1106	Choose the two days of the month
+1107	Choose the group expenses that go in «
+1108	Choose or type a category
+1109	Choose which debt to see.
+1110	Choose what each circle shows. «Auto» ones change by themselves depending on your month.
+1111	Choose which goal to see.
+1112	Choose which tabs you want to see. General (with the Monthly and Yearly views) is always visible. Your data isn't touched: only what's shown changes.
+1113	Choose what you see under the month card and in what order.
+1114	Choose what you see on Home: goals, accounts, calendar…
+1115	Choose a category
+1116	Choose a date
+1117	Choose a goal or debt from that group.
+1118	Choose an option to see the dates.
+1119	Deleted
+1120	Deleted
+1121	Delete
+1122	Delete item
+1123	Delete debt
+1124	Delete this payment
+1125	Delete shared expense
+1126	Deleting the goal doesn't delete any transaction.
+1127	Delete goal
+1128	Delete transaction
+1129	Delete task
+1130	Delete transfer
+1131	Electric
+1132	Choose it so each transaction goes to its account and what you already had isn't repeated.
+1133	Start
+1134	Start here
+1135	It starts the day it really arrives, even if it comes early or late.
+1136	Start here
+1137	In
+1138	In # you set aside more than you had left
+1139	In # you spent more than came in
+1140	In # months:
+1141	In # you didn't add anything.
+1142	In # you had # days without day-to-day spending (not counting fixed ones).
+1143	In #, not counting fixed ones
+1144	In Together you owe
+1145	In Together you owe #, adding up all your groups.
+1146	In Together you're owed
+1147	In Together, adding up your groups
+1148	On each item, tick who has it (what several of you tick is split equally). If there are several units, enter how many each person has.
+1149	In portfolio
+1150	At home
+1151	In accounts
+1152	In progress
+1153	In this group only whoever added it or an admin can change it.
+1154	They always count in the group's accounts. Here you decide whether they also show on your Home and your Transactions, in the months they happened.
+1155	The charts will show «
+1156	In what you share
+1157	So far in
+1158	So far in # you haven't added anything.
+1159	So far in # you've had # left over.
+1160	Negative
+1161	In no particular account
+1162	In order
+1163	Settled up
+1164	What you spend on
+1165	What you spent on
+1166	Where it went
+1167	In all categories with a budget
+1168	In your bank today
+1169	In your account
+1170	In your accounts
+1171	Only your share counts in your numbers.
+1172	In a group everyone in the group sees it
+1173	In a couple of minutes you'll have your numbers up to date.
+1174	In one sentence
+1175	In a kitty, usually each person puts in their own: tick only who contributes.
+1176	Assigned to others · #
+1177	Jan
+1178	Link copied
+1179	Link ready
+1180	Link for one person
+1181	Link for several (WhatsApp group)
+1182	Show to whoever sees my agenda
+1183	Got it
+1185	So it's
+1186	Comes in
+1187	Flat deposit
+1188	Log in
+1189	You'll log in as
+1190	You'll log in with the account
+1191	Between the two of you
+1192	Among everyone
+1193	Came in
+1194	Exactly what went out came in.
+1195	Send on WhatsApp
+1196	Send by email
+1197	It's how the other person will see you.
+1198	It's how others will see you.
+1199	It's the same
+1200	It's the default when sharing an expense in this group; it can be changed on each expense.
+1201	It's more than is owed (
+1202	It's more than is owed (#)
+1203	Other people may not have it and you won't be able to share expenses with it. If it fits a standard one, better use that and add this as a detail.
+1204	It's your main account: transactions without an account and shared ones where you didn't choose another go here.
+1205	It's a transfer
+1206	It's a forecast, not real data.
+1207	That account no longer exists: choose another
+1208	That method isn't valid
+1209	Someone in the group deleted that goal or debt
+1210	That goal or debt no longer exists: someone in the group deleted it
+1211	That goal or debt had already been deleted.
+1212	That goal no longer exists
+1213	That person is no longer in the group
+1214	You didn't spend anything that week.
+1215	Scan the QR code
+1217	Hide from whoever sees my agenda
+1218	Hidden from whoever sees your agenda
+1219	Type BORRAR to confirm
+1220	Type BORRAR to confirm.
+1221	Type at least # letters.
+1222	Enter how much you set aside
+1223	Enter how much it was
+1224	Enter how much you move
+1225	Type where you're leaving from and where you're going.
+1226	Type the #-digit code from your authenticator app.
+1227	Enter the amount
+1228	Type the name
+1229	Enter what the bank says
+1230	Enter what you have today in this account. From there the app adds and subtracts its transactions.
+1231	Type the # digits.
+1232	Type or choose the asset
+1233	Type the name first
+1234	Type their name
+1235	Type your email above and tap the link again.
+1236	Type your email and your password.
+1237	Type your name
+1238	Type «Mercadona», tick Remember and next time it fills in by itself.
+1239	Type «super» and you'll see what you've spent this month.
+1240	Type it by hand (no automatic valuation)
+1241	Write to us
+1242	Shield
+1243	That asset doesn't have prices for the chart yet
+1244	That day
+1245	Your salary arrived that day (
+1246	Your salary arrived that day (#)
+1247	That link is no longer valid (expired or already used). Ask for a new one.
+1248	That shared expense no longer exists
+1249	That expense had already been deleted.
+1250	That plan is already deleted
+1251	That topic is deleted
+1252	That topic no longer exists or belongs to another group
+1253	Zloty
+1254	Emerald
+1255	That doesn't look like an amount
+1256	Spain
+1257	Wait a moment: the last thing is still being saved
+1258	Waiting for them to accept
+1259	This account no longer exists.
+1260	This debt no longer exists

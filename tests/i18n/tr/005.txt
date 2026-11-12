@@ -1,0 +1,418 @@
+1701	What you delete (transactions and tasks) will appear here for
+1702	What you delete (transactions and tasks) will appear here for # days.
+1703	What changed
+1704	What you earn
+1705	What you owe or are owed
+1706	What you owe and are owed with each person
+1707	What you owe and are owed, by person
+1708	What your bank or card says, with the fee.
+1709	What comes in and what you spend, month by month
+1710	What you gain or lose on what you put in.
+1711	What it uses every # km
+1712	What you've written won't be saved.
+1713	What you've received minus what you've spent, set aside, invested and paid in debts in your month (
+1714	What you've received minus what you've spent, set aside, invested and paid in debts in your month (# – #). Tap each figure to see its transactions.
+1715	What you've put in
+1716	What arrives at night, at #:#
+1717	So far in
+1718	So far in #
+1719	So far this year
+1720	What you have in the one you choose
+1721	What I was charged
+1722	What fell most:
+1723	What you buy most · according to your receipts
+1724	What weighed most:
+1725	What rises most
+1726	What rose most:
+1727	What doesn't fit anywhere
+1728	What doesn't appear here didn't change.
+1729	What you pay regularly
+1730	What each person puts in:
+1731	What you can spend each remaining day
+1732	What goes up
+1733	What you've spent today
+1734	What you have left this month with its figures, and «How you're doing» with the circles you choose in «Change».
+1735	What you have left this month and what's coming, at a glance. The Agenda is now inside.
+1736	What you have left this month, where what comes in goes and arrows to see other months.
+1737	What you have
+1738	What you have invested and how much you earn.
+1739	What you have to do or pay
+1740	What you have to do, with its day, and a reminder on Home.
+1741	What you already
+1742	What you already had before (
+1743	What you already have is ticked. To change or remove one: You → Fixed income and payments.
+1744	Whoever sees your agenda will see it, depending on what you let them see.
+1745	The last thing you added
+1746	The last thing you've shared
+1747	Achieved on
+1748	Achieved on # ✓
+1749	The items add up to
+1750	Bill reminders stay the same
+1751	Bank notifications are only in the Android app.
+1752	Banks and salaries follow the calendar of the place where you work.
+1753	The days
+1754	Days # and # of every month
+1755	Day # and the last day of every month
+1756	The days you didn't spend anything
+1757	The amounts match the bank's Balance column.
+1758	The amounts don't match the Balance column (they match
+1759	The amounts don't match the Balance column (they match # of # rows). The sign or the amount column may not be right.
+1760	The amounts add up to
+1761	The amounts add up to # and the total is #
+1762	The amounts…
+1763	Transactions without an account count as the main one's.
+1764	Most used
+1765	The names and logos belong to each bank; they're only there so you recognise your account.
+1766	Your groups' plans and tasks show up in the Agenda and in «These days». And you can add them to your calendar.
+1767	The percentages add up to
+1768	The percentages add up to # and must add up to #
+1769	The tightest ones this month
+1770	Sections coming from «Adjustment» transactions are approximate: they count from the adjustment date.
+1771	The last
+1772	Mo
+1774	Mon #
+1775	Magnifying glass at the top to find anything
+1776	Electricity
+1777	Electricity, water, gas, internet, mobile
+1778	TUE
+1779	IMPROVED
+1780	Tu
+1782	Suitcase
+1783	Press and hold the link below to copy it
+1784	Tue
+1785	Tue #
+1786	Tick at least one person
+1787	Tick what you set aside or invested for this goal.
+1788	Tick the transactions that came out of (or went into) this account. The ones you don't tick keep counting as the main one's.
+1789	Mark as done
+1790	Tick the
+1791	Tick the #
+1792	Tick the new ones
+1793	Tick the
+1794	Tick the # from those dates
+1795	Mark as not done
+1796	Pet
+1797	Pets
+1799	Tomorrow
+1800	Due tomorrow:
+1801	Tomorrow,
+1802	Tomorrow, # #
+1803	Tomorrow, today (Confirm button) and «Did it happen?».
+1804	Tomorrow:
+1805	Tomorrow: income from
+1806	Tomorrow: payment of
+1807	I was charged
+1808	I like it
+1809	They paid me
+1810	Medium
+1811	Spain average
+1812	Half width
+1813	Better on iPhone
+1815	Less
+1816	Monthly
+1817	Market
+1819	Month
+1820	Previous month
+1821	Month closed
+1822	Next month
+1823	Goal
+1824	Goal #
+1825	Shared goal
+1826	Shared goal created
+1827	Goal complete
+1828	Goal complete:
+1829	Goal created:
+1830	Goal deleted
+1831	Goal saved
+1832	Goal achieved
+1833	Goal or debt
+1834	Goal restored
+1835	Goal ·
+1836	Goals
+1837	Goals with milestones
+1838	Goals reached
+1839	Savings goals
+1840	Investment goals
+1841	Goals and debts
+1842	Shared goals and debts
+1843	Goals and debts together
+1844	Put in
+1845	My
+1846	Member
+1847	Member removed
+1848	Members (#)
+1849	In the meantime, your month starts on day
+1850	See how much you have left this month
+1851	See how it went.
+1852	See where it went this week.
+1853	Look at your bank's app and copy the balance of your main account. From here, PalomApp adds and subtracts what you enter.
+1854	Dark mode in black
+1855	Currency
+1856	Mosaic
+1857	Show figures
+1858	Show more (
+1859	Show more (#)
+1860	Transaction
+1861	Transaction updated
+1862	Transaction added
+1863	Transaction deleted
+1864	Transaction restored
+1865	Transactions
+1866	Transactions month by month
+1867	Transactions month by month with arrows, smooth charts and small details that make the app nicer to use.
+1868	Transactions, clearer
+1869	A lot
+1870	World
+1872	Very common for salaries
+1875	Send it on WhatsApp. When they accept, they'll show up here in «With» and you can split with that person.
+1876	More
+1877	More (
+1878	More (#)
+1879	Later
+1880	More settings
+1881	More comfortable and nicer
+1882	More detail
+1883	More detail (optional)
+1884	More details
+1885	More options
+1886	Max
+1887	Payment method
+1888	Payment methods
+1889	See them in Agenda.
+1890	Mobile
+1891	NEW
+1892	Nothing with this filter.
+1893	Nothing with «
+1894	Nothing in the next two weeks.
+1895	Nothing this day.
+1896	Nothing else until the end of the month.
+1897	Nothing for this day.
+1898	Nothing pending
+1899	Nothing pending for these days.
+1900	Nothing pending. Nice!
+1901	Nobody owes anybody anything.
+1902	Nobody in this filter.
+1903	Nobody. Your agenda is yours alone.
+1905	You need at least a month of history to work out the yearly return.
+1906	You need at least a month of history to compare it with inflation (
+1907	You need to put in about
+1908	You need a month of history
+1909	I need at least # transactions of «
+1910	Together you need to save about
+1911	Together you need to put in about
+1912	Pure black
+1914	Neutral
+1915	None
+1916	No transaction changes account, but the balances may change.
+1918	You didn't add income in
+1919	You didn't add income in #.
+1920	Don't share
+1921	Doesn't convert
+1922	It doesn't count as spending or income: it just settles the accounts.
+1923	I can't find the transaction
+1924	I can't find the destination. Try typing it with the city.
+1925	I can't find the starting point. Try typing it with the city.
+1926	Not this one: search the market
+1927	It didn't happen
+1928	There was nothing new: you already had everything
+1929	There was nothing new: you already had everything in this file.
+1930	No connection. As soon as it's back, you'll see your data.
+1931	No rows ticked
+1932	No transactions with these filters
+1933	There's no setting with that name.
+1934	There's no driving route between those two places.
+1935	There's no exchange rate for that date. Enter the price in euros of each unit, or how many you bought. If you don't know, it's saved anyway.
+1936	There's no clear pattern: check it.
+1937	I couldn't open that file
+1938	I couldn't read that file. Try exporting it again as Excel, CSV or Norma #.
+1939	I couldn't read any row: check the columns and the date format
+1940	We couldn't open this invitation.
+1941	We couldn't open the invitation: there seems to be no connection. Carry on with the welcome and it'll be waiting for you on Home.
+1942	We couldn't load the prices.
+1943	It didn't arrive: the expected day counts
+1944	I don't know: work it out between two places
+1945	We don't have it. Choose «Other, or no bank» and give it a name yourself.
+1946	We don't connect to your bank. Only you see your figures.
+1947	It didn't happen
+1948	It doesn't look like a receipt or it can't be read well. Try another photo: in good light, the whole receipt and without creases.
+1949	There are no transactions left without an account.
+1950	Don't split
+1951	Nothing is deleted or lost: only what you see changes. You can change it whenever you want.
+1952	The connection with Supabase wasn't found. Copy
+1953	It hasn't been saved
+1954	We couldn't load who you share it with.
+1955	We couldn't load the history. Check your connection.
+1956	We couldn't load the history. We'll try again in a moment.
+1957	We couldn't share with that person
+1958	We couldn't confirm
+1959	We couldn't save everything (
+1960	They couldn't be changed
+1961	We couldn't load the tasks
+1962	We couldn't load the transactions
+1963	We couldn't search. Check your connection.
+1964	We couldn't change it:
+1965	We couldn't change it: in this group maybe only whoever added it or an admin can do it.
+1966	We couldn't load Golf Resale
+1967	We couldn't load the Excel reader. Check your connection and try again.
+1968	We couldn't load the settings
+1969	We couldn't finish. Check your connection and try again.
+1970	We couldn't finish. Check your connection.
+1971	We couldn't connect. Check your internet connection.
+1972	We couldn't look up the price. Check your connection or enter the units yourself.
+1973	We couldn't look it up. Check your connection.
+1974	We couldn't copy it
+1975	We couldn't turn it off. Log out, log back in with your code and try again.
+1976	We couldn't download it
+1977	We couldn't undo everything (
+1978	We couldn't send the email. Try again in a few minutes.
+1979	We couldn't save the file
+1980	We couldn't save. Check your connection.
+1981	We couldn't log in. Check your connection.
+1982	We couldn't start. Try again.
+1983	We couldn't read the receipt. Check your connection and try again.
+1984	We couldn't prepare the asset. Try again.
+1985	We couldn't restore your task. It's still shared and yours is in the bin
+1986	We couldn't use that image. Try another photo.
+1987	It can't be undone.
+1988	Doesn't repeat
+1989	You have no readings left
+1990	We don't have the price for that day (automatic ones go back a year). Enter the price you paid for each unit, or how many you bought. If you don't know, it's saved anyway and you fill it in later.
+1991	You don't have permission to change that in this group
+1992	You don't have permission for this.
+1993	You don't have permission to save this change (check your session).
+1994	No, it's a
+1995	No, only in the group
+1996	No, they're different
+1997	Name
+1998	Name changed
+1999	Account name
+2000	Group name
+2001	Bill name
+2002	Name in the charts
+2003	Name, drawing, amount, date and stages
+2004	Name, drawing, total, already paid, per month and date
+2005	Norma #: opening balance + transactions = the bank's final balance (#).
+2007	Note
+2008	Reading note:
+2010	What's new
+2011	New
+2012	New debt
+2013	New shared debt
+2014	New investment
+2015	New goal
+2016	New shared goal
+2017	New option: your month starts the day your salary really arrives. If it's late, it waits up to # days.
+2018	New task
+2019	New shared task
+2020	New:
+2021	New
+2022	New golf item
+2023	New expense
+2024	New group
+2025	New income
+2026	New fixed income
+2027	New «Return» mode: only what your investments earn, without counting what you put in.
+2028	New fixed payment
+2029	New plan
+2030	New topic
+2031	Never
+2032	Salary
+2033	Salary on
+2034	Salary on #
+2035	Salary, rent… with their real date (last working day, first #…).
+2036	Or choose one you already have:
+2037	Or take a photo of a receipt
+2038	Or take a photo of the receipt.
+2040	ANOTHER PACE
+2041	Target
+2042	Leisure
+2044	Hide
+2045	Hide figures
+2046	Hide from my agenda
+2047	Hide the ones at #
+2048	Hidden from your agenda (still in the group)
+2049	Hidden. You have everything in You.
+2051	Transaction abroad
+2052	Computer
+2053	I'm inviting you to my group «
+2054	Dark
+2055	Other
+2056	Other (by hand)
+2057	Another account
+2058	Another photo
+2059	Another currency
+2060	Others
+2061	Other categories
+2062	Others · # categories
+2063	Other
+2064	Other #
+2065	Another working day
+2066	Another day…
+2067	Other, or no bank
+2068	Others
+2069	Other #
+2070	# more transaction
+2071	# more transactions
+2072	Other banks
+2073	Other days
+2074	Other income
+2079	Paid
+2080	Paid
+2081	Paid # of # · pending #
+2082	Paid # of # · pending # · until #
+2083	Pay only part
+2084	Pay a shared debt
+2085	You pay
+2086	Bonus payments
+2087	You paid
+2088	You paid in debts
+2089	Payment
+2090	Payment added to «
+2091	Debt payment
+2092	Payment undone
+2093	Payment deleted
+2094	Fixed payment
+2095	Payment to settle up
+2096	Payment recorded
+2097	Payment recorded: #. You can edit it in Transactions.
+2098	Payment recorded: all square!
+2099	Payment recorded: settled up with
+2100	Payments every few months
+2101	Debt payments
+2102	Fixed payments
+2103	Fixed payments, your way
+2104	Paid
+2107	PalomApp is locked
+2108	PalomApp can read the notifications from your bank apps and add each expense or income by itself.
+2109	Paperwork
+2110	Bin
+2111	#-day bin
+2112	For
+2113	For #:
+2114	For #: #/month
+2115	To finish in
+2116	To finish in #: # a month.
+2117	To change the balance, enter an amount
+2118	To share expenses with someone without creating a group (a dinner, a present…). They get a link on WhatsApp and, once they accept, you can share expenses.
+2119	To share expenses, goals and debts with other people (for example, «Home» or «Trip»). Your own stuff stays private: only what you share in each group is seen.
+2120	To share, choose a standard category (put «
+2121	To undo it, tick the previous one again.
+2122	For
+2123	For #
+2124	For the target
+2125	To stay up to date · no sound
+2126	To work, Android will ask you to give PalomApp «Notification access». When you tap «OK» the phone settings open: find PalomApp and turn it on.
+2127	To leave yourself, use «Leave the group».
+2128	For home, your partner or a trip.
+2129	For day-to-day accounts. Savings and the broker, better kept out.
+2130	To get there in time you need to put in about
+2131	To get there in
+2132	For something else
+2133	To settle up ·
+2134	To settle up · # payment
+2135	To settle up, the app puts together the balances of the whole group and suggests as few payments as possible. That's why you might pay someone who didn't pay exactly your expenses: in the end, the accounts add up the same.
+2136	For whom
+2137	To receive them, PalomApp needs permission to send you notifications.
+2138	To split by items, the sum has to match the total
+2139	To settle up
+2140	To separate a trip, the shopping or the house.

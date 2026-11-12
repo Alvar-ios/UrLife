@@ -1,0 +1,393 @@
+421	Look and feel
+423	This is how your dates change
+424	This is PalomApp
+425	How Together works
+426	So you know what's really left.
+427	That way you'll know what you really have
+428	That way you'll know what you really have.
+429	This is how «Left this month» is worked out
+430	This is how you get around the app
+431	That way we remind you of what's due and you'll see how you'll end the month.
+432	This is how people you share expenses with will see you.
+433	This is how people you share expenses with will see you. In the groups you already have, your name is changed inside each group.
+434	How you're doing
+435	That way «Left» counts from when you get paid until the next payday, and doesn't go negative mid-month.
+436	Shortcuts
+437	Shortcuts on Home
+438	Back
+440	Autogas (LPG)
+441	Automatic
+442	Notify me
+443	Notify me when it adds something
+444	Notifications
+445	Bank notifications
+446	Bank notifications off. Anything pending has been deleted from the phone.
+447	Alerts on Home
+448	Plane
+449	Yesterday
+450	Yesterday, # #
+451	Add someone with just their name. If they install it one day, a link keeps their spot.
+452	Add your friends and share with them without creating a group.
+453	Add categories in You → Spending categories.
+454	Add what you pay in «
+455	Add an extra layer of security: besides the password, you'll be asked for a #-digit code from an app like Google Authenticator, Microsoft Authenticator or Authy. It's optional.
+456	Add
+457	Add #
+458	Add to Home
+459	Add to my calendar
+460	Add the new things from the file to your settings:
+461	Add to your friends
+462	Add item
+463	Add fixed income
+464	Add account
+465	Add cash or another account
+466	Add expense
+467	Add shared expense
+468	Add expenses already entered
+469	Add milestone
+470	Add transaction
+471	Add another account
+472	Add rule
+473	Add balance
+474	Add one
+475	Add to your friends now
+476	Year
+477	Previous year
+478	Year closed
+479	Whole year
+480	Next year
+481	Add it
+482	Still
+483	You're still alone in this group. Invite someone to start sharing.
+484	You don't share with anyone yet
+485	You don't share with anyone yet. Invite someone on WhatsApp or create a group and, once they accept, you can share expenses.
+486	You don't share with anyone yet. Invite someone on WhatsApp and, once they accept, you can share expenses.
+487	You don't share expenses yet
+488	You don't share expenses with anyone yet.
+489	You don't share anything yet. Create a group (home, trip…) or invite someone on WhatsApp.
+490	You're not in any group yet. Create one and invite people on WhatsApp.
+491	You haven't shared expenses yet
+492	You haven't added anything yet.
+493	You haven't added any accounts yet.
+494	You haven't completed any yet
+495	You haven't completed any yet.
+496	You haven't spent anything here this month yet.
+497	You haven't imported anything yet.
+498	No recent contributions yet. With a little each month, you'll see it grow.
+499	No changes yet. Here you'll see who adds, changes or deletes each expense.
+500	No data for this yet this month.
+501	No expenses here yet. Add the first one.
+502	No shared expenses here yet.
+503	No expenses yet in
+504	No expenses yet in #.
+505	No expenses in this topic yet.
+506	No reports yet.
+507	No investments yet. Add a transaction of type
+508	No transactions in these months yet.
+509	You don't have anything in this group yet.
+510	Nobody here yet. Invite someone on WhatsApp.
+511	No pieces for this yet.
+512	No plans yet. Add the first one: a dinner, a trip, someone's birthday.
+513	There are no prices for all your assets yet.
+514	Not enough days for the chart yet.
+515	They haven't accepted it yet. The link expires on
+516	We don't have the holidays for
+517	You don't have
+518	You don't have fixed income or payments yet.
+519	You don't have accounts yet.
+520	You don't have debts yet.
+521	You don't have groups yet. Create one for home, a trip or padel.
+522	You don't have investments yet.
+523	You don't have goals yet.
+524	You don't have Set aside or Investment transactions yet.
+525	You don't have any yet. Add rent, electricity or a subscription.
+526	You don't have any yet. Add your salary or another fixed income.
+527	You don't have any yet. Tap «Add».
+528	You don't have budgets yet.
+529	You don't have rules yet. They are created when you add a transaction with a description («Remember…») or when importing.
+530	Nothing added yet
+531	No payments yet
+533	Backspace
+535	Low
+536	Lowers what the goal has and it stays active (for example, an emergency).
+538	Balance with your people
+539	Balance for
+540	Balance for #
+541	Balance for # #
+542	Balearic Islands
+543	Ball
+544	Bank
+545	Bank #
+546	Bank + investments + savings − debts, on Home.
+550	Bar with what you owe and what you're owed
+551	Bars
+552	Wider bars, easier to read
+553	Just their name: no app needed.
+556	Baby
+557	Profit
+558	Welcome
+560	Biodiesel
+561	Bioethanol (E#)
+564	White
+565	Wedding
+566	Light bulb
+567	Bond
+568	Deleted
+569	Deleted
+570	Deleting…
+571	Delete
+572	Delete my account
+573	Delete topic
+574	Delete, hold to delete everything
+575	You deleted
+576	Buttons easier to tap
+577	+ button
+578	Compare button hidden
+579	«Before» button (testing)
+580	«Settle» button to get even
+581	Broker
+582	Brokers and investing
+584	Search transactions by shop, category or amount, your tasks and any setting.
+585	Search and choose the asset
+586	Search
+587	Looking up today's exchange rate…
+588	Searching…
+589	Search
+590	Search for the asset
+591	Search the whole history
+592	Find what's missing in their transactions
+593	Find it
+594	EVERY MONTH
+598	Every
+599	Every # days…
+600	Every # months (half-yearly)
+601	Every # months (quarterly)
+602	Every #, the week before
+603	Every year
+604	Every certain number of days
+605	Every certain number of months (quarterly, yearly…)
+606	Every certain number of weeks
+607	How many weeks apart
+608	How many days apart
+609	How many months apart
+610	Every day
+611	Each band is what that asset is worth; the grey, the rest. The top edge is the total.
+612	Each expense can only be changed or deleted by whoever added it, and by the admins.
+613	Each group is settled separately, with as few payments as possible.
+614	Each group has its admins, who choose who can change the expenses.
+615	Every month
+616	Each goal with its shape and its name inside
+617	Each goal gathers what you set aside and invest for it. You can give it milestones and, when you use the money, note it down.
+618	Each goal has its dated milestones and its pace to get there.
+619	Each town has #. Enter the ones where you work.
+620	Every week
+621	Every week, every # weeks…
+622	Every three months
+623	Every time it adds something it will tell you with an «Undo» button, and on Home you can delete it with one tap.
+627	Cash machine
+628	Worked out by when you put in each euro (money-weighted return), since
+629	Worked out from the balance on
+630	Worked out from the balance on # ·
+631	Trip calculator
+632	Calculating…
+633	Work out km
+634	Calendar
+635	Calendar with what you spend each day and «Where you spend most»
+636	Spending calendar
+637	Change month with the arrows or look at all your history.
+638	Change the filter or add a new one.
+639	Changes the symbol and format of all amounts.
+640	Changes only depending on your month
+641	Change
+642	Switch version (#, # of #)
+643	Change this circle
+644	Change name, icon or dates
+645	Change topic
+646	You changed
+647	Today's rate
+648	Changes
+649	Field
+650	Canary Islands
+651	Cancel
+653	Smiling face
+654	Car charging
+655	Fast charging
+656	Loading history…
+657	Loading prices…
+658	Loading your data…
+659	Loading…
+660	Charge
+661	Charges (spending)
+662	Charges and credits separate
+663	Trolley
+664	Home
+666	Castile and León
+667	Castile-La Mancha
+668	Catalonia
+669	Category
+670	Expense category
+671	Custom category added
+672	Category set by your rule «
+673	Categories
+674	Automatic categories
+675	Spending categories
+676	Task categories
+677	Same categories for everyone
+678	Categories and budgets
+679	Din
+680	Dinner
+681	Dinners and nights out
+682	Closed · #
+683	Close
+684	Swipe to close
+685	Close the group for everyone
+686	Close the trip
+687	Log out
+688	Close topic
+689	Close «
+690	Close: nothing new
+691	You closed in your favour
+693	Sky
+694	Figures visible
+695	Figures hidden
+696	Figures and headings
+697	Cinema
+698	Cinema, concerts, plans
+700	Light
+701	Classic
+702	Classic
+703	Cobalt
+704	Received
+705	You get paid on
+706	You get paid on the #.
+707	You get paid around day
+708	You get paid around day #. Shall we start your month that day?
+709	Income
+710	Paid on day
+711	Income and bills
+712	Income and payments
+713	Fixed income and payments
+714	Fixed income and payments until the end of the month
+715	Car
+716	Car, home, health
+718	Cushion
+720	Colour #
+721	Colour in charts
+722	Column
+723	Decimal comma
+724	Comment
+725	Eating out, drinks, coffees
+726	Shop
+727	Food
+728	Food and household things
+729	Food, vet
+730	As at the start
+731	At most # at a time.
+732	At most # assets at a time
+733	At most # notifications a day (important ones aside), without figures and without ads.
+734	Compare with the previous version
+735	Share expenses with someone
+736	Share expenses with whoever you want
+737	Share expenses in Together
+738	Share an expense with someone
+739	Share an expense with your partner, family or a trip. Only your share counts in your numbers and the app keeps track of who owes whom.
+740	Shared
+741	Shared with
+742	Shared
+743	Shared
+744	Shared expense saved, but your copy couldn't be saved
+745	Shared
+746	Share
+747	Share with
+748	Share with someone
+749	Share this expense
+750	Share expenses
+751	Share expenses with someone
+752	Share my agenda
+753	Share my agenda ›
+754	Sharing isn't available here.
+755	Share task
+756	Share an expense
+757	Share an expense with
+758	Completed (#)
+759	Done
+760	Complete task
+761	Shopping
+762	Shopping
+763	Region of Madrid
+764	Valencian Community
+765	With
+766	With items or a split you can't switch version here
+767	For each one we remind you on Home the day before and on the day, and you'll see it in the calendar.
+768	With character
+769	With the + button in the middle, whenever you want.
+770	With photo and items
+771	With what there is you'd get there without adding more
+772	With what you have left today (
+773	With what it's worth today you'd get there without adding more
+774	With less than a year of data it's a rough guide.
+775	With less than a year of data the yearly figure is a rough guide: it extrapolates what has happened so far.
+776	Which account
+777	Which account…
+778	With receipt
+779	With your colour
+780	With your salary and your fixed payments, at the end of
+781	With your salary and your fixed payments, at the end of # you'd have about #. It's a forecast, not a fact.
+782	Description
+783	Connection with your bank
+784	Confetti when you reach a goal 🎉
+785	Confirm
+786	Reached on
+787	Reached on # 🎉
+788	Checking the price for that day…
+789	Continue
+790	Password
+791	Password changed
+792	Password changed. You can log in now.
+793	New password
+794	Turned into a transfer
+795	Convert
+796	Turn into a transfer
+797	Backup
+798	Backup (.json)
+799	Backup downloaded
+800	Copy the balance from your bank's app
+801	Copy ready: check and save
+802	Copy link
+804	Heart
+805	Email
+806	Wrong email or password.
+807	Current
+808	Create your first goal
+809	Create your own group
+810	Create your accounts (bank, cash…) and choose which one each transaction goes in. Your real balance is the same one you see at the bank: if you pay a shared expense it drops by the whole amount, and it rises when they Bizum you to settle. The virtual balance also counts what you're owed and what you owe in Together.
+811	Create a group (home, trip, padel…) or invite someone on WhatsApp.
+812	Create a goal
+813	Create
+814	Create shared debt
+815	Create link
+816	Create invitation link
+817	Create group
+818	Create a group or invite
+819	Create goal
+820	Create shared goal
+821	Create my first goal
+822	Create my accounts
+823	Create another link (for one person)
+824	Create topic
+825	Create a group
+826	Create one
+827	Crypto
+828	Crypto #
+829	Cryptocurrency
+830	It matches: the app and the bank say the same on
+831	It matches: the app and the bank say the same on # (#).
+832	It matches: the app and the bank say the same.
+833	Matched with your bank
+834	Matched with the bank. Adjustment of
+835	Matched with the bank. Adjustment of #.
+836	Matched on
+837	Matched on # ·
+838	Matched. Adjustment of
+839	Matched. Adjustment of #
+840	Matched: everything agrees

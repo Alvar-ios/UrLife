@@ -96,6 +96,7 @@ const ICONS = {
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.5 13.5"/><path d="m21 3-6.5 18-4-7.5L3 9.5z"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
 };
+ICONS.globo = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18"/></svg>';
 ICONS.trendUp = ICONS.piggy; // la «hucha» de antes es una flecha que sube: Apartar usa ahora piggy2, una hucha de verdad
 function ic(name) {
   const s = ICONS[name];
@@ -112,30 +113,34 @@ const TIPO_COLOR = { Ingreso: 'income', Factura: 'bill', Gasto: 'expense', Ahorr
 const TIPO_SIGNO = { Ingreso: 1, Factura: -1, Gasto: -1, Ahorro: -1, 'Inversión': -1, Deuda: -1 };
 
 function num(v) { const n = Number(v); return isFinite(n) ? n : 0; }
+// C1 (idiomas): formato de números según el idioma (i18n.js). En español, como siempre («1.234,56 €»); en inglés «€1,234.56»
+function LOC() { return window.I18N && I18N.lang === 'en' ? 'en-GB' : 'es-ES'; }
+function enIngles() { return LOC() !== 'es-ES'; }
+function conSym(s) { if (!enIngles()) return s + ' ' + sym(); const y = sym(), neg = /^[-−]/.test(s); return (neg ? s.charAt(0) : '') + y + (y.length > 1 ? ' ' : '') + (neg ? s.slice(1) : s); }
 // es-ES no agrupa los números de 4 cifras («3240,00»): lo forzamos para que todos se lean igual («3.240,00»)
 function agrupar(s) { return String(s).replace(/^(-?)(\d{4,})/, (m, sg, d) => sg + d.replace(/\B(?=(\d{3})+(?!\d))/g, '.')); }
-function fmt2(n) { return agrupar(n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
+function fmt2(n) { return agrupar(n.toLocaleString(LOC(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })); }
 /* Moneda de la cuenta (solo símbolo y formato: NO convierte importes). Se guarda en config.moneda. */
 const MONEDAS = {
   EUR: { s: '€', dec: 2, n: 'Euro' }, USD: { s: '$', dec: 2, n: 'Dólar estadounidense' }, GBP: { s: '£', dec: 2, n: 'Libra esterlina' },
   JPY: { s: '¥', dec: 0, n: 'Yen japonés' }, CHF: { s: 'CHF', dec: 2, n: 'Franco suizo' }, CAD: { s: 'C$', dec: 2, n: 'Dólar canadiense' },
   AUD: { s: 'A$', dec: 2, n: 'Dólar australiano' }, MXN: { s: 'MX$', dec: 2, n: 'Peso mexicano' }
 };
-function fmtEjMoneda(k) { const d = MONEDAS[k].dec; return agrupar((1234.5).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d })) + ' ' + MONEDAS[k].s; }
+function fmtEjMoneda(k) { const d = MONEDAS[k].dec; return agrupar((1234.5).toLocaleString(LOC(), { minimumFractionDigits: d, maximumFractionDigits: d })) + ' ' + MONEDAS[k].s; }
 function monedaCod() { const c = S && S.config && S.config.moneda; return MONEDAS[c] ? c : 'EUR'; }
 function sym() { return MONEDAS[monedaCod()].s; }
-function fmtM(n) { const d = MONEDAS[monedaCod()].dec; return agrupar(n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d })); }
-function money(n) { return fmtM(num(n)) + ' ' + sym(); }
+function fmtM(n) { const d = MONEDAS[monedaCod()].dec; return agrupar(n.toLocaleString(LOC(), { minimumFractionDigits: d, maximumFractionDigits: d })); }
+function money(n) { return conSym(fmtM(num(n))); }
 // Rótulo de lo que apartas e inviertes (antes «Ahorro»)
 function apInvTxt() { return 'Apartado e invertido'; }
 function moneyShort(n) {
   n = num(n);
-  return Math.abs(n) >= 100 ? agrupar(n.toLocaleString('es-ES', { maximumFractionDigits: 0 })) + ' ' + sym() : money(n);
+  return Math.abs(n) >= 100 ? conSym(agrupar(n.toLocaleString(LOC(), { maximumFractionDigits: 0 }))) : money(n);
 }
 // Importe con signo según el efecto real sobre tu dinero (una devolución = gasto negativo = suma)
 function moneySigned(importe, tipo) {
   const eff = (TIPO_SIGNO[tipo] || 1) * num(importe);
-  return (eff >= 0 ? '+' : '−') + fmtM(Math.abs(eff)) + ' ' + sym();
+  return (eff >= 0 ? '+' : '−') + conSym(fmtM(Math.abs(eff)));
 }
 function effect(importe, tipo) { return (TIPO_SIGNO[tipo] || 1) * num(importe); }
 // Apartar e invertir mueven tu dinero, no lo gastan: en las listas van aparte (color de ahorro y una flecha)
@@ -737,10 +742,22 @@ function subscribeAll() {
   if (S.db.carpetas) _unsubs.push(S.db.carpetas.suscribir((rows) => { S.carpetas = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.carpetas = S.carpetas || []; }));
   if (S.db.objetivos) _unsubs.push(S.db.objetivos.suscribir((rows) => { S.objetivos = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.objetivos = S.objetivos || []; }));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
-    S.config = cfgConPendientes(snap.exists ? snap.data() : null); S.loaded.cfg = true; if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); pedirRender(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); setTimeout(revisarNivel30, 0); setTimeout(avisosTrasCargar, 0); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
+    S.config = cfgConPendientes(snap.exists ? snap.data() : null); S.loaded.cfg = true; idiomaDesdeConfig(snap.exists); if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); pedirRender(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); setTimeout(revisarNivel30, 0); setTimeout(avisosTrasCargar, 0); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
   }, fail('cfg', 'No se pudo cargar la configuración')));
 }
 
+/* C1 (idiomas): el idioma de la cuenta manda; una cuenta nueva coge el del móvil (y se guarda si no es español);
+   las de antes de que hubiera idiomas siguen en español. Ver I18N.desdeConfig en i18n.js. */
+function idiomaDesdeConfig(existia) {
+  if (!window.I18N) return;
+  const guardar = I18N.desdeConfig(S.config || {}, existia && S.config && Object.keys(S.config).length > 0);
+  if (guardar && cfg().idioma !== guardar) setTimeout(() => saveConfig({ idioma: guardar }), 0);
+}
+function idiomaFilaHtml() {
+  if (!window.I18N) return '';
+  return '<div class="menu-item static" data-k="idioma language english espanol ingles" translate="no"><span class="ic">' + ic('globo') + '</span>Idioma / Language' +
+    '<div class="segmented tema-seg">' + I18N.IDIOMAS.map(([k, l]) => '<button type="button" class="' + (I18N.lang === k ? 'active' : '') + '" aria-pressed="' + (I18N.lang === k) + '" ' + act('setIdioma', k) + '>' + l + '</button>').join('') + '</div></div>';
+}
 /* -------- Config: escrituras en serie (una a la vez sobre el mismo documento) -------- */
 let _cfgChain = Promise.resolve();
 /* 10/11 (fallo de Alfredo): una lectura del servidor que llega mientras aún se está guardando no trae
@@ -1070,6 +1087,7 @@ function renderLoginScreen(msg) {
     '<button class="btn accent block" style="margin-top:6px;" ' + act('doLogin') + '>Iniciar sesión</button>' +
     '<button class="section-title link" style="width:100%;text-align:center;margin-top:16px;justify-content:center;" ' + act('doForgotPassword') + '>¿Olvidaste tu contraseña?</button>' +
     '<button class="link" style="display:block;margin:10px auto 0;font-size:12.5px;" ' + act('abrirPrivacidad') + '>Privacidad</button>' +
+    (window.I18N ? '<button class="link" translate="no" style="display:block;margin:6px auto 0;font-size:12.5px;" ' + act('idiomaLogin', I18N.lang === 'en' ? 'es' : 'en') + '>' + (I18N.lang === 'en' ? 'Español' : 'English') + '</button>' : '') +
     '</div></div>';
   setTimeout(() => { const el = $('#loginEmail'); if (el) el.focus(); }, 60);
 }
@@ -1844,7 +1862,7 @@ function updatePreview() {
   if (!pr || (!pr.error && pr.cierre_eur == null)) { el.textContent = ''; return; }
   if (pr.error) { el.textContent = errPrecioMsg(pr.error); return; }
   const precioTxt = fmt2(pr.cierre) + ' ' + (pr.moneda === 'GBX' ? 'GBX' : pr.moneda) + (pr.moneda !== 'EUR' ? ' (≈ ' + fmt2(pr.cierre_eur) + ' €)' : '');
-  el.innerHTML = (isFinite(imp) && imp !== 0 ? '≈ <b>' + (imp / pr.cierre_eur).toLocaleString('es-ES', { maximumFractionDigits: 6 }) + '</b> participaciones · ' : '') +
+  el.innerHTML = (isFinite(imp) && imp !== 0 ? '≈ <b>' + (imp / pr.cierre_eur).toLocaleString(LOC(), { maximumFractionDigits: 6 }) + '</b> participaciones · ' : '') +
     'precio ' + precioTxt + ' · cierre del ' + fmtDateShort(pr.fecha_precio);
 }
 async function cargarPreview() {
@@ -2397,7 +2415,7 @@ function gcMosaicoHtml(d) {
   const abiertaEsFicha = out.some((t) => t.n === S._gcAbierta);
   return out.map((t, i) => { const grande = t.w >= 30 && t.h >= 26, media = t.w >= 22 && t.h >= 16;
     return '<button type="button" aria-pressed="' + (S._gcAbierta === t.n) + '" class="gc-ficha' + (abiertaEsFicha ? (S._gcAbierta === t.n ? ' sel' : ' off') : '') + (grande ? ' g' : media ? ' m' : ' p') + '" data-gc="' + escapeHtml(t.n) + '" style="left:' + t.x.toFixed(2) + '%;top:' + (t.y / H * 100).toFixed(2) + '%;width:' + t.w.toFixed(2) + '%;height:' + (t.h / H * 100).toFixed(2) + '%;--cc:' + t.color + ';animation-delay:' + (i * 0.05).toFixed(2) + 's" ' + act('gcAbrir', t.n) + ' aria-label="' + escapeHtml(t.otras ? 'Otras' : t.l) + ', ' + money(t.v) + '">' +
-      '<span class="gc-ficha-in">' + (!media ? '<span class="gf-ic" aria-hidden="true">' + (t.otras ? ic('more') : ic(iconoCat('Gasto', t.n))) + '</span>' : '') + (media ? '<span class="gf-n">' + escapeHtml(t.otras ? 'Otras' : t.l) + '</span>' : '') + '<b class="tnum">' + agrupar(Math.round(t.v).toLocaleString('es-ES')) + ' ' + sym() + '</b>' + (grande ? '<span class="gf-p">' + Math.round(t.v / d.total * 100) + ' %</span>' : '') + '</span></button>'; }).join('');
+      '<span class="gc-ficha-in">' + (!media ? '<span class="gf-ic" aria-hidden="true">' + (t.otras ? ic('more') : ic(iconoCat('Gasto', t.n))) + '</span>' : '') + (media ? '<span class="gf-n">' + escapeHtml(t.otras ? 'Otras' : t.l) + '</span>' : '') + '<b class="tnum">' + agrupar(Math.round(t.v).toLocaleString(LOC())) + ' ' + sym() + '</b>' + (grande ? '<span class="gf-p">' + Math.round(t.v / d.total * 100) + ' %</span>' : '') + '</span></button>'; }).join('');
 }
 // Anillo (versión 3): el trozo elegido sale hacia fuera y, alrededor, un arco fino con sus subcategorías; la lista de abajo se abre en su fila
 function gcAnilloDraw(animar) {
@@ -2803,12 +2821,13 @@ function numCampo(v) {
   // 12/11 (docs/salud/2026-11-12-diag-logica): «−3» (el menos que pinta la app) vale; «1,2,3» no es un importe; «0.500» es 0,5
   let t = String(v == null ? '' : v).replace(/[\s€\u00a0]/g, '').replace(/[\u2212\u2013]/g, '-');
   if (t.indexOf(',') >= 0 && t.indexOf('.') >= 0 && t.lastIndexOf('.') > t.lastIndexOf(',')) t = t.replace(/,/g, ''); // «1,240.50» (formato inglés)
+  else if (enIngles() && /^-?[1-9]\d{0,2}(,\d{3})+$/.test(t)) t = t.replace(/,/g, ''); // C1: en inglés «1,500» son mil quinientos
   else if (t.indexOf(',') >= 0) { if (t.indexOf(',') !== t.lastIndexOf(',')) return 0; t = t.replace(/\./g, '').replace(',', '.'); }
   else if (/^-?[1-9]\d{0,2}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
   if (!/^-?(\d+\.?\d*|\.\d+)$/.test(t)) return 0;
   const n = parseFloat(t); return isFinite(n) ? n : 0;
 }
-function fmtPct(x) { return num(x).toLocaleString('es-ES', { maximumFractionDigits: 2 }) + ' %'; }
+function fmtPct(x) { return num(x).toLocaleString(LOC(), { maximumFractionDigits: 2 }) + ' %'; }
 function compPorId(id) { return (S.compartidos || []).find((c) => c.id === id) || null; }
 function miParte(c) {
   if (!c || !c.reparto) return 0;
@@ -3571,7 +3590,7 @@ function repartoArticulos(arts, uids) {
   return tot; // céntimos
 }
 function tkReparto(F) { return repartoArticulos(F.t.articulos, miembrosDeDestino(F.rep.dest).map((m) => m.uid)); }
-const fmtUn = (n) => (Math.round(n * 100) / 100).toLocaleString('es-ES');
+const fmtUn = (n) => (Math.round(n * 100) / 100).toLocaleString(LOC());
 // Controles de «quién toma esto» para un artículo. ctx: 't' (hoja del ticket) o 'f' (formulario ya con el gasto)
 function artQuienHtml(a, i, ms, ctx) {
   const yo = miUid(), uids = ms.map((m) => m.uid), nm = (m) => (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)), Q = artQ(a);
@@ -3724,7 +3743,7 @@ function artFieldHtml(ex) {
   if (!arts || !arts.length) return '';
   const cp = FORM && FORM.comp, edita = !!(cp && cp.on && cp.dest && FORM.articulos && miembrosComp().length > 1), ms = edita ? miembrosComp() : [];
   return '<details class="tk-det"' + (FORM && FORM.artAbierto ? ' open' : '') + '><summary>' + ic('receipt') + ' ' + arts.length + (arts.length === 1 ? ' artículo' : ' artículos') + ' del ticket' + (edita ? ' · cambiar reparto' : '') + '</summary><div class="tk-det-l">' +
-    arts.map((a, i) => '<div class="tk-det-r"><span>' + (num(a.cantidad) && num(a.cantidad) !== 1 ? num(a.cantidad).toLocaleString('es-ES') + ' × ' : '') + escapeHtml(a.nombre) + '</span><b class="tnum">' + money(a.importe) + '</b></div>' + (edita ? artQuienHtml(a, i, ms, 'f') : '')).join('') + '</div><div id="artInfo"></div></details>';
+    arts.map((a, i) => '<div class="tk-det-r"><span>' + (num(a.cantidad) && num(a.cantidad) !== 1 ? num(a.cantidad).toLocaleString(LOC()) + ' × ' : '') + escapeHtml(a.nombre) + '</span><b class="tnum">' + money(a.importe) + '</b></div>' + (edita ? artQuienHtml(a, i, ms, 'f') : '')).join('') + '</div><div id="artInfo"></div></details>';
 }
 /* «+ Otra persona»: invitar sin salir de lo que estás creando */
 function otraPersonaChip(ctx) { return '<button type="button" class="chip nueva" ' + act('invAbrir', ctx) + '>+ Otra persona</button>'; }
@@ -3754,7 +3773,7 @@ function articulosTopHtml(movs) {
   if (!top.length) return '';
   const max = top[0].v;
   return '<div class="section-title">Lo que más compras · según tus tickets</div><div class="card">' + top.map((x) =>
-    '<div class="budget-row"><div class="top"><span class="cat">' + escapeHtml(x.nombre) + (x.n > 1 ? ' <span class="hint">×' + x.n.toLocaleString('es-ES', { maximumFractionDigits: 2 }) + '</span>' : '') + '</span><span class="nums"><b class="tnum">' + money(x.v) + '</b></span></div>' +
+    '<div class="budget-row"><div class="top"><span class="cat">' + escapeHtml(x.nombre) + (x.n > 1 ? ' <span class="hint">×' + x.n.toLocaleString(LOC(), { maximumFractionDigits: 2 }) + '</span>' : '') + '</span><span class="nums"><b class="tnum">' + money(x.v) + '</b></span></div>' +
     '<div class="progress"><div style="width:' + Math.max(2, x.v / max * 100) + '%"></div></div></div>').join('') + '</div>';
 }
 
@@ -4042,7 +4061,7 @@ function trCalc() {
   const cant = km * cons / 100, coste = Math.round(cant * pr.v * 100) / 100, n = Math.max(1, F.personas || 1);
   return { km, cant, coste, porPersona: Math.round(coste / n * 100) / 100, n, unidad: p.u, precio: pr };
 }
-function trNum(n, d) { return Number(n).toLocaleString('es-ES', { maximumFractionDigits: d == null ? 1 : d }); }
+function trNum(n, d) { return Number(n).toLocaleString(LOC(), { maximumFractionDigits: d == null ? 1 : d }); }
 function trResHtml() {
   const r = trCalc();
   if (!r) return '<div class="tr-res vacio">Pon la distancia y verás aquí lo que cuesta.</div>';
@@ -4267,6 +4286,7 @@ function renderTuV2() {
     grupo('La app', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', badge('aspecto') + '<span class="menu-extra">' + (PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1] + '</span>', 'aspecto color paleta tipografia cifras fuente vibracion sonido estilo'),
       '<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
       '<div class="segmented tema-seg">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([id, l]) => '<button class="' + (S.theme === id ? 'active' : '') + '" ' + act('setTheme', id) + '>' + l + '</button>').join('') + '</div></div>',
+      idiomaFilaHtml(),
       it('nivelAbrir', [], 'sliders', 'Qué ves en la app', '<span class="menu-extra">' + (bas ? 'Lo básico' : 'Todo') + '</span>', 'basico sencillo todo completo modo herramientas'),
       q(it('verNovedades', ['1'], 'megafono', 'Qué hay de nuevo', '<span class="menu-extra">' + escapeHtml(parche) + '</span>', 'novedades parche')),
       it('startOnboardingManually', [], 'replay', 'Volver a ver la bienvenida', '', 'empezar asistente bienvenida'),
@@ -4526,7 +4546,7 @@ function invCambioSemana() {
 }
 function insightsCatalogo(y, m, actual) {
   const out = {}, mk = mesClave(y, m), g = gastoComparado(y, m), mesAnt = MESES[g.pm - 1].toLowerCase(), mesAb = MESES_ABR[g.pm - 1].toLowerCase(), k = kpisMes(y, m);
-  const euros = (v) => (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString('es-ES')) + ' ' + sym(), alturas = g.enCurso ? ' a estas alturas' : '';
+  const euros = (v) => (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString(LOC())) + ' ' + sym(), alturas = g.enCurso ? ' a estas alturas' : '';
   if (g.antes.t > 0 && g.ahora.t > 0) {
     const dif = g.ahora.t - g.antes.t, pct = Math.round(dif / g.antes.t * 100), raro = g.antes.t < 30 || Math.abs(pct) > 300;
     out.gastoMes = { ic: dif > 0 ? 'arrowUp' : 'arrowDown', tono: dif > 0 && (raro || pct > 5) ? 'malo' : dif < 0 && (raro || pct < -5) ? 'bueno' : '', valor: raro ? (dif > 0 ? '+' : '') + euros(dif) : Math.abs(pct) < 1 ? '=' : (pct > 0 ? '+' : '−') + Math.abs(pct) + ' %',
@@ -4566,7 +4586,7 @@ function insightsCatalogo(y, m, actual) {
     out.ahorro = { ic: 'piggy2', tono: 'bueno', valor: p + ' %', l1: 'Apartas', l2: 'de lo que entra', aro: Math.min(1, p / 100),
       frase: 'Este mes apartas o inviertes ' + money(k.ahorro + k.inversion) + ': el ' + p + ' % de lo que te ha entrado.', a: act('irMovs', '_ahorro', mk) }; }
   const iv = invCambioSemana();
-  if (iv) out.inv = { ic: 'trendUp', tono: iv.dif >= 0 ? 'bueno' : 'malo', valor: (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' %', l1: 'Inversiones', l2: '7 días', aro: Math.min(1, Math.abs(iv.pct) / 10),
+  if (iv) out.inv = { ic: 'trendUp', tono: iv.dif >= 0 ? 'bueno' : 'malo', valor: (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString(LOC(), { maximumFractionDigits: 1 }) + ' %', l1: 'Inversiones', l2: '7 días', aro: Math.min(1, Math.abs(iv.pct) / 10),
     frase: 'Tus inversiones ' + (iv.dif >= 0 ? 'han subido ' : 'han bajado ') + money(Math.abs(iv.dif)) + ' esta semana: valen ' + money(iv.valor) + '. Meter dinero nuevo no cuenta.', a: act('irDinero', 'inversiones') };
   return out;
 }
@@ -4575,7 +4595,7 @@ function asiVasFijo(key, y, m, cat) {
   if (key.indexOf('cat:') === 0) {
     const c = key.slice(4), v = Math.max(0, gastoPorCategoria(k.movs)[c] || 0), cg = catsGasto().find((x) => x.nombre === c), p = cg ? num(cg.presupuesto) : 0;
     if (!cg && !v) return null; // categoría borrada: «—»
-    return { ic: iconoCat('Gasto', c, ''), color: colorCat(c), tono: p && v > p ? 'malo' : '', valor: agrupar(Math.round(v).toLocaleString('es-ES')) + ' ' + sym(), l1: c, l2: p ? 'de ' + moneyShort(p) : 'llevas', aro: p ? Math.min(1, v / p) : 1,
+    return { ic: iconoCat('Gasto', c, ''), color: colorCat(c), tono: p && v > p ? 'malo' : '', valor: agrupar(Math.round(v).toLocaleString(LOC())) + ' ' + sym(), l1: c, l2: p ? 'de ' + moneyShort(p) : 'llevas', aro: p ? Math.min(1, v / p) : 1,
       frase: 'En ' + c + ' llevas ' + money(v) + (p ? ' de ' + money(p) + ' de presupuesto' : '') + ' este mes.', a: act('irMovs', '_gastos', mk, c) };
   }
   if (key.indexOf('meta:') === 0) {
@@ -4665,7 +4685,7 @@ function avisosInicioFilas() {
   }
   const iv = invCambioSemana(), semana = isoSemana(todayISO());
   if (iv && Math.abs(iv.pct) >= 3 && Math.abs(iv.dif) >= 50 && cfg().invAvisoVisto !== semana)
-    filas.push({ cls: iv.dif >= 0 ? 'bien' : 'mal', icono: 'chart', t: 'Tus inversiones: ' + (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' % esta semana', d: (iv.dif >= 0 ? '+' : '−') + escapeHtml(money(Math.abs(iv.dif))) + ' · valen ' + escapeHtml(money(iv.valor)), a: act('invAvisoVer') });
+    filas.push({ cls: iv.dif >= 0 ? 'bien' : 'mal', icono: 'chart', t: 'Tus inversiones: ' + (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString(LOC(), { maximumFractionDigits: 1 }) + ' % esta semana', d: (iv.dif >= 0 ? '+' : '−') + escapeHtml(money(Math.abs(iv.dif))) + ' · valen ' + escapeHtml(money(iv.valor)), a: act('invAvisoVer') });
   return filas;
 }
 function isoSemana(iso) { const d = parseISO(iso), t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), dia = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - dia); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return t.getUTCFullYear() + '-S' + pad2(Math.ceil(((t - y0) / 864e5 + 1) / 7)); }
@@ -4681,7 +4701,7 @@ function marcarJuntosVisto() {
 function insightsDatos() {
   if (!S.movimientos.length) return [];
   const { y, m, actual } = inicioYM(), mk = mesClave(y, m), g = gastoComparado(y, m), out = [], mesAnt = MESES[g.pm - 1].toLowerCase(), mesAb = MESES_ABR[g.pm - 1].toLowerCase();
-  const euros = (v) => (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString('es-ES')) + ' ' + sym();
+  const euros = (v) => (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString(LOC())) + ' ' + sym();
   const alturas = g.enCurso ? ' a estas alturas' : '';
   if (g.antes.t > 0 && g.ahora.t > 0) {
     const dif = g.ahora.t - g.antes.t, pct = Math.round(dif / g.antes.t * 100), raro = g.antes.t < 30 || Math.abs(pct) > 300;
@@ -5698,7 +5718,7 @@ function renderJuntos() {
 function juntosV2() { return versionDe('juntos') !== 'antes'; }
 function juntosV3() { return versionDe('juntos') === 'nueva'; }
 /* ---- Juntos v3 (23/10/2026, docs/14 B1 y B3): lo que debes y te deben en círculos (Personas | Grupos) y la actividad arriba, con lo nuevo marcado ---- */
-function eurosR(v) { return (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString('es-ES')) + ' ' + sym(); }
+function eurosR(v) { return (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString(LOC())) + ' ' + sym(); }
 function cifraCirc(v) { return Math.abs(v) < 1 ? money(Math.abs(v)) : eurosR(Math.abs(v)); } // menos de 1 €: con céntimos (si no, «0 €»)
 function juntosAro(v, max, i) {
   const R = 27, C = 2 * Math.PI * R, f = max > 0 && Math.abs(v) >= 0.005 ? Math.max(0.06, Math.min(1, Math.abs(v) / max)) : 0;
@@ -5963,7 +5983,7 @@ function crParaHtml(ms, rep) {
 const MON_LISTA = [['USD', '$', 'Dólar'], ['GBP', '£', 'Libra'], ['CHF', 'CHF', 'Franco suizo'], ['JPY', '¥', 'Yen'], ['MXN', 'MX$', 'Peso mexicano'], ['CAD', 'CA$', 'Dólar canadiense'], ['AUD', 'AU$', 'Dólar australiano'], ['SEK', 'SEK', 'Corona sueca'], ['NOK', 'NOK', 'Corona noruega'], ['DKK', 'DKK', 'Corona danesa'], ['PLN', 'zł', 'Esloti'], ['CZK', 'Kč', 'Corona checa'], ['HUF', 'Ft', 'Forinto'], ['TRY', '₺', 'Lira turca'], ['BRL', 'R$', 'Real'], ['CNY', 'CNY', 'Yuan'], ['HKD', 'HK$', 'Dólar de Hong Kong'], ['INR', '₹', 'Rupia'], ['KRW', '₩', 'Won'], ['SGD', 'S$', 'Dólar de Singapur'], ['NZD', 'NZ$', 'Dólar neozelandés'], ['ZAR', 'R', 'Rand'], ['OTRA', '', 'Otra (a mano)']];
 const MON_SIN_DEC = ['JPY', 'KRW', 'HUF'];
 function monInfo(k) { return MON_LISTA.find((x) => x[0] === k) || [k, k, k]; }
-function monFmt(v, k) { const d = MON_SIN_DEC.indexOf(k) >= 0 ? 0 : 2; return Number(v || 0).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d }) + ' ' + (k === 'OTRA' ? '' : monInfo(k)[1]); }
+function monFmt(v, k) { const d = MON_SIN_DEC.indexOf(k) >= 0 ? 0 : 2; return Number(v || 0).toLocaleString(LOC(), { minimumFractionDigits: d, maximumFractionDigits: d }) + ' ' + (k === 'OTRA' ? '' : monInfo(k)[1]); }
 function monGuardado() { try { return JSON.parse(localStorage.getItem('monCambios') || '{}') || {}; } catch (e) { return {}; } }
 function monRecordar(k, v, f) { try { const o = monGuardado(); o[k] = { v, f }; localStorage.setItem('monCambios', JSON.stringify(o)); localStorage.setItem('monUlt', k); } catch (e) { /* sin almacenamiento */ } }
 function monUlt() { try { return localStorage.getItem('monUlt') || 'USD'; } catch (e) { return 'USD'; } }
@@ -6137,12 +6157,12 @@ function temaResumenHtml(g, t) {
   if (!t.cerrada && temaCandidatos(g.id, t).length) h += '<button type="button" class="btn ghost block tema-meter-b" ' + act('temaMeterAbrir', t.id) + '>' + ic('plus') + ' Añadir gastos ya apuntados' + (temaEsViaje(t) ? ' al viaje' : '') + '</button>';
   if (FORM && FORM.temaCerrarPre === t.id) { const pend = deudasDe(g.id).length;
     h += '<div class="card tema-cierre"><b>' + (temaEsViaje(t) ? 'Cómo quedó el viaje' : 'Cerrar «' + escapeHtml(t.nombre) + '»') + '</b>' +
-      '<span>' + escapeHtml(money(tot) + ' ' + entre + ' · tu parte ' + money(mia) + (dias > 1 ? ' · unos ' + Math.round(tot / dias).toLocaleString('es-ES') + ' € al día' : '')) + '</span>' +
+      '<span>' + escapeHtml(money(tot) + ' ' + entre + ' · tu parte ' + money(mia) + (dias > 1 ? ' · unos ' + Math.round(tot / dias).toLocaleString(LOC()) + ' € al día' : '')) + '</span>' +
       (pend ? '<span class="tema-cierre-av">' + ic('alert') + ' Aún ' + (pend === 1 ? 'hay 1 pago' : 'hay ' + pend + ' pagos') + ' para quedar en paz en el grupo. <button type="button" class="link" ' + act('grupoTab', 'saldos') + '>Ver saldos</button></span>' : '<span class="tema-cierre-ok">' + ic('checkCircle') + ' Estáis en paz en el grupo.</span>') +
       '<span class="tema-cierre-n">Al cerrarlo ya no sale al apuntar gastos. Se puede volver a abrir.</span>' +
       '<div class="actions"><button class="btn ghost block" ' + act('temaCerrarNo') + '>Ahora no</button><button class="btn accent block" ' + act('temaCerrar', t.id) + '>' + (temaEsViaje(t) ? 'Cerrar el viaje' : 'Cerrar tema') + '</button></div></div>'; }
   h += '<div class="tema-cifras"><div><span>Gastado ' + entre + '</span><b class="tnum">' + money(tot) + '</b></div><div><span>Tu parte</span><b class="tnum">' + money(mia) + '</b></div></div>';
-  if (dias > 1 && tot > 0) h += '<div class="rec-hint tema-dia">' + ic('calendar') + ' Unos <b class="tnum">' + Math.round(tot / dias).toLocaleString('es-ES') + ' €</b> al día · ' + dias + ' días' + (Math.abs(mia) > 0.004 ? ' · tu parte, ' + Math.round(mia / dias).toLocaleString('es-ES') + ' € al día' : '') + '</div>';
+  if (dias > 1 && tot > 0) h += '<div class="rec-hint tema-dia">' + ic('calendar') + ' Unos <b class="tnum">' + Math.round(tot / dias).toLocaleString(LOC()) + ' €</b> al día · ' + dias + ' días' + (Math.abs(mia) > 0.004 ? ' · tu parte, ' + Math.round(mia / dias).toLocaleString(LOC()) + ' € al día' : '') + '</div>';
   if (quien.length && tot > 0) h += '<div class="tema-sec">Quién pagó qué</div><div class="tema-quien">' + quien.map((u) => '<div class="tema-q"><span>' + escapeHtml(esMio(g.id, u) ? 'Tú' : nombreDe(g.id, u)) + '</span><span class="tema-q-bar"><i style="width:' + (pagos[u] / tot * 100).toFixed(1) + '%;background:' + colorPersona(u) + '"></i></span><b class="tnum">' + money(pagos[u]) + '</b></div>').join('') + '</div>';
   if (cs.length && tot > 0) h += '<div class="tema-sec">En qué se fue</div><div class="tema-cats" aria-hidden="true">' + cs.map(([k, v]) => '<i style="flex:' + (v / tot).toFixed(4) + ';background:' + colorCat(k) + '"></i>').join('') + '</div>' +
     '<div class="tema-cats-l">' + cs.map(([k, v]) => '<span><i style="background:' + colorCat(k) + '"></i>' + escapeHtml(k) + ' ' + Math.round(v / tot * 100) + ' %</span>').join('') + '</div>';
@@ -6800,7 +6820,7 @@ function invIcono(t) { const k = normName(t || ''); return /cripto|bitcoin/.test
 function invFilaV2(g, vv, completo) {
   const col = colorActivo(g.activoId);
   return '<button type="button" class="dm-inv-f tappable" ' + act('verActivo', g.nombre) + '><span class="dm-ic inv"' + (col ? ' style="--ac:' + col + '"' : '') + '>' + ic(invIcono(g.tipoActivo)) + '</span>' +
-    '<span class="dm-emp-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + (!vv ? 'Sin precio todavía' : completo ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 4 }) + ' part. · aportaste ' + m0(g.total) : 'Aportaste ' + m0(g.total)) + '</span></span>' +
+    '<span class="dm-emp-x"><b>' + escapeHtml(g.nombre) + '</b><span>' + (!vv ? 'Sin precio todavía' : completo ? g.part.toLocaleString(LOC(), { maximumFractionDigits: 4 }) + ' part. · aportaste ' + m0(g.total) : 'Aportaste ' + m0(g.total)) + '</span></span>' +
     '<span class="dm-inv-v"><b class="tnum">' + (vv ? money(vv.valor) : m0(g.total)) + '</b>' + (vv ? '<span class="tnum" style="color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + signoN(vv.gan) + money(Math.abs(vv.gan)) + (completo && vv.pct != null ? ' · ' + signoN(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %' : '') + '</span>' : '') + '</span></button>';
 }
 function dmInversionesHtml() {
@@ -7011,11 +7031,11 @@ function activoVerHtml(nombre) {
       (vv ? '<em class="tnum act-anio">Al año ' + (invAnualActivo(g, vv) == null ? '<span>necesita un mes de historia</span>' : invAnualTxt(invAnualActivo(g, vv)) + ' <span>según cuándo metiste cada euro' + (invDiasActivo(g) < 365 ? ' (orientativo: menos de un año)' : '') + '</span>') + '</em>' : '') + '</div>' +
     activoGraficaHtml(g, col) +
     (sinPrecio ? '<div class="dm-aviso">' + ic('info') + '<span>Sin precio: ' + (g.activoId ? 'a alguna aportación le faltan las participaciones.' : 'falta elegir el activo en sus aportaciones.') + '</span>' + (aVincular ? '<button class="link" ' + act('activoArreglar', aVincular.id) + '>Buscar el activo</button>' : '') + '</div>' : '') +
-    '<div class="act-cifras">' + cifra('Aportaste', money(g.total)) + cifra('Tienes', enPart ? g.part.toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.' : '—') +
+    '<div class="act-cifras">' + cifra('Aportaste', money(g.total)) + cifra('Tienes', enPart ? g.part.toLocaleString(LOC(), { maximumFractionDigits: 6 }) + ' part.' : '—') +
       cifra('Te costó de media', enPart ? money(g.total / g.part) : '—') + cifra('Último precio', precio) + '</div>' +
     (g.activoId ? '<div class="field act-apodo"><label for="actApodo">Nombre en las gráficas <span class="hint">· opcional</span></label><input id="actApodo" type="text" maxlength="18" placeholder="' + escapeHtml(invCortoAuto(g.nombre)) + '" value="' + escapeHtml((cfg().apodosActivo || {})[g.activoId] || '') + '" ' + onChange('activoApodo', g.activoId) + '></div>' : '') +
     '<div class="section-title">Tus aportaciones<span class="dm-cuenta-n">' + movs.length + '</span></div><div class="card act-movs">' +
-      movs.slice(0, 12).map((m) => '<button type="button" class="act-mov tappable" ' + act('activoMov', m.id) + '><span>' + escapeHtml(fmtDateShort(m.fecha || '')) + (m.descripcion ? ' · ' + escapeHtml(m.descripcion) : '') + '</span><b class="tnum">' + money(m.importe) + '</b>' + (m.participaciones != null && m.participaciones !== '' ? '<i class="tnum">' + Number(m.participaciones).toLocaleString('es-ES', { maximumFractionDigits: 6 }) + ' part.</i>' : '') + ic('chevR') + '</button>').join('') +
+      movs.slice(0, 12).map((m) => '<button type="button" class="act-mov tappable" ' + act('activoMov', m.id) + '><span>' + escapeHtml(fmtDateShort(m.fecha || '')) + (m.descripcion ? ' · ' + escapeHtml(m.descripcion) : '') + '</span><b class="tnum">' + money(m.importe) + '</b>' + (m.participaciones != null && m.participaciones !== '' ? '<i class="tnum">' + Number(m.participaciones).toLocaleString(LOC(), { maximumFractionDigits: 6 }) + ' part.</i>' : '') + ic('chevR') + '</button>').join('') +
       (movs.length > 12 ? '<button type="button" class="dm-inv-mas" ' + act('activoEnMovs', g.nombre) + '>Ver las ' + movs.length + ' en Movimientos ' + ic('chevR') + '</button>' : '') + '</div>' +
     '<div class="act-botones"><button class="btn accent block" ' + act('activoInvertir', g.nombre) + '>' + ic('plus') + ' Invertir más</button>' +
       '<div class="act-bot2"><button class="btn ghost block" ' + act('activoEnMovs', g.nombre) + '>' + ic('list') + ' Movimientos</button><button class="btn ghost block" ' + act('dmPrecios') + '>' + ic('info') + ' Precios</button></div></div>';
@@ -8621,7 +8641,7 @@ function inflacionHtml() {
     '<div style="font-size:26px;font-weight:700;" class="tnum">' + fmt2(d.tasa) + ' %</div>' +
     '<div style="font-size:11.5px;color:var(--text-faint);line-height:1.5;margin-top:6px;">' + escapeHtml(d.que) + ' · ' + escapeHtml(d.periodo) + ' · Fuente: ' + escapeHtml(d.fuente) + ' · Dato obtenido el ' + fmtDateLong(d.obtenido) + '.</div></div>';
 }
-const eur0 = (n) => agrupar(n.toLocaleString('es-ES', { maximumFractionDigits: 0 })) + ' €';
+const eur0 = (n) => agrupar(n.toLocaleString(LOC(), { maximumFractionDigits: 0 })) + ' €';
 const eur2 = (n) => fmt2(n) + ' €';
 function valorDeGrupo(g) {
   if (!g.activoId || g.conPart !== g.n || !S.valoracion) return null;
@@ -8949,7 +8969,7 @@ function renderInversiones() {
       if (vv) {
         const pr = vv.v;
         return '<div class="row" ' + act('verActivo', g.nombre) + '><span class="dot" style="background:var(--savings)"></span>' +
-          '<div class="main"><div class="ttl">' + escapeHtml(g.nombre) + '</div><div class="meta">' + g.part.toLocaleString('es-ES', { maximumFractionDigits: 4 }) + ' part. · invertido ' + eur2(g.total) +
+          '<div class="main"><div class="ttl">' + escapeHtml(g.nombre) + '</div><div class="meta">' + g.part.toLocaleString(LOC(), { maximumFractionDigits: 4 }) + ' part. · invertido ' + eur2(g.total) +
           ' · ' + fmt2(pr.cierre) + ' ' + escapeHtml(pr.moneda || '') + ' (cierre ' + fmtDateShort(pr.fecha_precio) + ')</div></div>' +
           '<div class="amt tnum">' + eur2(vv.valor) + '<div style="font-size:12.5px;font-weight:600;color:' + (vv.gan >= 0 ? 'var(--income)' : 'var(--expense)') + ';">' + signo(vv.gan) + eur2(Math.abs(vv.gan)) + (vv.pct == null ? '' : ' (' + signo(vv.gan) + Math.abs(vv.pct).toFixed(1).replace('.', ',') + ' %)') + '</div></div></div>';
       }
@@ -10603,7 +10623,7 @@ async function avisosServidorPreparar() {
     let id = lsGet(kId) || S['_' + kId]; if (!id) { id = nuevoIdMov(); lsSet(kId, id); S['_' + kId] = id; }
     const huella = await n.huella(uid);
     let zona = 'Europe/Madrid'; try { zona = Intl.DateTimeFormat().resolvedOptions().timeZone || zona; } catch (er) { /* */ }
-    await Data.moviles.registrar({ id, claveHash: huella, plataforma: 'android', idioma: 'es', zona });
+    await Data.moviles.registrar({ id, claveHash: huella, plataforma: 'android', idioma: (window.I18N && I18N.lang) || 'es', zona });
     const c = window.SUPABASE_CONFIG || {};
     await n.configurar({ url: c.url, anon: c.anonKey, servidor: true, mapa: avisosMapa() });
   } catch (er) { /* sin red o sin la tabla: se guarda al abrir la app, como antes */ }
@@ -10712,15 +10732,17 @@ function avisosAlMomento() {
   }
   return [];
 }
+// C1: los avisos del móvil, en el idioma de la app
+function avisosIdioma(l) { const t = (x) => (window.I18N && x ? I18N.tr(x) : x); return (l || []).map((a) => Object.assign({}, a, { titulo: t(a.titulo), texto: t(a.texto) })); }
 let _recT = null;
 function programarRecordatoriosPronto() {
   const n = notifNat(); if (!n || !S.user) return;
   clearTimeout(_recT);
   _recT = setTimeout(async () => { try {
     if ((await n.permiso()) !== 'granted') return;
-    const lista = recordatoriosLista(); await n.programar(lista);
+    const lista = recordatoriosLista(); await n.programar(avisosIdioma(lista));
     const mh = avHechos(); let cambia = false; lista.forEach((x) => { if (x.marca && !mh[x.marca]) { mh[x.marca] = x.cuando; cambia = true; } }); if (cambia) avGuardarHechos(mh); // 12/11: «mañana…» enseguida, una vez
-    const ya = avisosAlMomento(); if (ya.length && n.ahora) await n.ahora(ya);
+    const ya = avisosIdioma(avisosAlMomento()); if (ya.length && n.ahora) await n.ahora(ya);
   } catch (e) { /* */ } }, 1500);
 }
 function avisosTrasCargar() {
@@ -12744,7 +12766,7 @@ const H = {
     lsSet('huella', on ? '0' : '1'); toast(on ? 'Ya no se pedirá la huella' : 'Se pedirá la huella al abrir'); render();
   },
   desbloquear: () => { if (window.__nativo && window.__nativo.desbloquear) { document.documentElement.classList.remove('bloqueada'); window.__nativo.desbloquear(); } },
-  abrirPrivacidad: () => abrirExterno(APP_URL + 'privacidad.html'),
+  abrirPrivacidad: () => abrirExterno(APP_URL + 'privacidad.html' + (window.I18N && I18N.lang !== 'es' ? '?lang=' + I18N.lang : '')),
   borrarCuentaAbrir: () => { FORM = { kind: 'borrarCuenta' }; openSheet(borrarCuentaHtml()); },
   borrarCuentaOk: () => borrarCuentaOk(),
   nuevaContrasenaOk: async () => {
@@ -13113,6 +13135,7 @@ const H = {
   setTipo: ([id]) => { S.tipo = id; lsSet('tipo', id); applyLook(true); sentir('tic'); refrescarAspecto(); render(); },
   setSens: ([k]) => { const clave = k === 'vibra' ? 'vibra' : 'sonido', on = lsGet(clave) !== '0'; lsSet(clave, on ? '0' : '1'); if (!on) sentir('ok', true); refrescarAspecto(); },
   probarSens: ([k]) => sentir(SENS[k] ? k : 'ok', true),
+  setIdioma: ([l]) => { if (!window.I18N || !I18N.valido(l)) return; I18N.poner(l, true); if (S.config && S.user) saveConfig({ idioma: l }); render(); refrescarAspecto(); },
   setTheme: ([t]) => { verBadge('oscuro'); S.theme = t; lsSet('theme', t); applyTheme(); render(); refrescarAspecto(); },
   exportBackup: () => exportBackup(),
   // onboarding
@@ -13218,6 +13241,7 @@ const H = {
   },
   doMfaCancel: async () => { try { await window.Auth.signOut(); } catch (e) { /* noop */ } renderLoginScreen(); },
   // auth
+  idiomaLogin: ([l]) => { if (!window.I18N || !I18N.valido(l)) return; I18N.poner(l, true); renderLoginScreen(); },
   doLogin: async () => {
     const email = ($('#loginEmail').value || '').trim();
     const password = $('#loginPassword').value || '';

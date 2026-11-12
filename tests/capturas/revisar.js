@@ -11,6 +11,7 @@ const { chromium } = require('playwright');
 //   --teclado                  solo las hojas, con 500 px de alto (como con el teclado del móvil abierto): avisa de campos tapados
 //   --medir                    mide zonas de toque < 44 px, contraste por debajo de AA y botones sin nombre → medidas.json
 //   --mas                      añade las pantallas y hojas extra (Avisos, cuenta, persona, meta, filtros, importar…)
+//   --idioma=en                la app en inglés (C1 de docs/40); las capturas acaban en «-en»
 //   --solo=inicio,tu           solo esas pantallas · --sin-basico  no hace las de «Lo básico» · --entera  captura la página entera · --x1  capturas a escala 1
 const ARG = {}; const LIBRES = [];
 process.argv.slice(2).forEach((a) => { const m = /^--([a-z0-9-]+)(?:=(.*))?$/.exec(a); if (m) ARG[m[1]] = m[2] === undefined ? true : m[2]; else LIBRES.push(a); });
@@ -194,6 +195,7 @@ function revisarPagina() {
   const TAM = ANCHOS.map((a) => [a, ALTO]).concat(ARG.tableta ? [[1024, 768]] : []);
   for (const [ancho, alto] of TAM) for (const tema of TEMAS) {
     const ctx = await b.newContext({ viewport: { width: ancho, height: alto }, colorScheme: tema, deviceScaleFactor: ESCALA });
+    if (ARG.idioma) await ctx.addInitScript((l) => { try { localStorage.setItem('idioma', l); } catch (e) { /* */ } }, String(ARG.idioma));
     const p = await ctx.newPage(); const errores = [];
     p.on('pageerror', (e) => errores.push(e.message));
     await p.route('**/*', (r) => {
@@ -214,7 +216,7 @@ function revisarPagina() {
       const fallos = await p.evaluate(revisarPagina);
       if (ARG.teclado) (await p.evaluate(revisarTeclado)).forEach((x) => fallos.push(x));
       if (ARG.medir) medidas.push({ pantalla: id, ancho, tema, m: await p.evaluate(medirPagina) });
-      const f = id + '-' + ancho + (alto !== 844 ? 'x' + alto : '') + (LETRA !== 1 ? '-letra' + Math.round(LETRA * 100) : '') + '-' + (tema === 'dark' ? 'oscuro' : 'claro') + '.png';
+      const f = id + '-' + ancho + (alto !== 844 ? 'x' + alto : '') + (LETRA !== 1 ? '-letra' + Math.round(LETRA * 100) : '') + '-' + (tema === 'dark' ? 'oscuro' : 'claro') + (ARG.idioma ? '-' + ARG.idioma : '') + '.png';
       const hayHoja = await p.evaluate(() => !!document.querySelector('#sheetBackdrop'));
       await p.screenshot({ path: path.join(SALIDA, f), fullPage: !!ARG.entera && !hayHoja });
       informe.push({ pantalla: id, ancho, tema, captura: f, fallos });
@@ -225,6 +227,7 @@ function revisarPagina() {
   }
   for (const [ancho, alto] of (ARG['sin-basico'] || ARG.solo || ARG.teclado ? [] : [[375, 667], [390, 844]])) for (const tema of ['light', 'dark']) {
     const ctx = await b.newContext({ viewport: { width: ancho, height: alto }, colorScheme: tema, deviceScaleFactor: 2 });
+    if (ARG.idioma) await ctx.addInitScript((l) => { try { localStorage.setItem('idioma', l); } catch (e) { /* */ } }, String(ARG.idioma));
     const errores = [];
     for (const [id, variante, js] of PANTALLAS_BASICO) {
       const p = await ctx.newPage(); p.on('pageerror', (e) => errores.push(id + ': ' + e.message));
