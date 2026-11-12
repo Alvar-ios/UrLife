@@ -31,3 +31,19 @@ Resumen: entraban bien 6 de 12 (Santander ×2, BBVA salvo el saldo, ING, N26, Op
 - **No duplicar** el mismo archivo ya funcionaba (`hash53` de usuario + fecha + importe + texto). Los gastos que vienen de **avisos** (`origen: 'aviso'`) se comparaban como cualquier otro apunte: mismo importe el mismo día = «ya lo tenías»; a 1–3 días, «¿es el mismo?» (hay que contestar).
 - La **comisión** de Revolut (columna Fee) no se suma al importe. Con comisión distinta de 0, el saldo no cuadraría. No se arregla en esta tanda (es raro en cuentas en euros).
 - PDF: no se estudia ahora (Trade Republic y algunos bancos solo dan PDF del resumen); queda anotado.
+
+## Después de los cambios (rama `fase13/importar`)
+
+Los 12 extractos entran bien a la primera (`test151`, 12 de 12: filas, fechas, importes con signo, descripción y saldo). Lo que se ha cambiado, todo en la zona `imp*` de `app.js`:
+
+- **Qué es el archivo se mira por dentro**, no por la extensión: Excel (.xlsx / .xls de verdad), tabla HTML con extensión .xls (se lee sin convertir nada), Norma 43 o CSV.
+- **Norma 43** (AEB 43): registros 11, 22, 23, 33 y 88. Una hoja por cuenta, columnas ya puestas, saldo calculado desde el inicial y comprobado contra el final del registro 33 (si no cuadra, se avisa: archivo cortado). El código de entidad elige la cuenta de ese banco si solo hay una. Extensiones .n43, .aeb, .csb, .43, .txt o sin extensión.
+- Fechas con el **mes en letra** («01 oct 2026», «1 de octubre de 2026»).
+- «**Ingreso** / **Gasto**», «Débito / Crédito» al principio del título = abonos y cargos separados; «**Disponible**» = saldo.
+- Con cargos y abonos separados y columna Tipo, un «Pago con tarjeta» ya no queda como devolución.
+- Filas **anuladas** por el banco (REVERTED, DECLINED, anulada, rechazada…, columna State/Estado) se omiten y se dice cuántas.
+- **La segunda vez, un toque**: si el formato ya se conoce (o es Norma 43) y la cuenta está clara, se va directo a la vista previa («Formato reconocido… Ver columnas»).
+- **Avisos del banco**: un gasto que llegó por aviso (`origen: 'aviso'`) con el mismo importe a ±1 día = «ya lo tenías» (desmarcado). Lo apuntado a mano sigue igual (mismo día = ya lo tenías; hasta 3 días = «¿es el mismo?»).
+- **Compartir con PalomApp** en Android (plugin `ArchivoEntrante`) y el aviso de formatos en la pantalla de Importar.
+
+Sigue pendiente: comisión de Revolut (Fee), PDF, y probar con extractos reales del dueño.

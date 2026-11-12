@@ -75,6 +75,13 @@ if (Capacitor.isNativePlatform()) {
     };
     // al volver a la app, la web recoge lo leído
     App.addListener('appStateChange', ({ isActive }) => { if (isActive && window.__avisosVolver) { try { window.__avisosVolver(); } catch (e) { /* */ } } });
+
+    // 12/11 · «Compartir con PalomApp» (C4 de docs/40): extracto compartido o abierto desde otra app → { nombre, base64, tam } o { error: 'grande'|'leer' }
+    const AE = registerPlugin('ArchivoEntrante');
+    N.archivoEntrante = {
+      pendiente: () => AE.pendiente().then((r) => (r && (r.base64 || r.error) ? r : null)).catch(() => null),
+      alLlegar: (fn) => AE.addListener('archivoEntrante', fn),
+    };
   }
 
   // 12/11 · tres canales: importantes (suenan), normales (sin sonido) y resumen. Android oculta el texto con el móvil bloqueado.

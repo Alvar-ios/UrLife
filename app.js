@@ -9703,6 +9703,29 @@ function impAtajoHtml(I) {
   const cta = I.cuentaRecordada && I.cuenta && cuentaPorId(I.cuenta) ? ' La última vez importaste este formato en ' + escapeHtml(nombreCuenta(I.cuenta)) + '.' : '';
   return '<div class="rec-learn"><span class="ic-ok">' + ic('checkCircle') + '</span> ' + que + cta + ' <button type="button" class="link" ' + act('impVolver', 'columnas') + '>Ver columnas</button></div>';
 }
+/* ---- C4: «Compartir con PalomApp» en Android. El puente (movil/nativo-src.js → window.__nativo.archivoEntrante) da { nombre, base64 }
+   y aquí se abre Importar con ese archivo como si se hubiera elegido (mismo camino: impArchivo). ---- */
+function impEntranteIni() {
+  const n = window.__nativo && window.__nativo.archivoEntrante; if (!n || S._aeIni) return;
+  S._aeIni = true;
+  n.pendiente().then((a) => { if (a) impArchivoEntrante(a); }).catch(() => {});
+  n.alLlegar((a) => impArchivoEntrante(a));
+}
+function impBase64(b64) { const bin = atob(String(b64 || '')), u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return u8; }
+async function impArchivoEntrante(a, intento) {
+  if (!a) return;
+  if (!S.appStarted || !S.user || S.onboarding || !(S.loaded && S.loaded.mov && S.loaded.cfg)) { // aún entrando: se espera un poco (máx. ~1 min)
+    if ((intento || 0) < 30) setTimeout(() => impArchivoEntrante(a, (intento || 0) + 1), 2000);
+    return;
+  }
+  if (a.error) return toast(a.error === 'grande' ? 'El archivo es demasiado grande (máx. 10 MB)' : 'No he podido abrir ese archivo');
+  let u8; try { u8 = impBase64(a.base64); } catch (e) { return toast('No he podido abrir ese archivo'); }
+  const f = { name: String(a.nombre || 'extracto').slice(0, 120), size: u8.byteLength, arrayBuffer: async () => u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength) };
+  verBadge('importar');
+  IMP = { paso: 'archivo' };
+  if ($('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando) updateSheet(impHtml()); else openSheet(impHtml());
+  await H.impArchivo([], { files: [f] });
+}
 function impPrepararHoja(i) {
   const I = IMP;
   I.hojaIdx = i; I.hoja = I.hojas[i];
@@ -9742,7 +9765,7 @@ function impCuentaHtml(I) {
 // lo ya apuntado con lo que se compara una fila: de esta cuenta, sin cuenta (lo antiguo) y lo que pagaste tú en Juntos
 function impCandidatos(cuenta) {
   const yo = miUid(), out = [];
-  S.movimientos.forEach((m) => { if (m.tipo === 'Traspaso') return; if (cuenta && m.cuentaId && cuentaPorId(m.cuentaId) && m.cuentaId !== cuenta) return; out.push({ k: 'm:' + m.id, fecha: m.fecha, abs: Math.abs(num(m.importe)), que: m.descripcion || m.categoria || m.tipo, donde: 'mov' }); });
+  S.movimientos.forEach((m) => { if (m.tipo === 'Traspaso') return; if (cuenta && m.cuentaId && cuentaPorId(m.cuentaId) && m.cuentaId !== cuenta) return; out.push({ k: 'm:' + m.id, fecha: m.fecha, abs: Math.abs(num(m.importe)), que: (m.descripcion || m.categoria || m.tipo) + (m.origen === 'aviso' ? ' · por un aviso del banco' : ''), donde: 'mov', aviso: m.origen === 'aviso' }); });
   (S.traspasos || []).forEach((t) => { if (cuenta && t.cuentaId !== cuenta && t.cuentaDestinoId !== cuenta) return; out.push({ k: 't:' + t.id, fecha: t.fecha, abs: Math.abs(num(t.importe)), que: 'Traspaso ' + nombreCuenta(t.cuentaId) + ' → ' + nombreCuenta(t.cuentaDestinoId), donde: 'tras' }); });
   (S.compartidos || []).forEach((c) => { if (!grupoDe(c.grupoId)) return; const liq = c.tipo === 'Liquidación', rec = Object.keys(c.reparto || {})[0];
     const mio = esMio(c.grupoId, c.pagadoPor) || (liq && rec && esMio(c.grupoId, rec)); if (!mio) return;
@@ -9872,7 +9895,7 @@ function impProcesar() {
   const cuenta = hayVariasCuentas() ? I.cuenta || null : null;
   const porId = {}; yaApuntados.forEach((x) => { porId[x.id] = x; });
   const cands = impCandidatos(cuenta), usadosC = new Set(), pendientes = impCambiosPendientes();
-  const buscar = (fecha, abs, maxDias) => { let mejor = null, md = 99; cands.forEach((c) => { if (usadosC.has(c.k) || Math.abs(c.abs - abs) > 0.004) return; const d = impDias(c.fecha, fecha); if (d <= maxDias && d < md) { mejor = c; md = d; } }); return mejor; };
+  const buscar = (fecha, abs, maxDias, soloAviso) => { let mejor = null, md = 99; cands.forEach((c) => { if (usadosC.has(c.k) || Math.abs(c.abs - abs) > 0.004 || (soloAviso && !c.aviso)) return; const d = impDias(c.fecha, fecha); if (d <= maxDias && d < md) { mejor = c; md = d; } }); return mejor; };
   const ocurr = {}, out = [];
   const col = (f, k) => (k == null || k === '' ? '' : f[k]);
   // Con columna Tipo: ¿los gastos vienen en negativo (extracto) o en positivo (tu Excel)? Lo contrario es una devolución.
@@ -9945,7 +9968,8 @@ function impProcesar() {
     }
     if (estado === 'nuevo') {
       // lo ya apuntado a mano (también si lo apuntaste como gasto) se mira antes de proponer un traspaso: si no, se restaría dos veces
-      const igual = buscar(fecha, Math.abs(imp), 0);
+      // C4: lo que llegó por un aviso del banco (origen 'aviso') suele apuntarse el día de la compra y el banco lo carga al día siguiente: ±1 día = el mismo
+      const igual = buscar(fecha, Math.abs(imp), 0) || buscar(fecha, Math.abs(imp), 1, true);
       if (igual) { estado = igual.donde === 'juntos' ? 'juntos' : 'dup'; con = igual; usadosC.add(igual.k); }
       else { const cerca = buscar(fecha, Math.abs(imp), 3); if (cerca) { estado = cerca.donde === 'juntos' ? 'juntos' : 'quizas'; con = cerca; usadosC.add(cerca.k); } }
       // tanda 5: si «lo que ya tenías» no tiene cuenta, se puede poner la de este extracto (desmarcado: lo decides tú)
@@ -10492,6 +10516,7 @@ function avisosTrasCargar() {
     const n = avNat();
     if (n && S.user) n.configurar({ uid: miUid() }).catch(() => {});
     avisosRecoger();
+    impEntranteIni(); // C4: extracto compartido con PalomApp desde otra app
     if (n) { // al tocar «Apuntado en PalomApp», a Inicio
       n.abiertoDesdeAviso().then((si) => { if (si) window.__irA('inicio'); });
       if (!S._avEsc) { S._avEsc = true; n.alAbrirDesdeAviso(() => { avisosRecoger(); window.__irA('inicio'); }); }
@@ -13090,6 +13115,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
