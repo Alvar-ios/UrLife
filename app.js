@@ -11490,7 +11490,7 @@ const H = {
     if (!e.permiso) await n.abrirAjustes().catch(() => {});
     avisosAbrir();
   },
-  avApagar: async () => { const n = avNat(); if (!n) return; await n.vaciar(true).catch(() => {}); toast('Avisos del banco apagados. Lo pendiente se ha borrado del móvil.'); avisosAbrir(); },
+  avApagar: async () => { const n = avNat(); if (!n) return; await n.vaciar(true).catch(() => {}); try { const id = lsGet('avDisp:' + miUid()) || S['_avDisp:' + miUid()]; if (id && window.Data && Data.moviles) await Data.moviles.quitar(id); } catch (e) { /* */ } /* 12/11: también fuera del servidor */ toast('Avisos del banco apagados. Lo pendiente se ha borrado del móvil.'); avisosAbrir(); },
   avAvisarme: async () => { const n = avNat(), e = S._avEst || {}; if (!n) return; await n.configurar({ avisarme: e.avisarme === false }).catch(() => {}); avisosAbrir(); },
   avBanco: async ([pkg]) => { const n = avNat(), e = S._avEst || {}; if (!n) return; const b = new Set(e.bancos || []); if (b.has(pkg)) b.delete(pkg); else b.add(pkg); await n.configurar({ bancos: [...b] }).catch(() => {}); avisosAbrir(); },
   goTab: ([id]) => {
