@@ -42,7 +42,11 @@ if (cmd === 'candidatos') {
     if (ex[es] && ex[es] !== en) dup++;
     ex[es] = en; n++;
   }));
-  const reglas = fs.readFileSync(path.join(__dirname, 'reglas.js'), 'utf8');
+  // las reglas más largas (más concretas) primero; las de una sola captura «(.+)» al principio o al final, después
+  const lista = eval(fs.readFileSync(path.join(__dirname, 'reglas.js'), 'utf8'));
+  const peso = (r) => r[0].source.replace(/\(\.\+\??\)|\(\[\^[^\]]*\]\{?[^)]*\)|\\./g, '').length;
+  lista.sort((a, b) => peso(b) - peso(a));
+  const reglas = '[\n' + lista.map((r) => '  [' + r[0].toString() + ', ' + JSON.stringify(r[1]) + ']').join(',\n') + '\n]';
   const js = '/* PalomApp · diccionario español → inglés (C1 de docs/40). GENERADO por tests/i18n/herramienta.js construir\n' +
     '   desde tests/i18n/en*.tsv y tests/i18n/reglas.js: no se edita a mano. \'#\' = número, importe, fecha o mes. */\n' +
     '(function () {\nvar I = window.I18N; if (!I) return;\nI.en = { exactos: ' + JSON.stringify(ex) + ',\nreglas: ' + reglas.trim().replace(/;$/, '') + ' };\nI.dicListo();\n})();\n';

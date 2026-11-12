@@ -44,7 +44,7 @@
     [new RegExp(ANT + '(' + M + ') de (\\d{4})' + NO_L, 'gi'), function (m, me, y) { return MONTHS[mesN(me)] + ' ' + y; }],
     [new RegExp(ANT + '(\\d{1,2}) (' + A + ')' + NO_L + '\\.?(?: (\\d{4}))?', 'gi'), function (m, d, me, y) { return d + ' ' + ABR_EN[abrN(me)] + (y ? ' ' + y : ''); }],
     [new RegExp(ANT + '(' + A + ')' + NO_L + '\\.? (\\d{4})' + NO_L, 'gi'), function (m, me, y) { return ABR_EN[abrN(me)] + ' ' + y; }],
-    [new RegExp(ANT + '(lun|mar|mié|jue|vie|sáb|dom)' + NO_L + '\\.? (\\d{1,2})(?!\\d)', 'gi'), function (m, d, n) { var i = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'].indexOf(d.toLowerCase()); var w = DAYS[i].slice(0, 3); return (d.charAt(0) === d.charAt(0).toUpperCase() ? w : w.toLowerCase()) + ' ' + n; }],
+    [new RegExp(ANT + '(lun|mar|mié|jue|vie|sáb|dom)' + NO_L + '\\.? (\\d{1,2})(?!\\d)', 'gi'), function (m, d, n) { var i = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'].indexOf(d.toLowerCase()); return DAYS[i].slice(0, 3) + ' ' + n; }],
     [new RegExp(ANT + '(' + M + '|' + D + ')' + NO_L, 'gi'), function (m, w) { var i = mesN(w); return i >= 0 ? MONTHS[i] : DAYS[DIAS.indexOf(w.toLowerCase())]; }],
     [/[−+\-]?[€$£]?\d(?:[\d.,]*\d)?(?:\s?[€$£%])?/g, function (m) { return m; }],
   ];
@@ -129,8 +129,10 @@
   }
   // Traduce los trozos de un texto partido por sep. todas = tienen que traducirse todos los trozos con letras
   function partes(c, sep, h, todas) {
-    var ps = c.split(sep), alguna = false, sin = false;
-    var tr = ps.map(function (p) { if (!LETRA.test(p)) return p; var t = nucleo(p.trim(), h + 1); if (t == null) { sin = true; return p; } alguna = true; return t; });
+    var ps = c.split(sep), alguna = false, sin = false, sinMalo = false;
+    var tr = ps.map(function (p, i) { if (!LETRA.test(p)) return p; var t = nucleo(p.trim(), h + 1); if (t == null) { sin = true; if (sep === ': ' && (i > 0 || p.split(' ').length > 4)) sinMalo = true; return p; } alguna = true; return t; });
+    // con «: » vale dejar sin traducir solo lo de antes de los dos puntos si es corto (un nombre: «Ana: en paz»)
+    if (sep === ': ') return alguna && !sinMalo ? tr.join(sep) : null;
     return alguna && (!todas || !sin) ? tr.join(sep) : null;
   }
   var CACHE = new Map();

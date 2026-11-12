@@ -73,7 +73,6 @@
   [/^(.+): le debes (.+)$/, '$1: you owe $2'],
   [/^(.+): debes (.+)$/, '$1: you owe $2'],
   [/^(.+) (hace \d+ (?:días|día|h|min|semanas|semana|meses|mes))$/, '$1 $2'],
-  [/^(.+) (ayer|hoy|ahora)$/, '$1 $2'],
   [/^Lo apuntaste tú (.+)$/, 'You added it $1'],
   [/^cambiado por (.+)$/, 'changed by $1'],
   [/^(.+) apuntó «(.+)» y (\d+) más$/, '$1 added «$2» and $3 more'],
