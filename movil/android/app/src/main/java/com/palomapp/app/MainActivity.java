@@ -8,6 +8,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(AvisosBancoPlugin.class); // «Avisos del banco» (docs/39)
+        registerPlugin(PalomaWidgetsPlugin.class); // widgets de la pantalla de inicio (docs/40 C5)
         super.onCreate(savedInstanceState);
     }
 }
