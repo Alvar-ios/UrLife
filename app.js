@@ -1284,9 +1284,14 @@ function movPerNorm(p) {
   if (p === 'anio') return 'y:' + y;
   return p || 'todo';
 }
+// 12/11: se recuerda con la misma huella que las cifras del mes (miraba el mes de todos los movimientos en cada pintado)
+let _limMemo = null;
 function movLimites() {
+  const clave = JSON.stringify(mesCfg());
+  if (_limMemo && huellaIgual(_limMemo.h, clave)) return { min: _limMemo.min, max: _limMemo.max };
   const hoy = mesHoyClave().slice(2); let min = hoy, max = hoy;
   S.movimientos.forEach((m) => { const k = mesDe(m.fecha || ''); if (k.length === 7) { if (k < min) min = k; if (k > max) max = k; } });
+  if (!_cortesCalc) _limMemo = { h: huellaDatos(clave), min, max };
   return { min, max };
 }
 // Cabecera de Movimientos (la misma en las tres vistas): «Octubre ⌄» grande, las fechas de tu mes y dos flechas discretas.
