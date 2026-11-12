@@ -586,6 +586,8 @@ const onInput = (n, ...a) => attr('input', n, ...a);
 const onChange = (n, ...a) => attr('change', n, ...a);
 
 /* ---------------- Estado ---------------- */
+// 12/11 (diagnóstico de rendimiento): la Lista empieza con 40 filas y trae 60 más al acercarse al final (o con «Mostrar más»)
+const MOV_FILAS = 40, MOV_MAS = 60;
 const now0 = new Date();
 const S = {
   appStarted: false, db: null, user: null,
@@ -596,7 +598,7 @@ const S = {
   calVista: 'mes', calFecha: null, calFiltros: { tareas: true, facturas: true, hitos: true, movs: false },
   mesSel: now0.getMonth() + 1, anioSel: now0.getFullYear(),
   tareasSub: 'activas',
-  movVista: 'resumen', movFiltroTipo: 'Todos', movCuenta: '', movPeriodo: mesHoyClave(), movQuery: '', movLimit: 120,
+  movVista: 'resumen', movFiltroTipo: 'Todos', movCuenta: '', movPeriodo: mesHoyClave(), movQuery: '', movLimit: MOV_FILAS,
   invModo: lsGet('invModo') === 'rentab' ? 'rentab' : 'valor',
   theme: lsGet('theme') || 'auto',
   look: 'nuevo', paleta: lsGet('paleta') || 'violeta', tipo: lsGet('tipo') || 'bricolage', fondo: lsGet('fondo') || 'neutro',
@@ -769,13 +771,28 @@ function saveConfig(partial) {
    movimientos. Ahora se agrupan por «tu mes» (mesDe) una sola vez y se recuerdan mientras sean los mismos movimientos
    efectivos, la misma configuración (y su «tu mes») y el mismo día. Mismo orden que antes, así que las sumas son idénticas.
    Se devuelven copias: quien ordene o cambie la lista no estropea lo recordado. */
+// Huella de los datos para saber si lo recordado sigue valiendo: las listas (y cuántas cosas tienen, por si alguien añade
+// sin hacer copia), la configuración y cada uno de sus apartados, el usuario y el día. Ante la duda, se recalcula.
+function huellaDatos(extra) {
+  const c = S.config, l = (a) => (a ? a.length : -1);
+  return { movs: S.movimientos, nM: l(S.movimientos), comp: S.compartidos, nC: l(S.compartidos), tras: S.traspasos, nT: l(S.traspasos), obj: S.objetivos, nO: l(S.objetivos),
+    conf: c, cv: c ? Object.assign({}, c) : null, nK: c ? Object.keys(c).length : 0, yo: miUid(), hoy: todayISO(), extra };
+}
+function huellaIgual(h, extra) {
+  if (!h) return false;
+  const c = S.config, l = (a) => (a ? a.length : -1);
+  if (h.movs !== S.movimientos || h.nM !== l(S.movimientos) || h.comp !== S.compartidos || h.nC !== l(S.compartidos) || h.tras !== S.traspasos || h.nT !== l(S.traspasos) || h.obj !== S.objetivos || h.nO !== l(S.objetivos)) return false;
+  if (h.conf !== c || h.yo !== miUid() || h.hoy !== todayISO() || h.extra !== extra) return false;
+  if (c) { const ks = Object.keys(c); if (ks.length !== h.nK) return false; for (let i = 0; i < ks.length; i++) if (h.cv[ks[i]] !== c[ks[i]]) return false; }
+  return true;
+}
 let _porMes = null;
 function movsPorMes() {
-  const ef = movsEfectivos(), hoy = todayISO(), mc = JSON.stringify(mesCfg()), P = _porMes;
-  if (P && P.ef === ef && P.movs === S.movimientos && P.conf === S.config && P.mc === mc && P.hoy === hoy) return P;
+  const ef = movsEfectivos(), P = _porMes, clave = ef.length + '|' + JSON.stringify(mesCfg());
+  if (P && P.ef === ef && huellaIgual(P.h, clave)) return P;
   const mapa = new Map();
   ef.forEach((m) => { const k = mesDe(m.fecha || ''); let l = mapa.get(k); if (!l) mapa.set(k, (l = [])); l.push(m); });
-  const r = { ef, movs: S.movimientos, conf: S.config, mc, hoy, mapa, kpis: new Map() };
+  const r = { ef, h: huellaDatos(clave), mapa, kpis: new Map() };
   if (!_cortesCalc) _porMes = r; // a mitad de calcular los cortes de la nómina los meses aún no son los buenos: no se recuerda
   return r;
 }
@@ -1353,7 +1370,7 @@ function irMovs(o) {
   S.movCat = o.cat || ''; S.movSub = o.cat && o.sub ? o.sub : '';
   S.movCuenta = o.cuenta || '';
   S.movQuery = ''; S.movSoloTicket = false; S.movSoloComp = false; S._movBuscando = false;
-  S.movLimit = 120;
+  S.movLimit = MOV_FILAS;
   render(); window.scrollTo(0, 0);
 }
 const mesClave = (y, m) => 'm:' + y + '-' + pad2(m);
@@ -1420,7 +1437,7 @@ function renderMovTab() {
   return movVistaSegHtml() + vacio + (S.volverA ? '<button class="link volver" ' + act('volver') + '>' + ic('chevL') + ' Volver a ' + escapeHtml(S.volverA.label) + '</button>' : '') +
     movCabHtml(dir) + '<div class="mov-marco"><div id="movCuerpo" class="mov-cuerpo-' + v + '">' + cuerpo + '</div></div>';
 }
-function movLimpiarFiltros() { S.movFiltroTipo = 'Todos'; S.movQuery = ''; S.movSub = ''; S.movSoloTicket = false; S.movSoloComp = false; S._movBuscando = false; S.movLimit = 120; }
+function movLimpiarFiltros() { S.movFiltroTipo = 'Todos'; S.movQuery = ''; S.movSub = ''; S.movSoloTicket = false; S.movSoloComp = false; S._movBuscando = false; S.movLimit = MOV_FILAS; }
 // repinta y, si está abierta la hoja «Filtros», la pone al día (el botón cuenta en vivo)
 function movRefrescar() { render(); const b = $('#sheetBackdrop'); if (FORM && FORM.kind === 'movFiltros' && b && !b.dataset.cerrando) updateSheet(movFiltrosHtml()); }
 // Cambiar de vista o de mes: la cabecera se queda quieta y el cuerpo se desliza entero, sin transparencias (antes: «pantallazo negro»)
@@ -1622,19 +1639,75 @@ function renderMovList() {
   let html = '<div class="summary-line">' + movs.length + (movs.length === 1 ? ' movimiento' : ' movimientos') + (tras.length ? ' · ' + tras.length + (tras.length === 1 ? ' traspaso' : ' traspasos') : '') +
     (soloApartado ? '' : ' · balance ' + (net >= 0 ? '+' : '−') + fmtM(Math.abs(net)) + ' ' + sym()) +
     (apartadoTot ? ' · apartado e invertido ' + fmtM(apartadoTot) + ' ' + sym() : '') + '</div>' + enTodo;
-  let last = null;
-  const totDia = {}, apDia = {};
-  shown.forEach((m) => { if (esTraspaso(m)) return; if (esApartado(m.tipo)) apDia[m.fecha] = (apDia[m.fecha] || 0) + num(m.importe); else totDia[m.fecha] = (totDia[m.fecha] || 0) + effect(m.importe, m.tipo); });
-  const totDiaHtml = (f) => (!(f in totDia) && !(f in apDia) ? '' : f in totDia ? '<span class="tnum ' + (totDia[f] >= 0 ? 'pos' : 'neg') + '">' + (totDia[f] >= 0 ? '+' : '−') + fmtM(Math.abs(totDia[f])) + ' ' + sym() + '</span>'
-    : '<span class="tnum sav">→ ' + fmtM(apDia[f] || 0) + ' ' + sym() + '</span>');
-  shown.forEach((m) => {
-    if (m.fecha !== last) { if (last !== null) html += '</div>'; html += '<div class="date-sep"><span>' + fmtDiaLista(m.fecha) + '</span>' + totDiaHtml(m.fecha) + '</div><div class="list">'; last = m.fecha; }
-    html += esTraspaso(m) ? renderTraspasoRow(m) : renderMovRow(m);
-  });
-  if (last !== null) html += '</div>';
-  if (lista.length > shown.length) html += '<div style="margin-top:14px;"><button class="btn ghost block" ' + act('movMore') + '>Mostrar más (' + (lista.length - shown.length) + ')</button></div>';
+  const b = movBloquesHtml(shown, movTotDia(shown), null);
+  html += b.cont + b.html + movMasHtml(lista, shown);
   return html;
 }
+// lo que suma cada día entre las filas que se ven (como siempre: solo las que se ven)
+function movTotDia(shown) {
+  const totDia = {}, apDia = {};
+  shown.forEach((m) => { if (esTraspaso(m)) return; if (esApartado(m.tipo)) apDia[m.fecha] = (apDia[m.fecha] || 0) + num(m.importe); else totDia[m.fecha] = (totDia[m.fecha] || 0) + effect(m.importe, m.tipo); });
+  return (f) => (!(f in totDia) && !(f in apDia) ? '' : f in totDia ? '<span class="tnum ' + (totDia[f] >= 0 ? 'pos' : 'neg') + '">' + (totDia[f] >= 0 ? '+' : '−') + fmtM(Math.abs(totDia[f])) + ' ' + sym() + '</span>'
+    : '<span class="tnum sav">→ ' + fmtM(apDia[f] || 0) + ' ' + sym() + '</span>');
+}
+function movDiaSepHtml(f, totDiaHtml) { return '<div class="date-sep"><span>' + fmtDiaLista(f) + '</span>' + totDiaHtml(f) + '</div>'; }
+// Filas agrupadas por día. `last`: el día de la fila anterior (al traer más filas); las que siguen ese día van en `cont`, sin cabecera
+function movBloquesHtml(items, totDiaHtml, last) {
+  let cont = '', html = '', cur = last, abierto = false;
+  items.forEach((m) => {
+    const fila = esTraspaso(m) ? renderTraspasoRow(m) : renderMovRow(m);
+    if (m.fecha === cur) { if (abierto) html += fila; else cont += fila; return; }
+    if (abierto) html += '</div>';
+    // --filas: para que el navegador reserve el alto del día antes de pintarlo (content-visibility en look.css)
+    html += movDiaSepHtml(m.fecha, totDiaHtml) + '<div class="list mov-dia" style="--filas:' + items.filter((x) => x.fecha === m.fecha).length + '">'; abierto = true; cur = m.fecha; html += fila;
+  });
+  if (abierto) html += '</div>';
+  return { cont, html };
+}
+// Al final de la Lista: la marca que dice cuántas filas hay (para traer más sin repintar) y el botón de siempre
+function movMasHtml(lista, shown) {
+  if (lista.length <= shown.length) return '';
+  const ult = shown[shown.length - 1];
+  return '<div class="mov-mas" data-n="' + shown.length + '" data-ult="' + escapeHtml(String((ult && ult.id) || '')) + '" style="margin-top:14px;"><button class="btn ghost block" ' + act('movMore') + '>Mostrar más (' + (lista.length - shown.length) + ')</button></div>';
+}
+function movListaCompleta() { const movs = movsFiltrados(), tras = traspasosFiltrados(); return tras.length ? movs.concat(tras).sort(cmpMov) : movs; }
+// Trae más filas: si la Lista sigue siendo la misma, solo se añaden las nuevas al final (no se repinta lo que ya ves)
+function movTraerMas() {
+  const l = $('#movList'); if (!l) return;
+  const marca = l.querySelector('.mov-mas'), n = marca ? Number(marca.dataset.n) : -1;
+  S.movLimit = Math.max(S.movLimit, n > 0 ? n : 0) + MOV_MAS;
+  const lista = marca ? movListaCompleta() : null, prev = lista && n > 0 ? lista[n - 1] : null;
+  if (!lista || !prev || String(prev.id || '') !== marca.dataset.ult) { l.innerHTML = renderMovList(); return; } // algo ha cambiado: como siempre
+  const shown = lista.slice(0, S.movLimit), nuevas = shown.slice(n), tot = movTotDia(shown), b = movBloquesHtml(nuevas, tot, prev.fecha);
+  if (b.cont) {
+    // el día que estaba a medias: sus filas nuevas van en su bloque y su total se rehace con todas las que se ven
+    const bloques = l.querySelectorAll('.list.mov-dia'), ultB = bloques[bloques.length - 1], sep = ultB && ultB.previousElementSibling;
+    if (!ultB || !sep || !sep.classList.contains('date-sep')) { l.innerHTML = renderMovList(); return; }
+    ultB.insertAdjacentHTML('beforeend', b.cont); ultB.style.setProperty('--filas', shown.filter((x) => x.fecha === prev.fecha).length);
+    sep.outerHTML = movDiaSepHtml(prev.fecha, tot);
+  }
+  marca.insertAdjacentHTML('beforebegin', b.html);
+  marca.outerHTML = movMasHtml(lista, shown);
+  if (cifrasOcultas()) setTimeout(taparCifrasTexto, 0);
+}
+// Al bajar por la Lista, trae más filas antes de llegar al final (en el navegador simulado de las pruebas no hay medidas: no hace nada)
+let _movMasPend = 0, _movFilaH = 0;
+function movMasMirar() {
+  _movMasPend = 0;
+  if (S.tab !== 'movimientos' || movVistaAct() !== 'lista') return;
+  movMedirFila();
+  const m = document.querySelector('#movList .mov-mas'); if (!m) return;
+  const r = m.getBoundingClientRect(); if (!r.height) return;
+  if (r.top < (window.innerHeight || 800) + 900) { movTraerMas(); pedirMovMas(); }
+}
+// alto de una fila de verdad (cambia con el tamaño de letra del móvil): así lo reservado para los días sin pintar se parece a lo real
+function movMedirFila() {
+  const b = document.querySelector('#movList > .list.mov-dia'), n = b ? Number(b.style.getPropertyValue('--filas')) : 0; if (!n) return;
+  const h = b.getBoundingClientRect().height, f = (h - 1) / n;
+  if (f > 20 && f < 400 && Math.abs(f - _movFilaH) > 0.5) { _movFilaH = f; document.documentElement.style.setProperty('--mov-fila-h', f.toFixed(1) + 'px'); }
+}
+function pedirMovMas() { if (!_movMasPend && typeof requestAnimationFrame === 'function') _movMasPend = requestAnimationFrame(movMasMirar); }
+document.addEventListener('scroll', pedirMovMas, { passive: true, capture: true });
 function renderMovRow(m) {
   const fila = renderMovRowBase(m);
   if (m.comp) return fila;
@@ -8038,9 +8111,9 @@ function flujosCompartidos() {
    de la configuración actual (p. ej. la copia que se está editando) se calcula aparte, como siempre. */
 let _saldosMemo = null;
 function saldosTodas() {
-  const hoy = todayISO(), yo = miUid(), M = _saldosMemo;
-  if (M && M.movs === S.movimientos && M.comp === S.compartidos && M.tras === S.traspasos && M.obj === S.objetivos && M.conf === S.config && M.hoy === hoy && M.yo === yo) return M.v;
-  const cs = cuentasCfg(), v = new Map(), porId = new Map();
+  const M = _saldosMemo, cs = cuentasCfg(), hoy = todayISO();
+  if (M && huellaIgual(M.h, cs)) return M.v;
+  const v = new Map(), porId = new Map();
   cs.forEach((c) => { if (v.has(c) || c.saldo == null || !isFinite(Number(c.saldo))) return; const e = { c, s: num(c.saldo) }; v.set(c, e); if (!porId.has(c.id)) porId.set(c.id, []); porId.get(c.id).push(e); });
   if (v.size) {
     const vivos = new Set((S.compartidos || []).map((x) => x.id)), lista = (id) => porId.get(id) || []; // mismo id que compara saldoCuentaUna (también undefined)
@@ -8061,7 +8134,7 @@ function saldosTodas() {
     });
   }
   const out = new Map(); v.forEach((e, c) => out.set(c, Math.round(e.s * 100) / 100));
-  _saldosMemo = { movs: S.movimientos, comp: S.compartidos, tras: S.traspasos, obj: S.objetivos, conf: S.config, hoy, yo, v: out };
+  _saldosMemo = { h: huellaDatos(cs), v: out };
   return out;
 }
 function saldoCuenta(c) {
@@ -11739,15 +11812,15 @@ const H = {
   // movimientos
   setMovFiltro: ([t]) => {
     if (t === '_ticket') { S.movFiltroTipo = 'Todos'; S.movSoloTicket = true; } else if (t === '_comp') { S.movFiltroTipo = 'Todos'; S.movSoloComp = true; } else S.movFiltroTipo = t;
-    S.movVista = 'lista'; S.movLimit = 120; movRefrescar();
+    S.movVista = 'lista'; S.movLimit = MOV_FILAS; movRefrescar();
   },
-  movSoloTicket: () => { if (S.movFiltroTipo === '_ticket') { S.movFiltroTipo = 'Todos'; S.movSoloTicket = true; } S.movSoloTicket = !S.movSoloTicket; S.movLimit = 120; movRefrescar(); },
-  movSoloComp: () => { if (S.movFiltroTipo === '_comp') { S.movFiltroTipo = 'Todos'; S.movSoloComp = true; } S.movSoloComp = !S.movSoloComp; S.movLimit = 120; movRefrescar(); },
-  setMovCatFiltro: ([c]) => { S.movCat = c || ''; S.movSub = ''; S.movLimit = 120; movRefrescar(); },
+  movSoloTicket: () => { if (S.movFiltroTipo === '_ticket') { S.movFiltroTipo = 'Todos'; S.movSoloTicket = true; } S.movSoloTicket = !S.movSoloTicket; S.movLimit = MOV_FILAS; movRefrescar(); },
+  movSoloComp: () => { if (S.movFiltroTipo === '_comp') { S.movFiltroTipo = 'Todos'; S.movSoloComp = true; } S.movSoloComp = !S.movSoloComp; S.movLimit = MOV_FILAS; movRefrescar(); },
+  setMovCatFiltro: ([c]) => { S.movCat = c || ''; S.movSub = ''; S.movLimit = MOV_FILAS; movRefrescar(); },
   movFiltrosAbrir: () => { FORM = { kind: 'movFiltros' }; openSheet(movFiltrosHtml()); },
   movFiltrosQuitar: () => { S.movFiltroTipo = 'Todos'; S.movSoloTicket = false; S.movSoloComp = false; S.movCat = ''; S.movSub = ''; movRefrescar(); },
   movBuscarAbrir: () => { S._movBuscando = true; render(); setTimeout(() => { const el = $('#movSearch'); if (el) el.focus(); }, 30); },
-  movBuscarCerrar: () => { S._movBuscando = false; S.movQuery = ''; S.movLimit = 120; render(); },
+  movBuscarCerrar: () => { S._movBuscando = false; S.movQuery = ''; S.movLimit = MOV_FILAS; render(); },
   movCuentaElegir: () => { FORM = { kind: 'movCuenta' }; openSheet(movCuentaElegirHtml()); },
   movMesAbrir: () => { if (Date.now() - (S._swipeT || 0) < 450) return; const p = movPerNorm(S.movPeriodo); FORM = { kind: 'movMes', modo: /^m:/.test(p) ? 'mes' : /^y:/.test(p) ? 'anio' : 'todo', anio: /^[my]:/.test(p) ? Number(p.slice(2, 6)) : mesActual().y }; openSheet(movMesHtml()); },
   movMesModo: ([k]) => { if (!FORM || FORM.kind !== 'movMes') return; FORM.modo = k; updateSheet(movMesHtml()); },
@@ -11757,7 +11830,7 @@ const H = {
     if (nuevo === antes) return;
     if (nuevo === 'todo') S.movVista = 'lista';
     if (/^y:/.test(nuevo) && movVistaAct() === 'calendario') S.movVista = 'resumen';
-    S.movLimit = 120; S.movCalDia = ''; S._gcAbierta = ''; _donutAnim = '';
+    S.movLimit = MOV_FILAS; S.movCalDia = ''; S._gcAbierta = ''; _donutAnim = '';
     movDeslizar(() => { S.movPeriodo = nuevo; S._movDir = nuevo > antes ? 1 : -1; }, nuevo > antes ? 1 : -1);
   },
   donutSel: ([n]) => {
@@ -11776,20 +11849,20 @@ const H = {
   donutIr: ([cat, sub]) => { irMovs({ tipo: '_gastos', periodo: S.movPeriodo, cat, sub: sub === '-' ? SIN_DETALLE : sub }); },
   movCalDia: ([f]) => { S.movCalDia = f; render(); },
   movDonde: ([d]) => { irMovs({ tipo: '_gastos', periodo: S.movPeriodo }); S.movQuery = d; S._movBuscando = true; render(); },
-  setMovPeriodo: ([p]) => { S.movPeriodo = movPerNorm(p); S.movLimit = 120; render(); },
+  setMovPeriodo: ([p]) => { S.movPeriodo = movPerNorm(p); S.movLimit = MOV_FILAS; render(); },
   movPerMover: ([d]) => {
     const p = movPerNorm(S.movPeriodo); d = Number(d) || 0; if (!d) return;
     if (/^m:/.test(p)) { let [y, m] = p.slice(2).split('-').map(Number); m += d; if (m < 1) { m = 12; y--; } if (m > 12) { m = 1; y++; } S.movPeriodo = mesClave(y, m); }
     else if (/^y:/.test(p)) S.movPeriodo = 'y:' + (Number(p.slice(2)) + d);
     else return;
-    const nuevo = S.movPeriodo; S.movPeriodo = p; S.movLimit = 120; S.movCalDia = ''; S._gcAbierta = '';
+    const nuevo = S.movPeriodo; S.movPeriodo = p; S.movLimit = MOV_FILAS; S.movCalDia = ''; S._gcAbierta = '';
     movDeslizar(() => { S.movPeriodo = nuevo; S._movDir = d; }, d);
   },
   movModoCab: ([k]) => {
     const antes = movPerNorm(S.movPeriodo), ya = mesActual().y, y = /^[my]:/.test(antes) ? Number(antes.slice(2, 6)) : ya;
     const nuevo = k === 'anio' ? 'y:' + y : /^m:/.test(antes) ? antes : y === ya ? mesHoyClave() : mesClave(y, 12);
     if (nuevo === antes) return; sentir('tic');
-    S.movLimit = 120; S.movCalDia = ''; S._gcAbierta = ''; _donutAnim = '';
+    S.movLimit = MOV_FILAS; S.movCalDia = ''; S._gcAbierta = ''; _donutAnim = '';
     movDeslizar(() => { S.movPeriodo = nuevo; }, k === 'anio' ? 1 : -1);
   },
   setMovModo: ([k]) => {
@@ -11798,14 +11871,14 @@ const H = {
     else if (k === 'anio') S.movPeriodo = 'y:' + y;
     else { S.movPeriodo = 'todo'; S.movVista = 'lista'; }
     if (k === 'anio' && movVistaAct() === 'calendario') S.movVista = 'resumen';
-    S.movLimit = 120; render();
+    S.movLimit = MOV_FILAS; render();
   },
   movPerHoy: () => {
     const p = movPerNorm(S.movPeriodo), nuevo = /^y:/.test(p) ? 'y:' + mesActual().y : /^m:/.test(p) ? mesHoyClave() : p;
     if (nuevo === p) return; S._movDir = nuevo > p ? 1 : -1; S.movPeriodo = nuevo; render();
   },
   onMovSearch: (_a, el) => debouncedSearch(el.value),
-  movMore: () => { S.movLimit += 150; const l = $('#movList'); if (l) l.innerHTML = renderMovList(); },
+  movMore: () => { movTraerMas(); },
   openMovForm: ([id], el) => { if (el && el.parentNode && el.parentNode.classList && el.parentNode.classList.contains('abierta')) { cerrarSwipe(el.parentNode); return; } S._volverGrupo = null; openMovForm(id || null); },
   movDuplicar: ([id]) => { const m = S.movimientos.find((x) => x.id === id); $$('.swipe.abierta').forEach(cerrarSwipe); if (!m) return; S._volverGrupo = null; openMovForm(null, { tipo: m.tipo, importe: m.importe, categoria: m.categoria, fecha: todayISO(), descripcion: m.descripcion, cuentaId: m.cuentaId }); toast('Copia lista: revisa y guarda'); },
   movBorrar: ([id]) => { borrarMovConDeshacer(id); },
@@ -12569,7 +12642,7 @@ const H = {
   },
   empiezaOcultar: () => { saveConfig({ empiezaOculto: todayISO() }); render(); toast('Oculto. Lo tienes todo en Tú.'); },
   presTodas: () => { S.presTodas = !S.presTodas; render(); },
-  setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = 120; render(); },
+  setMovSub: ([s]) => { S.movSub = s || ''; S.movLimit = MOV_FILAS; render(); },
   openCuentas: () => { verBadge('patrimonio'); verBadge('cuentas'); FORM = { kind: 'cuentas' }; if ($('#sheetBackdrop')) updateSheet(cuentasHtml()); else openSheet(cuentasHtml()); },
   cuentaAnadir: () => { FORM = { kind: 'banco', i: -1, nueva: true, q: '' }; updateSheet(bancoElegirHtml()); }, // la cuenta se crea al elegir (cerrar aquí no deja una cuenta vacía)
   bancoVolver: () => { const F = FORM; if (F && F.kind === 'banco' && !F.nueva && F.i >= 0) { FORM = { kind: 'cuentaEd', i: F.i }; updateSheet(cuentaEdHtml(F.i)); } else { FORM = { kind: 'cuentas' }; updateSheet(cuentasHtml()); } },
@@ -12642,7 +12715,7 @@ const H = {
   asigCuentaTodos: () => { if (!FORM || FORM.kind !== 'asigCuenta') return; const l = movsSinCuenta(); if (l.length && l.every((m) => FORM.sel.has(m.id))) FORM.sel.clear(); else l.forEach((m) => FORM.sel.add(m.id)); FORM.confirmar = false; updateSheet(asigCuentaHtml()); },
   asigCuentaMas: () => { if (!FORM || FORM.kind !== 'asigCuenta') return; FORM.limite += 100; updateSheet(asigCuentaHtml()); },
   asigCuentaOk: () => { if (!FORM || FORM.kind !== 'asigCuenta' || !FORM.sel.size || FORM.guardando) return; if (!FORM.confirmar) { FORM.confirmar = true; updateSheet(asigCuentaHtml()); return; } asigCuentaGuardar(); },
-  setMovCuenta: ([id]) => { S.movCuenta = id || ''; S.movLimit = 120; if (FORM && FORM.kind === 'movCuenta') closeSheet(); movRefrescar(); },
+  setMovCuenta: ([id]) => { S.movCuenta = id || ''; S.movLimit = MOV_FILAS; if (FORM && FORM.kind === 'movCuenta') closeSheet(); movRefrescar(); },
   cuentasListo: () => { const cs = (cfg().cuentas || []).filter((c) => c && (c.nombre || c.saldo != null)).map((c) => Object.assign({}, c, c.nombre ? {} : { nombre: 'Cuenta' }, c.id ? {} : { id: nuevoIdMeta() })); saveConfig({ cuentas: cs }); closeSheet(); render(); },
   openGrupos: () => { verBadge('grupos'); FORM = { kind: 'grupos' }; if ($('#sheetBackdrop')) updateSheet(gruposListaHtml()); else openSheet(gruposListaHtml()); cargarGrupos().then(() => { if (FORM && FORM.kind === 'grupos') updateSheet(gruposListaHtml()); render(); }); },
   grupoNuevo: () => { FORM = { kind: 'grupoNuevo' }; updateSheet(grupoNuevoHtml()); setTimeout(() => { const el = $('#gNombre'); if (el) el.focus(); }, 60); },
@@ -12999,7 +13072,7 @@ const H = {
   },
   doLogout: async () => { if (_movsPend.size) return toast('Espera un momento: aún se está guardando lo último', { aviso: true }); closeSheet(); await limpiarAlSalir(); await window.Auth.signOut(); }, // Calidad 11/11
 };
-const debouncedSearch = debounce((v) => { S.movQuery = v; S.movLimit = 120; const l = $('#movList'); if (l) l.innerHTML = renderMovList(); }, 160);
+const debouncedSearch = debounce((v) => { S.movQuery = v; S.movLimit = MOV_FILAS; const l = $('#movList'); if (l) l.innerHTML = renderMovList(); }, 160);
 
 const VIBRA = new Set(['goTab', 'onFab', 'crearIr', 'setGeneralSub', 'setDineroSub', 'irAgenda', 'agendaDia', 'agendaSemana', 'setMovFiltro', 'setMovPeriodo', 'pickTipo', 'compOn', 'tkQuien', 'moveMes', 'moveAnio', 'setTareasSub']);
 function dispatch(kind, e) {

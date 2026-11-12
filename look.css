@@ -133,6 +133,9 @@ html[data-look="nuevo"] .profile-tile, html[data-look="nuevo"] .imp-list, html[d
 }
 html[data-look="nuevo"] .card { border-radius: var(--r-l); padding: var(--sp-4); }
 html[data-look="nuevo"] .list { border: 1px solid var(--card-border); border-radius: var(--r-l); box-shadow: var(--shadow); background: var(--line); }
+/* 12/11 (rendimiento, docs/salud/2026-11-12-diag-rendimiento.md): los días de la Lista que quedan lejos de la pantalla no se pintan.
+   El alto se reserva con las filas del día (--filas) y el alto de una fila medido en el móvil (--mov-fila-h, lo pone app.js) */
+html[data-look="nuevo"] #movList > .list.mov-dia { content-visibility: auto; contain-intrinsic-size: auto calc(var(--filas, 4) * var(--mov-fila-h, 69px) + 1px); }
 html[data-look="nuevo"] .row { padding: 13px var(--sp-4); }
 html[data-look="nuevo"] .row .ttl { font-size: var(--fs-m); font-weight: 600; }
 html[data-look="nuevo"] .row .meta { font-size: 12.5px; }
