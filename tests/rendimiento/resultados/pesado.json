@@ -1,0 +1,755 @@
+{
+ "fecha": "2026-11-12",
+ "freno": 4,
+ "juegos": [
+  {
+   "juego": "pesado",
+   "datos": {
+    "movs": 10000,
+    "dias": 730,
+    "cuentas": 8,
+    "grupos": 6,
+    "comp": 900,
+    "tareas": 300,
+    "metas": 6,
+    "deudas": 3,
+    "fijos": 12
+   },
+   "freno": 4,
+   "arranque": {
+    "hastaInicioMs": 1094.7,
+    "primeraPinturaMs": 396,
+    "antesDeAppJsMs": 266.2,
+    "leerAppJsMs": 1,
+    "ejecutarAppJsMs": 69.1,
+    "datosYPintarMs": 694.7,
+    "consultasAlEntrar": 9,
+    "pasadas": [
+     1099,
+     965,
+     1095
+    ]
+   },
+   "pantallas": [
+    {
+     "pantalla": "Inicio",
+     "jsMs": 107.3,
+     "totalMs": 118.1,
+     "nodos": 290,
+     "htmlKb": 12
+    },
+    {
+     "pantalla": "Movimientos · Resumen",
+     "jsMs": 55.3,
+     "totalMs": 57.5,
+     "nodos": 456,
+     "htmlKb": 19
+    },
+    {
+     "pantalla": "Movimientos · Lista",
+     "jsMs": 173.6,
+     "totalMs": 175,
+     "nodos": 3128,
+     "htmlKb": 182
+    },
+    {
+     "pantalla": "Movimientos · Lista (todo el tiempo)",
+     "jsMs": 159,
+     "totalMs": 160.1,
+     "nodos": 3118,
+     "htmlKb": 181
+    },
+    {
+     "pantalla": "Movimientos · Calendario",
+     "jsMs": 36.2,
+     "totalMs": 37.5,
+     "nodos": 638,
+     "htmlKb": 30
+    },
+    {
+     "pantalla": "Juntos",
+     "jsMs": 17.4,
+     "totalMs": 18.4,
+     "nodos": 242,
+     "htmlKb": 7
+    },
+    {
+     "pantalla": "Dinero",
+     "jsMs": 182.8,
+     "totalMs": 182.9,
+     "nodos": 222,
+     "htmlKb": 7
+    },
+    {
+     "pantalla": "Agenda",
+     "jsMs": 24.4,
+     "totalMs": 25.4,
+     "nodos": 251,
+     "htmlKb": 8
+    },
+    {
+     "pantalla": "Tú",
+     "jsMs": 26.5,
+     "totalMs": 29.1,
+     "nodos": 419,
+     "htmlKb": 21
+    }
+   ],
+   "hojas": [
+    {
+     "hoja": "Botón +",
+     "jsMs": 19,
+     "totalMs": 20.3,
+     "nodos": 120,
+     "abierta": true
+    },
+    {
+     "hoja": "Gasto con teclado",
+     "jsMs": 40.8,
+     "totalMs": 42.7,
+     "nodos": 235,
+     "abierta": true
+    },
+    {
+     "hoja": "Filtros",
+     "jsMs": 62.4,
+     "totalMs": 62.4,
+     "nodos": 60,
+     "abierta": true
+    },
+    {
+     "hoja": "Importar",
+     "jsMs": 9.5,
+     "totalMs": 9.5,
+     "nodos": 19,
+     "abierta": true
+    },
+    {
+     "hoja": "Una cuenta",
+     "jsMs": 52.6,
+     "totalMs": 53.2,
+     "nodos": 97,
+     "abierta": true
+    },
+    {
+     "hoja": "Un grupo",
+     "jsMs": 39.5,
+     "totalMs": 39.5,
+     "nodos": 119,
+     "abierta": true
+    }
+   ],
+   "largas": {
+    "cambiarPestana": {
+     "toques": 4,
+     "conTareaLarga": 4,
+     "maxMs": 205,
+     "detalle": [
+      {
+       "a": "movimientos",
+       "n": 1,
+       "maxMs": 159,
+       "sumaMs": 159,
+       "duroMs": 254
+      },
+      {
+       "a": "juntos",
+       "n": 1,
+       "maxMs": 74,
+       "sumaMs": 74,
+       "duroMs": 176
+      },
+      {
+       "a": "dinero",
+       "n": 1,
+       "maxMs": 205,
+       "sumaMs": 205,
+       "duroMs": 291
+      },
+      {
+       "a": "inicio",
+       "n": 1,
+       "maxMs": 140,
+       "sumaMs": 140,
+       "duroMs": 192
+      }
+     ]
+    },
+    "cambiarMes": {
+     "toques": 4,
+     "conTareaLarga": 0,
+     "maxMs": 0,
+     "periodoFinal": "m:2026-07"
+    },
+    "teclearImporte": {
+     "toques": 5,
+     "conTareaLarga": 0,
+     "maxMs": 0,
+     "msPorTecla": 93
+    },
+    "teclearBuscador": {
+     "toques": 7,
+     "conTareaLarga": 5,
+     "maxMs": 129,
+     "msPorLetra": 114,
+     "nota": "buscando en todo el tiempo"
+    }
+   },
+   "memoria": {
+    "alEmpezar": {
+     "heapMb": 6.5,
+     "nodos": 1002,
+     "oyentes": 58
+    },
+    "tras50Pestanas": {
+     "heapMb": 6.7,
+     "nodos": 960,
+     "oyentes": 58
+    },
+    "tras30Hojas": {
+     "heapMb": 6.8,
+     "nodos": 960,
+     "oyentes": 58
+    }
+   },
+   "llamadas": {
+    "alArrancar": {
+     "todayISO": 1459,
+     "mesCfg": 912120,
+     "mesDe": 912051,
+     "cfg": 16715,
+     "versionIdx": 53,
+     "perfilCfg": 11,
+     "render": 11,
+     "catsGasto": 62,
+     "movsEfectivos": 80,
+     "movsDelMes": 80,
+     "sumTipo": 480,
+     "kpisMes": 76,
+     "rangoMes": 64,
+     "previstoMes": 4,
+     "cuentasCfg": 328688,
+     "cuentaPrincipal": 9480,
+     "flujosCompartidos": 32,
+     "saldoCuenta": 32,
+     "metasCfg": 4,
+     "movsPersonales": 40,
+     "metasStats": 4,
+     "movsDeuda": 16,
+     "deudaStats": 4,
+     "saldosDe": 48,
+     "miSaldo": 48
+    },
+    "Inicio": {
+     "_renderMs": 166.2,
+     "versionIdx": {
+      "n": 8,
+      "ms": 0
+     },
+     "todayISO": {
+      "n": 355,
+      "ms": 0.4
+     },
+     "cfg": {
+      "n": 2394,
+      "ms": 1.2
+     },
+     "perfilCfg": {
+      "n": 1,
+      "ms": 0
+     },
+     "mesCfg": {
+      "n": 228029,
+      "ms": 31.2
+     },
+     "mesDe": {
+      "n": 228012,
+      "ms": 92.9
+     },
+     "movsEfectivos": {
+      "n": 20,
+      "ms": 0.1
+     },
+     "movsDelMes": {
+      "n": 20,
+      "ms": 115
+     },
+     "sumTipo": {
+      "n": 120,
+      "ms": 1.1
+     },
+     "kpisMes": {
+      "n": 19,
+      "ms": 109.9
+     },
+     "rangoMes": {
+      "n": 16,
+      "ms": 0.1
+     },
+     "previstoMes": {
+      "n": 1,
+      "ms": 0.1
+     },
+     "cuentasCfg": {
+      "n": 82172,
+      "ms": 12.7
+     },
+     "cuentaPrincipal": {
+      "n": 2370,
+      "ms": 1.2
+     },
+     "flujosCompartidos": {
+      "n": 8,
+      "ms": 4.5
+     },
+     "saldoCuenta": {
+      "n": 8,
+      "ms": 34.6
+     },
+     "catsGasto": {
+      "n": 3,
+      "ms": 0.1
+     },
+     "metasCfg": {
+      "n": 1,
+      "ms": 0
+     },
+     "movsPersonales": {
+      "n": 10,
+      "ms": 1.1
+     },
+     "metasStats": {
+      "n": 1,
+      "ms": 1.3
+     },
+     "movsDeuda": {
+      "n": 4,
+      "ms": 0.6
+     },
+     "deudaStats": {
+      "n": 1,
+      "ms": 0.2
+     },
+     "saldosDe": {
+      "n": 12,
+      "ms": 0.5
+     },
+     "miSaldo": {
+      "n": 12,
+      "ms": 0.6
+     }
+    },
+    "Movimientos · Resumen": {
+     "_renderMs": 51.5,
+     "versionIdx": {
+      "n": 6,
+      "ms": 0
+     },
+     "todayISO": {
+      "n": 16,
+      "ms": 0
+     },
+     "cfg": {
+      "n": 25,
+      "ms": 0.1
+     },
+     "perfilCfg": {
+      "n": 1,
+      "ms": 0
+     },
+     "mesCfg": {
+      "n": 86313,
+      "ms": 10.6
+     },
+     "mesDe": {
+      "n": 86306,
+      "ms": 31.8
+     },
+     "rangoMes": {
+      "n": 7,
+      "ms": 0
+     },
+     "movsEfectivos": {
+      "n": 7,
+      "ms": 0
+     },
+     "movsDelMes": {
+      "n": 7,
+      "ms": 38.7
+     },
+     "sumTipo": {
+      "n": 42,
+      "ms": 0.1
+     },
+     "kpisMes": {
+      "n": 7,
+      "ms": 38.8
+     },
+     "catsGasto": {
+      "n": 18,
+      "ms": 0.3
+     }
+    },
+    "Movimientos · Lista": {
+     "_renderMs": 58.8,
+     "versionIdx": {
+      "n": 3,
+      "ms": 0
+     },
+     "todayISO": {
+      "n": 21810,
+      "ms": 6.4
+     },
+     "cfg": {
+      "n": 153,
+      "ms": 0.1
+     },
+     "perfilCfg": {
+      "n": 1,
+      "ms": 0
+     },
+     "cuentasCfg": {
+      "n": 339,
+      "ms": 0.3
+     },
+     "movsEfectivos": {
+      "n": 1,
+      "ms": 0
+     },
+     "mesCfg": {
+      "n": 42705,
+      "ms": 5.1
+     },
+     "mesDe": {
+      "n": 42704,
+      "ms": 16
+     },
+     "movsFiltrados": {
+      "n": 1,
+      "ms": 28.8
+     },
+     "catsGasto": {
+      "n": 32,
+      "ms": 0.2
+     },
+     "rangoMes": {
+      "n": 1,
+      "ms": 0
+     }
+    },
+    "Movimientos · Lista (todo el tiempo)": {
+     "_renderMs": 45.2,
+     "versionIdx": {
+      "n": 3,
+      "ms": 0
+     },
+     "todayISO": {
+      "n": 10910,
+      "ms": 3.3
+     },
+     "cfg": {
+      "n": 153,
+      "ms": 0.1
+     },
+     "perfilCfg": {
+      "n": 1,
+      "ms": 0
+     },
+     "cuentasCfg": {
+      "n": 339,
+      "ms": 0.4
+     },
+     "movsEfectivos": {
+      "n": 1,
+      "ms": 0
+     },
+     "mesCfg": {
+      "n": 20904,
+      "ms": 2.6
+     },
+     "mesDe": {
+      "n": 20904,
+      "ms": 7.9
+     },
+     "movsFiltrados": {
+      "n": 1,
+      "ms": 15.2
+     },
+     "catsGasto": {
+      "n": 32,
+      "ms": 0.5
+     }
+    },
+    "Movimientos · Calendario": {
+     "_renderMs": 17.4,
+     "versionIdx": {
+      "n": 3,
+      "ms": 0
+     },
+     "todayISO": {
+      "n": 12,
+      "ms": 0
+     },
+     "cfg": {
+      "n": 27,
+      "ms": 0
+     },
+     "perfilCfg": {
+      "n": 1,
+      "ms": 0
+     },
+     "mesCfg": {
+      "n": 20907,
+      "ms": 2.7
+     },
+     "mesDe": {
+      "n": 20905,
+      "ms": 8.6
+     },
+     "rangoMes": {
+      "n": 2,
+      "ms": 0
+     },
+     "movsEfectivos": {
+      "n": 1,
+      "ms": 0
+     },
+     "cuentasCfg": {
+      "n": 44,
+      "ms": 0
+     },
+     "catsGasto": {
+      "n": 4,
+      "ms": 0
+     }
+    },
+    "Juntos": {
+     "_renderMs": 4.1,
+     "versionIdx": {
+      "n": 5,
+      "ms": 0
+     },
+     "todayISO": {
+      "n": 7,
+      "ms": 0
+     },
+     "cfg": {
+      "n": 7,
+      "ms": 0
+     },
+     "perfilCfg": {
+      "n": 1,
+      "ms": 0
+     },
+     "saldosDe": {
+      "n": 6,
+      "ms": 0.5
+     },
+     "mesCfg": {
+      "n": 1,
+      "ms": 0.1
+     },
+     "mesDe": {
+      "n": 1,
+      "ms": 0.1
+     }
+    },
+    "Dinero": {
+     "_renderMs": 135.4,
+     "versionIdx": {
+      "n": 9,
+      "ms": 0.1
+     },
+     "todayISO": {
+      "n": 1530,
+      "ms": 0.1
+     },
+     "cfg": {
+      "n": 9754,
+      "ms": 3.2
+     },
+     "perfilCfg": {
+      "n": 1,
+      "ms": 0.1
+     },
+     "cuentasCfg": {
+      "n": 338950,
+      "ms": 46.5
+     },
+     "cuentaPrincipal": {
+      "n": 9769,
+      "ms": 4.8
+     },
+     "flujosCompartidos": {
+      "n": 33,
+      "ms": 16.6
+     },
+     "saldoCuenta": {
+      "n": 33,
+      "ms": 126
+     },
+     "movsPersonales": {
+      "n": 16,
+      "ms": 1.3
+     },
+     "metasCfg": {
+      "n": 3,
+      "ms": 0.1
+     },
+     "movsDeuda": {
+      "n": 3,
+      "ms": 0.4
+     },
+     "deudaStats": {
+      "n": 3,
+      "ms": 0.5
+     },
+     "patrimonio": {
+      "n": 1,
+      "ms": 39.1
+     },
+     "metasStats": {
+      "n": 2,
+      "ms": 2.3
+     },
+     "mesCfg": {
+      "n": 1,
+      "ms": 0.1
+     },
+     "mesDe": {
+      "n": 1,
+      "ms": 0.1
+     }
+    },
+    "Agenda": {
+     "_renderMs": 5,
+     "versionIdx": {
+      "n": 5,
+      "ms": 0
+     },
+     "todayISO": {
+      "n": 13,
+      "ms": 0.1
+     },
+     "cfg": {
+      "n": 16,
+      "ms": 0
+     },
+     "perfilCfg": {
+      "n": 1,
+      "ms": 0
+     },
+     "mesCfg": {
+      "n": 1,
+      "ms": 0
+     },
+     "mesDe": {
+      "n": 1,
+      "ms": 0
+     }
+    },
+    "Tú": {
+     "_renderMs": 3.9,
+     "versionIdx": {
+      "n": 5,
+      "ms": 0
+     },
+     "todayISO": {
+      "n": 26,
+      "ms": 0
+     },
+     "cfg": {
+      "n": 61,
+      "ms": 0
+     },
+     "perfilCfg": {
+      "n": 2,
+      "ms": 0
+     },
+     "cuentasCfg": {
+      "n": 3,
+      "ms": 0
+     },
+     "catsGasto": {
+      "n": 2,
+      "ms": 0
+     },
+     "metasCfg": {
+      "n": 2,
+      "ms": 0
+     },
+     "mesCfg": {
+      "n": 3,
+      "ms": 0
+     },
+     "mesDe": {
+      "n": 1,
+      "ms": 0
+     }
+    }
+   },
+   "errores": [],
+   "scrollLista": {
+    "fotogramas": 118,
+    "lentos33": 1,
+    "peorMs": 49,
+    "filas": 120,
+    "altoPx": 9182
+   }
+  }
+ ],
+ "pesos": [
+  {
+   "archivo": "index.html",
+   "kb": 3,
+   "gzipKb": 1.4
+  },
+  {
+   "archivo": "app.js",
+   "kb": 1329.1,
+   "gzipKb": 377.8
+  },
+  {
+   "archivo": "data-layer.js",
+   "kb": 25.9,
+   "gzipKb": 7.4
+  },
+  {
+   "archivo": "auth-signup.js",
+   "kb": 5.6,
+   "gzipKb": 2
+  },
+  {
+   "archivo": "app.css",
+   "kb": 98.2,
+   "gzipKb": 19.5
+  },
+  {
+   "archivo": "look.css",
+   "kb": 269.3,
+   "gzipKb": 41.9
+  },
+  {
+   "archivo": "fonts/fonts.css",
+   "kb": 1,
+   "gzipKb": 0.4
+  },
+  {
+   "archivo": "fonts/*.woff2 (5)",
+   "kb": 209.1,
+   "gzipKb": null,
+   "detalle": [
+    "bricolage-grotesque.woff2 128.5",
+    "work-sans-latin-400-normal.woff2 19.4",
+    "work-sans-latin-500-normal.woff2 20.4",
+    "work-sans-latin-600-normal.woff2 20.5",
+    "work-sans-latin-700-normal.woff2 20.4"
+   ]
+  },
+  {
+   "archivo": "logos/* (27)",
+   "kb": 98.9,
+   "gzipKb": null
+  }
+ ]
+}
