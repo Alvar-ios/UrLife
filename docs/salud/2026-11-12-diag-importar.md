@@ -2,7 +2,7 @@
 
 C4 de `docs/40-plan-sesion-potente.md`. Hecho por Desarrollo **antes** de cambiar nada.
 
-**No hay extractos reales.** Los 12 archivos de `tests/datos/extractos/` son inventados (cuentas, nombres e importes), pero imitan la forma de lo que descarga cada banco: filas del banco antes de la tabla, nombres de columnas, fechas e importes. Se crean con `tests/datos/extractos/generar.js`; lo que debe salir está en `esperado.json`. Prueba: `tests/test151_importar_bancos.js`.
+**No hay extractos reales.** Los 12 archivos de `tests/datos/extractos/` son inventados (cuentas, nombres e importes), pero imitan la forma de lo que descarga cada banco: filas del banco antes de la tabla, nombres de columnas, fechas e importes. Se crean con `tests/datos/extractos/generar.js`; lo que debe salir está en `esperado.json`. Prueba: `tests/test154_importar_bancos.js`.
 
 Para cada archivo se mira, sin tocar nada a mano: ¿salen todas las filas con su fecha e importe (con su signo)?, ¿con su descripción?, ¿cuadra con la columna de saldo y el último saldo es el del banco?
 
