@@ -35,6 +35,9 @@ Deno.serve(async (req) => {
   if (e1) { console.error('borrar_cuenta_datos', e1.message); return json({ error: 'datos' }, 500); }
   if (!r?.ok) return json({ error: r?.motivo || 'no_borrado', grupos: r?.grupos || [] }, 409);
 
+  // 12/11: los móviles apuntados para avisos (el borrado suave no dispara las cascadas)
+  await sb.from('avisos_dispositivos').delete().eq('user_id', id);
+
   // Cuenta: borrado suave (true). NUNCA false: borraría la fila y, en cascada, sus filas de los grupos.
   const { error: e2 } = await sb.auth.admin.deleteUser(id, true);
   if (e2) { console.error('deleteUser', e2.message); return json({ error: 'cuenta', datos_borrados: true }, 500); }
@@ -42,6 +45,7 @@ Deno.serve(async (req) => {
   // Barrido final (por si la app guardó algo en estos segundos). Si falla, la cuenta ya está borrada: se avisa en el registro.
   const { error: e3 } = await sb.rpc('borrar_cuenta_datos', { p_user: id });
   if (e3) console.error('barrido final', e3.message);
+  await sb.from('avisos_dispositivos').delete().eq('user_id', id);
 
   return json({ ok: true, borrado: r.borrado, grupos_baja: r.grupos_baja });
 });

@@ -107,6 +107,7 @@ public class AvisosBancoService extends NotificationListenerService {
         int sinVer = p.getInt("sinVer", 0) + 1;
         p.edit().putString("cola", viva.toString()).putString("recientes", recViva.toString()).putInt("sinVer", sinVer).apply();
         avisar(ctx, it, sinVer);
+        AvisosServidor.guardarEnSegundoPlano(ctx, it.optString("id")); // 12/11 (docs/40 C3): a tu cuenta aunque la app esté cerrada
     }
 
     /** docs/39b: en un Bizum o una transferencia, el «comercio» es otra persona: su nombre no se guarda. */
@@ -150,12 +151,19 @@ public class AvisosBancoService extends NotificationListenerService {
         // con el móvil bloqueado, sin cifras
         Notification publica = new NotificationCompat.Builder(ctx, CANAL).setSmallIcon(R.drawable.ic_stat_paloma)
             .setContentTitle("PalomApp").setContentText("Movimientos nuevos apuntados").build();
-        Notification n = new NotificationCompat.Builder(ctx, CANAL)
+        NotificationCompat.Builder nb = new NotificationCompat.Builder(ctx, CANAL);
+        if (sinVer <= 1) { // «Deshacer» sin abrir la app (12/11, docs/40 C3)
+            Intent d = new Intent(ctx, AvisosDeshacerReceiver.class).putExtra("id", it.optString("id"));
+            PendingIntent pd = PendingIntent.getBroadcast(ctx, 1, d, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            nb.addAction(0, "Deshacer", pd);
+        }
+        Notification n = nb
             .setSmallIcon(R.drawable.ic_stat_paloma).setColor(0xFFFFC93C)
-            .setContentTitle(titulo).setContentText(cuerpo).setStyle(new NotificationCompat.BigTextStyle().bigText(cuerpo + (sinVer <= 1 ? "\nSi no es correcto, bórralo desde Inicio." : "")))
+            .setContentTitle(titulo).setContentText(cuerpo).setStyle(new NotificationCompat.BigTextStyle().bigText(cuerpo + (sinVer <= 1 ? "\nSi no es correcto, toca «Deshacer»." : "")))
             .setContentIntent(pi).setAutoCancel(true).setOnlyAlertOnce(true)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setPublicVersion(publica)
             .setPriority(NotificationCompat.PRIORITY_LOW).build();
+        nb = null;
         try { nm.notify(ID_AVISO, n); } catch (SecurityException e) { /* sin permiso para avisar */ }
     }
 }

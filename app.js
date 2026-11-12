@@ -988,6 +988,7 @@ async function borrarCuentaOk() {
   const email = S.user && S.user.email;
   try { await window.Auth.signIn(email, pass); } catch (e) { return updateSheet(borrarCuentaHtml('La contraseña no es correcta.')); }
   F.borrando = true; updateSheet(borrarCuentaHtml());
+  try { if (window.Data && Data.moviles) await Data.moviles.quitarTodos(); } catch (e) { /* */ } // 12/11: sus móviles de avisos
   let j = null;
   try {
     const c = window.SUPABASE_CONFIG, ses = await window.Auth.getSession();
@@ -1003,6 +1004,7 @@ async function borrarCuentaOk() {
 // nada de esa persona: se apagan los avisos del banco (la siguiente cuenta tendría que aceptarlos otra vez) y se borra lo pendiente.
 // Si la sesión caduca sola no se llama: basta con que Android deje de leer (uid vacío) y lo pendiente se recoge al volver.
 async function limpiarAlSalir() {
+  try { const id = lsGet('avDisp:' + miUid()) || S['_avDisp:' + miUid()]; if (id && window.Data && Data.moviles) await Data.moviles.quitar(id); } catch (e) { /* */ }
   try { if (avNat()) await avNat().vaciar(true); } catch (e) { /* */ }
   try { if (notifNat()) await notifNat().programar([]); } catch (e) { /* */ }
   ['unirse', 'soy', 'invAplazada', 'metaVista', 'metasCelebradas', 'monCambios', avClaveLs()].forEach((k) => { try { localStorage.removeItem(k); } catch (e) { /* */ } });
@@ -10287,7 +10289,7 @@ async function avisosRecoger() {
       if (it.uid && it.uid !== yo) { hechos.push(it.id); continue; } // leído con otra cuenta en este móvil: no se pasa a esta
       if (S.movimientos.some((m) => m.id === it.id)) { hechos.push(it.id); continue; } // ya guardado otra vez
       const data = avisoAMov(it);
-      if (avisoYaEsta(data, it.id)) { hechos.push(it.id); yaEstaban++; continue; } // ya lo tenías: no se duplica
+      if (avisoYaEsta(data, it.id)) { hechos.push(it.id); yaEstaban++; if (it.guardado) borrarMovSilencio(it.id); continue; } // ya lo tenías: no se duplica (y si Android ya lo guardó con la app cerrada, se quita)
       if (await guardarMovAlInstante(it.id, data, null, true)) { hechos.push(it.id); nuevos++; }
     }
     if (hechos.length) await n.quitar(hechos).catch(() => {});
@@ -10297,6 +10299,36 @@ async function avisosRecoger() {
     return nuevos;
   } finally { _avRecogiendo = false; }
 }
+/* Fase 2 (12/11, docs/40 C3): con los avisos activados, este móvil se apunta en Supabase con una clave propia (solo su
+   huella sale del móvil) para que Android guarde lo leído aunque la app esté cerrada. Aquí se le da además un mapa
+   pequeño (comercio → categoría según lo que ya apuntaste, cuenta de cada banco y forma de pago por tipo). */
+function avisosMapa() {
+  const tipoDe = (re) => (cfg().metodosPago || []).find((m) => re.test(m)) || '';
+  const comercios = {}, cuenta = {};
+  S.movimientos.slice(-1500).forEach((m) => { if (m.tipo !== 'Gasto' || !m.descripcion || !m.categoria) return; const k = String(m.descripcion).trim().toLowerCase(); if (k.length >= 2 && k.length <= 40) { cuenta[k] = cuenta[k] || {}; cuenta[k][m.categoria] = (cuenta[k][m.categoria] || 0) + 1; } });
+  Object.keys(cuenta).forEach((k) => { const c = cuenta[k]; comercios[k] = Object.keys(c).sort((a, b) => c[b] - c[a])[0]; });
+  const ks = Object.keys(comercios); if (ks.length > 400) ks.slice(0, ks.length - 400).forEach((k) => delete comercios[k]);
+  const cuentas = {}; PAQ_BANCOS.forEach(([k, pkg]) => { const c = k !== 'wallet' && cuentasCfg().find((x) => x.banco === k); if (c) cuentas[pkg] = c.id; });
+  const cg = categoriasPorTipo('Gasto'), ci = categoriasPorTipo('Ingreso');
+  return { comercios, cuentas, catGasto: cg.find((c) => /^otros?$/i.test(c)) || cg.find((c) => /otro/i.test(c)) || cg[0] || 'Otros', catIngreso: ci.find((c) => /otro/i.test(c)) || ci[0] || 'Otros ingresos',
+    metodos: { bizum: tipoDe(/bizum/i), transferencia: tipoDe(/transfer/i), nomina: tipoDe(/transfer/i), tarjeta: tipoDe(/tarjeta/i), cajero: tipoDe(/efectivo/i) } };
+}
+async function avisosServidorPreparar() {
+  const n = avNat(); if (!n || !S.user || !n.huella || !window.Data || !Data.moviles) return;
+  const e = await n.estado().catch(() => null); if (!e || !e.activo) return;
+  const uid = miUid(), kId = 'avDisp:' + uid;
+  try {
+    let id = lsGet(kId) || S['_' + kId]; if (!id) { id = nuevoIdMov(); lsSet(kId, id); S['_' + kId] = id; }
+    const huella = await n.huella(uid);
+    let zona = 'Europe/Madrid'; try { zona = Intl.DateTimeFormat().resolvedOptions().timeZone || zona; } catch (er) { /* */ }
+    await Data.moviles.registrar({ id, claveHash: huella, plataforma: 'android', idioma: 'es', zona });
+    const c = window.SUPABASE_CONFIG || {};
+    await n.configurar({ url: c.url, anon: c.anonKey, servidor: true, mapa: avisosMapa() });
+  } catch (er) { /* sin red o sin la tabla: se guarda al abrir la app, como antes */ }
+  // lo que se deshizo desde el aviso con la app cerrada, también fuera de la app
+  try { const ids = n.deshechos ? await n.deshechos() : []; (ids || []).forEach((id) => { if (S.movimientos.some((m) => m.id === id && m.origen === 'aviso')) borrarMovSilencio(id); }); } catch (er) { /* */ }
+}
+function borrarMovSilencio(id) { try { if (window.Data && Data.collection) Data.collection('movimientos').doc(id).delete(); } catch (e) { /* */ } }
 // Inicio: lo apuntado desde los avisos que aún no has dado por bueno, para borrarlo con un toque
 function avisosApuntados() {
   const desde = Math.max(Number(cfg().avisosVisto) || 0, Date.now() - 14 * 864e5);
@@ -10410,7 +10442,7 @@ function avisosTrasCargar() {
   if (!S._avIni) {
     S._avIni = true;
     const n = avNat();
-    if (n && S.user) n.configurar({ uid: miUid() }).catch(() => {});
+    if (n && S.user) n.configurar({ uid: miUid() }).then(() => avisosServidorPreparar()).catch(() => {});
     avisosRecoger();
     if (n) { // al tocar «Apuntado en PalomApp», a Inicio
       n.abiertoDesdeAviso().then((si) => { if (si) window.__irA('inicio'); });
@@ -10448,7 +10480,8 @@ function avisosHtml() {
       '<ul><li><b>Tú decides:</b> viene apagado y lo apagas cuando quieras.</li><li><b>Solo tus apps de banco y de pagos:</b> no lee mensajes, WhatsApp ni redes sociales. Para proponerte un banco que falte, solo apunta el nombre de la app que avisa de un pago, nunca lo que dice.</li>' +
       '<li><b>Se queda en tu móvil:</b> el texto del aviso se lee y se descarta. A tu cuenta solo pasa el movimiento (importe, comercio y fecha).</li>' +
       '<li><b>Nunca</b> lee códigos de verificación ni tus claves, y no se conecta con tu banco.</li>' +
-      '<li>Cada vez que apunte algo te avisará, y en Inicio podrás borrarlo con un toque.</li></ul>' +
+      '<li>Lo apunta en tu cuenta <b>aunque PalomApp esté cerrada</b>. Para eso tu móvil tiene una clave propia, que solo sirve para esto y se borra al cerrar sesión.</li>' +
+      '<li>Cada vez que apunte algo te avisará con un botón «Deshacer», y en Inicio podrás borrarlo con un toque.</li></ul>' +
       '<p class="rec-hint">Para funcionar, Android te pedirá dar a PalomApp «Acceso a notificaciones». Al tocar «Aceptar» se abren los ajustes del móvil: busca PalomApp y actívalo.</p>' +
       '<button type="button" class="btn accent block" ' + act('avActivar') + '>Aceptar y activar</button>' + (e.activo && !e.permiso ? '<p class="rec-hint">Falta el permiso en los ajustes del móvil.</p>' : '') + '</div>';
   }

@@ -296,6 +296,13 @@
     reparto: function (grupoId, reparto) { return q(sb.from('grupos').update({ reparto: reparto }).eq('id', grupoId).select('id')).then(function (d) { if (!d || !d.length) throw new Error('no_autorizado'); return d; }); },
   };
   function rpc(fn, params) { return q(sb.rpc(fn, params || {})); }
+  /* ---- móviles con avisos (12/11, docs/40 C3): cada uno ve y quita solo los suyos ---- */
+  var moviles = {
+    registrar: function (p) { return rpc('avisos_registrar', { p_id: p.id, p_token: p.token || null, p_plataforma: p.plataforma || 'android', p_idioma: p.idioma || 'es', p_zona: p.zona || 'Europe/Madrid', p_clave_hash: p.claveHash || null }); },
+    listar: function () { return q(sb.from('avisos_dispositivos').select('id,plataforma,creado,visto,activo').order('visto', { ascending: false })); },
+    quitar: function (id) { return q(sb.from('avisos_dispositivos').delete().eq('id', id)); },
+    quitarTodos: function () { return q(sb.from('avisos_dispositivos').delete().eq('user_id', currentUid)); },
+  };
 
   /* ---- gastos compartidos (8.2) y metas/deudas compartidas (8.3): los ve todo el grupo; nunca se borran de verdad (borrado = fecha) ---- */
   function tablaCompartida(tabla, campos, deFila, inmutables) {
@@ -408,5 +415,5 @@
       });
     }
   };
-  window.Data = { recargar: function (t) { avisarCambio(t); }, collection: collection, divisas: divisas, carburantes: carburantes, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, agendaPermisos: agendaPermisos, aportes: aportes, rpc: rpc, uid: function () { return currentUid; } };
+  window.Data = { recargar: function (t) { avisarCambio(t); }, collection: collection, divisas: divisas, carburantes: carburantes, doc: doc, grupos: grupos, compartidos: compartidos, objetivos: objetivos, carpetas: carpetas, agenda: agenda, agendaPermisos: agendaPermisos, aportes: aportes, moviles: moviles, rpc: rpc, uid: function () { return currentUid; } };
 })();

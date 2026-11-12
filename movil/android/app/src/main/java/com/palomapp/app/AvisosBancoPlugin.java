@@ -50,6 +50,25 @@ public class AvisosBancoPlugin extends Plugin {
         } catch (Exception e) { call.reject(e.getMessage()); }
     }
 
+    /** La huella de la clave propia de este móvil para la cuenta { uid } (la clave nunca sale del móvil). */
+    @PluginMethod
+    public void huella(PluginCall call) {
+        String uid = call.getString("uid", "");
+        if (uid == null || uid.isEmpty()) { call.reject("sin_uid"); return; }
+        try { JSObject r = new JSObject(); r.put("huella", AvisosServidor.huella(getContext(), uid)); call.resolve(r); } catch (Exception e) { call.reject(e.getMessage()); }
+    }
+
+    /** Lo que se deshizo desde el aviso con la app cerrada (para quitarlo también en la app). Se vacía al leerlo. */
+    @PluginMethod
+    public void deshechos(PluginCall call) {
+        try {
+            JSArray a = new JSArray(); JSONArray d = new JSONArray(prefs().getString("deshechos", "[]"));
+            for (int i = 0; i < d.length(); i++) a.put(d.getString(i));
+            prefs().edit().remove("deshechos").apply();
+            JSObject r = new JSObject(); r.put("ids", a); call.resolve(r);
+        } catch (Exception e) { call.reject(e.getMessage()); }
+    }
+
     /** Lleva a los ajustes de Android para dar el permiso de «Acceso a notificaciones». */
     @PluginMethod
     public void abrirAjustes(PluginCall call) {
@@ -70,6 +89,11 @@ public class AvisosBancoPlugin extends Plugin {
         if (call.hasOption("activo")) ed.putBoolean("activo", Boolean.TRUE.equals(call.getBoolean("activo")));
         if (call.hasOption("avisarme")) ed.putBoolean("avisarme", Boolean.TRUE.equals(call.getBoolean("avisarme")));
         if (call.hasOption("uid")) ed.putString("uid", call.getString("uid", "")); // la cuenta con sesión ("" = nadie: no se lee)
+        // 12/11 (docs/40 C3): dónde guardar con la app cerrada y el mapa comercio → categoría, cuentas y formas de pago
+        if (call.hasOption("url")) ed.putString("url", call.getString("url", ""));
+        if (call.hasOption("anon")) ed.putString("anon", call.getString("anon", ""));
+        if (call.hasOption("servidor")) ed.putBoolean("servidor", Boolean.TRUE.equals(call.getBoolean("servidor")));
+        if (call.hasOption("mapa")) { JSObject m = call.getObject("mapa"); ed.putString("mapa", m == null ? "{}" : m.toString()); }
         JSArray b = call.getArray("bancos");
         if (b != null) {
             Set<String> s = new HashSet<>();
@@ -120,7 +144,11 @@ public class AvisosBancoPlugin extends Plugin {
     }
     private void vaciarYa(PluginCall call) {
         SharedPreferences.Editor ed = prefs().edit();
-        ed.remove("cola").remove("recientes").remove("candidatos").remove("nombres").putInt("sinVer", 0);
+        ed.remove("cola").remove("recientes").remove("candidatos").remove("nombres").remove("deshechos").putInt("sinVer", 0);
+        if (Boolean.TRUE.equals(call.getBoolean("apagar", false))) { // al cerrar sesión: fuera claves, mapa y servidor
+            for (String k : prefs().getAll().keySet()) if (k.startsWith("clave:")) ed.remove(k);
+            ed.remove("mapa").putBoolean("servidor", false);
+        }
         if (Boolean.TRUE.equals(call.getBoolean("apagar", false))) ed.putBoolean("activo", false);
         ed.apply();
         NotificationManagerCompat.from(getContext()).cancel(AvisosBancoService.ID_AVISO);

@@ -68,6 +68,8 @@ if (Capacitor.isNativePlatform()) {
       abrirAjustes: () => AB.abrirAjustes(),
       configurar: (o) => AB.configurar(o),
       pendientes: () => AB.pendientes().then((r) => (r && r.lista) || []),
+      huella: (uid) => AB.huella({ uid }).then((r) => r && r.huella),
+      deshechos: () => AB.deshechos().then((r) => (r && r.ids) || []).catch(() => []),
       quitar: (ids) => AB.quitar({ ids }),
       vaciar: (apagar) => AB.vaciar({ apagar: !!apagar }),
       abiertoDesdeAviso: () => AB.abiertoDesdeAviso().then((r) => !!(r && r.si)).catch(() => false),
