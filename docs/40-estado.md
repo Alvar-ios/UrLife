@@ -10,17 +10,20 @@ Plan: `docs/40-plan-sesion-potente.md`. Empezó el 12/11/2026 a las 00:57 por or
 - Decisiones de §6: las recomendadas.
 
 ## Ramas
-- `fase13/integracion` (sale de `fase12/avisos` + docs de main): de aquí sale la APK. Ya lleva diagnóstico (pruebas y medidores), avisos por niveles, widgets, importar y avisos del banco fase 2.
-- En curso, por separado: `fase13/fix-rendimiento`, `fase13/fix-interfaz`, `fase13/idiomas`.
+- `fase13/integracion`: TODO junto (diagnóstico, arreglos, avisos, widgets, importar, avisos del banco 2, inglés, revisión de Calidad). De aquí salen la APK y el AAB. Sin fusionar a `main`.
 
 ## Fases
-| Fase | Estado | Notas |
-|---|---|---|
-| A · Diagnóstico | Hecho | Informes en `docs/salud/2026-11-12-diag-*.md` (rendimiento, interfaz, lógica, datos, importar). Sin P0. |
-| B · Arreglos P0/P1 | En curso | Importe escrito a mano: hecho. Rendimiento e interfaz: en curso. |
-| C2 · Avisos de la app | Hecho | Importantes / normales / resumen, máx. 3 al día, silencio 22–9. test152. |
-| C5 · Widgets | Hecho | «Te queda este mes» (2×1) y «Apuntar gasto» (1×1). test151_widgets + JUnit. Sin probar en móvil real. |
-| C4 · Importar | Hecho | Norma 43, Sabadell/CaixaBank/BBVA/Revolut/Trade Republic, compartir con PalomApp. test154–155. |
-| C3 · Avisos del banco 2 | Hecho | Se guardan con la app cerrada, «Deshacer» en el aviso. Migración `avisos_dispositivos` y función `avisos-guardar` aplicadas. **Falta permiso para redesplegar `borrar-cuenta`** (la web ya quita los móviles antes de borrar). |
-| C1 · Idiomas | En curso | |
-| Integración, Calidad, APK/AAB, CAMBIOS | Pendiente | |
+| Fase | Estado |
+|---|---|
+| A · Diagnóstico | Hecho (`docs/salud/2026-11-12-diagnostico.md`) |
+| B · Arreglos P0/P1 | Hecho (importe, rendimiento, interfaz móvil) |
+| C2 · Avisos de la app | Hecho |
+| C5 · Widgets | Hecho |
+| C4 · Importar | Hecho |
+| C3 · Avisos del banco 2 | Hecho (falta permiso para redesplegar `borrar-cuenta`) |
+| C1 · Idiomas | Hecho (~95 %) |
+| Integración y Calidad | Hecho: 192/192 pruebas + JUnit |
+| APK de prueba y AAB 1.1.0 | Hecho (AAB en GitHub Actions, run 43252759137, sin subir a Play) |
+| Lista de cambios | `docs/CAMBIOS-1.1.0.md` |
+
+**Sesión potente terminada el 12/11 a las 17:00.**
