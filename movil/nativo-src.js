@@ -77,19 +77,33 @@ if (Capacitor.isNativePlatform()) {
     App.addListener('appStateChange', ({ isActive }) => { if (isActive && window.__avisosVolver) { try { window.__avisosVolver(); } catch (e) { /* */ } } });
   }
 
+  // 12/11 · tres canales: importantes (suenan), normales (sin sonido) y resumen. Android oculta el texto con el móvil bloqueado.
+  let _canales = null;
+  const canales = () => _canales || (_canales = Promise.all([
+    LocalNotifications.createChannel({ id: 'importantes', name: 'Importantes', description: 'Lo que pide hacer algo hoy (p. ej. un pago sin saldo)', importance: 4, visibility: 0 }),
+    LocalNotifications.createChannel({ id: 'normales', name: 'Para estar al día', description: 'Cobros y pagos fijos, Agenda, presupuestos y metas', importance: 2, visibility: 0 }),
+    LocalNotifications.createChannel({ id: 'resumen', name: 'Resumen', description: 'Tu semana y tu mes', importance: 2, visibility: 0 }),
+  ]).catch(() => {}));
+  const aviso = (x) => ({ id: x.id, title: x.titulo, body: x.texto, schedule: { at: new Date(x.cuando), allowWhileIdle: true }, channelId: x.nivel === 'importante' ? 'importantes' : x.nivel === 'resumen' ? 'resumen' : 'normales', smallIcon: 'ic_stat_paloma', iconColor: '#FFC93C', extra: { tab: x.tab || '' } });
+  LocalNotifications.deleteChannel && LocalNotifications.deleteChannel({ id: 'recordatorios' }).catch(() => {}); // el canal único de la primera versión
+
   // 11/11 · Avisos de PalomApp que calcula el propio móvil (cobros y pagos fijos, Agenda): se programan en el teléfono
   N.notif = {
     permiso: () => LocalNotifications.checkPermissions().then((r) => r.display),
     pedir: () => LocalNotifications.requestPermissions().then((r) => r.display),
     // lista: [{ id (número), titulo, texto, cuando (ms), tab }]; borra los programados antes y pone estos
+    // lista: [{ id, nivel: importante|normal|resumen, titulo, texto, cuando (ms), tab }]. Borra los programados (1000-1999) y pone estos.
     programar: async (lista) => {
+      await canales();
       const prev = await LocalNotifications.getPending().catch(() => ({ notifications: [] }));
-      if (prev.notifications && prev.notifications.length) await LocalNotifications.cancel({ notifications: prev.notifications.map((x) => ({ id: x.id })) }).catch(() => {});
+      const viejos = (prev.notifications || []).filter((x) => x.id >= 1000 && x.id < 2000);
+      if (viejos.length) await LocalNotifications.cancel({ notifications: viejos.map((x) => ({ id: x.id })) }).catch(() => {});
       if (!lista || !lista.length) return 0;
-      await LocalNotifications.createChannel({ id: 'recordatorios', name: 'Cobros, pagos y Agenda', description: 'Recordatorios de PalomApp', importance: 3, visibility: 0 }).catch(() => {});
-      await LocalNotifications.schedule({ notifications: lista.slice(0, 60).map((x) => ({ id: x.id, title: x.titulo, body: x.texto, schedule: { at: new Date(x.cuando), allowWhileIdle: true }, channelId: 'recordatorios', smallIcon: 'ic_stat_paloma', iconColor: '#FFC93C', extra: { tab: x.tab || '' } })) });
+      await LocalNotifications.schedule({ notifications: lista.slice(0, 60).map(aviso) });
       return lista.length;
     },
+    // al momento (presupuesto, meta…): ids 2000+, no se borran al reprogramar
+    ahora: async (lista) => { await canales(); if (lista && lista.length) await LocalNotifications.schedule({ notifications: lista.map(aviso) }); return (lista || []).length; },
   };
   LocalNotifications.addListener('localNotificationActionPerformed', (a) => { const tab = a && a.notification && a.notification.extra && a.notification.extra.tab; if (tab && window.__irA) { try { window.__irA(tab); } catch (e) { /* */ } } });
 

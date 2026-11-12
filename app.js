@@ -10232,7 +10232,6 @@ const PAQ_BANCOS = [['santander', 'es.bancosantander.apps'], ['sabadell', 'net.i
   ['wallet', 'com.google.android.apps.walletnfcrel']];
 function avNat() { return window.__nativo && window.__nativo.avisosBanco ? window.__nativo.avisosBanco : null; }
 function notifNat() { return window.__nativo && window.__nativo.notif ? window.__nativo.notif : null; }
-function avisosCfg() { return Object.assign({ fijos: true, agenda: true }, cfg().avisos || {}); }
 function bancoDePaquete(pkg) { const p = PAQ_BANCOS.find((x) => x[1] === pkg); return p ? p[0] : null; }
 function nombreDePaquete(pkg, nombre) { const k = bancoDePaquete(pkg); if (k === 'wallet') return 'Google Wallet'; const b = k && BANCOS.find((x) => x.k === k); return b ? b.n : (nombre || pkg); }
 function isoLocal(ts) { const d = new Date(ts), p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
@@ -10303,29 +10302,99 @@ function avisosInicioHtml() {
     l.slice(0, 5).map(fila).join('') + (l.length > 5 ? '<div class="av-mas">y ' + (l.length - 5) + ' más en Movimientos</div>' : '') +
     '<button type="button" class="btn sm ghost block" ' + act('avVale') + '>Están bien</button></div>';
 }
-// Recordatorios que programa el propio móvil (los próximos 14 días; de 22:00 a 9:00, nada)
+/* Avisos de la app por niveles (12/11, docs/40 C2). Todo lo calcula el propio móvil (sin servidor):
+   · importantes (suenan): un pago fijo mañana en una cuenta que no tiene saldo para él.
+   · normales (sin sonido): cobros y pagos fijos de mañana, tareas de hoy, presupuesto al 80 % y al 100 %, meta conseguida.
+   · resumen (apagado de serie): tu semana (domingo 19:00) y tu mes cerrado.
+   Reglas: nada en las horas de silencio (22:00–9:00 de serie: se mueve a las 9:00), como mucho 3 normales al día
+   (los importantes no cuentan), lo del mismo tipo y día va junto, y sin cifras (Android oculta el texto con el móvil bloqueado). */
+const AVISOS_DEF = { fijos: true, agenda: true, saldo: true, presupuestos: true, metas: true, resumen: false, silencio: true };
+const AVISOS_MAX_DIA = 3;
+function avisosCfg() { return Object.assign({}, AVISOS_DEF, cfg().avisos || {}); }
+function avHoraOk(ts) { // devuelve la hora buena: si cae en silencio, a las 9:00 siguientes
+  if (!avisosCfg().silencio) return ts;
+  const d = new Date(ts), h = d.getHours();
+  if (h >= 22) { d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); } else if (h < 9) d.setHours(9, 0, 0, 0);
+  return d.getTime();
+}
+function avDia(ts) { return isoLocal(ts); }
+function avLista(arr) { return arr.length <= 2 ? arr.join(' y ') : arr.slice(0, 2).join(', ') + ' y ' + (arr.length - 2) + ' más'; }
+// lo que se programa para los próximos 14 días
 function recordatoriosLista() {
   const ac = avisosCfg(), out = [], hoy = todayISO(), ahora = Date.now(), fin = uAdd(hoy, 14);
-  const a9 = (iso) => new Date(iso + 'T09:00:00').getTime();
-  if (ac.fijos) recurrentes().forEach((rc) => {
+  const a9 = (iso, h) => new Date(iso + 'T' + pad2(h == null ? 9 : h) + ':00:00').getTime();
+  // fijos de mañana (normales), y los que no tienen saldo en su cuenta (importantes)
+  const porDia = {};
+  if (ac.fijos || ac.saldo) recurrentes().forEach((rc) => {
     if (!rc.regla) return;
     ocurrencias(rc.regla, uAdd(hoy, 1), uAdd(fin, 1)).forEach((o) => {
       const iso = o.iso || o, cuando = a9(uAdd(iso, -1)); if (cuando <= ahora) return;
-      out.push({ titulo: 'Mañana: ' + (rc.kind === 'cobro' ? 'cobro de ' : 'pago de ') + rc.nombre, texto: 'Toca para verlo en PalomApp.', cuando, tab: 'inicio' });
+      (porDia[iso] = porDia[iso] || []).push(rc);
     });
   });
-  if (ac.agenda) (S.tareas || []).forEach((t) => {
-    if (t.estado === 'Completado' || !t.fechaLimite || t.fechaLimite < hoy || t.fechaLimite > fin) return;
-    const cuando = a9(t.fechaLimite); if (cuando <= ahora) return;
-    out.push({ titulo: 'Hoy en tu Agenda', texto: String(t.nombre || 'Tienes una tarea'), cuando, tab: 'agenda' });
+  Object.keys(porDia).forEach((iso) => {
+    const l = porDia[iso], cuando = a9(uAdd(iso, -1));
+    if (ac.saldo) l.filter((rc) => rc.kind !== 'cobro' && rc.cuentaId).forEach((rc) => {
+      const c = cuentaPorId(rc.cuentaId), sal = c ? saldoCuenta(c) : null, imp = importePrevisto(rc, iso);
+      if (sal != null && imp != null && imp > 0 && sal < imp) out.push({ nivel: 'importante', titulo: 'Mañana se paga ' + rc.nombre, texto: 'En ' + (c.nombre || 'esa cuenta') + ' ahora no hay bastante. Toca para verlo.', cuando, tab: 'dinero' });
+    });
+    if (!ac.fijos) return;
+    const pagos = l.filter((rc) => rc.kind !== 'cobro').map((rc) => rc.nombre), cobros = l.filter((rc) => rc.kind === 'cobro').map((rc) => rc.nombre);
+    if (pagos.length) out.push({ nivel: 'normal', titulo: pagos.length === 1 ? 'Mañana: pago de ' + pagos[0] : 'Mañana: ' + pagos.length + ' pagos fijos', texto: pagos.length === 1 ? 'Toca para verlo en PalomApp.' : avLista(pagos), cuando, tab: 'inicio' });
+    if (cobros.length) out.push({ nivel: 'normal', titulo: cobros.length === 1 ? 'Mañana: cobro de ' + cobros[0] : 'Mañana: ' + cobros.length + ' cobros', texto: cobros.length === 1 ? 'Toca para verlo en PalomApp.' : avLista(cobros), cuando, tab: 'inicio' });
   });
-  return out.sort((a, b) => a.cuando - b.cuando).slice(0, 60).map((x, i) => Object.assign(x, { id: 1000 + i }));
+  // tareas de hoy, juntas
+  if (ac.agenda) {
+    const t2 = {};
+    (S.tareas || []).forEach((t) => { if (t.estado === 'Completado' || !t.fechaLimite || t.fechaLimite < hoy || t.fechaLimite > fin) return; (t2[t.fechaLimite] = t2[t.fechaLimite] || []).push(String(t.nombre || 'Tarea')); });
+    Object.keys(t2).forEach((iso) => { const cuando = a9(iso); if (cuando <= ahora) return; const l = t2[iso];
+      out.push({ nivel: 'normal', titulo: l.length === 1 ? 'Hoy en tu Agenda' : 'Hoy tienes ' + l.length + ' tareas', texto: l.length === 1 ? l[0] : avLista(l), cuando, tab: 'agenda' }); });
+  }
+  // resumen (si lo quiere): el domingo a las 19:00 y el día que cierra tu mes
+  if (ac.resumen) {
+    for (let i = 0; i <= 14; i++) { const iso = uAdd(hoy, i); if (new Date(iso + 'T12:00:00').getDay() !== 0) continue; const cuando = a9(iso, 19); if (cuando > ahora) out.push({ nivel: 'resumen', titulo: 'Tu semana en PalomApp', texto: 'Mira en qué se ha ido esta semana.', cuando, tab: 'movimientos' }); }
+    try { const ma = mesActual(), r = rangoMes(ma.y, ma.m), cierre = uAdd(r.hasta, 1), cuando = a9(cierre, 10);
+      if (cuando > ahora && cierre <= fin) out.push({ nivel: 'resumen', titulo: 'Tu mes de ' + MESES[ma.m - 1].toLowerCase() + ', cerrado', texto: 'Mira cómo te ha ido.', cuando, tab: 'inicio' }); } catch (e) { /* */ }
+  }
+  // silencio y como mucho 3 normales al día (los que ya salieron hoy al momento también cuentan)
+  const cuenta = {}; const hechos = avHechos();
+  return out.map((x) => Object.assign(x, { cuando: avHoraOk(x.cuando) })).sort((a, b) => (a.nivel === 'importante' ? -1 : 0) - (b.nivel === 'importante' ? -1 : 0) || a.cuando - b.cuando)
+    .filter((x) => { if (x.nivel === 'importante') return true; const d = avDia(x.cuando); cuenta[d] = (cuenta[d] || hechos['n|' + d] || 0) + 1; return cuenta[d] <= AVISOS_MAX_DIA; })
+    .sort((a, b) => a.cuando - b.cuando).slice(0, 60).map((x, i) => Object.assign(x, { id: 1000 + i }));
+}
+// lo que avisa al momento (presupuesto pasado, meta conseguida), una sola vez cada cosa
+// se guarda en el móvil (y en memoria, por si el móvil no deja guardar); es de cada cuenta
+function avClaveLs() { return 'avisosHechos:' + (S.user ? miUid() : ''); }
+function avHechos() { try { const v = lsGet(avClaveLs()); if (v) return JSON.parse(v) || {}; } catch (e) { /* */ } return Object.assign({}, S._avHechos || {}); }
+function avGuardarHechos(h) { const lim = Date.now() - 45 * 864e5; Object.keys(h).forEach((k) => { if (k === '_ini') return; if (!k.startsWith('n|') && h[k] < lim) delete h[k]; if (k.startsWith('n|') && k.slice(2) < isoLocal(lim)) delete h[k]; }); S._avHechos = h; lsSet(avClaveLs(), JSON.stringify(h)); }
+function avisosAlMomento() {
+  const ac = avisosCfg(), sucesos = [];
+  if (ac.presupuestos) try {
+    const ma = mesActual(), k = ma.y + '-' + pad2(ma.m), map = gastoPorCategoria(movsDelMes(ma.y, ma.m));
+    catsGasto().forEach((c) => { const p = num(c.presupuesto), g = map[c.nombre] || 0; if (!(p > 0) || !c.nombre) return;
+      if (g > p) sucesos.push({ clave: 'pres100|' + k + '|' + c.nombre, titulo: c.nombre + ': presupuesto pasado', texto: 'Ya has gastado más de lo que pensabas este mes.', tab: 'movimientos' });
+      else if (g >= p * 0.8) sucesos.push({ clave: 'pres80|' + k + '|' + c.nombre, titulo: c.nombre + ': llevas el 80 %', texto: 'Del presupuesto de este mes.', tab: 'movimientos' }); });
+  } catch (e) { /* */ }
+  if (ac.metas) try { metasStats().forEach((r) => { if (r.conseguida || (r.obj > 0 && r.valor >= r.obj - 0.005)) sucesos.push({ clave: 'meta|' + (r.key || r.nombre), titulo: '¡Meta conseguida: ' + r.nombre + '!', texto: 'Lo has logrado. Toca para verla.', tab: 'dinero' }); }); } catch (e) { /* */ }
+  const h = avHechos(), primera = !h._ini, nuevos = []; h._ini = 1;
+  sucesos.forEach((x) => { if (h[x.clave]) return; h[x.clave] = Date.now(); if (!primera) nuevos.push(x); }); // la primera vez solo se apunta lo que ya pasaba (no se avisa de golpe)
+  if (primera || nuevos.length) {
+    const hoy = isoLocal(Date.now()); let n = h['n|' + hoy] || 0;
+    const salen = nuevos.filter(() => n++ < AVISOS_MAX_DIA); h['n|' + hoy] = n > AVISOS_MAX_DIA ? AVISOS_MAX_DIA : n;
+    avGuardarHechos(h);
+    return salen.map((x, i) => Object.assign(x, { nivel: 'normal', cuando: avHoraOk(Date.now() + 3000), id: 2000 + ((parseInt(hash53(x.clave), 36) + i) % 7000) }));
+  }
+  return [];
 }
 let _recT = null;
 function programarRecordatoriosPronto() {
   const n = notifNat(); if (!n || !S.user) return;
   clearTimeout(_recT);
-  _recT = setTimeout(async () => { try { if ((await n.permiso()) !== 'granted') return; await n.programar(recordatoriosLista()); } catch (e) { /* */ } }, 1500);
+  _recT = setTimeout(async () => { try {
+    if ((await n.permiso()) !== 'granted') return;
+    await n.programar(recordatoriosLista());
+    const ya = avisosAlMomento(); if (ya.length && n.ahora) await n.ahora(ya);
+  } catch (e) { /* */ } }, 1500);
 }
 function avisosTrasCargar() {
   if (!S.loaded || !S.loaded.mov || !S.loaded.cfg) return;
@@ -10354,9 +10423,15 @@ function avisosHtml() {
   const sw = (on, accion, arg) => '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" ' + act(accion, arg || '') + '></button>';
   const fila = (t, sub, derecha) => '<div class="av-opt"><div><b>' + t + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>' + derecha + '</div>';
   let h = '<div class="handle"></div><h2>Avisos</h2>';
-  h += '<div class="section-title">Recordatorios</div><div class="card">' +
-    (nok ? '' : '<div class="av-nota">' + ic('bell') + ' Para recibirlos, PalomApp necesita permiso para mandarte avisos. <button type="button" class="btn sm accent" ' + act('avPermisoNotif') + '>Permitir avisos</button></div>') +
-    fila('Cobros y pagos fijos', 'El día antes, a las 9:00', sw(ac.fijos, 'avRec', 'fijos')) + fila('Tareas de la Agenda', 'El mismo día, a las 9:00', sw(ac.agenda, 'avRec', 'agenda')) + '</div>';
+  h += (nok ? '' : '<div class="card"><div class="av-nota">' + ic('bell') + ' Para recibirlos, PalomApp necesita permiso para mandarte avisos. <button type="button" class="btn sm accent" ' + act('avPermisoNotif') + '>Permitir avisos</button></div></div>') +
+    '<div class="section-title">Importantes · suenan</div><div class="card">' +
+    fila('Un pago fijo sin saldo', 'El día antes, si en esa cuenta no hay bastante', sw(ac.saldo, 'avRec', 'saldo')) + '</div>' +
+    '<div class="section-title">Para estar al día · sin sonido</div><div class="card">' +
+    fila('Cobros y pagos fijos', 'El día antes, a las 9:00', sw(ac.fijos, 'avRec', 'fijos')) + fila('Tareas de la Agenda', 'El mismo día, a las 9:00', sw(ac.agenda, 'avRec', 'agenda')) +
+    fila('Presupuestos', 'Al llegar al 80 % y al pasarte', sw(ac.presupuestos, 'avRec', 'presupuestos')) + fila('Metas conseguidas', '', sw(ac.metas, 'avRec', 'metas')) + '</div>' +
+    '<div class="section-title">Resumen</div><div class="card">' + fila('Tu semana y tu mes', 'El domingo a las 19:00 y cuando se cierra tu mes', sw(ac.resumen, 'avRec', 'resumen')) + '</div>' +
+    '<div class="card">' + fila('Silencio de 22:00 a 9:00', 'Lo que llegue de noche, a las 9:00', sw(ac.silencio, 'avRec', 'silencio')) + '</div>' +
+    '<p class="rec-hint">Como mucho ' + AVISOS_MAX_DIA + ' avisos al día (los importantes aparte), sin cifras y sin publicidad.</p>';
   if (!e) return h + '<p class="rec-hint">Los avisos del banco solo están en la app de Android.</p>';
   h += '<div class="section-title">Avisos del banco</div>';
   if (!e.activo || !e.permiso) {
