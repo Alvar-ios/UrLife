@@ -58,7 +58,7 @@
 905	Let whoever you choose see your agenda. Nobody sees it unless you share it, and what you mark as Private only you see.
 906	Stop sharing with
 907	From
-908	From # to #
+908	# – #
 909	From # to # or from the day you get paid. The forecast for the end of the month is shown apart, as a forecast.
 910	Categories, salaries, bills, goals and debts also come from the file.
 911	Day to day

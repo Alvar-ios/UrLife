@@ -2,7 +2,7 @@
 423	This is how your dates change
 424	This is PalomApp
 425	How Together works
-426	That way you'll know what you really have left.
+426	So you know what's really left.
 427	That way you'll know what you really have
 428	That way you'll know what you really have.
 429	This is how «Left this month» is worked out
@@ -122,7 +122,7 @@
 550	Bar with what you owe and what you're owed
 551	Bars
 552	Wider bars, easier to read
-553	Their name is enough: they don't need the app.
+553	Just their name: no app needed.
 556	Baby
 557	Profit
 558	Welcome

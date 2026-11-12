@@ -403,7 +403,7 @@
 2125	To stay up to date · no sound
 2126	To work, Android will ask you to give PalomApp «Notification access». When you tap «OK» the phone settings open: find PalomApp and turn it on.
 2127	To leave yourself, use «Leave the group».
-2128	For the house, your partner or the next trip.
+2128	For home, your partner or a trip.
 2129	For day-to-day accounts. Savings and the broker, better kept out.
 2130	To get there in time you need to put in about
 2131	To get there in

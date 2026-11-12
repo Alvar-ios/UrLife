@@ -111,7 +111,9 @@
     for (var i = 0; i < R.length; i++) {
       var m = R[i][0].exec(c);
       if (m) {
-        var g = m.slice(1).map(function (x) { if (x == null) return ''; var t = h > 3 ? null : nucleo(x, h + 1); return t == null ? x : t; });
+        var plant = R[i][1];
+        // lo que va entre «» es del usuario (una descripción, un nombre): tal cual
+        var g = m.slice(1).map(function (x, k) { if (x == null) return ''; if (plant.indexOf('«$' + (k + 1) + '»') >= 0) return x; var t = h > 3 ? null : nucleo(x, h + 1); return t == null ? x : t; });
         return R[i][1].replace(/\$(\d)/g, function (z, n) { return g[Number(n) - 1] || ''; }).replace(/\s+$/, '');
       }
     }
@@ -154,7 +156,7 @@
   /* ---------- La capa sobre la página ---------- */
   var ATR = ['placeholder', 'title', 'aria-label', 'alt', 'data-c'];
   var OBS_ATR = ATR.concat(['href']);
-  var hecho = new WeakMap();   // nodo de texto → lo que tiene ahora (ya mirado)
+  var hecho = new WeakMap();   // nodo de texto → lo que tiene ahora (ya mirado). Se vacía al llegar el diccionario
   var orig = new WeakMap();    // nodo de texto → el texto en español (para volver al español)
   var origA = new WeakMap();   // elemento → { atributo: [español, inglés] }
   var obs = null;
@@ -167,6 +169,7 @@
     return false;
   }
   function trTexto(n) {
+    if (!I.en) return; // sin diccionario todavía: no se marca nada (se mira todo al llegar)
     var d = n.data; if (hecho.get(n) === d) return;
     if (!LETRA.test(d) && d.indexOf('€') < 0 && d.indexOf('%') < 0) { hecho.set(n, d); return; }
     if (saltar(n.parentNode)) { hecho.set(n, d); return; }
@@ -174,6 +177,7 @@
     if (t !== d) { orig.set(n, d); hecho.set(n, t); n.data = t; } else hecho.set(n, d);
   }
   function trAtr(el, a) {
+    if (!I.en) return;
     var v = el.getAttribute(a); if (v == null || v === '') return;
     var mem = origA.get(el); if (mem && mem[a] && mem[a][1] === v) return;
     if (!LETRA.test(v) || saltar(el)) return;
@@ -256,7 +260,7 @@
     (document.head || document.documentElement).appendChild(s);
   };
   // lo llama i18n-en.js al terminar de cargar
-  I.dicListo = function () { CACHE.clear(); I._cargando = false; var l = esperando; esperando = []; l.forEach(function (f) { try { f(); } catch (e) { /* */ } }); if (I.lang !== 'es') { vigilar(); I.traducirTodo(); } };
+  I.dicListo = function () { CACHE.clear(); hecho = new WeakMap(); I._cargando = false; var l = esperando; esperando = []; l.forEach(function (f) { try { f(); } catch (e) { /* */ } }); if (I.lang !== 'es') { vigilar(); I.traducirTodo(); } };
 
   /* ---------- Poner un idioma ---------- */
   var alCambio = [];

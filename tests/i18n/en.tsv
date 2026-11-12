@@ -345,7 +345,7 @@ Aprender de mi historial	Learn from my history
 Apunta el primero con el botón + o haz una foto a un ticket.	Add the first one with the + button or take a photo of a receipt.
 Apunta la nómina y los recibos y verás cómo acabarás el mes.	Add your salary and bills and you'll see how you'll end the month.
 Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.	Add what you earn and what you spend, and you'll see how you're doing here.
-Apunta lo que cobras y verás cuánto te queda	Add what you earn and you'll see how much you have left
+Apunta lo que cobras y verás cuánto te queda	Add your income to see what's left
 Apunta lo que gastas y aquí verás cuánto te queda este mes.	Add what you spend and you'll see here how much you have left this month.
 Apunta lo que pagues para el grupo y la app hace las cuentas.	Add what you pay for the group and the app does the maths.
 Apunta tu primer gasto	Add your first expense
@@ -408,7 +408,7 @@ Aspecto y sensaciones	Look and feel
 Así cambian tus fechas	This is how your dates change
 Así es PalomApp	This is PalomApp
 Así funciona Juntos	How Together works
-Así sabrás lo que te queda de verdad.	That way you'll know what you really have left.
+Así sabrás lo que te queda de verdad.	So you know what's really left.
 Así sabrás lo que tienes de verdad	That way you'll know what you really have
 Así sabrás lo que tienes de verdad.	That way you'll know what you really have.
 Así sale «Te queda este mes»	This is how «Left this month» is worked out
@@ -528,7 +528,7 @@ Banco + inversiones + ahorro − deudas, en Inicio.	Bank + investments + savings
 Barra con lo que debes y lo que te deben	Bar with what you owe and what you're owed
 Barras	Bars
 Barras más anchas, se leen mejor	Wider bars, easier to read
-Basta con su nombre: no hace falta que tenga la app.	Their name is enough: they don't need the app.
+Basta con su nombre: no hace falta que tenga la app.	Just their name: no app needed.
 Bebé	Baby
 Beneficio	Profit
 Bienvenida	Welcome
@@ -857,7 +857,7 @@ Debes #	You owe #
 Deja que quien tú elijas vea tu agenda. Nadie la ve si no la compartes, y lo que marques como Privada solo lo ves tú.	Let whoever you choose see your agenda. Nobody sees it unless you share it, and what you mark as Private only you see.
 Dejar de compartir con	Stop sharing with
 Del	From
-Del # al #	From # to #
+Del # al #	# – #
 Del # al # o desde el día que cobras. Lo previsto a fin de mes sale aparte, como previsión.	From # to # or from the day you get paid. The forecast for the end of the month is shown apart, as a forecast.
 Del archivo también salen categorías, nóminas, facturas, metas y deudas.	Categories, salaries, bills, goals and debts also come from the file.
 Del día a día	Day to day
@@ -2017,7 +2017,7 @@ Para el objetivo	For the target
 Para estar al día · sin sonido	To stay up to date · no sound
 Para funcionar, Android te pedirá dar a PalomApp «Acceso a notificaciones». Al tocar «Aceptar» se abren los ajustes del móvil: busca PalomApp y actívalo.	To work, Android will ask you to give PalomApp «Notification access». When you tap «OK» the phone settings open: find PalomApp and turn it on.
 Para irte tú, usa «Salir del grupo».	To leave yourself, use «Leave the group».
-Para la casa, la pareja o el próximo viaje.	For the house, your partner or the next trip.
+Para la casa, la pareja o el próximo viaje.	For home, your partner or a trip.
 Para las cuentas del día a día. El ahorro y el bróker, mejor fuera.	For day-to-day accounts. Savings and the broker, better kept out.
 Para llegar a tiempo necesitas aportar aprox.	To get there in time you need to put in about
 Para llegar en	To get there in
@@ -3039,7 +3039,7 @@ de tu presupuesto de	of your budget for
 debes	you owe
 debes #	you owe #
 del # al	from # to
-del # al #	from # to #
+del # al #	# – #
 del banco y recordatorios	from the bank and reminders
 del tema	from the topic
 del ticket	from the receipt

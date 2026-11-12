@@ -344,7 +344,7 @@
 358	Add the first one with the + button or take a photo of a receipt.
 359	Add your salary and bills and you'll see how you'll end the month.
 360	Add what you earn and what you spend, and you'll see how you're doing here.
-361	Add what you earn and you'll see how much you have left
+361	Add your income to see what's left
 362	Add what you spend and you'll see here how much you have left this month.
 363	Add what you pay for the group and the app does the maths.
 364	Add your first expense

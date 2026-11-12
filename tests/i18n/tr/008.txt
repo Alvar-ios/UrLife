@@ -161,7 +161,7 @@
 3201	you owe
 3202	you owe #
 3203	from # to
-3204	from # to #
+3204	# – #
 3205	from the bank and reminders
 3206	from the topic
 3207	from the receipt
