@@ -18,7 +18,7 @@ const hoyISO = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0
         estado: async () => est, abrirAjustes: async () => { llamadas.ajustes++; },
         configurar: async (o) => { llamadas.configurar.push(o); Object.assign(est, o); },
         pendientes: async () => cola.slice(), quitar: async (ids) => { llamadas.quitar.push(...ids); cola = cola.filter((x) => ids.indexOf(x.id) < 0); },
-        vaciar: async () => { llamadas.vaciar++; cola = []; }, abiertoDesdeAviso: async () => false, alAbrirDesdeAviso: () => {},
+        vaciar: async (apagar) => { llamadas.vaciar++; cola = []; if (apagar) est.activo = false; }, abiertoDesdeAviso: async () => false, alAbrirDesdeAviso: () => {},
       },
       notif: { permiso: async () => 'granted', pedir: async () => 'granted', programar: async (l) => { llamadas.programar.push(l); return l.length; } },
     };
@@ -53,5 +53,9 @@ const hoyISO = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0
   ok(c.activo === true && (c.bancos || []).includes('es.bancosantander.apps') && (c.bancos || []).includes('de.traderepublic.app') && llamadas.ajustes === 1, '«Aceptar y activar» marca los bancos de serie y abre los ajustes de Android');
   est.permiso = true; e.w.__avisosVolver(); await sleep(120);
   ok(/Qué apps se leen/.test(sh()) && /Trade Republic/.test(sh()), 'con el permiso dado, se ven las apps que se leen');
+  // 12/11 (Datos y Seguridad): cerrar sesión apaga los avisos del banco y borra lo pendiente del móvil
+  e.w.__APP__.H.closeSheet([]); await sleep(300);
+  await e.w.__APP__.H.doLogout([]); await sleep(100);
+  ok(llamadas.vaciar >= 1 && est.activo === false, 'al cerrar sesión se apagan los avisos del banco y se vacía la cola');
   console.log(fails ? fails + ' FALLOS' : 'TODO OK'); process.exit(fails ? 1 : 0);
 })();

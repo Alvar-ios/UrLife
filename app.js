@@ -995,9 +995,18 @@ async function borrarCuentaOk() {
     try { j = await r0.json(); } catch (e) { j = { error: 'http_' + r0.status }; }
   } catch (e) { j = { error: 'red' }; }
   F.borrando = false;
-  if (j && j.ok) { closeSheet(); toast('Tu cuenta se ha borrado'); try { await window.Auth.signOut(); } catch (e) { /* */ } return; }
+  if (j && j.ok) { closeSheet(); toast('Tu cuenta se ha borrado'); await limpiarAlSalir(); try { await window.Auth.signOut(); } catch (e) { /* */ } return; }
   if (j && j.error === 'saldo_pendiente') return updateSheet(borrarCuentaHtml('Antes tienes que estar en paz en ' + escapeHtml((j.grupos || []).map((g) => (typeof g === 'string' ? g : (grupoDe(g.grupo) ? nombreDestino(grupoDe(g.grupo)) : g.nombre))).filter(Boolean).join(', ') || 'tus grupos') + '. Salda lo pendiente en Juntos y vuelve aquí.'));
   updateSheet(borrarCuentaHtml('Ahora no se puede borrar desde aquí. Escríbenos a <a href="mailto:' + CONTACTO.correo + '?subject=Borrar%20mi%20cuenta">' + escapeHtml(CONTACTO.correo) + '</a> y lo hacemos nosotros en menos de 30 días.'));
+}
+// 12/11 (Datos y Seguridad, diagnóstico n.º 1 y 15): al cerrar sesión o borrar la cuenta a propósito, en este móvil no queda
+// nada de esa persona: se apagan los avisos del banco (la siguiente cuenta tendría que aceptarlos otra vez) y se borra lo pendiente.
+// Si la sesión caduca sola no se llama: basta con que Android deje de leer (uid vacío) y lo pendiente se recoge al volver.
+async function limpiarAlSalir() {
+  try { if (avNat()) await avNat().vaciar(true); } catch (e) { /* */ }
+  try { if (notifNat()) await notifNat().programar([]); } catch (e) { /* */ }
+  ['unirse', 'soy', 'invAplazada', 'metaVista', 'metasCelebradas', 'monCambios', avClaveLs()].forEach((k) => { try { localStorage.removeItem(k); } catch (e) { /* */ } });
+  S._avHechos = null;
 }
 function renderNuevaContrasena(msg) {
   $('#app').innerHTML = '<div style="min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;"><div class="card" style="width:100%;max-width:360px;">' +
@@ -12867,7 +12876,7 @@ const H = {
     try { await window.Auth.resetPassword(email); renderLoginScreen('Te hemos enviado un correo con instrucciones para cambiar tu contraseña.'); }
     catch (e) { renderLoginScreen('No se pudo enviar el correo. Inténtalo de nuevo en unos minutos.'); }
   },
-  doLogout: async () => { if (_movsPend.size) return toast('Espera un momento: aún se está guardando lo último', { aviso: true }); closeSheet(); await window.Auth.signOut(); }, // Calidad 11/11
+  doLogout: async () => { if (_movsPend.size) return toast('Espera un momento: aún se está guardando lo último', { aviso: true }); closeSheet(); await limpiarAlSalir(); await window.Auth.signOut(); }, // Calidad 11/11
 };
 const debouncedSearch = debounce((v) => { S.movQuery = v; S.movLimit = 120; const l = $('#movList'); if (l) l.innerHTML = renderMovList(); }, 160);
 
