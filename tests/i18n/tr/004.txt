@@ -1,0 +1,409 @@
+1261	This debt no longer exists (did you change it on another device?)
+1262	This debt no longer exists.
+1263	This date belongs to the trip «
+1264	This invitation has expired. Ask whoever invited you for a new link.
+1265	This goal in
+1266	This goal no longer exists
+1267	This goal no longer exists.
+1268	This week
+1269	You haven't spent anything this week yet.
+1270	Status
+1271	This year hasn't started yet
+1272	This year you're above your income
+1273	This change is no longer there.
+1274	This device doesn't let web pages vibrate (it happens on iPhone). We try an iOS # or later trick that may or may not work. On Android, and in the installed app, it works.
+1275	This day hasn't arrived yet.
+1276	This link has expired. Ask whoever invited you for a new one.
+1277	This link has expired. Ask whoever sent it for a new one.
+1278	This link isn't valid.
+1279	This link is valid for
+1280	This link has already been used.
+1281	This link has already been used. Each link is for one person: ask for a new one.
+1282	This weekend
+1283	This group is closed: nothing more can be added
+1284	This group is already full.
+1285	This group is no longer available.
+1286	This group no longer exists.
+1287	This group already has # topics: close or delete some
+1288	This month
+1289	This month you set aside or invest
+1290	This month you set aside or invest #: # of what you received.
+1291	This month you've had
+1292	This month you've had # days without day-to-day spending (not counting fixed ones).
+1293	This month you've spent #. Leave it empty to remove the budget.
+1294	This month you're above your income
+1295	This month, not counting fixed ones
+1296	This month:
+1297	This transaction will stop counting as spending or income and will become a transfer between your accounts. It isn't duplicated: it's the same transaction.
+1298	This phone has no fingerprint or PIN set up
+1299	This plan has been deleted.
+1300	Broker style: choose a period and slide your finger to see each day.
+1301	This is PalomApp: your money, your expenses and what you share, in one place.
+1302	This is PalomApp: your expenses and what you share, in one place.
+1303	These days
+1304	Star
+1305	Studies
+1306	It's taking longer than usual. Check your connection.
+1307	It's empty
+1308	You're settled up in the group.
+1309	You're settled up: nobody owes anything.
+1310	They're fine
+1311	Standard
+1312	You're changing a transaction that already exists.
+1313	You're settled up
+1314	You're settled up with everyone
+1315	You're settled up with everyone.
+1316	You're settled up in this group
+1317	Label
+1319	Eurostat, published on #/#/#
+1320	Price history of
+1321	Value history of
+1323	IMF, World Economic Outlook Update of #
+1324	Bill
+1325	The app still needs setting up
+1326	The permission is missing in the phone settings.
+1327	Missing
+1328	# to go
+1329	Pharmacy
+1330	Pharmacy, doctor, hairdresser, nails
+1332	Date
+1333	Deadline
+1334	Target date
+1335	Value date
+1336	Dates
+1337	Holidays
+1338	Holidays saved
+1339	Your town's festivities
+1340	Fixed
+1341	Fixed
+1342	Row
+1343	Header row
+1344	Whole row
+1345	Filter by detail
+1346	«Fixed» filter in Transactions
+1347	Filters
+1348	Fund
+1349	Fund #
+1350	Exchange-traded fund (ETF)
+1351	Black background and easier-to-read text.
+1352	Funds, shares or crypto: you'll see what they're worth each day
+1353	Forint
+1354	Shapes
+1356	Date format
+1357	Format recognised: the same as last time.
+1358	Format recognised: you already imported a file like this. I've set the same columns.
+1359	Formats: Excel, CSV and your bank's Norma #
+1360	Formats: Excel, CSV and your bank's Norma #.
+1361	Receipt photo
+1362	Receipt photo → automatic expense
+1363	Photo of the receipt
+1364	Receipt photos
+1365	Raspberry
+1366	Compared with #
+1367	Compared with #: #
+1369	Income sources
+1371	You gain
+1372	You gain # · #
+1374	Natural gas (CNG)
+1375	Liquefied natural gas (LNG)
+1376	Petrol
+1377	Petrol #
+1378	Petrol # E#
+1379	Premium petrol #
+1380	Petrol, parking, car, public transport
+1381	Spent
+1382	Spent on
+1383	Spent on #: #
+1384	You spend
+1385	You spent
+1386	You spent # this week.
+1387	You spent # more.
+1388	You spent the same.
+1389	You spent more than came in:
+1390	You spent more than came in: # came from what you already had.
+1391	Expense
+1392	Shared expense
+1393	Shared expense added
+1394	Shared expense deleted
+1395	Estimated cost
+1396	Spending compared with last month
+1397	Expenses
+1398	Shared expenses
+1399	This month's spending
+1400	Expenses you share only with
+1401	Expenses and fixed payments
+1402	Diesel A
+1403	Premium diesel
+1405	People without the app in Together
+1406	Geometric
+1407	Manage
+1408	Manage goals
+1409	Gym
+1410	Gym, golf, padel
+1415	Thanks for writing to us
+1417	Group
+1418	Previous group
+1419	Group closed
+1420	Group created
+1421	Group created with
+1422	Group created with # friends
+1423	Groups
+1424	Groups and people
+1425	Your portfolio chart
+1427	Saved
+1428	Saved in
+1429	Saved without units: there's no price for that day. Add them when you know them so it can be valued.
+1430	Saved, but the shared goal couldn't be updated. Save it again.
+1431	Saving
+1432	Saving # of #…
+1433	Saving # transactions. Don't close the app.
+1434	Save
+1435	Save debt
+1436	Save this trip to repeat it
+1437	Always save by hand
+1438	Save and log in
+1439	TODAY
+1440	It notified a payment: shall we read it?
+1441	Make admin
+1442	Make main
+1443	More than # months have passed: it can no longer be restored
+1444	You've set aside and invested
+1445	You've created a lot of groups today. Try tomorrow.
+1446	You've discovered # of # tools
+1447	You've discovered # of # tools.
+1448	You've gained #
+1449	You've put in
+1450	You've split # and there are only # units.
+1451	You've left the group
+1452	You've used the
+1453	You've used this month's # readings. They come back on #.
+1454	You've used all this month's receipt readings. They renew on day #.
+1455	Until
+1456	Up to #, full width
+1457	Until
+1458	Until #
+1459	There are
+1460	There are pending balances. Settle them first («Settle» button).
+1461	There are too many pending links. Cancel some.
+1462	Take a photo of a receipt and the app reads the items and the total for you. The photo isn't saved anywhere.
+1463	Take a photo of the receipt and the app reads each item, the total, the date and the shop. You just check and save.
+1464	Take a photo and the app adds the total for you.
+1465	Take a photo of it and the app adds the total for you.
+1466	Make me one
+1467	Make me one now
+1468	I've used money
+1469	Done
+1470	Done on
+1471	Done on #
+1472	Done by
+1473	Done. The next one:
+1474	Done
+1475	Done
+1476	Made on your phone with what you've entered in the app. It describes your numbers; it isn't financial advice.
+1477	Done: those fixes stay as they are
+1478	Tools
+1479	Hydrogen
+1480	Mortgage
+1481	History
+1482	Milestones
+1483	Hello
+1484	Hi, I'm inviting you to share expenses with me on PalomApp. Open it here (valid for # days and for one person only):
+1485	Time
+1487	Hotels, flights, getaways
+1488	Today
+1489	Today in your Agenda
+1490	Today's free price lookups have run out. Enter the units yourself or try tomorrow.
+1491	Today's free calculations have run out. Enter the km by hand.
+1492	Today you have
+1493	Today ·
+1494	Today · #:#
+1495	Today · Task
+1496	Today, # #
+1497	Today:
+1498	Kitty
+1499	Kitties and shared debts (a mortgage split in half)
+1500	Spot taken
+1501	Fingerprint
+1504	INE, published on #/#/#
+1506	CPI, yearly change (flash estimate)
+1507	HICP, yearly change (preliminary estimate)
+1509	Icon
+1510	Return trip
+1511	Same as in
+1512	Equal
+1514	Import your statement or an Excel file, without duplicates.
+1515	Imports
+1516	Import undone
+1517	Import incomplete
+1518	Importing…
+1519	Important · with sound
+1520	Import
+1521	Import #
+1522	Import from the bank
+1523	Import from the bank or Excel
+1524	Import statement
+1525	Import statement into this account
+1526	Import statement or Excel
+1527	Import anyway (#)
+1528	Import transactions
+1529	Fuller import
+1530	Amount
+1531	Total amount
+1532	Includes
+1533	Includes # you paid before using the app. No interest.
+1535	Enter how much you invested
+1536	Inflation
+1537	Yearly inflation
+1538	Inflation in
+1539	Average yearly general inflation, forecast
+1540	Reports
+1541	Income
+1542	Fixed income
+1543	Income
+1544	Fixed income
+1545	Income and spending
+1546	Income and spending by month
+1547	Log in with the other account and the invitation will be completed
+1548	Started
+1549	Initials
+1550	Log in
+1551	Home
+1552	Home your way
+1553	New Home
+1554	Home without scrolling
+1555	Home: what you have left this month, at a glance
+1557	Interest
+1558	Interest and fees
+1559	Internet and mobile
+1560	Investments
+1561	Investments (market value)
+1562	Investments, what they're worth today
+1563	Investments: the last week («#W») and one line for each
+1564	Investment
+1565	Invested
+1566	Invested #
+1567	Invest
+1568	Invest more
+1569	Invite someone you don't have yet: they get a link on WhatsApp. What you're creating isn't lost.
+1570	Invite someone once and they'll be your friend here: you can share expenses with them and add them to any group without inviting them again.
+1571	Invite your partner or friends on WhatsApp.
+1572	Invitation
+1573	Invitation dismissed. If you change your mind, open the link again.
+1574	Pending invitation
+1575	Invite
+1576	Invite new people
+1577	Invite someone
+1578	Invite them to the app
+1579	Go to
+1580	Go to Money
+1581	Go to Home
+1582	Go to Together
+1583	Japan #
+1585	Th
+1586	Jul
+1587	Jun
+1588	Together
+1589	Together, clearer and with plans
+1590	Together: who owes whom
+1595	The app
+1596	The app works out
+1597	The app says there's left
+1598	The app reads the total and the items for you.
+1599	The app splits it among everyone.
+1600	The app splits among everyone.
+1601	The app, your way
+1602	The app, redesigned
+1603	The fastest-growing category
+1604	The password isn't correct.
+1605	A house deposit, a trip, a cushion…
+1606	The date is optional: with it you'll see if you reach that milestone in time.
+1607	The end date goes after the first
+1608	The date has passed · # to go
+1609	The date has passed · # to go
+1610	The next date is a forecast. If your salary is late, your month doesn't change until it arrives; if more than # days pass, it counts from the expected day. If it comes early, it starts that same day.
+1611	The date has passed and
+1612	The date has passed and there's
+1613	The date has passed and there's
+1614	The date has passed and there's left
+1615	The method is the same for the whole group.
+1616	The photo is too big. Try another one.
+1617	The photo isn't saved
+1618	The photo isn't saved: it's read and discarded.
+1619	The sentence from your last report
+1620	Inflation beats you by
+1621	Receipt reading isn't turned on yet. In the meantime you can add the expense by hand.
+1622	Receipt reading isn't available right now. Add the expense by hand.
+1623	Receipt reading isn't available here
+1624	The magnifying glass at the top searches transactions, tasks and settings.
+1625	The thick line is the total; the thin ones, each asset.
+1626	The line and what you've gained in that time
+1627	The goal will be left as
+1628	Your salary and bills, to see how you'll end the month.
+1629	The invested part is projected at
+1630	The week
+1631	The sum of the items matches the total.
+1632	Seen by
+1633	The last time you imported this format was in
+1635	The # with the highest balance, full width
+1637	Animations play when you scroll to them
+1638	The figures
+1639	The two passwords don't match.
+1640	The standard ones are the same for everyone and can't be deleted: that way a shared expense lands in the same category for everyone. Give them a monthly budget if you want.
+1641	Bills are now expenses
+1642	Investments without an automatic price count by what was put in.
+1643	Investments without an automatic price count by what you put in.
+1644	Custom ones are only yours: other people may not have them and you won't be able to share expenses with them. If it fits a standard one, use that and add the detail (e.g. «Health and personal care · Nails»).
+1645	Shared tasks belong to a group. Add your own as always.
+1646	Windows close by swiping down or with the ✕.
+1647	You owe them
+1648	You beat inflation by
+1649	You beat it by
+1650	You beat it by # points.
+1651	You pay them
+1652	We'll give it the account
+1653	Precise reading: it takes a bit longer.
+1654	Readings this month:
+1655	Readings this month: # of #. The photo hasn't been saved.
+1656	Reads the items and the total for you
+1657	Read more precisely
+1658	Read bank notifications
+1659	Read a receipt
+1660	Read a receipt with a photo
+1661	Reading the file…
+1662	Reading the receipt…
+1664	Pound
+1665	Book
+1666	Settlement
+1667	List
+1668	Cleaner list, «Filters» button and a magnifying glass that also searches by amount
+1669	Done
+1670	Done: this is how you'll see your «How you're doing»
+1671	Done: they can see your agenda now
+1672	Done: they can see your agenda now
+1673	Arrives in the account
+1675	They have a sign: − expense, + income
+1676	So far
+1677	You've spent #: # more than in #.
+1678	What's set aside for goals is already inside your accounts, so it isn't counted twice.
+1679	What's set aside for your goals (
+1680	Adds it to your account
+1681	What's been added so far
+1682	You added it
+1683	You added it
+1684	Added by
+1685	Basics
+1686	Together amounts don't count until they're paid.
+1687	The admins decide.
+1688	We'll have it ready in a minute.
+1689	You'll find the rest in
+1690	Highlights of
+1691	Highlights of #
+1692	You did it. Tap to see it.
+1693	Just enough to add and share. The rest, folded away and in Discover PalomApp.
+1694	Most common: between the # and the #, between the # and the #, or the last working day. If in doubt, use «Learn from my history».
+1695	The most important things in this version:
+1696	New things have the label
+1697	What's paid comes from your Debt-type transactions with each debt's name. This version doesn't calculate interest.
+1698	You paid it from
+1699	Coming up
+1700	What you set aside
