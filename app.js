@@ -10482,24 +10482,27 @@ function recordatoriosLista() {
   const ac = avisosCfg(), out = [], hoy = todayISO(), ahora = Date.now(), fin = uAdd(hoy, 14);
   const a9 = (iso, h) => new Date(iso + 'T' + pad2(h == null ? 9 : h) + ':00:00').getTime();
   // fijos de mañana (normales), y los que no tienen saldo en su cuenta (importantes)
-  const porDia = {};
+  const porDia = {}, hechos0 = avHechos();
+  // 12/11: si abres la app después de las 9:00 del día antes, el aviso de «mañana» sale enseguida (una sola vez), no se pierde
+  const cuandoFijo = (iso) => { const c = a9(uAdd(iso, -1)); if (c > ahora) return c; if (uAdd(iso, -1) !== hoy) return 0;
+    const ya = hechos0['fm|' + iso]; if (ya) return ya > ahora ? ya : 0; const pronto = ahora + 120000; return new Date(pronto).getHours() < 22 ? pronto : 0; };
   if (ac.fijos || ac.saldo) recurrentes().forEach((rc) => {
     if (!rc.regla) return;
     ocurrencias(rc.regla, uAdd(hoy, 1), uAdd(fin, 1)).forEach((o) => {
-      const iso = o.iso || o, cuando = a9(uAdd(iso, -1)); if (cuando <= ahora) return;
+      const iso = o.iso || o; if (!cuandoFijo(iso)) return;
       (porDia[iso] = porDia[iso] || []).push(rc);
     });
   });
   Object.keys(porDia).forEach((iso) => {
-    const l = porDia[iso], cuando = a9(uAdd(iso, -1));
+    const l = porDia[iso], cuando = cuandoFijo(iso), marca = cuando < a9(uAdd(iso, -1)) ? 'fm|' + iso : null;
     if (ac.saldo) l.filter((rc) => rc.kind !== 'cobro' && rc.cuentaId).forEach((rc) => {
       const c = cuentaPorId(rc.cuentaId), sal = c ? saldoCuenta(c) : null, imp = importePrevisto(rc, iso);
-      if (sal != null && imp != null && imp > 0 && sal < imp) out.push({ nivel: 'importante', titulo: 'Mañana se paga ' + rc.nombre, texto: 'En ' + (c.nombre || 'esa cuenta') + ' ahora no hay bastante. Toca para verlo.', cuando, tab: 'dinero' });
+      if (sal != null && imp != null && imp > 0 && sal < imp) out.push({ nivel: 'importante', titulo: 'Mañana se paga ' + rc.nombre, texto: 'En ' + (c.nombre || 'esa cuenta') + ' ahora no hay bastante. Toca para verlo.', cuando, marca, tab: 'dinero' });
     });
     if (!ac.fijos) return;
     const pagos = l.filter((rc) => rc.kind !== 'cobro').map((rc) => rc.nombre), cobros = l.filter((rc) => rc.kind === 'cobro').map((rc) => rc.nombre);
-    if (pagos.length) out.push({ nivel: 'normal', titulo: pagos.length === 1 ? 'Mañana: pago de ' + pagos[0] : 'Mañana: ' + pagos.length + ' pagos fijos', texto: pagos.length === 1 ? 'Toca para verlo en PalomApp.' : avLista(pagos), cuando, tab: 'inicio' });
-    if (cobros.length) out.push({ nivel: 'normal', titulo: cobros.length === 1 ? 'Mañana: cobro de ' + cobros[0] : 'Mañana: ' + cobros.length + ' cobros', texto: cobros.length === 1 ? 'Toca para verlo en PalomApp.' : avLista(cobros), cuando, tab: 'inicio' });
+    if (pagos.length) out.push({ nivel: 'normal', titulo: pagos.length === 1 ? 'Mañana: pago de ' + pagos[0] : 'Mañana: ' + pagos.length + ' pagos fijos', texto: pagos.length === 1 ? 'Toca para verlo en PalomApp.' : avLista(pagos), cuando, marca, tab: 'inicio' });
+    if (cobros.length) out.push({ nivel: 'normal', titulo: cobros.length === 1 ? 'Mañana: cobro de ' + cobros[0] : 'Mañana: ' + cobros.length + ' cobros', texto: cobros.length === 1 ? 'Toca para verlo en PalomApp.' : avLista(cobros), cuando, marca, tab: 'inicio' });
   });
   // tareas de hoy, juntas
   if (ac.agenda) {
@@ -10550,7 +10553,8 @@ function programarRecordatoriosPronto() {
   clearTimeout(_recT);
   _recT = setTimeout(async () => { try {
     if ((await n.permiso()) !== 'granted') return;
-    await n.programar(recordatoriosLista());
+    const lista = recordatoriosLista(); await n.programar(lista);
+    const mh = avHechos(); let cambia = false; lista.forEach((x) => { if (x.marca && !mh[x.marca]) { mh[x.marca] = x.cuando; cambia = true; } }); if (cambia) avGuardarHechos(mh); // 12/11: «mañana…» enseguida, una vez
     const ya = avisosAlMomento(); if (ya.length && n.ahora) await n.ahora(ya);
   } catch (e) { /* */ } }, 1500);
 }
