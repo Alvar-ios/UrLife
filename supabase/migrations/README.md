@@ -160,3 +160,5 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 
 ## 11/11/2026
 - `movimientos_origen` (aplicada con el «sí» del dueño): columna opcional `movimientos.origen` (texto corto, p. ej. `aviso`) para los gastos apuntados desde los avisos del banco. Deshacer: `alter table public.movimientos drop column origen;`
+
+- **2026-11-13_borrar_backups_octubre** (APLICADA 13/11): quita las 4 tablas `backup_*` de octubre (están en la copia cifrada).
