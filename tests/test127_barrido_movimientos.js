@@ -7,7 +7,7 @@ const conocido = (c, m) => console.log((c ? 'PASS ' : 'FALLO CONOCIDO ') + m);
 // La app solo se entera de lo guardado por el «tiempo real» de Supabase; la capa falsa no lo tiene, así que lo imitamos a mano.
 const conTiempoReal = (w) => { const orig = w.Data.collection; w.Data.collection = (n) => { const c = orig(n), os = c.onSnapshot; c.onSnapshot = (cb, er) => { (w.__subs = w.__subs || {})[n] = cb; return os(cb, er); }; return c; }; };
 console.error = () => {};
-const NUEVAS = { tu: 0, agenda: 0, crear: 0, importe: 0 };
+const NUEVAS = { tu: 1, agenda: 0, crear: 0, importe: 0 };
 const hoyD = new Date(), d = (n) => { const x = new Date(hoyD); x.setDate(x.getDate() - n); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
 (async () => {
   const e = makeEnv({ version: NUEVAS, movs: [

@@ -10,7 +10,7 @@ const isoL = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.
 const hace = (n) => { const x = new Date(); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - n); return isoL(x); };
 const HOY = hace(0), MM = HOY.slice(0, 7);
 const semanaISO = (iso) => { const [y, m, d] = iso.split('-').map(Number), t = new Date(Date.UTC(y, m - 1, d)), dia = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - dia); const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return t.getUTCFullYear() + '-S' + pad(Math.ceil(((t - y0) / 864e5 + 1) / 7)); };
-const V0 = { tu: 0, agenda: 0, crear: 0, importe: 0, inicio: 0 };
+const V0 = { tu: 1, agenda: 0, crear: 0, importe: 0, inicio: 0 };
 const base = (extra) => ({ app: Object.assign({ categoriasGasto: [{ nombre: 'Súper', presupuesto: 300 }, { nombre: 'Ocio' }] }, extra || {}), meta: { onboarded: true } });
 // cuenta las escrituras de configuración que llevan una clave concreta
 const espiarCfg = (A) => { const log = []; const orig = A.S.db.doc.bind(A.S.db); A.S.db.doc = (p) => { const d = orig(p); return Object.assign({}, d, { update: (x) => { log.push(x); return d.update(x); } }); }; return log; };

@@ -8,7 +8,7 @@ const dia = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.
   const movs = [
     { id: 'm1', tipo: 'Inversión', categoria: 'Fondo raro', importe: 500, fecha: dia(200), activoId: 'a1', participaciones: 5, tipoActivo: 'Fondo' },
     { id: 'm2', tipo: 'Inversión', categoria: 'Otro', importe: 300, fecha: dia(100), activoId: 'a2', participaciones: 3, tipoActivo: 'Otro' }];
-  const e = makeEnv({ movs, version: { tu: 0, agenda: 0, crear: 0, dinero: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], ahorro: [{ id: 'h1', nombre: 'Viaje', objetivo: 1000, yaAhorrado: 600, color: 'turquesa' }] }, meta: { onboarded: true } } });
+  const e = makeEnv({ movs, version: { tu: 1, agenda: 0, crear: 0, dinero: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], ahorro: [{ id: 'h1', nombre: 'Viaje', objetivo: 1000, yaAhorrado: 600, color: 'turquesa' }] }, meta: { onboarded: true } } });
   await sleep(200);
   const A = e.w.__APP__, H = A.H, doc = e.doc;
   // 1) nombres raros: nunca vacío, nunca cortado a medias de un emoji, como mucho 16 letras + «…»

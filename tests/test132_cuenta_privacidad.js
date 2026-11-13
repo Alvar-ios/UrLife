@@ -3,7 +3,7 @@ console.error = () => {};
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 (async () => {
-  const e = makeEnv({ cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } }, version: { tu: 0 } });
+  const e = makeEnv({ cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } }, version: { tu: 1 } });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, doc = e.doc, sh = () => doc.querySelector('#sheetHost').textContent.replace(/\s+/g, ' ');
   H.goTab(['tu']); await sleep(20);

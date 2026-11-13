@@ -25,7 +25,7 @@ const JUEGOS = [
 (async () => {
   for (const [nombre, j] of JUEGOS) {
     ctx = nombre; const n0 = errs.length;
-    const e = makeEnv({ movs: JSON.parse(JSON.stringify(j.movs)), pre: fijaFecha('2026-03-10'), version: { inicio: 0, dinero: 0, balance: 0, tu: 0, agenda: 0, crear: 0, juntos: 0 }, session: { user: { email: 't@t.com', id: 'yo' } }, cfg: { app: j.app, meta: { onboarded: true } } });
+    const e = makeEnv({ movs: JSON.parse(JSON.stringify(j.movs)), pre: fijaFecha('2026-03-10'), version: { inicio: 0, dinero: 0, balance: 0, tu: 1, agenda: 0, crear: 0, juntos: 0 }, session: { user: { email: 't@t.com', id: 'yo' } }, cfg: { app: j.app, meta: { onboarded: true } } });
     await sleep(250);
     const A = e.w.__APP__, H = A.H, doc = e.doc, faltan = new Map();
     const mirar = (donde) => doc.querySelectorAll('[data-click],[data-input],[data-change]').forEach((el) => ['click', 'input', 'change'].forEach((k) => {

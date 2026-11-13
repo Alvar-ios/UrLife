@@ -13,7 +13,7 @@ ICONOS.trendUp = ICONOS.piggy; // ICONS.trendUp = ICONS.piggy
 
 (async () => {
   // ---------- 1. Reglas de siempre: mismas fechas con los festivos apagados ----------
-  const e = makeEnv({ version: { tu: 0, crear: 0, dinero: 0 }, cfg: { app: { nombre: 'Ana Ruiz', categoriasGasto: [{ nombre: 'Otros' }], cuentas: [{ id: 'c1', nombre: 'Banco A', saldo: 100, ts: 1 }, { id: 'c2', nombre: 'Banco B', saldo: 50, ts: 1 }],
+  const e = makeEnv({ version: { tu: 1, crear: 0, dinero: 0 }, cfg: { app: { nombre: 'Ana Ruiz', categoriasGasto: [{ nombre: 'Otros' }], cuentas: [{ id: 'c1', nombre: 'Banco A', saldo: 100, ts: 1 }, { id: 'c2', nombre: 'Banco B', saldo: 50, ts: 1 }],
     ingresos: ['Nómina'], cobros: [{ nombre: 'Nómina', importe: 1500, regla: { t: 'ultHabil' } }] }, meta: { onboarded: true } }, movs: [] });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, doc = e.doc, sh = () => doc.querySelector('#sheetHost');
@@ -94,7 +94,7 @@ ICONOS.trendUp = ICONOS.piggy; // ICONS.trendUp = ICONS.piggy
   ok(!e.store.cfg.app.festivos, 'abrir y cerrar «Festivos» sin pulsar «Listo» no guarda nada');
 
   // ---------- 5. Perfil: usuario nuevo y datos raros ----------
-  const n = makeEnv({ version: { tu: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], perfil: { avatar: 'dibujo', icono: '"><img src=x onerror=alert(1)>', color: 'red;background:url(x)' } }, meta: { onboarded: true } }, movs: [] });
+  const n = makeEnv({ version: { tu: 1 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], perfil: { avatar: 'dibujo', icono: '"><img src=x onerror=alert(1)>', color: 'red;background:url(x)' } }, meta: { onboarded: true } }, movs: [] });
   await sleep(150);
   const av = n.doc.querySelector('#tbAvatar');
   ok(av && !av.querySelector('img') && !/url\(/.test(av.getAttribute('style') || '') && av.textContent.trim().length >= 1, 'perfil con datos raros: la barra de arriba vuelve a las iniciales y al color de siempre, sin colar nada');
@@ -104,7 +104,7 @@ ICONOS.trendUp = ICONOS.piggy; // ICONS.trendUp = ICONS.piggy
   ok(!n.store.cfg.app.nombre && n.doc.querySelector('#sheetHost #tuNombreIn'), 'sin nombre no se guarda el perfil (pide «Escribe tu nombre») y la hoja sigue abierta');
 
   // ---------- 6. Fondo guardado en el dispositivo ----------
-  const f = makeEnv({ url: 'https://app.test/', version: { tu: 0 }, pre: (w) => { try { w.localStorage.setItem('fondo', 'raro'); } catch (x) { /* */ } }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } }, movs: [] });
+  const f = makeEnv({ url: 'https://app.test/', version: { tu: 1 }, pre: (w) => { try { w.localStorage.setItem('fondo', 'raro'); } catch (x) { /* */ } }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } }, movs: [] });
   await sleep(120);
   ok(f.doc.documentElement.getAttribute('data-fondo') === 'neutro', 'un fondo guardado que no existe arranca en «Neutro»');
   f.w.__APP__.H.setFondo(['puro']); await sleep(5);
@@ -145,7 +145,7 @@ ICONOS.trendUp = ICONOS.piggy; // ICONS.trendUp = ICONS.piggy
   H.recCuandoTipo(['habil']); await sleep(5);
   ok(!/Penúltimo/.test(sh().querySelector('.rec-par').textContent), '«Otro día hábil» ya no ofrece «Penúltimo» (tiene su propia tarjeta)');
   H.recCuandoVolver([]); await sleep(5);
-  const n2 = makeEnv({ version: { tu: 0 }, cfg: { app: { nombre: 'Ana', categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } }, movs: [] }); await sleep(120);
+  const n2 = makeEnv({ version: { tu: 1 }, cfg: { app: { nombre: 'Ana', categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } }, movs: [] }); await sleep(120);
   n2.w.__APP__.H.goTab(['tu']); await sleep(5); n2.w.__APP__.H.tuNombreAbrir([]); await sleep(5); n2.w.__APP__.H.perfilModo(['dibujo']); await sleep(5);
   const labs = [...n2.doc.querySelectorAll('#sheetHost .perfil-d')].map((b) => b.getAttribute('aria-label'));
   ok(labs.length === 12 && labs.indexOf('Balón') >= 0 && labs.indexOf('Corazón') >= 0 && !labs.some((l) => /^(heart|ball|plane|film|gift|home|bulb|paw|sparkle)$/.test(l)), 'los dibujos del perfil se leen en español («Balón», «Corazón»…)');

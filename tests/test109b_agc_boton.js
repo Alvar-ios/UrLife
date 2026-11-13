@@ -4,7 +4,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
 console.error = () => {};
 const d = new Date(), iso = (x) => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'), hoy = iso(d);
 async function esc({ grupos, falla, perms }) {
-  const e = makeEnv({ version: { agenda: 0, tu: 0, crear: 0, inicio: 0 }, cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
+  const e = makeEnv({ version: { agenda: 0, tu: 1, crear: 0, inicio: 0 }, cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
   await sleep(80);
   const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc, c = () => doc.querySelector('#content');
   S.user = Object.assign({}, S.user, { id: 'uYo' });

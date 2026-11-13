@@ -21,7 +21,7 @@ function nativo(cola, reg) {
       { id: 'q-1', pkg: 'de.number26.android', app: 'N26', importe: 1.5, entra: false, comercio: 'Cafetería Uno', tipo: 'tarjeta', ts },
       { id: 'q-2', pkg: 'de.number26.android', app: 'N26', importe: 1.5, entra: false, comercio: 'Cafetería Dos', tipo: 'tarjeta', ts: ts + 1000 },
     ];
-    const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre: nativo(cola, reg), cfg: baseCfg(), session: { user: { id: 'u-1', email: 't@t.com' } },
+    const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre: nativo(cola, reg), cfg: baseCfg(), session: { user: { id: 'u-1', email: 't@t.com' } },
       movs: [{ id: 'mx', tipo: 'Gasto', categoria: 'Transporte', importe: 1.5, fecha: ayer, descripcion: 'Metro' }] });
     await e.w.__APP__.main(); await sleep(2200);
     const M = e.store.movimientos;
@@ -41,7 +41,7 @@ function nativo(cola, reg) {
   {
     const reg = { quitar: [], vaciar: [], programar: [] };
     const cola = [{ id: 'q-9', pkg: 'de.number26.android', app: 'N26', importe: 50, entra: true, comercio: 'Ana García', tipo: 'otro', ts }];
-    const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre: nativo(cola, reg), cfg: baseCfg(), movs: [] });
+    const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre: nativo(cola, reg), cfg: baseCfg(), movs: [] });
     await e.w.__APP__.main(); await sleep(2200);
     const m = e.store.movimientos['q-9'];
     ok(!!m && m.origen === 'aviso' && m.tipo === 'Ingreso', 'una cuenta sin movimientos recoge el aviso (usuario nuevo)');
@@ -50,7 +50,7 @@ function nativo(cola, reg) {
   // 5) En la web (sin window.__nativo) nada cambia ni falla
   {
     const errores = [];
-    const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre: (w) => { w.addEventListener('error', (ev) => errores.push(String(ev.message))); }, cfg: baseCfg(),
+    const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre: (w) => { w.addEventListener('error', (ev) => errores.push(String(ev.message))); }, cfg: baseCfg(),
       movs: [{ id: 'w1', tipo: 'Gasto', categoria: 'Otros', importe: 3, fecha: hoy, descripcion: 'Pan', creadoEn: Date.now() }] });
     await e.w.__APP__.main(); await sleep(1500);
     ok(!e.doc.querySelector('.av-card'), 'en la web, sin avisos, Inicio no enseña la tarjeta');

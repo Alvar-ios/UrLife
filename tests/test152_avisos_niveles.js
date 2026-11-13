@@ -13,7 +13,7 @@ const dia = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return is
     facturas: [{ nombre: 'Luz', importe: 60, diaDelMes: dm, cuentaId: 'c1' }, { nombre: 'Internet', importe: 30, diaDelMes: dm }, { nombre: 'Gimnasio', importe: 25, diaDelMes: dm }],
     categoriasGasto: [{ nombre: 'Supermercado', presupuesto: 100 }, { nombre: 'Ocio', presupuesto: 50 }] }, meta: { onboarded: true } };
   const hoy = dia(0);
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre, cfg,
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre, cfg,
     movs: [{ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 85, fecha: hoy, descripcion: 'Súper' }] });
   ['t1', 't2', 't3', 't4'].forEach((id, i) => { e.store.tareas[id] = { nombre: 'Tarea ' + (i + 1), estado: 'Pendiente', fechaLimite: dia(3), prioridad: 'Media' }; });
   await e.w.__APP__.main(); await sleep(2300);

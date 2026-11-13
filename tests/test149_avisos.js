@@ -23,7 +23,7 @@ const hoyISO = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0
       notif: { permiso: async () => 'granted', pedir: async () => 'granted', programar: async (l) => { llamadas.programar.push(l); return l.length; } },
     };
   };
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre,
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre,
     cfg: { app: { compararVersiones: false, categoriasGasto: [{ nombre: 'Supermercado' }, { nombre: 'Otros' }], ingresos: ['Nómina', 'Otros ingresos'], cuentas: [{ id: 'c1', nombre: 'Cuenta Santander', banco: 'santander' }] }, meta: { onboarded: true } },
     movs: [{ id: 'm0', tipo: 'Gasto', categoria: 'Otros', importe: 40, fecha: hoyISO(), descripcion: 'Gasolinera Repsol' }] });
   e.store.tareas.t1 = { nombre: 'Llamar al seguro', estado: 'Pendiente', fechaLimite: manana, prioridad: 'Media' };

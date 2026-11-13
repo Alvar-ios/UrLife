@@ -3,7 +3,7 @@
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 (async () => {
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 },
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 },
     movs: [{ id: 'm1', tipo: 'Gasto', categoria: 'Supermercado', importe: 7.08, fecha: '2026-10-01' }, { id: 'dv', tipo: 'Gasto', categoria: 'Compras', importe: -19.99, fecha: '2026-10-02' }, { id: 'mg', tipo: 'Gasto', categoria: 'Compras', importe: 1234.5, fecha: '2026-10-03' }],
     cfg: { app: { categoriasGasto: [{ nombre: 'Supermercado' }, { nombre: 'Compras' }], cuentas: [{ id: 'c1', nombre: 'Banco A', saldo: 100, ts: 1 }, { id: 'c2', nombre: 'Banco B', saldo: 50, ts: 1 }] }, meta: { onboarded: true } } });
   await sleep(120);

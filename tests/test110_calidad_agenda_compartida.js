@@ -6,7 +6,7 @@ const d = new Date(), iso = (x) => x.getFullYear() + '-' + String(x.getMonth() +
 const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return iso(x); };
 function montar(op) {
   op = op || {};
-  const e = makeEnv({ version: { agenda: 0, tu: 0, crear: 0, inicio: 0 }, cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
+  const e = makeEnv({ version: { agenda: 0, tu: 1, crear: 0, inicio: 0 }, cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
   return sleep(80).then(() => {
     const A = e.w.__APP__, S = A.S; S.user = Object.assign({}, S.user, { id: 'uYo' });
     const m = (u, nm) => ({ user_id: u, nombre: nm, rol: 'miembro' });

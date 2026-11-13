@@ -12,7 +12,7 @@ const m = (u, nm) => ({ user_id: u, nombre: nm, rol: 'miembro' });
 (async () => {
   /* 1. Usuario nuevo el mismo día del parche: la bienvenida marca todo como visto y no sale ninguna etiqueta */
   {
-    const e = makeEnv({ cfg: {}, version: { tu: 0, agenda: 0, crear: 0 }, pre: fijaFecha('2026-10-23') });
+    const e = makeEnv({ cfg: {}, version: { tu: 1, agenda: 0, crear: 0 }, pre: fijaFecha('2026-10-23') });
     await sleep(150);
     const A = e.w.__APP__;
     ok(A.S.onboarding, 'usuario nuevo: sale la bienvenida');
@@ -26,7 +26,7 @@ const m = (u, nm) => ({ user_id: u, nombre: nm, rol: 'miembro' });
   }
 
   /* 2. Usuario de antes: verBadge no repite sin fin; y un valor antiguo raro (true) no rompe */
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre: fijaFecha('2026-10-24'),
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre: fijaFecha('2026-10-24'),
     cfg: { app: { nombre: 'Lucía', badgesVistos: { tumes: '2026-10-17', cuentas: true }, categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc, sh = () => doc.querySelector('#sheetHost');

@@ -10,7 +10,7 @@ const hayAntes = (e) => [...e.doc.querySelectorAll('[data-click]')].filter((x) =
 (async () => {
   // ---------- 1) Cuenta nueva sin invitación ----------
   paso('Bienvenida nueva');
-  let e = await abrir({ cfg: {}, version: { bienvenida: 0 } });
+  let e = await abrir({ cfg: {}, version: { bienvenida: 1 } });
   ok(/¡Hola!/.test(pantalla(e)) && /Paso 1 de 2/.test(pantalla(e)), 'una cuenta nueva ve «¡Hola!» (paso 1 de 2)');
   await escribir(e, '#obNombre', 'Marta');
   const emp = buscar(e, 'obNext'); emp.click(); emp.click(); await sleep(300);
@@ -43,7 +43,7 @@ const hayAntes = (e) => [...e.doc.querySelectorAll('[data-click]')].filter((x) =
   // ---------- 2) Cuenta nueva que llega con una invitación ----------
   paso('Invitación');
   const TOKEN = 'invitacionInventada1234';
-  e = await abrir({ cfg: {}, version: { bienvenida: 0 }, url: 'https://x.test/?unirse=' + TOKEN,
+  e = await abrir({ cfg: {}, version: { bienvenida: 1 }, url: 'https://x.test/?unirse=' + TOKEN,
     rpc: { ver_invitacion: (p) => (p.p_token === TOKEN ? { valida: true, tipo: 'grupo', nombre: 'Piso inventado', invita: 'Ana', miembros: 2 } : { valida: false }) } });
   e.srv.rpc.unirse = (p) => { e.srv.grupos.push({ id: 'g9', nombre: 'Piso inventado', tipo: 'grupo', edicion: 'todos', created_at: '2026-11-01T10:00:00Z' }); e.srv.miembros.push({ grupo_id: 'g9', user_id: ANA, nombre: 'Ana', rol: 'admin' }, { grupo_id: 'g9', user_id: YO, nombre: p.p_nombre, rol: 'miembro' }); return 'g9'; };
   await sleep(200);

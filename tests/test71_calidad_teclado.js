@@ -8,7 +8,7 @@ console.error = () => {};
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const pend = (c, m) => console.log((c ? 'ARREGLADO (cambiar por ok) ' : 'PEND ') + m);
-const NUEVAS = { tu: 0, agenda: 0, crear: 0, importe: 0 };
+const NUEVAS = { tu: 1, agenda: 0, crear: 0, importe: 0 };
 const hoyD = new Date(), d = (n) => { const x = new Date(hoyD); x.setDate(x.getDate() - n); return x.toISOString().slice(0, 10); };
 const CFG = () => ({ app: { categoriasGasto: [{ nombre: 'Supermercado' }, { nombre: 'Ocio' }], ahorro: [{ id: 'casa', nombre: 'Casa', objetivo: 1000 }],
   cuentas: [{ id: 'c1', nombre: 'Banco A', saldo: 100, principal: true }, { id: 'c2', nombre: 'Banco B', saldo: 50 }] }, meta: { onboarded: true } });

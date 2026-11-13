@@ -4,7 +4,7 @@ const { makeEnv, sleep, click } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 (async () => {
   // 1) Usuario nuevo, sin cuentas: «Otro, o sin banco» crea una cuenta sin banco y deja escribir el nombre
-  const e = makeEnv({ cfg: { app: { compararVersiones: false, cuentas: [] }, meta: { onboarded: true } }, movs: [], version: { tu: 0, agenda: 0, crear: 0 } });
+  const e = makeEnv({ cfg: { app: { compararVersiones: false, cuentas: [] }, meta: { onboarded: true } }, movs: [], version: { tu: 1, agenda: 0, crear: 0 } });
   const A = e.w.__APP__; await A.main(); await sleep(150);
   A.H.goTab(['dinero']); await sleep(30);
   click(e, 'openCuentas'); await sleep(20); click(e, 'cuentaAnadir'); await sleep(20);
@@ -18,7 +18,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(e.store.cfg.app.cuentas.length === 1 && e.store.cfg.app.cuentas[0].nombre === 'Caja del Barrio', 'el nombre se guarda en la misma cuenta');
 
   // 2) Una cuenta con nombre que parece de un banco: «Ponle su logo» pone el banco a ESA cuenta, sin crear otra
-  const e2 = makeEnv({ cfg: { app: { compararVersiones: false, cuentas: [{ id: 'c1', nombre: 'Mi cuenta', saldo: 100, fecha: '2026-11-01' }, { id: 'c2', nombre: 'Santander nómina', saldo: 500, fecha: '2026-11-01' }] }, meta: { onboarded: true } }, movs: [], version: { tu: 0, agenda: 0, crear: 0 } });
+  const e2 = makeEnv({ cfg: { app: { compararVersiones: false, cuentas: [{ id: 'c1', nombre: 'Mi cuenta', saldo: 100, fecha: '2026-11-01' }, { id: 'c2', nombre: 'Santander nómina', saldo: 500, fecha: '2026-11-01' }] }, meta: { onboarded: true } }, movs: [], version: { tu: 1, agenda: 0, crear: 0 } });
   const B = e2.w.__APP__; await B.main(); await sleep(150);
   B.H.goTab(['dinero']); await sleep(30);
   click(e2, 'openCuentas'); await sleep(20);

@@ -37,7 +37,7 @@ const prob = [];
 const cerca = (a, b, tol) => Math.abs(a - b) <= (tol == null ? 0.006 : tol);
 async function caso(nombre, o) {
   const P = (m) => prob.push('[' + nombre + '] ' + m);
-  const e = makeEnv({ movs: o.movs, pre: D.fijaFecha(o.hoy), version: { inicio: 0, dinero: 0, balance: 0, tu: 0, agenda: 0, crear: 0 }, session: { user: { email: 't@t.com', id: 'yo' } }, cfg: { app: o.app, meta: { onboarded: true } } });
+  const e = makeEnv({ movs: o.movs, pre: D.fijaFecha(o.hoy), version: { inicio: 0, dinero: 0, balance: 0, tu: 1, agenda: 0, crear: 0 }, session: { user: { email: 't@t.com', id: 'yo' } }, cfg: { app: o.app, meta: { onboarded: true } } });
   await sleep(250);
   const A = e.w.__APP__, S = A.S, doc = e.doc, n0 = errs.length;
   if (o.comps) { S.grupos = o.grupos; S.compartidos = o.comps; S.objetivos = []; S.aportes = []; }
