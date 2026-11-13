@@ -2565,3 +2565,32 @@ html[data-look="nuevo"] .av-ok { display: inline-flex; align-items: center; just
 html[data-look="nuevo"] .av-ok.si { background: var(--income, #2E9E5B); color: #fff; }
 html[data-look="nuevo"] .av-ok.no { background: var(--expense, #D64545); color: #fff; }
 html[data-look="nuevo"] .av-opt .btn.sm { flex: none; }
+/* 13/11 · Juntos (fase 14): Grupos (tarjetas cuadradas) y Personas (círculos) separados, los más usados primero */
+html[data-look="nuevo"] .jv4-sec .section-title { display: flex; align-items: center; gap: 8px; }
+html[data-look="nuevo"] .jv4-sec .section-title .link { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; font-size: 14px; }
+html[data-look="nuevo"] .jv4-sec .section-title .link .i { width: 15px; height: 15px; }
+html[data-look="nuevo"] .jv4-n { font-family: var(--font-body, inherit); font-size: 12px; font-weight: 700; color: var(--text-muted); background: var(--paper-sunken); border-radius: 999px; padding: 2px 8px; }
+html[data-look="nuevo"] .jv4-grupos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+html[data-look="nuevo"] .jv4-g { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; padding: 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--paper-raised); color: var(--ink); text-align: left; font: inherit; cursor: pointer; }
+html[data-look="nuevo"] .jv4-g-cab { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-bottom: 6px; }
+html[data-look="nuevo"] .jv4-g-ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; background: var(--accent-soft); color: var(--accent); flex: none; }
+html[data-look="nuevo"] .jv4-g-ic .i { width: 20px; height: 20px; }
+html[data-look="nuevo"] .jv4-g-cab .cara.mini { border: 2px solid var(--paper-raised); }
+html[data-look="nuevo"] .jv4-g-n { max-width: 100%; font-size: 15px; font-weight: 700; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .jv4-g-m { font-size: 12px; color: var(--text-faint); }
+html[data-look="nuevo"] .jv4-g-v { display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap; margin-top: 6px; font-size: 12.5px; color: var(--text-muted); }
+html[data-look="nuevo"] .jv4-g-v b { font-size: 16px; font-weight: var(--num-peso, 700); }
+html[data-look="nuevo"] .jv4-g.malo .jv4-g-v b { color: var(--expense); } html[data-look="nuevo"] .jv4-g.bueno .jv4-g-v b { color: var(--income); }
+html[data-look="nuevo"] .jv4-personas { margin: 0 -16px; }
+html[data-look="nuevo"] .jv4-personas.todas { flex-wrap: wrap; overflow: visible; justify-content: flex-start; row-gap: 14px; }
+html[data-look="nuevo"] .jv4-todos { display: block; min-height: 44px; margin: 4px auto 0; font-size: 14px; }
+/* 13/11 · Meta: todas las aportaciones */
+html[data-look="nuevo"] .dm-ap-f { display: flex; align-items: center; gap: 10px; padding: 10px 0; font-size: 13.5px; }
+html[data-look="nuevo"] .dm-ap-f + .dm-ap-f, html[data-look="nuevo"] .dm-ap-tot { border-top: 1px solid var(--line); }
+html[data-look="nuevo"] .dm-ap-t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+html[data-look="nuevo"] .dm-ap-t b { font-weight: 600; }
+html[data-look="nuevo"] .dm-ap-t span { font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .dm-ap-v { flex: none; }
+html[data-look="nuevo"] .dm-ap-tot { display: flex; justify-content: space-between; gap: 10px; padding: 12px 0 10px; font-size: 14px; font-weight: 700; }
+html[data-look="nuevo"] .dm-ap-todas { display: block; min-height: 44px; margin: 4px auto 0; font-size: 14px; }
+html[data-look="nuevo"] .dm-ap-cuadre { margin-top: 6px; }

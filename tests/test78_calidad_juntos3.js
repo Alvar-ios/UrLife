@@ -39,6 +39,9 @@ const uidC = (x) => decodeURIComponent((x.getAttribute('data-click') || '').spli
       C('k3', 'd1', 'uA', 0.8, { uYo: 0.4, uA: 0.4 }, 'uA', '2026-10-15T10:00:00.000Z', 'Chicle'),
       C('k4', 'g2', 'p3', 100, rep2, 'p3', '2026-10-16T10:00:00.000Z', 'Pistas')], ['sc9']);
     H.goTab(['juntos']); await sleep(40);
+    const verTodas = doc.querySelector('.jv4-personas-sec .jv4-todos');
+    ok(circulos(doc).length === 8 && doc.querySelector('.jv3-circ').classList.contains('muchos') && verTodas && /Ver todas \(13\)/.test(verTodas.textContent), 'con 13 personas: las 8 que más usas, la fila se desliza y «Ver todas (13)»');
+    verTodas.click(); await sleep(20);
     let cs = circulos(doc), ns = cs.map(nombreC), us = cs.map(uidC);
     ok(!us.includes('uYo') && !us.includes('sc9') && !ns.some((n) => /Lucía/.test(n)), 'Personas: yo no salgo en los círculos, ni con mi sitio de «sin app» (' + ns.join(', ') + ')');
     ok(new Set(us).size === us.length && new Set(ns).size === ns.length, 'Personas: nadie sale repetido');
@@ -47,24 +50,19 @@ const uidC = (x) => decodeURIComponent((x.getAttribute('data-click') || '').spli
     ok(bea && bea.classList.contains('bueno') && /40 €/.test(bea.textContent), 'a Bea se le suma lo de antes y lo de después de unirse: te debe 40 €');
     ok(ns.filter((n) => n === 'Ana').length === 1, 'Ana (en el Piso y a solas) sale una sola vez');
     ok(ns.includes('Tía Rosa'), 'la persona sin cuenta que debe también sale');
-    ok(cs.length === 13 && doc.querySelector('.jv3-circ').classList.contains('muchos'), 'con 13 personas salen todas y la fila se puede deslizar (clase «muchos»)');
-    const pazIdx = cs.findIndex((x) => x.classList.contains('paz'));
-    ok(pazIdx > 0 && cs.slice(pazIdx).every((x) => x.classList.contains('paz')), 'quien está en paz va al final, todo seguido');
-    ok(cs.slice(pazIdx).every((x) => x.querySelector('.jv-c-ok') && !x.querySelector('.ins-aro-v')), 'en paz: con ✓ y sin aro de color');
+    ok(cs.length === 13 && doc.querySelector('.jv3-circ').classList.contains('todas'), 'con «Ver todas» salen las 13 personas');
+    const pazs = cs.filter((x) => x.classList.contains('paz'));
+    ok(pazs.length > 0 && pazs.every((x) => x.querySelector('.jv-c-ok') && !x.querySelector('.ins-aro-v')), 'en paz: con ✓ y sin aro de color');
     const lg = cs.find((x) => nombreC(x) === LARGO);
     ok(lg && (lg.getAttribute('aria-label') || '').indexOf(LARGO) === 0, 'nombre largo: entero en el texto y en lo que lee el lector de pantalla (el corte lo hace el diseño)');
     ok(cs.every((x) => x.tagName === 'BUTTON' && /: /.test(x.getAttribute('aria-label') || '')), 'cada círculo es un botón con nombre y estado para el lector de pantalla');
-    // importe de menos de 1 € (Ana a solas: le debes 0,40 €)
-    H.juntosVer(['grupos']); await sleep(20);
-    cs = circulos(doc); ns = cs.map(nombreC);
-    ok(ns.length === 3 && ns.includes('Pádel de los jueves por la tarde') && ns.includes('Piso') && ns.includes('Ana') && !ns.includes('Invitación pendiente'), 'Grupos: Pádel, Piso y el grupo directo con el nombre de la persona; sin la invitación pendiente (' + ns.join('|') + ')');
-    ok(cs.every((x) => /debes|te deben|en paz/.test(x.querySelector('.ins-l2').textContent)), 'Grupos: cada círculo dice «debes», «te deben» o «en paz»');
-    const ana = cs.find((x) => nombreC(x) === 'Ana');
-    ok(ana && ana.querySelector('.jv-c-cara .cara') && !ana.querySelector('.jv-c-gr'), 'el grupo directo lleva la cara de la persona, no unas iniciales de grupo');
-    ok(ana && ana.classList.contains('malo') && /debes/.test(ana.textContent), 'el grupo directo con Ana: «debes», en rojo');
-    const cifra = ana && ana.querySelector('.ins-aro b');
-    ok(cifra && !/^0 €$/.test(cifra.textContent.trim()), 'una deuda de 0,40 € no se enseña como «0 €» dentro del círculo (sale: «' + (cifra ? cifra.textContent : '') + '»)');
-    ok(doc.querySelector('.jv3-seg [role="tab"][aria-selected="true"]').textContent === 'Grupos', 'el selector dice al lector de pantalla cuál está elegido');
+    // grupos: solo los de verdad, en tarjetas aparte; el «solo vosotros dos» con Ana es una persona
+    const gs = [...doc.querySelectorAll('.jv4-grupos .jv4-g')], gns = gs.map((x) => x.querySelector('.jv4-g-n').textContent);
+    ok(gns.length === 2 && gns.includes('Pádel de los jueves por la tarde') && gns.includes('Piso') && !gns.includes('Ana') && !gns.some((n) => /Invitación/.test(n)), 'Grupos: Pádel y Piso, en tarjetas; ni el «solo vosotros dos» ni la invitación pendiente (' + gns.join('|') + ')');
+    ok(gs.every((x) => /debes|te deben|en paz|sin gastos/.test(x.querySelector('.jv4-g-v span').textContent)), 'Grupos: cada tarjeta dice «debes», «te deben» o «en paz»');
+    ok(gs.every((x) => x.tagName === 'BUTTON' && /^Grupo /.test(x.getAttribute('aria-label') || '')), 'el lector de pantalla dice que es un grupo');
+    const gPad = gs.find((x) => /Pádel/.test(x.textContent));
+    ok(gPad && /11 personas/.test(gPad.textContent) && gPad.querySelectorAll('.cara.mini').length === 3, 'el Pádel dice «11 personas» y enseña 3 caras');
     H.juntosVer(['personas']); await sleep(20);
   }
 
@@ -83,9 +81,7 @@ const uidC = (x) => decodeURIComponent((x.getAttribute('data-click') || '').spli
     const t = doc.querySelector('#content').textContent;
     ok(/Aún no habéis compartido gastos/.test(t) && !/NaN|undefined/.test(t), 'con grupo pero sin gastos: «Aún no habéis compartido gastos»');
     ok(circulos(doc).map(nombreC).join(',') === 'Ana' && !doc.querySelector('.section-title.jv-act, .jv-act'), 'sale Ana en paz y no hay bloque de actividad vacío');
-    H.juntosVer(['grupos']); await sleep(20);
-    ok(circulos(doc).length === 2, 'Grupos: también el grupo en el que aún estás solo');
-    H.juntosVer(['personas']); await sleep(10);
+    ok(doc.querySelectorAll('.jv4-grupos .jv4-g').length === 2 && /sin gastos/.test(doc.querySelector('.jv4-grupos').textContent), 'Grupos: también el grupo en el que aún estás solo («sin gastos»)');
   }
 
   /* ---------- 3. «N nuevas»: ni lo mío ni lo antiguo, y que no baile ---------- */
