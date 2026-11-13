@@ -35,7 +35,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   const miCara = [...doc.querySelectorAll('.jv-a')].find((x) => /Apuntaste/.test(x.textContent));
   ok(miCara && miCara.querySelector('.cara').textContent === 'L', 'tu propia cara lleva tu inicial (L), no una «T»');
   // grupos
-  const gc = [...doc.querySelectorAll('.jv4-grupos .jv4-g')], gn = gc.map((x) => x.querySelector('.jv4-g-n').textContent + ':' + x.querySelector('.jv4-g-v span').textContent);
+  const gc = [...doc.querySelectorAll('.jv4-grupos .jv4-g')], gn = gc.map((x) => x.querySelector('.jv4-g-n').textContent.replace('Grupo: ', '') + ':' + x.querySelector('.jv4-g-v span').textContent);
   ok(gn.slice().sort().join('|') === 'Piso:te deben|Viaje Lisboa:debes', 'Grupos: tu saldo en cada grupo, a la vez que las personas (' + gn.join('|') + ')');
   ok(gc.every((x) => x.querySelector('.jv4-g-ic') && /personas/.test(x.querySelector('.jv4-g-m').textContent)), 'cada grupo lleva su icono de grupo y cuántas personas son');
   gc.find((x) => /Viaje Lisboa/.test(x.textContent)).click(); await sleep(20);

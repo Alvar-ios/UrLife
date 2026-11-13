@@ -57,10 +57,10 @@ const uidC = (x) => decodeURIComponent((x.getAttribute('data-click') || '').spli
     ok(lg && (lg.getAttribute('aria-label') || '').indexOf(LARGO) === 0, 'nombre largo: entero en el texto y en lo que lee el lector de pantalla (el corte lo hace el diseño)');
     ok(cs.every((x) => x.tagName === 'BUTTON' && /: /.test(x.getAttribute('aria-label') || '')), 'cada círculo es un botón con nombre y estado para el lector de pantalla');
     // grupos: solo los de verdad, en tarjetas aparte; el «solo vosotros dos» con Ana es una persona
-    const gs = [...doc.querySelectorAll('.jv4-grupos .jv4-g')], gns = gs.map((x) => x.querySelector('.jv4-g-n').textContent);
+    const gs = [...doc.querySelectorAll('.jv4-grupos .jv4-g')], gns = gs.map((x) => x.querySelector('.jv4-g-n').textContent.replace('Grupo: ', ''));
     ok(gns.length === 2 && gns.includes('Pádel de los jueves por la tarde') && gns.includes('Piso') && !gns.includes('Ana') && !gns.some((n) => /Invitación/.test(n)), 'Grupos: Pádel y Piso, en tarjetas; ni el «solo vosotros dos» ni la invitación pendiente (' + gns.join('|') + ')');
     ok(gs.every((x) => /debes|te deben|en paz|sin gastos/.test(x.querySelector('.jv4-g-v span').textContent)), 'Grupos: cada tarjeta dice «debes», «te deben» o «en paz»');
-    ok(gs.every((x) => x.tagName === 'BUTTON' && /^Grupo /.test(x.getAttribute('aria-label') || '')), 'el lector de pantalla dice que es un grupo');
+    ok(gs.every((x) => x.tagName === 'BUTTON' && /Grupo/.test((x.querySelector('.sr-only') || {}).textContent || '')), 'el lector de pantalla dice que es un grupo');
     const gPad = gs.find((x) => /Pádel/.test(x.textContent));
     ok(gPad && /11 personas/.test(gPad.textContent) && gPad.querySelectorAll('.cara.mini').length === 3, 'el Pádel dice «11 personas» y enseña 3 caras');
     H.juntosVer(['personas']); await sleep(20);

@@ -5754,9 +5754,9 @@ function jvPorUso(uso) {
 function juntosGrupoCardHtml(x) {
   const g = x.g, v = x.v, paz = Math.abs(v) < 0.005, n = g.miembros.length;
   const est = !x.hay ? 'sin gastos' : paz ? 'en paz' : v < 0 ? 'debes' : 'te deben';
-  return '<button type="button" class="jv4-g tappable ' + (!x.hay || paz ? 'paz' : v < 0 ? 'malo' : 'bueno') + '" aria-label="' + escapeHtml('Grupo ' + x.nombre + ', ' + n + ' personas: ' + (paz || !x.hay ? est : est + ' ' + money(Math.abs(v)))) + '" ' + act('grupoVer', g.id) + '>' +
+  return '<button type="button" class="jv4-g tappable ' + (!x.hay || paz ? 'paz' : v < 0 ? 'malo' : 'bueno') + '" ' + act('grupoVer', g.id) + '>' +
     '<span class="jv4-g-cab"><span class="jv4-g-ic" aria-hidden="true">' + ic('users') + '</span><span class="jv-caras" aria-hidden="true">' + g.miembros.slice(0, 3).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '</span></span>' +
-    '<b class="jv4-g-n">' + escapeHtml(x.nombre) + '</b><span class="jv4-g-m">' + n + (n === 1 ? ' persona' : ' personas') + '</span>' +
+    '<b class="jv4-g-n"><span class="sr-only">Grupo: </span>' + escapeHtml(x.nombre) + '</b><span class="jv4-g-m">' + n + (n === 1 ? ' persona' : ' personas') + '</span>' +
     '<span class="jv4-g-v"><b class="tnum">' + (paz || !x.hay ? '' : escapeHtml(money(Math.abs(v)))) + '</b><span>' + est + '</span></span></button>';
 }
 function juntosV3Html(ps, gs, frase, debes, teDeben, hayComp) {

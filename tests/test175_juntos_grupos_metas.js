@@ -36,9 +36,9 @@ const dinero = (v) => Number(String(v).replace(/[^\d,-]/g, '').replace(',', '.')
     const tit = [...doc.querySelectorAll('#content .section-title')].map((x) => x.textContent);
     ok(/^Grupos/.test(tit[0] || '') && /^Personas/.test(tit[1] || ''), 'Juntos: título «Grupos» y debajo «Personas», a la vez (sin selector)');
     ok(!doc.querySelector('.jv3-seg'), 'ya no hay que elegir «Personas | Grupos»');
-    const gs = [...doc.querySelectorAll('.jv4-grupos .jv4-g')], gn = gs.map((x) => x.querySelector('.jv4-g-n').textContent);
+    const gs = [...doc.querySelectorAll('.jv4-grupos .jv4-g')], gn = gs.map((x) => x.querySelector('.jv4-g-n').textContent.replace('Grupo: ', ''));
     ok(gn.join(',') === 'Piso,Pádel,Cenas,Viaje antiguo', 'grupos por uso de los últimos 90 días; si empatan, el de lo último más reciente; se ven 4 (' + gn.join(',') + ')');
-    ok(gs.every((x) => x.querySelector('.jv4-g-ic svg') && !x.querySelector('.ins-aro')) && !gn.includes('Gema'), 'los grupos son tarjetas con icono de grupo (no círculos), y la conversación a solas con Gema no es un grupo');
+    ok(gs.every((x) => x.querySelector('.jv4-g-ic svg') && !x.querySelector('.ins-aro') && /Grupo/.test(x.querySelector('.sr-only').textContent)) && !gn.includes('Gema'), 'los grupos son tarjetas con icono de grupo (no círculos) y el lector de pantalla dice «Grupo»; la conversación a solas con Gema no es un grupo');
     const piso = gs[0];
     ok(/3 personas/.test(piso.textContent) && /en paz/.test(piso.textContent) && piso.classList.contains('paz'), 'Piso: «3 personas» y «en paz» (pagué 30 y debo 20 a Carlos, me deben 20)');
     const cenas = gs[2];
@@ -46,7 +46,7 @@ const dinero = (v) => Number(String(v).replace(/[^\d,-]/g, '').replace(',', '.')
     const vt = doc.querySelector('.jv4-grupos-sec .jv4-todos');
     ok(vt && /Ver todos \(5\)/.test(vt.textContent), 'con 5 grupos: «Ver todos (5)»');
     vt.click(); await sleep(20);
-    const gn2 = [...doc.querySelectorAll('.jv4-grupos .jv4-g')].map((x) => x.querySelector('.jv4-g-n').textContent);
+    const gn2 = [...doc.querySelectorAll('.jv4-grupos .jv4-g')].map((x) => x.querySelector('.jv4-g-n').textContent.replace('Grupo: ', ''));
     ok(gn2.length === 5 && gn2[4] === 'Sin estrenar' && /sin gastos/.test(doc.querySelectorAll('.jv4-grupos .jv4-g')[4].textContent), 'al tocarlo salen los 5; el que no tiene gastos, al final y «sin gastos»');
     ok(/Ver menos/.test(doc.querySelector('.jv4-grupos-sec .jv4-todos').textContent), 'y el botón pasa a «Ver menos»');
     const ps = [...doc.querySelectorAll('.jv4-personas .jv-c')], pn = ps.map((x) => x.querySelector('.ins-l1').textContent);
