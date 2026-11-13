@@ -4366,7 +4366,7 @@ function tuRamas() {
   return [
     [{ id: 'herramientas', ic: 'sliders', c: 'h', d: herrResumen(), k: 'herramientas elegir quitar apagar encender usar' }],
     [{ id: 'dinero', ic: 'wallet', c: 'd', d: 'Cuentas, categorías, cobros y pagos fijos, tu mes', bd: ['cuentas', 'patrimonio', 'categorias', 'reglas', 'cobros', 'tumes', 'informes'] },
-      juntosOn() && gruposDisponible() ? { id: 'juntos', n: 'Juntos', ic: 'users', c: 'j', d: 'Grupos y personas' + (nGr ? ' · ' + nGr + (nGr === 1 ? ' grupo' : ' grupos') : ''), a: act('openGrupos'), bd: ['grupos'], k: 'compartir invitar whatsapp grupos personas' } : null,
+      juntosOn() ? { id: 'juntos', n: 'Juntos', ic: 'users', c: 'j', d: nGr ? nGr + (nGr === 1 ? ' grupo' : ' grupos') : 'Grupos y personas', a: act('openGrupos'), bd: ['grupos'], k: 'compartir invitar whatsapp grupos personas' } : null,
       agendaOn() ? { id: 'agenda', ic: 'calendar', c: 'a', d: agcOn() ? 'Categorías de tareas y compartir tu agenda' : 'Categorías de tareas', bd: ['agendaComp'] } : null,
       notifNat() ? { id: 'avisos', n: 'Avisos', ic: 'bell', c: 'v', d: avNat() && herrOn('avisosBanco') ? 'Del banco y recordatorios' : 'Recordatorios', a: act('avAbrir'), k: 'avisos notificaciones banco recordatorios apuntar solo automatico' } : null].filter(Boolean),
     [{ id: 'seguridad', ic: 'shield', c: 's', d: (window.__nativo && window.__nativo.huella ? 'Huella, ' : '') + 'ocultar cifras, privacidad, borrar cuenta' },
@@ -10928,7 +10928,7 @@ function avisosTrasCargar() {
     avisosRecoger();
     impEntranteIni(); // C4: extracto compartido con PalomApp desde otra app
     // 13/11: Android 13+ no deja mandar avisos hasta que se dan permisos; se pide UNA vez al entrar (antes solo al tocar un interruptor de Avisos)
-    const nn = notifNat(); if (nn && S.user && !lsGet('notifPedido:' + miUid())) nn.permiso().then((r) => { if (String(r).indexOf('prompt') === 0) { lsSet('notifPedido:' + miUid(), '1'); return nn.pedir().then(() => programarRecordatoriosPronto()); } }).catch(() => {});
+    pedirNotifUnaVez(); // 13/11: no en mitad de la bienvenida (la nueva lo explica en su paso)
     if (n) { // al tocar «Apuntado en PalomApp», a Inicio
       n.abiertoDesdeAviso().then((si) => { if (si) window.__irA('inicio'); });
       if (!S._avEsc) { S._avEsc = true; n.alAbrirDesdeAviso(() => { avisosRecoger(); window.__irA('inicio'); }); }
@@ -10936,6 +10936,13 @@ function avisosTrasCargar() {
   }
   programarRecordatoriosPronto();
   widgetsTrasCargar(); // docs/40 C5
+}
+// 13/11: Android 13+ no deja mandar avisos hasta que se dan permisos; se pide UNA vez al entrar, pero nunca en mitad de la bienvenida
+function pedirNotifUnaVez(ya) {
+  const nn = notifNat(); if (!nn || !S.user || lsGet('notifPedido:' + miUid())) return;
+  if (!ya) { setTimeout(() => pedirNotifUnaVez(true), 1500); return; } // da tiempo a saber si toca la bienvenida
+  if (S.onboarding || S._onboardPending) return; // al terminarla se vuelve a mirar (doObFinish)
+  nn.permiso().then((r) => { if (String(r).indexOf('prompt') === 0) { lsSet('notifPedido:' + miUid(), '1'); return nn.pedir().then(() => programarRecordatoriosPronto()); } }).catch(() => {});
 }
 // La hoja «Avisos» (Tú)
 async function avisosAbrir() {
@@ -11402,13 +11409,22 @@ function freshOnboardingState(manual) {
     manual: !!manual, step: 0, nombre: cfg().nombre || '', cuentaNombre: 'Banco', saldo: '', extra: [],
     nomina: { on: false, importe: '', dia: '' }, fijos: [], otrosAbiertos: false, mesModo: mesCfg().modo === 'cobro' ? 'cobro' : 'natural',
     invite: null, grupoId: null, grupoNombre: '', saving: false,
+    herr: Object.fromEntries(HERRAMIENTAS.map((d) => [d.k, herrOn(d.k)])), // 13/11: «¿Qué quieres usar?» (se guarda al pasar de paso)
   };
 }
 // los pasos que tocan: con invitación válida, 3; si no, 4
 // docs/38 §6: la bienvenida de un usuario nuevo son 2 pantallas (Hola y ¿Por dónde empiezas?) o 1 con invitación. Repetida desde Tú, la de 4 pasos de siempre
 function bienvNueva(ob) { return !ob.manual && versionDe('bienvenida') === 'nueva'; }
+/* 13/11 · Bienvenida por pasos: Hola → ¿Qué quieres usar? → (solo en la app de Android) avisos de PalomApp y avisos del banco →
+   Tu banco → Listo. Con invitación: la invitación primero, sin el banco (como en docs/38). Todo se puede saltar. */
+function bienvPasos(ob) { return !ob.manual && versionDe('bienvenida') === 'pasos'; }
+function obHerrOn(ob, k) { const d = herrDef(k); return !!d && (d.base || (ob.herr || {})[k] !== false); }
 function obPasos(ob) {
   const inv = ob.invite && !ob.invite.aplazada;
+  if (bienvPasos(ob)) {
+    const perm = (notifNat() ? ['notif'] : []).concat(avNat() && obHerrOn(ob, 'avisosBanco') ? ['avbanco'] : []);
+    return (inv ? ['invite', 'herr'] : ['hola', 'herr']).concat(perm, inv ? [] : ['banco'], ['listo']);
+  }
   if (bienvNueva(ob)) return inv ? ['invite'] : ['hola', 'empieza'];
   return inv ? ['invite', 'banco', 'listo'] : ['hola', 'banco', 'mes', 'listo'];
 }
@@ -11490,7 +11506,12 @@ function obGuardarMes(ob) {
   if (Object.keys(patch).length) saveConfig(patch);
   ob.mesGuardado = { nomina: ob.nomina.on ? obDia(ob.nomina.dia) : null, fijos: ob.fijos.filter((f) => (f.nombre || '').trim()).length };
 }
-function obGuardarPaso(ob) { const p = obPasos(ob)[ob.step]; if (p === 'hola') obGuardarHola(ob); else if (p === 'banco') obGuardarBanco(ob); else if (p === 'mes') obGuardarMes(ob); }
+// «¿Qué quieres usar?»: solo se guarda lo que cambia (si lo deja todo encendido, no se escribe nada: sin clave = todo)
+function obGuardarHerr(ob) {
+  const c = {}; HERRAMIENTAS.forEach((d) => { if (d.base) return; const on = obHerrOn(ob, d.k); if (on !== herrOn(d.k)) c[d.k] = on; });
+  if (Object.keys(c).length) herrPoner(c);
+}
+function obGuardarPaso(ob) { const p = obPasos(ob)[ob.step]; if (p === 'hola') obGuardarHola(ob); else if (p === 'herr') obGuardarHerr(ob); else if (p === 'banco') obGuardarBanco(ob); else if (p === 'mes') obGuardarMes(ob); }
 async function doObFinish(despues) {
   const ob = S.onboarding; if (!ob || ob.saving) return;
   ob.saving = true;
@@ -11501,7 +11522,7 @@ async function doObFinish(despues) {
     const vistos = Object.assign({}, cfg().badgesVistos || {}); Object.keys(BADGES).forEach((k) => { if (!vistos[k]) vistos[k] = todayISO(); });
     // por la misma cola que el resto de guardados: así no se pisan (en el servidor, guardar es leer y luego escribir)
     const alta = { novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '', badgesVistos: vistos, compararVersiones: false, altaApp: todayISO() };
-    if (bienvNueva(ob)) Object.assign(alta, { nivel: 'basico', nivelCambio: { d: todayISO(), por: 'alta' } }); // docs/38 §6.1: las cuentas nuevas empiezan en «Lo básico» (en el mismo guardado)
+    if (bienvNueva(ob) || bienvPasos(ob)) Object.assign(alta, { nivel: 'basico', nivelCambio: { d: todayISO(), por: 'alta' } }); // docs/38 §6.1: las cuentas nuevas empiezan en «Lo básico» (en el mismo guardado)
     await saveConfig(alta);
     ok = await write(() => S.db.doc('config/meta').update({ onboarded: true, onboardedAt: new Date().toISOString() }));
   }
@@ -11510,6 +11531,7 @@ async function doObFinish(despues) {
   if (ob.invite && ob.invite.aplazada && lsGet('unirse')) lsSet('invAplazada', lsGet('unirse')); // la invitación queda en Inicio, sin saltar sola
   const gid = ob.grupoId;
   S.onboarding = null; S._novRevisado = true; S.tab = 'inicio'; S._entrando = true;
+  if (!ob.manual && notifNat() && S.user) { if (bienvPasos(ob)) lsSet('notifPedido:' + miUid(), '1'); else setTimeout(() => pedirNotifUnaVez(true), 600); } // 13/11: en la nueva ya se explicó y se pidió en su paso
   renderShell(); render(); window.scrollTo(0, 0);
   if (despues === 'grupo' && gid) { S._introJuntos = cfg().introJuntosVisto ? null : gid; S.tab = 'juntos'; render(); cargarGrupos().then(() => abrirGrupo(gid)); }
   else if (despues === 'gasto' && !lsGet('soy')) setTimeout(() => H.crearIr(['gasto']), 250); // con un sitio guardado, primero sale eso
@@ -11528,7 +11550,7 @@ function obBarra(ob) {
 }
 function obFila(icono, cls, t, d) { return '<div class="ob2-fila"><span class="ob2-fic ' + cls + '">' + ic(icono) + '</span><span><b>' + t + '</b><span>' + d + '</span></span></div>'; }
 function obHolaHtml(ob) {
-  if (bienvNueva(ob)) return marcaHtml(72, 'marca-ob') + '<h1 class="ob2-h">¡Hola!</h1><p class="ob2-p">Esto es PalomApp: tus gastos y lo que compartes, en un solo sitio.</p>' +
+  if (bienvNueva(ob) || bienvPasos(ob)) return marcaHtml(72, 'marca-ob') + '<h1 class="ob2-h">¡Hola!</h1><p class="ob2-p">Esto es PalomApp: tus gastos y lo que compartes, en un solo sitio.</p>' +
     '<div class="ob2-filas">' + obFila('plus', 'a', 'Apunta un gasto en dos toques', ticketsDisponible() ? 'o hazle una foto al ticket' : 'o trae el extracto de tu banco') +
     obFila('users', 'b', 'Comparte gastos en Juntos', 'aunque los demás no tengan la app') +
     obFila('sparkle', 'v', 'Y mucho más, cuando quieras', 'cuentas, metas, presupuestos, agenda… te lo iremos enseñando') + '</div>' +
@@ -11548,6 +11570,38 @@ function obEmpiezaHtml() {
     (compartidosDisponible() ? op('compartido', 'users', 'b', 'Compartir gastos con alguien', 'Una cena, la casa, un viaje') : '') +
     op('banco', 'bank', 'r', 'Poner mi banco al día', 'Copia el saldo de la app de tu banco') + '</div>' +
     '<div class="ob2-ayuda">Lo demás lo encuentras en <b>Descubre PalomApp</b>, en Inicio y en Tú.</div>';
+}
+// 13/11 · ¿Qué quieres usar? Tarjetas que se marcan y desmarcan (la base siempre); se cambia luego en Tú → Mis herramientas
+function obHerrHtml(ob) {
+  const t = (d) => { const on = obHerrOn(ob, d.k);
+    return '<button type="button" class="ob2-herr tappable' + (on ? ' on' : '') + (d.base ? ' base' : '') + '" role="checkbox" aria-checked="' + on + '"' + (d.base ? ' aria-disabled="true"' : ' ' + act('obHerr', d.k)) + '>' +
+      '<span class="ob2-herr-ic">' + ic(d.ic) + '</span><span class="ob2-herr-t"><b>' + d.n + '</b><span>' + (d.base ? 'Siempre' : d.f) + '</span></span><span class="ob2-herr-ck">' + (on ? ic('check') : '') + '</span></button>'; };
+  return '<h1 class="ob2-h">¿Qué quieres usar?</h1><p class="ob2-p">Quita lo que no te interese y la app será más sencilla. No se pierde nada: lo cambias cuando quieras en Tú → Mis herramientas.</p>' +
+    '<div class="ob2-herrs">' + herrLista().map(t).join('') + '</div>';
+}
+// 13/11 · Permiso 1: los avisos de la propia app, con lo que de verdad avisa (recordatoriosLista / avisosAlMomento)
+function obNotifHtml(ob) {
+  const ok = ob.notif === 'granted', no = ob.notif === 'denied';
+  const filas = [['alert', 'r', 'Un pago fijo de mañana sin saldo', 'Si en su cuenta no hay bastante, el día antes']].concat([['repeat', 'a', 'Tus cobros y pagos fijos', 'El día antes, a las 9:00']],
+    obHerrOn(ob, 'presupuestos') ? [['checkCircle', 'v', 'Cuando llegas al 80 % de un presupuesto', 'y si te pasas']] : [], obHerrOn(ob, 'metas') ? [['target', 'b', 'Cuando consigues una meta', '']] : [],
+    obHerrOn(ob, 'agenda') ? [['calendar', 'b', 'Tus tareas del día', 'Por la mañana, todas juntas']] : []);
+  return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te avisamos de lo importante</h1><p class="ob2-p">PalomApp te avisa solo de lo que te sirve:</p>' +
+    '<div class="ob2-filas">' + filas.map(([i, c, t, d]) => obFila(i, c, t, d)).join('') + '</div>' +
+    '<div class="ob2-nota">' + ic('shield') + '<span>Sin publicidad. Como mucho ' + AVISOS_MAX_DIA + ' al día, nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.</span></div>' +
+    (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">Android no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '');
+}
+// 13/11 · Permiso 2 (solo Android): leer los avisos del banco. Qué ganas y qué pasa con tu privacidad
+function obAvBancoHtml(ob) {
+  const e = ob.avEst || {}, listo = !!(e.activo && e.permiso);
+  return '<span class="ob2-big-ic">' + ic('fileIn') + '</span><h1 class="ob2-h">Que se apunten solos tus pagos</h1>' +
+    '<div class="ob2-sec">Qué ganas</div><div class="ob2-filas">' + obFila('checkCircle', 'a', 'Tus pagos con tarjeta y tus bizums, apuntados solos', 'al momento, aunque PalomApp esté cerrada') +
+    obFila('repeat', 'b', '«Deshacer» en el propio aviso', 'y en Inicio los borras con un toque si alguno no es tuyo') + '</div>' +
+    '<div class="ob2-sec">Tu privacidad</div><div class="ob2-filas">' + obFila('shield', 'v', 'El texto del aviso no sale de tu móvil', 'a tu cuenta solo pasa el movimiento: importe, comercio y fecha') +
+    obFila('bank', 'r', 'Solo tus apps de banco y de pagos', 'nunca mensajes, WhatsApp, códigos ni claves') + '</div>' +
+    (listo ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Activado: ya se apuntan solos</span></div>'
+      : '<p class="ob2-ayuda">Al tocar «Activar» se abren los ajustes del móvil: busca PalomApp en «Acceso a notificaciones» y actívalo.</p>' +
+        (ob.avPedido ? '<div class="ob2-nota">' + ic('alert') + '<span><b>¿Sale en gris o pone «Ajuste restringido»?</b> Pasa si instalaste PalomApp desde un archivo y no desde Google Play: abre los ajustes de PalomApp, toca ⋮ arriba a la derecha y elige «Permitir ajustes restringidos». Luego vuelve a tocar «Activar».' +
+          ' <button type="button" class="link" ' + act('avAbrirApp', 'app') + '>Abrir ajustes de PalomApp</button></span></div>' : ''));
 }
 function obBancoHtml(ob) {
   const ya = cuentasCfg(), unido = ob.grupoId ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Ya estás en <b>' + escapeHtml(ob.grupoNombre || 'el grupo') + '</b></span></div>' : '';
@@ -11592,7 +11646,7 @@ function obListoHtml(ob) {
   const tab = (i, t, d, c) => '<div class="ob2-tab' + (c ? ' c' : '') + '"><span class="ob2-tab-i">' + ic(i) + '</span><b>' + t + '</b><span>' + d + '</span></div>';
   return '<span class="ob2-big-ic ok">' + ic('checkCircle') + '</span><h1 class="ob2-h">¡Todo listo' + (n ? ', ' + escapeHtml(n.split(' ')[0]) : '') + '!</h1>' +
     (chips.length ? '<div class="ob2-res">' + chips.map(([i, t]) => '<span>' + ic(i) + escapeHtml(t) + '</span>').join('') + '</div>' : '<p class="ob2-p">Puedes poner tu banco y lo de cada mes cuando quieras desde Dinero y Tú.</p>') +
-    '<div class="ob2-sec">Así se mueve uno por la app</div><div class="ob2-barra">' + tab('home', 'Inicio', 'cómo vas') + tab('list', 'Movimientos', 'todo lo apuntado') + tab('plus', 'Apuntar', 'gasto, ticket…', true) + tab('users', 'Juntos', 'con otros') + tab('wallet', 'Dinero', 'cuentas y metas') + '</div>' +
+    '<div class="ob2-sec">Así se mueve uno por la app</div><div class="ob2-barra">' + tab('home', 'Inicio', 'cómo vas') + tab('list', 'Movimientos', 'todo lo apuntado') + tab('plus', 'Apuntar', 'gasto, ticket…', true) + (juntosOn() ? tab('users', 'Juntos', 'con otros') : '') + tab('wallet', 'Dinero', 'cuentas y metas') + '</div>' +
     '<div class="ob2-ayuda">Tus ajustes, categorías y esta bienvenida están en <b>Tú</b>: tu inicial, arriba a la derecha.</div>';
 }
 function obInviteHtml(ob) {
@@ -11614,13 +11668,15 @@ function obBoton(ob) {
   if (p === 'invite') { const I = ob.invite; if (I.cargando) return ''; return I.info && I.info.valida ? '<button class="btn accent block" ' + act('obUnirse') + '>' + (I.info.tipo === 'directo' ? 'Aceptar' : 'Unirme al grupo') + '</button>' : '<button class="btn accent block" ' + act('obInvAplazar', I.info && I.info.motivo === 'red' ? '' : 'mal') + '>Seguir sin unirme</button>'; }
   if (p === 'hola') return '<button class="btn accent block" ' + act('obNext') + '>' + (ob.manual ? 'Siguiente' : 'Empezar') + '</button>';
   if (p === 'empieza') return '<button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>';
+  if (p === 'notif' && ob.notif !== 'granted' && ob.notif !== 'denied') return '<div class="ob2-dos"><button class="btn ghost" ' + act('obNext', 'no') + '>Ahora no</button><button class="btn accent block" ' + act('obNotif') + '>' + ic('bell') + ' Permitir avisos</button></div>';
+  if (p === 'avbanco' && !(ob.avEst && ob.avEst.activo && ob.avEst.permiso)) return '<div class="ob2-dos"><button class="btn ghost" ' + act('obNext', 'no') + '>Ahora no</button><button class="btn accent block" ' + act('obAvBanco') + '>Activar</button></div>';
   if (p === 'listo') return ob.grupoId ? '<button class="btn accent block" ' + act('obFinish', 'grupo') + '>Ver ' + escapeHtml(ob.grupoNombre || 'el grupo') + '</button><button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>'
     : (ob.manual ? '<button class="btn accent block" ' + act('obFinish', '') + '>Volver a la app</button>' : '<button class="btn accent block" ' + act('obFinish', 'gasto') + '>' + ic('plus') + ' Apuntar mi primer gasto</button><button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>');
   return '<div class="ob2-dos"><button class="btn ghost" ' + act('obNext', 'no') + '>Ahora no</button><button class="btn accent block" ' + act('obNext') + '>Siguiente</button></div>';
 }
 function renderOnboarding() {
   const ob = S.onboarding, p = obPasos(ob)[ob.step];
-  const body = p === 'invite' ? obInviteHtml(ob) : p === 'hola' ? obHolaHtml(ob) : p === 'empieza' ? obEmpiezaHtml() : p === 'banco' ? obBancoHtml(ob) : p === 'mes' ? obMesHtml(ob) : obListoHtml(ob);
+  const body = p === 'invite' ? obInviteHtml(ob) : p === 'hola' ? obHolaHtml(ob) : p === 'empieza' ? obEmpiezaHtml() : p === 'herr' ? obHerrHtml(ob) : p === 'notif' ? obNotifHtml(ob) : p === 'avbanco' ? obAvBancoHtml(ob) : p === 'banco' ? obBancoHtml(ob) : p === 'mes' ? obMesHtml(ob) : obListoHtml(ob);
   $('#app').innerHTML = '<div class="ob2"><div class="ob2-in">' + obBarra(ob) + '<div class="ob2-body ob2-p-' + p + '">' + body + '</div><div class="ob2-pie">' + obBoton(ob) + '</div></div></div>';
   window.scrollTo(0, 0);
   if (p === 'listo' && !ob.confeti && !ob.manual) { ob.confeti = true; setTimeout(() => { confeti(30, null); sentir('ok'); }, 250); }
@@ -11889,7 +11945,8 @@ function atrasAndroid() {
   return false;
 }
 window.__atras = atrasAndroid;
-window.__avisosVolver = () => { avisosRecoger(); if (FORM && FORM.avisos && $('#sheetBackdrop')) avisosAbrir(); }; // al volver de los ajustes de Android o de segundo plano
+window.__avisosVolver = () => { avisosRecoger(); if (FORM && FORM.avisos && $('#sheetBackdrop')) avisosAbrir();
+  const ob = S.onboarding; if (ob && obPasos(ob)[ob.step] === 'avbanco' && avNat()) avNat().estado().then((e) => { if (S.onboarding === ob) { ob.avEst = e; render(); } }).catch(() => {}); }; // 13/11: al volver de los ajustes de Android en la bienvenida // al volver de los ajustes de Android o de segundo plano
 window.__irA = (tab) => { try { closeSheet(); } catch (e) { /* */ } H.goTab([tab]); };
 function closeSheet() {
   document.body.classList.remove('crear-abierto');
@@ -13201,6 +13258,7 @@ const H = {
     FORM.uniendo = false;
     if (!id) return;
     lsSet('unirse', ''); S._uniendo = false;
+    if (!juntosOn()) herrPoner({ juntos: true }); // 13/11: si te unes a un grupo, Juntos vuelve a verse (lo tenías apagado en «Mis herramientas»)
     render(); abrirGrupo(id);
   },
   reclamarHistorial: ([k]) => { if (!FORM || FORM.kind !== 'reclamar') return; FORM.historial = k === '1'; updateSheet(reclamarHtml()); },
@@ -13408,6 +13466,21 @@ const H = {
   },
   obInvAplazar: ([mal]) => { const ob = S.onboarding; if (!ob || !ob.invite) return; ob.invite.aplazada = true; if (mal === 'mal') lsSet('unirse', ''); ob.step = 0; render(); },
   obFinish: ([despues]) => doObFinish(despues || ''),
+  obHerr: ([k]) => { const ob = S.onboarding, d = herrDef(k); if (!ob || !d || d.base) return; ob.herr[k] = !obHerrOn(ob, k); sentir('tic'); render(); },
+  obNotif: async () => {
+    const ob = S.onboarding, nn = notifNat(); if (!ob || !nn) return;
+    if (S.user) lsSet('notifPedido:' + miUid(), '1'); // así no se vuelve a pedir al entrar (avisosTrasCargar)
+    const r = await nn.pedir().catch(() => 'denied'); if (S.onboarding !== ob) return;
+    ob.notif = r === 'granted' ? 'granted' : 'denied'; if (r === 'granted') { sentir('ok'); programarRecordatoriosPronto(); } render();
+  },
+  obAvBanco: async () => {
+    const ob = S.onboarding, n = avNat(); if (!ob || !n) return;
+    const e = await n.estado().catch(() => ({})) || {}, bancos = (e.bancos && e.bancos.length) ? e.bancos : PAQ_BANCOS.map((x) => x[1]);
+    await n.configurar({ activo: true, bancos }).catch(() => {});
+    ob.avPedido = true; ob.avEst = await n.estado().catch(() => null);
+    if (!(ob.avEst && ob.avEst.permiso)) await n.abrirAjustes().catch(() => {});
+    if (S.onboarding === ob) render();
+  },
   invVer: () => { if (S._uniendo) return; lsSet('invAplazada', ''); S._invAplazada = false; maybeUnirse(); },
   invDescartar: () => { lsSet('unirse', ''); lsSet('invAplazada', ''); S._invInfo = null; render(); toast('Invitación descartada. Si cambias de idea, vuelve a abrir el enlace.'); },
   invUnidoVisto: () => { saveConfig({ unidoA: Object.assign({}, cfg().unidoA || {}, { visto: true }) }); render(); },
@@ -13691,6 +13764,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { herrOn, herrLista, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { herrOn, herrLista, obPasos, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();

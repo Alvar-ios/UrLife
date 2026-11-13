@@ -132,6 +132,7 @@ const sinSvg = (h) => String(h || '').replace(/<svg[\s\S]*?<\/svg>/g, '');
   ok(/Descubre PalomApp/.test(hoja(e)) && e.doc.querySelectorAll('#sheetHost .desc-fila').length === 12, 'T7 · «Descubre para qué sirve cada una» abre el catálogo');
 
   /* T8 · «Lo básico», Tú */
+  A.VERSIONES.tu.cerrada = 'pruebas'; // 13/11: T8 mira Tú de 22/10 (version tu:1); sin esto, con «Antes» apagado (cuentas nuevas) se vería Tú por temas (test169)
   A.H.closeSheet([]); await sleep(260); A.H.goTab(['tu']); await sleep(20);
   const enMas = (k) => !!e.doc.querySelector('#content .tu-mas [data-click^="' + k + '"]');
   ok(['openReglas', 'infAbrir', 'tuMesAbrir', 'openPapelera', 'exportCsv', 'exportBackup', 'verNovedades'].every(enMas), 'T8 · Reglas, Informes, Tu mes, Papelera, Excel, Copia y «Qué hay de nuevo» están en «Más ajustes»');

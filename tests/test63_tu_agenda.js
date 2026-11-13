@@ -35,7 +35,7 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   const m = A.escrMensaje('gusta', 'Me encanta');
   ok(m.asunto === 'PalomApp · Me gusta' && /Me encanta/.test(m.cuerpo) && !/@/.test(m.cuerpo), 'Escríbenos: asunto y mensaje sin datos personales');
   H.closeSheet([]); await sleep(300);
-  ok(!e.doc.querySelector('.comparar-fab'), 'Tú: el dueño ya eligió la versión nueva (22/10): sin botón «Antes»');
+  ok(!!e.doc.querySelector('.comparar-fab'), 'Tú: desde el 13/11 (Tú por temas) vuelve el botón «Antes» para comparar');
   // buscador encuentra lo plegado
   const bus = e.doc.querySelector('#tuBuscar'); bus.value = 'moneda'; H.tuFiltrar([], bus);
   ok(e.doc.querySelector('.tu-mas').style.display === '' && [...e.doc.querySelectorAll('.tu-mas .menu-item')].some((b) => b.style.display === '' && /Moneda/.test(b.textContent)), 'buscador: «moneda» encuentra Moneda dentro de «Más ajustes»');

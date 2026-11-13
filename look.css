@@ -2602,3 +2602,19 @@ html[data-look="nuevo"] .herr-siempre { font-size: 12.5px; color: var(--text-fai
 html[data-look="nuevo"] .tabbar.tres .tab-crear { flex: 0 0 auto; }
 html[data-look="nuevo"] .dm3-tabs.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 html[data-look="nuevo"] .dm3-tabs.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* 13/11 · Bienvenida por pasos: «¿Qué quieres usar?» en tarjetas que se marcan */
+html[data-look="nuevo"] .ob2-herrs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0 8px; }
+html[data-look="nuevo"] .ob2-herr { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 104px; padding: 12px; border: 1.5px solid var(--line); border-radius: 16px; background: var(--paper-raised); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color .2s ease, background-color .2s ease; }
+html[data-look="nuevo"] .ob2-herr.on { border-color: var(--accent); background: var(--accent-soft); }
+html[data-look="nuevo"] .ob2-herr.base { cursor: default; }
+html[data-look="nuevo"] .ob2-herr-ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--accent); background: var(--paper-raised); }
+html[data-look="nuevo"] .ob2-herr:not(.on) .ob2-herr-ic { color: var(--text-faint); background: var(--paper-sunken); }
+html[data-look="nuevo"] .ob2-herr-ic .i { width: 18px; height: 18px; }
+html[data-look="nuevo"] .ob2-herr-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding-right: 18px; }
+html[data-look="nuevo"] .ob2-herr-t b { font-size: 14px; line-height: 1.25; }
+html[data-look="nuevo"] .ob2-herr-t span { font-size: 12px; color: var(--text-faint); line-height: 1.3; }
+html[data-look="nuevo"] .ob2-herr-ck { position: absolute; top: 10px; right: 10px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid var(--line); color: var(--accent-ink); }
+html[data-look="nuevo"] .ob2-herr.on .ob2-herr-ck { background: var(--accent); border-color: var(--accent); }
+html[data-look="nuevo"] .ob2-herr-ck .i { width: 14px; height: 14px; }
+html[data-look="nuevo"] .ob2-p-avbanco .ob2-filas, html[data-look="nuevo"] .ob2-p-notif .ob2-filas { gap: 12px; }
+html[data-look="nuevo"] .ob2-nota .link { display: inline; padding: 0; }

@@ -88,7 +88,7 @@ function preparar(w, opts, srv) {
 async function abrir(opts) {
   opts = Object.assign({ yo: 'u-yo' }, opts || {});
   const srv = { llamadas: [], escrituras: [], fetch: [], abiertos: [], funciones: Object.assign({}, opts.funciones || {}), rpc: Object.assign({}, opts.rpc || {}), grupos: opts.grupos || [], miembros: opts.miembros || [], sinCuenta: opts.sinCuenta || [], comp: opts.comp || [], objetivos: [], carpetas: [], agenda: opts.agenda || [], aportes: [], carburantes: opts.carburantes || [] };
-  const e = makeEnv({ idioma: opts.idioma, cfg: opts.cfg || {}, movs: opts.movs || [], session: { user: { id: opts.yo, email: 'prueba@example.invalid' } }, version: Object.assign({ tu: 1, agenda: 0, crear: 0, importe: 0, bienvenida: 1 }, opts.version || {}), url: opts.url,
+  const e = makeEnv({ idioma: opts.idioma, cfg: opts.cfg || {}, movs: opts.movs || [], tareas: opts.tareas, session: { user: { id: opts.yo, email: 'prueba@example.invalid' } }, version: Object.assign({ tu: 1, agenda: 0, crear: 0, importe: 0, bienvenida: 1 }, opts.version || {}), url: opts.url,
     pre: (w) => { preparar(w, opts, srv); if (opts.juntos !== false) capaJuntos(w, srv, opts.yo); } });
   e.srv = srv; e.A = e.w.__APP__; e.S = e.A.S;
   await sleep(opts.espera || 200);

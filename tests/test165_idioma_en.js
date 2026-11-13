@@ -69,6 +69,9 @@ const fixture = (idioma) => ({ idioma,
   paso('Dinero'); await ir('dinero'); revisa(e, 'Dinero', content());
   paso('Agenda'); await ir('agenda'); revisa(e, 'Agenda', content());
   paso('Tú'); await ir('tu'); revisa(e, 'Tú', content());
+  A.S.verAnterior = Object.assign({}, A.S.verAnterior, { tu: 0 }); await ir('tu');
+  ok(!!e.doc.querySelector('#content .tu3-cat'), 'Tú por temas en inglés'); revisa(e, 'Tú por temas', content());
+  for (const r of ['herramientas', 'dinero', 'agenda', 'seguridad', 'apariencia', 'datos', 'ayuda']) { H.tuIr([r]); await sleep(30); revisa(e, 'Tú → ' + r, content()); } H.tuIr(['']); await sleep(20); // 13/11: Tú por temas
   ok(!!e.doc.querySelector('[data-click="setIdioma|en"].active'), 'en Tú está la fila «Idioma / Language» con English marcado');
   paso('Hoja del +'); A.openCrear(); await sleep(80); revisa(e, 'Hoja del +', sheet());
   H.crearIr(['gasto']); await sleep(120); revisa(e, 'Formulario de gasto', sheet()); H.closeSheet(); await sleep(300);

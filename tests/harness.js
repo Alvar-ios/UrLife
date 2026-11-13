@@ -5,6 +5,7 @@ function makeEnv(seed){ // seed: {config:{app,meta}, movs:[]}
   const store={movimientos:{},tareas:{},golf:{},cfg:Object.assign({},seed.cfg||{})};
   if(store.cfg.app&&!seed.novedades&&!('novedadesVistas' in store.cfg.app))store.cfg.app=Object.assign({novedadesVistas:'9999-12-31'},store.cfg.app);
   (seed.movs||[]).forEach(m=>store.movimientos[m.id]=m);
+  (seed.tareas||[]).forEach(t=>store.tareas[t.id]=t); // 13/11: tareas de ejemplo
   const subs=[];const notify=()=>subs.forEach(f=>f());
   const mkDoc=(k)=>({
     get:async()=>({exists:!!store.cfg[k],data:()=>store.cfg[k]}),

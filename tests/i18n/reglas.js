@@ -1,6 +1,8 @@
 [
   // Textos con nombres (personas, cuentas, metas, categorías): $1, $2… se traducen solo si son textos conocidos
   [/^Mañana se paga (.+)$/, 'Due tomorrow: $1'],
+  [/^(.+): encendida$/, '$1: on'], // 13/11 · Mis herramientas
+  [/^(.+): apagada$/, '$1: off'],
   [/^Mañana: pago de (.+)$/, 'Tomorrow: payment of $1'],
   [/^Mañana: cobro de (.+)$/, 'Tomorrow: income from $1'],
   [/^Mañana: (\d+) pagos fijos$/, 'Tomorrow: $1 fixed payments'],
