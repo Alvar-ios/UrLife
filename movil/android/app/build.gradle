@@ -29,6 +29,7 @@ android {
             }
         }
     }
+    buildFeatures { buildConfig true } // 13/11: BuildConfig.DEBUG para «Comprobar» en la versión de prueba
     buildTypes {
         // 11/11: la versión de prueba (APK) se instala al lado de la de Google Play, sin pisarla
         debug {

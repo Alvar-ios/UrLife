@@ -52,6 +52,21 @@ public class AvisosBancoService extends NotificationListenerService {
             && !pkg.matches("(?i).*(whatsapp|telegram|messag|mms|sms|gmail|mail|facebook|instagram|twitter|tiktok|snapchat|discord|signal|slack|teams|outlook).*");
     }
 
+    static void apuntarVisto(Context ctx, SharedPreferences p, String pkg, String app, boolean leido, boolean marcado, String muestra) throws Exception {
+        long ahora = System.currentTimeMillis();
+        JSONArray v = new JSONArray(p.getString("vistos", "[]")), nv = new JSONArray();
+        nv.put(new JSONObject().put("pkg", pkg).put("app", app).put("ts", ahora).put("leido", leido).put("marcado", marcado));
+        for (int i = 0; i < v.length() && nv.length() < 15; i++) nv.put(v.getJSONObject(i));
+        SharedPreferences.Editor ed = p.edit().putString("vistos", nv.toString());
+        if (muestra != null) {
+            JSONArray mu = new JSONArray(p.getString("muestras", "[]")), nm = new JSONArray();
+            nm.put(new JSONObject().put("app", app).put("ts", ahora).put("texto", muestra.length() > 300 ? muestra.substring(0, 300) : muestra));
+            for (int i = 0; i < mu.length() && nm.length() < 8; i++) nm.put(mu.getJSONObject(i));
+            ed.putString("muestras", nm.toString());
+        }
+        ed.apply();
+    }
+
     static void procesar(Context ctx, StatusBarNotification sbn) throws Exception {
         if (sbn == null || sbn.getNotification() == null) return;
         String pkg = sbn.getPackageName();
@@ -68,10 +83,13 @@ public class AvisosBancoService extends NotificationListenerService {
         CharSequence big = ex.getCharSequence(Notification.EXTRA_BIG_TEXT);
         String texto = txt(big != null ? big : ex.getCharSequence(Notification.EXTRA_TEXT));
         LectorAvisos.Movimiento m = LectorAvisos.leer(pkg, titulo, texto);
-        titulo = null; texto = null; // el texto no se guarda en ningún sitio
+        Set<String> bancos = p.getStringSet("bancos", new HashSet<>());
+        // 13/11 · «Comprobar» (Tú → Avisos): qué apps de banco han avisado y si se entendió el aviso (sin el texto).
+        // Solo en «PalomApp prueba» se guardan además los textos NO entendidos (los 8 últimos, en este móvil) para mejorar el lector.
+        if (bancos.contains(pkg) || pareceBanco(pkg)) apuntarVisto(ctx, p, pkg, etiqueta(ctx, ex, pkg), m != null, bancos.contains(pkg), BuildConfig.DEBUG && m == null ? (titulo + " · " + texto) : null);
+        titulo = null; texto = null; // el texto no se guarda en ningún sitio (salvo lo dicho arriba en la versión de prueba)
         if (m == null) return;
 
-        Set<String> bancos = p.getStringSet("bancos", new HashSet<>());
         if (!bancos.contains(pkg)) { // app no marcada: solo se anota su nombre para proponerla (si tiene pinta de banco)
             if (!pareceBanco(pkg)) return;
             Set<String> cand = new HashSet<>(p.getStringSet("candidatos", new HashSet<>()));

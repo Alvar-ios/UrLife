@@ -67,6 +67,8 @@ if (Capacitor.isNativePlatform()) {
     N.avisosBanco = {
       estado: () => AB.estado(),
       abrirAjustes: () => AB.abrirAjustes(),
+      abrirApp: (que) => AB.abrirApp({ que: que || 'app' }), // 13/11: ajustes de PalomApp (restringidos, notificaciones)
+      olvidarVistos: () => AB.olvidarVistos(),
       configurar: (o) => AB.configurar(o),
       pendientes: () => AB.pendientes().then((r) => (r && r.lista) || []),
       huella: (uid) => AB.huella({ uid }).then((r) => r && r.huella),

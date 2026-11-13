@@ -46,6 +46,10 @@ public class AvisosBancoPlugin extends Plugin {
             for (String pkg : p.getStringSet("candidatos", new HashSet<>())) cand.put(new JSObject().put("pkg", pkg).put("nombre", nombres.optString(pkg, pkg)));
             r.put("candidatos", cand);
             r.put("pendientes", new JSONArray(p.getString("cola", "[]")).length());
+            r.put("vistos", new JSONArray(p.getString("vistos", "[]")));
+            r.put("muestras", BuildConfig.DEBUG ? new JSONArray(p.getString("muestras", "[]")) : new JSONArray());
+            r.put("prueba", BuildConfig.DEBUG);
+            r.put("android", Build.VERSION.SDK_INT);
             call.resolve(r);
         } catch (Exception e) { call.reject(e.getMessage()); }
     }
@@ -70,6 +74,21 @@ public class AvisosBancoPlugin extends Plugin {
     }
 
     /** Lleva a los ajustes de Android para dar el permiso de «Acceso a notificaciones». */
+    /** 13/11: los ajustes de PalomApp en Android («Permitir ajustes restringidos», notificaciones, batería). { que: 'app' | 'notif' } */
+    @PluginMethod
+    public void abrirApp(PluginCall call) {
+        Intent i;
+        if ("notif".equals(call.getString("que", "app")) && Build.VERSION.SDK_INT >= 26)
+            i = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
+        else i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + getContext().getPackageName()));
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try { getContext().startActivity(i); call.resolve(); } catch (Exception e) { call.reject(e.getMessage()); }
+    }
+
+    /** 13/11: borra lo apuntado para «Comprobar». */
+    @PluginMethod
+    public void olvidarVistos(PluginCall call) { prefs().edit().remove("vistos").remove("muestras").apply(); call.resolve(); }
+
     @PluginMethod
     public void abrirAjustes(PluginCall call) {
         Intent i;
@@ -144,7 +163,7 @@ public class AvisosBancoPlugin extends Plugin {
     }
     private void vaciarYa(PluginCall call) {
         SharedPreferences.Editor ed = prefs().edit();
-        ed.remove("cola").remove("recientes").remove("candidatos").remove("nombres").remove("deshechos").putInt("sinVer", 0);
+        ed.remove("cola").remove("recientes").remove("candidatos").remove("nombres").remove("deshechos").remove("vistos").remove("muestras").putInt("sinVer", 0);
         if (Boolean.TRUE.equals(call.getBoolean("apagar", false))) { // al cerrar sesión: fuera claves, mapa y servidor
             for (String k : prefs().getAll().keySet()) if (k.startsWith("clave:")) ed.remove(k);
             ed.remove("mapa").putBoolean("servidor", false);

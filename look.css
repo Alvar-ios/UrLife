@@ -2559,3 +2559,9 @@ html[data-look="nuevo"] .hero-barra { container-type: inline-size; font-size: 11
 }
 /* «Pedir por WhatsApp»: texto oscuro sobre el verde (contraste 7,6; antes blanco, 1,98) */
 html[data-look="nuevo"] .wa-btn { color: #0B2E18 !important; }
+
+/* 13/11 · Tú → Avisos → «Comprobar» */
+html[data-look="nuevo"] .av-ok { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; font-weight: 700; margin-right: 4px; vertical-align: -3px; }
+html[data-look="nuevo"] .av-ok.si { background: var(--income, #2E9E5B); color: #fff; }
+html[data-look="nuevo"] .av-ok.no { background: var(--expense, #D64545); color: #fff; }
+html[data-look="nuevo"] .av-opt .btn.sm { flex: none; }

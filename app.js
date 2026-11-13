@@ -10753,6 +10753,8 @@ function avisosTrasCargar() {
     if (n && S.user) n.configurar({ uid: miUid() }).then(() => avisosServidorPreparar()).catch(() => {});
     avisosRecoger();
     impEntranteIni(); // C4: extracto compartido con PalomApp desde otra app
+    // 13/11: Android 13+ no deja mandar avisos hasta que se dan permisos; se pide UNA vez al entrar (antes solo al tocar un interruptor de Avisos)
+    const nn = notifNat(); if (nn && S.user && !lsGet('notifPedido:' + miUid())) nn.permiso().then((r) => { if (String(r).indexOf('prompt') === 0) { lsSet('notifPedido:' + miUid(), '1'); return nn.pedir().then(() => programarRecordatoriosPronto()); } }).catch(() => {});
     if (n) { // al tocar «Apuntado en PalomApp», a Inicio
       n.abiertoDesdeAviso().then((si) => { if (si) window.__irA('inicio'); });
       if (!S._avEsc) { S._avEsc = true; n.alAbrirDesdeAviso(() => { avisosRecoger(); window.__irA('inicio'); }); }
@@ -10787,14 +10789,14 @@ function avisosHtml() {
   if (!e) return h + '<p class="rec-hint">Los avisos del banco solo están en la app de Android.</p>';
   h += '<div class="section-title">Avisos del banco</div>';
   if (!e.activo || !e.permiso) {
-    return h + '<div class="card av-explica"><b>PalomApp puede leer los avisos de tus apps de banco y apuntar solo cada gasto o ingreso.</b>' +
+    return h + (e.activo && !e.permiso ? avRestringidoHtml() : '') + '<div class="card av-explica"><b>PalomApp puede leer los avisos de tus apps de banco y apuntar solo cada gasto o ingreso.</b>' +
       '<ul><li><b>Tú decides:</b> viene apagado y lo apagas cuando quieras.</li><li><b>Solo tus apps de banco y de pagos:</b> no lee mensajes, WhatsApp ni redes sociales. Para proponerte un banco que falte, solo apunta el nombre de la app que avisa de un pago, nunca lo que dice.</li>' +
       '<li><b>Se queda en tu móvil:</b> el texto del aviso se lee y se descarta. A tu cuenta solo pasa el movimiento (importe, comercio y fecha).</li>' +
       '<li><b>Nunca</b> lee códigos de verificación ni tus claves, y no se conecta con tu banco.</li>' +
       '<li>Lo apunta en tu cuenta <b>aunque PalomApp esté cerrada</b>. Para eso tu móvil tiene una clave propia, que solo sirve para esto y se borra al cerrar sesión.</li>' +
       '<li>Cada vez que apunte algo te avisará con un botón «Deshacer», y en Inicio podrás borrarlo con un toque.</li></ul>' +
       '<p class="rec-hint">Para funcionar, Android te pedirá dar a PalomApp «Acceso a notificaciones». Al tocar «Aceptar» se abren los ajustes del móvil: busca PalomApp y actívalo.</p>' +
-      '<button type="button" class="btn accent block" ' + act('avActivar') + '>Aceptar y activar</button>' + (e.activo && !e.permiso ? '<p class="rec-hint">Falta el permiso en los ajustes del móvil.</p>' : '') + '</div>';
+      '<button type="button" class="btn accent block" ' + act('avActivar') + '>Aceptar y activar</button>' + (e.activo && !e.permiso ? '<p class="rec-hint">Falta el permiso en los ajustes del móvil.</p>' : '') + '</div>' + avComprobarHtml(e, nok);
   }
   const marcados = new Set(e.bancos || []);
   const filaB = (pkg, nombre, prop) => fila(escapeHtml(nombreDePaquete(pkg, nombre)), prop ? 'Ha avisado de un pago: ¿la leemos?' : '', sw(marcados.has(pkg), 'avBanco', pkg));
@@ -10806,8 +10808,38 @@ function avisosHtml() {
   if ((e.candidatos || []).length) h += '<div class="section-title">Apps que han avisado de un pago</div><div class="card">' + e.candidatos.map((c) => filaB(c.pkg, c.nombre, true)).join('') + '</div>';
   h += '<div class="section-title">Qué apps se leen</div><div class="card">' + orden.concat(otras).map((p) => filaB(p, '')).join('') + '</div>' +
     '<p class="rec-hint">Si tu banco no está, déjalo activado: cuando avise de un pago, aparecerá arriba para que lo marques.</p>';
+  return h + avComprobarHtml(e, nok);
+}
+// 13/11 · Android bloquea el «Acceso a notificaciones» de las apps instaladas desde un archivo (no desde Google Play)
+function avRestringidoHtml() {
+  return '<div class="card"><div class="av-nota">' + ic('alert') + ' <span><b>¿En los ajustes PalomApp sale en gris o pone «Ajuste restringido»?</b> <i>Android lo bloquea en las apps instaladas desde un archivo.</i> ' +
+    '<i>Abre los ajustes de PalomApp, toca los ⋮ de arriba a la derecha y elige «Permitir ajustes restringidos». Después vuelve a activar el acceso.</i></span></div>' +
+    '<button type="button" class="btn sm block" ' + act('avAbrirApp', 'app') + '>Abrir ajustes de PalomApp</button></div>';
+}
+// 13/11 · «Comprobar»: cada paso que hace falta para que funcionen los avisos, con un botón para arreglarlo
+function avComprobarHtml(e, nok) {
+  const ok = (b) => '<span class="av-ok ' + (b ? 'si' : 'no') + '">' + (b ? '✓' : '✗') + '</span>';
+  const paso = (b, t, sub, boton) => '<div class="av-opt"><div>' + ok(b) + ' <b>' + t + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</div>' + (!b && boton ? boton : '') + '</div>';
+  const bot = (accion, arg, t) => '<button type="button" class="btn sm" ' + act(accion, arg) + '>' + t + '</button>';
+  const marcados = (e.bancos || []).length, vistos = e.vistos || [];
+  let h = '<div class="section-title">Comprobar</div><div class="card">' +
+    paso(nok, 'PalomApp puede mandarte avisos', nok ? '' : (S._avNotif === 'denied' ? 'Están bloqueados en los ajustes del móvil' : 'Falta tu permiso'), bot('avPermisoNotif', '', 'Permitir')) +
+    paso(!!e.permiso, 'Acceso a notificaciones', e.permiso ? 'Para leer los avisos del banco' : 'Sin él no se puede leer nada del banco', bot('avAbrirApp', 'acceso', 'Abrir')) +
+    paso(!!e.activo, 'Leer los avisos del banco', e.activo ? 'Activado' : 'Apagado') +
+    paso(marcados > 0, 'Apps de banco marcadas', marcados ? marcados + ' marcadas' : 'Ninguna') +
+    '<div class="av-opt"><div><b>Últimos avisos de bancos</b><span>' + (vistos.length ? '' : 'Todavía no ha llegado ninguno desde que está activado. Haz un pago con tarjeta o pide a alguien un Bizum y vuelve aquí.') + '</span></div></div>' +
+    vistos.slice(0, 8).map((v) => '<div class="av-opt"><div>' + ok(v.leido && v.marcado) + ' <b>' + escapeHtml(nombreDePaquete(v.pkg, v.app)) + '</b><span><i>' + escapeHtml(haceTxtTs(v.ts)) + '</i> · <i>' +
+      (!v.marcado ? 'Esta app no está marcada para leerse' : v.leido ? 'Entendido y apuntado' : 'Llegó, pero no se entendió el texto') + '</i></span></div></div>').join('') +
+    '</div>';
+  if (e.prueba && (e.muestras || []).length) h += '<div class="section-title">Avisos no entendidos (solo versión de prueba)</div><div class="card"><p class="rec-hint">Se guardan solo en este móvil. Cópialos y mándaselos a quien te pasó la app (puedes tachar nombres o cifras): así PalomApp aprende a leerlos.</p>' +
+    e.muestras.map((m) => '<div class="av-opt"><div><b>' + escapeHtml(m.app || '') + '</b><span>' + escapeHtml(m.texto || '') + '</span></div></div>').join('') +
+    '<button type="button" class="btn sm block" ' + act('avCopiarMuestras') + '>Copiar los textos</button></div>';
+  h += '<button type="button" class="btn block" ' + act('avProbar') + '>Mandarme un aviso de prueba</button>' +
+    '<p class="rec-hint">¿El aviso de prueba no llega o los avisos del banco dejan de leerse al rato? En algunos móviles (Xiaomi, Huawei, Oppo, Samsung…) hay que abrir los ajustes de PalomApp, poner la batería «Sin restricciones» y, si existe, activar «Inicio automático».</p>' +
+    '<button type="button" class="btn sm block" ' + act('avAbrirApp', 'app') + '>Abrir ajustes de PalomApp</button>';
   return h;
 }
+function haceTxtTs(ts) { const m = Math.round((Date.now() - ts) / 60000); if (m < 1) return 'Ahora mismo'; if (m < 60) return 'Hace ' + m + ' min'; const h = Math.round(m / 60); if (h < 24) return 'Hace ' + h + ' h'; return 'Hace ' + Math.round(h / 24) + ' días'; }
 
 function avisosRecurrentes() {
   const hoy = todayISO(), man = uAdd(hoy, 1), ini = uAdd(hoy, -31);
@@ -11709,7 +11741,12 @@ const H = {
   avBorrar: ([id]) => borrarMovConDeshacer(id),
   avVale: () => { saveConfig({ avisosVisto: Date.now() }); render(); },
   avRec: ([k]) => { const a = avisosCfg(); a[k] = !a[k]; saveConfig({ avisos: a }); programarRecordatoriosPronto(); if (a[k] && notifNat()) notifNat().pedir().then(() => avisosAbrir()); else avisosAbrir(); },
-  avPermisoNotif: async () => { if (notifNat()) await notifNat().pedir().catch(() => {}); programarRecordatoriosPronto(); avisosAbrir(); },
+  avPermisoNotif: async () => { const nn = notifNat(); if (!nn) return; const r = await nn.pedir().catch(() => 'denied'); // 13/11: si Android ya no pregunta, a los ajustes
+    if (r !== 'granted' && avNat() && avNat().abrirApp) { toast('Activa las notificaciones de PalomApp y vuelve'); await avNat().abrirApp('notif').catch(() => {}); } programarRecordatoriosPronto(); avisosAbrir(); },
+  avAbrirApp: async ([que]) => { const n = avNat(); if (!n) return; if (que === 'acceso') await n.abrirAjustes().catch(() => {}); else await (n.abrirApp ? n.abrirApp(que) : n.abrirAjustes()).catch(() => {}); },
+  avProbar: async () => { const nn = notifNat(); if (!nn) return; if ((await nn.permiso().catch(() => 'denied')) !== 'granted') { toast('Primero permite los avisos de PalomApp'); return H.avPermisoNotif([]); }
+    await nn.ahora(avisosIdioma([{ id: 3999, titulo: 'PalomApp', texto: 'Así te llegarán los avisos de PalomApp.', nivel: 'normal', cuando: Date.now() + 1500, tab: '' }])).catch(() => {}); toast('Aviso enviado: mira arriba en el móvil'); },
+  avCopiarMuestras: async () => { const m = (S._avEst && S._avEst.muestras) || []; try { await navigator.clipboard.writeText(m.map((x) => (x.app || '') + ': ' + (x.texto || '')).join('\n')); toast('Copiados'); } catch (e) { toast('No se pudieron copiar'); } },
   avActivar: async () => {
     const n = avNat(); if (!n) return;
     const e = S._avEst || {}, bancos = (e.bancos && e.bancos.length) ? e.bancos : PAQ_BANCOS.map((x) => x[1]);

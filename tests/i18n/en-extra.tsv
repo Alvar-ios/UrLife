@@ -325,3 +325,42 @@ y # cambios más	and # more changes
 sin aportaciones recientes para estimar.	no recent contributions to estimate.
 desde el #	since #
 precio medio de hoy en #	today's average price in #
+Comprobar	Check
+PalomApp puede mandarte avisos	PalomApp can send you notifications
+Están bloqueados en los ajustes del móvil	They're blocked in your phone settings
+Falta tu permiso	Your permission is needed
+Permitir	Allow
+Acceso a notificaciones	Notification access
+Para leer los avisos del banco	To read your bank notifications
+Sin él no se puede leer nada del banco	Without it nothing from your bank can be read
+Leer los avisos del banco	Read bank notifications
+Activado	On
+Apagado	Off
+Apps de banco marcadas	Bank apps selected
+# marcadas	# selected
+Ninguna	None
+Abrir	Open
+Últimos avisos de bancos	Latest bank notifications
+Todavía no ha llegado ninguno desde que está activado. Haz un pago con tarjeta o pide a alguien un Bizum y vuelve aquí.	None has arrived since it was turned on. Pay with your card or ask someone for a Bizum, then come back here.
+Ahora mismo	Just now
+Hace # min	# min ago
+Hace # h	# h ago
+Hace # días	# days ago
+Esta app no está marcada para leerse	This app isn't selected to be read
+Entendido y apuntado	Understood and recorded
+Llegó, pero no se entendió el texto	Arrived, but the text wasn't understood
+Avisos no entendidos (solo versión de prueba)	Notifications not understood (test version only)
+Se guardan solo en este móvil. Cópialos y mándaselos a quien te pasó la app (puedes tachar nombres o cifras): así PalomApp aprende a leerlos.	They're only kept on this phone. Copy them and send them to whoever gave you the app (you can hide names or amounts): that's how PalomApp learns to read them.
+Copiar los textos	Copy the texts
+Mandarme un aviso de prueba	Send me a test notification
+Abrir ajustes de PalomApp	Open PalomApp settings
+Aviso enviado: mira arriba en el móvil	Notification sent: check the top of your phone
+Primero permite los avisos de PalomApp	First allow PalomApp notifications
+Activa las notificaciones de PalomApp y vuelve	Turn on PalomApp notifications and come back
+Así te llegarán los avisos de PalomApp.	This is how PalomApp notifications will look.
+Copiados	Copied
+No se pudieron copiar	Couldn't copy them
+¿En los ajustes PalomApp sale en gris o pone «Ajuste restringido»?	In settings, is PalomApp greyed out or does it say «Restricted setting»?
+Android lo bloquea en las apps instaladas desde un archivo.	Android blocks it for apps installed from a file.
+Abre los ajustes de PalomApp, toca los ⋮ de arriba a la derecha y elige «Permitir ajustes restringidos». Después vuelve a activar el acceso.	Open PalomApp settings, tap the ⋮ at the top right and choose «Allow restricted settings». Then turn access on again.
+¿El aviso de prueba no llega o los avisos del banco dejan de leerse al rato? En algunos móviles (Xiaomi, Huawei, Oppo, Samsung…) hay que abrir los ajustes de PalomApp, poner la batería «Sin restricciones» y, si existe, activar «Inicio automático».	Test notification not arriving, or bank notifications stop being read after a while? On some phones (Xiaomi, Huawei, Oppo, Samsung…) open PalomApp settings, set battery to «Unrestricted» and, if available, turn on «Autostart».
