@@ -299,6 +299,8 @@
   /* ---- móviles con avisos (12/11, docs/40 C3): cada uno ve y quita solo los suyos ---- */
   var moviles = {
     registrar: function (p) { return rpc('avisos_registrar', { p_id: p.id, p_token: p.token || null, p_plataforma: p.plataforma || 'android', p_idioma: p.idioma || 'es', p_zona: p.zona || 'Europe/Madrid', p_clave_hash: p.claveHash || null }); },
+    // 13/11 · avisos de Juntos (docs/41): solo el token de Firebase de este móvil (crea la fila si no está)
+    token: function (p) { return rpc('avisos_token', { p_id: p.id, p_token: p.token || null, p_idioma: p.idioma || 'es', p_zona: p.zona || 'Europe/Madrid' }); },
     listar: function () { return q(sb.from('avisos_dispositivos').select('id,plataforma,creado,visto,activo').order('visto', { ascending: false })); },
     quitar: function (id) { return q(sb.from('avisos_dispositivos').delete().eq('id', id)); },
     quitarTodos: function () { return q(sb.from('avisos_dispositivos').delete().eq('user_id', currentUid)); },

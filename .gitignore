@@ -9,3 +9,6 @@ movil/android/.gradle/
 *.jks
 *.keystore
 keystore.properties
+
+# Firebase (avisos de Juntos): lo escribe el workflow de Android desde los secretos; nunca al repositorio
+google-services.json
