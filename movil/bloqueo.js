@@ -31,7 +31,10 @@ function crearBloqueo(o) {
 
   // Avisos de Android: activo = true al volver, false al salir
   const estado = (activo) => {
-    if (enGracia()) return null; // lo ha provocado la propia ventanita de la huella
+    if (pidiendo) return null; // lo ha provocado la propia ventanita de la huella
+    // 13/11 (Calidad): justo después de cerrarse la ventanita no se pide, pero sí se apunta si sales de verdad; antes,
+    // salir en ese segundo y medio dejaba la app abierta sin huella al volver horas después
+    if (enGracia()) { if (!activo) { if (!fuera) fuera = ahora(); } else fuera = 0; return null; }
     if (!activo) { if (!fuera) fuera = ahora(); return null; }
     const salio = fuera; fuera = 0;
     if (salio && ahora() - salio > limite && o.activado()) return pedir();

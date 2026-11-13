@@ -12086,6 +12086,9 @@ function atrasAndroid() {
   const dsc = $('#descartarHoja'); if (dsc) { dsc.remove(); return true; }
   const b = $('#sheetBackdrop');
   if (b && !b.dataset.cerrando) { if (atrasEnHoja(b)) return true; if (hojaConAlgoEscrito()) preguntarDescartar(); else closeSheet(); return true; }
+  // 13/11 (Calidad): en la bienvenida, atrás vuelve al paso anterior (antes cerraba la app); en el primer paso, sale como siempre
+  const ob = S.onboarding;
+  if (ob) { if (ob.step > 0 && !(ob.grupoId && obPasos(ob)[ob.step - 1] === 'invite')) { H.obBack(); return true; } return false; }
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
   if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
   if (S.tab === 'tu' && S.tuSub) { H.tuIr(['']); return true; } // 13/11: de una pantalla de ajustes, a Tú
