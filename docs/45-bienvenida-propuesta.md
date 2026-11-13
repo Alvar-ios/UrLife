@@ -293,3 +293,16 @@ Nada de nombres, correos, importes, bancos concretos ni textos escritos.
 - [Appcues, «The 10 best user onboarding experiences»](https://www.appcues.com/blog/the-10-best-user-onboarding-experiences) y [CleverTap, «User onboarding best practices»](https://clevertap.com/blog/user-onboarding-best-practices/), consultados el 13/11/2026 (solo como referencia general; *los dos venden herramientas de onboarding*).
 
 Para el PDF: 1) el árbol de §2 dibujado como metro de colores (una línea por rama, paradas = pantallas, la paloma en la primera); 2) tres móviles: pantalla 2 con la vista previa, G1 con la rejilla de logos y M2 con el tarro llenándose; 3) la barra con la paloma en tres momentos (20 %, 60 %, 100 %) y la fila de los 6 sellos; 4) una tira «3 · 6 · 10 pantallas» según el camino.
+
+## 13. Programado (13/11/2026, rama `fase14/bienvenida-v2`, sin publicar)
+
+Desarrollo. Hecho como dice este documento, con las decisiones del dueño del 13/11 (apagar lo no elegido, tope de 10, los 6 sellos). Es la variante `v2` de `VERSIONES.bienvenida` («Por objetivos», la que ven las cuentas nuevas y la que se abre con «Volver a ver la bienvenida»); la de por pasos de esta mañana queda como «Antes». Código: bloque «BIENVENIDA POR OBJETIVOS» de `app.js` (`bv*`), estilos `.bv-*` en `look.css`, prueba `tests/test184_bienvenida_objetivos.js`.
+
+Diferencias con la propuesta:
+- **I2 («¿Eres tú alguno de estos?») no está.** Con las funciones de Supabase de hoy no se puede: `reclamar_sin_cuenta` falla con «ya_es_miembro» si ya te uniste con la invitación, y `enlace_sin_cuenta` exige ser miembro. Haría falta una función nueva (Datos y Seguridad). El enlace «Soy yo» (`?soy=`) sigue funcionando como siempre, fuera de la bienvenida.
+- **Recortes:** con todo marcado en Android salen 14 pantallas; además de Agenda, Deudas y M2 hace falta recortar **G3 («Tu mes»)** para llegar a 10 (orden: T1, D1, M2, G3, M1, J2…). Se eligió G3 porque saltarla equivale al día 1 (lo de siempre).
+- **J2 crea el grupo y las personas sin cuenta en un solo toque** (`crear_grupo` + `crear_sin_cuenta` por persona, las funciones de siempre). Invitar por WhatsApp usa `crear_invitacion_varios`.
+- **I1** usa la tarjeta de invitación de siempre (sin avatares: `ver_invitacion` no trae los nombres del grupo).
+- **D1** no pide nombre: la plantilla lo pone («Préstamo del coche», «Hipoteca»…); se cambia luego en Dinero.
+- `cfg().bienv` guarda también `piloto` y `avisos` (permisos concedidos: no se pueden deducir sin preguntar al móvil), `grupoCreado` e `invitado` (para la fila «Invita a tu grupo»).
+- El icono `trendUp` se ha añadido a `ICONS` (ya lo usaban Inversiones en Mis herramientas, Descubre e Inicio).

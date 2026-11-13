@@ -123,6 +123,8 @@ const grupoRpc = (e) => {
   ok(ll.filter((x) => x === 'rpc.crear_grupo').length === 1 && ll.filter((x) => x === 'rpc.crear_sin_cuenta').length === 2, 'crea el grupo y las 2 personas sin cuenta (funciones de siempre)');
   ok(/Grupo creado: Casa/.test(pantalla(e)) && /Ana · Bea/.test(pantalla(e)) && !!buscar(e, 'bvInvitar') && !!buscar(e, 'bvSig', 'Seguir'), 'el grupo «se monta» y salen «Invitar por WhatsApp» y «Seguir»');
   ok(app(e).bienv.sellos.equipo && app(e).bienv.grupoCreado === 'g1', 'sello «En equipo» y bienv.grupoCreado');
+  await tocar(e, 'bvInvitar', null, null, 300);
+  ok(e.srv.abiertos.some((u) => /^https:\/\/wa\.me\/\?text=.*unirse%3DtokenInventadoDeGrupo123/.test(u)) && app(e).bienv.invitado === true && /Enlace enviado/.test(pantalla(e)), '«Invitar por WhatsApp» abre WhatsApp con el enlace del grupo');
   await seguir(e);
   ok(paso_(e) === 'M1' && /¿Para qué ahorras\?/.test(pantalla(e)) && /Crear mi meta/.test(e.doc.querySelector('.ob2-pie').textContent), 'M1 con M2 recortada: el botón ya crea la meta');
   await tocar(e, 'bvMeta', 'Viaje');

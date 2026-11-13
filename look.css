@@ -2839,3 +2839,4 @@ html[data-look="nuevo"] .bv-campos.dos { display: grid; grid-template-columns: 1
 html[data-look="nuevo"] .bv-campos.dos .bv-campo { flex-direction: column; align-items: flex-start; gap: 0; padding: 6px 12px; }
 html[data-look="nuevo"] .bv-campos.dos .bv-campo-n { font-size: 12.5px; color: var(--text-muted); }
 @media (max-height: 700px) { html[data-look="nuevo"] .bv-tec .tec-k { min-height: 42px; } html[data-look="nuevo"] .bv-campo { min-height: 48px; } }
+@media (max-height: 700px) { html[data-look="nuevo"] .bv-p-obj .ob2-h { font-size: 21px; } html[data-look="nuevo"] .bv-p-obj .ob2-p { font-size: 13.5px; } html[data-look="nuevo"] .bv-card { min-height: 60px; padding-top: 6px; padding-bottom: 6px; } }

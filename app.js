@@ -12209,6 +12209,7 @@ function bvSaltar(ob) {
   if (p === 'I1') return H.bvInvAplazar([]);
   if (p === 'obj') { ob.objSaltada = true; ob.objs = ob.grupoId ? { juntos: true } : {}; bvSalirObj(ob); bvGuardarBienv({ saltadas: ['obj'] }); return bvIr(ob, bvSiguiente(ob)); }
   if (p === 'J1') ob.jCamino = 'luego';
+  if ((p === 'J2' && ob.grupoCreado) || (p === 'M2' && ob.metaCreada)) return bvIr(ob, bvSiguiente(ob)); // ya hecho: no cuenta como saltado
   if (p === 'M1') { ob.metaPlant = ''; }
   bvGuardarBienv({ saltadas: [p] });
   bvIr(ob, bvSiguiente(ob));
@@ -12443,7 +12444,7 @@ function bvPieHtml(ob) {
   if (p === 'obj') { const L = bvLista(ob, true), rec = bvRecortes(L), Lr = L.filter((c) => rec.indexOf(c) < 0), n = Lr.length - Lr.indexOf('obj') - 1; return sig(n > 1 ? 'Seguir (unas ' + n + ' pantallas)' : 'Seguir'); }
   if (p === 'G5') return ob.avEst && ob.avEst.activo && ob.avEst.permiso ? sig('Seguir') : dos('Activar', act('bvAvBanco'));
   if (p === 'J1') return '';
-  if (p === 'J2') return ob.grupoCreado ? '<div class="ob2-dos"><button class="btn ghost" ' + act('bvSig') + '>Seguir</button><a class="btn accent block wa-btn" href="#" ' + act('bvInvitar') + '>' + ic('send') + ' Invitar por WhatsApp</a></div>'
+  if (p === 'J2') return ob.grupoCreado ? '<div class="ob2-dos"><button class="btn ghost" ' + act('bvSig') + '>Seguir</button><button type="button" class="btn accent block wa-btn" ' + act('bvInvitar') + (ob.creandoEnlace ? ' disabled' : '') + '>' + ic('send') + ' Invitar por WhatsApp</button></div>'
     : '<button class="btn accent block" ' + act('bvJCrear') + (ob.creandoGrupo ? ' disabled' : '') + '>' + (ob.creandoGrupo ? 'Creando…' : 'Crear grupo') + '</button>';
   if (p === 'J3') return '<button class="btn accent block" ' + act('bvJ3Abrir') + '>Abrir invitación</button>';
   if (p === 'M1') return sig(bvLista(ob).indexOf('M2') < 0 ? 'Crear mi meta' : 'Seguir');
