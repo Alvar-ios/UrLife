@@ -1,7 +1,7 @@
 // Calidad · revisión de Tú v2, Agenda v2 y botón + v2 (22/10/2026). Casos raros. Datos inventados.
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
-const NUEVAS = { tu: 0, agenda: 0, crear: 0 };
+const NUEVAS = { tu: 1, agenda: 0, crear: 0 };
 const txt = (e) => e.doc.querySelector('#content').textContent.replace(/\s+/g, ' ');
 const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q);
 const veces = (t, s) => t.split(s).length - 1;

@@ -3,7 +3,7 @@ console.error = () => {};
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 (async () => {
-  const e = makeEnv({ version: { dinero: 0, tu: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], cuentas: [{ id: 'c1', nombre: 'Nómina', banco: 'bbva', saldo: 100, ts: 1 }, { id: 'c2', nombre: 'Mi Revolut', saldo: 10, ts: 1 }, { id: 'c3', nombre: 'Rara', banco: 'banco-que-no-existe', saldo: 5, ts: 1 }] }, meta: { onboarded: true } } });
+  const e = makeEnv({ version: { dinero: 0, tu: 1 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], cuentas: [{ id: 'c1', nombre: 'Nómina', banco: 'bbva', saldo: 100, ts: 1 }, { id: 'c2', nombre: 'Mi Revolut', saldo: 10, ts: 1 }, { id: 'c3', nombre: 'Rara', banco: 'banco-que-no-existe', saldo: 5, ts: 1 }] }, meta: { onboarded: true } } });
   await sleep(200);
   const A = e.w.__APP__, H = A.H, doc = e.doc, sh = () => doc.querySelector('#sheetHost');
   H.goTab(['tu']); H.openCuentas([]); await sleep(10);

@@ -29,7 +29,7 @@ function reglasAgenda(o, previo) {
 (async () => {
   /* ============ 1. App publicada sin Data.carpetas ni Data.agenda (lo que hay en el harness por defecto) ============ */
   {
-    const e = makeEnv({ version: { agenda: 0, tu: 0, crear: 0 }, cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Supermercado' }, { nombre: 'Otros' }] }, meta: { onboarded: true } } });
+    const e = makeEnv({ version: { agenda: 0, tu: 1, crear: 0 }, cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Supermercado' }, { nombre: 'Otros' }] }, meta: { onboarded: true } } });
     await sleep(80);
     const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc, sh = () => doc.querySelector('#sheetHost'), c = () => doc.querySelector('#content');
     const creados = [];
@@ -142,7 +142,7 @@ function reglasAgenda(o, previo) {
 
   /* ============ 4. Planes: lo que se manda cumple las reglas de la tabla ============ */
   {
-    const e = makeEnv({ version: { agenda: 0, tu: 0, crear: 0 }, cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
+    const e = makeEnv({ version: { agenda: 0, tu: 1, crear: 0 }, cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
     await sleep(80);
     const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc, sh = () => doc.querySelector('#sheetHost'), c = () => doc.querySelector('#content');
     const creados = [], editados = [], rpcs = [];
@@ -229,7 +229,7 @@ function reglasAgenda(o, previo) {
 
   /* ============ 5. Usuario nuevo, sin grupos ============ */
   {
-    const e = makeEnv({ version: { agenda: 0, tu: 0, crear: 0 }, cfg: { app: { nombre: 'Nuevo' }, meta: { onboarded: true } } });
+    const e = makeEnv({ version: { agenda: 0, tu: 1, crear: 0 }, cfg: { app: { nombre: 'Nuevo' }, meta: { onboarded: true } } });
     await sleep(80);
     const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc, sh = () => doc.querySelector('#sheetHost');
     const creados = [];
@@ -250,7 +250,7 @@ function reglasAgenda(o, previo) {
 
   /* ============ 6. Calendario: «Pago fijo» y archivo .ics ============ */
   {
-    const e = makeEnv({ version: { agenda: 0, tu: 0, crear: 0 }, cfg: { app: { nombre: 'Lucía' }, meta: { onboarded: true } } });
+    const e = makeEnv({ version: { agenda: 0, tu: 1, crear: 0 }, cfg: { app: { nombre: 'Lucía' }, meta: { onboarded: true } } });
     await sleep(80);
     const A = e.w.__APP__, H = A.H, S = A.S;
     S.user = Object.assign({}, S.user, { id: 'uYo' });

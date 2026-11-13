@@ -3,7 +3,7 @@ const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const conocido = (c, m) => console.log((c ? 'PASS ' : 'FALLO CONOCIDO ') + m); // apuntado en docs/salud/2026-11-08-barrido.md
 console.error = () => {};
-const NUEVAS = { tu: 0, agenda: 0, crear: 0, importe: 0 };
+const NUEVAS = { tu: 1, agenda: 0, crear: 0, importe: 0 };
 const hoyD = new Date(), d = (n) => { const x = new Date(hoyD); x.setDate(x.getDate() - n); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
 (async () => {
   const e = makeEnv({ version: NUEVAS, movs: [

@@ -15,7 +15,7 @@ function entorno(o) {
       alAbrir: (fn) => { L.oyente = fn; },
     } };
   };
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0, importe: 0 }, pre,
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0, importe: 0 }, pre,
     cfg: { app: Object.assign({ compararVersiones: false, categoriasGasto: [{ nombre: 'Supermercado' }, { nombre: 'Otros' }], ingresos: ['Nómina', 'Otros ingresos'] }, o.app || {}), meta: { onboarded: true } },
     movs: o.movs });
   return { e, L, ultimo: () => L.guardar[L.guardar.length - 1] || null };

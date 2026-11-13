@@ -23,7 +23,7 @@ const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) =
     H.goTab(['movimientos']); await sleep(20);
     ok(!fab() && !!doc.querySelector('#gcAnillo'), 'En qué gastas: siempre «Anillo» y sin botón' + t);
     H.goTab(['juntos']); await sleep(20); ok(!fab(), 'Juntos: sin botón «Antes»' + t);
-    H.goTab(['tu']); await sleep(20); ok(!fab() && doc.body.classList.contains('en-tu2'), 'Tú: la nueva y sin botón' + t);
+    H.goTab(['tu']); await sleep(20); ok(!!fab() === comparar && doc.body.classList.contains('en-tu2') && !!doc.querySelector('#content .tu3-cat'), 'Tú: la nueva (por temas, 13/11); el botón «Antes» solo con «Comparar» activado' + t);
     A.openCrear(); await sleep(10);
     const sh = doc.querySelector('#sheetHost').innerHTML;
     ok(!!doc.querySelector('#sheetHost .crear-4') && !/Ver la versión anterior/.test(sh), 'Botón +: la nueva y sin «Ver la versión anterior»' + t);

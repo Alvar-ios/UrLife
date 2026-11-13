@@ -5,7 +5,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
 const fijaFecha = (iso) => (w) => { const D = w.Date, t = new D(iso + 'T12:00:00').getTime(); class FD extends D { constructor(...a) { if (!a.length) super(t); else super(...a); } static now() { return t; } } w.Date = FD; };
 const mv = (id, tipo, cat, imp, fecha) => ({ id, tipo, categoria: cat, importe: imp, fecha });
 const raro = (t) => /NaN|undefined|null|Infinity|\[object/.test(t);
-const V = { inicio: 0, balance: 0, tu: 0 };
+const V = { inicio: 0, balance: 0, tu: 1 };
 (async () => {
   // 1) usuario nuevo sin datos
   { const e = makeEnv({ version: V, pre: fijaFecha('2026-11-02'), cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } }); await sleep(200);

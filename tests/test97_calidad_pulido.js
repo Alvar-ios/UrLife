@@ -38,7 +38,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   B.H.closeSheet([]); await sleep(300);
   /* 3. Deudas y ajustes guardados de antes */
   const e3 = makeEnv({ cfg: { app: { categoriasGasto: [{ nombre: 'Supermercado', presupuesto: 150.5 }], deudas: [{ id: 'd1', nombre: 'Coche', objetivo: 900, fechaObjetivo: '2027-05-31' }],
-    cobros: [{ nombre: 'Nómina', importe: 1500.5, regla: { t: 'dia', dia: 28 } }] }, meta: { onboarded: true } }, version: { tu: 0 } });
+    cobros: [{ nombre: 'Nómina', importe: 1500.5, regla: { t: 'dia', dia: 28 } }] }, meta: { onboarded: true } }, version: { tu: 1 } });
   await sleep(200);
   const C = e3.w.__APP__, sh3 = () => e3.doc.querySelector('#sheetHost');
   C.H.deudaEditar(['Coche']); await sleep(10);

@@ -1003,10 +1003,10 @@ function renderShell() {
     '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
     '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('tbVolver') + '>' + ic('chevL') + '</button>' +
     '<div><h1 id="pageTitle"></h1><div class="sub" id="pageSub"></div></div></div>' +
-    '<div class="tb-r"><span id="compararHost"></span><span id="ojoTb"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda" ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
+    '<div class="tb-r"><span id="compararHost"></span><span id="ojoTb"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda"' + (S.config && !agendaOn() ? ' hidden style="display:none"' : '') + ' ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
-    '<nav class="tabbar" aria-label="Secciones">' + tabBtn(tabsNav()[0]) + tabBtn(tabsNav()[1]) +
-    '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabBtn(tabsNav()[2]) + tabBtn(tabsNav()[3]) + '</nav>' +
+    '<nav class="tabbar' + (tabsNav().length < 4 ? ' tres' : '') + '" aria-label="Secciones">' + tabsNav().slice(0, 2).map(tabBtn).join('') +
+    '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabsNav().slice(2).map(tabBtn).join('') + '</nav>' +
     '<div id="sheetHost"></div><div class="toast" id="toast" role="status"></div>' +
     '<div class="bloqueo" aria-live="polite">' + ic('candado') + '<b>PalomApp está bloqueada</b><button class="btn accent" ' + act('desbloquear') + '>Desbloquear</button></div>';
 }
@@ -1163,23 +1163,24 @@ function render() {
   if (TAB_ALIAS[S.tab]) S.tab = TAB_ALIAS[S.tab];
   if (!TITULOS[S.tab]) S.tab = 'inicio';
   estrAjustarTab();
+  herrAjustarTab();
   $$('[data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === S.tab));
-  const nuevoTu = ['grupos', 'patrimonio', 'cuentas', 'tumes', 'importar', 'reglas', 'cobros'].concat(verAnterior('tu') ? [] : ['perfil']).concat(verAnterior('tu') ? ['metas'] : []).some(badgeActivo); // en Tú nuevo, Metas vive en Dinero
+  const nuevoTu = ['grupos', 'patrimonio', 'cuentas', 'tumes', 'importar', 'reglas', 'cobros'].concat(tuAntes() ? [] : ['perfil']).concat(tuAntes() ? ['metas'] : []).some(badgeActivo); // en Tú nuevo, Metas vive en Dinero
   $$('#tbAvatar, .rail-tu').forEach((b) => b.classList.toggle('con-novedad', nuevoTu));
-  const av = $('#tbAvatar'); if (av) { const v2 = !verAnterior('tu'), pf = perfilCfg(); if (v2) av.innerHTML = miAvatarDentro(pf); else av.textContent = inicialUsuario(); av.classList.toggle('dib', v2 && pf.avatar === 'dibujo'); av.style.background = v2 ? miColor(pf) : ''; av.style.color = v2 ? '#fff' : ''; }
+  const av = $('#tbAvatar'); if (av) { const v2 = !tuAntes(), pf = perfilCfg(); if (v2) av.innerHTML = miAvatarDentro(pf); else av.textContent = inicialUsuario(); av.classList.toggle('dib', v2 && pf.avatar === 'dibujo'); av.style.background = v2 ? miColor(pf) : ''; av.style.color = v2 ? '#fff' : ''; }
   document.body.classList.toggle('en-tu', S.tab === 'tu');
   document.body.classList.toggle('ini-basico', S.tab === 'inicio' && !!S.config && basico()); // docs/38: Inicio de «Lo básico» cabe sin scroll
   // 24/10 (docs/19, opción A): la Agenda a un toque desde arriba, con lo que hay hoy
   const tbA = $('#tbAgenda'); if (tbA) { const enAg = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0); tbA.classList.toggle('on', enAg); tbA.setAttribute('aria-current', enAg ? 'page' : 'false'); const n = allLoaded() ? agendaHoyN() : 0, nb = $('#tbAgendaN'); if (nb) { nb.hidden = !n; nb.textContent = n > 9 ? '9+' : String(n); } tbA.setAttribute('aria-label', 'Agenda' + (n ? ', ' + n + (n === 1 ? ' cosa hoy' : ' cosas hoy') : '')); }
   document.body.classList.toggle('en-movlista', S.tab === 'movimientos' && movVistaAct() === 'lista'); // allí ya hay una lupa que busca en la lista
-  document.body.classList.toggle('en-tu2', S.tab === 'tu' && !verAnterior('tu'));
+  document.body.classList.toggle('en-tu2', S.tab === 'tu' && !tuAntes());
   const enAgenda = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0);
   const sub = $('#pageSub'); if (sub) { const enHoy = S.tab === 'inicio' && !enAgenda; sub.textContent = enHoy ? fechaCabecera() : ''; sub.hidden = !enHoy; }
   document.body.classList.toggle('en-agenda', enAgenda); // docs/32 A6/A7: en la Agenda, flecha para volver y ninguna pestaña marcada
   if (enAgenda) $$('.tabbar [data-tab], .rail [data-tab]').forEach((b) => b.classList.remove('active'));
   const ojo = $('#ojoTb'); if (ojo) ojo.innerHTML = cifrasOcultas() && S.tab !== 'inicio' ? ojoBtnHtml() : ''; // Calidad 10/11: volver a ver las cifras desde cualquier pestaña
   if (cifrasOcultas()) setTimeout(taparCifrasTexto, 0);
-  const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : TITULOS[S.tab];
+  const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : S.tab === 'tu' && S.tuSub && versionDe('tu') === 'nueva' && TU_RAMAS_N[S.tuSub] ? TU_RAMAS_N[S.tuSub] : TITULOS[S.tab];
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
   const _agEl = document.activeElement && document.activeElement.id === 'agRapida' ? document.activeElement : null, _agV = _agEl ? _agEl.value : null;
   if (S.tab === 'inicio') c.innerHTML = renderInicioNuevo();
@@ -4039,14 +4040,18 @@ function crearTicketBandaHtml() {
 }
 function crearHtmlV2() {
   const op = (accion, args, icono, txt, cls) => '<button class="crear-op tappable ' + cls + '" ' + act(accion, ...args) + '><span class="crear-ic">' + ic(icono) + '</span><span>' + txt + '</span></button>';
-  const hab = gastosHabituales(), bas = basico(), comp = compartidosDisponible();
-  return '<div class="handle"></div><h2>¿Qué quieres apuntar?</h2>' + crearTicketBandaHtml() +
-    '<div class="crear-grid crear-4' + (bas ? (comp ? ' tres' : ' dos') : comp ? '' : ' tres') + '">' + op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
-      (comp ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') + (bas ? '' : op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea')) + '</div>' +
+  const hab = gastosHabituales(), bas = basico(), comp = compartidosDisponible() && juntosOn(), ag = agendaOn(); // 13/11: sin lo apagado en «Mis herramientas»
+  const nGr = 2 + (comp ? 1 : 0) + (!bas && ag ? 1 : 0), clsGr = nGr === 4 ? '' : nGr === 3 ? ' tres' : ' dos';
+  const peq = [ag ? ['Tarea', op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea'), 1] : null, herrOn('metas') ? ['Apartar', op('crearIr', ['ahorro'], 'piggy2', 'Apartar', 'k-ahorro')] : null,
+    herrOn('inversiones') ? ['Invertir', op('crearIr', ['inversion'], 'trendUp', 'Invertir', 'k-ahorro')] : null, ['Pago fijo', op('crearIr', ['factura'], 'repeat', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura')],
+    herrOn('deudas') ? ['Pago de deuda', op('crearIr', ['deuda'], 'deuda', 'Pago de deuda', 'k-deuda')] : null, hayVariasCuentas() ? ['Traspaso', op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras')] : null,
+    ['Importar', op('crearIr', ['importar'], 'fileIn', 'Importar', 'k-imp')], herrOn('trayecto') ? ['Trayecto', op('trAbrir', [], 'coche2', 'Trayecto<small>gasolina o carga de un viaje</small>', 'k-tray')] : null].filter(Boolean);
+  return '<div class="handle"></div><h2>¿Qué quieres apuntar?</h2>' + (herrOn('tickets') ? crearTicketBandaHtml() : '') +
+    '<div class="crear-grid crear-4' + clsGr + '">' + op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto') + op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso') +
+      (comp ? op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp') : '') + (bas || !ag ? '' : op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea')) + '</div>' +
     (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Repetir</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
-    (bas && !S.crearMas ? '<button type="button" class="crear-mas tappable" aria-expanded="false" ' + act('crearMasToggle') + '><span class="crear-ic">' + ic('more') + '</span><span><b>Más opciones</b><span>' + ['Tarea', 'Apartar', 'Invertir', 'Pago fijo', 'Pago de deuda'].concat(hayVariasCuentas() ? ['Traspaso'] : []).concat(['Importar', 'Trayecto']).join(', ') + '…</span></span>' + ic('chevD') + '</button>' :
-    '<div class="crear-grid crear-peq">' + (bas ? op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') : '') + op('crearIr', ['ahorro'], 'piggy2', 'Apartar', 'k-ahorro') + op('crearIr', ['inversion'], 'trendUp', 'Invertir', 'k-ahorro') + op('crearIr', ['factura'], 'repeat', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura') +
-      op('crearIr', ['deuda'], 'deuda', 'Pago de deuda', 'k-deuda') + (hayVariasCuentas() ? op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras') : '') + op('crearIr', ['importar'], 'fileIn', 'Importar', 'k-imp') + op('trAbrir', [], 'coche2', 'Trayecto<small>gasolina o carga de un viaje</small>', 'k-tray') + '</div>' +
+    (bas && !S.crearMas ? '<button type="button" class="crear-mas tappable" aria-expanded="false" ' + act('crearMasToggle') + '><span class="crear-ic">' + ic('more') + '</span><span><b>Más opciones</b><span>' + peq.map((x) => x[0]).join(', ') + '…</span></span>' + ic('chevD') + '</button>' :
+    '<div class="crear-grid crear-peq">' + peq.filter((x) => bas || !x[2]).map((x) => x[1]).join('') + '</div>' +
       (bas ? '<button type="button" class="link crear-desc" ' + act('descAbrir') + '>' + ic('sparkle') + ' Descubre para qué sirve cada una ' + ic('chevR') + '</button>' : '')) +
     (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '');
 }
@@ -4213,8 +4218,9 @@ function renderAgenda() {
   return '<div class="segmented" style="margin-bottom:14px;">' + [['tareas', 'Semana y tareas'], ['calendario', 'Calendario']].map(([id, l]) => '<button class="' + (sub === id ? 'active' : '') + '" ' + act('irAgenda', id) + '>' + l + '</button>').join('') + '</div>' +
     (sub === 'tareas' ? (agendaV2() ? renderAgendaSemanaV2() : renderAgendaSemana()) : (agendaV2() ? renderCalendarioV2() : renderCalendario()));
 }
-// «Tú»: la versión nueva (22/10) o la de antes (botón «Antes»)
-function renderTu() { return verAnterior('tu') ? renderTuAntes() : renderTuV2(); }
+// «Tú»: por temas (13/11, la de ahora), la de 22/10 o la primera (botón «Antes»)
+function tuAntes() { return versionDe('tu') === 'antes'; }
+function renderTu() { const v = versionDe('tu'); return v === 'antes' ? renderTuAntes() : v === 'v2' ? renderTuV2() : renderTuV3(); }
 // «Tú» de antes: todos los ajustes en grupos, con buscador
 function renderTuAntes() {
   const it = (accion, args, icono, txt, extra, claves) => '<button class="menu-item" data-k="' + escapeHtml(normDesc(txt + ' ' + (claves || ''))) + '" ' + act(accion, ...args) + '><span class="ic">' + ic(icono) + '</span>' + txt + (extra || '') + '<span class="chev">' + ic('chevR') + '</span></button>';
@@ -4286,7 +4292,7 @@ function renderTuV2() {
   const parche = NOVEDADES[0] ? String(NOVEDADES[0].titulo).split('·')[0].trim() : '';
   const nombre = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido());
   const bas = basico(), baja = [], q = (x) => { if (bas) { baja.push(x); return ''; } return x; }; // docs/38 §2.3: en «Lo básico» algunas filas bajan a «Más ajustes»
-  const todasDesc = descubreN() >= DESCUBRE.length;
+  const todasDesc = descubreN() >= descLista().length;
   const mas = [it('openMoneda', [], 'moneda', 'Moneda', '<span class="menu-extra">' + monedaCod() + ' ' + sym() + '</span>', 'euro dolar'),
     lista('metodosPago', 'card', 'tarjeta bizum efectivo'), lista('ingresos', 'arrowUp', 'nomina fuentes'), lista('categoriasTareas', 'checkCircle', 'tareas'),
     it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar')].concat(bas || Object.keys(VERSIONES).every((k) => VERSIONES[k].cerrada) ? [] : [
@@ -4326,6 +4332,111 @@ function renderTuV2() {
       '<button class="menu-item tu2-borrar" data-k="borrar cuenta eliminar baja datos" ' + act('borrarCuentaAbrir') + '><span class="ic">' + ic('trash') + '</span>Borrar mi cuenta</button>']) +
     '<div class="empty-mini" id="tuNada" style="display:none;">No hay ningún ajuste con ese nombre.</div>' +
     '<p class="tu2-pie">PalomApp' + (parche ? ' · ' + escapeHtml(parche) : '') + '</p>';
+}
+/* ============================================================
+   TÚ POR TEMAS (13/11/2026, docs/09 §«Ajustes por temas»): como los ajustes de las apps grandes.
+   Arriba tu perfil; luego pocas categorías con icono, y cada una abre su pantalla (S.tuSub) con «Volver»
+   (también con el botón atrás de Android y la flecha de arriba). «Buscar un ajuste» busca en todas.
+   Ningún ajuste se ha quitado: tests/test169_ajustes_temas.js comprueba que cada fila de antes sigue a mano.
+   ============================================================ */
+const TU_RAMAS_N = { herramientas: 'Mis herramientas', dinero: 'Dinero', agenda: 'Agenda', seguridad: 'Seguridad y privacidad', apariencia: 'Apariencia e idioma', datos: 'Tus datos', ayuda: 'Ayuda y novedades' };
+function tuFila(accion, args, icono, txt, extra, claves, cls) { return '<button class="menu-item' + (cls ? ' ' + cls : '') + '" data-k="' + escapeHtml(normDesc(txt + ' ' + (claves || ''))) + '" ' + act(accion, ...args) + '><span class="ic">' + ic(icono) + '</span>' + txt + (extra || '') + '<span class="chev">' + ic('chevR') + '</span></button>'; }
+function tuExtra(t) { return '<span class="menu-extra">' + t + '</span>'; }
+// las filas de cada pantalla, en secciones: [[título, [filas]], …]. Lo apagado en «Mis herramientas» no sale.
+function tuRamaFilas(id) {
+  const it = tuFila, lista = (key, icono, claves) => it('openListEditor', [key], icono || LIST_META[key].icon, LIST_META[key].title, '', claves);
+  const nCu = (cuentasCfg() || []).length;
+  if (id === 'herramientas') return [['', [it('nivelAbrir', [], 'sliders', 'Qué ves en la app', tuExtra(basico() ? 'Lo básico' : 'Todo'), 'basico sencillo todo completo modo plegado'),
+    it('descAbrir', [], 'sparkle', 'Descubre PalomApp', tuExtra(descubreN() + ' de ' + descLista().length), 'descubre palomapp herramientas funciones que puedo hacer ayuda')]]];
+  if (id === 'dinero') return [
+    ['Cuentas', [it('openCuentas', [], 'bank', 'Cuentas y saldos', (badge('cuentas') || badge('patrimonio')) + (nCu ? tuExtra(nCu + (nCu === 1 ? ' cuenta' : ' cuentas')) : ''), 'banco saldo patrimonio'),
+      it('openMoneda', [], 'moneda', 'Moneda', tuExtra(monedaCod() + ' ' + sym()), 'euro dolar')]],
+    ['Categorías', [it('openListEditor', ['categoriasGasto'], 'tag', herrOn('presupuestos') ? 'Categorías y presupuestos' : 'Categorías de gasto', badge('categorias'), 'presupuestos estandar personalizadas subcategorias detalle'),
+      it('openReglas', [], 'autoTag', 'Reglas de categorías', badge('reglas'), 'automatico'),
+      lista('ingresos', 'arrowUp', 'nomina fuentes'), lista('metodosPago', 'card', 'tarjeta bizum efectivo')]],
+    ['Cada mes', [it('openRecurrentes', [], 'repeat', 'Cobros y pagos fijos', badge('cobros'), 'nomina alquiler facturas fijas pagos fijos recurrentes recibos suscripciones'),
+      it('tuMesAbrir', [], 'calRango', 'Tu mes', badge('tumes') + tuExtra(mesCfg().nomina && cortesNomina() ? 'desde tu nómina' : mesCfg().modo === 'cobro' ? 'desde el día ' + mesCfg().dia : 'del 1 al 31'), 'mes nomina cobro dia empieza'),
+      herrOn('informes') ? it('infAbrir', [], 'sparkle', 'Informes', badge('informes'), 'informe resumen semanal mensual trimestral anual asistente') : '',
+      herrOn('deudas') ? it('irDinero', ['deudas'], 'deuda', 'Deudas', '', 'prestamo hipoteca tarjeta') : '']]];
+  if (id === 'agenda') return [['', [lista('categoriasTareas', 'checkCircle', 'tareas'),
+    agcOn() ? it('agcAbrir', [], 'calendar', 'Compartir mi agenda', badge('agendaComp') + (agcCompartoAlgo() ? tuExtra(S.agcPermisos.length + (S.agcPermisos.length === 1 ? ' persona o grupo' : ' personas o grupos')) : ''), 'compartir agenda ver calendario pareja familia privada') : '']]];
+  if (id === 'seguridad') return [
+    ['Al abrir la app', [mfaDisponible() ? it('openSeguridad', [], 'candado', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
+      window.__nativo && window.__nativo.huella ? '<button class="menu-item" data-k="huella bloqueo pin seguridad" ' + act('huellaCambiar') + '><span class="ic">' + ic('candado') + '</span>Pedir huella al abrir<span class="menu-extra">' + (lsGet('huella') === '1' ? 'Sí' : 'No') + '</span></button>' : '',
+      it('ocultarCifras', [], cifrasOcultas() ? 'ojoNo' : 'ojo', 'Ocultar cifras', tuExtra(cifrasOcultas() ? 'Sí' : 'No'), 'ocultar cifras importes ojo privacidad')]],
+    ['Tus datos', [it('abrirPrivacidad', [], 'shield', 'Privacidad', '', 'datos privacidad politica rgpd'),
+      '<button class="menu-item tu2-borrar" data-k="borrar cuenta eliminar baja datos" ' + act('borrarCuentaAbrir') + '><span class="ic">' + ic('trash') + '</span>Borrar mi cuenta</button>']]];
+  if (id === 'apariencia') return [['', [it('openAspecto', [], 'palette', 'Aspecto y sensaciones', badge('aspecto') + tuExtra((PALETAS.find((x) => x[0] === S.paleta) || PALETAS[0])[1]), 'aspecto color paleta tipografia cifras fuente vibracion sonido estilo'),
+    '<div class="menu-item static" data-k="tema apariencia oscuro claro"><span class="ic">' + ic('moon') + '</span>Tema' + badge('oscuro') +
+    '<div class="segmented tema-seg">' + [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']].map(([k, l]) => '<button class="' + (S.theme === k ? 'active' : '') + '" ' + act('setTheme', k) + '>' + l + '</button>').join('') + '</div></div>',
+    idiomaFilaHtml()]]];
+  if (id === 'datos') return [
+    ['Traer', [it('impAbrir', [], 'fileIn', 'Importar extracto o Excel', badge('importar'), 'banco csv'), it('openLotes', [], 'history', 'Importaciones', '', 'deshacer importar'),
+      ticketsDisponible() && herrOn('tickets') ? it('ticketsInfo', [], 'receipt', 'Fotos de tickets', ticketsFilaExtra(), 'tickets lecturas foto camara recibo quedan') : '']],
+    ['Guardar', [it('exportCsv', [], 'download', 'Descargar mis movimientos (Excel)', '', 'exportar excel csv hoja de calculo'),
+      it('exportBackup', [], 'archive', 'Copia de seguridad', tuExtra('Descargar'), 'exportar backup json'),
+      it('openPapelera', [], 'trash', 'Papelera', badge('papelera') + tuExtra(papeleraItems().length ? papeleraItems().length + ' dentro' : 'vacía'), 'borrados recuperar eliminados')]]];
+  if (id === 'ayuda') {
+    const parche = NOVEDADES[0] ? String(NOVEDADES[0].titulo).split('·')[0].trim() : '';
+    return [['', [contactoHay() ? it('escrAbrir', [], 'send', 'Escríbenos', tuExtra('¿Algo falla o una idea?'), 'escribenos contacto ayuda fallo idea sugerencia') : '',
+      it('verNovedades', ['1'], 'megafono', 'Qué hay de nuevo', tuExtra(escapeHtml(parche)), 'novedades parche'),
+      it('startOnboardingManually', [], 'replay', 'Volver a ver la bienvenida', '', 'empezar asistente bienvenida'),
+      basico() || Object.keys(VERSIONES).every((k) => VERSIONES[k].cerrada) ? '' : it('compararToggle', [], 'comparar', 'Botón «Antes» (pruebas)', tuExtra(compararOn() ? 'sí' : 'no'), 'comparar version anterior pruebas antes nueva')]]];
+  }
+  return [];
+}
+// las categorías de la pantalla principal, en grupos; `a` = abre algo directamente (si solo tiene una cosa)
+function tuRamas() {
+  const nGr = S.grupos ? S.grupos.filter((g) => g.tipo === 'grupo').length : null;
+  return [
+    [{ id: 'herramientas', ic: 'sliders', c: 'h', d: herrResumen(), k: 'herramientas elegir quitar apagar encender usar' }],
+    [{ id: 'dinero', ic: 'wallet', c: 'd', d: 'Cuentas, categorías, cobros y pagos fijos, tu mes', bd: ['cuentas', 'patrimonio', 'categorias', 'reglas', 'cobros', 'tumes', 'informes'] },
+      juntosOn() ? { id: 'juntos', n: 'Juntos', ic: 'users', c: 'j', d: nGr ? nGr + (nGr === 1 ? ' grupo' : ' grupos') : 'Grupos y personas', a: act('openGrupos'), bd: ['grupos'], k: 'compartir invitar whatsapp grupos personas' } : null,
+      agendaOn() ? { id: 'agenda', ic: 'calendar', c: 'a', d: agcOn() ? 'Categorías de tareas y compartir tu agenda' : 'Categorías de tareas', bd: ['agendaComp'] } : null,
+      notifNat() ? { id: 'avisos', n: 'Avisos', ic: 'bell', c: 'v', d: avNat() && herrOn('avisosBanco') ? 'Del banco y recordatorios' : 'Recordatorios', a: act('avAbrir'), k: 'avisos notificaciones banco recordatorios apuntar solo automatico' } : null].filter(Boolean),
+    [{ id: 'seguridad', ic: 'shield', c: 's', d: window.__nativo && window.__nativo.huella ? 'Huella, ocultar cifras, privacidad, borrar cuenta' : 'Ocultar cifras, privacidad, borrar cuenta' },
+      { id: 'apariencia', ic: 'palette', c: 'p', d: 'Aspecto, tema' + (window.I18N ? ' e idioma' : ''), bd: ['aspecto', 'oscuro'] },
+      { id: 'datos', ic: 'archive', c: 'x', d: 'Importar, descargar en Excel, copia, papelera', bd: ['importar', 'papelera'] }],
+    [{ id: 'ayuda', ic: 'info', c: 'y', d: contactoHay() ? 'Escríbenos, novedades y la bienvenida' : 'Novedades y la bienvenida' }],
+  ];
+}
+function tuCatHtml(r) {
+  const n = r.n || TU_RAMAS_N[r.id], punto = (r.bd || []).some(badgeActivo) ? '<span class="badge-dot"></span>' : '';
+  return '<button type="button" class="menu-item tu3-cat" data-rama="' + r.id + '" data-k="' + escapeHtml(normDesc(n + ' ' + (r.k || ''))) + '" ' + (r.a || act('tuIr', r.id)) + '><span class="ic tu3-ic c-' + r.c + '">' + ic(r.ic) + '</span>' +
+    '<span class="tu3-cat-t"><b>' + escapeHtml(n) + punto + '</b><small>' + escapeHtml(r.d) + '</small></span><span class="chev">' + ic('chevR') + '</span></button>';
+}
+function tuSecciones(secs) { return secs.map(([t, fs]) => { const f = fs.filter(Boolean); return f.length ? '<div class="tu-grupo">' + (t ? '<div class="section-title">' + t + '</div>' : '') + '<div class="card menu">' + f.join('') + '</div></div>' : ''; }).join(''); }
+function renderTuV3() {
+  const ramas = tuRamas(), ids = ramas.flat().map((r) => r.id);
+  if (S.tuSub && ids.indexOf(S.tuSub) < 0) S.tuSub = ''; // una rama apagada (p. ej. la Agenda) vuelve a la principal
+  if (S.tuSub) return tuSubHtml(S.tuSub);
+  const nombre = String(cfg().nombre || '').trim() || (S.grupos ? miNombreAlguno() : nombreSugerido());
+  const parche = NOVEDADES[0] ? String(NOVEDADES[0].titulo).split('·')[0].trim() : '';
+  // lo que encuentra el buscador: todas las filas de todas las pantallas, con dónde están
+  const res = ramas.flat().filter((r) => !r.a).map((r) => tuRamaFilas(r.id).map(([, fs]) => fs.filter(Boolean).map((f) => f.replace('<span class="chev">', '<span class="tu3-donde">' + escapeHtml(TU_RAMAS_N[r.id]) + '</span><span class="chev">')).join('')).join('')).join('');
+  return '<div class="tu2-cab">' + avatarYoHtml('tu2-av') + '<div class="tu2-quien"><div class="t"><span class="t-n">' + escapeHtml(nombre) + '</span></div><div class="d">' + escapeHtml((S.user && S.user.email) || '') + '</div></div>' +
+      '<button type="button" class="btn sm ghost tu2-editar" ' + act('tuNombreAbrir') + '>' + ic('edit') + ' Editar' + badgeDot('perfil') + '</button></div>' +
+    '<div class="field tu-buscar"><input type="search" id="tuBuscar" placeholder="Buscar un ajuste" aria-label="Buscar un ajuste" ' + onInput('tu3Filtrar') + '></div>' +
+    '<div class="tu3-raiz">' + descTuHtml() + ramas.map((g) => '<div class="tu-grupo"><div class="card menu">' + g.map(tuCatHtml).join('') + '</div></div>').join('') +
+    '<div class="tu-grupo"><div class="card menu"><button class="menu-item tu2-salir" data-k="cerrar sesion salir" ' + act('logoutPreguntar') + '><span class="ic">' + ic('salir') + '</span>Cerrar sesión</button></div></div></div>' +
+    '<div class="tu-grupo tu3-res" hidden><div class="card menu">' + res + ramas.flat().filter((r) => r.a).map(tuCatHtml).join('') + '</div></div>' +
+    '<div class="empty-mini" id="tuNada" style="display:none;">No hay ningún ajuste con ese nombre.</div>' +
+    '<p class="tu2-pie">PalomApp' + (parche ? ' · ' + escapeHtml(parche) : '') + '</p>';
+}
+function tuSubHtml(id) {
+  let cuerpo;
+  if (id === 'herramientas') cuerpo = herrHtml();
+  else cuerpo = tuSecciones(tuRamaFilas(id));
+  return '<div class="tu3-sub"><button type="button" class="tu3-volver" ' + act('tuIr', '') + '>' + ic('chevL') + ' Volver</button>' + cuerpo + '</div>'; // el título va arriba, en la cabecera
+}
+// «Mis herramientas»: un interruptor por herramienta (la base no se puede apagar). Nada se borra
+function herrHtml() {
+  const fila = (d) => { const on = herrOn(d.k), datos = !on && herrTieneDatos(d.k);
+    return '<div class="herr-fila' + (on ? '' : ' off') + '"><span class="herr-ic">' + ic(d.ic) + '</span><span class="herr-t"><b>' + d.n + '</b><span>' + d.f + '</span>' +
+      (datos ? '<span class="herr-nota">' + ic('check') + ' Tus datos se quedan guardados</span>' : '') + '</span>' +
+      (d.base ? '<span class="herr-siempre">Siempre</span>' : '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + d.n + '" ' + act('herrCambiar', d.k) + '></button>') + '</div>'; };
+  return '<p class="rec-hint herr-intro">Enciende solo lo que quieras usar. Lo que apagues desaparece de las pestañas, de Inicio y del +, pero <b>no se borra nada</b>: al encenderlo vuelve tal cual.</p>' +
+    '<div class="card herr-lista">' + herrLista().map(fila).join('') + '</div>' + tuSecciones(tuRamaFilas('herramientas'));
 }
 function tuNombreHtml() {
   return '<div class="handle"></div><h2>Tu nombre</h2><div class="field"><label for="tuNombreIn">¿Cómo te llamas?</label><input id="tuNombreIn" type="text" maxlength="40" autocomplete="given-name" value="' + escapeHtml(String(cfg().nombre || '').trim() || nombreSugerido()) + '"></div>' +
@@ -4367,7 +4478,22 @@ function logoutHtml() {
    los datos son los mismos. Sin elegir nada, la app de siempre.
    ============================================================ */
 /* Estructura (fase 2, decidida el 14/10): Inicio ligero · Movimientos (Lista | Resumen) · Juntos · Dinero; la Agenda vive dentro de Inicio. */
-function tabsNav() { return [TABS[0], TABS[1], { id: 'juntos', label: 'Juntos', icon: 'users' }, TABS[2]]; }
+function tabsNav() { return [TABS[0], TABS[1]].concat(S.config && !juntosOn() ? [] : [{ id: 'juntos', label: 'Juntos', icon: 'users' }]).concat([TABS[2]]); } // 13/11: sin Juntos si lo apagas en «Mis herramientas»
+// 13/11: si una pestaña es de una herramienta apagada, a Inicio (y la barra de abajo, al día si cambió)
+function herrAjustarTab() {
+  if (!S.config) return;
+  if (S.tab === 'juntos' && !juntosOn()) S.tab = 'inicio';
+  if (!agendaOn() && (S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0))) { S.tab = 'inicio'; S.inicioVista = 'hoy'; }
+  if (S.tab === 'dinero' && S.dineroVer === 'inversiones' && !herrOn('inversiones')) S.dineroVer = '';
+  const tb = $('.tabbar'), want = tabsNav().map((t) => t.id).join();
+  if (tb && [...tb.querySelectorAll('[data-tab]')].map((b) => b.getAttribute('data-tab')).join() !== want) { // solo los botones: una hoja abierta no se toca
+    tb.className = 'tabbar' + (tabsNav().length < 4 ? ' tres' : '');
+    tb.innerHTML = tabsNav().slice(0, 2).map(tabBtn).join('') + '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabsNav().slice(2).map(tabBtn).join('');
+    const rail = $('.rail'), brand = rail && rail.querySelector('.brand');
+    if (brand) { rail.querySelectorAll('.tab[data-tab]:not(.rail-tu)').forEach((b) => b.remove()); brand.insertAdjacentHTML('afterend', tabsNav().map(tabBtn).join('')); }
+  }
+  const tbA = $('#tbAgenda'); if (tbA) { tbA.hidden = !agendaOn(); tbA.style.display = agendaOn() ? '' : 'none'; } // el CSS de la cabecera gana a «hidden»
+}
 function estrAjustarTab() {
   if (S.tab === 'agenda') { S.tab = 'inicio'; S.inicioVista = S.agendaSub === 'calendario' ? 'calendario' : 'tareas'; }
 }
@@ -4474,12 +4600,12 @@ const VERSIONES = {
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
   juntos: { txt: 'Juntos', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: la lista de personas de antes de los círculos
   dinero: { txt: 'Dinero', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
-  tu: { txt: 'Tú', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  tu: { txt: 'Tú', desde: '2026-11-13', variantes: [['nueva', 'Por temas'], ['v2', 'Antes'], ['antes', 'Primera']] }, // 13/11: ajustes por temas; «Antes» = Tú de 22/10 (las pruebas antiguas fijan v2 o la primera)
   agenda: { txt: 'Agenda', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   balance: { txt: 'Mes cerrado', desde: '2026-10-29', variantes: [['nueva', 'Balance'], ['antes', 'Antes']] },
   importe: { txt: 'Apuntar importe', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
-  bienvenida: { txt: 'Bienvenida', desde: '2026-11-10', cerrada: '2026-11-10', def: 0, variantes: [['nueva', '2 pantallas'], ['antes', '4 pasos']] }, // docs/38 §6: 2 pantallas (1 con invitación) y «Lo básico»; «antes» = la de 4 pasos para todos (solo para las pruebas antiguas)
+  bienvenida: { txt: 'Bienvenida', desde: '2026-11-13', cerrada: '2026-11-13', def: 0, variantes: [['pasos', 'Por pasos'], ['nueva', '2 pantallas'], ['antes', '4 pasos']] }, // 13/11: Hola → Qué quieres usar → Permisos (solo Android) → Tu banco → Listo; «2 pantallas» = la de docs/38 (10/11) // docs/38 §6: 2 pantallas (1 con invitación) y «Lo básico»; «antes» = la de 4 pasos para todos (solo para las pruebas antiguas)
 };
 function seccionVersion() {
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
@@ -4840,18 +4966,19 @@ function estosDiasHtml(v2) {
   const btn = (k, x, l, cls) => '<button type="button" class="btn sm ' + cls + '" ' + act(k, x.rc.kind, x.rc.idx, x.iso) + '>' + l + '</button>';
   ra.pasados.forEach((x) => filas.push({ cls: 'rec', icono: 'calendar', t: escapeHtml(x.rc.nombre) + imp(x), d: (x.rc.kind === 'cobro' ? '¿Cobrado?' : '¿Pagado?') + ' · era el ' + fechaCortaU(x.iso), a: act('openRecurrentes'), botones: btn('recSi', x, 'Sí', 'accent') + btn('recNo', x, 'No', 'ghost') }));
   ra.hoy.filter((x) => x.estado !== 'ok').forEach((x) => filas.push({ cls: 'rec', fecha: x.iso, t: escapeHtml(x.rc.nombre) + imp(x), d: 'Hoy · ' + (x.rc.kind === 'cobro' ? 'cobro previsto' : 'pago previsto'), a: act('openRecurrentes'), botones: btn('recSi', x, 'Confirmar', 'accent') }));
-  tareasVencidas().slice().sort(cmpTarea).forEach((t) => { const n = -daysUntil(t.fechaLimite); filas.push({ cls: 'mal', icono: 'alert', t: escapeHtml(t.nombre || 'Tarea'), d: 'Tarea · venció ' + (n === 1 ? 'ayer' : 'hace ' + n + ' días'), a: act('openTareaForm', t.id) }); });
-  S.tareas.filter((t) => t.estado !== 'Completado' && t.fechaLimite === hoy).sort(cmpTarea).forEach((t) => filas.push({ cls: 'hoy', icono: 'checkCircle', t: escapeHtml(t.nombre || 'Tarea'), d: 'Hoy · Tarea' + (t.categoria ? ' · ' + escapeHtml(t.categoria) : ''), a: act('openTareaForm', t.id) }));
-  if (agendaDisponible()) agendaItems().forEach((a) => {
+  const ag = agendaOn(); // 13/11: con la Agenda apagada en «Mis herramientas», sin tareas aquí
+  if (ag) tareasVencidas().slice().sort(cmpTarea).forEach((t) => { const n = -daysUntil(t.fechaLimite); filas.push({ cls: 'mal', icono: 'alert', t: escapeHtml(t.nombre || 'Tarea'), d: 'Tarea · venció ' + (n === 1 ? 'ayer' : 'hace ' + n + ' días'), a: act('openTareaForm', t.id) }); });
+  if (ag) S.tareas.filter((t) => t.estado !== 'Completado' && t.fechaLimite === hoy).sort(cmpTarea).forEach((t) => filas.push({ cls: 'hoy', icono: 'checkCircle', t: escapeHtml(t.nombre || 'Tarea'), d: 'Hoy · Tarea' + (t.categoria ? ' · ' + escapeHtml(t.categoria) : ''), a: act('openTareaForm', t.id) }));
+  if (ag && agendaDisponible()) agendaItems().forEach((a) => {
     if (a.tipo === 'plan' && a.fecha && a.fecha <= hoy && (a.fechaFin || a.fecha) >= hoy && planAviso(a.id) !== 'no') filas.push({ cls: 'hoy', icono: 'calendar', t: escapeHtml(a.titulo), d: (a.hora ? horaTxt(a.hora) : 'Hoy') + ' · ' + escapeHtml(a.grupoId && grupoDe(a.grupoId) ? nombreDestino(grupoDe(a.grupoId)) : 'Plan') + (a.lugar ? ' · ' + escapeHtml(a.lugar) : ''), a: act('planVer', a.id) });
     else if (a.tipo === 'tarea' && !a.hechaEn && a.fecha && a.fecha <= hoy && tareaCEsMia(a)) filas.push({ cls: a.fecha < hoy ? 'mal' : 'hoy', icono: a.fecha < hoy ? 'alert' : 'checkCircle', t: escapeHtml(a.titulo), d: (a.fecha < hoy ? 'Venció el ' + fechaCortaU(a.fecha) : 'Hoy') + ' · ' + escapeHtml(nombreDestino(grupoDe(a.grupoId))), a: act('planVer', a.id) });
   });
-  presupuestoExcedido(ma.y, ma.m).forEach((c) => filas.push({ cls: 'warn', cat: c.categoria, icono: 'alert', t: escapeHtml(c.categoria) + ': te has pasado', d: money(c.real) + ' de ' + money(c.presupuesto) + ' de presupuesto', a: act('irMovs', '_gastos', mesClave(ma.y, ma.m), c.categoria) }));
-  if (compartidosDisponible()) {
+  if (herrOn('presupuestos')) presupuestoExcedido(ma.y, ma.m).forEach((c) => filas.push({ cls: 'warn', cat: c.categoria, icono: 'alert', t: escapeHtml(c.categoria) + ': te has pasado', d: money(c.real) + ' de ' + money(c.presupuesto) + ' de presupuesto', a: act('irMovs', '_gastos', mesClave(ma.y, ma.m), c.categoria) }));
+  if (compartidosDisponible() && juntosOn()) {
     const ids = [...new Set((S.compartidos || []).map((c) => c.grupoId))].filter((id) => grupoDe(id)), tot = r2(ids.reduce((a, id) => a + miSaldo(id), 0));
     if (Math.abs(tot) >= 0.005) filas.push({ cls: 'juntos', icono: 'users', t: tot > 0 ? 'Te deben ' + money(tot) : 'Debes ' + money(-tot), d: 'En lo que compartes', a: act('goTab', 'juntos') });
   }
-  try { const en = encargosNuevos(); if (en.length) { const a0 = en[0], g0 = grupoDe(a0.grupoId);
+  try { const en = ag ? encargosNuevos() : []; if (en.length) { const a0 = en[0], g0 = grupoDe(a0.grupoId);
     filas.unshift(en.length === 1 ? { cls: 'hoy', icono: 'checkCircle', t: escapeHtml(a0.titulo), d: 'Te lo encarga ' + escapeHtml(nombreDe(a0.grupoId, a0.creadoPor)) + (g0 && g0.tipo !== 'directo' ? ' · ' + escapeHtml(nombreDestino(g0)) : '') + (a0.fecha ? ' · para el ' + fechaCortaU(a0.fecha) : ''), a: act('planVer', a0.id) }
       : { cls: 'hoy', icono: 'users', t: en.length + ' tareas nuevas para ti', d: 'Te las han encargado', a: act('setInicioVista', 'tareas') }); } } catch (e) { console.error(e); }
   ra.revisar.forEach((x) => filas.push({ cls: 'rec', icono: 'repeat', t: escapeHtml(x.rc.nombre) + ': revisa la regla', d: 'Tus últimos movimientos encajan mejor con otra', a: act('recEditar', x.rc.kind, x.rc.idx) }));
@@ -4984,6 +5111,7 @@ function iwTienesHtml() {
     '<span class="iw-ti-l">' + (p.deudas > 0.004 ? 'Debes ' + escapeHtml(moneyShort(p.deudas)) : p.inv > 0.004 ? 'Invertido ' + escapeHtml(moneyShort(p.inv)) : p.nCuentas === 1 ? 'En tu cuenta' : 'En tus cuentas') + '</span></button></section>';
 }
 function iwPiezaHtml(x, i) {
+  if (!iwTipoOn(x.t)) return ''; // herramienta apagada: la pieza no sale (se queda guardada en «Inicio a tu gusto»)
   try {
     if (x.t === 'asivas') return insightsHtmlV3();
     if (x.t === 'dias') return estosDiasHtml(true);
@@ -5026,6 +5154,46 @@ function inicioPiezasHtml() {
    ============================================================ */
 function nivel() { return cfg().nivel === 'basico' ? 'basico' : 'todo'; }
 function basico() { return nivel() === 'basico'; }
+/* ============================================================
+   MIS HERRAMIENTAS (13/11/2026, docs/09 §«Ajustes por temas»): cada persona enciende solo lo que quiere usar.
+   cfg().herramientas = { clave: false } para lo apagado (JSON en config, sin migración). Sin la clave = todo encendido, como siempre.
+   Apagar SOLO esconde (pestañas, Inicio, el +, ajustes, avisos y Descubre): nunca se borra ningún dato y al encender vuelve todo.
+   «Lo básico / Todo» (nivel) sigue aparte: dice cuánto se pliega lo que está encendido.
+   ============================================================ */
+const HERRAMIENTAS = [
+  { k: 'gastos', ic: 'arrowDown', n: 'Gastos e ingresos', f: 'Lo que entra y lo que sale. Es la base: siempre está.', base: true },
+  { k: 'presupuestos', ic: 'checkCircle', n: 'Presupuestos', f: 'Un tope al mes para cada cosa, y aviso si te pasas.', datos: () => catsGasto().some((c) => num(c.presupuesto) > 0) },
+  { k: 'metas', ic: 'target', n: 'Metas de ahorro', f: 'Aparta para un viaje o un colchón y mira cuánto te falta.', datos: () => metasCfg().length > 0 },
+  { k: 'inversiones', ic: 'trendUp', n: 'Inversiones', f: 'Lo que tienes invertido y cuánto ganas.', datos: () => (S.movimientos || []).some((m) => m.tipo === 'Inversión') },
+  { k: 'deudas', ic: 'deuda', n: 'Deudas', f: 'Un préstamo o la tarjeta: cuánto queda y cuándo acabas.', datos: () => (cfg().deudas || []).some((d) => d && d.nombre) },
+  { k: 'juntos', ic: 'users', n: 'Juntos', f: 'Gastos compartidos con tu pareja, tu casa o un viaje.', disp: () => compartidosDisponible(), datos: () => (S.compartidos || []).length > 0 || (S.grupos || []).length > 0 },
+  { k: 'agenda', ic: 'calendar', n: 'Agenda y tareas', f: 'Lo que tienes que hacer, con su día.', datos: () => (S.tareas || []).length > 0 },
+  { k: 'tickets', ic: 'camera', n: 'Lectura de tickets', f: 'Haz una foto al ticket y la app apunta el total.', disp: () => ticketsDisponible() },
+  { k: 'avisosBanco', ic: 'bell', n: 'Avisos del banco', f: 'Se apuntan solos tus pagos y bizums, con «Deshacer».', disp: () => !!avNat() },
+  { k: 'informes', ic: 'sparkle', n: 'Informes', f: 'Un resumen de tu mes en frases sencillas.', datos: () => { const o = (cfg().informes || {}).on; return !!o && (o === true || Object.keys(o).some((k) => o[k])); } },
+  { k: 'trayecto', ic: 'coche2', n: 'Calculadora de trayecto', f: 'Cuánto cuesta un viaje en coche, con el precio de hoy.', datos: () => !!cfg().trayecto },
+];
+function herrCfg() { const h = S.config ? cfg().herramientas : null; return h && typeof h === 'object' && !Array.isArray(h) ? h : {}; }
+function herrDef(k) { return HERRAMIENTAS.find((x) => x.k === k); }
+// ¿está encendida? (sin clave, todo encendido; la base, siempre)
+function herrOn(k) { const d = herrDef(k); if (!d || d.base) return true; return herrCfg()[k] !== false; }
+// las que se pueden elegir en este móvil (p. ej. «Avisos del banco», solo en la app de Android)
+function herrLista() { return HERRAMIENTAS.filter((d) => { try { return !d.disp || d.disp(); } catch (e) { return false; } }); }
+function herrTieneDatos(k) { const d = herrDef(k); try { return !!(d && d.datos && d.datos()); } catch (e) { return false; } }
+function herrResumen() { const l = herrLista().filter((d) => !d.base), n = l.filter((d) => herrOn(d.k)).length; return n === l.length ? 'Todas encendidas' : n + ' de ' + l.length + ' encendidas'; }
+// cambia una (o varias) por la misma cola de siempre; nada se borra
+function herrPoner(cambios) {
+  const h = Object.assign({}, herrCfg());
+  Object.keys(cambios).forEach((k) => { const d = herrDef(k); if (!d || d.base) return; if (cambios[k]) delete h[k]; else h[k] = false; });
+  return saveConfig({ herramientas: h });
+}
+// lo que se ve u oculta en otras partes según la herramienta
+const IW_HERR = { presu: 'presupuestos', meta: 'metas', juntos: 'juntos', deuda: 'deudas', inv: 'inversiones', informe: 'informes', semana: 'agenda' };
+function iwTipoOn(t) { return herrOn(IW_HERR[t]); }
+const DESC_HERR = { ticket: 'tickets', agenda: 'agenda', presu: 'presupuestos', metas: 'metas', deudas: 'deudas', inversiones: 'inversiones', trayecto: 'trayecto', informes: 'informes' };
+const BUSCAR_HERR = { 'Foto de ticket': 'tickets', 'Nueva tarea': 'agenda', 'Grupos y personas': 'juntos', Metas: 'metas', Inversiones: 'inversiones', Deudas: 'deudas', Calendario: 'agenda', Tareas: 'agenda', 'Calculadora de trayecto': 'trayecto', Informes: 'informes' };
+function juntosOn() { return herrOn('juntos'); }
+function agendaOn() { return herrOn('agenda'); }
 function diasEntre(a, b) { const x = parseISO(String(a || '').slice(0, 10)), y = parseISO(String(b || '').slice(0, 10)); return x && y ? Math.round((y - x) / 864e5) : 0; }
 // días desde que empezó (0 = el mismo día del alta, «día 1»)
 function diasAlta() { const c = cfg(), d = c.altaApp || (c.nivelCambio && c.nivelCambio.d); return d ? Math.max(0, diasEntre(d, todayISO())) : 0; }
@@ -5079,11 +5247,13 @@ const DESCUBRE = [
   { k: 'inicio', ic: 'sliders', n: 'Inicio a tu gusto', f: 'Elige qué ves en Inicio: metas, cuentas, calendario…', b: 'Probar', a: ['iwEditar', []], si: () => !!cfg().inicioWidgets },
 ];
 function descubierta(k) { const d = DESCUBRE.find((x) => x.k === k); if (!d) return false; if ((cfg().descubierto || {})[k]) return true; try { return !!d.si(); } catch (e) { return false; } }
-function descubreN() { return DESCUBRE.filter((d) => descubierta(d.k)).length; }
-function descubreTxt(n) { return 'Has descubierto ' + n + ' de ' + DESCUBRE.length + ' herramientas'; }
-function descBarraHtml(n) { return '<i class="desc-barra" aria-hidden="true"><i style="width:' + Math.round(n / DESCUBRE.length * 100) + '%"></i></i>'; }
+// las apagadas en «Mis herramientas» no salen en Descubre (ni cuentan)
+function descLista() { return DESCUBRE.filter((d) => herrOn(DESC_HERR[d.k])); }
+function descubreN() { return descLista().filter((d) => descubierta(d.k)).length; }
+function descubreTxt(n) { return 'Has descubierto ' + n + ' de ' + descLista().length + ' herramientas'; }
+function descBarraHtml(n) { return '<i class="desc-barra" aria-hidden="true"><i style="width:' + Math.round(n / Math.max(1, descLista().length) * 100) + '%"></i></i>'; }
 function descubreHtml() {
-  const ds = DESCUBRE.map((d) => Object.assign({ hecha: descubierta(d.k) }, d)), n = ds.filter((d) => d.hecha).length;
+  const ds = descLista().map((d) => Object.assign({ hecha: descubierta(d.k) }, d)), n = ds.filter((d) => d.hecha).length;
   const fila = (d) => '<div class="desc-fila tappable' + (d.hecha ? ' hecha' : '') + '" role="button" tabindex="0" ' + act('descProbar', d.k) + '><span class="desc-ic">' + ic(d.ic) + (d.hecha ? '<i class="desc-ok">' + ic('check') + '</i>' : '') + '</span>' +
     '<span class="desc-t"><b>' + d.n + '</b><span>' + d.f + '</span></span><button type="button" class="btn sm ' + (d.hecha ? 'ghost' : 'accent') + '" ' + act('descProbar', d.k) + '>' + (d.hecha ? 'Abrir' : d.b) + '</button></div>';
   return '<div class="handle"></div><h2>Descubre PalomApp</h2><p class="desc-cuenta">' + descubreTxt(n) + '</p>' +
@@ -5098,7 +5268,7 @@ function descLineaHtml() {
   return '<button type="button" class="iw-editar desc-linea" ' + act('descAbrir') + '>' + ic('sparkle') + '<span class="desc-l-t"><b><span class="dl-largo">Descubre todo lo que puede hacer PalomApp</span><span class="dl-corto">Descubre PalomApp</span></b><small>' + descubreTxt(n) + '</small>' + descBarraHtml(n) + '</span></button>';
 }
 function descTuHtml() {
-  const n = descubreN(); if (n >= DESCUBRE.length) return '';
+  const n = descubreN(); if (n >= descLista().length) return '';
   return '<div class="tu-grupo"><button type="button" class="tu2-desc tappable" data-k="descubre palomapp herramientas funciones que puedo hacer ayuda" ' + act('descAbrir') + '><span class="ic">' + ic('sparkle') + '</span><span class="desc-l-t"><b>Descubre PalomApp</b><small>' + descubreTxt(n) + '</small>' + descBarraHtml(n) + '</span><span class="chev">' + ic('chevR') + '</span></button></div>';
 }
 /* ---- Hoja «Qué ves en la app» (Tú → La app) ---- */
@@ -5120,7 +5290,7 @@ function ppFilas() {
       { ic: 'plus', t: 'Apunta un gasto tuyo', d: 'Solo lo ves tú.', a: act('crearIr', 'gasto'), hecho: movs.length > 0 },
       { ic: 'send', t: 'Crea tu propio grupo', d: 'Para la casa, la pareja o el próximo viaje.', a: act('openGrupos'), hecho: (S.grupos || []).some((g) => g.id !== inv.gid && grupoMio(g)) }];
   }
-  return [{ ic: 'plus', t: 'Apunta tu primer gasto', d: 'O hazle una foto al ticket.', a: act('crearIr', 'gasto'), hecho: (S.movimientos || []).length > 0 }].concat(compartidosDisponible() ? [
+  return [{ ic: 'plus', t: 'Apunta tu primer gasto', d: herrOn('tickets') ? 'O hazle una foto al ticket.' : 'Lo que te has gastado hoy.', a: act('crearIr', 'gasto'), hecho: (S.movimientos || []).length > 0 }].concat(compartidosDisponible() && juntosOn() ? [
     { ic: 'users', t: 'Comparte un gasto con alguien', d: 'Basta con su nombre: no hace falta que tenga la app.', a: act('crearIr', 'compartido'), hecho: cs.some(compMio) }] : []).concat([
     { ic: 'bank', t: 'Pon el saldo de tu banco', d: 'Así sabrás lo que te queda de verdad.', a: act('openCuentas'), hecho: cuentasCfg().some(conSaldo) }]); // sin Juntos disponible, la fila de compartir no sale
 }
@@ -5136,7 +5306,7 @@ function ppTarjetaHtml(enHoja) {
   const fs = ppFilas(), n = fs.filter((f) => f.hecho).length, est = ppEstado();
   if (est === 'hecho') {
     if (!(cfg().primerosPasos || {}).hecho && !S._ppProg) S._ppProg = setTimeout(() => { S._ppProg = null; if (!(cfg().primerosPasos || {}).hecho) { if (S._ppVioPendiente && !reduceMotion()) confeti(30, null); saveConfig({ primerosPasos: { hecho: todayISO() } }); } }, 0);
-    return '<div class="empieza pp"><div class="empieza-cab"><h3>¡Ya lo tienes!</h3></div><button type="button" class="empieza-paso pp-fila tappable" ' + act('descAbrir') + '><span class="pp-c on">' + ic('sparkle') + '</span><span><b>Ahora, descubre lo demás</b><span class="d">Has descubierto ' + descubreN() + ' de ' + DESCUBRE.length + ' herramientas.</span></span><span class="chev-s">' + ic('chevR') + '</span></button></div>';
+    return '<div class="empieza pp"><div class="empieza-cab"><h3>¡Ya lo tienes!</h3></div><button type="button" class="empieza-paso pp-fila tappable" ' + act('descAbrir') + '><span class="pp-c on">' + ic('sparkle') + '</span><span><b>Ahora, descubre lo demás</b><span class="d">Has descubierto ' + descubreN() + ' de ' + descLista().length + ' herramientas.</span></span><span class="chev-s">' + ic('chevR') + '</span></button></div>';
   }
   S._ppVioPendiente = true;
   if (S._ppN != null && n > S._ppN) setTimeout(() => sentir('ok'), 0);
@@ -5162,7 +5332,7 @@ function sugCandidatas() {
   if (new Set(plazos.map((m) => mesDe(m.fecha || ''))).size >= 2) out.push({ k: 'deudas', ic: 'deuda', t: '¿Estás pagando algo a plazos?', f: 'Apúntalo como deuda y verás cuánto te queda y cuándo acabas.', b: 'Apuntar deuda', a: ['deudaNueva', []] });
   if (d >= 13 && (S.movimientos || []).length >= 20) out.push({ k: 'inicio', ic: 'sliders', t: 'Pon en Inicio lo que más miras', f: 'Una meta, tus cuentas, el calendario de gastos…', b: 'Elegir', a: ['iwEditar', []] });
   const sg = cfg().sugerencias || {};
-  return out.filter((x) => { const e = sg[x.k] || {}; return !descubierta(x.k) && !e.hecha && e.hasta !== 'nunca' && !(e.hasta && e.hasta > hoy); });
+  return out.filter((x) => { const e = sg[x.k] || {}; return herrOn(DESC_HERR[x.k]) && !descubierta(x.k) && !e.hecha && e.hasta !== 'nunca' && !(e.hasta && e.hasta > hoy); });
 }
 function sugerenciaHtml() {
   if (!basico() || diasAlta() < 1) return '';
@@ -5216,8 +5386,8 @@ function iwEdHtml() {
 }
 function iwCatHtml() {
   const F = FORM, L = F.lista, f = F.filtro || 'todo', lleno = L.length >= IW_MAX;
-  const chips = '<div class="chips iw-cat-chips">' + IW_GRUPOS.filter(([k]) => k === 'todo' || IW_ORDEN.some((t) => IW_TIPOS[t].g === k && (!IW_TIPOS[t].hay || IW_TIPOS[t].hay()))).map(([k, l]) => '<button type="button" class="chip' + (f === k ? ' active' : '') + '" ' + act('iwFiltro', k) + '>' + l + '</button>').join('') + '</div>';
-  const tiene = (t) => !IW_TIPOS[t].varias && L.some((x) => x.t === t), tarjetas = IW_ORDEN.filter((t) => (f === 'todo' || IW_TIPOS[t].g === f) && (!IW_TIPOS[t].hay || IW_TIPOS[t].hay())).sort((a, b) => tiene(a) - tiene(b)).map((t) => { const T = IW_TIPOS[t], ya = !T.varias && L.some((x) => x.t === t);
+  const chips = '<div class="chips iw-cat-chips">' + IW_GRUPOS.filter(([k]) => k === 'todo' || IW_ORDEN.some((t) => IW_TIPOS[t].g === k && iwTipoOn(t) && (!IW_TIPOS[t].hay || IW_TIPOS[t].hay()))).map(([k, l]) => '<button type="button" class="chip' + (f === k ? ' active' : '') + '" ' + act('iwFiltro', k) + '>' + l + '</button>').join('') + '</div>';
+  const tiene = (t) => !IW_TIPOS[t].varias && L.some((x) => x.t === t), tarjetas = IW_ORDEN.filter((t) => (f === 'todo' || IW_TIPOS[t].g === f) && iwTipoOn(t) && (!IW_TIPOS[t].hay || IW_TIPOS[t].hay())).sort((a, b) => tiene(a) - tiene(b)).map((t) => { const T = IW_TIPOS[t], ya = !T.varias && L.some((x) => x.t === t);
     let prev = ''; if (t !== 'dias' && t !== 'asivas') { const sv = S._ins; prev = iwPiezaHtml(iwEjemplo(t), -1); S._ins = sv; }
     return '<div class="iw-cat-t' + (ya || lleno ? ' ya' : ' tappable') + '" role="button" ' + (ya || lleno ? 'aria-disabled="true"' : 'tabindex="0" ' + act('iwAnadir', t)) + '>' +
       '<div class="iw-prev" aria-hidden="true">' + (prev ? '<div class="iw-prev-in">' + prev.replace(/data-click="[^"]*"/g, '').replace(/<button /g, '<span ').replace(/<\/button>/g, '</span>').replace(/<(\/?)section/g, '<$1div') + '</div>' : '<span class="iw-prev-ic">' + ic(T.ic) + '</span>') + '</div>' +
@@ -5586,6 +5756,7 @@ function infPendientes() {
 }
 // el aviso en Inicio: siempre que haya un informe nuevo (un solo aviso a la vez, después de la invitación de Juntos)
 function infAvisoHtml() {
+  if (!herrOn('informes')) return '';
   const c = infPendientes()[0]; if (!c) return '';
   const P = infDatos(c).P;
   return '<div class="card inf-ini inf-ini-1"><span class="inf-ini-ic">' + ic('sparkle') + '</span><button type="button" class="inf-ini-x tappable" ' + act('infVer', c) + '><b>Tu informe ' + (P.tipo === 'semana' ? 'de la semana' : P.tipo === 'anio' ? 'de ' + P.y : P.tipo === 'trimestre' ? 'del trimestre' : 'de ' + MESES[P.m - 1].toLowerCase()) + ' está listo</b>' + ic('chevR') + '</button>' +
@@ -6562,8 +6733,8 @@ function renderDineroV2() {
   const deudas = (cfg().deudas || []).filter((d) => d && d.nombre), dComp = objCompartidos('deuda');
   const nada = !p.nCuentas && !hayInv && !deudas.length && !dComp.length && !ms.activas.length && !ms.hechas.length;
   if (nada) return '<div class="card dm-empezar"><div class="dm-emp-t">Empieza por aquí</div>' +
-    [['bank', 'Pon el saldo de tu banco', 'Así sabrás lo que tienes de verdad', 'openCuentas'], ['target', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva'], ['deuda', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva']]
-      .map(([i, t, d, a]) => '<button type="button" class="dm-emp tappable" ' + act(a) + '><span class="dm-ic">' + ic(i) + '</span><span class="dm-emp-x"><b>' + t + '</b><span>' + d + '</span></span>' + ic('chevR') + '</button>').join('') + '</div>';
+    [['bank', 'Pon el saldo de tu banco', 'Así sabrás lo que tienes de verdad', 'openCuentas'], ['target', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva', 'metas'], ['deuda', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva', 'deudas']]
+      .filter((x) => herrOn(x[4])).map(([i, t, d, a]) => '<button type="button" class="dm-emp tappable" ' + act(a) + '><span class="dm-ic">' + ic(i) + '</span><span class="dm-emp-x"><b>' + t + '</b><span>' + d + '</span></span>' + ic('chevR') + '</button>').join('') + '</div>';
   if (dineroV3()) return dinero3Html(p, ms, hayInv, deudas, dComp);
   return lqtHtml(p) + dmCuentasHtml() + dmMetasHtml(ms) + (hayInv ? dmInversionesHtml() : '') + dmDeudasHtml(deudas, dComp);
 }
@@ -6578,18 +6749,20 @@ function cabAltoMedir() {
 }
 window.addEventListener('resize', () => { if (S.tab === 'dinero') cabAltoMedir(); });
 const DM3_TABS = ['cuentas', 'metas', 'inversiones', 'deudas'];
-function dm3Tab() { return DM3_TABS.indexOf(S.dm3Tab) >= 0 ? S.dm3Tab : 'cuentas'; }
+function dm3Tab() { return DM3_TABS.indexOf(S.dm3Tab) >= 0 && dm3TabOn(S.dm3Tab) ? S.dm3Tab : 'cuentas'; }
+function dm3TabOn(k) { return k === 'cuentas' || herrOn(k); } // 13/11: metas, inversiones y deudas se pueden apagar en «Mis herramientas» (los datos se quedan)
 function dinero3Html(p, ms, hayInv, deudas, dComp) {
   const t = dm3Tab(), nMetas = ms.activas.length + ms.hechas.length, nDeu = deudas.length + dComp.length;
   const lqt = '<div class="card dm3-lqt"><div class="dm3-lqt-l"><span>Lo que tienes</span><button type="button" class="dm3-info" aria-label="¿Cómo se calcula?" ' + act('dmComo') + '>' + ic('info') + '</button></div>' +
     (p.nCuentas ? '<b class="dm3-lqt-v tnum">' + money(p.total) + '</b>' : '<button type="button" class="link dm3-lqt-sin" ' + act('openCuentas') + '>Pon el saldo de tu banco</button>') +
     '<span class="dm3-lqt-f">cuentas + invertido − lo que debes</span></div>';
   const ficha = (k, icono, nom, val, cls) => '<button type="button" role="tab" id="dm3t-' + k + '" aria-controls="dmCuerpo" aria-selected="' + (t === k) + '" class="dm3-tab' + (t === k ? ' on' : '') + (cls ? ' ' + cls : '') + '" ' + act('dm3Tab', k) + '>' + ic(icono) + '<span>' + nom + '</span><b class="tnum">' + val + '</b></button>';
-  const tabs = '<div class="dm3-tabs" role="tablist" aria-label="Tu dinero">' +
+  const nT = DM3_TABS.filter(dm3TabOn).length;
+  const tabs = nT < 2 ? '' : '<div class="dm3-tabs' + (nT < 4 ? ' n' + nT : '') + '" role="tablist" aria-label="Tu dinero">' +
     ficha('cuentas', 'bank', 'Cuentas', p.nCuentas ? m0(p.banco) : 'Añadir', p.nCuentas ? '' : 'vacia') +
-    ficha('metas', 'target', 'Metas', nMetas ? (nMetas === 1 ? '1 meta' : nMetas + ' metas') : 'Añadir', nMetas ? '' : 'vacia') +
-    ficha('inversiones', 'trendUp', 'Inversiones', hayInv ? m0(p.inv) : 'Añadir', hayInv ? 'inv' : 'vacia') +
-    ficha('deudas', 'deuda', 'Deudas', nDeu ? (p.deudas ? '−' + m0(p.deudas) : m0(0)) : 'Añadir', nDeu ? 'deu' : 'vacia') + '</div>';
+    (dm3TabOn('metas') ? ficha('metas', 'target', 'Metas', nMetas ? (nMetas === 1 ? '1 meta' : nMetas + ' metas') : 'Añadir', nMetas ? '' : 'vacia') : '') +
+    (dm3TabOn('inversiones') ? ficha('inversiones', 'trendUp', 'Inversiones', hayInv ? m0(p.inv) : 'Añadir', hayInv ? 'inv' : 'vacia') : '') +
+    (dm3TabOn('deudas') ? ficha('deudas', 'deuda', 'Deudas', nDeu ? (p.deudas ? '−' + m0(p.deudas) : m0(0)) : 'Añadir', nDeu ? 'deu' : 'vacia') : '') + '</div>';
   let cuerpo;
   if (t === 'cuentas') cuerpo = dm3CuentasHtml(p);
   else if (t === 'metas') cuerpo = dmMetasHtml(ms);
@@ -7550,18 +7723,19 @@ const BUSCAR_ACCIONES = [
   ['Análisis del año', 'anual resumen', 'verAnio', []], ['Copia de seguridad', 'exportar backup json', 'exportBackup', []],
   ['Tema oscuro o claro', 'apariencia', 'goTab', ['tu']], ['Aspecto y sensaciones', 'color paleta tipografia cifras vibracion sonido clasico nuevo estilo', 'openAspecto', []], ['Moneda', 'euro dolar', 'openMoneda', []], ['Qué hay de nuevo', 'novedades parche', 'verNovedades', ['1']],
   ['Descubre PalomApp', 'herramientas funciones que puedo hacer ayuda', 'descAbrir', []], ['Calculadora de trayecto', 'trayecto gasolina coche viaje carga', 'trAbrir', []],
-  ['Informes', 'informe resumen mes frases', 'infAbrir', []], ['Inicio a tu gusto', 'editar inicio piezas', 'iwEditar', []], ['Qué ves en la app', 'basico sencillo todo completo modo', 'nivelAbrir', []],
+  ['Informes', 'informe resumen mes frases', 'infAbrir', []], ['Inicio a tu gusto', 'editar inicio piezas', 'iwEditar', []], ['Qué ves en la app', 'basico sencillo todo completo modo', 'nivelAbrir', []], ['Mis herramientas', 'herramientas elegir quitar apagar encender usar', 'tuIr', ['herramientas']],
 ];
+function buscarAcciones() { return BUSCAR_ACCIONES.filter(([t]) => herrOn(BUSCAR_HERR[t])); } // sin lo apagado en «Mis herramientas»
 function buscarHtml() {
   return '<div class="handle"></div><div class="field buscar-campo"><input type="search" id="qBuscar" placeholder="Buscar: Mercadona, luz, 42,50, metas…" aria-label="Buscar en la app" autocomplete="off" ' + onInput('buscarGlobal') + '></div>' +
     '<div id="buscarRes">' + buscarResHtml('') + '</div>';
 }
 function buscarResHtml(q0) {
   const q = normDesc(q0);
-  if (!q) return '<div class="section-title">Atajos</div><div class="chips">' + BUSCAR_ACCIONES.slice(0, 8).map(([t, , h, a]) => '<button type="button" class="chip chip-ic" ' + act('buscarIr', h, ...a) + '>' + ic(ATAJO_IC[t] || 'chevR') + ' ' + escapeHtml(t) + '</button>').join('') + '</div>' +
+  if (!q) return '<div class="section-title">Atajos</div><div class="chips">' + buscarAcciones().slice(0, 8).map(([t, , h, a]) => '<button type="button" class="chip chip-ic" ' + act('buscarIr', h, ...a) + '>' + ic(ATAJO_IC[t] || 'chevR') + ' ' + escapeHtml(t) + '</button>').join('') + '</div>' +
     '<div class="rec-hint" style="margin-top:12px;">Busca movimientos por tienda, categoría o importe, tus tareas y cualquier ajuste.</div>';
   const pal = q.split(' ').filter(Boolean), casa = (txt) => { const t = normDesc(txt); return pal.every((w) => t.indexOf(w) >= 0); };
-  const acc = BUSCAR_ACCIONES.filter(([t, k]) => casa(t + ' ' + k)).slice(0, 5);
+  const acc = buscarAcciones().filter(([t, k]) => casa(t + ' ' + k)).slice(0, 5);
   const cats = [...new Set(categoriasPorTipo('Gasto').concat(categoriasPorTipo('Factura')))].filter((c) => casa(c)).slice(0, 4);
   const ma = mesActual(), delMes = cats.length ? gastoPorCategoria(kpisMes(ma.y, ma.m).movs) : {};
   const todos = movsEfectivos().filter((m) => casa([m.categoria, m.subcategoria, m.descripcion, m.tipo, fmtM(Math.abs(num(m.importe))), String(m.importe)].join(' '))).sort(cmpMov);
@@ -10836,7 +11010,7 @@ function recordatoriosLista() {
     if (cobros.length) out.push({ nivel: 'normal', titulo: cobros.length === 1 ? 'Mañana: cobro de ' + cobros[0] : 'Mañana: ' + cobros.length + ' cobros', texto: cobros.length === 1 ? 'Toca para verlo en PalomApp.' : avLista(cobros), cuando, marca, tab: 'inicio' });
   });
   // tareas de hoy, juntas
-  if (ac.agenda) {
+  if (ac.agenda && agendaOn()) {
     const t2 = {};
     (S.tareas || []).forEach((t) => { if (t.estado === 'Completado' || !t.fechaLimite || t.fechaLimite < hoy || t.fechaLimite > fin) return; (t2[t.fechaLimite] = t2[t.fechaLimite] || []).push(String(t.nombre || 'Tarea')); });
     Object.keys(t2).forEach((iso) => { const cuando = a9(iso); if (cuando <= ahora) return; const l = t2[iso];
@@ -10861,13 +11035,13 @@ function avHechos() { try { const v = lsGet(avClaveLs()); if (v) return JSON.par
 function avGuardarHechos(h) { const lim = Date.now() - 45 * 864e5; Object.keys(h).forEach((k) => { if (k === '_ini') return; if (!k.startsWith('n|') && h[k] < lim) delete h[k]; if (k.startsWith('n|') && k.slice(2) < isoLocal(lim)) delete h[k]; }); S._avHechos = h; lsSet(avClaveLs(), JSON.stringify(h)); }
 function avisosAlMomento() {
   const ac = avisosCfg(), sucesos = [];
-  if (ac.presupuestos) try {
+  if (ac.presupuestos && herrOn('presupuestos')) try {
     const ma = mesActual(), k = ma.y + '-' + pad2(ma.m), map = gastoPorCategoria(movsDelMes(ma.y, ma.m));
     catsGasto().forEach((c) => { const p = num(c.presupuesto), g = map[c.nombre] || 0; if (!(p > 0) || !c.nombre) return;
       if (g > p) sucesos.push({ clave: 'pres100|' + k + '|' + c.nombre, titulo: c.nombre + ': presupuesto pasado', texto: 'Ya has gastado más de lo que pensabas este mes.', tab: 'movimientos' });
       else if (g >= p * 0.8) sucesos.push({ clave: 'pres80|' + k + '|' + c.nombre, titulo: c.nombre + ': llevas el 80 %', texto: 'Del presupuesto de este mes.', tab: 'movimientos' }); });
   } catch (e) { /* */ }
-  if (ac.metas) try { metasStats().forEach((r) => { if (r.conseguida || (r.obj > 0 && r.valor >= r.obj - 0.005)) sucesos.push({ clave: 'meta|' + (r.key || r.nombre), titulo: '¡Meta conseguida: ' + r.nombre + '!', texto: 'Lo has logrado. Toca para verla.', tab: 'dinero' }); }); } catch (e) { /* */ }
+  if (ac.metas && herrOn('metas')) try { metasStats().forEach((r) => { if (r.conseguida || (r.obj > 0 && r.valor >= r.obj - 0.005)) sucesos.push({ clave: 'meta|' + (r.key || r.nombre), titulo: '¡Meta conseguida: ' + r.nombre + '!', texto: 'Lo has logrado. Toca para verla.', tab: 'dinero' }); }); } catch (e) { /* */ }
   const h = avHechos(), primera = !h._ini, nuevos = []; h._ini = 1;
   sucesos.forEach((x) => { if (h[x.clave]) return; h[x.clave] = Date.now(); if (!primera) nuevos.push(x); }); // la primera vez solo se apunta lo que ya pasaba (no se avisa de golpe)
   if (primera || nuevos.length) {
@@ -10900,7 +11074,7 @@ function avisosTrasCargar() {
     avisosRecoger();
     impEntranteIni(); // C4: extracto compartido con PalomApp desde otra app
     // 13/11: Android 13+ no deja mandar avisos hasta que se dan permisos; se pide UNA vez al entrar (antes solo al tocar un interruptor de Avisos)
-    const nn = notifNat(); if (nn && S.user && !lsGet('notifPedido:' + miUid())) nn.permiso().then((r) => { if (String(r).indexOf('prompt') === 0) { lsSet('notifPedido:' + miUid(), '1'); return nn.pedir().then(() => programarRecordatoriosPronto()); } }).catch(() => {});
+    pedirNotifUnaVez(); // 13/11: no en mitad de la bienvenida (la nueva lo explica en su paso)
     if (n) { // al tocar «Apuntado en PalomApp», a Inicio
       n.abiertoDesdeAviso().then((si) => { if (si) window.__irA('inicio'); });
       if (!S._avEsc) { S._avEsc = true; n.alAbrirDesdeAviso(() => { avisosRecoger(); window.__irA('inicio'); }); }
@@ -10908,6 +11082,13 @@ function avisosTrasCargar() {
   }
   programarRecordatoriosPronto();
   widgetsTrasCargar(); // docs/40 C5
+}
+// 13/11: Android 13+ no deja mandar avisos hasta que se dan permisos; se pide UNA vez al entrar, pero nunca en mitad de la bienvenida
+function pedirNotifUnaVez(ya) {
+  const nn = notifNat(); if (!nn || !S.user || lsGet('notifPedido:' + miUid())) return;
+  if (!ya) { setTimeout(() => pedirNotifUnaVez(true), 1500); return; } // da tiempo a saber si toca la bienvenida
+  if (S.onboarding || S._onboardPending) return; // al terminarla se vuelve a mirar (doObFinish)
+  nn.permiso().then((r) => { if (String(r).indexOf('prompt') === 0) { lsSet('notifPedido:' + miUid(), '1'); return nn.pedir().then(() => programarRecordatoriosPronto()); } }).catch(() => {});
 }
 // La hoja «Avisos» (Tú)
 async function avisosAbrir() {
@@ -10927,12 +11108,13 @@ function avisosHtml() {
     '<div class="section-title">Importantes · suenan</div><div class="card">' +
     fila('Un pago fijo sin saldo', 'El día antes, si en esa cuenta no hay bastante', sw(ac.saldo, 'avRec', 'saldo')) + '</div>' +
     '<div class="section-title">Para estar al día · sin sonido</div><div class="card">' +
-    fila('Cobros y pagos fijos', 'El día antes, a las 9:00', sw(ac.fijos, 'avRec', 'fijos')) + fila('Tareas de la Agenda', 'El mismo día, a las 9:00', sw(ac.agenda, 'avRec', 'agenda')) +
-    fila('Presupuestos', 'Al llegar al 80 % y al pasarte', sw(ac.presupuestos, 'avRec', 'presupuestos')) + fila('Metas conseguidas', '', sw(ac.metas, 'avRec', 'metas')) + '</div>' +
+    fila('Cobros y pagos fijos', 'El día antes, a las 9:00', sw(ac.fijos, 'avRec', 'fijos')) + (agendaOn() ? fila('Tareas de la Agenda', 'El mismo día, a las 9:00', sw(ac.agenda, 'avRec', 'agenda')) : '') +
+    (herrOn('presupuestos') ? fila('Presupuestos', 'Al llegar al 80 % y al pasarte', sw(ac.presupuestos, 'avRec', 'presupuestos')) : '') + (herrOn('metas') ? fila('Metas conseguidas', '', sw(ac.metas, 'avRec', 'metas')) : '') + '</div>' +
     '<div class="section-title">Resumen</div><div class="card">' + fila('Tu semana y tu mes', 'El domingo a las 19:00 y cuando se cierra tu mes', sw(ac.resumen, 'avRec', 'resumen')) + '</div>' +
     '<div class="card">' + fila('Silencio de 22:00 a 9:00', 'Lo que llegue de noche, a las 9:00', sw(ac.silencio, 'avRec', 'silencio')) + '</div>' +
     '<p class="rec-hint">Como mucho ' + AVISOS_MAX_DIA + ' avisos al día (los importantes aparte), sin cifras y sin publicidad.</p>';
   if (!e) return h + '<p class="rec-hint">Los avisos del banco solo están en la app de Android.</p>';
+  if (!herrOn('avisosBanco') && !e.activo) return h + '<p class="rec-hint">Los avisos del banco están apagados en Tú → Mis herramientas.</p>';
   h += '<div class="section-title">Avisos del banco</div>';
   if (!e.activo || !e.permiso) {
     return h + (e.activo && !e.permiso ? avRestringidoHtml() : '') + '<div class="card av-explica"><b>PalomApp puede leer los avisos de tus apps de banco y apuntar solo cada gasto o ingreso.</b>' +
@@ -11374,13 +11556,22 @@ function freshOnboardingState(manual) {
     manual: !!manual, step: 0, nombre: cfg().nombre || '', cuentaNombre: 'Banco', saldo: '', extra: [],
     nomina: { on: false, importe: '', dia: '' }, fijos: [], otrosAbiertos: false, mesModo: mesCfg().modo === 'cobro' ? 'cobro' : 'natural',
     invite: null, grupoId: null, grupoNombre: '', saving: false,
+    herr: Object.fromEntries(HERRAMIENTAS.map((d) => [d.k, herrOn(d.k)])), // 13/11: «¿Qué quieres usar?» (se guarda al pasar de paso)
   };
 }
 // los pasos que tocan: con invitación válida, 3; si no, 4
 // docs/38 §6: la bienvenida de un usuario nuevo son 2 pantallas (Hola y ¿Por dónde empiezas?) o 1 con invitación. Repetida desde Tú, la de 4 pasos de siempre
 function bienvNueva(ob) { return !ob.manual && versionDe('bienvenida') === 'nueva'; }
+/* 13/11 · Bienvenida por pasos: Hola → ¿Qué quieres usar? → (solo en la app de Android) avisos de PalomApp y avisos del banco →
+   Tu banco → Listo. Con invitación: la invitación primero, sin el banco (como en docs/38). Todo se puede saltar. */
+function bienvPasos(ob) { return !ob.manual && versionDe('bienvenida') === 'pasos'; }
+function obHerrOn(ob, k) { const d = herrDef(k); return !!d && (d.base || (ob.herr || {})[k] !== false); }
 function obPasos(ob) {
   const inv = ob.invite && !ob.invite.aplazada;
+  if (bienvPasos(ob)) {
+    const perm = (notifNat() ? ['notif'] : []).concat(avNat() && obHerrOn(ob, 'avisosBanco') ? ['avbanco'] : []);
+    return (inv ? ['invite', 'herr'] : ['hola', 'herr']).concat(perm, inv ? [] : ['banco'], ['listo']);
+  }
   if (bienvNueva(ob)) return inv ? ['invite'] : ['hola', 'empieza'];
   return inv ? ['invite', 'banco', 'listo'] : ['hola', 'banco', 'mes', 'listo'];
 }
@@ -11462,7 +11653,12 @@ function obGuardarMes(ob) {
   if (Object.keys(patch).length) saveConfig(patch);
   ob.mesGuardado = { nomina: ob.nomina.on ? obDia(ob.nomina.dia) : null, fijos: ob.fijos.filter((f) => (f.nombre || '').trim()).length };
 }
-function obGuardarPaso(ob) { const p = obPasos(ob)[ob.step]; if (p === 'hola') obGuardarHola(ob); else if (p === 'banco') obGuardarBanco(ob); else if (p === 'mes') obGuardarMes(ob); }
+// «¿Qué quieres usar?»: solo se guarda lo que cambia (si lo deja todo encendido, no se escribe nada: sin clave = todo)
+function obGuardarHerr(ob) {
+  const c = {}; HERRAMIENTAS.forEach((d) => { if (d.base) return; const on = obHerrOn(ob, d.k); if (on !== herrOn(d.k)) c[d.k] = on; });
+  if (Object.keys(c).length) herrPoner(c);
+}
+function obGuardarPaso(ob) { const p = obPasos(ob)[ob.step]; if (p === 'hola') obGuardarHola(ob); else if (p === 'herr') obGuardarHerr(ob); else if (p === 'banco') obGuardarBanco(ob); else if (p === 'mes') obGuardarMes(ob); }
 async function doObFinish(despues) {
   const ob = S.onboarding; if (!ob || ob.saving) return;
   ob.saving = true;
@@ -11474,7 +11670,7 @@ async function doObFinish(despues) {
     // por la misma cola que el resto de guardados: así no se pisan (en el servidor, guardar es leer y luego escribir)
     const alta = { novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '', badgesVistos: vistos, compararVersiones: false, altaApp: todayISO() };
     if (!(cfg().ingresos || []).filter(Boolean).length) Object.assign(alta, { ingresos: INGRESOS_SERIE.slice(), ingresosSerie: 2 }); // 13/11: la bienvenida corta no las ponía
-    if (bienvNueva(ob)) Object.assign(alta, { nivel: 'basico', nivelCambio: { d: todayISO(), por: 'alta' } }); // docs/38 §6.1: las cuentas nuevas empiezan en «Lo básico» (en el mismo guardado)
+    if (bienvNueva(ob) || bienvPasos(ob)) Object.assign(alta, { nivel: 'basico', nivelCambio: { d: todayISO(), por: 'alta' } }); // docs/38 §6.1: las cuentas nuevas empiezan en «Lo básico» (en el mismo guardado)
     await saveConfig(alta);
     ok = await write(() => S.db.doc('config/meta').update({ onboarded: true, onboardedAt: new Date().toISOString() }));
   }
@@ -11483,6 +11679,7 @@ async function doObFinish(despues) {
   if (ob.invite && ob.invite.aplazada && lsGet('unirse')) lsSet('invAplazada', lsGet('unirse')); // la invitación queda en Inicio, sin saltar sola
   const gid = ob.grupoId;
   S.onboarding = null; S._novRevisado = true; S.tab = 'inicio'; S._entrando = true;
+  if (!ob.manual && notifNat() && S.user) { if (bienvPasos(ob)) lsSet('notifPedido:' + miUid(), '1'); else setTimeout(() => pedirNotifUnaVez(true), 600); } // 13/11: en la nueva ya se explicó y se pidió en su paso
   renderShell(); render(); window.scrollTo(0, 0);
   if (despues === 'grupo' && gid) { S._introJuntos = cfg().introJuntosVisto ? null : gid; S.tab = 'juntos'; render(); cargarGrupos().then(() => abrirGrupo(gid)); }
   else if (despues === 'gasto' && !lsGet('soy')) setTimeout(() => H.crearIr(['gasto']), 250); // con un sitio guardado, primero sale eso
@@ -11501,7 +11698,7 @@ function obBarra(ob) {
 }
 function obFila(icono, cls, t, d) { return '<div class="ob2-fila"><span class="ob2-fic ' + cls + '">' + ic(icono) + '</span><span><b>' + t + '</b><span>' + d + '</span></span></div>'; }
 function obHolaHtml(ob) {
-  if (bienvNueva(ob)) return marcaHtml(72, 'marca-ob') + '<h1 class="ob2-h">¡Hola!</h1><p class="ob2-p">Esto es PalomApp: tus gastos y lo que compartes, en un solo sitio.</p>' +
+  if (bienvNueva(ob) || bienvPasos(ob)) return marcaHtml(72, 'marca-ob') + '<h1 class="ob2-h">¡Hola!</h1><p class="ob2-p">Esto es PalomApp: tus gastos y lo que compartes, en un solo sitio.</p>' +
     '<div class="ob2-filas">' + obFila('plus', 'a', 'Apunta un gasto en dos toques', ticketsDisponible() ? 'o hazle una foto al ticket' : 'o trae el extracto de tu banco') +
     obFila('users', 'b', 'Comparte gastos en Juntos', 'aunque los demás no tengan la app') +
     obFila('sparkle', 'v', 'Y mucho más, cuando quieras', 'cuentas, metas, presupuestos, agenda… te lo iremos enseñando') + '</div>' +
@@ -11521,6 +11718,38 @@ function obEmpiezaHtml() {
     (compartidosDisponible() ? op('compartido', 'users', 'b', 'Compartir gastos con alguien', 'Una cena, la casa, un viaje') : '') +
     op('banco', 'bank', 'r', 'Poner mi banco al día', 'Copia el saldo de la app de tu banco') + '</div>' +
     '<div class="ob2-ayuda">Lo demás lo encuentras en <b>Descubre PalomApp</b>, en Inicio y en Tú.</div>';
+}
+// 13/11 · ¿Qué quieres usar? Tarjetas que se marcan y desmarcan (la base siempre); se cambia luego en Tú → Mis herramientas
+function obHerrHtml(ob) {
+  const t = (d) => { const on = obHerrOn(ob, d.k);
+    return '<button type="button" class="ob2-herr tappable' + (on ? ' on' : '') + (d.base ? ' base' : '') + '" role="checkbox" aria-checked="' + on + '"' + (d.base ? ' aria-disabled="true"' : ' ' + act('obHerr', d.k)) + '>' +
+      '<span class="ob2-herr-ic">' + ic(d.ic) + '</span><span class="ob2-herr-t"><b>' + d.n + '</b><span>' + (d.base ? 'Siempre' : d.f) + '</span></span><span class="ob2-herr-ck">' + (on ? ic('check') : '') + '</span></button>'; };
+  return '<h1 class="ob2-h">¿Qué quieres usar?</h1><p class="ob2-p">Quita lo que no te interese y la app será más sencilla. No se pierde nada: lo cambias cuando quieras en Tú → Mis herramientas.</p>' +
+    '<div class="ob2-herrs">' + herrLista().map(t).join('') + '</div>';
+}
+// 13/11 · Permiso 1: los avisos de la propia app, con lo que de verdad avisa (recordatoriosLista / avisosAlMomento)
+function obNotifHtml(ob) {
+  const ok = ob.notif === 'granted', no = ob.notif === 'denied';
+  const filas = [['alert', 'r', 'Un pago fijo de mañana sin saldo', 'Si en su cuenta no hay bastante, el día antes']].concat([['repeat', 'a', 'Tus cobros y pagos fijos', 'El día antes, a las 9:00']],
+    obHerrOn(ob, 'presupuestos') ? [['checkCircle', 'v', 'Cuando llegas al 80 % de un presupuesto', 'y si te pasas']] : [], obHerrOn(ob, 'metas') ? [['target', 'b', 'Cuando consigues una meta', '']] : [],
+    obHerrOn(ob, 'agenda') ? [['calendar', 'b', 'Tus tareas del día', 'Por la mañana, todas juntas']] : []);
+  return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te avisamos de lo importante</h1><p class="ob2-p">PalomApp te avisa solo de lo que te sirve:</p>' +
+    '<div class="ob2-filas">' + filas.map(([i, c, t, d]) => obFila(i, c, t, d)).join('') + '</div>' +
+    '<div class="ob2-nota">' + ic('shield') + '<span>Sin publicidad. Como mucho ' + AVISOS_MAX_DIA + ' al día, nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.</span></div>' +
+    (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">Android no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '');
+}
+// 13/11 · Permiso 2 (solo Android): leer los avisos del banco. Qué ganas y qué pasa con tu privacidad
+function obAvBancoHtml(ob) {
+  const e = ob.avEst || {}, listo = !!(e.activo && e.permiso);
+  return '<span class="ob2-big-ic">' + ic('fileIn') + '</span><h1 class="ob2-h">Que se apunten solos tus pagos</h1>' +
+    '<div class="ob2-sec">Qué ganas</div><div class="ob2-filas">' + obFila('checkCircle', 'a', 'Tus pagos con tarjeta y tus bizums, apuntados solos', 'al momento, aunque PalomApp esté cerrada') +
+    obFila('repeat', 'b', '«Deshacer» en el propio aviso', 'y en Inicio los borras con un toque si alguno no es tuyo') + '</div>' +
+    '<div class="ob2-sec">Tu privacidad</div><div class="ob2-filas">' + obFila('shield', 'v', 'El texto del aviso no sale de tu móvil', 'a tu cuenta solo pasa el movimiento: importe, comercio y fecha') +
+    obFila('bank', 'r', 'Solo tus apps de banco y de pagos', 'nunca mensajes, WhatsApp, códigos ni claves') + '</div>' +
+    (listo ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Activado: ya se apuntan solos</span></div>'
+      : '<p class="ob2-ayuda">Al tocar «Activar» se abren los ajustes del móvil: busca PalomApp en «Acceso a notificaciones» y actívalo.</p>' +
+        (ob.avPedido ? '<div class="ob2-nota">' + ic('alert') + '<span><b>¿Sale en gris o pone «Ajuste restringido»?</b> Pasa si instalaste PalomApp desde un archivo y no desde Google Play: abre los ajustes de PalomApp, toca ⋮ arriba a la derecha y elige «Permitir ajustes restringidos». Luego vuelve a tocar «Activar».' +
+          ' <button type="button" class="link" ' + act('avAbrirApp', 'app') + '>Abrir ajustes de PalomApp</button></span></div>' : ''));
 }
 function obBancoHtml(ob) {
   const ya = cuentasCfg(), unido = ob.grupoId ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Ya estás en <b>' + escapeHtml(ob.grupoNombre || 'el grupo') + '</b></span></div>' : '';
@@ -11565,7 +11794,7 @@ function obListoHtml(ob) {
   const tab = (i, t, d, c) => '<div class="ob2-tab' + (c ? ' c' : '') + '"><span class="ob2-tab-i">' + ic(i) + '</span><b>' + t + '</b><span>' + d + '</span></div>';
   return '<span class="ob2-big-ic ok">' + ic('checkCircle') + '</span><h1 class="ob2-h">¡Todo listo' + (n ? ', ' + escapeHtml(n.split(' ')[0]) : '') + '!</h1>' +
     (chips.length ? '<div class="ob2-res">' + chips.map(([i, t]) => '<span>' + ic(i) + escapeHtml(t) + '</span>').join('') + '</div>' : '<p class="ob2-p">Puedes poner tu banco y lo de cada mes cuando quieras desde Dinero y Tú.</p>') +
-    '<div class="ob2-sec">Así se mueve uno por la app</div><div class="ob2-barra">' + tab('home', 'Inicio', 'cómo vas') + tab('list', 'Movimientos', 'todo lo apuntado') + tab('plus', 'Apuntar', 'gasto, ticket…', true) + tab('users', 'Juntos', 'con otros') + tab('wallet', 'Dinero', 'cuentas y metas') + '</div>' +
+    '<div class="ob2-sec">Así se mueve uno por la app</div><div class="ob2-barra">' + tab('home', 'Inicio', 'cómo vas') + tab('list', 'Movimientos', 'todo lo apuntado') + tab('plus', 'Apuntar', 'gasto, ticket…', true) + (juntosOn() ? tab('users', 'Juntos', 'con otros') : '') + tab('wallet', 'Dinero', 'cuentas y metas') + '</div>' +
     '<div class="ob2-ayuda">Tus ajustes, categorías y esta bienvenida están en <b>Tú</b>: tu inicial, arriba a la derecha.</div>';
 }
 function obInviteHtml(ob) {
@@ -11587,13 +11816,15 @@ function obBoton(ob) {
   if (p === 'invite') { const I = ob.invite; if (I.cargando) return ''; return I.info && I.info.valida ? '<button class="btn accent block" ' + act('obUnirse') + '>' + (I.info.tipo === 'directo' ? 'Aceptar' : 'Unirme al grupo') + '</button>' : '<button class="btn accent block" ' + act('obInvAplazar', I.info && I.info.motivo === 'red' ? '' : 'mal') + '>Seguir sin unirme</button>'; }
   if (p === 'hola') return '<button class="btn accent block" ' + act('obNext') + '>' + (ob.manual ? 'Siguiente' : 'Empezar') + '</button>';
   if (p === 'empieza') return '<button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>';
+  if (p === 'notif' && ob.notif !== 'granted' && ob.notif !== 'denied') return '<div class="ob2-dos"><button class="btn ghost" ' + act('obNext', 'no') + '>Ahora no</button><button class="btn accent block" ' + act('obNotif') + '>' + ic('bell') + ' Permitir avisos</button></div>';
+  if (p === 'avbanco' && !(ob.avEst && ob.avEst.activo && ob.avEst.permiso)) return '<div class="ob2-dos"><button class="btn ghost" ' + act('obNext', 'no') + '>Ahora no</button><button class="btn accent block" ' + act('obAvBanco') + '>Activar</button></div>';
   if (p === 'listo') return ob.grupoId ? '<button class="btn accent block" ' + act('obFinish', 'grupo') + '>Ver ' + escapeHtml(ob.grupoNombre || 'el grupo') + '</button><button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>'
     : (ob.manual ? '<button class="btn accent block" ' + act('obFinish', '') + '>Volver a la app</button>' : '<button class="btn accent block" ' + act('obFinish', 'gasto') + '>' + ic('plus') + ' Apuntar mi primer gasto</button><button type="button" class="link ob2-ir" ' + act('obFinish', '') + '>Ir a Inicio</button>');
   return '<div class="ob2-dos"><button class="btn ghost" ' + act('obNext', 'no') + '>Ahora no</button><button class="btn accent block" ' + act('obNext') + '>Siguiente</button></div>';
 }
 function renderOnboarding() {
   const ob = S.onboarding, p = obPasos(ob)[ob.step];
-  const body = p === 'invite' ? obInviteHtml(ob) : p === 'hola' ? obHolaHtml(ob) : p === 'empieza' ? obEmpiezaHtml() : p === 'banco' ? obBancoHtml(ob) : p === 'mes' ? obMesHtml(ob) : obListoHtml(ob);
+  const body = p === 'invite' ? obInviteHtml(ob) : p === 'hola' ? obHolaHtml(ob) : p === 'empieza' ? obEmpiezaHtml() : p === 'herr' ? obHerrHtml(ob) : p === 'notif' ? obNotifHtml(ob) : p === 'avbanco' ? obAvBancoHtml(ob) : p === 'banco' ? obBancoHtml(ob) : p === 'mes' ? obMesHtml(ob) : obListoHtml(ob);
   $('#app').innerHTML = '<div class="ob2"><div class="ob2-in">' + obBarra(ob) + '<div class="ob2-body ob2-p-' + p + '">' + body + '</div><div class="ob2-pie">' + obBoton(ob) + '</div></div></div>';
   window.scrollTo(0, 0);
   if (p === 'listo' && !ob.confeti && !ob.manual) { ob.confeti = true; setTimeout(() => { confeti(30, null); sentir('ok'); }, 250); }
@@ -11857,11 +12088,13 @@ function atrasAndroid() {
   if (b && !b.dataset.cerrando) { if (atrasEnHoja(b)) return true; if (hojaConAlgoEscrito()) preguntarDescartar(); else closeSheet(); return true; }
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
   if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
+  if (S.tab === 'tu' && S.tuSub) { H.tuIr(['']); return true; } // 13/11: de una pantalla de ajustes, a Tú
   if (S.tab !== 'inicio') { H.goTab(['inicio']); return true; }
   return false;
 }
 window.__atras = atrasAndroid;
-window.__avisosVolver = () => { avisosRecoger(); if (FORM && FORM.avisos && $('#sheetBackdrop')) avisosAbrir(); }; // al volver de los ajustes de Android o de segundo plano
+window.__avisosVolver = () => { avisosRecoger(); if (FORM && FORM.avisos && $('#sheetBackdrop')) avisosAbrir();
+  const ob = S.onboarding; if (ob && obPasos(ob)[ob.step] === 'avbanco' && avNat()) avNat().estado().then((e) => { if (S.onboarding === ob) { ob.avEst = e; render(); } }).catch(() => {}); }; // 13/11: al volver de los ajustes de Android en la bienvenida // al volver de los ajustes de Android o de segundo plano
 window.__irA = (tab) => { try { closeSheet(); } catch (e) { /* */ } H.goTab([tab]); };
 function closeSheet() {
   document.body.classList.remove('crear-abierto');
@@ -11911,6 +12144,7 @@ const H = {
     S.volverA = null; if (id === 'movimientos') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S.movVista = 'resumen'; S.movPeriodo = mesHoyClave(); S._donutSel = ''; S._gcAbierta = ''; _donutAnim = ''; }
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
     const nueva = TAB_ALIAS[id] || id; if (nueva !== S.tab) S._entrando = true;
+    if (nueva === 'tu' && S.tab !== 'tu') S.tuSub = '';
     if (nueva === 'inicio') { S.inicioVista = 'hoy'; S.inicioMes = ''; }
     S.tab = nueva; render(); window.scrollTo(0, 0);
   },
@@ -11945,6 +12179,23 @@ const H = {
   buscarGlobal: (_a, el) => { clearTimeout(S._buscarT); const pintar = () => { const r = $('#buscarRes'); if (r) r.innerHTML = buscarResHtml(el.value); }; if (S.movimientos.length > 800) S._buscarT = setTimeout(pintar, 140); else pintar(); },
   buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
   tuMasToggle: () => { S.tuMas = !S.tuMas; sentir('tic'); render(); },
+  /* ---- Tú por temas y «Mis herramientas» (13/11) ---- */
+  tuIr: ([id]) => { S.tuSub = id || ''; if (S.tab !== 'tu') { S.tab = 'tu'; } S._entrando = true; sentir('tic'); render(); window.scrollTo(0, 0); },
+  tu3Filtrar: (_a, el) => {
+    const q = normDesc(el.value), raiz = $('#content .tu3-raiz'), res = $('#content .tu3-res'); let n = 0;
+    if (raiz) raiz.hidden = !!q; if (res) res.hidden = !q;
+    if (res) res.querySelectorAll('[data-k]').forEach((b) => { const ok = !!q && (b.getAttribute('data-k') || '').indexOf(q) >= 0; b.style.display = ok ? '' : 'none'; if (ok) n++; });
+    const z = $('#tuNada'); if (z) z.style.display = q && !n ? '' : 'none';
+  },
+  herrCambiar: ([k]) => {
+    const d = herrDef(k); if (!d || d.base) return;
+    const on = !herrOn(k), datos = !on && herrTieneDatos(k);
+    herrPoner({ [k]: on });
+    if (!on && k === 'avisosBanco' && avNat()) avNat().estado().then((e) => { if (e && e.activo) return avNat().configurar({ activo: false }); }).catch(() => {}); // deja de leer; lo ya apuntado se queda
+    sentir('tic'); toast(on ? d.n + ': encendida' : datos ? 'Apagada. Tus datos se quedan guardados' : d.n + ': apagada');
+    if (on || k === 'agenda' || k === 'presupuestos' || k === 'metas') programarRecordatoriosPronto();
+    render();
+  },
   /* ---- «Lo básico» y «Descubre PalomApp» (docs/38) ---- */
   descAbrir: () => { FORM = { kind: 'descubre' }; if ($('#sheetBackdrop')) updateSheet(descubreHtml()); else openSheet(descubreHtml()); },
   descProbar: ([k]) => {
@@ -12965,7 +13216,7 @@ const H = {
   },
   ocultarCifras: () => { const v = !cifrasOcultas(); S._ocultas = v; lsSet('cifrasOcultas', v ? '1' : '0'); aplicarOcultar(); sentir('tic'); toast(v ? 'Cifras ocultas' : 'Cifras a la vista'); render(); widgetsPronto(); },
   reintentarCarga: () => location.reload(),
-  tbVolver: () => { if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) H.setInicioVista(['hoy']); else H.goTab(['inicio']); },
+  tbVolver: () => { if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) H.setInicioVista(['hoy']); else if (S.tab === 'tu' && S.tuSub) H.tuIr(['']); else H.goTab(['inicio']); },
   metaGuardar: () => metaGuardar(),
   metaCuentaElegir: ([id]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.cuentaMeta = id || ''; updateSheet(metaEditorHtml()); sentir('tic'); },
   aportarRDesde: ([id]) => { if (!FORM || FORM.kind !== 'aportarR' || !cuentaPorId(id)) return; FORM.desde = id; const t = FORM.tec, imp = FORM.importe; updateSheet(aportarRHtml()); FORM.importe = imp; if (t) tecSync(); sentir('tic'); },
@@ -13157,6 +13408,7 @@ const H = {
     FORM.uniendo = false;
     if (!id) return;
     lsSet('unirse', ''); S._uniendo = false;
+    if (!juntosOn()) herrPoner({ juntos: true }); // 13/11: si te unes a un grupo, Juntos vuelve a verse (lo tenías apagado en «Mis herramientas»)
     render(); abrirGrupo(id);
   },
   reclamarHistorial: ([k]) => { if (!FORM || FORM.kind !== 'reclamar') return; FORM.historial = k === '1'; updateSheet(reclamarHtml()); },
@@ -13364,6 +13616,21 @@ const H = {
   },
   obInvAplazar: ([mal]) => { const ob = S.onboarding; if (!ob || !ob.invite) return; ob.invite.aplazada = true; if (mal === 'mal') lsSet('unirse', ''); ob.step = 0; render(); },
   obFinish: ([despues]) => doObFinish(despues || ''),
+  obHerr: ([k]) => { const ob = S.onboarding, d = herrDef(k); if (!ob || !d || d.base) return; ob.herr[k] = !obHerrOn(ob, k); sentir('tic'); render(); },
+  obNotif: async () => {
+    const ob = S.onboarding, nn = notifNat(); if (!ob || !nn) return;
+    if (S.user) lsSet('notifPedido:' + miUid(), '1'); // así no se vuelve a pedir al entrar (avisosTrasCargar)
+    const r = await nn.pedir().catch(() => 'denied'); if (S.onboarding !== ob) return;
+    ob.notif = r === 'granted' ? 'granted' : 'denied'; if (r === 'granted') { sentir('ok'); programarRecordatoriosPronto(); } render();
+  },
+  obAvBanco: async () => {
+    const ob = S.onboarding, n = avNat(); if (!ob || !n) return;
+    const e = await n.estado().catch(() => ({})) || {}, bancos = (e.bancos && e.bancos.length) ? e.bancos : PAQ_BANCOS.map((x) => x[1]);
+    await n.configurar({ activo: true, bancos }).catch(() => {});
+    ob.avPedido = true; ob.avEst = await n.estado().catch(() => null);
+    if (!(ob.avEst && ob.avEst.permiso)) await n.abrirAjustes().catch(() => {});
+    if (S.onboarding === ob) render();
+  },
   invVer: () => { if (S._uniendo) return; lsSet('invAplazada', ''); S._invAplazada = false; maybeUnirse(); },
   invDescartar: () => { lsSet('unirse', ''); lsSet('invAplazada', ''); S._invInfo = null; render(); toast('Invitación descartada. Si cambias de idea, vuelve a abrir el enlace.'); },
   invUnidoVisto: () => { saveConfig({ unidoA: Object.assign({}, cfg().unidoA || {}, { visto: true }) }); render(); },
@@ -13647,6 +13914,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { herrOn, herrLista, obPasos, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE };
 if (!window.__NO_AUTOSTART__) main();
 })();

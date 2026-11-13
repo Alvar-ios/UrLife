@@ -9,7 +9,7 @@ const movs = [mv('j1', 'Ingreso', 'Nómina', 1000, '2026-07-01'), mv('j2', 'Gast
   mv('s1', 'Ingreso', 'Nómina', 1000, '2026-09-01'), mv('s2', 'Gasto', 'Comida', 600, '2026-09-10'), mv('s3', 'Gasto', 'Casa', 100, '2026-09-12'), mv('s4', 'Ahorro', 'Viaje', 50, '2026-09-20'),
   mv('o1', 'Ingreso', 'Nómina', 1000, '2026-10-01'), mv('o2', 'Gasto', 'Comida', 45.5, '2026-10-06'), mv('o3', 'Gasto', 'Ocio', 20, '2026-10-08')];
 (async () => {
-  const e = makeEnv({ movs, version: { inicio: 0, balance: 0, tu: 0 }, pre: fijaFecha('2026-10-15'), cfg: { app: { categoriasGasto: [{ nombre: 'Comida', presupuesto: 500 }, { nombre: 'Casa' }, { nombre: 'Ocio' }], facturas: [{ nombre: 'Gimnasio', importe: 30, diaDelMes: 28 }], cobros: [{ nombre: 'Extra', importe: 100, diaDelMes: 25 }] }, meta: { onboarded: true } } });
+  const e = makeEnv({ movs, version: { inicio: 0, balance: 0, tu: 1 }, pre: fijaFecha('2026-10-15'), cfg: { app: { categoriasGasto: [{ nombre: 'Comida', presupuesto: 500 }, { nombre: 'Casa' }, { nombre: 'Ocio' }], facturas: [{ nombre: 'Gimnasio', importe: 30, diaDelMes: 28 }], cobros: [{ nombre: 'Extra', importe: 100, diaDelMes: 25 }] }, meta: { onboarded: true } } });
   await sleep(200);
   const A = e.w.__APP__, S = A.S, H = A.H, doc = e.doc, sh = () => doc.querySelector('#sheetHost').textContent;
   const card = doc.querySelector('.inf-ini');

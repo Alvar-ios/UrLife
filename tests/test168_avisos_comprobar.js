@@ -15,7 +15,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
       huella: async () => 'f'.repeat(64), deshechos: async () => [] },
       notif: { permiso: async () => perm, pedir: async () => { reg.pedir++; perm = 'granted'; return perm; }, programar: async () => 0, ahora: async (l) => { reg.ahora.push(...l); return l.length; } } };
   };
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre, session: { user: { id: 'u-1', email: 't@t.com' } }, cfg: { app: { compararVersiones: false }, meta: { onboarded: true } } });
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre, session: { user: { id: 'u-1', email: 't@t.com' } }, cfg: { app: { compararVersiones: false }, meta: { onboarded: true } } });
   e.w.Data.moviles = { registrar: async (p) => p.id, quitar: async () => {}, quitarTodos: async () => {} };
   await e.w.__APP__.main(); await sleep(2300);
   ok(reg.pedir === 1, 'al entrar se pide UNA vez el permiso para mandar avisos (Android 13+)');

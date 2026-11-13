@@ -3,7 +3,7 @@ console.error = () => {};
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 (async () => {
-  const e = makeEnv({ version: { dinero: 0, tu: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], cuentas: [{ id: 'c1', nombre: 'X', saldo: 100, ts: 1, color: '#0F8A87', tipo: 'ahorro', fecha: '2026-10-01' }] }, meta: { onboarded: true } } });
+  const e = makeEnv({ version: { dinero: 0, tu: 1 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }], cuentas: [{ id: 'c1', nombre: 'X', saldo: 100, ts: 1, color: '#0F8A87', tipo: 'ahorro', fecha: '2026-10-01' }] }, meta: { onboarded: true } } });
   await sleep(200);
   const A = e.w.__APP__, H = A.H, sh = () => e.doc.querySelector('#sheetHost');
   H.goTab(['tu']); H.openCuentas([]); await sleep(5);

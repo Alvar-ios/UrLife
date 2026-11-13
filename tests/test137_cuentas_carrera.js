@@ -4,7 +4,7 @@
 const { makeEnv, sleep, click } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 (async () => {
-  const e = makeEnv({ cfg: { app: { compararVersiones: false, cuentas: [] }, meta: { onboarded: true } }, movs: [], version: { tu: 0, agenda: 0, crear: 0 } });
+  const e = makeEnv({ cfg: { app: { compararVersiones: false, cuentas: [] }, meta: { onboarded: true } }, movs: [], version: { tu: 1, agenda: 0, crear: 0 } });
   // nos quedamos con la función que recibe lo que llega del servidor
   const orig = e.w.Data; let snap = null;
   // guardar tarda (como en un móvil con poca cobertura): la lectura antigua llega mientras se guarda
@@ -30,7 +30,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   A.H.cuentaAnadir([]); A.H.bancoBuscar([], { value: 'trading' }); await sleep(10);
   ok(/Trading 212/.test(e.doc.querySelector('#sheetHost').textContent), 'buscar «trading» encuentra Trading 212');
   // 10/11 (2.ª vez): tocando de verdad (con el evento del toque), como en el móvil: elegir banco, saldo, color, cambiar de banco y «Listo»
-  const e2 = makeEnv({ cfg: { app: { compararVersiones: false, cuentas: [] }, meta: { onboarded: true } }, movs: [], version: { tu: 0, agenda: 0, crear: 0 } });
+  const e2 = makeEnv({ cfg: { app: { compararVersiones: false, cuentas: [] }, meta: { onboarded: true } }, movs: [], version: { tu: 1, agenda: 0, crear: 0 } });
   const B = e2.w.__APP__; await B.main(); await sleep(150);
   B.H.goTab(['dinero']); await sleep(30);
   click(e2, 'openCuentas'); await sleep(20); click(e2, 'cuentaAnadir'); await sleep(20); click(e2, 'bancoElegir', 'myinvestor'); await sleep(30);

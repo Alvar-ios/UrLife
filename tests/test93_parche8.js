@@ -12,7 +12,7 @@ const m = (u, nm) => ({ user_id: u, nombre: nm, rol: 'miembro' });
 (async () => {
   // Ya vio las etiquetas del Parche 7 (17/10) y las antiguas de Tú
   const vistas = { tumes: '2026-10-17', asivas: '2026-10-17', cobros: '2026-10-13', cuentas: '2026-10-18', patrimonio: '2026-10-18', categorias: '2026-10-13', reglas: '2026-10-13', grupos: '2026-10-13', importar: '2026-10-13', papelera: '2026-10-15', aspecto: '2026-10-15', oscuro: '2026-10-13', sincuenta: '2026-10-18' };
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre: fijaFecha('2026-10-24'),
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre: fijaFecha('2026-10-24'),
     movs: [{ id: 'i1', tipo: 'Ingreso', categoria: 'Nómina', importe: 1500, fecha: '2026-10-01' }, { id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 80, fecha: '2026-10-10' }, { id: 'g2', tipo: 'Gasto', categoria: 'Supermercado', importe: 60, fecha: '2026-09-10' }],
     cfg: { app: { nombre: 'Lucía', badgesVistos: Object.assign({}, vistas), categoriasGasto: [{ nombre: 'Supermercado' }, { nombre: 'Otros' }] }, meta: { onboarded: true } } });
   await sleep(120);
@@ -72,7 +72,7 @@ const m = (u, nm) => ({ user_id: u, nombre: nm, rol: 'miembro' });
   H.closeSheet([]); await sleep(300);
 
   /* 5. Alguien nuevo (la bienvenida marca todo como visto hoy): sin etiquetas del Parche 8 */
-  const n = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre: fijaFecha('2026-10-24'),
+  const n = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre: fijaFecha('2026-10-24'),
     cfg: { app: { nombre: 'Leo', badgesVistos: { tumes: '2026-10-24', asivas: '2026-10-24', cobros: '2026-10-24', perfil: '2026-10-24', planes: '2026-10-24', temas: '2026-10-24' }, categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
   await sleep(120);
   ok(!n.w.__APP__.badgeActivo('tumes') && !n.w.__APP__.badgeActivo('perfil'), 'si las viste después del 23/10, no vuelven');

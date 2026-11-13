@@ -111,7 +111,7 @@ const kind = (e) => (e.A.form() || {}).kind;
   const e2 = makeEnv({
     cfg: { app: { categoriasGasto: [{ nombre: 'Supermercado' }, { nombre: 'Otros' }], ingresos: ['Nómina'], cuentas: [{ id: 'c1', nombre: 'Banco inventado', saldo: 1000, fecha: '2026-09-01' }, { id: 'c2', nombre: 'Efectivo', tipo: 'efectivo', saldo: 50, fecha: '2026-09-01' }] }, meta: { onboarded: true } },
     url: 'https://x.test/', session: { user: { email: 't@t.com', id: 'yo' } }, pre: (w) => { w.TextDecoder = TextDecoder; w.HTMLElement.prototype.scrollIntoView = function () {}; },
-    version: { tu: 0, agenda: 0, crear: 0 },
+    version: { tu: 1, agenda: 0, crear: 0 },
   });
   await sleep(200);
   const A = e2.w.__APP__, H2 = A.H, d2 = e2.doc, atras2 = () => e2.w.__atras(), ab2 = () => { const b = d2.querySelector('#sheetBackdrop'); return !!b && !b.dataset.cerrando; };

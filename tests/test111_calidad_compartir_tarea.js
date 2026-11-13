@@ -10,7 +10,7 @@ const m = (u, nm) => ({ user_id: u, nombre: nm, rol: 'miembro' });
 async function montar(op) {
   op = op || {};
   const tareas = op.tareas || { tp: tarea('Pintar la puerta') };
-  const e = makeEnv({ version: Object.assign({ agenda: 0, tu: 0, crear: 0, inicio: 0 }, op.version || {}), cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
+  const e = makeEnv({ version: Object.assign({ agenda: 0, tu: 1, crear: 0, inicio: 0 }, op.version || {}), cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
   Object.assign(e.store.tareas, JSON.parse(JSON.stringify(tareas)));
   await sleep(80);
   const A = e.w.__APP__, S = A.S;

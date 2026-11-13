@@ -32,6 +32,8 @@ const PANTALLAS = [
   ['dinero', 'A.S.tab="dinero";A.render()'],
   ['agenda', 'A.S.tab="agenda";A.render()'],
   ['tu', 'A.S.tab="tu";A.render()'],
+  ['tu-dinero', 'A.S.tab="tu";A.S.tuSub="dinero";A.render()'], // 13/11: Tú por temas
+  ['tu-herramientas', 'A.S.tab="tu";A.S.tuSub="herramientas";A.render()'],
   ['moneda', 'A.S.tab="juntos";A.render();A.H.compRapido(["g:"+C.G1]);setTimeout(()=>{A.H.monAbrir([]);setTimeout(()=>{const el=document.querySelector("#monImporte");el.value="120";A.H.monImporte([],el);},150);},150)'],
   ['viaje', 'A.S.tab="juntos";A.render();A.H.grupoVer([C.G1]);setTimeout(()=>{A.H.temaVer(["tv1"]);A.H.temaCerrarPre(["tv1"]);},150)'],
   ['trayecto', 'A.S.tab="inicio";A.render();A.H.trAbrir([]);setTimeout(()=>{A.H.trModo(["km"]);setTimeout(()=>{const el=document.querySelector("#trKm");el.value="1.234";A.H.trKm([],el);A.H.trPers([1]);A.H.trPers([1]);},100);},150)'],
@@ -48,6 +50,9 @@ const PANTALLAS = [
 const PANTALLAS_MAS = [
   ['inicio-avisos', AVISOS_MOVS + 'A.S.tab="inicio";A.render()'],
   ['tu-android', NATIVO(true) + 'A.S.tab="tu";A.render()'],
+  ['tu-seguridad-android', NATIVO(true) + 'A.S.tab="tu";A.S.tuSub="seguridad";A.render()'],
+  ['tu-herr-apagadas', 'A.S.config=Object.assign({},A.S.config,{herramientas:{agenda:false,juntos:false,deudas:false,inversiones:false}});A.S.tab="tu";A.S.tuSub="herramientas";A.render()'],
+  ['mas-herr-apagadas', 'A.S.config=Object.assign({},A.S.config,{herramientas:{agenda:false,juntos:false,deudas:false,inversiones:false,trayecto:false}});A.S.tab="inicio";A.render();A.openCrear()'],
   ['tu-mas', 'A.S.tab="tu";A.S.tuMas=true;A.render();setTimeout(()=>{const e=document.querySelector(".tu-mas, [data-click^=tuMasToggle]");if(e)e.scrollIntoView();},100)'],
   ['hoja-avisos', NATIVO(true) + 'A.S.tab="tu";A.render();A.H.avAbrir([])'],
   ['hoja-avisos-explica', NATIVO(false) + 'A.S.tab="tu";A.render();A.H.avAbrir([])'],
@@ -145,6 +150,8 @@ const PANTALLAS_BASICO = [
   ['b-invitado', 'invitado', 'A.S.tab="inicio";A.render()'],
   ['b-bienvenida-1', 'bienvenida', ''],
   ['b-bienvenida-2', 'bienvenida', 'A.H.obNext([])'],
+  ['b-bienvenida-avisos', 'bienvenida', NATIVO(false) + 'A.H.obNext([]);A.H.obNext([])'], // 13/11: bienvenida por pasos (Android)
+  ['b-bienvenida-banco-avisos', 'bienvenida', NATIVO(false) + 'A.H.obNext([]);A.H.obNext([]);A.H.obNext(["no"])'],
 ];
 // en la página: busca textos cortados (sin «…» a propósito) y cosas que se salen por la derecha
 function revisarPagina() {

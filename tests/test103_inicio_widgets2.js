@@ -10,7 +10,7 @@ const grupos = [{ id: 'g1', nombre: 'Piso', tipo: 'grupo', alias: {}, miembros: 
 const comps = [{ id: 'k1', grupoId: 'g1', fecha: hace(3), tipo: 'Gasto', categoria: 'Casa', importe: 90, pagadoPor: yo, reparto: { [yo]: 30, uA: 30, uB: 30 }, modo: 'igual' },
   { id: 'k2', grupoId: 'g2', fecha: hace(2), tipo: 'Gasto', categoria: 'Viajes', importe: 100, pagadoPor: 'uC', reparto: { [yo]: 50, uC: 50 }, modo: 'igual' }];
 (async () => {
-  const e = makeEnv({ version: { inicio: 0, agenda: 0, tu: 0, crear: 0 },
+  const e = makeEnv({ version: { inicio: 0, agenda: 0, tu: 1, crear: 0 },
     movs: [{ id: 'm1', tipo: 'Gasto', categoria: 'Comida', descripcion: 'Súper', importe: 40, fecha: hace(1) }, { id: 'm2', tipo: 'Gasto', categoria: 'Ocio', descripcion: 'Cine', importe: 12, fecha: hace(0) },
       { id: 'm3', tipo: 'Ingreso', categoria: 'Nómina', importe: 1500, fecha: hace(0) }, { id: 'm4', tipo: 'Gasto', categoria: 'Ropa', descripcion: 'Futuro', importe: 9, fecha: en(3) }],
     cfg: { app: { categoriasGasto: [{ nombre: 'Comida' }, { nombre: 'Ocio' }], cuentas: [{ id: 'c1', nombre: 'Banco Uno', saldo: 1200, ts: 1, banco: 'bbva' }, { id: 'c2', nombre: 'Ahorro Dos', saldo: 3000, ts: 1 }],

@@ -14,7 +14,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
       abiertoDesdeAviso: async () => false, alAbrirDesdeAviso: () => {}, huella: async (uid) => 'f'.repeat(64), deshechos: async () => [] },
       notif: { permiso: async () => 'denied', pedir: async () => 'denied', programar: async () => 0 } };
   };
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, pre, session: { user: { id: 'u-1', email: 't@t.com' } },
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre, session: { user: { id: 'u-1', email: 't@t.com' } },
     cfg: { app: { compararVersiones: false, categoriasGasto: [{ nombre: 'Panadería y café' }, { nombre: 'Otros' }], cuentas: [{ id: 'c1', nombre: 'Santander', banco: 'santander' }] }, meta: { onboarded: true } },
     movs: [{ id: 'm1', tipo: 'Gasto', categoria: 'Panadería y café', importe: 2, fecha: hoy, descripcion: 'Panadería' },
            { id: 'm2', tipo: 'Gasto', categoria: 'Otros', importe: 7.3, fecha: hoy, descripcion: 'Panadería centro' }] });

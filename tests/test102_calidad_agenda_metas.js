@@ -15,7 +15,7 @@ const grupo = (S) => {
 (async () => {
   // 1) Usuario nuevo, sin nada: no sale número y no se rompe
   {
-    const e = makeEnv({ version: { agenda: 0, tu: 0, crear: 0, dinero: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
+    const e = makeEnv({ version: { agenda: 0, tu: 1, crear: 0, dinero: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
     await sleep(150);
     const A = e.w.__APP__, doc = e.doc;
     ok(A.agendaHoyN() === 0 && doc.querySelector('#tbAgendaN').hidden && doc.querySelector('#tbAgenda').getAttribute('aria-label') === 'Agenda', 'usuario nuevo: botón de Agenda sin número');
@@ -24,7 +24,7 @@ const grupo = (S) => {
   }
   // 2) El número de hoy: solo lo de hoy y sin hacer (propias y compartidas)
   {
-    const e = makeEnv({ version: { agenda: 0, tu: 0, crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
+    const e = makeEnv({ version: { agenda: 0, tu: 1, crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
     await sleep(150);
     const A = e.w.__APP__, S = A.S, doc = e.doc; grupo(S); S.objetivos = [];
     S.tareas = [{ id: 't1', nombre: 'Hoy sin hacer', fechaLimite: hoy, estado: 'Pendiente' }, { id: 't2', nombre: 'Hoy hecha', fechaLimite: hoy, estado: 'Completado' },
@@ -38,7 +38,7 @@ const grupo = (S) => {
   }
   // 3) Capas del calendario
   {
-    const e = makeEnv({ version: { agenda: 0, tu: 0, crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
+    const e = makeEnv({ version: { agenda: 0, tu: 1, crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
     await sleep(150);
     const A = e.w.__APP__, S = A.S, H = A.H, doc = e.doc;
     const otro = mas(40); // otro mes

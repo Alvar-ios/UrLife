@@ -10,7 +10,7 @@ const { JSDOM } = require('jsdom');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const iso = (n) => { const d = new Date(); d.setDate(d.getDate() + (n || 0)); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const HOY = iso(0), RAIZ = path.join(__dirname, '..');
-const V = { tu: 0, agenda: 0, crear: 0, bienvenida: 0 };
+const V = { tu: 1, agenda: 0, crear: 0, bienvenida: 1 };
 const mesUTC = () => new Date().toISOString().slice(0, 7);
 
 function env(app, user, movs) {

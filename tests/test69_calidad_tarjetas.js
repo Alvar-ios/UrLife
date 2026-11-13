@@ -7,7 +7,7 @@ const cuentas = [{ id: 'c1', nombre: 'Banco A', saldo: 500, ts: 1 }];
 const deudaA = { nombre: 'Préstamo A', objetivo: 1000, previo: 200, cuotaMes: 50 };
 const deudaB = { nombre: 'Préstamo B', objetivo: 600, previo: 100, cuotaMes: 40 };
 async function dinero(app) {
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, movs: [], cfg: { app: Object.assign({ cuentas }, app), meta: { onboarded: true } } });
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, movs: [], cfg: { app: Object.assign({ cuentas }, app), meta: { onboarded: true } } });
   await sleep(120); e.w.__APP__.H.goTab(['dinero']); await sleep(40);
   const c = e.doc.querySelector('#content');
   const ficha = (t) => [...c.querySelectorAll('.dm-ficha')].find((f) => f.textContent.indexOf(t) >= 0);

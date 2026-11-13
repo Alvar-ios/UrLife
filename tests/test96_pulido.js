@@ -44,7 +44,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   const dv = (B.cfg().deudas || []).find((d) => d.nombre === 'Tarjeta Visa');
   ok(dv && dv.emoji === '💳' && dv.fechaObjetivo === '2028-06-30' && dv.objetivo === 1200, 'se guarda con su icono (💳), fecha (30 jun 2028) y total');
   /* 3. Hojas de ajustes (3.4) */
-  const e3 = makeEnv({ version: { tu: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Supermercado', presupuesto: 200 }], metodosPago: ['Efectivo', 'Bizum'], cuentas: [{ id: 'c1', nombre: 'Banco', saldo: 10, ts: 1, tipo: 'ahorro' }],
+  const e3 = makeEnv({ version: { tu: 1 }, cfg: { app: { categoriasGasto: [{ nombre: 'Supermercado', presupuesto: 200 }], metodosPago: ['Efectivo', 'Bizum'], cuentas: [{ id: 'c1', nombre: 'Banco', saldo: 10, ts: 1, tipo: 'ahorro' }],
     cobros: [{ nombre: 'Nómina', importe: 1500, regla: { t: 'ultHabil' } }], facturas: [{ nombre: 'Luz', importe: 40, regla: { t: 'dia', dia: 5 }, categoria: 'Suministros' }] }, meta: { onboarded: true } } });
   await sleep(200);
   const C = e3.w.__APP__, sh3 = () => e3.doc.querySelector('#sheetHost');
