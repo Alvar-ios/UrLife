@@ -9,6 +9,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { registerPlugin } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+const { crearBloqueo } = require('./bloqueo.js');
 
 if (Capacitor.isNativePlatform()) {
   document.documentElement.classList.add('nativo');
@@ -32,19 +33,17 @@ if (Capacitor.isNativePlatform()) {
 
   // Huella o PIN del móvil al abrir y al volver tras 5 minutos fuera (docs/32 B3)
   BiometricAuth.checkBiometry().then((r) => { N.huella = !!(r && (r.isAvailable || r.deviceIsSecure)); }).catch(() => {});
-  let fuera = 0;
-  const pedir = () => {
-    let on = false; try { on = localStorage.getItem('huella') === '1'; } catch (e) { /* */ }
-    if (!on || document.documentElement.classList.contains('bloqueada')) return;
-    document.documentElement.classList.add('bloqueada');
-    BiometricAuth.authenticate({ reason: 'Desbloquea PalomApp', cancelTitle: 'Cancelar', allowDeviceCredential: true, androidTitle: 'Desbloquea PalomApp', androidSubtitle: 'Con tu huella o el PIN del móvil' })
-      .then(() => document.documentElement.classList.remove('bloqueada'))
-      .catch(() => { /* sigue bloqueada: el botón «Desbloquear» lo vuelve a pedir */ });
-  };
-  N.desbloquear = pedir;
+  // 13/11: la lógica vive en bloqueo.js (candado, sin bucle al cerrar la ventanita de la huella)
+  const B = crearBloqueo({
+    activado: () => { try { return localStorage.getItem('huella') === '1'; } catch (e) { return false; } },
+    bloquear: () => document.documentElement.classList.add('bloqueada'),
+    desbloquear: () => document.documentElement.classList.remove('bloqueada'),
+    autenticar: () => BiometricAuth.authenticate({ reason: 'Desbloquea PalomApp', cancelTitle: 'Cancelar', allowDeviceCredential: true, androidTitle: 'Desbloquea PalomApp', androidSubtitle: 'Con tu huella o el PIN del móvil' }),
+  });
+  N.desbloquear = () => B.pedir(); // botón «Desbloquear» de la pantalla de bloqueo
   N.probarHuella = () => BiometricAuth.authenticate({ reason: 'Confirma que eres tú', allowDeviceCredential: true, androidTitle: 'Confirma que eres tú' });
-  App.addListener('appStateChange', ({ isActive }) => { if (!isActive) fuera = Date.now(); else if (fuera && Date.now() - fuera > 5 * 60e3) pedir(); });
-  pedir();
+  App.addListener('appStateChange', ({ isActive }) => { B.estado(isActive); });
+  B.pedir();
 
   // Enlaces que salen de la app (WhatsApp, correo, mapas): con el sistema
   document.addEventListener('click', (ev) => {

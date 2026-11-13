@@ -12802,7 +12802,7 @@ const H = {
     if (!on) { try { await N.probarHuella(); } catch (e) { return toast('No se ha podido confirmar'); } }
     lsSet('huella', on ? '0' : '1'); toast(on ? 'Ya no se pedirá la huella' : 'Se pedirá la huella al abrir'); render();
   },
-  desbloquear: () => { if (window.__nativo && window.__nativo.desbloquear) { document.documentElement.classList.remove('bloqueada'); window.__nativo.desbloquear(); } },
+  desbloquear: () => { if (window.__nativo && window.__nativo.desbloquear) window.__nativo.desbloquear(); }, // 13/11: sin quitar el bloqueo antes (lo quita la huella)
   abrirPrivacidad: () => abrirExterno(APP_URL + 'privacidad.html' + (window.I18N && I18N.lang !== 'es' ? '?lang=' + I18N.lang : '')),
   borrarCuentaAbrir: () => { FORM = { kind: 'borrarCuenta' }; openSheet(borrarCuentaHtml()); },
   borrarCuentaOk: () => borrarCuentaOk(),
