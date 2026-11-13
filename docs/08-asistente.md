@@ -162,3 +162,18 @@ Orden: 1 → 2 → 3 → 4. **La tanda 1 se puede publicar sola** y conviene que
 - Capturas y medidas propias con datos inventados, 19/10/2026.
 
 Para el PDF: poner lado a lado el paso «Ahorro y deudas» de hoy (`asis-antes.png`, 3) y el paso «Cada mes» del boceto, y el Inicio a «0,00 €» (`asis-antes-2.png`, 5) junto al Inicio con «En tu banco hoy» (`asis-boceto-claro.png`, 3). Un embudo de 5 pasos → 4 pasos (3 con invitación) se vería bien.
+
+---
+
+## Bienvenida por pasos (13/11/2026, rama `fase14/bienvenida-ajustes`)
+
+`VERSIONES.bienvenida`: `pasos` (la de ahora), `nueva` (2 pantallas, docs/38) y `antes` (4 pasos, la que se repite desde Tú). Pasos (`obPasos`):
+
+1. **Hola** (nombre).
+2. **¿Qué quieres usar?** (`obHerrHtml`): tarjetas de «Mis herramientas», todas marcadas de salida; se guarda al pasar de paso solo lo quitado (`obGuardarHerr` → `herrPoner`, por `saveConfig`).
+3. **Avisos de PalomApp** (solo app de Android, `obNotifHtml`): qué avisamos de verdad (pago fijo de mañana sin saldo, fijos, presupuesto al 80 %, metas, tareas, según lo elegido), sin publicidad, máx. 3 al día → «Permitir avisos» (`__nativo.notif.pedir`). Ya no se pide el permiso de golpe en mitad de la bienvenida (`pedirNotifUnaVez`).
+4. **Avisos del banco** (solo Android y si se eligió, `obAvBancoHtml`): qué ganas y qué pasa con tu privacidad → «Activar» enciende la lectura y abre «Acceso a notificaciones»; si al volver no hay permiso, la nota de «Permitir ajustes restringidos» con su botón.
+5. **Tu banco** (si no llega con invitación).
+6. **Listo**.
+
+Con invitación: la invitación primero, luego 2, (3, 4) y Listo. Todo se puede saltar. En la web no salen 3 ni 4. Al acabar, «Lo básico» como en docs/38. Pruebas: `tests/test171_bienvenida_pasos.js`.

@@ -120,3 +120,29 @@ Sin texto: aviso «Escribe algo primero». WhatsApp: `https://wa.me/<numero>?tex
 - `docs/ROADMAP.md` (fila 3) y `docs/08-asistente.md` (textos del nombre). Consultados el 22/10/2026.
 
 Para el PDF: dos móviles lado a lado (Tú hoy con 23 filas y Tú propuesto con 17 y «Más ajustes» plegado), y debajo una tira con los tres estados de la banda del ticket en el + (normal, «Te quedan 8», gris «Sin lecturas hasta el 1 de noviembre»).
+
+---
+
+## Ajustes por temas y «Mis herramientas» (13/11/2026, rama `fase14/bienvenida-ajustes`)
+
+Tú se reordena como los ajustes de las apps grandes: perfil arriba, pocas categorías con icono y cada una abre su pantalla (`renderTuV3`, `S.tuSub`, `tuRamas`, `tuRamaFilas`). Cada pantalla tiene «Volver», y la flecha de arriba y el atrás de Android vuelven a Tú (`atrasAndroid`, `tbVolver`). «Buscar un ajuste» busca en todas las pantallas y dice dónde está cada fila. La versión de 22/10 queda en «Antes» (`VERSIONES.tu`: `nueva`, `v2`, `antes`).
+
+```
+Tú
+├─ Perfil (Editar) · Buscar un ajuste · Descubre PalomApp
+├─ Mis herramientas → interruptores · Qué ves en la app · Descubre PalomApp
+├─ Dinero → Cuentas y saldos · Moneda · Categorías (y presupuestos) · Reglas · Fuentes de ingreso · Métodos de pago · Cobros y pagos fijos · Tu mes · Informes* · Deudas*
+├─ Juntos* → Grupos y personas (abre directamente)
+├─ Agenda* → Categorías de tareas · Compartir mi agenda
+├─ Avisos (solo Android, abre directamente)
+├─ Seguridad y privacidad → Verificación en dos pasos · Pedir huella al abrir (Android) · Ocultar cifras · Privacidad · Borrar mi cuenta
+├─ Apariencia e idioma → Aspecto y sensaciones · Tema · Idioma
+├─ Tus datos → Importar · Importaciones · Fotos de tickets* · Descargar (Excel) · Copia de seguridad · Papelera
+├─ Ayuda y novedades → Escríbenos · Qué hay de nuevo · Volver a ver la bienvenida · Botón «Antes» (pruebas)
+└─ Cerrar sesión
+* solo si esa herramienta está encendida
+```
+
+**Mis herramientas** (`HERRAMIENTAS`, `herrOn`, `herrPoner`): Gastos e ingresos (siempre), Presupuestos, Metas de ahorro, Inversiones, Deudas, Juntos, Agenda y tareas, Lectura de tickets, Avisos del banco (solo Android), Informes y Calculadora de trayecto. Se guarda en `cfg().herramientas` solo lo apagado (`{ clave: false }`); sin la clave, todo encendido como siempre. Apagar solo esconde (pestaña Juntos, botón de la Agenda, piezas de Inicio, opciones del +, fichas de Dinero, filas de Tú, avisos, Descubre, sugerencias y la lupa): **nunca se borra nada** y, si había datos, se dice «Tus datos se quedan guardados». Apagar «Avisos del banco» deja de leer (sin vaciar lo pendiente). Unirse a un grupo vuelve a encender Juntos. «Lo básico / Todo» (`nivel`) sigue igual: dice cuánto se pliega lo que está encendido.
+
+Pruebas: `tests/test169_ajustes_temas.js` (inventario: todo lo que se podía tocar en Tú de 22/10 sigue a mano, web y Android), `tests/test170_herramientas.js`.

@@ -1003,7 +1003,7 @@ function renderShell() {
     '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
     '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('tbVolver') + '>' + ic('chevL') + '</button>' +
     '<div><h1 id="pageTitle"></h1><div class="sub" id="pageSub"></div></div></div>' +
-    '<div class="tb-r"><span id="compararHost"></span><span id="ojoTb"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda"' + (S.config && !agendaOn() ? ' hidden' : '') + ' ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
+    '<div class="tb-r"><span id="compararHost"></span><span id="ojoTb"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda"' + (S.config && !agendaOn() ? ' hidden style="display:none"' : '') + ' ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
     '<nav class="tabbar' + (tabsNav().length < 4 ? ' tres' : '') + '" aria-label="Secciones">' + tabsNav().slice(0, 2).map(tabBtn).join('') +
     '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabsNav().slice(2).map(tabBtn).join('') + '</nav>' +
@@ -4369,10 +4369,10 @@ function tuRamas() {
       juntosOn() ? { id: 'juntos', n: 'Juntos', ic: 'users', c: 'j', d: nGr ? nGr + (nGr === 1 ? ' grupo' : ' grupos') : 'Grupos y personas', a: act('openGrupos'), bd: ['grupos'], k: 'compartir invitar whatsapp grupos personas' } : null,
       agendaOn() ? { id: 'agenda', ic: 'calendar', c: 'a', d: agcOn() ? 'Categorías de tareas y compartir tu agenda' : 'Categorías de tareas', bd: ['agendaComp'] } : null,
       notifNat() ? { id: 'avisos', n: 'Avisos', ic: 'bell', c: 'v', d: avNat() && herrOn('avisosBanco') ? 'Del banco y recordatorios' : 'Recordatorios', a: act('avAbrir'), k: 'avisos notificaciones banco recordatorios apuntar solo automatico' } : null].filter(Boolean),
-    [{ id: 'seguridad', ic: 'shield', c: 's', d: (window.__nativo && window.__nativo.huella ? 'Huella, ' : '') + 'ocultar cifras, privacidad, borrar cuenta' },
+    [{ id: 'seguridad', ic: 'shield', c: 's', d: window.__nativo && window.__nativo.huella ? 'Huella, ocultar cifras, privacidad, borrar cuenta' : 'Ocultar cifras, privacidad, borrar cuenta' },
       { id: 'apariencia', ic: 'palette', c: 'p', d: 'Aspecto, tema' + (window.I18N ? ' e idioma' : ''), bd: ['aspecto', 'oscuro'] },
       { id: 'datos', ic: 'archive', c: 'x', d: 'Importar, descargar en Excel, copia, papelera', bd: ['importar', 'papelera'] }],
-    [{ id: 'ayuda', ic: 'info', c: 'y', d: (contactoHay() ? 'Escríbenos, ' : '') + 'novedades y la bienvenida' }],
+    [{ id: 'ayuda', ic: 'info', c: 'y', d: contactoHay() ? 'Escríbenos, novedades y la bienvenida' : 'Novedades y la bienvenida' }],
   ];
 }
 function tuCatHtml(r) {
@@ -4402,7 +4402,7 @@ function tuSubHtml(id) {
   let cuerpo;
   if (id === 'herramientas') cuerpo = herrHtml();
   else cuerpo = tuSecciones(tuRamaFilas(id));
-  return '<div class="tu3-sub"><button type="button" class="tu3-volver" ' + act('tuIr', '') + '>' + ic('chevL') + ' Tú</button><h2 class="tu3-h">' + escapeHtml(TU_RAMAS_N[id] || '') + '</h2>' + cuerpo + '</div>';
+  return '<div class="tu3-sub"><button type="button" class="tu3-volver" ' + act('tuIr', '') + '>' + ic('chevL') + ' Volver</button>' + cuerpo + '</div>'; // el título va arriba, en la cabecera
 }
 // «Mis herramientas»: un interruptor por herramienta (la base no se puede apagar). Nada se borra
 function herrHtml() {
@@ -4467,7 +4467,7 @@ function herrAjustarTab() {
     const rail = $('.rail'), brand = rail && rail.querySelector('.brand');
     if (brand) { rail.querySelectorAll('.tab[data-tab]:not(.rail-tu)').forEach((b) => b.remove()); brand.insertAdjacentHTML('afterend', tabsNav().map(tabBtn).join('')); }
   }
-  const tbA = $('#tbAgenda'); if (tbA) tbA.hidden = !agendaOn();
+  const tbA = $('#tbAgenda'); if (tbA) { tbA.hidden = !agendaOn(); tbA.style.display = agendaOn() ? '' : 'none'; } // el CSS de la cabecera gana a «hidden»
 }
 function estrAjustarTab() {
   if (S.tab === 'agenda') { S.tab = 'inicio'; S.inicioVista = S.agendaSub === 'calendario' ? 'calendario' : 'tareas'; }
