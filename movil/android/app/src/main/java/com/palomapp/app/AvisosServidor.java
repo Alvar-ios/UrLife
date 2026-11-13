@@ -132,7 +132,31 @@ public final class AvisosServidor {
         JSONObject cats = mapa.optJSONObject("comercios");
         String c = it.optString("comercio", "").trim().toLowerCase(new Locale("es", "ES"));
         if (!entra && cats != null && !c.isEmpty()) { String k = cats.optString(c, ""); if (!k.isEmpty()) return k; }
-        return mapa.optString(entra ? "catIngreso" : "catGasto", "");
+        if (!entra) return mapa.optString("catGasto", "");
+        JSONObject ing = mapa.optJSONObject("ingresos");
+        java.util.Map<String, String> porTipo = new java.util.HashMap<>();
+        if (ing != null) { java.util.Iterator<String> ks = ing.keys(); while (ks.hasNext()) { String k = ks.next(); porTipo.put(k, ing.optString(k, "")); } }
+        return categoriaIngreso(it.optString("tipo"), it.optDouble("importe", 0), mapa.optDouble("nominaImporte", 0), porTipo, mapa.optString("catIngreso", ""));
+    }
+
+    // 13/11 · Igual que catIngresoAviso en app.js: cada tipo de ingreso a su categoría (la web manda el mapa «ingresos»).
+    // «Nómina» solo si el aviso lo dice o si es una transferencia de un importe parecido (±15 %) al de su nómina fija
+    // (300 € o más). Un Bizum de 0,50 € nunca es «Nómina» (antes caía en la primera categoría de la lista).
+    // (Sin JSON para poder probarlo en JUnit: porTipo = { nomina, bizum, transferencia, devolucion, intereses, dividendo, otro }.)
+    static String categoriaIngreso(String tipo, double importe, double nom, java.util.Map<String, String> porTipo, String catIngreso) {
+        String t = tipo == null ? "" : tipo;
+        if ("transferencia".equals(t) && nom >= 300 && Math.abs(importe - nom) <= nom * 0.15) t = "nomina";
+        String k = porTipo != null && porTipo.get(t) != null ? porTipo.get(t) : "";
+        if (k.isEmpty() && porTipo != null && porTipo.get("otro") != null) k = porTipo.get("otro");
+        if (k.isEmpty()) k = catIngreso == null ? "" : catIngreso;
+        if (!"nomina".equals(t) && esNomina(k)) k = "Otros ingresos"; // por si el mapa es de una versión anterior
+        if (k.isEmpty()) k = "nomina".equals(t) ? "Nómina" : "Otros ingresos";
+        return k;
+    }
+
+    static boolean esNomina(String cat) {
+        String n = java.text.Normalizer.normalize(cat == null ? "" : cat, java.text.Normalizer.Form.NFD).replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT);
+        return n.matches(".*(nomina|salario|sueldo|haberes).*");
     }
 
     private static int post(String url, String anon, String clave, JSONObject cuerpo) throws Exception {

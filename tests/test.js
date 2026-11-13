@@ -68,7 +68,7 @@ const change=(e,el,v)=>{el.value=v;el.dispatchEvent(new e.w.Event('change',{bubb
  ok(!(e.store.cfg.app.cuentas||[]).length,'«Ahora no» en el banco: no se crea cuenta');
  click(e,'obNomina');A().H.obNomDia([],{value:'28'});click(e,'obMesModo','cobro');A().H.obNext([]);await sleep(10);
  ok(e.store.cfg.app.mesInicio&&e.store.cfg.app.mesInicio.modo==='cobro'&&e.store.cfg.app.mesInicio.dia===28,'eligió «Del 28 al 27»: tu mes va de nómina a nómina');
- ok(JSON.stringify(e.store.cfg.app.ingresos)===JSON.stringify(['Nómina','Transferencias','Wallapop/Vinted','Otros']),'ingresos de serie');
+ ok(JSON.stringify(e.store.cfg.app.ingresos)===JSON.stringify(['Nómina','Extras y bonus','Trabajos y freelance','Bizum y transferencias','Devoluciones y reembolsos','Ventas de segunda mano','Alquileres cobrados','Intereses y dividendos','Ayudas y prestaciones','Regalos','Otros ingresos']),'ingresos de serie (13/11: lista nueva, más amplia)');
  ok(/¡Todo listo, Lucía!/.test(txt()),'«¡Todo listo, Lucía!»');
  click(e,'obFinish','');await sleep(600);
  a=e.store.cfg.app;
