@@ -1,4 +1,4 @@
-// Avisos de Juntos con la app cerrada (Firebase Cloud Messaging). docs/41-avisos-juntos.md.
+// Avisos de Juntos con la app cerrada (Firebase Cloud Messaging). supabase/migrations/2026-11-13_avisos_juntos.sql.
 // La llaman SOLO los disparadores de la base de datos (avisar_compartido, avisar_miembro) con pg_net y la cabecera x-avisar,
 // que se comprueba contra el secreto «avisar_secreto» de Vault (avisar_secreto_ok). Publicada SIN «Verify JWT».
 // Eventos: { evento: 'compartido', id }  ·  { evento: 'miembro', grupo_id, user_id, por }

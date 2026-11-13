@@ -124,6 +124,7 @@ language plpgsql security definer set search_path to 'public', 'pg_temp' as $$
 begin
   if auth.uid() is null or new.baja is not null then return null; end if;
   if tg_op = 'UPDATE' and old.baja is null then return null; end if;      -- solo cuando vuelve tras salir
+  if (select count(*) from public.grupo_miembros where grupo_id = new.grupo_id and baja is null) < 2 then return null; end if;   -- grupo recién creado: nadie a quien avisar
   perform public.avisar_llamar(jsonb_build_object('evento', 'miembro', 'grupo_id', new.grupo_id, 'user_id', new.user_id, 'por', auth.uid()));
   return null;
 exception when others then

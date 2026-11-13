@@ -1,4 +1,4 @@
-// 13/11/2026 · Avisos de Juntos con la app cerrada (Firebase, docs/41). Dos partes:
+// 13/11/2026 · Avisos de Juntos con la app cerrada (Firebase; servidor en supabase/functions/avisar). Dos partes:
 // 1. La lógica de la función «avisar» (supabase/functions/avisar/logica.js): quién recibe, textos es/en, silencio, freno…
 // 2. La app: guarda el token de Firebase de este móvil, la opción «Juntos» en Tú → Avisos, tocar el aviso abre la persona
 //    o el grupo, y al cerrar sesión el token se olvida. Android, Firebase y Supabase se simulan. Datos inventados.

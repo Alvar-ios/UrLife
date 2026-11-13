@@ -86,7 +86,7 @@ public class AvisosBancoPlugin extends Plugin {
     }
 
     /** 13/11: borra lo apuntado para «Comprobar». */
-    /** 13/11 · Avisos de Juntos (docs/41): ¿esta compilación lleva Firebase (google-services.json)? Sin él, no se pide token. */
+    /** 13/11 · Avisos de Juntos (supabase/functions/avisar): ¿esta compilación lleva Firebase (google-services.json)? Sin él, no se pide token. */
     @PluginMethod
     public void firebase(PluginCall call) {
         int id = getContext().getResources().getIdentifier("google_app_id", "string", getContext().getPackageName());

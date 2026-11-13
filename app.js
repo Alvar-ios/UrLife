@@ -10967,7 +10967,7 @@ function avisosInicioHtml() {
     l.slice(0, 5).map(fila).join('') + (l.length > 5 ? '<div class="av-mas">y ' + (l.length - 5) + ' más en Movimientos</div>' : '') +
     '<button type="button" class="btn sm ghost block" ' + act('avVale') + '>Están bien</button></div>';
 }
-/* 13/11 · Avisos de Juntos con la app cerrada (docs/41). El móvil pide su token de Firebase (solo con permiso de avisos y si
+/* 13/11 · Avisos de Juntos con la app cerrada (supabase/functions/avisar). El móvil pide su token de Firebase (solo con permiso de avisos y si
    esta compilación lleva Firebase) y lo guarda en avisos_dispositivos con avisos_token. El servidor (función «avisar») decide
    a quién avisar y respeta Tú → Avisos → Juntos y el silencio de 22:00 a 9:00 (de noche llega sin sonido). */
 function pushNat() { return window.__nativo && window.__nativo.push ? window.__nativo.push : null; }
@@ -11032,7 +11032,7 @@ window.__juntosLlega = (n) => {
    · resumen (apagado de serie): tu semana (domingo 19:00) y tu mes cerrado.
    Reglas: nada en las horas de silencio (22:00–9:00 de serie: se mueve a las 9:00), como mucho 3 normales al día
    (los importantes no cuentan), lo del mismo tipo y día va junto, y sin cifras (Android oculta el texto con el móvil bloqueado). */
-const AVISOS_DEF = { fijos: true, agenda: true, saldo: true, presupuestos: true, metas: true, resumen: false, silencio: true, juntos: true }; // 13/11: juntos = avisos del servidor (docs/41)
+const AVISOS_DEF = { fijos: true, agenda: true, saldo: true, presupuestos: true, metas: true, resumen: false, silencio: true, juntos: true }; // 13/11: juntos = avisos del servidor (supabase/functions/avisar)
 const AVISOS_MAX_DIA = 3;
 function avisosCfg() { return Object.assign({}, AVISOS_DEF, cfg().avisos || {}); }
 function avHoraOk(ts) { // devuelve la hora buena: si cae en silencio, a las 9:00 siguientes

@@ -35,7 +35,7 @@ jobs:
       - name: Preparar la web dentro de la app
         working-directory: movil
         run: npm ci && npm run sync
-      # 13/11 · Avisos de Juntos (docs/41): Firebase solo si el secreto existe. Sin él, la app compila igual, sin avisos de Juntos
+      # 13/11 · Avisos de Juntos (supabase/functions/avisar): Firebase solo si el secreto existe. Sin él, la app compila igual, sin avisos de Juntos
       # (build.gradle aplica google-services solo si hay archivo). El archivo nunca se sube (está en .gitignore).
       - name: Firebase de la versión de prueba
         working-directory: movil/android/app

@@ -127,7 +127,7 @@ if (Capacitor.isNativePlatform()) {
   };
   LocalNotifications.addListener('localNotificationActionPerformed', (a) => { const tab = a && a.notification && a.notification.extra && a.notification.extra.tab; if (tab && window.__irA) { try { window.__irA(tab); } catch (e) { /* */ } } });
 
-  // 13/11 · Avisos de Juntos con la app cerrada (Firebase Cloud Messaging, docs/41). Solo si la compilación lleva
+  // 13/11 · Avisos de Juntos con la app cerrada (Firebase Cloud Messaging; servidor en supabase/functions/avisar). Solo si la compilación lleva
   // google-services.json (si no, Firebase no existe y pedir el token cerraría la app): lo dice avisosBanco.firebase().
   // El servidor (función «avisar») manda por el canal «juntos» (suena bajito, el sonido normal del móvil) o, en las
   // horas de silencio, por «juntos_noche» (sin sonido). Al tocar el aviso se abre la persona o el grupo.
