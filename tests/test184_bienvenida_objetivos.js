@@ -34,10 +34,10 @@ const grupoRpc = (e) => {
   ok(e.doc.querySelector('#app .bv-card.on') && /Controlar mis gastos/.test(e.doc.querySelector('#app .bv-card.on').textContent), 'sin invitación, «Controlar mis gastos» sale marcado');
   ok(e.doc.querySelectorAll('#app .bv-movil .bv-pz').length === 2, 'vista previa: tarjeta del mes + «Así vas» (cifras inventadas)');
   await tocar(e, 'bvObj', 'Ahorrar para algo');
-  ok(e.doc.querySelectorAll('#app .bv-movil .bv-pz').length === 3 && /Viaje a Lisboa/.test(e.doc.querySelector('.bv-movil').textContent) && e.doc.querySelector('.bv-pz.entra'), 'al marcar «Ahorrar» la vista previa encaja su pieza');
+  ok(e.doc.querySelectorAll('#app .bv-movil .bv-pz').length === 3 && /Lisboa/.test(e.doc.querySelector('.bv-movil').textContent) && e.doc.querySelector('.bv-pz.entra'), 'al marcar «Ahorrar» la vista previa encaja su pieza');
   await tocar(e, 'bvObj', 'Ahorrar para algo'); await tocar(e, 'bvObj', 'Controlar mis gastos');
   ok(!e.doc.querySelector('#app .bv-card.on') && e.doc.querySelectorAll('#app .bv-movil .bv-pz').length === 1, 'desmarcadas todas: solo la tarjeta del mes');
-  ok(/Seguir \(unas 1 pantallas\)|Seguir \(unas 1 pantalla/.test(pantalla(e)) || /unas 1/.test(e.doc.querySelector('.ob2-pie').textContent), 'el botón dice cuántas pantallas quedan');
+  ok(e.doc.querySelector('.ob2-pie').textContent.trim() === 'Seguir', 'sin ramas, el botón dice solo «Seguir» (queda el final)');
   await seguir(e);
   ok(paso_(e) === 'F' && e.A.bvLista(e.S.onboarding).length === 3, 'web sin nada marcado: 3 pantallas (' + e.A.bvLista(e.S.onboarding).join(',') + ')');
   const h = app(e).herramientas || {};
@@ -47,8 +47,8 @@ const grupoRpc = (e) => {
   ok(!e.S.onboarding && app(e).nivel === 'basico' && e.store.cfg.meta.onboarded === true && (app(e).bienv || {}).hecho, 'al acabar: «Lo básico», bienvenida hecha y bienv.hecho');
   ok(JSON.stringify(app(e).bienv.objetivos) === '[]', 'bienv.objetivos guardado (vacío)');
   await tocar(e, 'descAbrir', null, null, 100);
-  ok(/herramientas más esperando/.test(hoja(e)) && !!buscar(e, 'bvEncender', 'Metas de ahorro', 'hoja'), 'Descubre nombra lo apagado con «Encender»');
-  await tocar(e, 'bvEncender', 'Metas de ahorro', 'hoja', 150);
+  ok(/herramientas más esperando/.test(hoja(e)) && !!buscar(e, 'bvEncender', 'metas', 'hoja'), 'Descubre nombra lo apagado con «Encender»');
+  await tocar(e, 'bvEncender', 'metas', 'hoja', 150);
   ok(!(app(e).herramientas || {}).hasOwnProperty('metas'), '«Encender» vuelve a encender Metas');
 
   // ---------- 2) Web, camino típico con el teclado de la app ----------
@@ -97,7 +97,7 @@ const grupoRpc = (e) => {
   e = await abrir({ cfg: {}, version: V, pre: nativo(reg), espera: 400 }); grupoRpc(e);
   await escribir(e, '#obNombre', 'Leo'); await seguir(e);
   for (const t of ['Compartir gastos', 'Ahorrar para algo', 'Pagar una deuda', 'Organizar mi día', 'Ver mis inversiones']) await tocar(e, 'bvObj', t);
-  ok(/Lo dejamos listo en unas 10 pantallas/.test(pantalla(e)), 'con todo marcado avisa: «Lo dejamos listo en unas 10 pantallas»');
+  ok(/Lo dejamos listo en unas 8 pantallas/.test(pantalla(e)) && /Seguir \(unas 8 pantallas\)/.test(pantalla(e)), 'con todo marcado avisa: «Lo dejamos listo en unas 8 pantallas» (más; 10 en total)');
   await seguir(e);
   const L = e.A.bvLista(e.S.onboarding), rec = e.S.onboarding.recortadas;
   ok(L.length === 10 && L.join() === 'hola,obj,G1,G2,G5,J1,J2,M1,N1,F', 'Android con todo: 10 pantallas (' + L.join(',') + ')');
@@ -121,7 +121,7 @@ const grupoRpc = (e) => {
   await tocar(e, 'bvJCrear', null, null, 500);
   const ll = e.srv.llamadas.map((x) => x[0]);
   ok(ll.filter((x) => x === 'rpc.crear_grupo').length === 1 && ll.filter((x) => x === 'rpc.crear_sin_cuenta').length === 2, 'crea el grupo y las 2 personas sin cuenta (funciones de siempre)');
-  ok(/Casa está listo/.test(pantalla(e)) && !!buscar(e, 'bvInvitar') && !!buscar(e, 'bvSig', 'Seguir'), 'el grupo «se monta» y salen «Invitar por WhatsApp» y «Seguir»');
+  ok(/Grupo creado: Casa/.test(pantalla(e)) && /Ana · Bea/.test(pantalla(e)) && !!buscar(e, 'bvInvitar') && !!buscar(e, 'bvSig', 'Seguir'), 'el grupo «se monta» y salen «Invitar por WhatsApp» y «Seguir»');
   ok(app(e).bienv.sellos.equipo && app(e).bienv.grupoCreado === 'g1', 'sello «En equipo» y bienv.grupoCreado');
   await seguir(e);
   ok(paso_(e) === 'M1' && /¿Para qué ahorras\?/.test(pantalla(e)) && /Crear mi meta/.test(e.doc.querySelector('.ob2-pie').textContent), 'M1 con M2 recortada: el botón ya crea la meta');
@@ -139,7 +139,7 @@ const grupoRpc = (e) => {
   const pz = e.A.bvPiezas(e.S.onboarding);
   ok(pz.length === 9 && pz.filter((x) => !x[1]).map((x) => x[0]).join() === 'mes,deuda,agenda', 'piezas pendientes: tu mes, tu deuda y tu agenda (' + pz.map((x) => x[0] + ':' + x[1]).join(' ') + ')');
   ok(pctTxt(e) === '67', '«Tu PalomApp al 67 %»: ' + pctTxt(e));
-  ok(/Te falta: tu deuda y tu primera tarea|Te falta: tu primera tarea y tu deuda/.test(pantalla(e)), '«Te falta» con lo recortado: ' + ((pantalla(e).match(/Te falta:[^.]*?(?=\d|$)/) || [])[0] || ''));
+  ok(/Te falta: tu primera tarea · tu deuda/.test(pantalla(e)), '«Te falta» con lo recortado: ' + ((pantalla(e).match(/Te falta:[^.]*?(?=\d|$)/) || [])[0] || ''));
   await tocar(e, 'bvFin', '', null, 800);
   ok(!e.S.onboarding && app(e).nivel === 'basico', 'a Inicio en «Lo básico»');
   const pp = e.A.bvPpFilas().map((f) => f.t);

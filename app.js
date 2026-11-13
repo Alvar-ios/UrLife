@@ -5278,7 +5278,7 @@ function descubreHtml() {
 function descEsperanHtml() {
   const ap = bvApagadas(); if (!ap.length) return '';
   return '<div class="section-title desc-esp-t">' + ap.length + (ap.length === 1 ? ' herramienta más esperando' : ' herramientas más esperando') + '</div><div class="desc-lista desc-esperan">' +
-    ap.map((d) => '<div class="desc-fila apagada"><span class="desc-ic">' + ic(d.ic) + '</span><span class="desc-t"><b>' + d.n + '</b><span>' + d.f + '</span></span><button type="button" class="btn sm ghost" aria-label="Encender ' + d.n + '" ' + act('bvEncender', d.k) + '>Encender</button></div>').join('') + '</div>';
+    ap.map((d) => '<div class="desc-fila apagada"><span class="desc-ic">' + ic(d.ic) + '</span><span class="desc-t"><b>' + d.n + '</b><span>' + d.f + '</span></span><button type="button" class="btn sm ghost" ' + act('bvEncender', d.k) + '>Encender</button></div>').join('') + '</div>';
 }
 // la línea del final de Inicio (mientras dure «Lo básico») y la tarjeta de Tú (para todos)
 function descLineaHtml() {
@@ -12253,7 +12253,7 @@ function bvTecHtml() {
 // fila con cifra que se rellena con el teclado (toca para elegir cuál)
 function bvCampoHtml(ob, k, izq, etiqueta) {
   const on = ob.tecCampo === k, t = ob.vals[k] == null ? '' : String(ob.vals[k]);
-  return '<button type="button" class="bv-campo tappable' + (on ? ' on' : '') + '" aria-pressed="' + on + '" aria-label="' + escapeHtml(etiqueta) + ': ' + (t ? escapeHtml(tecMiles(t)) + ' euros' : 'sin poner') + '" ' + act('bvCampo', k) + '>' + izq + '<span class="bv-cifra">' + bvCifraHtml(t) + '</span></button>';
+  return '<button type="button" class="bv-campo tappable' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-k="' + escapeHtml(etiqueta) + '" ' + act('bvCampo', k) + '>' + izq + '<span class="bv-cifra">' + bvCifraHtml(t) + '</span></button>';
 }
 function bvTarjeta(k, icono, cls, t, d, on, accion, extra) {
   return '<button type="button" class="bv-card tappable' + (on ? ' on' : '') + (extra || '') + '" role="checkbox" aria-checked="' + !!on + '" ' + accion + '><span class="ob2-fic ' + cls + '">' + ic(icono) + '</span><span class="bv-card-t"><b>' + t + '</b><span>' + d + '</span></span><span class="ob2-herr-ck">' + (on ? ic('check') : '') + '</span></button>';
@@ -12264,12 +12264,12 @@ function bvPreviaHtml(ob, grande) {
   const pieza = (k, icono, t, d, cls) => pz.push('<span class="bv-pz' + (cls ? ' ' + cls : '') + (k === nuevo && !grande ? ' entra' : '') + '"><i>' + ic(icono) + '</i><b>' + t + '</b>' + (d ? '<small>' + d + '</small>' : '') + '</span>');
   if (!grande) {
     pieza('mes', 'wallet', 'Te quedan 780 €', 'de 1.400 € este mes', 'ancha');
-    if (o.gastos) pieza('gastos', 'sparkle', 'Comida: 180 de 250 €', 'Vas bien');
-    if (o.juntos) pieza('juntos', 'users', 'Casa: Ana te debe 23,40 €', '');
-    if (o.metas) pieza('metas', 'target', 'Viaje a Lisboa', '320 de 800 €');
-    if (o.deudas) pieza('deudas', 'deuda', 'Coche: quedan 4.200 €', 'acabas en marzo de 2028');
-    if (o.agenda) pieza('agenda', 'calendar', 'Mañana: pagar el alquiler', '');
-    if (o.inversiones) pieza('inversiones', 'trendUp', 'Fondo indexado: 2.000 €', 'ganas 140 €');
+    if (o.gastos) pieza('gastos', 'sparkle', 'Comida', '180 de 250 €, vas bien');
+    if (o.juntos) pieza('juntos', 'users', 'Casa', 'Ana te debe 23,40 €');
+    if (o.metas) pieza('metas', 'target', 'Lisboa', '320 de 800 €');
+    if (o.deudas) pieza('deudas', 'deuda', 'Coche', 'acabas en 2028');
+    if (o.agenda) pieza('agenda', 'calendar', 'Mañana', 'pagar el alquiler');
+    if (o.inversiones) pieza('inversiones', 'trendUp', 'Fondo', 'ganas 140 €');
   } else {
     const pc = cuentaPrincipal(), v = pc ? saldoCuenta(pc) : null, falta = (t) => '<span class="bv-falta">' + t + '</span>';
     pieza('mes', pc ? 'bank' : 'wallet', pc && v != null ? escapeHtml(pc.nombre) + ': ' + money(v) : 'Tu mes', pc && v != null ? 'Lo que tienes hoy' : falta('Pon tu saldo cuando quieras'), 'ancha');
@@ -12286,7 +12286,6 @@ function bvPreviaHtml(ob, grande) {
   return '<div class="bv-movil' + (grande ? ' grande' : '') + '" aria-hidden="true"><span class="bv-movil-cab"></span><div class="bv-movil-in">' + pz.join('') + '</div></div>';
 }
 function bvApagadas() { return herrLista().filter((d) => !d.base && !herrOn(d.k)); }
-function bvListaNombres(ns) { return ns.length <= 1 ? ns.join('') : ns.slice(0, -1).join(', ') + ' y ' + ns[ns.length - 1]; }
 function bvAfinarHtml(ob) {
   const directo = !ob || bvPaso(ob) === 'F';
   const fila = (d) => { const on = directo ? herrOn(d.k) : bvHerrFinal(ob, d.k);
@@ -12307,9 +12306,10 @@ function bvObjHtml(ob) {
   const ds = bvObjDisp(), L = bvLista(ob, true), rec = bvRecortes(L);
   const t = (o) => { const bloq = o.k === 'juntos' && ob.grupoId, on = bloq || !!ob.objs[o.k];
     return bvTarjeta(o.k, o.ic, o.cls, o.n, bloq ? 'Ya estás en ' + escapeHtml(ob.grupoNombre || 'tu grupo') : o.f, on, bloq ? 'aria-disabled="true"' : act('bvObj', o.k), (bloq ? ' bloq' : '') + (ob._objToque === o.k ? ' rebota' : '')); };
-  return bvPreviaHtml(ob, false) + '<h1 class="ob2-h">¿Para qué quieres PalomApp?</h1><p class="ob2-p">Elige todo lo que quieras. Lo cambias cuando quieras.</p>' +
+  const Lr = L.filter((c) => rec.indexOf(c) < 0), quedan = Lr.length - Lr.indexOf('obj') - 1;
+  return bvPreviaHtml(ob, false) + '<h1 class="ob2-h">¿Para qué quieres PalomApp?</h1><p class="ob2-p">' + (rec.length ? 'Lo dejamos listo en unas ' + quedan + ' pantallas; lo demás, en Primeros pasos.' : 'Elige todo lo que quieras. Lo cambias cuando quieras.') + '</p>' +
     '<div class="bv-cards">' + ds.map(t).join('') + '</div>' +
-    '<div class="bv-obj-pie">' + (rec.length ? '<span>Lo dejamos listo en unas ' + bvCuenta(L.filter((c) => rec.indexOf(c) < 0)) + ' pantallas; lo demás, en Primeros pasos.</span>' : '') + '<button type="button" class="link" ' + act('bvAfinar') + '>' + ic('sliders') + ' Afinar herramienta a herramienta</button></div>';
+    '<div class="bv-obj-pie"><button type="button" class="link" ' + act('bvAfinar') + '>' + ic('sliders') + ' Afinar herramienta a herramienta</button></div>';
 }
 function bvG1Html(ob) {
   const q = normDesc(ob.bancoQ || ''), sel = ob.bancos;
@@ -12348,13 +12348,13 @@ function bvG3Html(ob) {
     '<div class="bv-mes-ops" role="radiogroup" aria-label="Cuándo empieza tu mes">' + op('natural', 'calendar', 'El día 1', 'Del 1 al último día del mes') + op('cobro', 'wallet', 'Cuando cobro, el día…', '') + '</div>' +
     (ob.mesModo === 'cobro' ? '<div class="bv-dia"><button type="button" class="bv-dia-b" aria-label="Un día antes" ' + act('bvMesDia', -1) + '>−</button><b class="tnum" aria-live="polite">Día ' + ob.mesDia + '</b><button type="button" class="bv-dia-b" aria-label="Un día después" ' + act('bvMesDia', 1) + '>+</button></div>' : '') +
     '<div class="bv-cal" aria-hidden="true">' + ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((x) => '<i class="cab">' + x + '</i>').join('') + celdas.join('') + '</div>' +
-    '<div class="bv-cal-txt">Tu mes: del ' + a.getDate() + ' de ' + MESES[a.getMonth()].toLowerCase() + ' al ' + b.getDate() + ' de ' + MESES[b.getMonth()].toLowerCase() + '</div>';
+    '<div class="bv-cal-txt"><span>Tu mes:</span> <b class="tnum">' + a.getDate() + '/' + (a.getMonth() + 1) + ' – ' + b.getDate() + '/' + (b.getMonth() + 1) + '</b></div>';
 }
 function bvG5Html(ob) {
   const e = ob.avEst || {}, listo = !!(e.activo && e.permiso);
   const bs = ob.bancos.map((k) => BANCOS.find((b) => b.k === k)).filter((b) => b && PAQ_BANCOS.some((p) => p[0] === b.k));
   return (bs.length ? '<div class="bv-logos">' + bs.slice(0, 5).map((b) => bancoFichaHtml(b, 'bv-ficha-s')).join('') + '</div>' : '<span class="ob2-big-ic">' + ic('bolt') + '</span>') +
-    '<h1 class="ob2-h">Que se apunten solos</h1><p class="ob2-p">' + (bs.length ? 'Funciona con ' + escapeHtml(bvListaNombres(bs.map((b) => b.n))) + (bs.length === 1 ? ', tu banco.' : ', tus bancos.') : 'Funciona con los bancos y apps de pago más usados.') + '</p>' +
+    '<h1 class="ob2-h">Que se apunten solos</h1><p class="ob2-p">' + (bs.length ? '<span>Funciona con</span> <b>' + escapeHtml(bs.map((b) => b.n).join(' · ')) + '</b><span>' + (bs.length === 1 ? ', tu banco.' : ', tus bancos.') + '</span>' : 'Funciona con los bancos y apps de pago más usados.') + '</p>' +
     '<div class="ob2-sec">Qué ganas</div><div class="ob2-filas bv-filas">' + obFila('checkCircle', 'a', 'Tus pagos y bizums, apuntados solos', 'al momento, aunque PalomApp esté cerrada') + obFila('repeat', 'b', '«Deshacer» en el propio aviso', 'si alguno no es tuyo') + '</div>' +
     '<div class="ob2-sec">Tu privacidad</div><div class="ob2-filas bv-filas">' + obFila('shield', 'v', 'El texto del aviso no sale de tu móvil', 'solo pasa el importe, el comercio y la fecha') + obFila('bank', 'r', 'Solo tus apps de banco y de pagos', 'nunca mensajes, WhatsApp, códigos ni claves') + '</div>' +
     (listo ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Activado: ya se apuntan solos</span></div>'
@@ -12369,7 +12369,7 @@ function bvJ2Html(ob) {
   if (ob.grupoCreado) {
     const g = grupoDe(ob.grupoCreado), ms = g ? g.miembros : [];
     return '<div class="bv-centro"><div class="bv-avs montado">' + ms.slice(0, 5).map((m) => '<span class="avatar" style="background:' + colorPersona(m.user_id) + '">' + escapeHtml(iniciales(m.nombre)) + '</span>').join('') + '</div>' +
-      '<h1 class="ob2-h">¡' + escapeHtml(ob.grupoCreadoNombre || 'Tu grupo') + ' está listo!</h1><p class="ob2-p">' + (ms.length > 1 ? escapeHtml(bvListaNombres(ms.map((m) => m.nombre))) + '. ' : '') + 'Invítalos por WhatsApp cuando quieras: verán los gastos que llevéis.</p>' +
+      '<h1 class="ob2-h"><span>Grupo creado:</span> <span>' + escapeHtml(ob.grupoCreadoNombre || '') + '</span></h1>' + (ms.length > 1 ? '<div class="bv-nombres">' + ms.map((m) => escapeHtml(m.nombre)).join(' · ') + '</div>' : '') + '<p class="ob2-p">Invítalos por WhatsApp cuando quieras: verán los gastos que llevéis.</p>' +
       (ob.invitado ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Enlace enviado</span></div>' : '') + '</div>';
   }
   const pl = BV_GRUPOS.find((x) => x[0] === ob.gPlant), n = pl ? pl[3] : 2;
@@ -12395,14 +12395,14 @@ function bvM2Html(ob) {
   const v = tecNum(ob.vals.meta), n = ob.metaMeses, mes = v > 0 && n ? Math.ceil(v / n / 5) * 5 : 0, ll = n ? Math.min(100, Math.round(100 / n)) : 8;
   const chip = (k, t) => '<button type="button" class="chip' + (n === k ? ' active' : '') + '" aria-pressed="' + (n === k) + '" ' + act('bvMetaPlazo', k) + '>' + t + '</button>';
   return '<h1 class="ob2-h">¿Cuánto y para cuándo?</h1><p class="ob2-p">Te decimos cuánto apartar al mes.</p>' + bvCampoHtml(ob, 'meta', '<span class="bv-campo-n">' + escapeHtml(String(ob.metaNombre || 'Tu meta')) + '</span>', 'Cuánto quieres juntar') +
-    '<div class="chips bv-chips">' + chip(3, '3 meses') + chip(6, '6 meses') + chip(12, '12 meses') + chip(0, 'Sin fecha') + '</div>' +
+    '<div class="chips bv-chips bv-chips4">' + chip(3, '3 meses') + chip(6, '6 meses') + chip(12, '12 meses') + chip(0, 'Sin fecha') + '</div>' +
     '<div class="bv-vivo"><span class="bv-tarro" style="--ll:' + ll + '%"><i></i></span><b>' + (mes ? 'Unos ' + moneyShort(mes) + ' al mes' : n ? 'Pon cuánto quieres juntar' : 'Sin prisa: aparta lo que puedas') + '</b></div>' + bvTecHtml();
 }
 function bvD1Html(ob) {
   const a = bvDeudaAcaba(ob);
   return '<h1 class="ob2-h">¿Qué estás pagando?</h1><p class="ob2-p">Así verás cuánto te queda y cuándo acabas.</p>' +
     '<div class="bv-plants bv-plants-s" role="radiogroup" aria-label="Qué deuda">' + BV_DEUDAS.map(([k, icono, t]) => '<button type="button" class="bv-plant tappable' + (ob.deudaPlant === k ? ' on' : '') + '" role="radio" aria-checked="' + (ob.deudaPlant === k) + '" ' + act('bvDeuda', k) + '>' + ic(icono) + '<span>' + t + '</span></button>').join('') + '</div>' +
-    '<div class="bv-campos">' + bvCampoHtml(ob, 'dq', '<span class="bv-campo-n">Te queda</span>', 'Te queda') + bvCampoHtml(ob, 'dc', '<span class="bv-campo-n">Pagas al mes</span>', 'Pagas al mes') + '</div>' +
+    '<div class="bv-campos dos">' + bvCampoHtml(ob, 'dq', '<span class="bv-campo-n">Te queda</span>', 'Te queda') + bvCampoHtml(ob, 'dc', '<span class="bv-campo-n">Pagas al mes</span>', 'Pagas al mes') + '</div>' +
     '<div class="bv-vivo"><span class="ob2-fic r">' + ic('flag') + '</span><b>' + (a ? 'Acabas en ' + MESES[a.getMonth()].toLowerCase() + ' de ' + a.getFullYear() : 'Pon las dos cifras y te decimos cuándo acabas') + '</b></div>' + bvTecHtml();
 }
 function bvT1Html(ob) {
@@ -12429,18 +12429,18 @@ function bvFHtml(ob) {
   const g = bvSellosGanados(ob), sellos = BV_SELLOS.filter(([k]) => g[k]);
   const falta = bvPpPendientes().slice(0, 2).map((f) => f.corto), ap = bvApagadas();
   if (!hizo) return '<div class="bv-centro">' + marcaHtml(80, 'marca-ob bv-paloma aterriza') + '<h1 class="ob2-h">Todo listo</h1><p class="ob2-p">Te esperamos en Inicio con tus primeros pasos.</p></div>' +
-    (ap.length ? '<div class="bv-esperan">' + ic('sparkle') + '<span><b>' + ap.length + (ap.length === 1 ? ' herramienta más esperando' : ' herramientas más esperando') + ':</b> ' + escapeHtml(bvListaNombres(ap.slice(0, 3).map((d) => d.n))) + (ap.length > 3 ? '…' : '') + '</span><button type="button" class="link" ' + act('bvAfinar') + '>Encender</button></div>' : '');
-  return '<div class="bv-centro">' + marcaHtml(64, 'marca-ob bv-paloma aterriza') + '<h1 class="ob2-h">¡Lista' + (n ? ', ' + escapeHtml(n) : '') + '!</h1><p class="ob2-p">Tu PalomApp al ' + pct + ' %.' + (pct < 100 ? ' Lo que falta, en Inicio.' : '') + '</p>' +
+    (ap.length ? '<div class="bv-esperan">' + ic('sparkle') + '<span><b>' + ap.length + (ap.length === 1 ? ' herramienta más esperando' : ' herramientas más esperando') + ':</b> ' + ap.slice(0, 3).map((d) => '<span>' + d.n + '</span>').join(' · ') + (ap.length > 3 ? ' …' : '') + '</span><button type="button" class="link" ' + act('bvAfinar') + '>Encender</button></div>' : '');
+  return '<div class="bv-centro">' + marcaHtml(64, 'marca-ob bv-paloma aterriza') + '<h1 class="ob2-h">' + (n ? '¡Lista, <span>' + escapeHtml(n) + '</span>!' : '¡Lista!') + '</h1><p class="ob2-p"><span>Tu PalomApp al ' + pct + ' %.</span>' + (pct < 100 ? ' <span>Lo que falta, en Inicio.</span>' : '') + '</p>' +
     (sellos.length ? '<div class="bv-sellos" aria-label="Sellos">' + sellos.map(([k, i, t]) => '<span class="bv-sello" title="' + t + '"><i>' + ic(i) + '</i><small>' + t + '</small></span>').join('') + '</div>' : '') + '</div>' +
     bvPreviaHtml(ob, true) +
-    (falta.length ? '<div class="bv-falta-l">' + ic('clock') + '<span>Te falta: ' + escapeHtml(bvListaNombres(falta)) + '</span></div>' : '') +
-    (ap.length ? '<div class="bv-esperan">' + ic('sparkle') + '<span><b>' + ap.length + (ap.length === 1 ? ' herramienta más esperando' : ' herramientas más esperando') + ':</b> ' + escapeHtml(bvListaNombres(ap.slice(0, 3).map((d) => d.n))) + (ap.length > 3 ? '…' : '') + '</span><button type="button" class="link" ' + act('bvAfinar') + '>Encender</button></div>' : '');
+    (falta.length ? '<div class="bv-falta-l">' + ic('clock') + '<span><span>Te falta:</span> ' + falta.map((x) => '<b>' + escapeHtml(x) + '</b>').join(' · ') + '</span></div>' : '') +
+    (ap.length ? '<div class="bv-esperan">' + ic('sparkle') + '<span><b>' + ap.length + (ap.length === 1 ? ' herramienta más esperando' : ' herramientas más esperando') + ':</b> ' + ap.slice(0, 3).map((d) => '<span>' + d.n + '</span>').join(' · ') + (ap.length > 3 ? ' …' : '') + '</span><button type="button" class="link" ' + act('bvAfinar') + '>Encender</button></div>' : '');
 }
 function bvPieHtml(ob) {
   const p = bvPaso(ob), sig = (t, extra) => '<button class="btn accent block" ' + act('bvSig') + (extra || '') + '>' + t + '</button>', dos = (t, a) => '<div class="ob2-dos"><button class="btn ghost" ' + act('bvSaltar') + '>Ahora no</button><button class="btn accent block" ' + a + '>' + t + '</button></div>';
   if (p === 'hola') return ob.confSaltar ? '<div class="ob2-dos"><button class="btn ghost" ' + act('bvNoSaltar') + '>Seguir</button><button class="btn accent block" ' + act('bvSaltarTodo') + '>Sí, saltar</button></div>' : sig(ob.manual ? 'Empezar' : 'Empezar');
   if (p === 'I1') { const I = ob.invite || {}; if (I.cargando) return ''; return I.info && I.info.valida ? '<button class="btn accent block" ' + act('bvUnirse') + '>' + (I.info.tipo === 'directo' ? 'Aceptar' : 'Unirme') + '</button>' : '<button class="btn accent block" ' + act('bvInvAplazar', I.info && I.info.motivo === 'red' ? '' : 'mal') + '>Seguir sin unirme</button>'; }
-  if (p === 'obj') { const L = bvLista(ob, true), rec = bvRecortes(L), Lr = L.filter((c) => rec.indexOf(c) < 0), n = Lr.length - Lr.indexOf('obj') - 1; return sig('Seguir (unas ' + n + ' pantallas)'); }
+  if (p === 'obj') { const L = bvLista(ob, true), rec = bvRecortes(L), Lr = L.filter((c) => rec.indexOf(c) < 0), n = Lr.length - Lr.indexOf('obj') - 1; return sig(n > 1 ? 'Seguir (unas ' + n + ' pantallas)' : 'Seguir'); }
   if (p === 'G5') return ob.avEst && ob.avEst.activo && ob.avEst.permiso ? sig('Seguir') : dos('Activar', act('bvAvBanco'));
   if (p === 'J1') return '';
   if (p === 'J2') return ob.grupoCreado ? '<div class="ob2-dos"><button class="btn ghost" ' + act('bvSig') + '>Seguir</button><a class="btn accent block wa-btn" href="#" ' + act('bvInvitar') + '>' + ic('send') + ' Invitar por WhatsApp</a></div>'
@@ -14322,7 +14322,7 @@ const H = {
     if (bvPaso(ob) === 'F') herrPoner({ [k]: !herrOn(k) }); else ob.afinar[k] = !bvHerrFinal(ob, k);
     sentir('tic'); if (FORM && FORM.kind === 'bvAfinar') updateSheet(bvAfinarHtml(ob)); render();
   },
-  bvEncender: ([k]) => { if (!herrDef(k)) return; herrPoner({ [k]: true }); sentir('ok'); toast(herrDef(k).n + ' encendida'); if (FORM && FORM.kind === 'descubre') updateSheet(descubreHtml()); render(); },
+  bvEncender: ([k]) => { if (!herrDef(k)) return; herrPoner({ [k]: true }); sentir('ok'); toast('Herramienta encendida'); if (FORM && FORM.kind === 'descubre') updateSheet(descubreHtml()); render(); },
   bvBanco: ([k]) => { const ob = S.onboarding; if (!ob) return; const i = ob.bancos.indexOf(k); if (i >= 0) ob.bancos.splice(i, 1); else ob.bancos.push(k); sentir('tic'); if (ob.bancosMas) { ob.bancosMas = false; ob.bancoQ = ''; } render(); },
   bvBancosMas: () => { const ob = S.onboarding; if (!ob) return; ob.bancosMas = !ob.bancosMas; ob.bancoQ = ''; render(); if (ob.bancosMas) setTimeout(() => { const el = $('#bvBcoQ'); if (el) el.focus(); }, 60); },
   bvBancoBuscar: (_a, el) => { const ob = S.onboarding; if (!ob) return; ob.bancoQ = el.value; const r = $('#bvBcoRes'), tmp = document.createElement('div'); if (!r) return; tmp.innerHTML = bvG1Html(ob); const n = tmp.querySelector('#bvBcoRes'); if (n) r.innerHTML = n.innerHTML; },
