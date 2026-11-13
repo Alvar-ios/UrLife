@@ -12776,7 +12776,7 @@ function atrasAndroid() {
   if (b && !b.dataset.cerrando) { if (atrasEnHoja(b)) return true; if (hojaConAlgoEscrito()) preguntarDescartar(); else closeSheet(); return true; }
   // 13/11 (Calidad): en la bienvenida, atrás vuelve al paso anterior (antes cerraba la app); en el primer paso, sale como siempre
   const ob = S.onboarding;
-  if (ob && bienvV2(ob)) return bvAtras(ob); // 13/11 (docs/45)
+  if (ob && bienvV2(ob)) { if (ob.confSaltar) { ob.confSaltar = false; render(); return true; } return bvAtras(ob); } // 13/11 (docs/45)
   if (ob) { if (ob.step > 0 && !(ob.grupoId && obPasos(ob)[ob.step - 1] === 'invite')) { H.obBack(); return true; } return false; }
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
   if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
