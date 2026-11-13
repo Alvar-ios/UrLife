@@ -465,3 +465,13 @@ No se pudo cargar la comprobación de seguridad. Revisa tu conexión.	The securi
 Juntos · suenan bajito	Together · soft sound
 Cuando alguien apunta un gasto contigo, te paga o entra en tu grupo. Llegan aunque la app esté cerrada	When someone adds an expense with you, pays you or joins your group. They arrive even when the app is closed
 Esta versión de la app aún no puede recibirlos con la app cerrada.	This version of the app can't receive them with the app closed yet.
+// fase14 (13/11): barra y pantallas con herramientas apagadas; animación del CAPTCHA
+Comprobando que eres tú…	Checking it's you…
+Toca la casilla de abajo para seguir	Tap the box below to continue
+No se pudo comprobar. Revisa tu conexión.	Couldn't check. Please check your connection.
+Puedes activar más herramientas en	You can turn on more tools in
+Tú → Mis herramientas	You → My tools
+No volver a enseñarlo	Don't show again
+lo que hay en tus cuentas	what's in your accounts
+cuentas + invertido	accounts + invested
+cuentas − lo que debes	accounts − what you owe
