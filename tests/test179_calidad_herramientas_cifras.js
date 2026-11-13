@@ -46,8 +46,8 @@ const YO = 'u-yo';
 
   paso('Barra de abajo con Juntos apagado');
   const hijos = [...doc.querySelectorAll('.tabbar > *')].map((b) => b.classList.contains('tab-crear') ? '+' : b.getAttribute('data-tab'));
-  ok(hijos.join() === 'inicio,movimientos,+,dinero', 'barra: Inicio, Movimientos, +, Dinero (' + hijos.join() + ')');
-  ok(doc.querySelector('.tabbar').classList.contains('tres'), 'la barra sabe que tiene 3 pestañas (clase «tres»)');
+  ok(hijos.join() === 'inicio,movimientos,+,agenda,dinero', 'barra: Inicio, Movimientos, +, Agenda, Dinero: el + en medio y la Agenda en el hueco de Juntos (' + hijos.join() + ')');
+  ok(doc.querySelector('#tbAgenda').hidden, 'el botón de la Agenda de arriba se esconde (ya está abajo)');
   A.H.onFab([]); await sleep(60);
   ok(!buscar(e, 'crearIr', 'Compartido', 'hoja') && !!buscar(e, 'crearIr', 'Gasto', 'hoja'), 'el + abre sin «Compartido» y con «Gasto»');
   await T.cerrarHoja(e);

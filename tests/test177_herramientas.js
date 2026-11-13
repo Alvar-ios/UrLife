@@ -35,7 +35,7 @@ const YO = 'u-yo';
   ok(datos() === antes, 'no se ha borrado ningún dato (movimientos, tareas, metas, deudas, presupuestos, Inicio)');
 
   paso('Lo apagado desaparece');
-  ok(tabs() === 'inicio,movimientos,dinero' && doc.querySelector('#tbAgenda').hidden, 'sin la pestaña Juntos ni el botón de la Agenda');
+  ok(tabs() === 'inicio,movimientos,dinero,tu' && doc.querySelector('#tbAgenda').hidden, 'sin la pestaña Juntos ni el botón de la Agenda; el hueco lo ocupa «Tú» (2 + 2) (' + tabs() + ')');
   ok(!buscar(e, 'tuIr', 'Agenda', 'app') && !buscar(e, 'openGrupos', '', 'app'), 'Tú: sin la categoría Agenda ni Juntos');
   await tocar(e, 'tuIr', '', 'app'); 
   await tocar(e, 'tuIr', 'Dinero', 'app');

@@ -2627,7 +2627,10 @@ html[data-look="nuevo"] .herr-t > span { font-size: 12.5px; color: var(--text-fa
 html[data-look="nuevo"] .herr-t .herr-nota { color: var(--income); display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
 html[data-look="nuevo"] .herr-nota .i { width: 14px; height: 14px; }
 html[data-look="nuevo"] .herr-siempre { font-size: 12.5px; color: var(--text-faint); flex: none; }
-html[data-look="nuevo"] .tabbar.tres .tab-crear { flex: 0 0 auto; }
+/* fase14 · barra de abajo siempre 2 + 2 con el + en medio: con Juntos apagado, su sitio lo ocupa la Agenda (o «Tú»).
+   Si la Agenda o «Tú» tienen pestaña, no hace falta la flecha de volver arriba. La pestaña de la Agenda lleva un punto si hay algo hoy. */
+html[data-look="nuevo"] body.ag-en-barra.en-agenda .tb-volver, html[data-look="nuevo"] body.tu-en-barra.tu-raiz .tb-volver { display: none; }
+html[data-look="nuevo"] .tabbar .tab.con-cuenta .ic::after { content: ''; position: absolute; right: 10px; top: 1px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); border: 2px solid var(--paper-raised); }
 html[data-look="nuevo"] .dm3-tabs.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 html[data-look="nuevo"] .dm3-tabs.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* 13/11 · Bienvenida por pasos: «¿Qué quieres usar?» en tarjetas que se marcan */
@@ -2646,3 +2649,11 @@ html[data-look="nuevo"] .ob2-herr.on .ob2-herr-ck { background: var(--accent); b
 html[data-look="nuevo"] .ob2-herr-ck .i { width: 14px; height: 14px; }
 html[data-look="nuevo"] .ob2-p-avbanco .ob2-filas, html[data-look="nuevo"] .ob2-p-notif .ob2-filas { gap: 12px; }
 html[data-look="nuevo"] .ob2-nota .link { display: inline; padding: 0; }
+/* fase14 · «Puedes activar más herramientas…»: una línea discreta al final de una pantalla que se ha quedado vacía */
+html[data-look="nuevo"] .herr-pista { display: flex; align-items: center; gap: 4px; margin: 18px 0 4px; padding: 4px 4px 4px 0; border: 1px dashed var(--line); border-radius: 16px; }
+html[data-look="nuevo"] .herr-pista-t { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 4px 6px 12px; background: none; border: 0; font: inherit; font-size: 13px; line-height: 1.35; color: var(--text-faint); text-align: left; cursor: pointer; }
+html[data-look="nuevo"] .herr-pista-t b { color: var(--accent); font-weight: 600; }
+html[data-look="nuevo"] .herr-pista-ic { width: 30px; height: 30px; flex: none; border-radius: 10px; display: grid; place-items: center; color: var(--accent); background: var(--accent-soft); }
+html[data-look="nuevo"] .herr-pista-ic .i { width: 17px; height: 17px; }
+html[data-look="nuevo"] .herr-pista-x { flex: none; width: 44px; height: 44px; display: grid; place-items: center; background: none; border: 0; border-radius: 12px; color: var(--text-faint); cursor: pointer; }
+html[data-look="nuevo"] .herr-pista-x .i { width: 16px; height: 16px; }

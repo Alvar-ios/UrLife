@@ -53,6 +53,13 @@ const PANTALLAS_MAS = [
   ['tu-seguridad-android', NATIVO(true) + 'A.S.tab="tu";A.S.tuSub="seguridad";A.render()'],
   ['tu-herr-apagadas', 'A.S.config=Object.assign({},A.S.config,{herramientas:{agenda:false,juntos:false,deudas:false,inversiones:false}});A.S.tab="tu";A.S.tuSub="herramientas";A.render()'],
   ['mas-herr-apagadas', 'A.S.config=Object.assign({},A.S.config,{herramientas:{agenda:false,juntos:false,deudas:false,inversiones:false,trayecto:false}});A.S.tab="inicio";A.render();A.openCrear()'],
+  // 13/11 (fase14): con herramientas apagadas. «sin-juntos» = solo Juntos apagado; «casi-nada» = todo apagado salvo lo básico
+  ['sin-juntos-inicio', 'A.S.config=Object.assign({},A.S.config,{herramientas:{juntos:false}});A.S.tab="inicio";A.render()'],
+  ['sin-juntos-agenda', 'A.S.config=Object.assign({},A.S.config,{herramientas:{juntos:false}});A.H.irAgenda(["tareas"])'],
+  ['casi-nada-inicio', 'A.S.config=Object.assign({},A.S.config,{herramientas:{juntos:false,agenda:false,metas:false,inversiones:false,deudas:false,presupuestos:false,informes:false,trayecto:false,tickets:false}});A.S.tab="inicio";A.render()'],
+  ['casi-nada-dinero', 'A.S.config=Object.assign({},A.S.config,{herramientas:{juntos:false,agenda:false,metas:false,inversiones:false,deudas:false,presupuestos:false,informes:false,trayecto:false,tickets:false}});A.S.tab="dinero";A.render()'],
+  ['casi-nada-mas', 'A.S.config=Object.assign({},A.S.config,{herramientas:{juntos:false,agenda:false,metas:false,inversiones:false,deudas:false,presupuestos:false,informes:false,trayecto:false,tickets:false}});A.S.tab="inicio";A.render();A.openCrear()'],
+  ['casi-nada-tu', 'A.S.config=Object.assign({},A.S.config,{herramientas:{juntos:false,agenda:false,metas:false,inversiones:false,deudas:false,presupuestos:false,informes:false,trayecto:false,tickets:false}});A.S.tab="tu";A.render()'],
   ['tu-mas', 'A.S.tab="tu";A.S.tuMas=true;A.render();setTimeout(()=>{const e=document.querySelector(".tu-mas, [data-click^=tuMasToggle]");if(e)e.scrollIntoView();},100)'],
   ['hoja-avisos', NATIVO(true) + 'A.S.tab="tu";A.render();A.H.avAbrir([])'],
   ['hoja-avisos-explica', NATIVO(false) + 'A.S.tab="tu";A.render();A.H.avAbrir([])'],

@@ -1003,10 +1003,9 @@ function renderShell() {
     '<button class="tab rail-tu" data-tab="tu" ' + act('goTab', 'tu') + '><span class="ic">' + ic('gear') + '</span><span>Tú y ajustes</span></button></nav>' +
     '<div class="page"><header class="topbar"><div class="tb-l"><button class="icon-btn tb-volver" id="tbVolver" aria-label="Volver" ' + act('tbVolver') + '>' + ic('chevL') + '</button>' +
     '<div><h1 id="pageTitle"></h1><div class="sub" id="pageSub"></div></div></div>' +
-    '<div class="tb-r"><span id="compararHost"></span><span id="ojoTb"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda"' + (S.config && !agendaOn() ? ' hidden style="display:none"' : '') + ' ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
+    '<div class="tb-r"><span id="compararHost"></span><span id="ojoTb"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda"' + (S.config && (!agendaOn() || agendaEnBarra()) ? ' hidden style="display:none"' : '') + ' ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
-    '<nav class="tabbar' + (tabsNav().length < 4 ? ' tres' : '') + '" aria-label="Secciones">' + tabsNav().slice(0, 2).map(tabBtn).join('') +
-    '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabsNav().slice(2).map(tabBtn).join('') + '</nav>' +
+    '<nav class="tabbar" aria-label="Secciones">' + tabbarDentro() + '</nav>' +
     '<div id="sheetHost"></div><div class="toast" id="toast" role="status"></div>' +
     '<div class="bloqueo" aria-live="polite">' + ic('candado') + '<b>PalomApp está bloqueada</b><button class="btn accent" ' + act('desbloquear') + '>Desbloquear</button></div>';
 }
@@ -1187,7 +1186,9 @@ function render() {
   const enAgenda = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0);
   const sub = $('#pageSub'); if (sub) { const enHoy = S.tab === 'inicio' && !enAgenda; sub.textContent = enHoy ? fechaCabecera() : ''; sub.hidden = !enHoy; }
   document.body.classList.toggle('en-agenda', enAgenda); // docs/32 A6/A7: en la Agenda, flecha para volver y ninguna pestaña marcada
-  if (enAgenda) $$('.tabbar [data-tab], .rail [data-tab]').forEach((b) => b.classList.remove('active'));
+  if (enAgenda) $$('.tabbar [data-tab], .rail [data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === 'agenda' && !!b.closest('.tabbar'))); // fase14: si la Agenda tiene pestaña abajo, se marca
+  // fase14: la pestaña de la Agenda dice cuántas cosas hay hoy (como el botón de arriba al que sustituye)
+  const agT = $('.tabbar [data-tab="agenda"]'); if (agT) { const n = allLoaded() ? agendaHoyN() : 0; agT.classList.toggle('con-cuenta', !!n); agT.setAttribute('aria-label', 'Agenda' + (n ? ', ' + n + (n === 1 ? ' cosa hoy' : ' cosas hoy') : '')); }
   const ojo = $('#ojoTb'); if (ojo) ojo.innerHTML = cifrasOcultas() && S.tab !== 'inicio' ? ojoBtnHtml() : ''; // Calidad 10/11: volver a ver las cifras desde cualquier pestaña
   if (cifrasOcultas()) setTimeout(taparCifrasTexto, 0);
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : S.tab === 'tu' && S.tuSub && versionDe('tu') === 'nueva' && TU_RAMAS_N[S.tuSub] ? TU_RAMAS_N[S.tuSub] : TITULOS[S.tab];
@@ -4489,20 +4490,29 @@ function logoutHtml() {
    ============================================================ */
 /* Estructura (fase 2, decidida el 14/10): Inicio ligero · Movimientos (Lista | Resumen) · Juntos · Dinero; la Agenda vive dentro de Inicio. */
 function tabsNav() { return [TABS[0], TABS[1]].concat(S.config && !juntosOn() ? [] : [{ id: 'juntos', label: 'Juntos', icon: 'users' }]).concat([TABS[2]]); } // 13/11: sin Juntos si lo apagas en «Mis herramientas»
+/* 13/11 (fase14): la barra de abajo SIEMPRE con 2 pestañas a cada lado y el + en el centro (antes, sin Juntos, quedaban 2 + 1 y el + se iba de sitio).
+   Con Juntos apagado, su hueco (a la derecha del +) lo ocupa:
+   1) la Agenda, si está encendida: es la única sección que no tiene pestaña propia (vive en el botón del calendario de arriba) y se usa a diario;
+      así sube a la barra y el botón de arriba se esconde para no tenerla dos veces;
+   2) si no, «Tú»: siempre existe y es donde se vuelven a encender las herramientas. Va la última, como los ajustes en casi todas las apps.
+   El menú lateral del ordenador no cambia (allí ya están «Tú y ajustes» y la Agenda arriba). */
+function tabRelleno() { if (!S.config || juntosOn()) return null; return agendaOn() ? { id: 'agenda', label: 'Agenda', icon: 'calendar' } : { id: 'tu', label: 'Tú', icon: 'gear' }; }
+function tabsBarra() { const r = tabRelleno(); if (!r) return tabsNav(); return r.id === 'agenda' ? [TABS[0], TABS[1], r, TABS[2]] : [TABS[0], TABS[1], TABS[2], r]; }
+function agendaEnBarra() { const r = tabRelleno(); return !!r && r.id === 'agenda'; }
+function tabbarDentro() { const t = tabsBarra(); return t.slice(0, 2).map(tabBtn).join('') + '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + t.slice(2).map(tabBtn).join(''); }
 // 13/11: si una pestaña es de una herramienta apagada, a Inicio (y la barra de abajo, al día si cambió)
 function herrAjustarTab() {
   if (!S.config) return;
   if (S.tab === 'juntos' && !juntosOn()) S.tab = 'inicio';
   if (!agendaOn() && (S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0))) { S.tab = 'inicio'; S.inicioVista = 'hoy'; }
   if (S.tab === 'dinero' && S.dineroVer === 'inversiones' && !herrOn('inversiones')) S.dineroVer = '';
-  const tb = $('.tabbar'), want = tabsNav().map((t) => t.id).join();
-  if (tb && [...tb.querySelectorAll('[data-tab]')].map((b) => b.getAttribute('data-tab')).join() !== want) { // solo los botones: una hoja abierta no se toca
-    tb.className = 'tabbar' + (tabsNav().length < 4 ? ' tres' : '');
-    tb.innerHTML = tabsNav().slice(0, 2).map(tabBtn).join('') + '<button class="tab-crear" ' + act('onFab') + ' aria-label="Añadir">' + ic('plus') + '</button>' + tabsNav().slice(2).map(tabBtn).join('');
-    const rail = $('.rail'), brand = rail && rail.querySelector('.brand');
-    if (brand) { rail.querySelectorAll('.tab[data-tab]:not(.rail-tu)').forEach((b) => b.remove()); brand.insertAdjacentHTML('afterend', tabsNav().map(tabBtn).join('')); }
-  }
-  const tbA = $('#tbAgenda'); if (tbA) { tbA.hidden = !agendaOn(); tbA.style.display = agendaOn() ? '' : 'none'; } // el CSS de la cabecera gana a «hidden»
+  const tb = $('.tabbar'), want = tabsBarra().map((t) => t.id).join();
+  if (tb && [...tb.querySelectorAll('[data-tab]')].map((b) => b.getAttribute('data-tab')).join() !== want) { tb.className = 'tabbar'; tb.innerHTML = tabbarDentro(); } // solo los botones: una hoja abierta no se toca
+  const rail = $('.rail'), brand = rail && rail.querySelector('.brand'), wantR = tabsNav().map((t) => t.id).join();
+  if (brand && [...rail.querySelectorAll('.tab[data-tab]:not(.rail-tu)')].map((b) => b.getAttribute('data-tab')).join() !== wantR) { rail.querySelectorAll('.tab[data-tab]:not(.rail-tu)').forEach((b) => b.remove()); brand.insertAdjacentHTML('afterend', tabsNav().map(tabBtn).join('')); }
+  const agArriba = agendaOn() && !agendaEnBarra(); // con la Agenda en la barra de abajo, el botón de arriba sobra
+  const tbA = $('#tbAgenda'); if (tbA) { tbA.hidden = !agArriba; tbA.style.display = agArriba ? '' : 'none'; } // el CSS de la cabecera gana a «hidden»
+  document.body.classList.toggle('ag-en-barra', agendaEnBarra()); document.body.classList.toggle('tu-en-barra', tabRelleno() != null && !agendaEnBarra()); document.body.classList.toggle('tu-raiz', S.tab === 'tu' && !S.tuSub);
 }
 function estrAjustarTab() {
   if (S.tab === 'agenda') { S.tab = 'inicio'; S.inicioVista = S.agendaSub === 'calendario' ? 'calendario' : 'tareas'; }
@@ -4531,7 +4541,7 @@ function renderInicioNuevo() {
     const ayuda = avisoB || (pp === 'tarjeta' || pp === 'hecho' ? ppTarjetaHtml() : (pp === 'linea' ? ppLineaHtml() : '') + sugerenciaHtml());
     return heroMesHtmlV2() + avisosInicioHtml() + ayuda + (pp === 'tarjeta' ? '' : piezas()) + descLineaHtml();
   }
-  return heroMesHtmlV2() + avisosInicioHtml() + (inv || tuMesSugHtml() || aviso30Html() || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + piezas();
+  return heroMesHtmlV2() + avisosInicioHtml() + (inv || tuMesSugHtml() || aviso30Html() || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + piezas() + herrPistaHtml('inicio');
 }
 // la cifra grande, con los céntimos más pequeños
 function cifraHtml(v) { const t = money(v), i = t.lastIndexOf(','); return i < 0 ? escapeHtml(t) : escapeHtml(t.slice(0, i)) + '<small>' + escapeHtml(t.slice(i)) + '</small>'; }
@@ -4681,7 +4691,8 @@ function heroCifrasHtml(k, y, m) {
   const trozos = [['g', gas], ['a', aho], ['v', inv], ['d', deu], ['q', queda]].filter((t) => t[1] > 0.004);
   const barra = base > 0 ? '<div class="hero-bar" aria-hidden="true">' + trozos.map(([c, v]) => '<i class="' + c + '" style="width:' + Math.max(0, v / base * 100).toFixed(1) + '%"></i>').join('') + '</div>' : '';
   const cel = (c, l, v, tipo) => '<button type="button" class="hk-cel tappable" ' + act('irMovs', tipo, mk) + ' aria-label="' + l + ': ' + escapeHtml(money(v)) + '"><span>' + (c ? '<i class="' + c + '"></i>' : '') + l + '</span><b class="tnum' + (c ? '' : ' ing') + (Math.abs(v) >= 9999.5 ? ' largo' : '') + '">' + escapeHtml(Math.abs(v) < 0.005 ? '0 ' + sym() : moneyShort(v)) + '</b></button>';
-  return '<div class="hero-barra">' + barra + '<div class="hk-cels' + (deu > 0.004 ? ' cinco' : '') + '">' + cel('', 'Ingresos', ing, 'Ingreso') + cel('g', 'Gastos', gas, '_gastos') + cel('a', 'Apartado', aho, 'Ahorro') + cel('v', 'Invertido', inv, 'Inversión') +
+  const verA = herrOn('metas') || aho > 0.004, verV = herrOn('inversiones') || inv > 0.004; // fase14: una casilla a 0 de algo apagado no sale (si tiene dinero, sí: las cifras no cambian)
+  return '<div class="hero-barra">' + barra + '<div class="hk-cels' + (deu > 0.004 && verA && verV ? ' cinco' : '') + '">' + cel('', 'Ingresos', ing, 'Ingreso') + cel('g', 'Gastos', gas, '_gastos') + (verA ? cel('a', 'Apartado', aho, 'Ahorro') : '') + (verV ? cel('v', 'Invertido', inv, 'Inversión') : '') +
     (deu > 0.004 ? cel('d', 'Deudas', deu, 'Deuda') : '') + '</div></div>';
 }
 // A2 · catálogo de círculos. Cada uno: { k, ic, tono, valor, l1, l2, aro, frase, a } o null si no hay datos
@@ -4749,8 +4760,12 @@ function insightsCatalogo(y, m, actual) {
   const iv = invCambioSemana();
   if (iv) out.inv = { ic: 'trendUp', tono: iv.dif >= 0 ? 'bueno' : 'malo', valor: (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString(LOC(), { maximumFractionDigits: 1 }) + ' %', l1: 'Inversiones', l2: '7 días', aro: Math.min(1, Math.abs(iv.pct) / 10),
     frase: 'Tus inversiones ' + (iv.dif >= 0 ? 'han subido ' : 'han bajado ') + money(Math.abs(iv.dif)) + ' esta semana: valen ' + money(iv.valor) + '. Meter dinero nuevo no cuenta.', a: act('irDinero', 'inversiones') };
+  // fase14: sin círculos de lo que está apagado en «Mis herramientas» (antes salían «Te deben en Juntos» o «En orden sin pasarte» con Juntos o Presupuestos apagados)
+  if (!herrOn('presupuestos')) delete out.presu; if (!juntosOn()) delete out.juntos; if (!herrOn('inversiones')) delete out.inv;
   return out;
 }
+const ASIVAS_HERR = { presu: 'presupuestos', juntos: 'juntos', inv: 'inversiones', meta: 'metas' };
+function asiVasTipoOn(t) { return !ASIVAS_HERR[t] || herrOn(ASIVAS_HERR[t]); }
 function asiVasFijo(key, y, m, cat) {
   const mk = mesClave(y, m), k = kpisMes(y, m);
   if (key.indexOf('cat:') === 0) {
@@ -4760,6 +4775,7 @@ function asiVasFijo(key, y, m, cat) {
       frase: 'En ' + c + ' llevas ' + money(v) + (p ? ' de ' + money(p) + ' de presupuesto' : '') + ' este mes.', a: act('irMovs', '_gastos', mk, c) };
   }
   if (key.indexOf('meta:') === 0) {
+    if (!herrOn('metas')) return null; // fase14: metas apagadas
     let r = null; try { r = metaPorKey(key.slice(5)); } catch (e) { r = null; }
     if (!r) return null;
     const pct = r.pct == null ? 0 : r.pct;
@@ -4777,6 +4793,7 @@ function insightsDatosV3() {
   const libres = recomendados.filter((x) => cat[x] && !usados.has(x) && !enPiezas.has(x)); // los círculos automáticos no repiten lo que ya enseña una pieza de Inicio
   const out = elegidos.map((key, i) => {
     if (key === 'auto') { const x = libres.shift(); return x ? Object.assign({ k: x, hueco: i }, cat[x]) : null; }
+    if (!asiVasTipoOn(key.split(':')[0])) return null; // fase14: de una herramienta apagada
     const d = asiVasFijo(key, y, m, cat), t = ASIVAS_TIPOS.find((z) => z[0] === key.split(':')[0]) || [];
     return d ? Object.assign({ k: key, hueco: i, fijo: true }, d) : { k: key, hueco: i, fijo: true, vacio: true, ic: t[2] || 'sparkle', tono: '', valor: '—', l1: ASIVAS_CORTO[key.split(':')[0]] || 'Círculo', l2: 'sin datos', aro: 0, frase: 'Aún no hay datos para esto este mes.', a: act('asiVasAbrir', i) };
   }).filter(Boolean);
@@ -4801,7 +4818,7 @@ function asiVasHtml() {
   if (F.sub === 'cat') lista = '<button type="button" class="link av-volver" ' + act('asiVasSub', '') + '>' + ic('chevL') + ' Volver</button>' + catsGasto().map((c) => c.nombre).map((c) => '<button type="button" class="av-op' + (v[sel] === 'cat:' + c ? ' on' : '') + '" role="radio" aria-checked="' + (v[sel] === 'cat:' + c) + '" ' + act('asiVasElegir', 'cat:' + c) + '><span class="av-op-ic" style="--cc:' + colorCat(c) + '">' + ic(iconoCat('Gasto', c, '')) + '</span><span class="av-op-t"><b>' + escapeHtml(c) + '</b></span><span class="av-radio"></span></button>').join('');
   else if (F.sub === 'meta') { let ms = []; try { ms = metasStats ? (metasCfg() || []).map((x) => metaPorKey(x.id)).filter(Boolean) : []; } catch (e) { ms = []; }
     lista = '<button type="button" class="link av-volver" ' + act('asiVasSub', '') + '>' + ic('chevL') + ' Volver</button>' + (ms.length ? ms.map((r) => '<button type="button" class="av-op' + (v[sel] === 'meta:' + r.key ? ' on' : '') + '" role="radio" aria-checked="' + (v[sel] === 'meta:' + r.key) + '" ' + act('asiVasElegir', 'meta:' + r.key) + '><span class="av-op-ic">' + ic('flag') + '</span><span class="av-op-t"><b>' + escapeHtml(r.nombre) + '</b><span>' + (r.pct == null ? '' : Math.round(r.pct) + ' %') + '</span></span><span class="av-radio"></span></button>').join('') : '<div class="card empty-mini">Aún no tienes metas.</div>'); }
-  else lista = ASIVAS_TIPOS.map(([key, t, icono2, d]) => {
+  else lista = ASIVAS_TIPOS.filter((x) => asiVasTipoOn(x[0])).map(([key, t, icono2, d]) => {
     const otro = key !== 'auto' && key !== 'cat' && key !== 'meta' ? v.findIndex((x, i) => i !== sel && x === key) : -1, sub = key === 'cat' || key === 'meta';
     const on = sub ? v[sel].indexOf(key + ':') === 0 : v[sel] === key, ej = cat[key] ? cat[key].valor + ' · ' + cat[key].l1 + ' ' + cat[key].l2 : d;
     return '<button type="button" class="av-op' + (on ? ' on' : '') + (otro >= 0 ? ' usado' : '') + '"' + (sub ? '' : ' role="radio" aria-checked="' + on + '"') + ' ' + (sub ? act('asiVasSub', key) : act('asiVasElegir', key)) + '><span class="av-op-ic">' + ic(icono2) + '</span><span class="av-op-t"><b>' + escapeHtml(t) + '</b><span>' + escapeHtml(otro >= 0 ? 'Ya está en el círculo ' + (otro + 1) : key === 'auto' ? d : ej) + '</span></span>' + (sub ? '<span class="chev">' + ic('chevR') + '</span>' : '<span class="av-radio"></span>') + '</button>';
@@ -4832,9 +4849,9 @@ function histAvisosCargar() {
   setTimeout(async () => { await histCargar(null); if (S.tab === 'inicio' && !$('#sheetBackdrop')) render(); }, 0);
 }
 function avisosInicioFilas() {
-  const filas = [], nov = juntosNovedades();
-  histAvisosCargar();
-  const ha = histAvisos();
+  const filas = [], jOn = juntosOn(), nov = jOn ? juntosNovedades() : []; // fase14: con Juntos apagado, sin sus avisos
+  if (jOn) histAvisosCargar();
+  const ha = jOn ? histAvisos() : [];
   if (ha.length) { const f = ha[0], ef = histEfecto(f), g = grupoDe(f.gid);
     filas.push({ cls: 'juntos-nov', caras: caraHtml(aliasDe(f.gid, f.por), histQuien(f), 'mini'), t: histFraseHtml(f),
       d: escapeHtml((ef > 0 ? '+' : '−') + money(Math.abs(ef)) + ' a tu saldo' + (ha.length > 1 ? ' · y ' + (ha.length - 1) + (ha.length === 2 ? ' cambio más' : ' cambios más') : '') + ' · ' + nombreDestino(g)), a: act('histVer', f.gid) }); }
@@ -4845,7 +4862,7 @@ function avisosInicioFilas() {
       t: escapeHtml(nov.length === 1 ? que : nov.length + ' novedades en Juntos'), d: escapeHtml(nov.length === 1 ? nombreDestino(grupoDe(c.grupoId)) + parteTxt : que + ' y ' + (nov.length - 1) + ' más'), a: act('goTab', 'juntos') });
   }
   const iv = invCambioSemana(), semana = isoSemana(todayISO());
-  if (iv && Math.abs(iv.pct) >= 3 && Math.abs(iv.dif) >= 50 && cfg().invAvisoVisto !== semana)
+  if (iv && herrOn('inversiones') && Math.abs(iv.pct) >= 3 && Math.abs(iv.dif) >= 50 && cfg().invAvisoVisto !== semana)
     filas.push({ cls: iv.dif >= 0 ? 'bien' : 'mal', icono: 'chart', t: 'Tus inversiones: ' + (iv.pct >= 0 ? '+' : '−') + Math.abs(iv.pct).toLocaleString(LOC(), { maximumFractionDigits: 1 }) + ' % esta semana', d: (iv.dif >= 0 ? '+' : '−') + escapeHtml(money(Math.abs(iv.dif))) + ' · valen ' + escapeHtml(money(iv.valor)), a: act('invAvisoVer') });
   return filas;
 }
@@ -4993,7 +5010,7 @@ function estosDiasHtml(v2) {
       : { cls: 'hoy', icono: 'users', t: en.length + ' tareas nuevas para ti', d: 'Te las han encargado', a: act('setInicioVista', 'tareas') }); } } catch (e) { console.error(e); }
   ra.revisar.forEach((x) => filas.push({ cls: 'rec', icono: 'repeat', t: escapeHtml(x.rc.nombre) + ': revisa la regla', d: 'Tus últimos movimientos encajan mejor con otra', a: act('recEditar', x.rc.kind, x.rc.idx) }));
   // lo de los próximos 7 días (tareas, cobros y pagos fijos, metas)
-  const f0 = S.calFiltros; S.calFiltros = { tareas: true, facturas: true, hitos: true, movs: false };
+  const f0 = S.calFiltros; S.calFiltros = { tareas: ag, facturas: true, hitos: herrOn('metas') || herrOn('deudas'), movs: false }; // fase14: sin lo apagado
   let mapa; try { mapa = calEventos(uAdd(hoy, 1), uAdd(hoy, 7)); } finally { S.calFiltros = f0; }
   Object.keys(mapa).sort().forEach((iso) => mapa[iso].forEach((ev) => { if (ev.pagada) return; const n = daysUntil(iso);
     if (ev.k === 'plan') { const av = planAviso(ev.id), a0 = agendaPorId(ev.id); if (av === 'no' || av === 'dia' || (av === 'antes' && n > 1) || (a0 && a0.fecha !== iso)) return; }
@@ -5007,7 +5024,7 @@ function estosDiasHtml(v2) {
   if (v2) { const ins = S._ins || [], conJuntos = ins.some((x) => x.k === 'juntos') || (inicioV3() && iwLista().some((x) => x.t === 'juntos' && !(x.o && x.o.gid))), pasada = (ins.find((x) => x.k === 'pasada' || x.k2 === 'pasada') || {}).cat; // lo que ya sale en «Así vas» no se repite
     for (let i = filas.length - 1; i >= 0; i--) if ((filas[i].cls === 'juntos' && conJuntos) || (filas[i].cls === 'warn' && pasada != null && filas[i].cat === pasada)) filas.splice(i, 1); }
   const CAP = v2 ? 2 : 3, todas = !!S.pendTodos, ver = todas ? filas : filas.slice(0, CAP);
-  return '<div class="section-title dias-tit">Estos días <button class="link" ' + act('setInicioVista', 'tareas') + '>Agenda ' + ic('chevR') + '</button></div>' +
+  return '<div class="section-title dias-tit">Estos días' + (ag ? ' <button class="link" ' + act('setInicioVista', 'tareas') + '>Agenda ' + ic('chevR') + '</button>' : '') + '</div>' + // fase14: sin «Agenda ›» si está apagada
     (filas.length ? '<div class="card dias-lista">' + ver.map(filaHtml).join('') +
       (filas.length > CAP ? '<button type="button" class="dias-mas" ' + act('verPendiente') + '>' + (todas ? 'Ver menos' : 'Ver los ' + filas.length) + '</button>' : '') + '</div>'
       : '<div class="card dias-vacio">' + ic('checkCircle') + '<span>Nada pendiente para estos días.</span></div>');
@@ -5203,6 +5220,16 @@ function iwTipoOn(t) { return herrOn(IW_HERR[t]); }
 const DESC_HERR = { ticket: 'tickets', agenda: 'agenda', presu: 'presupuestos', metas: 'metas', deudas: 'deudas', inversiones: 'inversiones', trayecto: 'trayecto', informes: 'informes' };
 const BUSCAR_HERR = { 'Foto de ticket': 'tickets', 'Nueva tarea': 'agenda', 'Grupos y personas': 'juntos', Metas: 'metas', Inversiones: 'inversiones', Deudas: 'deudas', Calendario: 'agenda', Tareas: 'agenda', 'Calculadora de trayecto': 'trayecto', Informes: 'informes' };
 function juntosOn() { return herrOn('juntos'); }
+/* fase14: si una pantalla se queda muy vacía por tener casi todo apagado, una línea discreta lo recuerda (Dinero solo con Cuentas, o Inicio con la mitad o más apagado).
+   Una sola línea por pantalla; al tocarla o cerrarla (X) no vuelve a salir en ningún sitio: cfg().herrPista = 'fuera'. Nunca en «Lo básico» (allí está «Descubre PalomApp»). */
+function herrApagadas() { return herrLista().filter((d) => !d.base && !herrOn(d.k)).length; }
+function herrPistaHtml(donde) {
+  if (!S.config || basico() || cfg().herrPista === 'fuera') return '';
+  const n = herrApagadas(), total = herrLista().filter((d) => !d.base).length;
+  if (donde === 'inicio' ? n < Math.max(3, Math.ceil(total / 2)) : n < 1) return '';
+  return '<div class="herr-pista ' + donde + '"><button type="button" class="herr-pista-t tappable" ' + act('herrPistaIr') + '><span class="herr-pista-ic">' + ic('sliders') + '</span><span>Puedes activar más herramientas en <b>Tú → Mis herramientas</b></span></button>' +
+    '<button type="button" class="herr-pista-x" aria-label="No volver a enseñarlo" ' + act('herrPistaFuera') + '>' + ic('close') + '</button></div>';
+}
 function agendaOn() { return herrOn('agenda'); }
 function diasEntre(a, b) { const x = parseISO(String(a || '').slice(0, 10)), y = parseISO(String(b || '').slice(0, 10)); return x && y ? Math.round((y - x) / 864e5) : 0; }
 // días desde que empezó (0 = el mismo día del alta, «día 1»)
@@ -6750,6 +6777,8 @@ function renderDineroV2() {
 }
 /* ---- Dinero v3 (23/10/2026, docs/15 2.1 y 2.2): «Lo que tienes» en una fila, 4 fichas que hacen de pestañas y cuentas en mosaico ---- */
 function dineroV3() { return versionDe('dinero') === 'formas'; }
+// fase14: la explicación de «Lo que tienes» solo nombra lo que está encendido o tiene dinero (la cifra es la misma siempre)
+function lqtFormula(p) { const inv = herrOn('inversiones') || p.inv > 0.004, deu = herrOn('deudas') || p.deudas > 0.004; return inv || deu ? 'cuentas' + (inv ? ' + invertido' : '') + (deu ? ' − lo que debes' : '') : 'lo que hay en tus cuentas'; }
 // alto de la cabecera (cambia a 360 px, con la fecha en dos líneas): las fichas-pestaña se quedan fijas justo debajo
 function cabAltoMedir() {
   const t = $('.topbar'); if (!t) return;
@@ -6765,7 +6794,7 @@ function dinero3Html(p, ms, hayInv, deudas, dComp) {
   const t = dm3Tab(), nMetas = ms.activas.length + ms.hechas.length, nDeu = deudas.length + dComp.length;
   const lqt = '<div class="card dm3-lqt"><div class="dm3-lqt-l"><span>Lo que tienes</span><button type="button" class="dm3-info" aria-label="¿Cómo se calcula?" ' + act('dmComo') + '>' + ic('info') + '</button></div>' +
     (p.nCuentas ? '<b class="dm3-lqt-v tnum">' + money(p.total) + '</b>' : '<button type="button" class="link dm3-lqt-sin" ' + act('openCuentas') + '>Pon el saldo de tu banco</button>') +
-    '<span class="dm3-lqt-f">cuentas + invertido − lo que debes</span></div>';
+    '<span class="dm3-lqt-f">' + lqtFormula(p) + '</span></div>';
   const ficha = (k, icono, nom, val, cls) => '<button type="button" role="tab" id="dm3t-' + k + '" aria-controls="dmCuerpo" aria-selected="' + (t === k) + '" class="dm3-tab' + (t === k ? ' on' : '') + (cls ? ' ' + cls : '') + '" ' + act('dm3Tab', k) + '>' + ic(icono) + '<span>' + nom + '</span><b class="tnum">' + val + '</b></button>';
   const nT = DM3_TABS.filter(dm3TabOn).length;
   const tabs = nT < 2 ? '' : '<div class="dm3-tabs' + (nT < 4 ? ' n' + nT : '') + '" role="tablist" aria-label="Tu dinero">' +
@@ -6778,7 +6807,7 @@ function dinero3Html(p, ms, hayInv, deudas, dComp) {
   else if (t === 'metas') cuerpo = dmMetasHtml(ms);
   else if (t === 'inversiones') cuerpo = hayInv ? renderInversionesTodo(true) : '<button type="button" class="card dm-emp tappable" ' + act('crearIr', 'inversion') + '><span class="dm-ic">' + ic('trendUp') + '</span><span class="dm-emp-x"><b>Apunta tu primera inversión</b><span>Fondos, acciones o cripto: verás cuánto valen cada día</span></span>' + ic('chevR') + '</button>';
   else cuerpo = dmDeudasHtml(deudas, dComp);
-  return lqt + tabs + '<div class="dm3-marco"><div id="dmCuerpo" class="dm3-cuerpo" role="tabpanel" aria-labelledby="dm3t-' + t + '">' + cuerpo + '</div></div>';
+  return lqt + tabs + '<div class="dm3-marco"><div id="dmCuerpo" class="dm3-cuerpo" role="tabpanel" aria-labelledby="dm3t-' + t + '">' + cuerpo + '</div></div>' + (nT < 2 ? herrPistaHtml('dinero') : '');
 }
 const ICONO_CUENTA = { corriente: 'bank', ahorro: 'piggy2', efectivo: 'wallet', broker: 'trendUp', otra: 'wallet' };
 function dm3CuentasHtml(p) {
@@ -12257,6 +12286,8 @@ const H = {
   buscarIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
   tuMasToggle: () => { S.tuMas = !S.tuMas; sentir('tic'); render(); },
   /* ---- Tú por temas y «Mis herramientas» (13/11) ---- */
+  herrPistaIr: () => { saveConfig({ herrPista: 'fuera' }); H.tuIr(['herramientas']); },
+  herrPistaFuera: () => { sentir('tic'); saveConfig({ herrPista: 'fuera' }); const el = $('.herr-pista'); if (el) el.remove(); },
   tuIr: ([id]) => { S.tuSub = id || ''; if (S.tab !== 'tu') { S.tab = 'tu'; } S._entrando = true; sentir('tic'); render(); window.scrollTo(0, 0); },
   tu3Filtrar: (_a, el) => {
     const q = normDesc(el.value), raiz = $('#content .tu3-raiz'), res = $('#content .tu3-res'); let n = 0;
@@ -13991,6 +14022,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { herrOn, herrLista, obPasos, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE };
+window.__APP__ = { herrOn, tabsBarra, insightsCatalogo, herrPistaHtml, herrLista, obPasos, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE };
 if (!window.__NO_AUTOSTART__) main();
 })();
