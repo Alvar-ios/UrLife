@@ -12,6 +12,7 @@ const { chromium } = require('playwright');
 //   --medir                    mide zonas de toque < 44 px, contraste por debajo de AA y botones sin nombre → medidas.json
 //   --mas                      añade las pantallas y hojas extra (Avisos, cuenta, persona, meta, filtros, importar…)
 //   --idioma=en                la app en inglés (C1 de docs/40); las capturas acaban en «-en»
+//   --bienvenida               solo la bienvenida por objetivos (docs/45) a 375 × 667 y 390 × 844, y avisa si alguna pantalla tiene scroll
 //   --solo=inicio,tu           solo esas pantallas · --sin-basico  no hace las de «Lo básico» · --entera  captura la página entera · --x1  capturas a escala 1
 const ARG = {}; const LIBRES = [];
 process.argv.slice(2).forEach((a) => { const m = /^--([a-z0-9-]+)(?:=(.*))?$/.exec(a); if (m) ARG[m[1]] = m[2] === undefined ? true : m[2]; else LIBRES.push(a); });
@@ -155,11 +156,37 @@ const PANTALLAS_BASICO = [
   ['b-catalogo', 'basico', 'A.S.tab="inicio";A.render();A.H.descAbrir([])'],
   ['b-que-ves', 'basico', 'A.S.tab="tu";A.render();A.H.nivelAbrir([])'],
   ['b-invitado', 'invitado', 'A.S.tab="inicio";A.render()'],
-  ['b-bienvenida-1', 'bienvenida', ''],
-  ['b-bienvenida-2', 'bienvenida', 'A.H.obNext([])'],
-  ['b-bienvenida-avisos', 'bienvenida', NATIVO(false) + 'A.H.obNext([]);A.H.obNext([])'], // 13/11: bienvenida por pasos (Android)
-  ['b-bienvenida-banco-avisos', 'bienvenida', NATIVO(false) + 'A.H.obNext([]);A.H.obNext([]);A.H.obNext(["no"])'],
-];
+].concat(PANTALLAS_BV());
+// 13/11 (docs/45): la bienvenida por objetivos, pantalla a pantalla (deben caber sin scroll a 375 × 667). Datos inventados
+function PANTALLAS_BV() {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const OB = (paso, objs, extra) => 'const ob=A.S.onboarding;Object.assign(ob,{objs:' + JSON.stringify(objs || { gastos: true, juntos: true, metas: true, deudas: true, agenda: true }) + ',objPasado:true,recortadas:[],hist:["hola","obj"]});' + (extra || '') + 'ob.paso="' + paso + '";ob._pintado=null;A.render()';
+  const CFG = (o) => 'A.S.config=Object.assign({},A.S.config,' + JSON.stringify(o) + ');';
+  const CTAS = CFG({ cuentas: [{ id: 'c1', nombre: 'BBVA', banco: 'bbva', tipo: 'corriente', saldo: null, fecha: hoy, principal: true }, { id: 'c2', nombre: 'Efectivo', tipo: 'efectivo', saldo: null, fecha: hoy }] });
+  return [
+    ['b-bv-hola', 'bienvenida', ''],
+    ['b-bv-saltar', 'bienvenida', 'A.H.bvSaltar([])'],
+    ['b-bv-obj', 'bienvenida', 'const ob=A.S.onboarding;ob.paso="obj";ob.hist=["hola"];ob.objs={gastos:true,metas:true};A.render()'],
+    ['b-bv-obj-todo', 'bienvenida', 'const ob=A.S.onboarding;ob.paso="obj";ob.hist=["hola"];ob.objs={gastos:true,juntos:true,metas:true,deudas:true,agenda:true,inversiones:true};A.render()'],
+    ['b-bv-I1', 'bienvenida', 'const ob=A.S.onboarding;ob.invite={token:"x",info:{valida:true,tipo:"grupo",nombre:"Piso de la calle Mayor",invita:"Ana",miembros:3}};ob.paso="I1";ob._pintado=null;A.render()'],
+    ['b-bv-G1', 'bienvenida', OB('G1', null, 'ob.bancos=["bbva","efectivo"];')],
+    ['b-bv-G1-mas', 'bienvenida', OB('G1', null, 'ob.bancosMas=true;')],
+    ['b-bv-G2', 'bienvenida', CTAS + OB('G2', null, 'ob.vals={"saldo:c1":"1234,5"};ob.tecCampo="saldo:c1";')],
+    ['b-bv-G3', 'bienvenida', OB('G3', null, 'ob.mesModo="cobro";ob.mesDia=28;')],
+    ['b-bv-G5', 'bienvenida', NATIVO(false) + OB('G5', null, 'ob.bancos=["santander","bbva"];')],
+    ['b-bv-J1', 'bienvenida', OB('J1')],
+    ['b-bv-J2', 'bienvenida', OB('J2', null, 'ob.jCamino="crear";ob.gPlant="casa";ob.gNombre="Casa";ob.gPers=["Ana","Leo",""];')],
+    ['b-bv-J2-creado', 'bienvenida', 'A.S.grupos=[{id:"gx",nombre:"Casa",tipo:"grupo",miembros:[{user_id:"u1",nombre:"Álex"},{user_id:"u2",nombre:"Ana",sinCuenta:true},{user_id:"u3",nombre:"Leo",sinCuenta:true}],todos:[],alias:{},soyAdmin:true}];' + OB('J2', null, 'ob.jCamino="crear";ob.grupoCreado="gx";ob.grupoCreadoNombre="Casa";')],
+    ['b-bv-J3', 'bienvenida', OB('J3', null, 'ob.jCamino="invitado";')],
+    ['b-bv-M1', 'bienvenida', OB('M1', null, 'ob.metaPlant="viaje";ob.metaNombre="Viaje";')],
+    ['b-bv-M2', 'bienvenida', OB('M2', null, 'ob.metaPlant="viaje";ob.metaNombre="Viaje a Lisboa";ob.vals={meta:"1200"};ob.tecCampo="meta";ob.metaMeses=6;')],
+    ['b-bv-D1', 'bienvenida', OB('D1', null, 'ob.deudaPlant="coche";ob.vals={dq:"4200",dc:"150"};ob.tecCampo="dc";')],
+    ['b-bv-T1', 'bienvenida', OB('T1', null, 'ob.tarea="Pagar el alquiler";ob.tareaDia="manana";')],
+    ['b-bv-N1', 'bienvenida', NATIVO(false) + OB('N1')],
+    ['b-bv-F', 'bienvenida', CFG({ nombre: 'Álex', cuentas: [{ id: 'c1', nombre: 'BBVA', banco: 'bbva', tipo: 'corriente', saldo: 1240, fecha: hoy, principal: true }], mesInicio: { modo: 'natural', dia: 1 }, ahorro: [{ id: 'm1', nombre: 'Viaje a Lisboa', objetivo: 800 }], deudas: [{ id: 'd1', nombre: 'Préstamo del coche', objetivo: 4200, cuotaMes: 150, emoji: '🚗' }], herramientas: { inversiones: false, informes: false, trayecto: false } }) + OB('F', { gastos: true, metas: true, deudas: true, agenda: true })],
+    ['b-bv-F-nada', 'bienvenida', CFG({ herramientas: { presupuestos: false, metas: false, deudas: false, agenda: false, juntos: false, inversiones: false } }) + OB('F', {})],
+  ];
+}
 // en la página: busca textos cortados (sin «…» a propósito) y cosas que se salen por la derecha
 function revisarPagina() {
   const out = [], W = window.innerWidth, vis = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
@@ -203,7 +230,7 @@ function revisarPagina() {
 (async () => {
   fs.mkdirSync(SALIDA, { recursive: true });
   const b = await chromium.launch(), informe = [], medidas = [];
-  let LISTA = PANTALLAS.concat(ARG.mas ? PANTALLAS_MAS : []);
+  let LISTA = ARG.bienvenida ? [] : PANTALLAS.concat(ARG.mas ? PANTALLAS_MAS : []);
   if (ARG.solo) { const q = String(ARG.solo).split(','); LISTA = LISTA.filter((x) => q.indexOf(x[0]) >= 0); }
   if (ARG.teclado) LISTA = LISTA.filter((x) => /^hoja-|^gasto-teclado|^moneda|^trayecto$|^mas$/.test(x[0]));
   const TAM = ANCHOS.map((a) => [a, ALTO]).concat(ARG.tableta ? [[1024, 768]] : []);
@@ -243,7 +270,7 @@ function revisarPagina() {
     const ctx = await b.newContext({ viewport: { width: ancho, height: alto }, colorScheme: tema, deviceScaleFactor: 2 });
     if (ARG.idioma) await ctx.addInitScript((l) => { try { localStorage.setItem('idioma', l); } catch (e) { /* */ } }, String(ARG.idioma));
     const errores = [];
-    for (const [id, variante, js] of PANTALLAS_BASICO) {
+    for (const [id, variante, js] of PANTALLAS_BASICO.filter((x) => !ARG.bienvenida || /^b-bv-/.test(x[0]))) {
       const p = await ctx.newPage(); p.on('pageerror', (e) => errores.push(id + ': ' + e.message));
       await p.route('**/*', (r) => {
         const u = r.request().url();
@@ -257,6 +284,7 @@ function revisarPagina() {
       try { await p.evaluate((code) => { const A = window.__APP__; eval(code); }, js); } catch (e) { errores.push(id + ': ' + e.message); }
       await p.waitForTimeout(700);
       const fallos = await p.evaluate(revisarPagina);
+      if (/^b-bv-/.test(id) && alto <= 700) { const a3 = await p.evaluate(() => ({ h: document.documentElement.scrollHeight, v: window.innerHeight })); if (a3.h > a3.v + 1) fallos.push({ tipo: 'bienvenida con scroll', donde: 'página', txt: a3.h + ' px de ' + a3.v }); }
       if (id === 'b-inicio' || id === 'b-invitado') { const alto2 = await p.evaluate(() => ({ h: document.documentElement.scrollHeight, v: window.innerHeight })); if (alto2.h > alto2.v + 1) fallos.push({ tipo: 'Inicio con scroll', donde: 'página', txt: alto2.h + ' px de ' + alto2.v }); }
       const f = id + '-' + ancho + 'x' + alto + '-' + (tema === 'dark' ? 'oscuro' : 'claro') + '.png';
       await p.screenshot({ path: path.join(SALIDA, f) });

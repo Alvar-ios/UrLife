@@ -47,6 +47,7 @@ const ICONS = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg>',
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+  trendUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>', // 13/11 (docs/45 §11): Inversiones lo usaba y no existía
   chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M11 19V4M18 19v-6"/><path d="M3 19h18"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
   checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.3 2.3 4.7-5"/></svg>',
@@ -4625,7 +4626,7 @@ const VERSIONES = {
   crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   balance: { txt: 'Mes cerrado', desde: '2026-10-29', variantes: [['nueva', 'Balance'], ['antes', 'Antes']] },
   importe: { txt: 'Apuntar importe', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
-  bienvenida: { txt: 'Bienvenida', desde: '2026-11-13', cerrada: '2026-11-13', def: 0, variantes: [['pasos', 'Por pasos'], ['nueva', '2 pantallas'], ['antes', '4 pasos']] }, // 13/11: Hola → Qué quieres usar → Permisos (solo Android) → Tu banco → Listo; «2 pantallas» = la de docs/38 (10/11) // docs/38 §6: 2 pantallas (1 con invitación) y «Lo básico»; «antes» = la de 4 pasos para todos (solo para las pruebas antiguas)
+  bienvenida: { txt: 'Bienvenida', desde: '2026-11-13', cerrada: '2026-11-13', def: 3, variantes: [['pasos', 'Antes'], ['nueva', '2 pantallas'], ['antes', '4 pasos'], ['v2', 'Por objetivos']] }, // 13/11 (docs/45): def 3 = «Por objetivos» (la nueva, también al repetirla desde Tú); «Antes» = la de por pasos de esta mañana. // 13/11: Hola → Qué quieres usar → Permisos (solo Android) → Tu banco → Listo; «2 pantallas» = la de docs/38 (10/11) // docs/38 §6: 2 pantallas (1 con invitación) y «Lo básico»; «antes» = la de 4 pasos para todos (solo para las pruebas antiguas)
 };
 function seccionVersion() {
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
@@ -5296,8 +5297,15 @@ function descubreHtml() {
   return '<div class="handle"></div><h2>Descubre PalomApp</h2><p class="desc-cuenta">' + descubreTxt(n) + '</p>' +
     '<div class="desc-tramos" aria-hidden="true">' + ds.map((d, i) => '<i class="' + (i < n ? 'on' : '') + '"></i>').join('') + '</div>' +
     '<div class="desc-lista">' + ds.filter((d) => !d.hecha).concat(ds.filter((d) => d.hecha)).map(fila).join('') + '</div>' +
+    descEsperanHtml() +
     '<p class="rec-hint desc-pie">Y en Tú también: Reglas de categorías, Tu mes, Compartir mi agenda, Ocultar cifras, Copia de seguridad, Aspecto.</p>' +
     (basico() ? '<div class="desc-todo"><button type="button" class="btn ghost block" ' + act('descTodo') + '>Quiero verlo todo ya</button></div>' : ''); // al final de la lista, sin quedarse fijo abajo
+}
+// 13/11 (docs/45 §3.4): lo apagado en «Mis herramientas» no desaparece sin nombre: «N herramientas más esperando» con «Encender»
+function descEsperanHtml() {
+  const ap = bvApagadas(); if (!ap.length) return '';
+  return '<div class="section-title desc-esp-t">' + ap.length + (ap.length === 1 ? ' herramienta más esperando' : ' herramientas más esperando') + '</div><div class="desc-lista desc-esperan">' +
+    ap.map((d) => '<div class="desc-fila apagada"><span class="desc-ic">' + ic(d.ic) + '</span><span class="desc-t"><b>' + d.n + '</b><span>' + d.f + '</span></span><button type="button" class="btn sm ghost" ' + act('bvEncender', d.k) + '>Encender</button></div>').join('') + '</div>';
 }
 // la línea del final de Inicio (mientras dure «Lo básico») y la tarjeta de Tú (para todos)
 function descLineaHtml() {
@@ -5319,7 +5327,8 @@ function nivelHtml() {
 function ppGrupoInv() { const u = cfg().unidoA; return u && u.gid ? u : null; }
 function compMio(c) { const yo = miUid(); return !!c && c.tipo !== 'Liquidación' && (c.creadoPor ? esMio(c.grupoId, c.creadoPor) : esMio(c.grupoId, c.pagadoPor)) && !!yo; }
 function grupoMio(g) { return g.tipo === 'grupo' && (g.creadoPor ? g.creadoPor === miUid() : !!g.soyAdmin); } // los grupos no traen quién los creó: vale ser administrador (quien lo crea lo es)
-function ppFilas() {
+function ppFilas() { return bvPpActiva() ? bvPpFilas() : ppFilasBase(); } // 13/11 (docs/45 §6): con la bienvenida por objetivos, lo saltado y lo recortado primero
+function ppFilasBase() {
   const inv = ppGrupoInv(), cs = S.compartidos || [], movs = (S.movimientos || []).filter((m) => !m.compartidoId);
   if (inv) {
     const n0 = String(inv.nombre || 'tu grupo'), nom = n0.length > 20 ? n0.slice(0, 18).trim() + '…' : n0; // un nombre muy largo no ocupa dos líneas
@@ -5350,9 +5359,9 @@ function ppTarjetaHtml(enHoja) {
   S._ppN = n;
   const fila = (f) => f.hecho ? '<div class="empieza-paso pp-fila hecha"><span class="pp-c on">' + ic('check') + '</span><span class="pp-t"><b>' + f.t + '</b><span class="d">' + f.d + '</span></span></div>'
     : '<button type="button" class="empieza-paso pp-fila tappable" ' + (enHoja ? f.a.replace('data-click="', 'data-click="ppIr|') : f.a) + '><span class="pp-c"></span><span class="pp-t"><b>' + f.t + '</b><span class="d">' + f.d + '</span></span></button>';
-  return '<div class="empieza pp"><div class="empieza-cab"><h3>Primeros pasos</h3><span class="pp-cab-d"><span class="pp-n">' + n + ' de ' + fs.length + '</span><button type="button" class="link" ' + act('empiezaOcultar') + '>Ocultar</button></span></div>' + fs.map(fila).join('') + '</div>';
+  return '<div class="empieza pp"><div class="empieza-cab"><h3>Primeros pasos</h3><span class="pp-cab-d">' + (bvPpActiva() ? '<span class="pp-n" aria-label="Tu PalomApp al ' + bvPct(null) + ' %">Al ' + bvPct(null) + ' %</span>' : '<span class="pp-n">' + n + ' de ' + fs.length + '</span>') + '<button type="button" class="link" ' + act('empiezaOcultar') + '>Ocultar</button></span></div>' + fs.map(fila).join('') + '</div>';
 }
-function ppLineaHtml() { const fs = ppFilas(), n = fs.filter((f) => f.hecho).length; return '<button type="button" class="pp-linea tappable" ' + act('ppAbrir') + '><span>Primeros pasos · ' + n + ' de ' + fs.length + '</span>' + ic('chevR') + '</button>'; }
+function ppLineaHtml() { const fs = ppFilas(), n = fs.filter((f) => f.hecho).length; return '<button type="button" class="pp-linea tappable" ' + act('ppAbrir') + '><span>Primeros pasos · ' + (bvPpActiva() ? 'al ' + bvPct(null) + ' %' : n + ' de ' + fs.length) + '</span>' + ic('chevR') + '</button>'; }
 /* ---- Sugerencias según el uso (solo en «Lo básico», una al día como mucho) ---- */
 function sugCandidatas() {
   const d = diasAlta(), hoy = todayISO(), movs = movsPersonales(), gastos = movs.filter((m) => m.tipo === 'Gasto'), manual = gastos.filter(esManual);
@@ -11691,6 +11700,8 @@ function maybeStartOnboarding() {
   if (!S._onboardPending || !S.loaded.cfg || S.onboarding || !S.db) return;
   S._onboardPending = false;
   const c = cfg();
+  // 13/11 (docs/45): la bienvenida por objetivos a medias (cerró la app) sigue donde la dejó, aunque ya haya puesto su banco
+  if (c.bienv && !c.bienv.hecho && c.bienv.paso && versionDe('bienvenida') === 'v2') { S.onboarding = bvReanudar(c.bienv); obCargarInvitacion(S.onboarding); render(); return; }
   // quien ya tenía su configuración (categorías o cuentas) no ve la bienvenida
   if ((c.categoriasGasto && c.categoriasGasto.length > 0) || (c.cuentas && c.cuentas.length > 0)) {
     write(() => S.db.doc('config/meta').update({ onboarded: true, onboardedAt: new Date().toISOString(), auto: true }));
@@ -11701,8 +11712,8 @@ function maybeStartOnboarding() {
   render();
 }
 // si llega con un enlace de invitación, la bienvenida empieza por ella
-async function obCargarInvitacion(ob) {
-  const t = lsGet('unirse');
+async function obCargarInvitacion(ob, tok) {
+  const t = tok || lsGet('unirse');
   if (!t || !gruposDisponible()) return;
   ob.invite = { token: t, cargando: true, info: null };
   let info = null;
@@ -11761,7 +11772,7 @@ function obGuardarHerr(ob) {
   const c = {}; HERRAMIENTAS.forEach((d) => { if (d.base) return; const on = obHerrOn(ob, d.k); if (on !== herrOn(d.k)) c[d.k] = on; });
   if (Object.keys(c).length) herrPoner(c);
 }
-function obGuardarPaso(ob) { const p = obPasos(ob)[ob.step]; if (p === 'hola') obGuardarHola(ob); else if (p === 'herr') obGuardarHerr(ob); else if (p === 'banco') obGuardarBanco(ob); else if (p === 'mes') obGuardarMes(ob); }
+function obGuardarPaso(ob) { if (bienvV2(ob)) return; const p = obPasos(ob)[ob.step]; if (p === 'hola') obGuardarHola(ob); else if (p === 'herr') obGuardarHerr(ob); else if (p === 'banco') obGuardarBanco(ob); else if (p === 'mes') obGuardarMes(ob); }
 async function doObFinish(despues) {
   const ob = S.onboarding; if (!ob || ob.saving) return;
   ob.saving = true;
@@ -11773,7 +11784,7 @@ async function doObFinish(despues) {
     // por la misma cola que el resto de guardados: así no se pisan (en el servidor, guardar es leer y luego escribir)
     const alta = { novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '', badgesVistos: vistos, compararVersiones: false, altaApp: todayISO() };
     if (!(cfg().ingresos || []).filter(Boolean).length) Object.assign(alta, { ingresos: INGRESOS_SERIE.slice(), ingresosSerie: 2 }); // 13/11: la bienvenida corta no las ponía
-    if (bienvNueva(ob) || bienvPasos(ob)) Object.assign(alta, { nivel: 'basico', nivelCambio: { d: todayISO(), por: 'alta' } }); // docs/38 §6.1: las cuentas nuevas empiezan en «Lo básico» (en el mismo guardado)
+    if (bienvNueva(ob) || bienvPasos(ob) || bienvV2(ob)) Object.assign(alta, { nivel: 'basico', nivelCambio: { d: todayISO(), por: 'alta' } }); // docs/38 §6.1: las cuentas nuevas empiezan en «Lo básico» (en el mismo guardado)
     await saveConfig(alta);
     ok = await write(() => S.db.doc('config/meta').update({ onboarded: true, onboardedAt: new Date().toISOString() }));
   }
@@ -11782,7 +11793,7 @@ async function doObFinish(despues) {
   if (ob.invite && ob.invite.aplazada && lsGet('unirse')) lsSet('invAplazada', lsGet('unirse')); // la invitación queda en Inicio, sin saltar sola
   const gid = ob.grupoId;
   S.onboarding = null; S._novRevisado = true; S.tab = 'inicio'; S._entrando = true;
-  if (!ob.manual && notifNat() && S.user) { if (bienvPasos(ob)) lsSet('notifPedido:' + miUid(), '1'); else setTimeout(() => pedirNotifUnaVez(true), 600); } // 13/11: en la nueva ya se explicó y se pidió en su paso
+  if (!ob.manual && notifNat() && S.user) { if (bienvPasos(ob) || bienvV2(ob)) lsSet('notifPedido:' + miUid(), '1'); else setTimeout(() => pedirNotifUnaVez(true), 600); } // 13/11: en la nueva ya se explicó y se pidió en su paso
   renderShell(); render(); window.scrollTo(0, 0);
   if (despues === 'grupo' && gid) { S._introJuntos = cfg().introJuntosVisto ? null : gid; S.tab = 'juntos'; render(); cargarGrupos().then(() => abrirGrupo(gid)); }
   else if (despues === 'gasto' && !lsGet('soy')) setTimeout(() => H.crearIr(['gasto']), 250); // con un sitio guardado, primero sale eso
@@ -11926,11 +11937,615 @@ function obBoton(ob) {
   return '<div class="ob2-dos"><button class="btn ghost" ' + act('obNext', 'no') + '>Ahora no</button><button class="btn accent block" ' + act('obNext') + '>Siguiente</button></div>';
 }
 function renderOnboarding() {
+  if (bienvV2(S.onboarding)) return renderBienvV2(S.onboarding); // 13/11 (docs/45): la de objetivos, también al repetirla desde Tú
   const ob = S.onboarding, p = obPasos(ob)[ob.step];
   const body = p === 'invite' ? obInviteHtml(ob) : p === 'hola' ? obHolaHtml(ob) : p === 'empieza' ? obEmpiezaHtml() : p === 'herr' ? obHerrHtml(ob) : p === 'notif' ? obNotifHtml(ob) : p === 'avbanco' ? obAvBancoHtml(ob) : p === 'banco' ? obBancoHtml(ob) : p === 'mes' ? obMesHtml(ob) : obListoHtml(ob);
   $('#app').innerHTML = '<div class="ob2"><div class="ob2-in">' + obBarra(ob) + '<div class="ob2-body ob2-p-' + p + '">' + body + '</div><div class="ob2-pie">' + obBoton(ob) + '</div></div></div>';
   window.scrollTo(0, 0);
   if (p === 'listo' && !ob.confeti && !ob.manual) { ob.confeti = true; setTimeout(() => { confeti(30, null); sentir('ok'); }, 250); }
+}
+/* ============================================================
+   BIENVENIDA POR OBJETIVOS (13/11/2026, docs/45-bienvenida-propuesta.md). Hola → «¿Para qué quieres PalomApp?» (6 tarjetas
+   y vista previa de Inicio con cifras inventadas) → una rama por objetivo, en orden fijo: Gastos (G1 banco, G2 saldo, G3 tu mes,
+   G5 avisos del banco solo en Android) → Juntos (J1, J2 crear grupo, J3 enlace) → Metas (M1, M2) → Deudas (D1) → Agenda (T1) →
+   N1 avisos de PalomApp (solo Android) → Final. Con invitación, la invitación primero (I1).
+   · Tope de 10 pantallas (sin contar la invitación): se recorta desde el final (BV_RECORTE) y lo recortado va a «Primeros pasos».
+   · Todo se puede saltar; lo saltado queda en cfg().bienv.saltadas y sale en «Primeros pasos».
+   · Lo que NO se elige se APAGA en «Mis herramientas» (decisión del dueño, 13/11): solo esconde, nunca borra nada.
+   · Repetida desde Tú (ob.manual) solo AÑADE: no apaga nada que no apague a mano en «Afinar», no toca cuentas con saldo
+     ni borra cuentas, metas, deudas ni grupos.
+   · cfg().bienv = { objetivos, saltadas, recortadas, paso, sellos, hecho, piloto, avisos, grupoCreado, invitado }: se guarda
+     copiando lo que hay y añadiendo (bvGuardarBienv), por la cola de saveConfig, así dos guardados seguidos no se pisan.
+   · I2 («¿Eres tú alguno de estos?») NO está: con las funciones de Supabase de hoy, quien ya es miembro no puede ocupar el sitio
+     de una persona sin cuenta (reclamar_sin_cuenta da «ya_es_miembro»). Necesitaría una función nueva (Datos y Seguridad).
+   ============================================================ */
+function bienvV2(ob) { return !!ob && versionDe('bienvenida') === 'v2'; }
+const BV_TOPE = 10;
+const BV_RECORTE = ['T1', 'D1', 'M2', 'G3', 'M1', 'J2', 'J3', 'J1', 'G5', 'G2']; // desde el final: Agenda, Deudas, M2 (se funde con M1)…
+const BV_OBJ = [
+  { k: 'gastos', ic: 'wallet', n: 'Controlar mis gastos', f: 'Cuánto te queda y en qué se te va', herr: ['presupuestos', 'tickets', 'informes', 'avisosBanco'], cls: 'a' },
+  { k: 'juntos', ic: 'users', n: 'Compartir gastos', f: 'Con tu pareja, tu casa o un viaje', herr: ['juntos', 'trayecto'], cls: 'b', principal: 'juntos', disp: () => compartidosDisponible() },
+  { k: 'metas', ic: 'target', n: 'Ahorrar para algo', f: 'Un viaje, un colchón, la entrada de casa', herr: ['metas'], cls: 'v', principal: 'metas' },
+  { k: 'deudas', ic: 'deuda', n: 'Pagar una deuda', f: 'Un préstamo o la tarjeta, hasta el final', herr: ['deudas'], cls: 'r', principal: 'deudas' },
+  { k: 'agenda', ic: 'calendar', n: 'Organizar mi día', f: 'Tareas y planes con su día', herr: ['agenda'], cls: 'b', principal: 'agenda' },
+  { k: 'inversiones', ic: 'trendUp', n: 'Ver mis inversiones', f: 'Lo que tienes invertido y cuánto ganas', herr: ['inversiones'], cls: 'v', principal: 'inversiones' },
+];
+const BV_SELLOS = [['nombre', 'persona', 'Con nombre propio'], ['banco', 'bank', 'Banco al día'], ['mes', 'calendar', 'Mes a tu medida'], ['equipo', 'users', 'En equipo'], ['meta', 'target', 'Primera meta'], ['piloto', 'bolt', 'Piloto automático']];
+const BV_TRAMOS = [['tu', 'Tú'], ['dinero', 'Tu dinero'], ['juntos', 'Juntos'], ['planes', 'Tus planes'], ['listo', 'Listo']];
+const BV_METAS = [['viaje', 'plane', 'Viaje', 1200, 'maleta'], ['colchon', 'shield', 'Colchón', 0, 'colchon'], ['casa', 'home', 'Entrada de casa', 20000, 'casa'], ['coche', 'coche2', 'Coche', 8000, 'coche'], ['regalo', 'gift', 'Regalo', 150, 'regalo'], ['otra', 'plus', 'Otra cosa', 0, 'tarro']];
+const BV_DEUDAS = [['coche', 'car', 'Préstamo del coche', '🚗'], ['hipoteca', 'home', 'Hipoteca', '🏠'], ['tarjeta', 'card', 'Tarjeta', '💳'], ['persona', 'users', 'A una persona', '🤝']];
+const BV_GRUPOS = [['pareja', 'heart', 'Pareja', 1], ['casa', 'home', 'Casa', 3], ['viaje', 'plane', 'Viaje', 3], ['amigos', 'users', 'Amigos', 3]];
+const BV_TAREAS = ['Pagar el alquiler', 'Pedir cita', 'Comprar regalo'];
+function bvObjDisp() { return BV_OBJ.filter((o) => { try { return !o.disp || o.disp(); } catch (e) { return false; } }); }
+function bvObjDef(k) { return BV_OBJ.find((o) => o.k === k); }
+// objetivos guardados (para «Primeros pasos» y el % fuera de la bienvenida)
+function bvObjsCfg() { const b = cfg().bienv || {}, o = {}; (Array.isArray(b.objetivos) ? b.objetivos : []).forEach((k) => { o[k] = true; }); return o; }
+function bvIniciar(ob) {
+  if (ob.bv) return ob;
+  Object.assign(ob, { bv: true, objs: {}, afinar: {}, hist: [], paso: null, bancos: [], bancosMas: false, bancoQ: '', vals: {}, tecCampo: null, saldosPuestos: [],
+    mesModo: mesCfg().modo === 'cobro' ? 'cobro' : 'natural', mesDia: mesCfg().modo === 'cobro' ? mesCfg().dia : 28, jCamino: '', gPlant: '', gNombre: '', gPers: ['', '', ''],
+    metaPlant: '', metaNombre: '', metaMeses: 12, deudaPlant: '', tarea: '', tareaDia: 'hoy', enlace: '', sellosIni: {} });
+  if (!ob.manual && !bvInvActiva(ob)) ob.objs.gastos = true; // docs/45 §2: sin invitación, «Controlar mis gastos» sale marcado; al invitado, sin marcar
+  if (ob.manual) ob.sellosIni = bvSellosGanados(ob); // al repetirla, lo que ya tenía no «cae» otra vez
+  return ob;
+}
+function bvInvActiva(ob) { return !!(ob.invite && !ob.invite.aplazada); }
+// ¿quedará encendida al salir de la pantalla 2? (lo afinado a mano manda; luego, lo que enciende un objetivo elegido)
+function bvHerrFinal(ob, k) {
+  const d = herrDef(k); if (!d || d.base) return true;
+  if (ob.afinar[k] != null) return !!ob.afinar[k];
+  if (ob.objSaltada) return herrOn(k);
+  if (BV_OBJ.some((o) => ob.objs[o.k] && o.herr.indexOf(k) >= 0)) return true;
+  return ob.manual ? herrOn(k) : false; // al repetirla, lo no elegido se queda como estaba
+}
+function bvRama(ob, k) { const o = bvObjDef(k); return !!ob.objs[k] && (!o.principal || bvHerrFinal(ob, o.principal)); }
+function bvG5(ob) {
+  if (!avNat() || !bvHerrFinal(ob, 'avisosBanco')) return false;
+  const bs = ob.bancos.filter((k) => BANCOS.some((b) => b.k === k));
+  return !bs.length || bs.some((k) => PAQ_BANCOS.some((p) => p[0] === k));
+}
+// las pantallas que tocan (en orden fijo). conTodo: sin recortar
+function bvLista(ob, conTodo) {
+  const L = [], unidoAlEmpezar = !!ob.grupoId && !ob.invJ3;
+  L.push(bvInvActiva(ob) && !ob.invJ3 || unidoAlEmpezar ? 'I1' : 'hola', 'obj');
+  if (bvRama(ob, 'gastos')) { L.push('G1', 'G2', 'G3'); if (bvG5(ob)) L.push('G5'); }
+  if (bvRama(ob, 'juntos') && !unidoAlEmpezar) {
+    if (ob.grupoId) L.push('I1'); // se unió con el enlace de J3: la invitación se queda en su sitio
+    else { L.push('J1'); if (ob.jCamino === 'invitado') { L.push('J3'); if (ob.invJ3 && bvInvActiva(ob)) L.push('I1'); } else if (ob.jCamino !== 'luego') L.push('J2'); }
+  }
+  if (bvRama(ob, 'metas')) L.push('M1', 'M2');
+  if (bvRama(ob, 'deudas')) L.push('D1');
+  if (bvRama(ob, 'agenda')) L.push('T1');
+  if (notifNat()) L.push('N1');
+  L.push('F');
+  if (conTodo) return L;
+  const rec = ob.recortadas || bvRecortes(L);
+  return L.filter((c) => rec.indexOf(c) < 0);
+}
+function bvCuenta(L) { return L.filter((c) => c !== 'I1' && c !== 'I2').length; }
+function bvRecortes(L) { const l = L.slice(), rec = []; for (const c of BV_RECORTE) { if (bvCuenta(l) <= BV_TOPE) break; const i = l.indexOf(c); if (i >= 0) { l.splice(i, 1); rec.push(c); } } return rec; }
+function bvPaso(ob) { if (!ob.paso) ob.paso = bvLista(ob)[0]; return ob.paso; }
+function bvSiguiente(ob) {
+  const L = bvLista(ob), p = bvPaso(ob), i = L.indexOf(p);
+  if (i >= 0) return L[i + 1] || 'F';
+  const T = bvLista(ob, true), j = T.indexOf(p); // la pantalla ya no está (p. ej. se unió a un grupo): la siguiente que siga en la lista
+  return L.find((c) => T.indexOf(c) > j) || 'F';
+}
+/* ---- lo que se guarda ---- */
+function bvGuardarBienv(patch) {
+  const b = Object.assign({}, cfg().bienv || {});
+  Object.keys(patch).forEach((k) => {
+    const v = patch[k];
+    if (k === 'saltadas' || k === 'recortadas') { const a = (Array.isArray(b[k]) ? b[k] : []).slice(); (v || []).forEach((x) => { if (a.indexOf(x) < 0) a.push(x); }); b[k] = k === 'recortadas' && patch._recortadasExactas ? v.slice() : a; }
+    else if (k === 'sellos') b.sellos = Object.assign({}, b.sellos || {}, v);
+    else if (k !== '_recortadasExactas') b[k] = v;
+  });
+  return saveConfig({ bienv: b });
+}
+function bvSellosGanados(ob) {
+  const c = cfg(), b = c.bienv || {};
+  return { nombre: !!String(c.nombre || '').trim(), banco: cuentasCfg().some(conSaldo), mes: !!c.mesInicio, equipo: !!((S.grupos || []).length || (ob && ob.grupoId) || (c.unidoA && c.unidoA.gid)),
+    meta: metasCfg().length > 0, piloto: !!(b.piloto || (S._avEst && S._avEst.activo && S._avEst.permiso)) };
+}
+// tras guardar algo: ¿hay un sello nuevo? (se apunta la fecha para no repetir la animación)
+function bvSellosRevisar(ob) {
+  const g = bvSellosGanados(ob), vistos = (cfg().bienv || {}).sellos || {}, nuevos = BV_SELLOS.map((x) => x[0]).filter((k) => g[k] && !vistos[k] && !ob.sellosIni[k]);
+  if (!nuevos.length) return;
+  const p = {}; nuevos.forEach((k) => { p[k] = todayISO(); }); bvGuardarBienv({ sellos: p });
+  ob.selloCae = nuevos[nuevos.length - 1]; sentir('ok');
+}
+// «Tu PalomApp al X %»: las piezas que tocan según lo elegido (se deducen de los datos)
+function bvPiezas(ob) {
+  const c = cfg(), b = c.bienv || {}, o = ob ? ob.objs : bvObjsCfg(), g = bvSellosGanados(ob), P = [['nombre', g.nombre], ['gusto', ob ? !!ob.objPasado : Array.isArray(b.objetivos)]];
+  if (o.gastos) P.push(['banco', g.banco], ['mes', g.mes]);
+  if (o.juntos) P.push(['grupo', g.equipo]);
+  if (o.metas) P.push(['meta', g.meta]);
+  if (o.deudas) P.push(['deuda', (c.deudas || []).some((d) => d && d.nombre)]);
+  if (o.agenda) P.push(['agenda', (S.tareas || []).length > 0]);
+  if (notifNat()) P.push(['avisos', !!(b.avisos || (ob && ob.notif === 'granted') || S._avNotif === 'granted')]);
+  return P;
+}
+function bvPct(ob) { const P = bvPiezas(ob); return Math.round(P.filter((p) => p[1]).length / P.length * 100); }
+function bvSalirObj(ob) {
+  ob.objPasado = true;
+  ob.recortadas = bvRecortes(bvLista(ob, true));
+  if (!ob.objSaltada) {
+    const c = {};
+    herrLista().forEach((d) => { if (d.base) return; const on = bvHerrFinal(ob, d.k); if (ob.manual && !on && ob.afinar[d.k] !== false) return; if (on !== herrOn(d.k)) c[d.k] = on; });
+    if (ob.grupoId) c.juntos = true;
+    if (Object.keys(c).length) herrPoner(c);
+  }
+  bvGuardarBienv({ objetivos: BV_OBJ.filter((o) => ob.objs[o.k]).map((o) => o.k), recortadas: ob.recortadas, _recortadasExactas: true });
+}
+function bvGuardarBancos(ob) {
+  if (!ob.bancos.length) return;
+  const cs = (cfg().cuentas || []).slice(), hoy = todayISO();
+  let n = 0; const nuevas = [];
+  ob.bancos.forEach((k) => {
+    const b = BANCOS.find((x) => x.k === k), nombre = b ? b.n : k === 'efectivo' ? 'Efectivo' : 'Mi banco';
+    const ya = cs.find((c) => c && (b ? c.banco === k : k === 'efectivo' ? tipoCuenta(c) === 'efectivo' : normName(c.nombre) === normName(nombre)));
+    if (ya) return; // ya la tenía: no se toca
+    const c = Object.assign({ id: nuevoIdMeta(), nombre, tipo: k === 'efectivo' ? 'efectivo' : b && b.tipo === 'broker' ? 'broker' : 'corriente', saldo: null, fecha: hoy, ts: Date.now(), principal: false }, b ? { banco: k } : {});
+    cs.push(c); nuevas.push(c); n++;
+  });
+  if (!n) return;
+  if (!cs.some((c) => c && c.principal)) { const p = nuevas.find((c) => c.tipo !== 'efectivo') || nuevas[0]; p.principal = true; }
+  saveConfig({ cuentas: cs });
+}
+// G2: las cuentas sin saldo (las de G1 o las que ya tenía sin saldo) y las que se han puesto aquí; sin ninguna, una nueva
+function bvFilasSaldo(ob) {
+  const cs = cuentasCfg().filter((c) => !conSaldo(c) || ob.saldosPuestos.indexOf(c.id) >= 0);
+  if (cs.length) return cs.map((c) => ({ k: 'saldo:' + c.id, id: c.id, nombre: c.nombre, b: bancoDe(c), efectivo: tipoCuenta(c) === 'efectivo' }));
+  return cuentasCfg().length ? [] : [{ k: 'saldo:nueva', id: null, nombre: 'Tu banco', b: null }];
+}
+function bvGuardarSaldos(ob) {
+  const filas = bvFilasSaldo(ob); if (!filas.length) return;
+  const cs = (cfg().cuentas || []).slice(), hoy = todayISO(); let cambia = false;
+  filas.forEach((f) => {
+    const t = ob.vals[f.k]; if (!t) return; const v = r2(tecNum(t));
+    if (f.id) { const i = cs.findIndex((c) => c && c.id === f.id); if (i < 0) return; if (conSaldo(cs[i]) && ob.saldosPuestos.indexOf(f.id) < 0) return; cs[i] = Object.assign({}, cs[i], { saldo: v, fecha: hoy, ts: Date.now() }); if (ob.saldosPuestos.indexOf(f.id) < 0) ob.saldosPuestos.push(f.id); cambia = true; }
+    else { const id = nuevoIdMeta(); cs.push({ id, nombre: 'Banco', tipo: 'corriente', saldo: v, fecha: hoy, ts: Date.now(), principal: !cs.some((c) => c && c.principal) }); ob.saldosPuestos.push(id); cambia = true; }
+  });
+  if (cambia) saveConfig({ cuentas: cs });
+}
+function bvGuardarMes(ob) {
+  const mc = cfg().mesInicio, nuevo = ob.mesModo === 'cobro' ? { modo: 'cobro', dia: ob.mesDia } : { modo: 'natural', dia: 1 };
+  if (!mc || mc.modo !== nuevo.modo || (nuevo.modo === 'cobro' && Number(mc.dia) !== nuevo.dia)) saveConfig({ mesInicio: nuevo });
+}
+function bvColchon() { const ma = mesActual(); let t = 0; for (let i = 1; i <= 3; i++) { const d = new Date(ma.y, ma.m - 1 - i, 1); try { const k = kpisMes(d.getFullYear(), d.getMonth() + 1); t += num(k.gastos) + num(k.facturas); } catch (e) { /* */ } } return t > 0 ? Math.max(100, Math.round(t / 100) * 100) : 3000; }
+function bvMetaEjemplo(k) { const m = BV_METAS.find((x) => x[0] === k); return !m ? 0 : k === 'colchon' ? bvColchon() : m[3]; }
+function bvMasMeses(n) { const d = parseISO(todayISO()); const dia = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + n); const ult = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); d.setDate(Math.min(dia, ult)); return dateISO(d); }
+function bvCrearMeta(ob) {
+  const nombre = String(ob.metaNombre || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+  if (!nombre) { marcarCampo('#bvMNombre'); toast('Ponle un nombre a tu meta'); return false; }
+  const arr = (cfg().ahorro || []).slice();
+  if (arr.some((m) => m && m.nombre && normName(m.nombre) === normName(nombre))) { toast('Ya tienes una meta con ese nombre'); return false; }
+  const obj = ob.vals.meta != null && ob.vals.meta !== '' ? r2(tecNum(ob.vals.meta)) : bvMetaEjemplo(ob.metaPlant) || null;
+  const pl = BV_METAS.find((x) => x[0] === ob.metaPlant), forma = pl ? pl[4] : null;
+  const item = { id: nuevoIdMeta(), nombre, objetivo: obj > 0 ? obj : null, fechaObjetivo: ob.metaMeses ? bvMasMeses(ob.metaMeses) : null, yaAhorrado: null, rentabilidad: null, hitos: [], color: metaColor({ id: null }) };
+  if (forma && forma !== 'tarro') item.forma = forma;
+  arr.push(item); saveConfig({ ahorro: arr }); ob.metaCreada = item.id; return true;
+}
+function bvDeudaAcaba(ob) { const q = tecNum(ob.vals.dq), c = tecNum(ob.vals.dc); return q > 0 && c > 0 ? sumaMeses(Math.ceil(q / c)) : null; }
+function bvCrearDeuda(ob) {
+  const pl = BV_DEUDAS.find((x) => x[0] === ob.deudaPlant) || BV_DEUDAS[0], q = r2(tecNum(ob.vals.dq)), c = r2(tecNum(ob.vals.dc));
+  if (!(q > 0)) { ob.tecCampo = 'dq'; toast('Pon cuánto te queda por pagar'); return false; }
+  const lista = (cfg().deudas || []).slice(), nombre = pl[2];
+  if (lista.some((d) => d && (normName(d.nombre) === normName(nombre) || (d.nombresAntes || []).some((x) => normName(x) === normName(nombre))))) { toast('Ya tienes una deuda con ese nombre: cámbiala en Dinero'); return false; }
+  lista.push({ id: 'd' + Date.now().toString(36), nombre, objetivo: q, previo: null, cuotaMes: c > 0 ? c : null, fechaObjetivo: null, emoji: pl[3] });
+  saveConfig({ deudas: lista }); return true;
+}
+function bvFinde() { const h = todayISO(), d = dowMon(parseISO(h)); return d >= 5 ? h : addDaysISO(h, 5 - d); }
+async function bvCrearTarea(ob) {
+  const nombre = String(ob.tarea || '').trim().replace(/\s+/g, ' ').slice(0, 80);
+  if (!nombre) { marcarCampo('#bvTarea'); toast('Escribe tu tarea o toca una idea'); return false; }
+  const hoy = todayISO(), f = ob.tareaDia === 'manana' ? addDaysISO(hoy, 1) : ob.tareaDia === 'finde' ? bvFinde() : hoy;
+  const data = { nombre, categoria: tCatSugerida(nombre, tCatLista()) || '', prioridad: 'Media', estado: 'Pendiente', fechaLimite: f, fechaCreacion: hoy, fechaInicio: null, fechaFin: null, comentario: '', repetir: null };
+  let r = null; try { r = await withRetry(() => anadir('tareas', data)); } catch (e) { console.error(e); toast(errMsg(e)); }
+  if (!r) return false;
+  ob.tareaCreada = r.id; return true;
+}
+async function bvCrearGrupo(ob) {
+  const pl = BV_GRUPOS.find((x) => x[0] === ob.gPlant), n = String(ob.gNombre || (pl ? pl[2] : '')).trim().slice(0, 40);
+  if (!n) { marcarCampo('#bvGNombre'); toast('Ponle un nombre al grupo'); return; }
+  if (ob.creandoGrupo) return; ob.creandoGrupo = true; render();
+  const yo = String(cfg().nombre || '').trim() || nombreSugerido();
+  const id = await accionGrupo(() => S.db.rpc('crear_grupo', { p_nombre: n, p_mi_nombre: yo }), null);
+  if (!id || id === true) { ob.creandoGrupo = false; render(); return; }
+  const ps = ob.gPers.map((x) => String(x || '').trim().slice(0, 40)).filter(Boolean).filter((x, i, a) => a.findIndex((y) => normName(y) === normName(x)) === i);
+  let okN = 0; for (const p of ps) { try { await S.db.rpc('crear_sin_cuenta', { p_grupo: id, p_nombre: p }); okN++; } catch (e) { console.error(e); } }
+  await cargarGrupos();
+  ob.creandoGrupo = false; ob.grupoCreado = id; ob.grupoCreadoNombre = n;
+  toast(okN === ps.length ? (ps.length ? 'Grupo creado con ' + ps.join(', ') : 'Grupo creado') : 'Grupo creado; no se pudo añadir a todos');
+  if (!juntosOn()) herrPoner({ juntos: true });
+  bvGuardarBienv({ grupoCreado: id }); bvSellosRevisar(ob); render();
+}
+async function bvInvitarGrupo(ob) {
+  if (!ob.grupoCreado || ob.creandoEnlace) return; ob.creandoEnlace = true;
+  const t = await accionGrupo(() => S.db.rpc('crear_invitacion_varios', { p_grupo: ob.grupoCreado }));
+  ob.creandoEnlace = false;
+  if (!t || t === true) return;
+  const url = APP_URL + '?unirse=' + encodeURIComponent(t), msg = 'Os invito a mi grupo «' + (ob.grupoCreadoNombre || '') + '» en PalomApp para compartir gastos. Entrad aquí (vale 7 días, para hasta 10 personas): ' + url;
+  ob.invitado = true; bvGuardarBienv({ invitado: true });
+  try { window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener'); } catch (e) { /* sin ventana */ }
+  render();
+}
+function bvLeerToken(txt) { const s = String(txt || '').trim(); const m = /[?&]unirse=([A-Za-z0-9_-]{16,64})/.exec(s); if (m) return m[1]; return /^[A-Za-z0-9_-]{16,64}$/.test(s) ? s : ''; }
+function bvPilotoRevisar(ob) { const e = ob && ob.avEst; if (e && e.activo && e.permiso && !(cfg().bienv || {}).piloto) { bvGuardarBienv({ piloto: true }); bvSellosRevisar(ob); } }
+// las piezas de Inicio que se ven en la vista previa (docs/45 §4.4): así lo que vio es lo que tiene
+function bvWidgets(ob) {
+  const o = ob.objs, w = [];
+  if (o.gastos) w.push({ t: 'asivas' });
+  w.push({ t: 'dias' });
+  if (o.juntos && juntosOn()) w.push({ t: 'juntos' });
+  if (o.metas && herrOn('metas')) w.push({ t: 'meta', o: { key: '*' } });
+  const d = (cfg().deudas || []).find((x) => x && x.nombre); if (o.deudas && herrOn('deudas') && d) w.push({ t: 'deuda', o: { nombre: d.nombre } });
+  return w.length === 2 && o.gastos ? null : w; // lo de siempre: sin clave
+}
+async function bvFin(despues) {
+  const ob = S.onboarding; if (!ob || ob.saving) return;
+  bvGuardarBienv({ hecho: todayISO(), paso: 'F' });
+  if (!ob.manual && !Array.isArray(cfg().inicioWidgets)) { const w = bvWidgets(ob); if (w) saveConfig({ inicioWidgets: w }); }
+  return doObFinish(despues);
+}
+// retomar donde lo dejó (si cerró la app a mitad)
+function bvReanudar(b) {
+  const ob = bvIniciar(freshOnboardingState(false));
+  ob.objs = {}; (b.objetivos || []).forEach((k) => { ob.objs[k] = true; });
+  ob.objPasado = Array.isArray(b.objetivos); if (ob.objPasado) ob.recortadas = (b.recortadas || []).slice();
+  if (b.grupoCreado) { ob.grupoCreado = b.grupoCreado; ob.jCamino = 'crear'; }
+  const L = bvLista(ob); ob.paso = L.indexOf(b.paso) >= 0 && b.paso !== 'I1' ? b.paso : ob.objPasado ? L[L.indexOf('obj') + 1] || 'F' : L[0];
+  return ob;
+}
+
+/* ---- navegación ---- */
+async function bvSig(ob) {
+  const p = bvPaso(ob);
+  if (p === 'hola') obGuardarHola(ob);
+  else if (p === 'obj') bvSalirObj(ob);
+  else if (p === 'G1') bvGuardarBancos(ob);
+  else if (p === 'G2') bvGuardarSaldos(ob);
+  else if (p === 'G3') bvGuardarMes(ob);
+  else if (p === 'M1') { if (!ob.metaPlant && !String(ob.metaNombre || '').trim()) { toast('Elige una idea o escribe la tuya'); return; } if (bvLista(ob).indexOf('M2') < 0 && !ob.metaCreada && !bvCrearMeta(ob)) return; if (ob.vals.meta == null) ob.vals.meta = bvMetaEjemplo(ob.metaPlant) ? String(bvMetaEjemplo(ob.metaPlant)) : ''; }
+  else if (p === 'M2') { if (!ob.metaCreada && !bvCrearMeta(ob)) return; }
+  else if (p === 'D1') { if (!ob.deudaCreada) { if (!bvCrearDeuda(ob)) { render(); return; } ob.deudaCreada = true; } }
+  else if (p === 'T1') { if (!ob.tareaCreada) { if (ob.ocupado) return; ob.ocupado = true; const r = await bvCrearTarea(ob); ob.ocupado = false; if (!r) return; } }
+  bvSellosRevisar(ob);
+  bvIr(ob, bvSiguiente(ob));
+}
+function bvIr(ob, code) {
+  if (S.onboarding !== ob) return;
+  if (ob.paso && ob.paso !== code) ob.hist.push(ob.paso);
+  ob.paso = code; ob.tecCampo = null; ob.confSaltar = false;
+  if (code === 'obj') ob.recortadas = undefined; // al volver a la pantalla 2 se puede elegir otra cosa
+  if (code === 'G2') { const f = bvFilasSaldo(ob)[0]; ob.tecCampo = f ? f.k : null; }
+  if (code === 'M2') ob.tecCampo = 'meta';
+  if (code === 'D1') ob.tecCampo = 'dq';
+  if (!(ob.manual && (cfg().bienv || {}).hecho)) bvGuardarBienv({ paso: code });
+  render();
+}
+function bvAtras(ob) {
+  if (!ob.hist.length) return false;
+  const prev = ob.hist[ob.hist.length - 1];
+  if (prev === 'I1' && ob.grupoId) return false; // la invitación ya aceptada no se repite
+  ob.hist.pop(); ob.paso = prev; ob.tecCampo = prev === 'G2' ? ((bvFilasSaldo(ob)[0] || {}).k || null) : prev === 'M2' ? 'meta' : prev === 'D1' ? 'dq' : null; ob.confSaltar = false;
+  if (prev === 'obj') ob.recortadas = undefined;
+  render(); return true;
+}
+function bvSaltar(ob) {
+  const p = bvPaso(ob);
+  if (p === 'hola') { if (ob.manual) return doObFinish(''); ob.confSaltar = true; render(); return; }
+  if (p === 'I1') return H.bvInvAplazar([]);
+  if (p === 'obj') { ob.objSaltada = true; ob.objs = ob.grupoId ? { juntos: true } : {}; bvSalirObj(ob); bvGuardarBienv({ saltadas: ['obj'] }); return bvIr(ob, bvSiguiente(ob)); }
+  if (p === 'J1') ob.jCamino = 'luego';
+  if ((p === 'J2' && ob.grupoCreado) || (p === 'M2' && ob.metaCreada)) return bvIr(ob, bvSiguiente(ob)); // ya hecho: no cuenta como saltado
+  if (p === 'M1') { ob.metaPlant = ''; }
+  bvGuardarBienv({ saltadas: [p] });
+  bvIr(ob, bvSiguiente(ob));
+}
+async function bvSaltarTodo(ob) {
+  obGuardarHola(ob);
+  bvGuardarBienv({ saltadas: ['todo'], hecho: todayISO() });
+  return doObFinish('');
+}
+// teclado de la app (las mismas teclas y reglas que el del importe: 2 decimales, 7 cifras)
+function bvTecPulsar(ob, k) {
+  const c = ob.tecCampo; if (!c) return;
+  let t = ob.vals[c] == null ? '' : String(ob.vals[c]);
+  if (ob._tecNuevo === c) { t = ''; ob._tecNuevo = null; }
+  if (k === 'del') { if (!t) return; t = t.slice(0, -1); }
+  else if (k === ',') { if (t.indexOf(',') >= 0) return sentir('aviso'); t = (t || '0') + ','; }
+  else if (/^\d$/.test(k)) { const p = t.split(','); if (p.length > 1 && p[1].length >= 2) return sentir('aviso'); if (p.length === 1 && p[0].replace(/^0+/, '').length >= 7) return sentir('aviso'); t = t === '0' ? k : t + k; }
+  else return;
+  ob.vals[c] = t; sentir('tic'); render();
+}
+
+/* ---- piezas de las pantallas ---- */
+function bvTopHtml(ob) {
+  const p = bvPaso(ob), L = bvLista(ob), atras = ob.hist.length && !(ob.hist[ob.hist.length - 1] === 'I1' && ob.grupoId), pct = bvPct(ob);
+  const sal = p === 'F' ? '<span class="ob2-ic"></span>' : '<button type="button" class="ob2-saltar" ' + act('bvSaltar') + '>' + (p === 'I1' ? 'Ahora no' : 'Saltar') + '</button>';
+  const ts = BV_TRAMOS.filter(([k]) => L.some((c) => bvTramo(ob, c) === k)), seg = Math.max(1, ts.length - 1);
+  const pos = (c) => { const t = bvTramo(ob, c), ti = ts.findIndex((x) => x[0] === t); if (t === 'listo' || ti < 0) return 100; const de = L.filter((x) => bvTramo(ob, x) === t), j = Math.max(0, de.indexOf(c)); return Math.round((ti + j / de.length) / seg * 1000) / 10; };
+  const x = pos(p); ob._palNueva = x;
+  return '<div class="bv-top">' + (atras ? '<button type="button" class="ob2-ic" aria-label="Atrás" ' + act('bvAtras') + '>' + ic('chevL') + '</button>' : '<span class="ob2-ic"></span>') +
+    '<span class="bv-pct">Tu PalomApp al <b class="tnum">' + pct + ' %</b></span>' + sal + '</div>' +
+    '<div class="bv-barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Tu PalomApp al ' + pct + ' %">' +
+    '<div class="bv-linea"><i style="width:' + x + '%"></i>' + ts.map((t, i) => '<b class="bv-punto' + (pos(L.find((c) => bvTramo(ob, c) === t[0])) <= x ? ' on' : '') + '" style="left:' + (t[0] === 'listo' ? 100 : Math.round(i / seg * 1000) / 10) + '%"></b>').join('') + '</div>' +
+    '<span class="bv-pal" id="bvPaloma" style="left:' + (ob._palX != null ? ob._palX : x) + '%">' + marcaHtml(26) + '</span>' +
+    '<div class="bv-tramos" aria-hidden="true">' + ts.map((t, i) => '<span class="' + (bvTramo(ob, p) === t[0] ? 'on' : '') + (t[0] === 'listo' ? ' fin' : '') + '" style="' + (t[0] === 'listo' ? 'right:0' : 'left:' + Math.round(i / seg * 1000) / 10 + '%') + '">' + t[1] + '</span>').join('') + '</div></div>';
+}
+function bvTramo(ob, c) { if (c === 'hola' || c === 'obj' || c === 'I2') return 'tu'; if (c === 'I1') return ob.invJ3 ? 'juntos' : 'tu'; if (c[0] === 'G') return 'dinero'; if (c[0] === 'J') return 'juntos'; if (c === 'F') return 'listo'; return 'planes'; }
+function bvCifraHtml(t) { return '<span class="bv-cifra-n tnum' + (t ? '' : ' vacio') + '">' + (t ? tecMiles(t) : '0') + '</span><span class="bv-cifra-e">' + escapeHtml(sym()) + '</span>'; }
+function bvTecHtml() {
+  const k = (v, l, aria, cls) => '<button type="button" class="tec-k bv-k' + (cls ? ' ' + cls : '') + '" ' + act('bvTec', v) + (aria ? ' aria-label="' + aria + '"' : '') + '>' + l + '</button>';
+  return '<div class="bv-tec" role="group" aria-label="Teclado de importe">' + ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => k(d, d)).join('') + k(',', ',', 'Coma decimal', 'tec-coma') + k('0', '0') + k('del', ic('borrar'), 'Borrar', 'tec-del') + '</div>';
+}
+// fila con cifra que se rellena con el teclado (toca para elegir cuál)
+function bvCampoHtml(ob, k, izq, etiqueta) {
+  const on = ob.tecCampo === k, t = ob.vals[k] == null ? '' : String(ob.vals[k]);
+  return '<button type="button" class="bv-campo tappable' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-k="' + escapeHtml(etiqueta) + '" ' + act('bvCampo', k) + '>' + izq + '<span class="bv-cifra">' + bvCifraHtml(t) + '</span></button>';
+}
+function bvTarjeta(k, icono, cls, t, d, on, accion, extra) {
+  return '<button type="button" class="bv-card tappable' + (on ? ' on' : '') + (extra || '') + '" role="checkbox" aria-checked="' + !!on + '" ' + accion + '><span class="ob2-fic ' + cls + '">' + ic(icono) + '</span><span class="bv-card-t"><b>' + t + '</b><span>' + d + '</span></span><span class="ob2-herr-ck">' + (on ? ic('check') : '') + '</span></button>';
+}
+// vista previa de Inicio: un móvil dibujado con piezas de Inicio. En la pantalla 2, cifras inventadas; en el final, sus datos
+function bvPreviaHtml(ob, grande) {
+  const o = ob.objs, pz = [], nuevo = ob._objNuevo;
+  const pieza = (k, icono, t, d, cls) => pz.push('<span class="bv-pz' + (cls ? ' ' + cls : '') + (k === nuevo && !grande ? ' entra' : '') + '"><i>' + ic(icono) + '</i><b>' + t + '</b>' + (d ? '<small>' + d + '</small>' : '') + '</span>');
+  if (!grande) {
+    pieza('mes', 'wallet', 'Te quedan 780 €', 'de 1.400 € este mes', 'ancha');
+    if (o.gastos) pieza('gastos', 'sparkle', 'Comida', '180 de 250 €, vas bien');
+    if (o.juntos) pieza('juntos', 'users', 'Casa', 'Ana te debe 23,40 €');
+    if (o.metas) pieza('metas', 'target', 'Lisboa', '320 de 800 €');
+    if (o.deudas) pieza('deudas', 'deuda', 'Coche', 'acabas en 2028');
+    if (o.agenda) pieza('agenda', 'calendar', 'Mañana', 'pagar el alquiler');
+    if (o.inversiones) pieza('inversiones', 'trendUp', 'Fondo', 'ganas 140 €');
+  } else {
+    const pc = cuentaPrincipal(), v = pc ? saldoCuenta(pc) : null, falta = (t) => '<span class="bv-falta">' + t + '</span>';
+    pieza('mes', pc ? 'bank' : 'wallet', pc && v != null ? escapeHtml(pc.nombre) + ': ' + money(v) : 'Tu mes', pc && v != null ? 'Lo que tienes hoy' : falta('Pon tu saldo cuando quieras'), 'ancha');
+    const g = (S.grupos || []).find((x) => x.id === (ob.grupoId || ob.grupoCreado)) || (S.grupos || [])[0];
+    if (o.juntos) pieza('juntos', 'users', g ? escapeHtml(nombreDestino(g)) : 'Juntos', g ? g.miembros.length + (g.miembros.length === 1 ? ' persona' : ' personas') : falta('Crea tu grupo'));
+    const m = metasCfg()[metasCfg().length - 1];
+    if (o.metas) pieza('metas', 'target', m ? escapeHtml(m.nombre) : 'Tu meta', m ? (m.objetivo ? 'Objetivo ' + moneyShort(m.objetivo) : 'Sin cifra aún') : falta('Cuando quieras'));
+    const d = (cfg().deudas || []).filter((x) => x && x.nombre).slice(-1)[0], r = d ? deudaStats(d) : null;
+    if (o.deudas) pieza('deudas', 'deuda', d ? escapeHtml(d.nombre) : 'Tu deuda', r ? (r.acaba ? 'Acabas en ' + MESES[r.acaba.getMonth()].toLowerCase() + ' de ' + r.acaba.getFullYear() : 'Quedan ' + moneyShort(r.pend)) : falta('Cuando quieras'));
+    const t = (S.tareas || []).find((x) => x.id === ob.tareaCreada) || (S.tareas || [])[0];
+    if (o.agenda) pieza('agenda', 'calendar', t ? escapeHtml(t.nombre) : 'Tu agenda', t ? escapeHtml(tecFechaTxt(t.fechaLimite || todayISO())) : falta('Cuando quieras'));
+    if (o.gastos && !pz.some((x) => /bank/.test(x))) pieza('gastos', 'sparkle', 'Así vas', 'Tus círculos del mes');
+  }
+  return '<div class="bv-movil' + (grande ? ' grande' : '') + '" aria-hidden="true"><span class="bv-movil-cab"></span><div class="bv-movil-in">' + pz.join('') + '</div></div>';
+}
+function bvApagadas() { return herrLista().filter((d) => !d.base && !herrOn(d.k)); }
+function bvAfinarHtml(ob) {
+  const directo = !ob || bvPaso(ob) === 'F';
+  const fila = (d) => { const on = directo ? herrOn(d.k) : bvHerrFinal(ob, d.k);
+    return '<div class="herr-fila' + (on ? '' : ' off') + '"><span class="herr-ic">' + ic(d.ic) + '</span><span class="herr-t"><b>' + d.n + '</b><span>' + d.f + '</span></span>' +
+      (d.base ? '<span class="herr-siempre">Siempre</span>' : '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + d.n + '" ' + act('bvAfinarCambiar', d.k) + '></button>') + '</div>'; };
+  return '<div class="handle"></div><h2>Herramienta a herramienta</h2><p class="rec-hint herr-intro">Lo que apagues solo se esconde: <b>no se borra nada</b> y lo enciendes cuando quieras en Tú → Mis herramientas.</p>' +
+    '<div class="card herr-lista">' + herrLista().map(fila).join('') + '</div><div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
+}
+
+/* ---- cada pantalla ---- */
+function bvHolaHtml(ob) {
+  if (ob.confSaltar) return '<div class="bv-centro">' + marcaHtml(96, 'marca-ob bv-paloma') + '<h1 class="ob2-h">¿Saltamos la bienvenida?</h1><p class="ob2-p">Podrás hacerlo luego desde <b>Primeros pasos</b>, en Inicio.</p></div>';
+  return '<div class="bv-centro">' + marcaHtml(96, 'marca-ob bv-paloma entra') + '<h1 class="ob2-h">' + (ob.manual ? 'Tu PalomApp a tu gusto' : '¡Hola! Soy PalomApp') + '</h1><p class="ob2-p">' + (ob.manual ? 'Aquí no se borra nada: solo añades lo que te falte.' : 'Te dejo la app a tu gusto en unos dos minutos.') + '</p></div>' +
+    '<div class="field bv-nombre"><label for="obNombre">¿Cómo te llamas?</label><input id="obNombre" type="text" maxlength="40" autocomplete="given-name" placeholder="' + escapeHtml(nombreSugerido()) + '" value="' + escapeHtml(ob.nombre || '') + '" ' + onInput('obSet', 'nombre') + '>' +
+    '<div class="ob2-ayuda">Así te verán las personas con las que compartas gastos.</div></div>';
+}
+function bvObjHtml(ob) {
+  const ds = bvObjDisp(), L = bvLista(ob, true), rec = bvRecortes(L);
+  const t = (o) => { const bloq = o.k === 'juntos' && ob.grupoId, on = bloq || !!ob.objs[o.k];
+    return bvTarjeta(o.k, o.ic, o.cls, o.n, bloq ? 'Ya estás en ' + escapeHtml(ob.grupoNombre || 'tu grupo') : o.f, on, bloq ? 'aria-disabled="true"' : act('bvObj', o.k), (bloq ? ' bloq' : '') + (ob._objToque === o.k ? ' rebota' : '')); };
+  const Lr = L.filter((c) => rec.indexOf(c) < 0), quedan = Lr.length - Lr.indexOf('obj') - 1;
+  return bvPreviaHtml(ob, false) + '<h1 class="ob2-h">¿Para qué quieres PalomApp?</h1><p class="ob2-p">' + (rec.length ? 'Lo dejamos listo en unas ' + quedan + ' pantallas; lo demás, en Primeros pasos.' : 'Elige todo lo que quieras. Lo cambias cuando quieras.') + '</p>' +
+    '<div class="bv-cards">' + ds.map(t).join('') + '</div>' +
+    '<div class="bv-obj-pie"><button type="button" class="link" ' + act('bvAfinar') + '>' + ic('sliders') + ' Afinar herramienta a herramienta</button></div>';
+}
+function bvG1Html(ob) {
+  const q = normDesc(ob.bancoQ || ''), sel = ob.bancos;
+  const tile = (k, ficha, n) => '<button type="button" class="bv-bco tappable' + (sel.indexOf(k) >= 0 ? ' on' : '') + '" role="checkbox" aria-checked="' + (sel.indexOf(k) >= 0) + '" ' + act('bvBanco', k) + '>' + ficha + '<span>' + escapeHtml(n) + '</span>' + (sel.indexOf(k) >= 0 ? '<i class="bv-bco-ok">' + ic('check') + '</i>' : '') + '</button>';
+  const top = BANCOS.filter((b) => b.tipo === 'banco' && b.top), extra = sel.map((k) => BANCOS.find((b) => b.k === k)).filter((b) => b && top.indexOf(b) < 0);
+  const rej = top.concat(extra).map((b) => tile(b.k, bancoFichaHtml(b, 'bv-ficha'), b.n)).join('') +
+    tile('otro', '<span class="bco-ficha bv-ficha bv-ficha-ic">' + ic('wallet') + '</span>', 'Otro') + tile('efectivo', '<span class="bco-ficha bv-ficha bv-ficha-ic">' + ic('cash') + '</span>', 'Efectivo');
+  const res = () => { const vis = BANCOS.filter((b) => !q || [b.n, b.k, b.alias].some((x) => normDesc(x).indexOf(q) >= 0)); return vis.length ? vis.map((b) => '<button type="button" class="bco-fila tappable' + (sel.indexOf(b.k) >= 0 ? ' on' : '') + '" ' + act('bvBanco', b.k) + '>' + bancoFichaHtml(b) + '<span>' + escapeHtml(b.n) + '</span>' + (sel.indexOf(b.k) >= 0 ? ic('check') : '') + '</button>').join('') : '<div class="rec-hint">No lo tenemos. Elige «Otro».</div>'; };
+  return '<h1 class="ob2-h">¿Cuál es tu banco?</h1><p class="ob2-p">Toca el tuyo. Puedes elegir varios.</p>' +
+    (ob.bancosMas ? '<div class="field bv-buscar"><input type="search" id="bvBcoQ" placeholder="Busca tu banco o bróker" aria-label="Busca tu banco o bróker" autocomplete="off" value="' + escapeHtml(ob.bancoQ || '') + '" ' + onInput('bvBancoBuscar') + '></div><div class="card bco-lista bv-bco-res" id="bvBcoRes">' + res() + '</div>' +
+      '<button type="button" class="link bv-mas" ' + act('bvBancosMas') + '>' + ic('chevL') + ' Volver a los más usados</button>'
+      : '<div class="bv-bcos">' + rej + '</div><button type="button" class="link bv-mas" ' + act('bvBancosMas') + '>' + ic('search') + ' Ver más bancos</button>');
+}
+function bvG2Html(ob) {
+  const fs = bvFilasSaldo(ob);
+  if (!fs.length) return '<span class="ob2-big-ic">' + ic('bank') + '</span><h1 class="ob2-h">Tus cuentas ya tienen saldo</h1><p class="ob2-p">Aquí no se cambia nada. Si alguna no coincide con tu banco, usa «Cuadrar» en la cuenta (en Dinero).</p>';
+  return '<h1 class="ob2-h">¿Cuánto tienes hoy?</h1><p class="ob2-p">Copia el saldo de la app de tu banco.</p>' +
+    '<div class="bv-campos">' + fs.map((f) => bvCampoHtml(ob, f.k, (f.b ? bancoFichaHtml(f.b, 'bv-ficha-s') : '<span class="bco-ficha bv-ficha-s bv-ficha-ic">' + ic(f.efectivo ? 'cash' : 'bank') + '</span>') + '<span class="bv-campo-n">' + escapeHtml(f.nombre) + '</span>', 'Saldo de ' + f.nombre)).join('') + '</div>' +
+    '<div class="ob2-nota bv-nota">' + ic('shield') + '<span>No nos conectamos a tu banco. Solo tú ves tus cifras.</span></div>' + bvTecHtml();
+}
+function bvMesRango(ob) {
+  const hoy = parseISO(todayISO());
+  if (ob.mesModo !== 'cobro') { const a = new Date(hoy.getFullYear(), hoy.getMonth(), 1); return [a, new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0)]; }
+  const d = ob.mesDia, ult = (y, m) => new Date(y, m + 1, 0).getDate();
+  let a = new Date(hoy.getFullYear(), hoy.getMonth(), Math.min(d, ult(hoy.getFullYear(), hoy.getMonth())));
+  if (a > hoy) a = new Date(hoy.getFullYear(), hoy.getMonth() - 1, Math.min(d, ult(hoy.getFullYear(), hoy.getMonth() - 1)));
+  const sig = new Date(a.getFullYear(), a.getMonth() + 1, Math.min(d, ult(a.getFullYear(), a.getMonth() + 1))); sig.setDate(sig.getDate() - 1);
+  return [a, sig];
+}
+function bvG3Html(ob) {
+  const op = (k, icono, t, d) => '<button type="button" class="bv-mes-op tappable' + (ob.mesModo === k ? ' on' : '') + '" role="radio" aria-checked="' + (ob.mesModo === k) + '" ' + act('bvMes', k) + '><span class="ob2-fic a">' + ic(icono) + '</span><span class="bv-card-t"><b>' + t + '</b>' + (d ? '<span>' + d + '</span>' : '') + '</span><span class="av-radio"></span></button>';
+  const [a, b] = bvMesRango(ob), hoyISO = todayISO(), celdas = [];
+  for (let i = 0; i < dowMon(a); i++) celdas.push('<i></i>');
+  for (let d = new Date(a); d <= b; d.setDate(d.getDate() + 1)) { const iso = dateISO(d); celdas.push('<i class="on' + (iso === dateISO(a) ? ' ini' : '') + (iso === hoyISO ? ' hoy' : '') + '">' + d.getDate() + '</i>'); }
+  return '<h1 class="ob2-h">¿Cuándo empieza tu mes?</h1><p class="ob2-p">Así «Te queda» cuadra con tu nómina.</p>' +
+    '<div class="bv-mes-ops" role="radiogroup" aria-label="Cuándo empieza tu mes">' + op('natural', 'calendar', 'El día 1', 'Del 1 al último día del mes') + op('cobro', 'wallet', 'Cuando cobro, el día…', '') + '</div>' +
+    (ob.mesModo === 'cobro' ? '<div class="bv-dia"><button type="button" class="bv-dia-b" aria-label="Un día antes" ' + act('bvMesDia', -1) + '>−</button><b class="tnum" aria-live="polite">Día ' + ob.mesDia + '</b><button type="button" class="bv-dia-b" aria-label="Un día después" ' + act('bvMesDia', 1) + '>+</button></div>' : '') +
+    '<div class="bv-cal" aria-hidden="true">' + ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((x) => '<i class="cab">' + x + '</i>').join('') + celdas.join('') + '</div>' +
+    '<div class="bv-cal-txt"><span>Tu mes:</span> <b class="tnum">' + a.getDate() + '/' + (a.getMonth() + 1) + ' – ' + b.getDate() + '/' + (b.getMonth() + 1) + '</b></div>';
+}
+function bvG5Html(ob) {
+  const e = ob.avEst || {}, listo = !!(e.activo && e.permiso);
+  const bs = ob.bancos.map((k) => BANCOS.find((b) => b.k === k)).filter((b) => b && PAQ_BANCOS.some((p) => p[0] === b.k));
+  return (bs.length ? '<div class="bv-logos">' + bs.slice(0, 5).map((b) => bancoFichaHtml(b, 'bv-ficha-s')).join('') + '</div>' : '<span class="ob2-big-ic">' + ic('bolt') + '</span>') +
+    '<h1 class="ob2-h">Que se apunten solos</h1><p class="ob2-p">' + (bs.length ? '<span>Funciona con</span> <b>' + escapeHtml(bs.map((b) => b.n).join(' · ')) + '</b><span>' + (bs.length === 1 ? ', tu banco.' : ', tus bancos.') + '</span>' : 'Funciona con los bancos y apps de pago más usados.') + '</p>' +
+    '<div class="ob2-sec">Qué ganas</div><div class="ob2-filas bv-filas">' + obFila('checkCircle', 'a', 'Tus pagos y bizums, apuntados solos', 'al momento, aunque PalomApp esté cerrada') + obFila('repeat', 'b', '«Deshacer» en el propio aviso', 'si alguno no es tuyo') + '</div>' +
+    '<div class="ob2-sec">Tu privacidad</div><div class="ob2-filas bv-filas">' + obFila('shield', 'v', 'El texto del aviso no sale de tu móvil', 'solo pasa el importe, el comercio y la fecha') + obFila('bank', 'r', 'Solo tus apps de banco y de pagos', 'nunca mensajes, WhatsApp, códigos ni claves') + '</div>' +
+    (listo ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Activado: ya se apuntan solos</span></div>'
+      : ob.avPedido ? '<div class="ob2-nota">' + ic('alert') + '<span><b>¿Sale en gris o pone «Ajuste restringido»?</b> Abre los ajustes de PalomApp, toca ⋮ arriba a la derecha y elige «Permitir ajustes restringidos». Luego vuelve a tocar «Activar». <button type="button" class="link" ' + act('avAbrirApp', 'app') + '>Abrir ajustes de PalomApp</button></span></div>' : '');
+}
+function bvJ1Html() {
+  const op = (k, icono, cls, t, d) => '<button type="button" class="ob2-puerta tappable" ' + act('bvJ1', k) + '><span class="ob2-fic ' + cls + '">' + ic(icono) + '</span><span><b>' + t + '</b><span>' + d + '</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
+  return '<span class="ob2-big-ic">' + ic('users') + '</span><h1 class="ob2-h">¿Ya tienes grupo?</h1><p class="ob2-p">Para la casa, la pareja o un viaje.</p><div class="ob2-puertas">' +
+    op('crear', 'plus', 'a', 'Crear uno ahora', 'Con quien compartes gastos') + op('invitado', 'send', 'b', 'Me han invitado', 'Tengo un enlace de WhatsApp') + op('luego', 'clock', 'r', 'Más adelante', 'Lo tendrás en Primeros pasos') + '</div>';
+}
+function bvJ2Html(ob) {
+  if (ob.grupoCreado) {
+    const g = grupoDe(ob.grupoCreado), ms = g ? g.miembros : [];
+    return '<div class="bv-centro"><div class="bv-avs montado">' + ms.slice(0, 5).map((m) => '<span class="avatar" style="background:' + colorPersona(m.user_id) + '">' + escapeHtml(iniciales(m.nombre)) + '</span>').join('') + '</div>' +
+      '<h1 class="ob2-h"><span>Grupo creado:</span> <span>' + escapeHtml(ob.grupoCreadoNombre || '') + '</span></h1>' + (ms.length > 1 ? '<div class="bv-nombres">' + ms.map((m) => escapeHtml(m.nombre)).join(' · ') + '</div>' : '') + '<p class="ob2-p">Invítalos por WhatsApp cuando quieras: verán los gastos que llevéis.</p>' +
+      (ob.invitado ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Enlace enviado</span></div>' : '') + '</div>';
+  }
+  const pl = BV_GRUPOS.find((x) => x[0] === ob.gPlant), n = pl ? pl[3] : 2;
+  return '<h1 class="ob2-h">¿Con quién compartes?</h1><p class="ob2-p">Añádelos por su nombre: no hace falta que tengan la app.</p>' +
+    '<div class="bv-plants" role="radiogroup" aria-label="Tipo de grupo">' + BV_GRUPOS.map(([k, icono, t]) => '<button type="button" class="bv-plant tappable' + (ob.gPlant === k ? ' on' : '') + '" role="radio" aria-checked="' + (ob.gPlant === k) + '" ' + act('bvJPlant', k) + '>' + ic(icono) + '<span>' + t + '</span></button>').join('') + '</div>' +
+    '<div class="field"><label for="bvGNombre">Nombre del grupo</label><input id="bvGNombre" type="text" maxlength="40" placeholder="Casa, Viaje a Roma…" value="' + escapeHtml(ob.gNombre || '') + '" ' + onInput('obSet', 'gNombre') + '></div>' +
+    '<div class="field bv-pers"><label for="bvP0">' + (n === 1 ? 'Su nombre' : 'Sus nombres') + '</label>' + [0, 1, 2].slice(0, n).map((i) => '<input id="bvP' + i + '" type="text" maxlength="40" aria-label="Nombre de la persona ' + (i + 1) + '" placeholder="' + ['Ana', 'Leo', 'Sara'][i] + '" value="' + escapeHtml(ob.gPers[i] || '') + '" ' + onInput('obSet', 'gPers.' + i) + '>').join('') + '</div>';
+}
+function bvJ3Html(ob) {
+  return '<span class="ob2-big-ic">' + ic('send') + '</span><h1 class="ob2-h">Pega tu enlace</h1><p class="ob2-p">El que te pasaron por WhatsApp.</p>' +
+    '<div class="field bv-enlace"><label for="bvEnlace">Enlace de invitación</label><div class="bv-enlace-f"><input id="bvEnlace" type="url" autocomplete="off" placeholder="https://…?unirse=…" value="' + escapeHtml(ob.enlace || '') + '" ' + onInput('obSet', 'enlace') + '>' +
+    '<button type="button" class="btn ghost" ' + act('bvPegar') + '>' + ic('copy') + ' Pegar</button></div></div>';
+}
+function bvM1Html(ob) {
+  const solo = bvLista(ob).indexOf('M2') < 0;
+  return '<h1 class="ob2-h">¿Para qué ahorras?</h1><p class="ob2-p">Elige una idea o escribe la tuya.</p>' +
+    '<div class="bv-metas" role="radiogroup" aria-label="Ideas de meta">' + BV_METAS.map(([k, icono, t]) => { const ej = k === 'colchon' ? '3 meses de gastos' : k === 'otra' ? 'La que quieras' : moneyShort(bvMetaEjemplo(k));
+      return '<button type="button" class="bv-plant bv-meta tappable' + (ob.metaPlant === k ? ' on' : '') + '" role="radio" aria-checked="' + (ob.metaPlant === k) + '" ' + act('bvMeta', k) + '>' + ic(icono) + '<span>' + t + '</span><small class="tnum">' + ej + '</small></button>'; }).join('') + '</div>' +
+    '<div class="field"><label for="bvMNombre">¿Cómo la llamamos?</label><input id="bvMNombre" type="text" maxlength="40" placeholder="Viaje a Lisboa, Colchón…" value="' + escapeHtml(ob.metaNombre || '') + '" ' + onInput('obSet', 'metaNombre') + '></div>' +
+    (solo ? '<div class="ob2-ayuda">Le ponemos la cifra del ejemplo; la cambias cuando quieras en Dinero.</div>' : '');
+}
+function bvM2Html(ob) {
+  const v = tecNum(ob.vals.meta), n = ob.metaMeses, mes = v > 0 && n ? Math.ceil(v / n / 5) * 5 : 0, ll = n ? Math.min(100, Math.round(100 / n)) : 8;
+  const chip = (k, t) => '<button type="button" class="chip' + (n === k ? ' active' : '') + '" aria-pressed="' + (n === k) + '" ' + act('bvMetaPlazo', k) + '>' + t + '</button>';
+  return '<h1 class="ob2-h">¿Cuánto y para cuándo?</h1><p class="ob2-p">Te decimos cuánto apartar al mes.</p>' + bvCampoHtml(ob, 'meta', '<span class="bv-campo-n">' + escapeHtml(String(ob.metaNombre || 'Tu meta')) + '</span>', 'Cuánto quieres juntar') +
+    '<div class="chips bv-chips bv-chips4">' + chip(3, '3 meses') + chip(6, '6 meses') + chip(12, '12 meses') + chip(0, 'Sin fecha') + '</div>' +
+    '<div class="bv-vivo"><span class="bv-tarro" style="--ll:' + ll + '%"><i></i></span><b>' + (mes ? 'Unos ' + moneyShort(mes) + ' al mes' : n ? 'Pon cuánto quieres juntar' : 'Sin prisa: aparta lo que puedas') + '</b></div>' + bvTecHtml();
+}
+function bvD1Html(ob) {
+  const a = bvDeudaAcaba(ob);
+  return '<h1 class="ob2-h">¿Qué estás pagando?</h1><p class="ob2-p">Así verás cuánto te queda y cuándo acabas.</p>' +
+    '<div class="bv-plants bv-plants-s" role="radiogroup" aria-label="Qué deuda">' + BV_DEUDAS.map(([k, icono, t]) => '<button type="button" class="bv-plant tappable' + (ob.deudaPlant === k ? ' on' : '') + '" role="radio" aria-checked="' + (ob.deudaPlant === k) + '" ' + act('bvDeuda', k) + '>' + ic(icono) + '<span>' + t + '</span></button>').join('') + '</div>' +
+    '<div class="bv-campos dos">' + bvCampoHtml(ob, 'dq', '<span class="bv-campo-n">Te queda</span>', 'Te queda') + bvCampoHtml(ob, 'dc', '<span class="bv-campo-n">Pagas al mes</span>', 'Pagas al mes') + '</div>' +
+    '<div class="bv-vivo"><span class="ob2-fic r">' + ic('flag') + '</span><b>' + (a ? 'Acabas en ' + MESES[a.getMonth()].toLowerCase() + ' de ' + a.getFullYear() : 'Pon las dos cifras y te decimos cuándo acabas') + '</b></div>' + bvTecHtml();
+}
+function bvT1Html(ob) {
+  const dia = (k, t) => '<button type="button" class="chip' + (ob.tareaDia === k ? ' active' : '') + '" aria-pressed="' + (ob.tareaDia === k) + '" ' + act('bvTareaDia', k) + '>' + t + '</button>';
+  return '<span class="ob2-big-ic">' + ic('calendar') + '</span><h1 class="ob2-h">Tu primera tarea</h1><p class="ob2-p">Lo que no quieres olvidar esta semana.</p>' +
+    '<div class="field"><label for="bvTarea">Tarea</label><input id="bvTarea" class="bv-tarea" type="text" maxlength="80" placeholder="Llamar al taller…" value="' + escapeHtml(ob.tarea || '') + '" ' + onInput('obSet', 'tarea') + '></div>' +
+    '<div class="chips bv-chips">' + BV_TAREAS.map((t) => '<button type="button" class="chip" ' + act('bvTareaIdea', t) + '>' + ic('plus') + ' ' + t + '</button>').join('') + '</div>' +
+    '<div class="ob2-sec">¿Para cuándo?</div><div class="chips bv-chips">' + dia('hoy', 'Hoy') + dia('manana', 'Mañana') + dia('finde', 'Este finde') + '</div>';
+}
+function bvN1Html(ob) {
+  const ok = ob.notif === 'granted', no = ob.notif === 'denied', h = (k) => bvHerrFinal(ob, k);
+  const filas = [['alert', 'r', 'Un pago fijo de mañana sin saldo', 'Si en su cuenta no hay bastante, el día antes'], ['repeat', 'a', 'Tus cobros y pagos fijos', 'El día antes, a las 9:00']]
+    .concat(h('presupuestos') ? [['checkCircle', 'v', 'Cuando llegas al 80 % de un presupuesto', 'y si te pasas']] : [], h('metas') ? [['target', 'b', 'Cuando consigues una meta', '']] : [],
+      h('agenda') ? [['calendar', 'b', 'Tus tareas del día', 'Por la mañana, todas juntas']] : []);
+  const ord = [filas[0], filas[1]].concat(filas.slice(2).filter((f) => f[0] !== 'checkCircle'), filas.filter((f) => f[0] === 'checkCircle'));
+  if (h('juntos')) ord.splice(2, 0, ['users', 'b', 'Lo que te apuntan en Juntos', 'Un gasto contigo o un pago']);
+  filas.length = 0; ord.slice(0, 5).forEach((f) => filas.push(f));
+  return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te avisamos de lo importante</h1><p class="ob2-p">Sin publicidad. Máximo ' + AVISOS_MAX_DIA + ' al día.</p>' +
+    '<div class="ob2-filas bv-filas">' + filas.map(([i, c, t, d]) => obFila(i, c, t, d)).join('') + '</div>' +
+    (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">Android no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '<div class="ob2-ayuda">Nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.</div>');
+}
+function bvFHtml(ob) {
+  const n = String(cfg().nombre || ob.nombre || '').trim().split(' ')[0], P = bvPiezas(ob), pct = bvPct(ob), hizo = P.some(([k, v]) => v && k !== 'gusto');
+  const g = bvSellosGanados(ob), sellos = BV_SELLOS.filter(([k]) => g[k]);
+  const falta = bvPpPendientes().slice(0, 2).map((f) => f.corto), ap = bvApagadas();
+  if (!hizo) return '<div class="bv-centro">' + marcaHtml(80, 'marca-ob bv-paloma aterriza') + '<h1 class="ob2-h">Todo listo</h1><p class="ob2-p">Te esperamos en Inicio con tus primeros pasos.</p></div>' +
+    (ap.length ? '<div class="bv-esperan">' + ic('sparkle') + '<span><b>' + ap.length + (ap.length === 1 ? ' herramienta más esperando' : ' herramientas más esperando') + ':</b> ' + ap.slice(0, 3).map((d) => '<span>' + d.n + '</span>').join(' · ') + (ap.length > 3 ? ' …' : '') + '</span><button type="button" class="link" ' + act('bvAfinar') + '>Encender</button></div>' : '');
+  return '<div class="bv-centro">' + marcaHtml(64, 'marca-ob bv-paloma aterriza') + '<h1 class="ob2-h">' + (n ? '¡Lista, <span>' + escapeHtml(n) + '</span>!' : '¡Lista!') + '</h1><p class="ob2-p"><span>Tu PalomApp al ' + pct + ' %.</span>' + (pct < 100 ? ' <span>Lo que falta, en Inicio.</span>' : '') + '</p>' +
+    (sellos.length ? '<div class="bv-sellos" aria-label="Sellos">' + sellos.map(([k, i, t]) => '<span class="bv-sello" title="' + t + '"><i>' + ic(i) + '</i><small>' + t + '</small></span>').join('') + '</div>' : '') + '</div>' +
+    bvPreviaHtml(ob, true) +
+    (falta.length ? '<div class="bv-falta-l">' + ic('clock') + '<span><span>Te falta:</span> ' + falta.map((x) => '<b>' + escapeHtml(x) + '</b>').join(' · ') + '</span></div>' : '') +
+    (ap.length ? '<div class="bv-esperan">' + ic('sparkle') + '<span><b>' + ap.length + (ap.length === 1 ? ' herramienta más esperando' : ' herramientas más esperando') + ':</b> ' + ap.slice(0, 3).map((d) => '<span>' + d.n + '</span>').join(' · ') + (ap.length > 3 ? ' …' : '') + '</span><button type="button" class="link" ' + act('bvAfinar') + '>Encender</button></div>' : '');
+}
+function bvPieHtml(ob) {
+  const p = bvPaso(ob), sig = (t, extra) => '<button class="btn accent block" ' + act('bvSig') + (extra || '') + '>' + t + '</button>', dos = (t, a) => '<div class="ob2-dos"><button class="btn ghost" ' + act('bvSaltar') + '>Ahora no</button><button class="btn accent block" ' + a + '>' + t + '</button></div>';
+  if (p === 'hola') return ob.confSaltar ? '<div class="ob2-dos"><button class="btn ghost" ' + act('bvNoSaltar') + '>Seguir</button><button class="btn accent block" ' + act('bvSaltarTodo') + '>Sí, saltar</button></div>' : sig(ob.manual ? 'Empezar' : 'Empezar');
+  if (p === 'I1') { const I = ob.invite || {}; if (I.cargando) return ''; return I.info && I.info.valida ? '<button class="btn accent block" ' + act('bvUnirse') + '>' + (I.info.tipo === 'directo' ? 'Aceptar' : 'Unirme') + '</button>' : '<button class="btn accent block" ' + act('bvInvAplazar', I.info && I.info.motivo === 'red' ? '' : 'mal') + '>Seguir sin unirme</button>'; }
+  if (p === 'obj') { const L = bvLista(ob, true), rec = bvRecortes(L), Lr = L.filter((c) => rec.indexOf(c) < 0), n = Lr.length - Lr.indexOf('obj') - 1; return sig(n > 1 ? 'Seguir (unas ' + n + ' pantallas)' : 'Seguir'); }
+  if (p === 'G5') return ob.avEst && ob.avEst.activo && ob.avEst.permiso ? sig('Seguir') : dos('Activar', act('bvAvBanco'));
+  if (p === 'J1') return '';
+  if (p === 'J2') return ob.grupoCreado ? '<div class="ob2-dos"><button class="btn ghost" ' + act('bvSig') + '>Seguir</button><button type="button" class="btn accent block wa-btn" ' + act('bvInvitar') + (ob.creandoEnlace ? ' disabled' : '') + '>' + ic('send') + ' Invitar por WhatsApp</button></div>'
+    : '<button class="btn accent block" ' + act('bvJCrear') + (ob.creandoGrupo ? ' disabled' : '') + '>' + (ob.creandoGrupo ? 'Creando…' : 'Crear grupo') + '</button>';
+  if (p === 'J3') return '<button class="btn accent block" ' + act('bvJ3Abrir') + '>Abrir invitación</button>';
+  if (p === 'M1') return sig(bvLista(ob).indexOf('M2') < 0 ? 'Crear mi meta' : 'Seguir');
+  if (p === 'M2') return sig('Crear mi meta');
+  if (p === 'D1') return sig('Guardar deuda');
+  if (p === 'T1') return sig('Apuntar');
+  if (p === 'N1') return ob.notif === 'granted' || ob.notif === 'denied' ? sig('Seguir') : dos(ic('bell') + ' Permitir avisos', act('bvNotif'));
+  if (p === 'F') { const gid = ob.grupoId && !ob.invJ3 ? ob.grupoId : null;
+    if (ob.manual) return '<button class="btn accent block" ' + act('bvFin', '') + '>Volver a la app</button>';
+    return gid ? '<button class="btn accent block" ' + act('bvFin', 'grupo') + '>Ir a ' + escapeHtml(ob.grupoNombre || 'tu grupo') + '</button><button type="button" class="link ob2-ir" ' + act('bvFin', '') + '>Ir a Inicio</button>'
+      : '<button class="btn accent block" ' + act('bvFin', 'gasto') + '>' + ic('plus') + ' Apuntar mi primer gasto</button><button type="button" class="link ob2-ir" ' + act('bvFin', '') + '>Ir a Inicio</button>'; }
+  return sig('Seguir');
+}
+function renderBienvV2(ob) {
+  bvIniciar(ob);
+  const p = bvPaso(ob), quieto = ob._pintado === p;
+  const body = p === 'hola' ? bvHolaHtml(ob) : p === 'I1' ? obInviteHtml(ob) : p === 'obj' ? bvObjHtml(ob) : p === 'G1' ? bvG1Html(ob) : p === 'G2' ? bvG2Html(ob) : p === 'G3' ? bvG3Html(ob) : p === 'G5' ? bvG5Html(ob)
+    : p === 'J1' ? bvJ1Html(ob) : p === 'J2' ? bvJ2Html(ob) : p === 'J3' ? bvJ3Html(ob) : p === 'M1' ? bvM1Html(ob) : p === 'M2' ? bvM2Html(ob) : p === 'D1' ? bvD1Html(ob) : p === 'T1' ? bvT1Html(ob) : p === 'N1' ? bvN1Html(ob) : bvFHtml(ob);
+  const sello = ob.selloCae ? BV_SELLOS.find((x) => x[0] === ob.selloCae) : null; ob.selloCae = null;
+  const foco = document.activeElement && document.activeElement.id && quieto ? document.activeElement : null, sel = foco && foco.selectionStart != null ? [foco.selectionStart, foco.selectionEnd] : null; // al repintar (p. ej. llegan datos) no se pierde lo que estás escribiendo
+  // la hoja («Afinar») y los avisos viven fuera de lo que se repinta: así un repintado no los cierra
+  let raiz = $('#bvRaiz'); if (!raiz) { $('#app').innerHTML = '<div id="bvRaiz"></div><div id="sheetHost"></div><div class="toast" id="toast" role="status"></div><div id="bvSelloHost"></div>'; raiz = $('#bvRaiz'); }
+  raiz.innerHTML = '<div class="ob2 bv"><div class="ob2-in">' + bvTopHtml(ob) + '<div class="ob2-body bv-body bv-p-' + p + (quieto ? ' quieto' : '') + '">' + body + '</div><div class="ob2-pie">' + bvPieHtml(ob) + '</div></div></div>';
+  if (sello) { const sh = $('#bvSelloHost'); if (sh) { sh.innerHTML = '<div class="bv-sello-cae" role="status"><i>' + ic(sello[1]) + '</i><span>Sello: <b>' + sello[2] + '</b></span></div>'; clearTimeout(S._bvSelloT); S._bvSelloT = setTimeout(() => { const h2 = $('#bvSelloHost'); if (h2) h2.innerHTML = ''; }, 2800); } }
+  if (!quieto) window.scrollTo(0, 0);
+  if (foco) { const el = document.getElementById(foco.id); if (el && el !== foco) { try { el.focus(); if (sel) el.setSelectionRange(sel[0], sel[1]); } catch (e) { /* */ } } }
+  ob._pintado = p; ob._objToque = null; ob._objNuevo = null;
+  // la paloma vuela del punto de antes al de ahora (sin animación con «reducir movimiento»)
+  const pal = $('#bvPaloma'), x = ob._palNueva, antes = ob._palX; ob._palX = x;
+  if (pal && antes != null && antes !== x) { if (reduceMotion()) pal.style.left = x + '%'; else setTimeout(() => { pal.classList.add('vuela'); pal.style.left = x + '%'; setTimeout(() => pal.classList.remove('vuela'), 450); }, 30); }
+  if (p === 'F' && !ob.confeti && bvPiezas(ob).some(([k, v]) => v && k !== 'gusto')) { ob.confeti = true; setTimeout(() => { confeti(30, null); sentir('ok'); }, 300); }
+}
+
+// con teclado físico (ordenador): los números van a la cifra de la pantalla, si no se está escribiendo en un campo
+document.addEventListener('keydown', (ev) => {
+  const ob = S.onboarding; if (!ob || !bienvV2(ob) || !ob.tecCampo || ev.ctrlKey || ev.metaKey || ev.altKey || $('#sheetBackdrop')) return;
+  const t = ev.target; if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+  const k = /^\d$/.test(ev.key) ? ev.key : ev.key === ',' || ev.key === '.' ? ',' : ev.key === 'Backspace' ? 'del' : null;
+  if (!k) return; ev.preventDefault(); bvTecPulsar(ob, k);
+});
+/* ---- «Primeros pasos» con lo de la bienvenida (docs/45 §6): lo saltado → lo recortado → lo de siempre, 3 pendientes ---- */
+function bvPpActiva() { const b = cfg().bienv; return !!b && (Array.isArray(b.objetivos) || Array.isArray(b.saltadas)) && !(b.saltadas || []).includes('todo'); }
+function bvPpCandidatas() {
+  const c = cfg(), b = c.bienv || {}, o = bvObjsCfg(), g = bvSellosGanados(null), yo = miUid();
+  const gc = b.grupoCreado ? grupoDe(b.grupoCreado) : null;
+  const R = {
+    banco: { k: 'banco', ic: 'bank', t: 'Pon el saldo de tu banco', corto: 'tu banco', d: 'Así sabrás lo que te queda de verdad.', a: act('openCuentas'), hecho: g.banco },
+    mes: { k: 'mes', ic: 'calendar', t: 'Elige cuándo empieza tu mes', corto: 'tu mes', d: 'Del 1 al 31 o desde el día que cobras.', a: act('tuMesAbrir'), hecho: g.mes },
+    piloto: { k: 'piloto', ic: 'bolt', t: 'Que se apunten solos tus pagos', corto: 'los avisos del banco', d: 'Con los avisos de tu banco, y «Deshacer».', a: act('avAbrir'), hecho: g.piloto, si: () => !!avNat() && herrOn('avisosBanco') },
+    grupo: { k: 'grupo', ic: 'users', t: 'Crea tu grupo', corto: 'tu grupo', d: 'Para la casa, la pareja o un viaje.', a: act('openGrupos'), hecho: g.equipo, si: () => compartidosDisponible() && juntosOn() },
+    invitar: { k: 'invitar', ic: 'send', t: 'Invita a tu grupo', corto: 'invitar al grupo', d: 'Por WhatsApp: verán los gastos que llevéis.', a: gc ? act('grupoVer', gc.id) : act('openGrupos'), hecho: !!b.invitado || !!(gc && gc.miembros.some((m) => !m.sinCuenta && m.user_id !== yo)), si: () => !!gc && juntosOn() },
+    meta: { k: 'meta', ic: 'target', t: 'Crea tu primera meta', corto: 'tu meta', d: 'Un viaje, un colchón, la entrada de casa…', a: act('metaNueva'), hecho: g.meta, si: () => herrOn('metas') },
+    deuda: { k: 'deuda', ic: 'deuda', t: 'Apunta lo que debes', corto: 'tu deuda', d: 'Y verás cuándo acabas de pagarlo.', a: act('deudaNueva'), hecho: (c.deudas || []).some((d) => d && d.nombre), si: () => herrOn('deudas') },
+    tarea: { k: 'tarea', ic: 'calendar', t: 'Apunta tu primera tarea', corto: 'tu primera tarea', d: 'Lo que no quieres olvidar esta semana.', a: act('irAgenda', 'tareas'), hecho: (S.tareas || []).length > 0, si: () => agendaOn() },
+    avisos: { k: 'avisos', ic: 'bell', t: 'Activa los avisos de PalomApp', corto: 'los avisos', d: 'Solo de lo importante, máximo ' + AVISOS_MAX_DIA + ' al día.', a: act('avAbrir'), hecho: !!(b.avisos || S._avNotif === 'granted'), si: () => !!notifNat() },
+    inversion: { k: 'inversion', ic: 'trendUp', t: 'Apunta tu primera inversión', corto: 'tu inversión', d: 'Y mira cuánto ganas.', a: act('crearIr', 'inversion'), hecho: (S.movimientos || []).some((m) => m.tipo === 'Inversión'), si: () => herrOn('inversiones') },
+  };
+  const COD = { G1: 'banco', G2: 'banco', G3: 'mes', G5: 'piloto', J1: 'grupo', J2: 'grupo', J3: 'grupo', M1: 'meta', M2: 'meta', D1: 'deuda', T1: 'tarea', N1: 'avisos' };
+  const orden = [];
+  const pon = (k) => { const r = R[k]; if (!r || orden.indexOf(r) >= 0) return; try { if (r.si && !r.si()) return; } catch (e) { return; } orden.push(r); };
+  (b.saltadas || []).forEach((x) => pon(COD[x]));
+  (b.recortadas || []).forEach((x) => pon(COD[x]));
+  if (o.inversiones) pon('inversion');
+  if (b.grupoCreado) pon('invitar');
+  return orden;
+}
+function bvPpPendientes() { return bvPpCandidatas().filter((r) => !r.hecho); }
+function bvPpFilas() {
+  const base = ppFilasBase(), todas = bvPpCandidatas().concat(base.filter((f) => !bvPpCandidatas().some((r) => r.t === f.t)));
+  const pend = todas.filter((f) => !f.hecho), vis = pend.slice(0, 3);
+  for (let i = 0; vis.length < 3 && i < todas.length; i++) if (vis.indexOf(todas[i]) < 0) vis.push(todas[i]);
+  return vis;
 }
 /* ---- en Inicio: invitación pendiente o recién aceptada ---- */
 /* 11/11 (auditoría A4, decisión del dueño): quien cobra a final de mes veía «Te queda −321 €» casi todo el mes.
@@ -12191,6 +12806,7 @@ function atrasAndroid() {
   if (b && !b.dataset.cerrando) { if (atrasEnHoja(b)) return true; if (hojaConAlgoEscrito()) preguntarDescartar(); else closeSheet(); return true; }
   // 13/11 (Calidad): en la bienvenida, atrás vuelve al paso anterior (antes cerraba la app); en el primer paso, sale como siempre
   const ob = S.onboarding;
+  if (ob && bienvV2(ob)) { if (ob.confSaltar) { ob.confSaltar = false; render(); return true; } return bvAtras(ob); } // 13/11 (docs/45)
   if (ob) { if (ob.step > 0 && !(ob.grupoId && obPasos(ob)[ob.step - 1] === 'invite')) { H.obBack(); return true; } return false; }
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
   if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
@@ -12200,7 +12816,8 @@ function atrasAndroid() {
 }
 window.__atras = atrasAndroid;
 window.__avisosVolver = () => { avisosRecoger(); if (FORM && FORM.avisos && $('#sheetBackdrop')) avisosAbrir();
-  const ob = S.onboarding; if (ob && obPasos(ob)[ob.step] === 'avbanco' && avNat()) avNat().estado().then((e) => { if (S.onboarding === ob) { ob.avEst = e; render(); } }).catch(() => {}); }; // 13/11: al volver de los ajustes de Android en la bienvenida // al volver de los ajustes de Android o de segundo plano
+  const ob = S.onboarding; if (ob && bienvV2(ob) && ob.paso === 'G5' && avNat()) { avNat().estado().then((e) => { if (S.onboarding === ob) { ob.avEst = e; bvPilotoRevisar(ob); render(); } }).catch(() => {}); return; }
+  if (ob && !bienvV2(ob) && obPasos(ob)[ob.step] === 'avbanco' && avNat()) avNat().estado().then((e) => { if (S.onboarding === ob) { ob.avEst = e; render(); } }).catch(() => {}); }; // 13/11: al volver de los ajustes de Android en la bienvenida // al volver de los ajustes de Android o de segundo plano
 window.__irA = (tab) => { try { closeSheet(); } catch (e) { /* */ } H.goTab([tab]); };
 function closeSheet() {
   document.body.classList.remove('crear-abierto');
@@ -13724,6 +14341,59 @@ const H = {
   },
   obInvAplazar: ([mal]) => { const ob = S.onboarding; if (!ob || !ob.invite) return; ob.invite.aplazada = true; if (mal === 'mal') lsSet('unirse', ''); ob.step = 0; render(); },
   obFinish: ([despues]) => doObFinish(despues || ''),
+  // 13/11 · bienvenida por objetivos (docs/45)
+  bvSig: (_a, el) => { const ob = S.onboarding; if (!ob) return; if (el) { if (Date.now() - (ob._t || 0) < 450) return; ob._t = Date.now(); } return bvSig(ob); }, // un doble toque no se salta una pantalla
+  bvSaltar: () => { const ob = S.onboarding; if (ob) bvSaltar(ob); },
+  bvSaltarTodo: () => { const ob = S.onboarding; if (ob) bvSaltarTodo(ob); },
+  bvNoSaltar: () => { const ob = S.onboarding; if (!ob) return; ob.confSaltar = false; render(); },
+  bvAtras: () => { const ob = S.onboarding; if (ob) bvAtras(ob); },
+  bvObj: ([k]) => { const ob = S.onboarding; if (!ob || !bvObjDef(k) || (k === 'juntos' && ob.grupoId)) return; ob.objs[k] = !ob.objs[k]; ob._objNuevo = ob.objs[k] ? k : null; ob._objToque = k; sentir('tic'); render(); },
+  bvAfinar: () => { FORM = { kind: 'bvAfinar' }; openSheet(bvAfinarHtml(S.onboarding)); },
+  bvAfinarCambiar: ([k]) => {
+    const ob = S.onboarding, d = herrDef(k); if (!ob || !d || d.base) return;
+    if (bvPaso(ob) === 'F') herrPoner({ [k]: !herrOn(k) }); else ob.afinar[k] = !bvHerrFinal(ob, k);
+    sentir('tic'); if (FORM && FORM.kind === 'bvAfinar') updateSheet(bvAfinarHtml(ob)); render();
+  },
+  bvEncender: ([k]) => { if (!herrDef(k)) return; herrPoner({ [k]: true }); sentir('ok'); toast('Herramienta encendida'); if (FORM && FORM.kind === 'descubre') updateSheet(descubreHtml()); render(); },
+  bvBanco: ([k]) => { const ob = S.onboarding; if (!ob) return; const i = ob.bancos.indexOf(k); if (i >= 0) ob.bancos.splice(i, 1); else ob.bancos.push(k); sentir('tic'); if (ob.bancosMas) { ob.bancosMas = false; ob.bancoQ = ''; } render(); },
+  bvBancosMas: () => { const ob = S.onboarding; if (!ob) return; ob.bancosMas = !ob.bancosMas; ob.bancoQ = ''; render(); if (ob.bancosMas) setTimeout(() => { const el = $('#bvBcoQ'); if (el) el.focus(); }, 60); },
+  bvBancoBuscar: (_a, el) => { const ob = S.onboarding; if (!ob) return; ob.bancoQ = el.value; const r = $('#bvBcoRes'), tmp = document.createElement('div'); if (!r) return; tmp.innerHTML = bvG1Html(ob); const n = tmp.querySelector('#bvBcoRes'); if (n) r.innerHTML = n.innerHTML; },
+  bvTec: ([k]) => { const ob = S.onboarding; if (ob) bvTecPulsar(ob, k); },
+  bvCampo: ([k]) => { const ob = S.onboarding; if (!ob) return; ob.tecCampo = k; sentir('tic'); render(); },
+  bvMes: ([m]) => { const ob = S.onboarding; if (!ob) return; ob.mesModo = m === 'cobro' ? 'cobro' : 'natural'; sentir('tic'); render(); },
+  bvMesDia: ([d]) => { const ob = S.onboarding; if (!ob) return; ob.mesDia = Math.min(31, Math.max(2, ob.mesDia + Number(d))); sentir('tic'); render(); },
+  bvAvBanco: async () => { const ob = S.onboarding; if (!ob) return; await H.obAvBanco(); bvPilotoRevisar(ob); if (S.onboarding === ob) render(); },
+  bvNotif: async () => { const ob = S.onboarding; if (!ob) return; await H.obNotif(); if (ob.notif === 'granted') { bvGuardarBienv({ avisos: true }); bvSellosRevisar(ob); } if (S.onboarding === ob) render(); },
+  bvJ1: ([k]) => { const ob = S.onboarding; if (!ob) return; ob.jCamino = k === 'invitado' ? 'invitado' : k === 'luego' ? 'luego' : 'crear'; if (k === 'luego') bvGuardarBienv({ saltadas: ['J1'] }); bvIr(ob, bvSiguiente(ob)); },
+  bvJPlant: ([k]) => { const ob = S.onboarding, pl = BV_GRUPOS.find((x) => x[0] === k); if (!ob || !pl) return; const antes = BV_GRUPOS.find((x) => x[0] === ob.gPlant); if (!ob.gNombre || (antes && ob.gNombre === antes[2])) ob.gNombre = pl[2]; ob.gPlant = k; sentir('tic'); render(); },
+  bvJCrear: () => { const ob = S.onboarding; if (ob) bvCrearGrupo(ob); },
+  bvInvitar: () => { const ob = S.onboarding; if (ob) bvInvitarGrupo(ob); },
+  bvPegar: async () => { const ob = S.onboarding; if (!ob) return; try { const t = await navigator.clipboard.readText(); ob.enlace = t || ''; render(); } catch (e) { toast('Mantén pulsado el campo y elige «Pegar»'); } },
+  bvJ3Abrir: () => {
+    const ob = S.onboarding; if (!ob) return; const el = $('#bvEnlace'); if (el) ob.enlace = el.value;
+    const t = bvLeerToken(ob.enlace); if (!t) { marcarCampo('#bvEnlace'); return toast('Ese enlace no parece una invitación de PalomApp'); }
+    lsSet('unirse', t); ob.invJ3 = true; obCargarInvitacion(ob, t); bvIr(ob, 'I1');
+  },
+  bvUnirse: async () => {
+    const ob = S.onboarding; if (!ob || !ob.invite || ob.uniendo) return; ob.uniendo = true;
+    const i = ob.invite.info || {}, nombre = String(ob.nombre || '').trim().slice(0, 40) || nombreSugerido();
+    const id = await accionGrupo(() => S.db.rpc('unirse', { p_token: ob.invite.token, p_nombre: nombre }), i.tipo === 'directo' ? '¡Ya compartís gastos!' : '¡Te has unido al grupo!');
+    ob.uniendo = false;
+    if (!id || id === true) { render(); return; }
+    lsSet('unirse', '');
+    ob.grupoId = id; ob.grupoNombre = i.tipo === 'directo' ? (i.invita || i.nombre || '') : (i.nombre || ''); ob.objs.juntos = true;
+    saveConfig({ nombre, unidoA: { gid: id, nombre: ob.grupoNombre, invita: i.invita || '', fecha: todayISO() } });
+    if (!juntosOn()) herrPoner({ juntos: true });
+    bvSellosRevisar(ob);
+    bvIr(ob, ob.invJ3 ? bvSiguiente(ob) : 'obj');
+  },
+  bvInvAplazar: ([mal]) => { const ob = S.onboarding; if (!ob || !ob.invite) return; ob.invite.aplazada = true; if (mal === 'mal') lsSet('unirse', ''); if (ob.invJ3) { ob.invJ3 = false; ob.jCamino = 'luego'; bvIr(ob, bvSiguiente(ob)); } else { ob.hist = []; ob.paso = 'hola'; if (!ob.objPasado && !ob.manual) ob.objs.gastos = true; render(); } },
+  bvMeta: ([k]) => { const ob = S.onboarding, pl = BV_METAS.find((x) => x[0] === k); if (!ob || !pl) return; const antes = BV_METAS.find((x) => x[0] === ob.metaPlant); if (!ob.metaNombre || (antes && ob.metaNombre === antes[2])) ob.metaNombre = k === 'otra' ? '' : pl[2]; ob.metaPlant = k; ob.vals.meta = bvMetaEjemplo(k) ? String(bvMetaEjemplo(k)) : ''; ob._tecNuevo = 'meta'; sentir('tic'); render(); if (k === 'otra') setTimeout(() => { const el = $('#bvMNombre'); if (el) el.focus(); }, 60); },
+  bvMetaPlazo: ([n]) => { const ob = S.onboarding; if (!ob) return; ob.metaMeses = Number(n) || 0; sentir('tic'); render(); },
+  bvDeuda: ([k]) => { const ob = S.onboarding; if (!ob) return; ob.deudaPlant = k; sentir('tic'); render(); },
+  bvTareaIdea: ([t]) => { const ob = S.onboarding; if (!ob) return; ob.tarea = t; sentir('tic'); render(); },
+  bvTareaDia: ([d]) => { const ob = S.onboarding; if (!ob) return; ob.tareaDia = d; sentir('tic'); render(); },
+  bvFin: ([d]) => bvFin(d || ''),
   obHerr: ([k]) => { const ob = S.onboarding, d = herrDef(k); if (!ob || !d || d.base) return; ob.herr[k] = !obHerrOn(ob, k); sentir('tic'); render(); },
   obNotif: async () => {
     const ob = S.onboarding, nn = notifNat(); if (!ob || !nn) return;
@@ -14022,6 +14692,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { herrOn, tabsBarra, insightsCatalogo, herrPistaHtml, herrLista, obPasos, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE };
+window.__APP__ = { herrOn, herrLista, obPasos, bvLista, bvPct, bvPiezas, bvSellosGanados, bvPpFilas, bvRecortes, bienvV2, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, tabsBarra, insightsCatalogo, herrPistaHtml };
 if (!window.__NO_AUTOSTART__) main();
 })();
