@@ -154,7 +154,7 @@ function revisarPagina() {
   if (document.documentElement.scrollWidth > W + 1) out.push({ tipo: 'scroll lateral', donde: 'página', txt: 'la página se puede mover a los lados (' + document.documentElement.scrollWidth + ' px)' });
   const SEL = document.querySelector('#sheetBackdrop') ? '#sheetHost *' : '#app *';
   document.querySelectorAll(SEL).forEach((el) => {
-    if (!vis(el) || enScroll(el)) return;
+    if (!vis(el) || enScroll(el) || (el.classList && el.classList.contains('sr-only'))) return; // 13/11: lo que solo lee el lector de pantalla está recortado a propósito
     const s = getComputedStyle(el), txt = (el.textContent || '').trim().replace(/\s+/g, ' ');
     if (!txt) return;
     const propio = Array.from(el.childNodes).some((n) => n.nodeType === 3 && n.textContent.trim());

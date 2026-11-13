@@ -375,3 +375,16 @@ Ventas de segunda mano	Second-hand sales
 Alquileres cobrados	Rent received
 Intereses y dividendos	Interest and dividends
 Ayudas y prestaciones	Benefits and allowances
+// 13/11 · Juntos (Grupos y Personas por uso) y todas las aportaciones de una meta
+Grupo:	Group:
+Ver todos (#)	See all (#)
+Ver todas (#)	See all (#)
+Lo que ya tenías	What you already had
+antes de empezar a apuntar	before you started tracking
+Total aportado	Total contributed
+La meta lleva #.	The goal has #.
+Con esto, menos lo usado (#), la meta lleva #.	After subtracting what was used (#), the goal has #.
+Con esto, más lo que han ganado las inversiones (#), la meta lleva #.	Adding what the investments have earned (#), the goal has #.
+Con esto, menos lo que han perdido las inversiones (#), la meta lleva #.	After what the investments have lost (#), the goal has #.
+Con esto, menos lo usado (#) y más lo que han ganado las inversiones (#), la meta lleva #.	After subtracting what was used (#) and adding what the investments earned (#), the goal has #.
+Con esto, menos lo usado (#) y menos lo que han perdido las inversiones (#), la meta lleva #.	After subtracting what was used (#) and what the investments lost (#), the goal has #.

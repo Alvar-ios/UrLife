@@ -5773,29 +5773,61 @@ function juntosCircHtml(x, max, i) {
     '<span class="ins-aro">' + juntosAro(v, max, i) + (paz ? '<span class="jv-c-ok" aria-hidden="true">' + ic('check') + '</span>' : '<b class="tnum' + (cifraCirc(v).length > 5 ? ' largo' : '') + '">' + escapeHtml(cifraCirc(v)) + '</b>') +
     '<span class="jv-c-cara">' + x.cara + '</span></span><span class="ins-l1">' + escapeHtml(x.nombre) + '</span><span class="ins-l2">' + est + '</span></button>';
 }
+/* ---- Juntos (13/11/2026, fase 14): Grupos y Personas a la vista, cada uno con su forma (grupo = tarjeta cuadrada; persona = círculo)
+   y los que más usas primero: nº de gastos y pagos de los últimos 90 días; si empatan, el último movimiento más reciente. Las cifras no cambian. ---- */
+const JV_USO_DIAS = 90, JV_MAX_GRUPOS = 4, JV_MAX_PERSONAS = 8;
+function juntosUso() {
+  const desde = isoDaysAgo(JV_USO_DIAS), yo = miUid(), g = {}, p = {};
+  const sumar = (o, k, f) => { const x = o[k] || (o[k] = { n: 0, ult: '' }); if (f >= desde) x.n++; if (f > x.ult) x.ult = f; };
+  (S.compartidos || []).forEach((c) => {
+    if (!grupoDe(c.grupoId)) return;
+    const f = String(c.fecha || c.createdAt || '').slice(0, 10); if (!f) return;
+    sumar(g, c.grupoId, f);
+    new Set([c.pagadoPor].concat(Object.keys(c.reparto || {})).filter(Boolean).map((u) => aliasDe(c.grupoId, u)))
+      .forEach((u) => { if (u !== yo && !esMio(c.grupoId, u)) sumar(p, u, f); });
+  });
+  return { g, p };
+}
+// más usado primero; empate: lo último más reciente; luego quien tiene más pendiente; luego por nombre
+function jvPorUso(uso) {
+  const U = (k) => uso[k] || { n: 0, ult: '' };
+  return (a, b) => (U(b.k).n - U(a.k).n) || U(b.k).ult.localeCompare(U(a.k).ult) || (Math.abs(b.v) - Math.abs(a.v)) || String(a.nombre).localeCompare(String(b.nombre), 'es');
+}
+function juntosGrupoCardHtml(x) {
+  const g = x.g, v = x.v, paz = Math.abs(v) < 0.005, n = g.miembros.length;
+  const est = !x.hay ? 'sin gastos' : paz ? 'en paz' : v < 0 ? 'debes' : 'te deben';
+  return '<button type="button" class="jv4-g tappable ' + (!x.hay || paz ? 'paz' : v < 0 ? 'malo' : 'bueno') + '" ' + act('grupoVer', g.id) + '>' +
+    '<span class="jv4-g-cab"><span class="jv4-g-ic" aria-hidden="true">' + ic('users') + '</span><span class="jv-caras" aria-hidden="true">' + g.miembros.slice(0, 3).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '</span></span>' +
+    '<b class="jv4-g-n"><span class="sr-only">Grupo: </span>' + escapeHtml(x.nombre) + '</b><span class="jv4-g-m">' + n + (n === 1 ? ' persona' : ' personas') + '</span>' +
+    '<span class="jv4-g-v"><b class="tnum">' + (paz || !x.hay ? '' : escapeHtml(money(Math.abs(v)))) + '</b><span>' + est + '</span></span></button>';
+}
 function juntosV3Html(ps, gs, frase, debes, teDeben, hayComp) {
-  const yo = miUid(), ver = S.juntosVer === 'grupos' ? 'grupos' : 'personas';
-  // personas: primero con dinero pendiente (de mayor a menor), luego las que están en paz
-  let items;
-  if (ver === 'personas') {
-    const vistos = new Set(ps.map((x) => x.uid)), paz = [];
-    gs.forEach((g) => g.miembros.forEach((m) => { const u = aliasDe(g.id, m.user_id); if (u !== yo && !esMio(g.id, m.user_id) && !vistos.has(u)) { vistos.add(u); paz.push({ uid: u, nombre: m.nombre }); } }));
-    items = ps.map((x) => ({ nombre: x.nombre, v: x.neto, cara: caraHtml(x.uid, x.nombre, 'mini'), a: act('personaVer', x.uid) }))
-      .concat(paz.map((x) => ({ nombre: x.nombre, v: 0, cara: caraHtml(x.uid, x.nombre, 'mini'), a: act('personaVer', x.uid) })));
-  } else {
-    items = gs.map((g) => { const o = g.tipo === 'directo' ? otroDe(g) : null, hay = (S.compartidos || []).some((c) => c.grupoId === g.id);
-      return { nombre: nombreDestino(g), v: hay ? miSaldo(g.id) : 0, grupo: true, cara: o ? caraHtml(o.user_id, o.nombre, 'mini') : '<span class="jv-c-gr">' + escapeHtml(iniciales(g.nombre)) + '</span>', a: act('grupoVer', g.id) }; })
-      .sort((a, b) => (Math.abs(b.v) >= 0.005) - (Math.abs(a.v) >= 0.005) || Math.abs(b.v) - Math.abs(a.v));
-  }
-  const max = Math.max(0, ...items.map((x) => Math.abs(x.v)));
+  const yo = miUid(), uso = juntosUso(), todos = S.juntosTodos || {};
+  // personas: con dinero pendiente o en paz, cada una una sola vez (también las de «solo vosotros dos»)
+  const vistos = new Set(ps.map((x) => x.uid)), paz = [];
+  gs.forEach((g) => g.miembros.forEach((m) => { const u = aliasDe(g.id, m.user_id); if (u !== yo && !esMio(g.id, m.user_id) && !vistos.has(u)) { vistos.add(u); paz.push({ uid: u, nombre: m.nombre }); } }));
+  const pers = ps.map((x) => ({ k: x.uid, nombre: x.nombre, v: x.neto, cara: caraHtml(x.uid, x.nombre, 'mini'), a: act('personaVer', x.uid) }))
+    .concat(paz.map((x) => ({ k: x.uid, nombre: x.nombre, v: 0, cara: caraHtml(x.uid, x.nombre, 'mini'), a: act('personaVer', x.uid) })))
+    .sort(jvPorUso(uso.p));
+  // grupos de verdad (los de «solo vosotros dos» son personas)
+  const grs = gs.filter((g) => g.tipo === 'grupo').map((g) => { const hay = (S.compartidos || []).some((c) => c.grupoId === g.id);
+    return { k: g.id, g, nombre: nombreDestino(g), hay, v: hay ? miSaldo(g.id) : 0 }; }).sort(jvPorUso(uso.g));
   const cifras = !hayComp ? '<div class="jv3-paz">Aún no habéis compartido gastos</div>' : (debes < 0.005 && teDeben < 0.005) ? '<div class="jv3-paz">' + ic('checkCircle') + ' Estás en paz con todos</div>' :
     '<div class="jv3-cifras tnum">' + (debes >= 0.005 ? '<span class="de">Debes <b>' + money(debes) + '</b></span>' : '') + (teDeben >= 0.005 ? '<span class="te">' + (debes >= 0.005 ? '<i>·</i> ' : '') + 'Te deben <b>' + money(teDeben) + '</b></span>' : '') + '</div>';
-  const seg = '<div class="jv3-seg"><div class="segmented" role="tablist">' + [['personas', 'Personas'], ['grupos', 'Grupos']].map(([k, l]) => '<button type="button" role="tab" aria-selected="' + (ver === k) + '" class="' + (ver === k ? 'active' : '') + '" ' + act('juntosVer', k) + '>' + l + '</button>').join('') + '</div>' +
-    (ver === 'personas' ? '<button type="button" class="link" ' + act('juntosInvitar') + '>' + ic('plus') + ' Invitar</button>' : '<button type="button" class="link" ' + act('openGrupos') + '>' + ic('plus') + ' Nuevo</button>') + '</div>';
-  const fila = items.length ? '<div class="ins-circ jv3-circ' + (items.length > 4 ? ' muchos' : '') + '">' + items.map((x, i) => juntosCircHtml(x, max, i)).join('') + '</div>' :
-    '<div class="jv3-vacio">' + (ver === 'personas' ? 'Aún no hay nadie. Invita a alguien por WhatsApp.' : 'Aún no tienes grupos. Crea uno para la casa, un viaje o el pádel.') + '</div>';
-  let h = '<div class="card jv-cab jv3-cab"><div class="jv-frase">' + frase + '</div>' + cifras + seg + fila +
+  let h = '<div class="card jv-cab jv3-cab"><div class="jv-frase">' + frase + '</div>' + cifras +
     '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
+  // Grupos
+  const nG = todos.grupos ? grs.length : JV_MAX_GRUPOS;
+  h += '<section class="jv4-sec jv4-grupos-sec"><div class="section-title">Grupos' + (grs.length > 1 ? '<span class="jv4-n">' + grs.length + '</span>' : '') + '<button type="button" class="link" ' + act('openGrupos') + '>' + ic('plus') + ' Nuevo</button></div>' +
+    (grs.length ? '<div class="jv4-grupos">' + grs.slice(0, nG).map(juntosGrupoCardHtml).join('') + '</div>' +
+      (grs.length > JV_MAX_GRUPOS ? '<button type="button" class="link jv4-todos" ' + act('juntosTodos', 'grupos') + '>' + (todos.grupos ? 'Ver menos' : 'Ver todos (' + grs.length + ')') + '</button>' : '')
+      : '<div class="jv3-vacio">Aún no tienes grupos. Crea uno para la casa, un viaje o el pádel.</div>') + '</section>';
+  // Personas
+  const nP = todos.personas ? pers.length : JV_MAX_PERSONAS, maxP = Math.max(0, ...pers.map((x) => Math.abs(x.v)));
+  h += '<section class="jv4-sec jv4-personas-sec"><div class="section-title">Personas' + (pers.length > 1 ? '<span class="jv4-n">' + pers.length + '</span>' : '') + '<button type="button" class="link" ' + act('juntosInvitar') + '>' + ic('plus') + ' Invitar</button></div>' +
+    (pers.length ? '<div class="ins-circ jv3-circ jv4-personas' + (todos.personas ? ' todas' : pers.length > 4 ? ' muchos' : '') + '">' + pers.slice(0, nP).map((x, i) => juntosCircHtml(x, maxP, i)).join('') + '</div>' +
+      (pers.length > JV_MAX_PERSONAS ? '<button type="button" class="link jv4-todos" ' + act('juntosTodos', 'personas') + '>' + (todos.personas ? 'Ver menos' : 'Ver todas (' + pers.length + ')') + '</button>' : '')
+      : '<div class="jv3-vacio">Aún no hay nadie. Invita a alguien por WhatsApp.</div>') + '</section>';
   h += juntosActividadHtml();
   h += juntosObjHtml();
   return h;
@@ -6754,7 +6786,6 @@ function metaVerHtml(k) {
     else if (r.llegada) consejo = 'A este ritmo (' + money(Math.round(r.ritmo)) + ' al mes) llegarías en ' + mesLargo(r.llegada) + '. Ponle una fecha y te diremos cuánto apartar.';
     else consejo = 'Aún no hay aportaciones recientes. Con un poco cada mes, la verás avanzar.';
   }
-  const piezas = ((r.b && r.b.piezas) || []).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))).slice(0, 3);
   const mas = FORM && FORM.mas;
   return '<div class="handle"></div><div class="dm-hcab">' + (metasVariante() === 'formas' ? '' : '<span class="dm-hemo">' + metaIcono(r) + '</span>') + '<div class="dm-hcab-t"><h2>' + escapeHtml(r.nombre) + '</h2>' + (g ? '<span class="obj-grupo">' + ic('users') + escapeHtml(nombreDestino(g)) + '</span>' : '') + '</div>' +
     '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
@@ -6767,8 +6798,39 @@ function metaVerHtml(k) {
     (mas ? '<div class="card dm-hmas">' + (vos ? '' : '<button type="button" class="dm-hmas-b" ' + act('metaAsignar', r.key) + '>' + ic('list') + '<span><b>Elegir movimientos</b><span>Qué apartados e inversiones cuentan para esta meta</span></span></button>') +
       '<button type="button" class="dm-hmas-b" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('flag') + '<span><b>Editar, fecha e hitos</b><span>Nombre, dibujo, cantidad, fecha y etapas</span></span></button></div>' +
       (r.hitos.length ? hitosChipsHtml(r, null) : '') + (r.inv && r.rent != null ? '<div class="meta-est">La parte invertida se proyecta al <b>' + fmt2(r.rent).replace(/,00$/, '') + ' % anual</b> (' + escapeHtml(r.fuente) + '). Es una estimación: las inversiones suben y bajan.</div>' : '') : '') +
-    (piezas.length ? '<div class="section-title">Últimas aportaciones</div><div class="card dm-ult">' + piezas.map((x) => '<div class="dm-ult-f"><span>' + fmtDateShort(x.fecha) + ' · ' + (x.tipo === 'Inversión' ? 'invertido' : 'apartado') + '</span><b class="tnum">' + money(x.importe) + '</b></div>').join('') + '</div>' : '') +
+    metaAportesHtml(r) +
     (r.usos.length ? '<div class="meta-usos">' + r.usos.slice(-3).reverse().map((u) => '<div><span>' + fmtDateShort(u.fecha) + ' · usado <b class="tnum">' + money(u.importe) + '</b>' + (u.nota ? ' · ' + escapeHtml(u.nota) : '') + '</span><button class="link" ' + act('usoQuitar', r.key, u.id) + '>Quitar</button></div>').join('') + '</div>' : '');
+}
+/* ---- Todas las aportaciones de una meta (13/11/2026, fase 14): las mismas piezas que suma statsMetaH, de la más reciente a la más antigua.
+   Fecha, quién (en las compartidas), importe y, si hay, la nota y la cuenta. 10 y «Ver todas». El total cuadra con lo aportado. ---- */
+const META_APORTES_MAX = 10;
+function metaAportes(r) { return ((r && r.b && r.b.piezas) || []).filter((x) => x.fecha).slice().sort((a, b) => String(b.fecha).localeCompare(String(a.fecha))); }
+function fechaCortaAnio(iso) { const t = fmtDateShort(iso); return String(iso || '').slice(0, 4) !== todayISO().slice(0, 4) ? t + ' ' + String(iso).slice(0, 4) : t; }
+function metaAportesHtml(r) {
+  const ps = metaAportes(r), previo = num(r.b && r.b.previo);
+  if (!ps.length && !(previo > 0.005)) return '';
+  const vos = r.compartida, gid = r.o ? r.o.grupoId : null, yo = miUid() || 'yo', todas = FORM && FORM.kind === 'metaVer' && FORM.aportesTodas;
+  const total = r2(ps.reduce((a, x) => a + num(x.importe), 0) + (previo > 0.005 ? previo : 0));
+  const fila = (x) => {
+    const mio = x.quien === yo, mv = x.movId && mio ? S.movimientos.find((m) => m.id === x.movId) : null;
+    const nota = x.nota || (mv && mv.descripcion) || '', cid = x.cuentaId || (mv && (mv.cuentaDestinoId || mv.cuentaId)) || '';
+    const extra = [x.tipo === 'Inversión' ? 'invertido' : 'apartado'].concat(nota ? [nota] : []).concat(cid && cuentaPorId(cid) ? [nombreCuenta(cid)] : []).join(' · ');
+    return '<div class="dm-ap-f">' + (vos ? caraHtml(gid ? aliasDe(gid, x.quien) : x.quien, mio ? (String(cfg().nombre || '').trim() || 'Tú') : nombreDe(gid, x.quien), 'mini') : '') +
+      '<span class="dm-ap-t"><b>' + escapeHtml(fechaCortaAnio(x.fecha)) + (vos ? ' · ' + escapeHtml(mio ? 'Tú' : nombreDe(gid, x.quien)) : '') + '</b><span>' + escapeHtml(extra) + '</span></span>' +
+      '<b class="tnum dm-ap-v">' + money(x.importe) + '</b></div>';
+  };
+  const n = todas ? ps.length : META_APORTES_MAX;
+  let h = '<div class="section-title">Aportaciones' + (ps.length ? '<span class="jv4-n">' + ps.length + '</span>' : '') + '</div><div class="card dm-ult dm-aportes">' + ps.slice(0, n).map(fila).join('') +
+    (previo > 0.005 ? '<div class="dm-ap-f"><span class="dm-ap-t"><b>Lo que ya tenías</b><span>antes de empezar a apuntar</span></span><b class="tnum dm-ap-v">' + money(previo) + '</b></div>' : '') +
+    '<div class="dm-ap-tot"><span>Total aportado</span><b class="tnum">' + money(total) + '</b></div></div>';
+  if (ps.length > n) h += '<button type="button" class="link dm-ap-todas" ' + act('metaAportesTodas') + '>Ver todas (' + ps.length + ')</button>';
+  else if (todas && ps.length > META_APORTES_MAX) h += '<button type="button" class="link dm-ap-todas" ' + act('metaAportesTodas') + '>Ver menos</button>';
+  // si se ha usado dinero o las inversiones valen distinto de lo que se puso, se dice para que cuadre con lo que lleva la meta
+  if (Math.abs(total - r.valor) >= 0.005) {
+    const partes = (r.usado > 0.005 ? ['menos lo usado (' + money(r.usado) + ')'] : []).concat(Math.abs(r.gan) >= 0.005 ? [(r.gan > 0 ? 'más lo que han ganado' : 'menos lo que han perdido') + ' las inversiones (' + money(Math.abs(r.gan)) + ')'] : []);
+    h += '<div class="rec-hint dm-ap-cuadre">' + escapeHtml(partes.length ? 'Con esto, ' + partes.join(' y ') + ', la meta lleva ' + money(r.valor) + '.' : 'La meta lleva ' + money(r.valor) + '.') + '</div>';
+  }
+  return h;
 }
 /* ---- Aportar en una pantalla: importes de un toque y cómo queda ---- */
 function aportarRHtml() {
@@ -7564,12 +7626,12 @@ function basePersonal(m) {
   const yo = miUid() || 'yo';
   return { id: m.id, nombre: m.nombre, compartida: false, objetivo: m.objetivo, fechaObjetivo: m.fechaObjetivo, previo: m.yaAhorrado, rentabilidad: m.rentabilidad,
     hitos: m.hitos, usos: m.usos, conseguida: m.conseguida,
-    piezas: movsMetaPersonal(m).map((x) => ({ fecha: x.fecha, tipo: x.tipo, importe: x.importe, valor: x.tipo === 'Inversión' ? valorMovInv(x) : null, quien: yo })) };
+    piezas: movsMetaPersonal(m).map((x) => ({ fecha: x.fecha, tipo: x.tipo, importe: x.importe, valor: x.tipo === 'Inversión' ? valorMovInv(x) : null, quien: yo, movId: x.id, nota: x.descripcion || '', cuentaId: x.cuentaDestinoId || x.cuentaId || '' })) };
 }
 function baseCompartida(o) {
   return { id: o.id, nombre: o.nombre, compartida: true, o, objetivo: o.objetivo, fechaObjetivo: o.fechaObjetivo, previo: o.previo, rentabilidad: null,
     hitos: o.hitos, usos: o.usos, conseguida: o.conseguida,
-    piezas: aportesDeObj(o).map((a) => ({ fecha: a.fecha, tipo: a.tipo, importe: a.importe, valor: a.tipo === 'Inversión' ? valorMovInv(a) : null, quien: a.userId })) };
+    piezas: aportesDeObj(o).map((a) => ({ fecha: a.fecha, tipo: a.tipo, importe: a.importe, valor: a.tipo === 'Inversión' ? valorMovInv(a) : null, quien: a.userId, movId: a.movId })) };
 }
 function statsMetaH(b) {
   const piezas = (b.piezas || []).filter((x) => x.fecha).sort((a, c) => a.fecha.localeCompare(c.fecha));
@@ -12384,6 +12446,7 @@ const H = {
   dmPrecios: () => { FORM = { kind: 'dmPrecios' }; openSheet(dmPreciosHtml()); },
   metaVer: ([k]) => { FORM = { kind: 'metaVer', key: k }; if ($('#sheetBackdrop')) updateSheet(metaVerHtml(k)); else openSheet(metaVerHtml(k)); },
   metaMas: () => { if (!FORM || FORM.kind !== 'metaVer') return; FORM.mas = !FORM.mas; updateSheet(metaVerHtml(FORM.key)); },
+  metaAportesTodas: () => { if (!FORM || FORM.kind !== 'metaVer') return; FORM.aportesTodas = !FORM.aportesTodas; sentir('tic'); updateSheet(metaVerHtml(FORM.key)); },
   metaAportarR: ([k]) => { verBadge('metasH'); FORM = { kind: 'aportarR', key: k, importe: '' }; if ($('#sheetBackdrop')) updateSheet(aportarRHtml()); else openSheet(aportarRHtml()); if (FORM.tec) tecSync(); else setTimeout(() => { const el = $('#apImporte'); if (el) el.focus(); }, 120); },
   aportarRImp: ([v]) => { if (!FORM || FORM.kind !== 'aportarR') return; FORM.importe = String(v); sentir('tic'); if (FORM.tec) { FORM.tec.txt = tecTxtDe(v); FORM.tec.reemplazar = true; tecSync(true); } else updateSheet(aportarRHtml()); },
   aportarRInput: (_a, el) => {
@@ -12440,7 +12503,8 @@ const H = {
   histGasto: ([cid]) => { S._volverGrupo = null; openCompForm(cid); },
   origenVer: ([gid, volver]) => { FORM = { kind: 'origen', gid, volver: volver || '' }; if ($('#sheetBackdrop')) updateSheet(origenHtml(gid, volver)); else openSheet(origenHtml(gid, volver)); },
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
-  juntosVer: ([k]) => { S.juntosVer = k === 'grupos' ? 'grupos' : 'personas'; sentir('tic'); render(); },
+  juntosVer: ([k]) => { S.juntosVer = k === 'grupos' ? 'grupos' : 'personas'; sentir('tic'); render(); }, // ya sin selector (fase 14): Grupos y Personas se ven a la vez
+  juntosTodos: ([k]) => { const t = S.juntosTodos = Object.assign({}, S.juntosTodos); t[k] = !t[k]; sentir('tic'); render(); },
   personaVer: ([uid]) => { FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid)); },
   saldarTodo: ([uid]) => { const pc = cuentaPrincipal(), dePersona = !!(FORM && FORM.kind === 'persona' && FORM.uid === uid && $('#sheetBackdrop')); FORM = { kind: 'saldarTodo', uid, cuenta: pc ? pc.id : null, dePersona }; if ($('#sheetBackdrop')) updateSheet(saldarTodoHtml()); else openSheet(saldarTodoHtml()); },
   saldarTodoGuardar: async () => {

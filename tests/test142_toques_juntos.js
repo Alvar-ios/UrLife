@@ -69,7 +69,6 @@ const activos = (e) => e.srv.comp.filter((c) => !c.borrado);
   ok(/Leo/.test(pantalla(e)) && /15/.test(pantalla(e)), 'Juntos enseña que Leo te debe 15 €');
 
   paso('Pago parcial de Leo desde el grupo');
-  await tocar(e, 'juntosVer', 'grupos', 'app', 60);
   await tocar(e, 'grupoVer', null, null, 100);
   await tocar(e, 'saldarAbrir', null, 'hoja', 40);
   ok(/Leo te paga/.test(hoja(e)) && e.doc.querySelector('#sImporte').value === '15', '«Me ha pagado» abre «Leo te paga» con 15 € puestos');
@@ -152,7 +151,6 @@ const activos = (e) => e.srv.comp.filter((c) => !c.borrado);
 
   paso('Historial del grupo');
   await ir(e, 'juntos');
-  await tocar(e, 'juntosVer', 'grupos', 'app', 60);
   await tocar(e, 'grupoVer', 'g1', null, 80);
   if (process.env.VER) console.log('HOJA ' + hoja(e).replace(/\s+/g, ' ').slice(0, 600) + ' ## ' + [...e.doc.querySelectorAll('#sheetHost [data-click]')].map((x) => x.getAttribute('data-click')).join(' '));
   const hv = buscar(e, 'histVer', null, 'hoja');
