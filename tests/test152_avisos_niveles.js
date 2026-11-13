@@ -23,10 +23,12 @@ const dia = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return is
   const fij = lista.find((x) => x.nivel === 'normal' && /3 pagos fijos/.test(x.titulo));
   ok(!!fij && /Luz/.test(fij.texto), 'los tres pagos de mañana van en un solo aviso');
   const ya9 = new Date().getHours() >= 9; // 12/11: abierta después de las 9:00 del día antes → sale enseguida (2 min) y se marca para no repetir
-  ok(ya9 ? (!!imp[0] && imp[0].marca && imp[0].cuando - Date.now() < 3 * 60000) || new Date(Date.now() + 120000).getHours() >= 22 : !imp[0] || !imp[0].marca, 'si ya pasaron las 9:00, el aviso de mañana sale enseguida en vez de perderse (' + JSON.stringify(imp[0] && [imp[0].marca, imp[0].cuando - Date.now()]) + ')');
+  const noche = new Date(Date.now() + 120000).getHours() >= 22;
+  if (ya9 && noche) ok(!!imp[0] && imp[0].canal === 'normales', 'de noche (22-24 h) el aviso de mañana sale igualmente, pero por el canal sin sonido');
+  ok(ya9 ? (!!imp[0] && imp[0].marca && imp[0].cuando - Date.now() < 3 * 60000) : !imp[0] || !imp[0].marca, 'si ya pasaron las 9:00, el aviso de mañana sale enseguida en vez de perderse (' + JSON.stringify(imp[0] && [imp[0].marca, imp[0].cuando - Date.now()]) + ')');
   const tar = lista.filter((x) => /tareas|Agenda/.test(x.titulo));
   ok(tar.length === 1 && /4 tareas/.test(tar[0].titulo), 'las 4 tareas del mismo día van juntas');
-  ok(lista.every((x) => { const h = new Date(x.cuando).getHours(); return h >= 9 && h < 22; }), 'ningún aviso entre las 22:00 y las 9:00');
+  ok(lista.every((x) => { if (x.noche && x.canal === 'normales') return true; const h = new Date(x.cuando).getHours(); return h >= 9 && h < 22; }), 'ningún aviso CON SONIDO entre las 22:00 y las 9:00');
   ok(lista.every((x) => !/\d+,\d\d|€/.test(x.titulo + x.texto)), 'sin cifras de dinero en los avisos');
   ok(!lista.some((x) => x.nivel === 'resumen'), 'el resumen viene apagado');
   // al momento: la primera vez solo se apunta lo que ya pasaba (súper al 85 %), sin avisar de golpe

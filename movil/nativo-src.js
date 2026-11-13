@@ -104,7 +104,7 @@ if (Capacitor.isNativePlatform()) {
     LocalNotifications.createChannel({ id: 'normales', name: 'Para estar al día', description: 'Cobros y pagos fijos, Agenda, presupuestos y metas', importance: 2, visibility: 0 }),
     LocalNotifications.createChannel({ id: 'resumen', name: 'Resumen', description: 'Tu semana y tu mes', importance: 2, visibility: 0 }),
   ]).catch(() => {}));
-  const aviso = (x) => ({ id: x.id, title: x.titulo, body: x.texto, schedule: { at: new Date(x.cuando), allowWhileIdle: true }, channelId: x.nivel === 'importante' ? 'importantes' : x.nivel === 'resumen' ? 'resumen' : 'normales', smallIcon: 'ic_stat_paloma', iconColor: '#FFC93C', extra: { tab: x.tab || '' } });
+  const aviso = (x) => ({ id: x.id, title: x.titulo, body: x.texto, schedule: { at: new Date(x.cuando), allowWhileIdle: true }, channelId: x.canal || (x.nivel === 'importante' ? 'importantes' : x.nivel === 'resumen' ? 'resumen' : 'normales'), smallIcon: 'ic_stat_paloma', iconColor: '#FFC93C', extra: { tab: x.tab || '' } });
   LocalNotifications.deleteChannel && LocalNotifications.deleteChannel({ id: 'recordatorios' }).catch(() => {}); // el canal único de la primera versión
 
   // 11/11 · Avisos de PalomApp que calcula el propio móvil (cobros y pagos fijos, Agenda): se programan en el teléfono

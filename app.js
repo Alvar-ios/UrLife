@@ -11097,7 +11097,7 @@ function recordatoriosLista() {
   const porDia = {}, hechos0 = avHechos();
   // 12/11: si abres la app después de las 9:00 del día antes, el aviso de «mañana» sale enseguida (una sola vez), no se pierde
   const cuandoFijo = (iso) => { const c = a9(uAdd(iso, -1)); if (c > ahora) return c; if (uAdd(iso, -1) !== hoy) return 0;
-    const ya = hechos0['fm|' + iso]; if (ya) return ya > ahora ? ya : 0; const pronto = ahora + 120000; return new Date(pronto).getHours() < 22 ? pronto : 0; };
+    const ya = hechos0['fm|' + iso]; if (ya) return ya > ahora ? ya : 0; return ahora + 120000; }; // 14/11: también entre las 22:00 y las 24:00 (sale sin sonido, ver abajo), si no se perdía
   if (ac.fijos || ac.saldo) recurrentes().forEach((rc) => {
     if (!rc.regla) return;
     ocurrencias(rc.regla, uAdd(hoy, 1), uAdd(fin, 1)).forEach((o) => {
@@ -11131,7 +11131,9 @@ function recordatoriosLista() {
   }
   // silencio y como mucho 3 normales al día (los que ya salieron hoy al momento también cuentan)
   const cuenta = {}; const hechos = avHechos();
-  return out.map((x) => Object.assign(x, { cuando: avHoraOk(x.cuando) })).sort((a, b) => (a.nivel === 'importante' ? -1 : 0) - (b.nivel === 'importante' ? -1 : 0) || a.cuando - b.cuando)
+  // 14/11: el «mañana…» que sale al momento por la noche no se mueve a las 9:00 (ya sería el día del pago): sale ya, en el canal sin sonido
+  const nocheYa = (x) => x.marca && avisosCfg().silencio && avHoraOk(x.cuando) !== x.cuando;
+  return out.map((x) => nocheYa(x) ? Object.assign(x, { canal: 'normales', noche: true }) : Object.assign(x, { cuando: avHoraOk(x.cuando) })).sort((a, b) => (a.nivel === 'importante' ? -1 : 0) - (b.nivel === 'importante' ? -1 : 0) || a.cuando - b.cuando)
     .filter((x) => { if (x.nivel === 'importante') return true; const d = avDia(x.cuando); cuenta[d] = (cuenta[d] || hechos['n|' + d] || 0) + 1; return cuenta[d] <= AVISOS_MAX_DIA; })
     .sort((a, b) => a.cuando - b.cuando).slice(0, 60).map((x, i) => Object.assign(x, { id: 1000 + i }));
 }
