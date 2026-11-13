@@ -9,6 +9,9 @@ const LIMITE_ANTIGUOS = 60, LIMITE_NUEVOS = 10, FECHA_CORTE = '2026-11-11T00:00:
 const limiteDe = (u: { created_at?: string }) => (u.created_at && u.created_at < FECHA_CORTE ? LIMITE_ANTIGUOS : LIMITE_NUEVOS);
 const MODELOS = { rapido: 'claude-haiku-5-5', preciso: 'claude-sonnet-5-5' };
 const MAX_B64 = 7_000_000; // ~5 MB de imagen
+// 13/11 (decisión del dueño, docs/salud/2026-11-12-diag-datos n.º 4): topes para que cuentas falsas no cuesten dinero
+const TOPE_DIA_TODOS = 300;      // lecturas al día entre TODAS las cuentas
+const TOPE_PRECISAS_MES = 3;     // lecturas «más precisión» (modelo caro) al mes por persona; luego, la normal
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { status, headers: CORS });
 
@@ -75,8 +78,19 @@ Deno.serve(async (req) => {
   const LIMITE_MES = limiteDe(user);
   if (usados >= LIMITE_MES) return json({ error: 'limite', usados, limite: LIMITE_MES });
   if (!clave) return json({ error: 'sin_clave' });
+  const inicioDia = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), ahora.getUTCDate())).toISOString();
+  const { count: hoyTodos } = await sb.from('tickets_uso').select('id', { count: 'exact', head: true }).gte('created_at', inicioDia);
+  if ((hoyTodos || 0) >= TOPE_DIA_TODOS) return json({ error: 'ocupado' });
+  let preciso = !!p.preciso;
+  if (preciso) {
+    const { count: prec } = await sb.from('tickets_uso').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('modelo', MODELOS.preciso).gte('created_at', inicioMes);
+    if ((prec || 0) >= TOPE_PRECISAS_MES) preciso = false;
+  }
 
-  const modelo = p.preciso ? MODELOS.preciso : MODELOS.rapido;
+  const modelo = preciso ? MODELOS.preciso : MODELOS.rapido;
+  // se apunta ANTES de llamar a la IA: dos peticiones a la vez ya no se saltan el límite
+  const { data: fila } = await sb.from('tickets_uso').insert({ user_id: user.id, modelo, ok: false }).select('id').single();
+  const apuntar = (o: Record<string, unknown>) => fila?.id ? sb.from('tickets_uso').update(o).eq('id', fila.id) : sb.from('tickets_uso').insert({ user_id: user.id, modelo, ...o });
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 55000);
   let r: any = null, cuerpo: any = null;
   try {
@@ -95,19 +109,19 @@ Deno.serve(async (req) => {
     });
     cuerpo = await r.json().catch(() => null);
   } catch (e) {
-    await sb.from('tickets_uso').insert({ user_id: user.id, modelo, ok: false });
-    return json({ error: 'ia_error', detalle: String((e as Error).message || e).slice(0, 200) });
+    console.error('ia', String((e as Error).message || e).slice(0, 200));
+    return json({ error: 'ia_error' });
   } finally { clearTimeout(t); }
 
   const usoTok = cuerpo?.usage || {};
   if (!r.ok) {
-    await sb.from('tickets_uso').insert({ user_id: user.id, modelo, ok: false });
     const tipoErr = cuerpo?.error?.type || '';
-    return json({ error: r.status === 401 || tipoErr === 'authentication_error' ? 'clave_mala' : r.status === 400 && /credit|billing/i.test(JSON.stringify(cuerpo)) ? 'sin_saldo' : 'ia_error', detalle: (cuerpo?.error?.message || '').slice(0, 200) });
+    console.error('ia', r.status, (cuerpo?.error?.message || '').slice(0, 200));
+    return json({ error: r.status === 401 || tipoErr === 'authentication_error' ? 'clave_mala' : r.status === 400 && /credit|billing/i.test(JSON.stringify(cuerpo)) ? 'sin_saldo' : 'ia_error' });
   }
   const bloque = (cuerpo?.content || []).find((b: any) => b.type === 'tool_use');
   const d = bloque?.input || {};
-  await sb.from('tickets_uso').insert({ user_id: user.id, modelo, ok: !!bloque, tokens_entrada: usoTok.input_tokens || null, tokens_salida: usoTok.output_tokens || null });
+  await apuntar({ ok: !!bloque, tokens_entrada: usoTok.input_tokens || null, tokens_salida: usoTok.output_tokens || null });
   if (!bloque) return json({ error: 'ia_error' });
 
   const articulos = (Array.isArray(d.articulos) ? d.articulos : []).slice(0, 150)
@@ -120,6 +134,6 @@ Deno.serve(async (req) => {
       comercio: txt(d.comercio, 60), fecha, total: num(d.total), moneda: txt(d.moneda, 3).toUpperCase() || 'EUR',
       categoria: categorias.includes(txt(d.categoria, 40)) ? txt(d.categoria, 40) : '', notas: txt(d.notas, 300), articulos,
     },
-    modelo: p.preciso ? 'preciso' : 'rapido', usados: usados + 1, limite: LIMITE_MES,
+    modelo: preciso ? 'preciso' : 'rapido', precisasAgotadas: !!p.preciso && !preciso, usados: usados + 1, limite: LIMITE_MES,
   });
 });

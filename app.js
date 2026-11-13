@@ -3475,6 +3475,7 @@ const ERR_TICKET = {
   clave_mala: 'La lectura de tickets no está disponible ahora mismo. Apunta el gasto a mano.',
   sin_saldo: 'La lectura de tickets no está disponible ahora mismo. Apunta el gasto a mano.',
   imagen_grande: 'La foto es demasiado grande. Prueba con otra.',
+  ocupado: 'Hoy hay muchas lecturas de tickets. Apunta el gasto a mano o inténtalo mañana.', // 13/11: tope diario entre todas las cuentas
   imagen: 'No se pudo usar esa imagen. Prueba con otra foto.',
   no_ticket: 'No parece un ticket o no se lee bien. Prueba con otra foto: con buena luz, el ticket entero y sin arrugas.',
   sin_sesion: 'Tienes que iniciar sesión.',
@@ -3540,6 +3541,8 @@ async function ticketPedir(F, preciso) {
   if (r.error) { F.error = r.error; F.t = previo; if (FORM === F) updateSheet(ticketHtml()); return; }
   const t = r.ticket;
   F.modelo = r.modelo || (preciso ? 'preciso' : 'rapido');
+  if (r.precisasAgotadas) toast('Ya usaste las 3 lecturas precisas de este mes: se ha leído de la forma normal', { aviso: true }); // 13/11
+  if (r.precisasAgotadas) F.modelo = 'preciso'; // no ofrecer otra vez «más precisión»
   if (F.modelo === 'preciso') F.foto = null; // ya no hace falta: se descarta
   F.t = {
     comercio: t.comercio || '', fecha: t.fecha && t.fecha <= todayISO() ? t.fecha : todayISO(), total: r2(t.total),
