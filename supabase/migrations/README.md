@@ -162,3 +162,13 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - `movimientos_origen` (aplicada con el «sí» del dueño): columna opcional `movimientos.origen` (texto corto, p. ej. `aviso`) para los gastos apuntados desde los avisos del banco. Deshacer: `alter table public.movimientos drop column origen;`
 
 - **2026-11-13_borrar_backups_octubre** (APLICADA 13/11): quita las 4 tablas `backup_*` de octubre (están en la copia cifrada).
+
+## 13/11/2026
+- **2026-11-13_avisos_juntos** (SIN APLICAR: falta el «sí» del dueño). Avisos de Juntos con la app cerrada (Firebase).
+  Aditiva: tabla `avisos_enviados` (sin acceso con sesión), funciones `avisos_token` (con sesión: el móvil guarda su token de Firebase),
+  `avisar_secreto_ok` y `avisar_apuntar` (solo service_role), `avisar_llamar` (interna, pg_net) y disparadores AFTER
+  `avisar_compartido` (gasto o pago nuevo en `compartidos`) y `avisar_miembro` (alguien entra o vuelve a un grupo).
+  Crea en Vault el secreto `avisar_secreto` (aleatorio; nunca en el repositorio). Un fallo del aviso nunca impide guardar.
+  Antes, desplegar la función `avisar` SIN «Verify JWT» (usa `FCM_SERVICE_ACCOUNT`). Deshacer: ver la cabecera del SQL.
+  Probada en un Postgres local con tablas de mentira: llama solo con sesión, solo gastos y pagos (no «Ahorro» ni ediciones),
+  al entrar o volver a un grupo (no al crearlo ni al cambiar el nombre), freno 20/día, no repite, permisos cerrados, `id_de_otro`.

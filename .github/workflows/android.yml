@@ -35,6 +35,15 @@ jobs:
       - name: Preparar la web dentro de la app
         working-directory: movil
         run: npm ci && npm run sync
+      # 13/11 · Avisos de Juntos (supabase/functions/avisar): Firebase solo si el secreto existe. Sin él, la app compila igual, sin avisos de Juntos
+      # (build.gradle aplica google-services solo si hay archivo). El archivo nunca se sube (está en .gitignore).
+      - name: Firebase de la versión de prueba
+        working-directory: movil/android/app
+        env:
+          GS: ${{ secrets.GOOGLE_SERVICES_JSON_PRUEBA }}
+        run: |
+          rm -f google-services.json
+          if [ -n "$GS" ]; then printf '%s' "$GS" > google-services.json; echo "Con Firebase (prueba)"; else echo "Sin GOOGLE_SERVICES_JSON_PRUEBA: sin avisos de Juntos"; fi
       - name: APK de prueba (debug)
         working-directory: movil/android
         env:
@@ -51,11 +60,14 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          GS: ${{ secrets.GOOGLE_SERVICES_JSON }}
         run: |
+          rm -f app/google-services.json
+          if [ -n "$GS" ]; then printf '%s' "$GS" > app/google-services.json; echo "Con Firebase"; else echo "Sin GOOGLE_SERVICES_JSON: sin avisos de Juntos"; fi
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/subida.jks"
           export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/subida.jks"
           ./gradlew bundleRelease --no-daemon
-          rm -f "$RUNNER_TEMP/subida.jks"
+          rm -f "$RUNNER_TEMP/subida.jks" app/google-services.json
       - uses: actions/upload-artifact@v4
         with:
           name: palomapp-${{ inputs.version || '1.0.0' }}

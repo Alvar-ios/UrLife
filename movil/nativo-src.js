@@ -9,6 +9,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { registerPlugin } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { PushNotifications } from '@capacitor/push-notifications';
 const { crearBloqueo } = require('./bloqueo.js');
 
 if (Capacitor.isNativePlatform()) {
@@ -74,6 +75,7 @@ if (Capacitor.isNativePlatform()) {
       deshechos: () => AB.deshechos().then((r) => (r && r.ids) || []).catch(() => []),
       quitar: (ids) => AB.quitar({ ids }),
       vaciar: (apagar) => AB.vaciar({ apagar: !!apagar }),
+      firebase: () => (AB.firebase ? AB.firebase().then((r) => !!(r && r.si)).catch(() => false) : Promise.resolve(false)),
       abiertoDesdeAviso: () => AB.abiertoDesdeAviso().then((r) => !!(r && r.si)).catch(() => false),
       alAbrirDesdeAviso: (fn) => AB.addListener('abiertoDesdeAviso', fn),
     };
@@ -124,6 +126,59 @@ if (Capacitor.isNativePlatform()) {
     ahora: async (lista) => { await canales(); if (lista && lista.length) await LocalNotifications.schedule({ notifications: lista.map(aviso) }); return (lista || []).length; },
   };
   LocalNotifications.addListener('localNotificationActionPerformed', (a) => { const tab = a && a.notification && a.notification.extra && a.notification.extra.tab; if (tab && window.__irA) { try { window.__irA(tab); } catch (e) { /* */ } } });
+
+  // 13/11 · Avisos de Juntos con la app cerrada (Firebase Cloud Messaging; servidor en supabase/functions/avisar). Solo si la compilación lleva
+  // google-services.json (si no, Firebase no existe y pedir el token cerraría la app): lo dice avisosBanco.firebase().
+  // El servidor (función «avisar») manda por el canal «juntos» (suena bajito, el sonido normal del móvil) o, en las
+  // horas de silencio, por «juntos_noche» (sin sonido). Al tocar el aviso se abre la persona o el grupo.
+  if (N.android) {
+    let _pushCanales = null, _token = '', _pend = null, _esperas = [];
+    const pushCanales = () => _pushCanales || (_pushCanales = Promise.all([
+      LocalNotifications.createChannel({ id: 'juntos', name: 'Juntos', description: 'Gastos compartidos contigo, pagos y quién entra en tus grupos', importance: 3, visibility: 0 }),
+      LocalNotifications.createChannel({ id: 'juntos_noche', name: 'Juntos (de noche, sin sonido)', description: 'Lo mismo, en tus horas de silencio', importance: 2, visibility: 0 }),
+    ]).catch(() => {}));
+    const conFirebase = () => (N.avisosBanco && N.avisosBanco.firebase ? N.avisosBanco.firebase() : Promise.resolve(false));
+    let _oyendo = false;
+    const oir = () => {
+      if (_oyendo) return; _oyendo = true;
+      // el token llega aquí al registrarse y cada vez que Firebase lo cambia
+      PushNotifications.addListener('registration', (t) => {
+        _token = (t && t.value) || ''; const es = _esperas; _esperas = []; es.forEach((f) => f(_token));
+        if (_token && window.__pushToken) { try { window.__pushToken(_token); } catch (e) { /* */ } }
+      });
+      PushNotifications.addListener('registrationError', () => { const es = _esperas; _esperas = []; es.forEach((f) => f('')); });
+    };
+    N.push = {
+      disponible: conFirebase,
+      // pide el token (sin pedir permiso: eso lo hace notif.pedir). '' si no se puede.
+      token: async () => {
+        if (!(await conFirebase())) return '';
+        oir(); await pushCanales();
+        if (_token) return _token;
+        const p = new Promise((res) => { _esperas.push(res); setTimeout(() => res(''), 20000); });
+        try { await PushNotifications.register(); } catch (e) { return ''; }
+        return p;
+      },
+      // al cerrar sesión: este móvil deja de tener token (el siguiente será otro)
+      olvidar: async () => { _token = ''; if (await conFirebase()) await PushNotifications.unregister().catch(() => {}); },
+      // aviso tocado mientras la web aún cargaba: se recoge una vez
+      pendiente: () => { const d = _pend; _pend = null; return d; },
+    };
+    conFirebase().then((si) => {
+      if (!si) return;
+      PushNotifications.addListener('pushNotificationActionPerformed', (a) => {
+        const d = (a && a.notification && a.notification.data) || {};
+        if (d.tipo !== 'juntos') return;
+        if (window.__juntosAbrir) { try { window.__juntosAbrir(d); return; } catch (e) { /* */ } }
+        _pend = d;
+      });
+      // con la app abierta Android no lo enseña: la web lo cuenta con un aviso pequeño y recarga Juntos
+      PushNotifications.addListener('pushNotificationReceived', (n) => {
+        const d = (n && n.data) || {};
+        if (d.tipo === 'juntos' && window.__juntosLlega) { try { window.__juntosLlega({ titulo: n.title || '', texto: n.body || '', datos: d }); } catch (e) { /* */ } }
+      });
+    });
+  }
 
   // Invitaciones: https://urlife-zeta.vercel.app/?unirse=… abre la app (App Links) y se pasa a la web de dentro
   App.addListener('appUrlOpen', ({ url }) => {

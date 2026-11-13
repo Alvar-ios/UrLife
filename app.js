@@ -1060,6 +1060,8 @@ async function limpiarAlSalir() {
   try { const id = lsGet('avDisp:' + miUid()) || S['_avDisp:' + miUid()]; if (id && window.Data && Data.moviles) await Data.moviles.quitar(id); } catch (e) { /* */ }
   try { if (avNat()) await avNat().vaciar(true); } catch (e) { /* */ }
   try { if (notifNat()) await notifNat().programar([]); } catch (e) { /* */ }
+  try { const p = pushNat(); if (p) await p.olvidar(); } catch (e) { /* */ } // 13/11: el token de Juntos de este móvil deja de valer
+  ['avTok:', 'avTokEn:', 'avTokIdioma:'].forEach((k) => { delete S['_' + k + miUid()]; try { localStorage.removeItem(k + miUid()); } catch (e) { /* */ } });
   ['unirse', 'soy', 'invAplazada', 'metaVista', 'metasCelebradas', 'monCambios', avClaveLs()].forEach((k) => { try { localStorage.removeItem(k); } catch (e) { /* */ } });
   S._avHechos = null;
 }
@@ -10951,7 +10953,7 @@ async function avisosServidorPreparar() {
     let id = lsGet(kId) || S['_' + kId]; if (!id) { id = nuevoIdMov(); lsSet(kId, id); S['_' + kId] = id; }
     const huella = await n.huella(uid);
     let zona = 'Europe/Madrid'; try { zona = Intl.DateTimeFormat().resolvedOptions().timeZone || zona; } catch (er) { /* */ }
-    await Data.moviles.registrar({ id, claveHash: huella, plataforma: 'android', idioma: (window.I18N && I18N.lang) || 'es', zona });
+    await Data.moviles.registrar({ id, claveHash: huella, token: lsGet('avTok:' + uid) || S['_avTok:' + uid] || null, plataforma: 'android', idioma: (window.I18N && I18N.lang) || 'es', zona }); // 13/11: con el token de Juntos, que avisos_registrar sobrescribe
     const c = window.SUPABASE_CONFIG || {};
     await n.configurar({ url: c.url, anon: c.anonKey, servidor: true, mapa: avisosMapa() });
   } catch (er) { /* sin red o sin la tabla: se guarda al abrir la app, como antes */ }
@@ -10973,13 +10975,72 @@ function avisosInicioHtml() {
     l.slice(0, 5).map(fila).join('') + (l.length > 5 ? '<div class="av-mas">y ' + (l.length - 5) + ' más en Movimientos</div>' : '') +
     '<button type="button" class="btn sm ghost block" ' + act('avVale') + '>Están bien</button></div>';
 }
+/* 13/11 · Avisos de Juntos con la app cerrada (supabase/functions/avisar). El móvil pide su token de Firebase (solo con permiso de avisos y si
+   esta compilación lleva Firebase) y lo guarda en avisos_dispositivos con avisos_token. El servidor (función «avisar») decide
+   a quién avisar y respeta Tú → Avisos → Juntos y el silencio de 22:00 a 9:00 (de noche llega sin sonido). */
+function pushNat() { return window.__nativo && window.__nativo.push ? window.__nativo.push : null; }
+let _pushCadena = Promise.resolve();
+function pushPreparar(forzar) {
+  _pushCadena = _pushCadena.then(() => pushPrepararYa(forzar)).catch(() => {});
+  return _pushCadena;
+}
+async function pushPrepararYa(forzar) {
+  const p = pushNat(), nn = notifNat(); if (!p || !nn || !S.user || !window.Data || !Data.moviles || !Data.moviles.token) return;
+  if (!(await p.disponible().catch(() => false))) { S._pushOk = false; return; }
+  S._pushOk = true;
+  if ((await nn.permiso().catch(() => 'denied')) !== 'granted') return;
+  const t = await p.token().catch(() => ''); if (t) await pushGuardarToken(t, forzar);
+}
+async function pushGuardarToken(token, forzar) {
+  if (!token || !S.user || !window.Data || !Data.moviles || !Data.moviles.token) return;
+  const uid = miUid(), kId = 'avDisp:' + uid, idioma = (window.I18N && I18N.lang) || 'es';
+  // ya guardado hace menos de 7 días, igual y en el mismo idioma: nada que hacer
+  const g = (k) => lsGet(k) || S['_' + k] || null, p = (k, v) => { lsSet(k, v); S['_' + k] = v; }; // sin almacenamiento local, en memoria
+  const ya = g('avTok:' + uid), en = Number(g('avTokEn:' + uid)) || 0;
+  if (!forzar && ya === token && Date.now() - en < 7 * 864e5 && g('avTokIdioma:' + uid) === idioma) return;
+  let id = lsGet(kId) || S['_' + kId]; if (!id) { id = nuevoIdMov(); lsSet(kId, id); S['_' + kId] = id; }
+  let zona = 'Europe/Madrid'; try { zona = Intl.DateTimeFormat().resolvedOptions().timeZone || zona; } catch (er) { /* */ }
+  try {
+    await Data.moviles.token({ id, token, idioma, zona });
+    p('avTok:' + uid, token); p('avTokEn:' + uid, String(Date.now())); p('avTokIdioma:' + uid, idioma);
+  } catch (e) {
+    if (/id_de_otro/.test(String(e && e.message || e))) { try { localStorage.removeItem(kId); } catch (er) { /* */ } delete S['_' + kId]; } // la próxima vez, con un id nuevo
+  }
+}
+window.__pushToken = (t) => { if (S.user && S.loaded && S.loaded.cfg) _pushCadena = _pushCadena.then(() => pushGuardarToken(t)).catch(() => {}); }; // Firebase cambió el token
+// Al tocar un aviso de Juntos: la persona (si sigue en tus cuentas) o el grupo
+function juntosAbrirAviso(d, intentos) {
+  if (!d || !S.user) return false;
+  intentos = intentos || 0;
+  // recién abierta la app aún pueden faltar los grupos o los gastos: se espera un poco (como mucho ~5 s)
+  if (d.grupo && !(grupoDe(d.grupo) && Array.isArray(S.compartidos)) && intentos < 16) {
+    if (intentos === 0) cargarGrupos().catch(() => {});
+    setTimeout(() => juntosAbrirAviso(d, intentos + 1), 300); return true;
+  }
+  try { closeSheet(); } catch (e) { /* */ }
+  if (juntosOn()) H.goTab(['juntos']);
+  const per = d.persona && d.rol !== 'se_une' && d.rol !== 'te_anaden' && juntosPersonas().some((x) => x.uid === d.persona);
+  if (per) H.personaVer([d.persona]);
+  else if (d.grupo && grupoDe(d.grupo)) abrirGrupo(d.grupo);
+  return true;
+}
+window.__juntosAbrir = (d) => { if (S.loaded && S.loaded.cfg && S._avIni) juntosAbrirAviso(d); else S._pushPend = d; };
+function pushPendienteAbrir() {
+  const p = pushNat(), d = S._pushPend || (p && p.pendiente ? p.pendiente() : null); S._pushPend = null;
+  if (d) setTimeout(() => juntosAbrirAviso(d), 0);
+}
+// Con la app abierta: un aviso pequeño y Juntos al día
+window.__juntosLlega = (n) => {
+  try { if (window.Data && Data.recargar) { Data.recargar('compartidos'); if (n && n.datos && /se_une|te_anaden/.test(n.datos.rol || '')) cargarGrupos().then(() => render()).catch(() => {}); } } catch (e) { /* */ }
+  if (n && n.texto) toast(n.texto, { sens: 'ok' });
+};
 /* Avisos de la app por niveles (12/11, docs/40 C2). Todo lo calcula el propio móvil (sin servidor):
    · importantes (suenan): un pago fijo mañana en una cuenta que no tiene saldo para él.
    · normales (sin sonido): cobros y pagos fijos de mañana, tareas de hoy, presupuesto al 80 % y al 100 %, meta conseguida.
    · resumen (apagado de serie): tu semana (domingo 19:00) y tu mes cerrado.
    Reglas: nada en las horas de silencio (22:00–9:00 de serie: se mueve a las 9:00), como mucho 3 normales al día
    (los importantes no cuentan), lo del mismo tipo y día va junto, y sin cifras (Android oculta el texto con el móvil bloqueado). */
-const AVISOS_DEF = { fijos: true, agenda: true, saldo: true, presupuestos: true, metas: true, resumen: false, silencio: true };
+const AVISOS_DEF = { fijos: true, agenda: true, saldo: true, presupuestos: true, metas: true, resumen: false, silencio: true, juntos: true }; // 13/11: juntos = avisos del servidor (supabase/functions/avisar)
 const AVISOS_MAX_DIA = 3;
 function avisosCfg() { return Object.assign({}, AVISOS_DEF, cfg().avisos || {}); }
 function avHoraOk(ts) { // devuelve la hora buena: si cae en silencio, a las 9:00 siguientes
@@ -11068,6 +11129,7 @@ function programarRecordatoriosPronto() {
   clearTimeout(_recT);
   _recT = setTimeout(async () => { try {
     if ((await n.permiso()) !== 'granted') return;
+    if (S._avIni) pushPreparar(); // 13/11: con permiso (p. ej. recién dado), el token de Juntos
     const lista = recordatoriosLista(); await n.programar(avisosIdioma(lista));
     const mh = avHechos(); let cambia = false; lista.forEach((x) => { if (x.marca && !mh[x.marca]) { mh[x.marca] = x.cuando; cambia = true; } }); if (cambia) avGuardarHechos(mh); // 12/11: «mañana…» enseguida, una vez
     const ya = avisosIdioma(avisosAlMomento()); if (ya.length && n.ahora) await n.ahora(ya);
@@ -11078,7 +11140,9 @@ function avisosTrasCargar() {
   if (!S._avIni) {
     S._avIni = true;
     const n = avNat();
-    if (n && S.user) n.configurar({ uid: miUid() }).then(() => avisosServidorPreparar()).catch(() => {});
+    if (n && S.user) n.configurar({ uid: miUid() }).then(() => avisosServidorPreparar()).catch(() => {}).then(() => pushPreparar()); // 13/11: después, el token de Juntos (en fila)
+    else pushPreparar();
+    pushPendienteAbrir();
     avisosRecoger();
     impEntranteIni(); // C4: extracto compartido con PalomApp desde otra app
     // 13/11: Android 13+ no deja mandar avisos hasta que se dan permisos; se pide UNA vez al entrar (antes solo al tocar un interruptor de Avisos)
@@ -11118,6 +11182,8 @@ function avisosHtml() {
     '<div class="section-title">Para estar al día · sin sonido</div><div class="card">' +
     fila('Cobros y pagos fijos', 'El día antes, a las 9:00', sw(ac.fijos, 'avRec', 'fijos')) + (agendaOn() ? fila('Tareas de la Agenda', 'El mismo día, a las 9:00', sw(ac.agenda, 'avRec', 'agenda')) : '') +
     (herrOn('presupuestos') ? fila('Presupuestos', 'Al llegar al 80 % y al pasarte', sw(ac.presupuestos, 'avRec', 'presupuestos')) : '') + (herrOn('metas') ? fila('Metas conseguidas', '', sw(ac.metas, 'avRec', 'metas')) : '') + '</div>' +
+    (juntosOn() ? '<div class="section-title">Juntos · suenan bajito</div><div class="card">' + fila('Juntos', 'Cuando alguien apunta un gasto contigo, te paga o entra en tu grupo. Llegan aunque la app esté cerrada', sw(ac.juntos, 'avRec', 'juntos')) + '</div>' +
+      (S._pushOk === false ? '<p class="rec-hint">Esta versión de la app aún no puede recibirlos con la app cerrada.</p>' : '') : '') +
     '<div class="section-title">Resumen</div><div class="card">' + fila('Tu semana y tu mes', 'El domingo a las 19:00 y cuando se cierra tu mes', sw(ac.resumen, 'avRec', 'resumen')) + '</div>' +
     '<div class="card">' + fila('Silencio de 22:00 a 9:00', 'Lo que llegue de noche, a las 9:00', sw(ac.silencio, 'avRec', 'silencio')) + '</div>' +
     '<p class="rec-hint">Como mucho ' + AVISOS_MAX_DIA + ' avisos al día (los importantes aparte), sin cifras y sin publicidad.</p>';
@@ -12132,7 +12198,7 @@ const H = {
   avAbrir: () => avisosAbrir(),
   avBorrar: ([id]) => borrarMovConDeshacer(id),
   avVale: () => { saveConfig({ avisosVisto: Date.now() }); render(); },
-  avRec: ([k]) => { const a = avisosCfg(); a[k] = !a[k]; saveConfig({ avisos: a }); programarRecordatoriosPronto(); if (a[k] && notifNat()) notifNat().pedir().then(() => avisosAbrir()); else avisosAbrir(); },
+  avRec: ([k]) => { const a = avisosCfg(); a[k] = !a[k]; saveConfig({ avisos: a }); programarRecordatoriosPronto(); if (k === 'juntos' && a[k]) pushPreparar(true); if (a[k] && notifNat()) notifNat().pedir().then(() => avisosAbrir()); else avisosAbrir(); },
   avPermisoNotif: async () => { const nn = notifNat(); if (!nn) return; const r = await nn.pedir().catch(() => 'denied'); // 13/11: si Android ya no pregunta, a los ajustes
     if (r !== 'granted' && avNat() && avNat().abrirApp) { toast('Activa las notificaciones de PalomApp y vuelve'); await avNat().abrirApp('notif').catch(() => {}); } programarRecordatoriosPronto(); avisosAbrir(); },
   avAbrirApp: async ([que]) => { const n = avNat(); if (!n) return; if (que === 'acceso') await n.abrirAjustes().catch(() => {}); else await (n.abrirApp ? n.abrirApp(que) : n.abrirAjustes()).catch(() => {}); },
