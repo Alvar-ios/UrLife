@@ -124,13 +124,14 @@ public final class LectorAvisos {
     private static String tipoDe(String s, boolean entra) {
         String l = s.toLowerCase(Locale.ROOT);
         if (l.contains("bizum")) return "bizum";
-        if (l.matches(".*(n[oó]mina|salario|payroll).*")) return "nomina";
+        if (l.matches(".*(n[oó]mina|salario|sueldo|haberes|payroll).*")) return "nomina";
         if (entra && l.matches(".*(intereses|interest).*")) return "intereses";
         if (entra && l.contains("dividendo")) return "dividendo";
         if (l.matches(".*(cajero|retirada|has retirado|reintegro|withdraw|atm).*")) return "cajero";
         if (l.matches(".*(devoluci|devuelto|reembolso|refund).*")) return "devolucion";
         if (l.matches(".*(recibo|adeudo|domiciliaci|direct debit).*")) return "recibo";
         if (l.matches(".*(transferencia|transfer|traspaso|paypal|has enviado|te ha enviado|te ha pagado).*")) return "transferencia";
+        if (entra && l.matches(".*(has recibido|te ha llegado|recibido de|received).*")) return "transferencia"; // 13/11: dinero de otra persona, no nómina
         if (l.matches(".*(tarjeta|card|compra|purchase|spent|pago|pagado|wallet|google pay|apple pay|contactless).*")) return "tarjeta";
         return "otro";
     }

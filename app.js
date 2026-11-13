@@ -742,7 +742,7 @@ function subscribeAll() {
   if (S.db.carpetas) _unsubs.push(S.db.carpetas.suscribir((rows) => { S.carpetas = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.carpetas = S.carpetas || []; }));
   if (S.db.objetivos) _unsubs.push(S.db.objetivos.suscribir((rows) => { S.objetivos = rows; render(); refrescarSheetCompartido(); }, (e) => { console.error(e); S.objetivos = S.objetivos || []; }));
   _unsubs.push(S.db.doc('config/app').onSnapshot((snap) => {
-    S.config = cfgConPendientes(snap.exists ? snap.data() : null); S.loaded.cfg = true; idiomaDesdeConfig(snap.exists); if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); pedirRender(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); setTimeout(revisarNivel30, 0); setTimeout(avisosTrasCargar, 0); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
+    S.config = cfgConPendientes(snap.exists ? snap.data() : null); S.loaded.cfg = true; idiomaDesdeConfig(snap.exists); if (S._movsRaw) aplicarMovs(); sincronizarMes(); maybeStartOnboarding(); pedirRender(); maybeUnirse(); maybeNovedades(); asegurarIdsMetas(); setTimeout(revisarNivel30, 0); setTimeout(completarIngresosSerie, 0); setTimeout(avisosTrasCargar, 0); if (S.grupos == null && !S._gruposCargando) { S._gruposCargando = true; cargarGrupos().then(() => { S._gruposCargando = false; }); }
   }, fail('cfg', 'No se pudo cargar la configuración')));
 }
 
@@ -3798,8 +3798,30 @@ const CAT_ICONOS = [
   [/viaje|vuelo|hotel|avi[oó]n|airbnb|vacacion/, 'plane'],
   [/educa|colegio|cole\b|libro|curso|academia|universidad|guarder/, 'book'],
 ];
+// 13/11 · Categorías de ingreso de serie (cuentas nuevas y listas vacías). Cada una con su icono y su color (los mismos
+// tonos que las de gasto). `re` reconoce también nombres antiguos o propios parecidos («Transferencias», «Sueldo»…).
+const ING_STD = [
+  { n: 'Nómina', ic: 'cash', c: '#1FA67A', re: /n[o]mina|salario|sueldo|haberes/ },
+  { n: 'Extras y bonus', ic: 'sparkle', c: '#E6B422', re: /extra|bonus|paga|incentivo|comision/ },
+  { n: 'Trabajos y freelance', ic: 'receipt', c: '#2E9BD6', re: /freelance|trabajo|autonomo|factura|honorario|chapuza/ },
+  { n: 'Bizum y transferencias', ic: 'swap', c: '#8A7BE8', re: /bizum|transferenc/ },
+  { n: 'Devoluciones y reembolsos', ic: 'replay', c: '#4FB3A9', re: /devoluc|reembols|devuelto/ },
+  { n: 'Ventas de segunda mano', ic: 'tag', c: '#C25BD8', re: /venta|segunda mano|wallapop|vinted|milanuncios/ },
+  { n: 'Alquileres cobrados', ic: 'home', c: '#7B6CF6', re: /alquiler|arrend|inquilin/ },
+  { n: 'Intereses y dividendos', ic: 'coin', c: '#6D5BF0', re: /interes|dividend|rendimient|cupon/ },
+  { n: 'Ayudas y prestaciones', ic: 'shield', c: '#5A7BD8', re: /ayuda|prestacion|subsidio|paro|pension|beca|subvencion/ },
+  { n: 'Regalos', ic: 'gift', c: '#F97316', re: /regalo|cumple/ },
+  { n: 'Otros ingresos', ic: 'arrowUp', c: '#7C8794', re: /^otros?( ingresos?)?$/ },
+];
+const INGRESOS_SERIE = ING_STD.map((x) => x.n);
+// la de serie que corresponde a un nombre de categoría de ingreso (exacta primero; si no, por palabras)
+function ingStd(nombre) {
+  const k = normDesc(nombre || ''); if (!k) return null;
+  return ING_STD.find((x) => normDesc(x.n) === k) || ING_STD.find((x) => x.re.test(k)) || null;
+}
 const TIPO_ICONO = { Ingreso: 'arrowUp', 'Inversión': 'trendUp', Ahorro: 'piggy2', Deuda: 'deuda', Factura: 'calendar', Gasto: 'tag' };
 function iconoCat(tipo, categoria, descripcion) {
+  if (tipo === 'Ingreso' && categoria && ingStd(categoria)) return ingStd(categoria).ic; // 13/11: cada ingreso con su icono
   if (tipo === 'Ingreso' || tipo === 'Inversión' || tipo === 'Ahorro' || tipo === 'Deuda') return TIPO_ICONO[tipo];
   if (catStd(categoria)) return catStd(categoria).ic;
   const t = normDesc((categoria || '') + ' ' + (descripcion || ''));
@@ -5009,6 +5031,23 @@ function diasEntre(a, b) { const x = parseISO(String(a || '').slice(0, 10)), y =
 function diasAlta() { const c = cfg(), d = c.altaApp || (c.nivelCambio && c.nivelCambio.d); return d ? Math.max(0, diasEntre(d, todayISO())) : 0; }
 function nivelPoner(v, por) { return saveConfig({ nivel: v === 'basico' ? 'basico' : 'todo', nivelCambio: { d: todayISO(), por } }); }
 // A los 30 días de entrar por la bienvenida pasa sola a «Todo» y se avisa una vez (docs/38 §3.3). Se llama al cargar la configuración, nunca dentro de render()
+// 13/11 · Categorías de ingreso de serie para quien ya tenía cuenta: SOLO se añaden (nunca se borra ni se renombra nada,
+// ni se tocan sus movimientos) y una sola vez (`ingresosSerie: 2`), y solo a quien usa las de serie: lista vacía o la de
+// serie de antes tal cual. Una lista que la persona ha cambiado no se toca.
+function completarIngresosSerie() {
+  if (S._ingSerie || !S.loaded.cfg || S.onboarding || !S.db) return;
+  S._ingSerie = true;
+  const c = cfg(); if (Number(c.ingresosSerie) >= 2) return;
+  const ing = (c.ingresos || []).filter(Boolean);
+  let nueva = null;
+  if (!ing.length) nueva = INGRESOS_SERIE.slice();
+  else if (ing.length === OB_INGRESOS_ANTES.length && ing.every((x, i) => x === OB_INGRESOS_ANTES[i])) {
+    // las de antes se quedan; se añaden las nuevas que no repiten una que ya hay (Transferencias, Wallapop/Vinted y Otros ya cubren tres)
+    const ya = ing.map((x) => (ingStd(x) || { n: x }).n);
+    nueva = ing.concat(INGRESOS_SERIE.filter((n) => ya.indexOf(n) < 0));
+  }
+  if (nueva) saveConfig({ ingresos: nueva, ingresosSerie: 2 });
+}
 function revisarNivel30() {
   if (S._nivel30 || !S.loaded.cfg || S.onboarding || !S.db) return;
   S._nivel30 = true;
@@ -9058,6 +9097,7 @@ function colorCat(nombre) {
   const std = catStd(nombre); if (std) return COLOR_CAT_STD[std.n] || COLOR_OTRAS;
   const k = normName(nombre), propias = catsGasto().filter((c) => !c.std), i = propias.findIndex((c) => normName(c.nombre) === k);
   if (i >= 0) return COLOR_CAT_PROPIAS[i % COLOR_CAT_PROPIAS.length];
+  const ing = ING_STD.find((x) => normName(x.n) === k); if (ing) return ing.c; // 13/11: las de ingreso de serie, su color fijo
   let h = 0; for (let j = 0; j < k.length; j++) h = (h * 31 + k.charCodeAt(j)) >>> 0; // una que ya no está en tu lista
   return COLOR_CAT_PROPIAS[h % COLOR_CAT_PROPIAS.length];
 }
@@ -10551,6 +10591,36 @@ function notifNat() { return window.__nativo && window.__nativo.notif ? window._
 function bancoDePaquete(pkg) { const p = PAQ_BANCOS.find((x) => x[1] === pkg); return p ? p[0] : null; }
 function nombreDePaquete(pkg, nombre) { const k = bancoDePaquete(pkg); if (k === 'wallet') return 'Google Wallet'; const b = k && BANCOS.find((x) => x.k === k); return b ? b.n : (nombre || pkg); }
 function isoLocal(ts) { const d = new Date(ts), p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+// 13/11 · Categoría de un ingreso leído de un aviso: según lo que dice el aviso (Bizum, transferencia, devolución,
+// intereses, nómina) y las categorías de la persona. «Nómina» SOLO si el aviso dice nómina/salario/haberes o si es una
+// transferencia de un importe parecido (±15 %) al de su cobro fijo de nómina (y de 300 € o más). Nunca «la primera de
+// la lista» (antes un Bizum de 0,50 € acababa en Nómina porque era la primera).
+const ING_DE_AVISO = { nomina: ['Nómina'], bizum: ['Bizum y transferencias'], transferencia: ['Bizum y transferencias'], devolucion: ['Devoluciones y reembolsos'],
+  intereses: ['Intereses y dividendos'], dividendo: ['Intereses y dividendos'] };
+const esCatNomina = (n) => /n[o]mina|salario|sueldo|haberes/.test(normDesc(n || ''));
+function nominaFijaImporte() {
+  const nom = (cfg().cobros || []).find((x) => x && x.nombre && Number(x.importe) > 0 && (esCatNomina(x.nombre) || (mesCfg().nomina && normName(x.nombre) === normName(mesCfg().nomina))));
+  return nom ? Number(nom.importe) : 0;
+}
+function pareceNomina(tipoAv, importe) {
+  if (tipoAv === 'nomina') return true;
+  const n = nominaFijaImporte();
+  return tipoAv === 'transferencia' && n >= 300 && Math.abs(Number(importe) - n) <= n * 0.15;
+}
+function catIngresoAviso(tipoAv, importe, cats, sinOtros) {
+  cats = cats || categoriasPorTipo('Ingreso');
+  const t = pareceNomina(tipoAv, importe) ? 'nomina' : tipoAv;
+  const buscar = (re) => cats.find((c) => re.test(normDesc(c)));
+  let cat = '';
+  if (t === 'nomina') cat = buscar(/n[o]mina|salario|sueldo|haberes/) || 'Nómina';
+  else if (t === 'bizum') cat = buscar(/bizum/) || buscar(/transferenc/);
+  else if (t === 'transferencia') cat = buscar(/transferenc/) || buscar(/bizum/);
+  else if (t === 'devolucion') cat = buscar(/devoluc|reembols/);
+  else if (t === 'intereses' || t === 'dividendo') cat = buscar(t === 'dividendo' ? /dividend/ : /interes/) || buscar(/interes|dividend|rendimient/);
+  if (!cat && ING_DE_AVISO[t] && !cats.length) cat = ING_DE_AVISO[t][0]; // sin lista propia: las de serie
+  return cat || (sinOtros ? '' : catIngresoOtros(cats));
+}
+function catIngresoOtros(cats) { return (cats || categoriasPorTipo('Ingreso')).find((c) => /^otro|otros ingresos/.test(normDesc(c))) || (cats || []).find((c) => /otro/i.test(c)) || 'Otros ingresos'; }
 // lo leído → un movimiento de PalomApp
 function avisoAMov(it) {
   const tipo = it.entra ? 'Ingreso' : 'Gasto', importe = Math.round(Number(it.importe) * 100) / 100;
@@ -10561,8 +10631,15 @@ function avisoAMov(it) {
     : ((it.entra ? '' : String(it.comercio || '').trim()) || GEN[it.tipo] || (it.entra ? 'Ingreso' : 'Pago') + ' · ' + nombreDePaquete(it.pkg, it.app)); // en lo que entra no se guarda quién (suele ser una persona)
   const kb = bancoDePaquete(it.pkg), cta = kb && kb !== 'wallet' ? cuentasCfg().find((c) => c.banco === kb) : null;
   const regla = reglaPara(desc, tipo, cta ? cta.id : undefined), cats = categoriasPorTipo(tipo);
-  let categoria = (regla && regla.categoria) || sugerirCategoria(desc, tipo) || '';
-  if (!categoria) categoria = tipo === 'Ingreso' ? (cats.find((c) => /otro/i.test(c)) || cats[0] || 'Otros ingresos') : (cats.find((c) => /^otros?$/i.test(c)) || cats.find((c) => /otro/i.test(c)) || cats[0] || 'Otros');
+  let categoria = (regla && regla.categoria) || '';
+  if (!categoria && tipo === 'Ingreso') {
+    // primero lo que dice el aviso; lo aprendido de tus movimientos solo si no es «Nómina» (salvo que lo sea de verdad)
+    const porTipo = ING_DE_AVISO[it.tipo] || pareceNomina(it.tipo, importe) ? catIngresoAviso(it.tipo, importe, cats, true) : '';
+    const sug = sugerirCategoria(desc, tipo) || '';
+    categoria = porTipo || (sug && (!esCatNomina(sug) || pareceNomina(it.tipo, importe)) ? sug : '') || catIngresoOtros(cats);
+  }
+  if (!categoria) categoria = sugerirCategoria(desc, tipo) || '';
+  if (!categoria) categoria = tipo === 'Ingreso' ? catIngresoOtros(cats) : (cats.find((c) => /^otros?$/i.test(c)) || cats.find((c) => /otro/i.test(c)) || cats[0] || 'Otros');
   const metodos = cfg().metodosPago || [], met = (re) => metodos.find((m) => re.test(m)) || '';
   const metodoPago = it.tipo === 'bizum' ? met(/bizum/i) : it.tipo === 'transferencia' || it.tipo === 'nomina' ? met(/transfer/i) : it.tipo === 'tarjeta' ? met(/tarjeta/i) : it.tipo === 'cajero' ? met(/efectivo/i) : '';
   const data = { creadoEn: Number(it.ts) || Date.now(), tipo, importe, categoria, fecha: isoLocal(Number(it.ts) || Date.now()), descripcion: desc, metodoPago, origen: 'aviso' };
@@ -10615,7 +10692,11 @@ function avisosMapa() {
   const ks = Object.keys(comercios); if (ks.length > 400) ks.slice(0, ks.length - 400).forEach((k) => delete comercios[k]);
   const cuentas = {}; PAQ_BANCOS.forEach(([k, pkg]) => { const c = k !== 'wallet' && cuentasCfg().find((x) => x.banco === k); if (c) cuentas[pkg] = c.id; });
   const cg = categoriasPorTipo('Gasto'), ci = categoriasPorTipo('Ingreso');
-  return { comercios, cuentas, catGasto: cg.find((c) => /^otros?$/i.test(c)) || cg.find((c) => /otro/i.test(c)) || cg[0] || 'Otros', catIngreso: ci.find((c) => /otro/i.test(c)) || ci[0] || 'Otros ingresos',
+  return { comercios, cuentas, catGasto: cg.find((c) => /^otros?$/i.test(c)) || cg.find((c) => /otro/i.test(c)) || cg[0] || 'Otros', catIngreso: catIngresoOtros(ci), // 13/11: nunca la primera de la lista (era «Nómina»)
+    // 13/11: la categoría de cada tipo de ingreso, para que Android acierte con la app cerrada (Bizum ≠ Nómina)
+    ingresos: { nomina: catIngresoAviso('nomina', 0, ci), bizum: catIngresoAviso('bizum', 0, ci), transferencia: catIngresoAviso('transferencia', 0, ci), devolucion: catIngresoAviso('devolucion', 0, ci),
+      intereses: catIngresoAviso('intereses', 0, ci), dividendo: catIngresoAviso('dividendo', 0, ci), otro: catIngresoOtros(ci) },
+    nominaImporte: nominaFijaImporte(),
     metodos: { bizum: tipoDe(/bizum/i), transferencia: tipoDe(/transfer/i), nomina: tipoDe(/transfer/i), tarjeta: tipoDe(/tarjeta/i), cajero: tipoDe(/efectivo/i) } };
 }
 async function avisosServidorPreparar() {
@@ -11224,7 +11305,8 @@ const LIST_META = {
    Se guarda paso a paso y, al repetirla desde Tú, solo añade (nunca borra ni reescribe listas).
    ============================================================ */
 const OB_FIJOS = ['Alquiler', 'Luz', 'Internet y móvil'], OB_FIJOS_MAS = ['Hipoteca', 'Agua', 'Gas', 'Gimnasio', 'Suscripciones', 'Seguro'];
-const OB_INGRESOS_SERIE = ['Nómina', 'Transferencias', 'Wallapop/Vinted', 'Otros'];
+const OB_INGRESOS_SERIE = INGRESOS_SERIE; // 13/11: antes ['Nómina', 'Transferencias', 'Wallapop/Vinted', 'Otros']
+const OB_INGRESOS_ANTES = ['Nómina', 'Transferencias', 'Wallapop/Vinted', 'Otros'];
 function freshOnboardingState(manual) {
   return {
     manual: !!manual, step: 0, nombre: cfg().nombre || '', cuentaNombre: 'Banco', saldo: '', extra: [],
@@ -11310,7 +11392,7 @@ function obGuardarMes(ob) {
   if (ob.nomina.on && !cobros.some((x) => x && x.nombre)) { cobros.push(Object.assign(item('Nómina', ob.nomina.importe, ob.nomina.dia), { extras: [] })); patch.cobros = cobros; }
   ob.fijos.forEach((f) => { const n = (f.nombre || '').trim(); if (!n || existe(facturas, n) || facturas.some((x) => x && normName(x.nombre).indexOf(normName(n)) >= 0)) return; facturas.push(Object.assign(item(n, f.importe, f.dia), { categoria: catDeRecibo(n) })); patch.facturas = facturas; });
   const ing = c.ingresos || [];
-  if (!ing.length) patch.ingresos = OB_INGRESOS_SERIE.slice();
+  if (!ing.length) { patch.ingresos = OB_INGRESOS_SERIE.slice(); patch.ingresosSerie = 2; }
   else if (ob.nomina.on && !ing.some((x) => normName(x) === normName('Nómina'))) patch.ingresos = ing.concat(['Nómina']);
   const d = obDia(ob.nomina.dia);
   if (ob.nomina.on && d && d >= 20 && ob.mesModo === 'cobro' && !mesCfg().nomina) patch.mesInicio = { modo: 'cobro', dia: d };
@@ -11329,6 +11411,7 @@ async function doObFinish(despues) {
     const vistos = Object.assign({}, cfg().badgesVistos || {}); Object.keys(BADGES).forEach((k) => { if (!vistos[k]) vistos[k] = todayISO(); });
     // por la misma cola que el resto de guardados: así no se pisan (en el servidor, guardar es leer y luego escribir)
     const alta = { novedadesVistas: NOVEDADES.length ? NOVEDADES[0].id : '', badgesVistos: vistos, compararVersiones: false, altaApp: todayISO() };
+    if (!(cfg().ingresos || []).filter(Boolean).length) Object.assign(alta, { ingresos: INGRESOS_SERIE.slice(), ingresosSerie: 2 }); // 13/11: la bienvenida corta no las ponía
     if (bienvNueva(ob)) Object.assign(alta, { nivel: 'basico', nivelCambio: { d: todayISO(), por: 'alta' } }); // docs/38 §6.1: las cuentas nuevas empiezan en «Lo básico» (en el mismo guardado)
     await saveConfig(alta);
     ok = await write(() => S.db.doc('config/meta').update({ onboarded: true, onboardedAt: new Date().toISOString() }));
@@ -12805,7 +12888,7 @@ const H = {
     if (!on) { try { await N.probarHuella(); } catch (e) { return toast('No se ha podido confirmar'); } }
     lsSet('huella', on ? '0' : '1'); toast(on ? 'Ya no se pedirá la huella' : 'Se pedirá la huella al abrir'); render();
   },
-  desbloquear: () => { if (window.__nativo && window.__nativo.desbloquear) { document.documentElement.classList.remove('bloqueada'); window.__nativo.desbloquear(); } },
+  desbloquear: () => { if (window.__nativo && window.__nativo.desbloquear) window.__nativo.desbloquear(); }, // 13/11: sin quitar el bloqueo antes (lo quita la huella)
   abrirPrivacidad: () => abrirExterno(APP_URL + 'privacidad.html' + (window.I18N && I18N.lang !== 'es' ? '?lang=' + I18N.lang : '')),
   borrarCuentaAbrir: () => { FORM = { kind: 'borrarCuenta' }; openSheet(borrarCuentaHtml()); },
   borrarCuentaOk: () => borrarCuentaOk(),
@@ -13500,6 +13583,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
+window.__APP__ = { avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos };
 if (!window.__NO_AUTOSTART__) main();
 })();
