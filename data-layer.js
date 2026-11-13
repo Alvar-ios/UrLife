@@ -255,15 +255,15 @@
     // Se llama inmediatamente con el estado ya conocido (si lo hay) y también con cada cambio futuro,
     // evitando perder el evento inicial si éste ya ocurrió antes de suscribirse.
     onChange: function (fn) { authListeners.push(fn); if (lastSession !== undefined) fn(lastSession); },
-    signIn: function (email, password) {
-      return sb.auth.signInWithPassword({ email: email, password: password }).then(function (res) {
+    signIn: function (email, password, captchaToken) { // 13/11: código del CAPTCHA (captcha.js)
+      return sb.auth.signInWithPassword({ email: email, password: password, options: captchaToken ? { captchaToken: captchaToken } : undefined }).then(function (res) {
         if (res.error) throw pgError(res.error);
         return res.data.session;
       });
     },
     signOut: function () { return sb.auth.signOut(); },
-    resetPassword: function (email) {
-      return sb.auth.resetPasswordForEmail(email, { redirectTo: urlVuelta() }).then(function (res) {
+    resetPassword: function (email, captchaToken) {
+      return sb.auth.resetPasswordForEmail(email, { redirectTo: urlVuelta(), captchaToken: captchaToken || undefined }).then(function (res) {
         if (res.error) throw pgError(res.error);
       });
     },

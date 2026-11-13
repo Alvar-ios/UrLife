@@ -37,10 +37,12 @@
       '<div class="field"><label>Correo</label><input id="signupEmail" type="email" autocomplete="email" placeholder="tu@correo.com"></div>' +
       '<div class="field"><label>Contraseña</label><input id="signupPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></div>' +
       '<div class="field"><label>Repite la contraseña</label><input id="signupPassword2" type="password" autocomplete="new-password" placeholder="Repite tu contraseña"></div>' +
+      '<div class="captcha" id="signupCaptcha"></div>' + // 13/11: CAPTCHA (captcha.js), con permiso del dueño
       '<div id="signupMsg"></div>' +
       '<button class="btn accent block" id="signupSubmit" style="margin-top:6px;">Crear cuenta</button>' +
       '<button class="auth-link" id="backToLogin">¿Ya tienes cuenta? Iniciar sesión</button>';
     setTimeout(() => document.getElementById('signupEmail')?.focus(), 60);
+    if (window.Captcha) window.Captcha.montar('#signupCaptcha');
   }
 
   function showMessage(msg) {
@@ -60,10 +62,16 @@
     b.disabled = true; b.textContent = 'Creando cuenta…';
 
     try {
-      const res = await client.auth.signUp({ email, password });
+      let captchaToken = null;
+      if (window.Captcha && window.Captcha.activo) {
+        captchaToken = await window.Captcha.esperar(8000);
+        if (!captchaToken) throw new Error('captcha_espera');
+      }
+      const res = await client.auth.signUp({ email, password, options: captchaToken ? { captchaToken } : undefined });
+      if (window.Captcha) window.Captcha.gastado();
       if (res.error) throw res.error;
 
-      if (res.data && res.data.session) {
+      if (res.data && res.data.session && !(window.Captcha && window.Captcha.activo)) { // con CAPTCHA, el código ya se usó: a iniciar sesión
         await window.Auth.signIn(email, password);
         return;
       }
@@ -79,7 +87,9 @@
     } catch (e) {
       const raw = String(e?.message || '').toLowerCase();
       let msg = 'No se pudo crear la cuenta. Inténtalo de nuevo.';
-      if (raw.includes('already') || raw.includes('registered') || raw.includes('exists')) msg = 'Ese correo ya tiene una cuenta. Prueba a iniciar sesión.';
+      if (raw.includes('captcha_espera')) msg = 'No se pudo comprobar que no eres un robot. Espera un momento y vuelve a intentarlo.';
+      else if (raw.includes('captcha')) msg = 'La comprobación de seguridad ha caducado. Vuelve a intentarlo.';
+      else if (raw.includes('already') || raw.includes('registered') || raw.includes('exists')) msg = 'Ese correo ya tiene una cuenta. Prueba a iniciar sesión.';
       else if (raw.includes('password')) msg = 'La contraseña no cumple los requisitos.';
       else if (raw.includes('email')) msg = 'Introduce un correo electrónico válido.';
       showMessage(msg);
@@ -98,7 +108,7 @@
   });
 
   const style = document.createElement('style');
-  style.textContent = '.auth-screen{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px}.auth-card{width:100%;max-width:360px}.auth-head{text-align:center;margin-bottom:22px}.auth-title{font-family:var(--font-display);font-size:26px;font-weight:600;color:var(--ink)}.auth-subtitle{font-size:13px;color:var(--text-faint);margin-top:2px}.auth-link{display:block;width:100%;margin-top:14px;padding:8px;border:0;background:none;color:var(--accent);font:500 13px var(--font-ui);cursor:pointer}';
+  style.textContent = '.captcha{display:flex;justify-content:center;min-height:0;margin:2px 0 8px}.captcha:empty{margin:0}.captcha-nota{font-size:12.5px;color:var(--text-faint);text-align:center}.auth-screen{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px}.auth-card{width:100%;max-width:360px}.auth-head{text-align:center;margin-bottom:22px}.auth-title{font-family:var(--font-display);font-size:26px;font-weight:600;color:var(--ink)}.auth-subtitle{font-size:13px;color:var(--text-faint);margin-top:2px}.auth-link{display:block;width:100%;margin-top:14px;padding:8px;border:0;background:none;color:var(--accent);font:500 13px var(--font-ui);cursor:pointer}';
   document.head.appendChild(style);
 
   const observer = new MutationObserver(addLink);

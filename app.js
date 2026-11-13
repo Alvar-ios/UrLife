@@ -1084,12 +1084,20 @@ function renderLoginScreen(msg) {
     '<div class="field"><label>Correo</label><input id="loginEmail" type="email" autocomplete="username" placeholder="tu@correo.com"></div>' +
     '<div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password"></div>' +
     (msg ? '<div class="alert" style="margin-top:2px;">' + ic('alert') + '<div>' + escapeHtml(msg) + '</div></div>' : '') +
+    '<div class="captcha" id="loginCaptcha"></div>' + // 13/11: CAPTCHA (captcha.js)
     '<button class="btn accent block" style="margin-top:6px;" ' + act('doLogin') + '>Iniciar sesión</button>' +
     '<button class="section-title link" style="width:100%;text-align:center;margin-top:16px;justify-content:center;" ' + act('doForgotPassword') + '>¿Olvidaste tu contraseña?</button>' +
     '<button class="link" style="display:block;margin:10px auto 0;font-size:12.5px;" ' + act('abrirPrivacidad') + '>Privacidad</button>' +
     (window.I18N ? '<button class="link" translate="no" style="display:block;margin:6px auto 0;font-size:12.5px;" ' + act('idiomaLogin', I18N.lang === 'en' ? 'es' : 'en') + '>' + (I18N.lang === 'en' ? 'Español' : 'English') + '</button>' : '') +
     '</div></div>';
   setTimeout(() => { const el = $('#loginEmail'); if (el) el.focus(); }, 60);
+  if (window.Captcha) Captcha.montar('#loginCaptcha');
+}
+async function captchaCodigo() { // 13/11: espera al código del CAPTCHA (normalmente 1-2 s); sin captcha.js, nada
+  if (!window.Captcha || !Captcha.activo) return null;
+  const t = await Captcha.esperar(8000);
+  if (!t) throw Object.assign(new Error('captcha'), { captcha: true });
+  return t;
 }
 /* ============================================================
    VERIFICACIÓN EN DOS PASOS (TOTP, Bloque 2)
@@ -13704,17 +13712,17 @@ const H = {
     const password = $('#loginPassword').value || '';
     if (!email || !password) return renderLoginScreen('Escribe tu correo y tu contraseña.');
     loginBusy(true);
-    try { await window.Auth.signIn(email, password); }
+    try { const cc = await captchaCodigo(); await window.Auth.signIn(email, password, cc); }
     catch (e) {
       loginBusy(false);
-      const msg = e && /invalid/i.test(e.message || '') ? 'Correo o contraseña incorrectos.' : 'No se pudo iniciar sesión. Revisa tu conexión.';
+      const msg = e && e.captcha ? 'No se pudo comprobar que no eres un robot. Espera un momento y vuelve a intentarlo.' : e && /captcha/i.test(e.message || '') ? 'La comprobación de seguridad ha caducado. Vuelve a intentarlo.' : e && /invalid/i.test(e.message || '') ? 'Correo o contraseña incorrectos.' : 'No se pudo iniciar sesión. Revisa tu conexión.';
       renderLoginScreen(msg);
     }
   },
   doForgotPassword: async () => {
     const email = ($('#loginEmail').value || '').trim();
     if (!email) return renderLoginScreen('Escribe tu correo arriba y vuelve a tocar el enlace.');
-    try { await window.Auth.resetPassword(email); renderLoginScreen('Te hemos enviado un correo con instrucciones para cambiar tu contraseña.'); }
+    try { await window.Auth.resetPassword(email, await captchaCodigo()); renderLoginScreen('Te hemos enviado un correo con instrucciones para cambiar tu contraseña.'); }
     catch (e) { renderLoginScreen('No se pudo enviar el correo. Inténtalo de nuevo en unos minutos.'); }
   },
   doLogout: async () => { if (_movsPend.size) return toast('Espera un momento: aún se está guardando lo último', { aviso: true }); closeSheet(); await limpiarAlSalir(); await window.Auth.signOut(); }, // Calidad 11/11
