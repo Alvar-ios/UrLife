@@ -9,6 +9,12 @@
     auth: { persistSession: false, autoRefreshToken: false }
   });
 
+  // 13/11 (con permiso del dueño): el enlace del correo de confirmación vuelve a la web de PalomApp, nunca a «localhost»
+  function urlVuelta() {
+    var WEB = 'https://urlife-zeta.vercel.app/', o = window.location.origin || '';
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o) || !/^https?:/.test(o) ? WEB : o + window.location.pathname;
+  }
+
   function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
@@ -67,7 +73,7 @@
         captchaToken = await window.Captcha.esperar(8000);
         if (!captchaToken) throw new Error('captcha_espera');
       }
-      const res = await client.auth.signUp({ email, password, options: captchaToken ? { captchaToken } : undefined });
+      const res = await client.auth.signUp({ email, password, options: Object.assign({ emailRedirectTo: urlVuelta() }, captchaToken ? { captchaToken } : {}) });
       if (window.Captcha) window.Captcha.gastado();
       if (res.error) throw res.error;
 
