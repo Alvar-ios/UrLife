@@ -164,7 +164,7 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
 - **2026-11-13_borrar_backups_octubre** (APLICADA 13/11): quita las 4 tablas `backup_*` de octubre (están en la copia cifrada).
 
 ## 13/11/2026
-- **2026-11-13_avisos_juntos** (SIN APLICAR: falta el «sí» del dueño). Avisos de Juntos con la app cerrada (Firebase).
+- **2026-11-13_avisos_juntos** (APLICADA 13/11). Avisos de Juntos con la app cerrada (Firebase).
   Aditiva: tabla `avisos_enviados` (sin acceso con sesión), funciones `avisos_token` (con sesión: el móvil guarda su token de Firebase),
   `avisar_secreto_ok` y `avisar_apuntar` (solo service_role), `avisar_llamar` (interna, pg_net) y disparadores AFTER
   `avisar_compartido` (gasto o pago nuevo en `compartidos`) y `avisar_miembro` (alguien entra o vuelve a un grupo).

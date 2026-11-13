@@ -1,4 +1,4 @@
--- 13/11/2026 · avisos_juntos. SIN APLICAR: necesita el «sí» del dueño. Aditiva: una tabla, funciones y disparadores nuevos.
+-- 13/11/2026 · avisos_juntos. APLICADA el 13/11 (con el «sí» del dueño), tras desplegar la función «avisar». Aditiva: una tabla, funciones y disparadores nuevos.
 -- No cambia ninguna tabla ni función que ya exista, y no toca ningún dato.
 -- Qué hace: cuando alguien apunta un gasto compartido, paga/salda a otro o entra en un grupo, la base de datos llama a la
 -- función de borde «avisar» (pg_net), que manda un aviso (Firebase Cloud Messaging) a los móviles de las OTRAS personas.
