@@ -118,4 +118,6 @@
     // Tras usarlo (vale una sola vez): se pide otro.
     gastado: function () { token = null; poner('comprobando'); try { if (window.turnstile && widget != null) window.turnstile.reset(widget); } catch (e) { /* */ } },
   };
+  // 14/11: si la pantalla de entrada o de alta ya estaba pintada antes de cargar este archivo, se monta ahora
+  ['#loginCaptcha', '#signupCaptcha'].forEach(function (s) { var el = document.querySelector(s); if (el && !el.firstChild) window.Captcha.montar(el); });
 })();
