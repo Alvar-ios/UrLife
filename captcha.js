@@ -57,7 +57,8 @@
       '.cap.listo .cap-check{display:block;animation:cap-pop .35s cubic-bezier(.3,1.6,.5,1)}' +
       '.cap.listo .cap-linea{color:var(--income,#1a8a5a);font-weight:600;gap:6px}' +
       '.cap.listo .cap-logo{width:28px;height:18px}' +
-      '.cap.error .cap-linea{color:var(--expense,#c0392b);height:auto;min-height:40px}' +
+      '.cap.error{display:none}' + // 14/11: si Cloudflare falla se puede entrar igual (la app lo intenta sin código); no se asusta a nadie
+
       '@keyframes cap-pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}' +
       '.cap-cf{display:flex;justify-content:center}' +
       '.cap-cf:empty{display:none}' +
