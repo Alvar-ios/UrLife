@@ -6,7 +6,7 @@ const { JSDOM } = require('jsdom');
 const T = require('./toques_comun.js');
 const { abrir, tocar, buscar, escribir, pantalla, hoja, app, atras, ok, paso, fin, sleep } = T;
 // Fallos de la app encontrados por Calidad el 14/11 (ver informe): se quitan de aquí cuando se arreglen
-T.fallosConocidos(['BV_BANCO_SIN_LOGO_DUP', 'SOY_JUNTOS_APAGADO']);
+T.fallosConocidos([]); // 14/11: los dos, arreglados
 const YO = 'u-yo';
 const V = { bienvenida: 3 };
 const paso_ = (e) => e.S.onboarding && e.S.onboarding.paso;
@@ -145,7 +145,7 @@ const cuenta = (e, n) => e.srv.llamadas.filter((x) => x[0] === 'rpc.' + n).lengt
   await seguir(e); await seguir(e); // «Controlar mis gastos» (marcado de serie)
   while (e.S.onboarding && paso_(e) !== 'F') await tocar(e, 'bvSaltar', null, null, 250);
   await tocar(e, 'bvFin', '', null, 800);
-  ok(app(e).herramientas && app(e).herramientas.juntos === false, '(lo de ahora) sin elegir «Compartir gastos», Juntos queda apagado');
+  ok(!app(e).herramientas || app(e).herramientas.juntos !== false, '(14/11) viniendo con «Soy yo», «Compartir gastos» sale marcado y Juntos no se apaga');
   const bR = buscar(e, 'reclamarConfirmar', null, 'hoja');
   ok(!!bR, 'tras la bienvenida sale la hoja para ocupar su sitio en el grupo');
   if (bR) { bR.click(); await sleep(500); }

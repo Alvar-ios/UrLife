@@ -70,8 +70,7 @@
     try {
       let captchaToken = null;
       if (window.Captcha && window.Captcha.activo) {
-        captchaToken = await window.Captcha.esperar(8000);
-        if (!captchaToken) throw new Error('captcha_espera');
+        captchaToken = await window.Captcha.esperar(8000); // 14/11: si Cloudflare no responde, se intenta igual
       }
       const res = await client.auth.signUp({ email, password, options: Object.assign({ emailRedirectTo: urlVuelta() }, captchaToken ? { captchaToken } : {}) });
       if (window.Captcha) window.Captcha.gastado();

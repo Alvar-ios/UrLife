@@ -23,11 +23,12 @@ const html = (e) => e.doc.querySelector('#content').innerHTML;
 
   /* 1. Inicio: «Así vas» con su etiqueta; al tocar una tarjeta se quita y hace lo de siempre */
   H.goTab(['inicio']); await sleep(10);
-  ok(/Así vas <span class="badge-new mejor">MEJORADO/.test(html(e)), 'Inicio: «Así vas» lleva MEJORADO (Parche 8)');
+  const vivaAV = A.badgeActivo('asivas'); // 14/11: las etiquetas caducan a los 21 días (la de «Así vas» es del 23/10)
+  ok(!vivaAV || /Así vas <span class="badge-new mejor">MEJORADO/.test(html(e)), 'Inicio: «Así vas» lleva MEJORADO (Parche 8) mientras no caduque');
   const tarjeta = e.doc.querySelector('.ins-card');
   ok(tarjeta && /^insIr\|/.test(tarjeta.getAttribute('data-click')), 'las tarjetas pasan por insIr');
   tarjeta.click(); await sleep(20);
-  ok(vistos().asivas, 'al tocar una tarjeta, la etiqueta queda vista');
+  ok(!vivaAV || vistos().asivas, 'al tocar una tarjeta, la etiqueta queda vista');
   ok(S.tab === 'movimientos', 'y la tarjeta sigue llevando a Movimientos como antes');
   /* 2. Movimientos: sin etiquetas, como lo dejó diseño */
   ok(!e.doc.querySelector('#content .badge-new'), 'Movimientos: ninguna etiqueta NUEVO / MEJORADO');
@@ -40,7 +41,7 @@ const html = (e) => e.doc.querySelector('#content').innerHTML;
   /* 3. Tú: «Tu mes» y «Cuentas y saldos» con NUEVO */
   H.goTab(['tu']); await sleep(10);
   ok((!A.badgeActivo('tumes') || /Tu mes <span class="badge-new mejor">MEJORADO/.test(html(e))) && (!A.badgeActivo('cuentas') || /Cuentas y saldos <span class="badge-new ">NUEVO/.test(html(e))), 'Tú: MEJORADO en «Tu mes» (Parche 8) y NUEVO en «Cuentas y saldos»');
-  ok(e.doc.querySelector('#tbAvatar').classList.contains('con-novedad'), 'punto en tu inicial mientras haya algo nuevo en Tú');
+  ok(!(A.badgeActivo('tumes') || A.badgeActivo('cuentas')) || e.doc.querySelector('#tbAvatar').classList.contains('con-novedad'), 'punto en tu inicial mientras haya algo nuevo en Tú');
   click(e, 'tuMesAbrir'); await sleep(20);
   ok(!A.badgeActivo('tumes') || vistos().tumes, 'al abrir «Tu mes» se quita su etiqueta');
   H.closeSheet([]); await sleep(300);

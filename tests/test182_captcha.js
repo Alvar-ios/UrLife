@@ -1,5 +1,5 @@
 // 13/11/2026 · CAPTCHA (Cloudflare Turnstile) en la entrada, «¿Olvidaste tu contraseña?» y el alta (auth-signup.js, con permiso
-// del dueño). Turnstile y Supabase se simulan: el código del CAPTCHA tiene que llegar a Supabase, y sin código no se intenta.
+// del dueño). Turnstile y Supabase se simulan: el código del CAPTCHA tiene que llegar a Supabase, y si Cloudflare no responde se intenta igual (14/11).
 const fs = require('fs'), path = require('path');
 const { JSDOM } = require('jsdom');
 const { makeEnv, sleep } = require('./harness.js');
@@ -25,7 +25,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   codigo = null; llamadas.length = 0;
   d.getElementById('loginEmail').value = 'prueba@example.invalid'; d.getElementById('loginPassword').value = 'secreta1';
   await e.w.__APP__.H.doLogin([]); await sleep(50);
-  ok(!llamadas.length && /robot/.test(d.body.textContent), 'sin código no se intenta entrar y se explica por qué');
+  ok(llamadas.length === 1 && llamadas[0][1] == null, 'si Cloudflare no responde, se intenta entrar igual (sin código): no se bloquea la entrada');
 
   // 2) Alta (auth-signup.js)
   const dom = new JSDOM('<!doctype html><html><head></head><body><div id="app"><div class="card auth-card"><input id="loginEmail"><button data-click="doLogin"></button></div></div></body></html>', { runScripts: 'outside-only' });

@@ -1097,9 +1097,8 @@ function renderLoginScreen(msg) {
 }
 async function captchaCodigo() { // 13/11: espera al código del CAPTCHA (normalmente 1-2 s); sin captcha.js, nada
   if (!window.Captcha || !Captcha.activo) return null;
-  const t = await Captcha.esperar(8000);
-  if (!t) throw Object.assign(new Error('captcha'), { captcha: true });
-  return t;
+  // 14/11 (Calidad): si Cloudflare no responde, se intenta igual; si Supabase exige el CAPTCHA, ya dirá que falta
+  return (await Captcha.esperar(8000)) || null;
 }
 /* ============================================================
    VERIFICACIÓN EN DOS PASOS (TOTP, Bloque 2)
@@ -11987,7 +11986,8 @@ function bvIniciar(ob) {
   Object.assign(ob, { bv: true, objs: {}, afinar: {}, hist: [], paso: null, bancos: [], bancosMas: false, bancoQ: '', vals: {}, tecCampo: null, saldosPuestos: [],
     mesModo: mesCfg().modo === 'cobro' ? 'cobro' : 'natural', mesDia: mesCfg().modo === 'cobro' ? mesCfg().dia : 28, jCamino: '', gPlant: '', gNombre: '', gPers: ['', '', ''],
     metaPlant: '', metaNombre: '', metaMeses: 12, deudaPlant: '', tarea: '', tareaDia: 'hoy', enlace: '', sellosIni: {} });
-  if (!ob.manual && !bvInvActiva(ob)) ob.objs.gastos = true; // docs/45 §2: sin invitación, «Controlar mis gastos» sale marcado; al invitado, sin marcar
+  if (!ob.manual && !bvInvActiva(ob)) ob.objs.gastos = true;
+  if (lsGet('soy')) ob.objs.juntos = true; // 14/11: viene a ocupar su sitio en un grupo → «Compartir gastos» marcado // docs/45 §2: sin invitación, «Controlar mis gastos» sale marcado; al invitado, sin marcar
   if (ob.manual) ob.sellosIni = bvSellosGanados(ob); // al repetirla, lo que ya tenía no «cae» otra vez
   return ob;
 }
@@ -12077,7 +12077,8 @@ function bvSalirObj(ob) {
     if (ob.grupoId) c.juntos = true;
     if (Object.keys(c).length) herrPoner(c);
   }
-  bvGuardarBienv({ objetivos: BV_OBJ.filter((o) => ob.objs[o.k]).map((o) => o.k), recortadas: ob.recortadas, _recortadasExactas: true });
+  const objsYa = ob.manual ? (cfg().bienv || {}).objetivos || [] : []; // 14/11: al repetirla, se suman a los de antes
+  bvGuardarBienv({ objetivos: BV_OBJ.filter((o) => ob.objs[o.k] || objsYa.indexOf(o.k) >= 0).map((o) => o.k), recortadas: ob.recortadas, _recortadasExactas: true });
 }
 function bvGuardarBancos(ob) {
   if (!ob.bancos.length) return;
@@ -12085,7 +12086,8 @@ function bvGuardarBancos(ob) {
   let n = 0; const nuevas = [];
   ob.bancos.forEach((k) => {
     const b = BANCOS.find((x) => x.k === k), nombre = b ? b.n : k === 'efectivo' ? 'Efectivo' : 'Mi banco';
-    const ya = cs.find((c) => c && (b ? c.banco === k : k === 'efectivo' ? tipoCuenta(c) === 'efectivo' : normName(c.nombre) === normName(nombre)));
+    // 14/11 (Calidad): las cuentas de antes de los logos no guardan el banco: se reconocen también por el nombre
+    const ya = cs.find((c) => c && (b ? c.banco === k || (!c.banco && (normName(c.nombre) === normName(nombre) || (bancoSugerido(c.nombre) || {}).k === k)) : k === 'efectivo' ? tipoCuenta(c) === 'efectivo' : normName(c.nombre) === normName(nombre)));
     if (ya) return; // ya la tenía: no se toca
     const c = Object.assign({ id: nuevoIdMeta(), nombre, tipo: k === 'efectivo' ? 'efectivo' : b && b.tipo === 'broker' ? 'broker' : 'corriente', saldo: null, fecha: hoy, ts: Date.now(), principal: false }, b ? { banco: k } : {});
     cs.push(c); nuevas.push(c); n++;
@@ -14145,6 +14147,7 @@ const H = {
     if (FORM) FORM.uniendo = false;
     if (!id) return;
     lsSet('soy', ''); S._uniendo = false; S._ef = null;
+    if (!juntosOn()) herrPoner({ juntos: true }); // 14/11 (Calidad): al ocupar tu sitio en un grupo, Juntos se ve aunque no lo eligieras
     render(); abrirGrupo(id);
   },
   reclamarCerrar: ([grupoId]) => { lsSet('soy', ''); S._uniendo = false; if (grupoId) { cargarGrupos().then(() => abrirGrupo(grupoId)); } else closeSheet(); },
