@@ -399,7 +399,7 @@ conversación de dinero».
 | 0–3 s | Negro; texto que se escribe | Le hice una app a mi novia. Se llama como ella. |
 | 3–6 s | Aparece el símbolo; la moneda cae y se engancha | Ella se llama Paloma. La app, PalomApp |
 | 6–10 s | Recorrido rápido por la app (Inicio, Juntos) | Empezó para apuntar lo de casa sin discutir |
-| 10–14 s | Pantalla de un grupo con 3 personas | Luego se apuntaron los amigos. Y mi madre |
+| 10–14 s | Pantalla de un grupo con 3 personas | Luego se apuntaron los amigos. |
 | 14–19 s | Manos tecleando de noche (plano de ambiente, sin cara) | La hago yo, por las tardes |
 | 19–25 s | Logo + texto | Ahora busco gente que la pruebe en Android. ¿Te apuntas? Enlace en el perfil |
 
@@ -738,7 +738,7 @@ Grotesque). Don't say «free». If the test build isn't in English yet, add
 
 ## 7. Preguntas para el dueño
 
-1. **(Bloquea X2)** ¿Paloma está de acuerdo con contar que la app se llama como ella? ¿Se puede decir «mi novia» y que su madre la usa?
+1. **(Bloquea X2)** ¿Paloma está de acuerdo en contar que la app se llama como ella y decir «mi novia»?
 2. **(Bloquea J2)** ¿Los avisos del banco están ya en la versión de prueba que instalan los probadores?
 3. **(Bloquea D2)** ¿La versión de prueba ya sale en inglés?
 4. **(Bloquea el lunes)** ¿Qué usuario usamos (`@palomapp_es` propuesto) y está libre en Instagram y TikTok?
