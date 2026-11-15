@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prueba PalomApp</title>
+<meta name="description" content="Prueba PalomApp: tus gastos y los que compartes con tu pareja, tu piso o tus amigos, en una sola app. Hazte probador en Android o empieza ya desde el navegador.">
+<meta name="theme-color" content="#0A0A0C">
+<meta property="og:title" content="Prueba PalomApp">
+<meta property="og:description" content="Tus gastos y los que compartes, en una sola app. Hazte probador en Android o empieza ya desde el navegador.">
+<meta property="og:image" content="https://urlife-zeta.vercel.app/marca/icono-512.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="marca/icono.svg" type="image/svg+xml">
+<link rel="icon" href="marca/icono-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="marca/icono-180.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root { --oro: #FFC93C; --vio: #A98BFF; --txt: #F3F3F7; --mute: #B4B5C6; --card: rgba(255,255,255,.06); --line: rgba(255,255,255,.14); }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; background: #08080C; }
+  body { margin: 0; color: var(--txt); font: 500 17px/1.55 'Work Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; min-height: 100vh;
+    background: radial-gradient(900px 600px at 95% -6%, rgba(34,48,130,.8), transparent 62%), radial-gradient(800px 700px at -10% 108%, rgba(169,139,255,.16), transparent 60%), linear-gradient(170deg, #2A2A36 0%, #14141B 40%, #08080C 100%); }
+  main { max-width: 540px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) 20px max(40px, env(safe-area-inset-bottom)); }
+  .barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px; }
+  .marca { display: flex; align-items: center; gap: 10px; font: 800 24px/1 'Bricolage Grotesque', sans-serif; letter-spacing: -.01em; white-space: nowrap; }
+  .marca svg { width: 44px; height: auto; display: block; flex: none; }
+  .idioma { font-size: 15px; white-space: nowrap; } .idioma button { background: none; border: 0; color: var(--vio); font: inherit; cursor: pointer; padding: 10px 5px; min-height: 44px; }
+  .idioma button[aria-pressed="true"] { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+  h1, h2 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: -.012em; word-spacing: .04em; margin: 0; text-wrap: balance; }
+  h1 { font-size: clamp(38px, 10.5vw, 54px); line-height: 1.04; }
+  h1 em { font-style: normal; color: var(--oro); }
+  .lead { font-size: 19px; color: #D9D9E4; margin: 16px 0 28px; }
+  .caja { background: var(--card); border: 1px solid var(--line); border-radius: 26px; padding: 24px 20px; margin: 0 0 18px; }
+  h2 { font-size: 27px; line-height: 1.1; margin: 0 0 8px; }
+  .etq { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #14110a; background: var(--oro); border-radius: 999px; padding: 3px 12px; margin: 0 0 12px; }
+  .caja p { margin: 0 0 16px; color: #D4D4E0; }
+  .pasos { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 10px; }
+  .pasos a { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 10px 16px 10px 12px; border-radius: 18px; background: rgba(255,255,255,.07); border: 1px solid var(--line); color: #fff; text-decoration: none; font-weight: 600; font-size: 17px; }
+  .pasos a:hover { background: rgba(255,255,255,.12); }
+  .num { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--oro); color: #14110a; display: flex; align-items: center; justify-content: center; font: 800 18px 'Bricolage Grotesque', sans-serif; }
+  .pasos .fl { margin-left: auto; flex: none; color: var(--vio); }
+  .nota { font-size: 15px; color: var(--mute); margin: 0 !important; }
+  .gran { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 60px; border-radius: 999px; background: var(--oro); color: #14110a; font: 800 20px 'Bricolage Grotesque', sans-serif; text-decoration: none; padding: 12px 24px; box-shadow: 0 14px 50px rgba(255,201,60,.28); margin: 0 0 14px; }
+  .gran:hover { filter: brightness(1.06); }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--vio); outline-offset: 3px; }
+  a { color: var(--vio); }
+  .pie { text-align: center; color: var(--mute); font-size: 15px; margin: 28px 0 0; }
+  .pie p { margin: 0 0 8px; } .pie a { display: inline-block; padding: 12px 10px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+<div class="barra">
+  <div class="marca"><svg viewBox="70 180 374 206" aria-hidden="true"><path d="M84 238 Q112 202 172 198 Q224 196 256 246 Q288 196 340 194 Q402 194 430 214" fill="none" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/><circle cx="256" cy="334" r="48" fill="#FFC93C"/></svg>PalomApp</div>
+  <p class="idioma" style="margin:0"><button type="button" data-l="es" aria-pressed="true">Español</button> · <button type="button" data-l="en" aria-pressed="false">English</button></p>
+</div>
+
+<div data-version="es">
+  <h1>Prueba <em>PalomApp</em></h1>
+  <p class="lead">Tus gastos y los que compartes con tu pareja, tu piso o tus amigos, en una sola app. Quién debe a quién, saldar con un toque y foto al ticket para que cada uno pague lo suyo.</p>
+
+  <section class="caja">
+    <span class="etq">Prueba cerrada</span>
+    <h2>Tengo Android</h2>
+    <p>Buscamos 15 probadores para la app de Android. Si te apuntas, la pruebas antes que nadie y nos ayudas a dejarla bien.</p>
+    <ol class="pasos">
+      <li><a href="https://groups.google.com/g/palomapp-testers" target="_blank" rel="noopener"><span class="num">1</span>Únete al grupo de Google<span class="fl" aria-hidden="true">→</span></a></li>
+      <li><a href="https://play.google.com/apps/testing/es.palomapp.finanzas" target="_blank" rel="noopener"><span class="num">2</span>Hazte probador<span class="fl" aria-hidden="true">→</span></a></li>
+      <li><a href="https://play.google.com/store/apps/details?id=es.palomapp.finanzas" target="_blank" rel="noopener"><span class="num">3</span>Descárgala en Google Play<span class="fl" aria-hidden="true">→</span></a></li>
+    </ol>
+    <p class="nota">Hazlo en este orden y con la cuenta de Google que usas en tu móvil. Google pide que los probadores sigan apuntados 14 días seguidos, así que, si te animas, no te des de baja enseguida y, si puedes, ábrela de vez en cuando.</p>
+  </section>
+
+  <section class="caja">
+    <h2>iPhone, o prefiero no ser probador</h2>
+    <p>Puedes empezar ya desde el navegador, sin instalar nada. Es la misma app. La de Android añade cosas propias del móvil, como pedir huella al abrirla.</p>
+    <a class="gran" href="https://urlife-zeta.vercel.app/">Abrir PalomApp en el navegador</a>
+    <p class="nota">En iPhone, ábrela con Safari y usa Compartir → «Añadir a pantalla de inicio» para tenerla como una app más.</p>
+  </section>
+
+  <section class="caja">
+    <h2>Cuéntanos qué no se entiende</h2>
+    <p style="margin:0">Está en pruebas, así que algo puede fallar o quedar raro. Escríbeme a <a href="mailto:cortex.studio.mkt@gmail.com">cortex.studio.mkt@gmail.com</a>: lo leo todo.</p>
+  </section>
+
+  <div class="pie"><p>Hecha en España por una persona. Sin anuncios.</p><p><a href="privacidad.html">Privacidad</a></p></div>
+</div>
+
+<div data-version="en" hidden>
+  <h1>Try <em>PalomApp</em></h1>
+  <p class="lead">Your own spending and the costs you share with your partner, flatmates or friends, in one app. Who owes whom, settle up in one tap, and snap a receipt so everyone pays their part.</p>
+
+  <section class="caja">
+    <span class="etq">Closed test</span>
+    <h2>I have Android</h2>
+    <p>I'm looking for 15 testers for my new Android app. Join and you try it before anyone else, and you help me get it right.</p>
+    <ol class="pasos">
+      <li><a href="https://groups.google.com/g/palomapp-testers" target="_blank" rel="noopener"><span class="num">1</span>Join the Google Group<span class="fl" aria-hidden="true">→</span></a></li>
+      <li><a href="https://play.google.com/apps/testing/es.palomapp.finanzas" target="_blank" rel="noopener"><span class="num">2</span>Become a tester<span class="fl" aria-hidden="true">→</span></a></li>
+      <li><a href="https://play.google.com/store/apps/details?id=es.palomapp.finanzas" target="_blank" rel="noopener"><span class="num">3</span>Download on Google Play<span class="fl" aria-hidden="true">→</span></a></li>
+    </ol>
+    <p class="nota">Do it in this order, with the Google account you use on your phone. Google asks testers to stay signed up for 14 days in a row, so please don't leave early and, if you can, open the app now and then. Heads-up: the app is in Spanish for now.</p>
+  </section>
+
+  <section class="caja">
+    <h2>iPhone, or no testing for me</h2>
+    <p>You can start right now from your browser, nothing to install. It's the same app. The Android one adds phone-only things, like asking for your fingerprint when you open it.</p>
+    <a class="gran" href="https://urlife-zeta.vercel.app/">Open PalomApp in your browser</a>
+    <p class="nota">On iPhone, open it in Safari and use Share → “Add to Home Screen” to keep it like any other app.</p>
+  </section>
+
+  <section class="caja">
+    <h2>Tell us what's unclear</h2>
+    <p style="margin:0">It's in testing, so something may break or feel odd. Write to <a href="mailto:cortex.studio.mkt@gmail.com">cortex.studio.mkt@gmail.com</a>: I read everything. Thanks!</p>
+  </section>
+
+  <div class="pie"><p>Made in Spain by one person. No ads.</p><p><a href="privacidad.html?lang=en">Privacy</a></p></div>
+</div>
+</main>
+<script>var TITULOS = { es: 'Prueba PalomApp', en: 'Try PalomApp' };</script>
+<script>
+/* Idioma: ?lang=en|es, lo elegido en la app (localStorage «idioma») o el idioma del navegador. Sin rastreadores. */
+(function () {
+  var q = /[?&]lang=(es|en)/.exec(location.search), g = null; try { g = localStorage.getItem('idioma'); } catch (e) { /* */ }
+  var l = q ? q[1] : (g === 'es' || g === 'en') ? g : (/^es/i.test(navigator.language || 'es') ? 'es' : 'en');
+  function poner(x) {
+    document.documentElement.lang = x;
+    document.querySelectorAll('[data-version]').forEach(function (d) { d.hidden = d.getAttribute('data-version') !== x; });
+    document.querySelectorAll('.idioma button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-l') === x ? 'true' : 'false'); });
+    document.title = TITULOS[x];
+  }
+  document.querySelectorAll('.idioma button').forEach(function (b) { b.onclick = function () { poner(b.getAttribute('data-l')); }; });
+  poner(l);
+})();
+</script>
+</body>
+</html>
