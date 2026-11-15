@@ -10,6 +10,7 @@
 <meta property="og:description" content="Tus gastos y los que compartes, en una sola app. Hazte probador en Android o empieza ya desde el navegador.">
 <meta property="og:image" content="https://urlife-zeta.vercel.app/marca/icono-512.png">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://urlife-zeta.vercel.app/bienvenido.html">
 <link rel="icon" href="marca/icono.svg" type="image/svg+xml">
 <link rel="icon" href="marca/icono-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="marca/icono-180.png">
@@ -38,6 +39,7 @@
   .pasos a { display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 10px 16px 10px 12px; border-radius: 18px; background: rgba(255,255,255,.07); border: 1px solid var(--line); color: #fff; text-decoration: none; font-weight: 600; font-size: 17px; }
   .pasos a:hover { background: rgba(255,255,255,.12); }
   .num { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--oro); color: #14110a; display: flex; align-items: center; justify-content: center; font: 800 18px 'Bricolage Grotesque', sans-serif; }
+  .pasos .lb { flex: 0 1 auto; min-width: 0; }
   .pasos .fl { margin-left: auto; flex: none; color: var(--vio); }
   .nota { font-size: 15px; color: var(--mute); margin: 0 !important; }
   .gran { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 60px; border-radius: 999px; background: var(--oro); color: #14110a; font: 800 20px 'Bricolage Grotesque', sans-serif; text-decoration: none; padding: 12px 24px; box-shadow: 0 14px 50px rgba(255,201,60,.28); margin: 0 0 14px; }
@@ -46,6 +48,18 @@
   a { color: var(--vio); }
   .pie { text-align: center; color: var(--mute); font-size: 15px; margin: 28px 0 0; }
   .pie p { margin: 0 0 8px; } .pie a { display: inline-block; padding: 12px 10px; }
+  .cab { display: flex; align-items: center; gap: 16px; margin: 0 0 14px; } .cab h2 { margin: 0; } .cab .etq { margin: 0 0 8px; }
+  .ico { flex: none; width: 60px; height: 60px; border-radius: 20px; background: rgba(255,255,255,.08); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+  .ico-s { width: 32px; height: 32px; display: block; }
+  .ico-p { width: 18px; height: 18px; vertical-align: -3px; margin-right: 4px; color: var(--oro); }
+  .etq2 { background: rgba(169,139,255,.2); color: #D8CBFF; border: 1px solid rgba(169,139,255,.45); }
+  .marca svg { filter: drop-shadow(0 0 22px rgba(255,201,60,.35)); }
+  .caja { box-shadow: 0 22px 60px rgba(0,0,0,.35); backdrop-filter: blur(6px); }
+  @media (prefers-reduced-motion: no-preference) {
+    .caja, h1, .lead { animation: sube .6s cubic-bezier(.2,.7,.2,1) both; }
+    .lead { animation-delay: .06s; } .caja:nth-of-type(1) { animation-delay: .12s; } .caja:nth-of-type(2) { animation-delay: .2s; } .caja:nth-of-type(3) { animation-delay: .28s; }
+    @keyframes sube { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -61,20 +75,19 @@
   <p class="lead">Tus gastos y los que compartes con tu pareja, tu piso o tus amigos, en una sola app. Quién debe a quién, saldar con un toque y foto al ticket para que cada uno pague lo suyo.</p>
 
   <section class="caja">
-    <span class="etq">Prueba cerrada</span>
-    <h2>Tengo Android</h2>
+    <div class="cab"><span class="ico"><svg class="ico-s" viewBox="0 0 24 24" aria-hidden="true"><path fill="#3DDC84" d="M18.44 5.559q-1.015 1.748-2.028 3.498-.055-.023-.111-.043a12.098 12.098 0 0 0-8.68.033C7.537 8.897 5.868 6.026 5.6 5.56a1 1 0 0 0-.141-.19 1.104 1.104 0 0 0-1.768 1.298c1.947 3.37-.096-.216 1.948 3.36.017.03-.495.263-1.393 1.017C2.9 12.176.452 14.772 0 18.99h24a11.7 11.7 0 0 0-.746-3.068 12.1 12.1 0 0 0-2.74-4.184 12 12 0 0 0-2.131-1.687c.66-1.122 1.312-2.256 1.965-3.385a1.11 1.11 0 0 0-.008-1.12 1.1 1.1 0 0 0-.852-.532c-.522-.054-.939.313-1.049.545m-.04 8.46c.395.593.324 1.331-.156 1.65-.48.32-1.188.1-1.582-.493s-.324-1.33.156-1.65c.473-.316 1.182-.11 1.582.494m-11.193-.492c.48.32.55 1.058.156 1.65-.394.593-1.103.815-1.584.495-.48-.32-.55-1.058-.156-1.65.4-.603 1.109-.811 1.584-.495"/></svg></span><div><span class="etq">Prueba cerrada</span><h2>Tengo Android</h2></div></div>
     <p>Buscamos 15 probadores para la app de Android. Si te apuntas, la pruebas antes que nadie y nos ayudas a dejarla bien.</p>
     <ol class="pasos">
       <li><a href="https://groups.google.com/g/palomapp-testers" target="_blank" rel="noopener"><span class="num">1</span>Únete al grupo de Google<span class="fl" aria-hidden="true">→</span></a></li>
       <li><a href="https://play.google.com/apps/testing/es.palomapp.finanzas" target="_blank" rel="noopener"><span class="num">2</span>Hazte probador<span class="fl" aria-hidden="true">→</span></a></li>
-      <li><a href="https://play.google.com/store/apps/details?id=es.palomapp.finanzas" target="_blank" rel="noopener"><span class="num">3</span>Descárgala en Google Play<span class="fl" aria-hidden="true">→</span></a></li>
+      <li><a href="https://play.google.com/store/apps/details?id=es.palomapp.finanzas" target="_blank" rel="noopener"><span class="num">3</span><span class="lb">Descárgala en <svg class="ico-p" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m22.018 13.298-3.919 2.218-3.515-3.493 3.543-3.521 3.891 2.202a1.49 1.49 0 0 1 0 2.594M1.337.924a1.5 1.5 0 0 0-.112.568v21.017c0 .217.045.419.124.6l11.155-11.087zm12.207 10.065 3.258-3.238L3.45.195a1.47 1.47 0 0 0-.946-.179zm0 2.067-11 10.933c.298.036.612-.016.906-.183l13.324-7.54z"/></svg>Google Play</span><span class="fl" aria-hidden="true">→</span></a></li>
     </ol>
     <p class="nota">Hazlo en este orden y con la cuenta de Google que usas en tu móvil. Google pide que los probadores sigan apuntados 14 días seguidos, así que, si te animas, no te des de baja enseguida y, si puedes, ábrela de vez en cuando.</p>
   </section>
 
   <section class="caja">
-    <h2>iPhone, o prefiero no ser probador</h2>
-    <p>Puedes empezar ya desde el navegador, sin instalar nada. Es la misma app. La de Android añade cosas propias del móvil, como pedir huella al abrirla.</p>
+    <div class="cab"><span class="ico"><svg class="ico-s" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FFFFFF" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg></span><div><span class="etq etq2">Sin instalar nada</span><h2>iPhone, o prefiero no ser probador</h2></div></div>
+    <p>Puedes empezar ya desde el navegador, sin instalar nada. Es la misma app, salvo lo que solo existe en Android, como leer los avisos del banco con la app cerrada o los widgets.</p>
     <a class="gran" href="https://urlife-zeta.vercel.app/">Abrir PalomApp en el navegador</a>
     <p class="nota">En iPhone, ábrela con Safari y usa Compartir → «Añadir a pantalla de inicio» para tenerla como una app más.</p>
   </section>
@@ -92,20 +105,19 @@
   <p class="lead">Your own spending and the costs you share with your partner, flatmates or friends, in one app. Who owes whom, settle up in one tap, and snap a receipt so everyone pays their part.</p>
 
   <section class="caja">
-    <span class="etq">Closed test</span>
-    <h2>I have Android</h2>
+    <div class="cab"><span class="ico"><svg class="ico-s" viewBox="0 0 24 24" aria-hidden="true"><path fill="#3DDC84" d="M18.44 5.559q-1.015 1.748-2.028 3.498-.055-.023-.111-.043a12.098 12.098 0 0 0-8.68.033C7.537 8.897 5.868 6.026 5.6 5.56a1 1 0 0 0-.141-.19 1.104 1.104 0 0 0-1.768 1.298c1.947 3.37-.096-.216 1.948 3.36.017.03-.495.263-1.393 1.017C2.9 12.176.452 14.772 0 18.99h24a11.7 11.7 0 0 0-.746-3.068 12.1 12.1 0 0 0-2.74-4.184 12 12 0 0 0-2.131-1.687c.66-1.122 1.312-2.256 1.965-3.385a1.11 1.11 0 0 0-.008-1.12 1.1 1.1 0 0 0-.852-.532c-.522-.054-.939.313-1.049.545m-.04 8.46c.395.593.324 1.331-.156 1.65-.48.32-1.188.1-1.582-.493s-.324-1.33.156-1.65c.473-.316 1.182-.11 1.582.494m-11.193-.492c.48.32.55 1.058.156 1.65-.394.593-1.103.815-1.584.495-.48-.32-.55-1.058-.156-1.65.4-.603 1.109-.811 1.584-.495"/></svg></span><div><span class="etq">Closed test</span><h2>I have Android</h2></div></div>
     <p>I'm looking for 15 testers for my new Android app. Join and you try it before anyone else, and you help me get it right.</p>
     <ol class="pasos">
       <li><a href="https://groups.google.com/g/palomapp-testers" target="_blank" rel="noopener"><span class="num">1</span>Join the Google Group<span class="fl" aria-hidden="true">→</span></a></li>
       <li><a href="https://play.google.com/apps/testing/es.palomapp.finanzas" target="_blank" rel="noopener"><span class="num">2</span>Become a tester<span class="fl" aria-hidden="true">→</span></a></li>
-      <li><a href="https://play.google.com/store/apps/details?id=es.palomapp.finanzas" target="_blank" rel="noopener"><span class="num">3</span>Download on Google Play<span class="fl" aria-hidden="true">→</span></a></li>
+      <li><a href="https://play.google.com/store/apps/details?id=es.palomapp.finanzas" target="_blank" rel="noopener"><span class="num">3</span><span class="lb">Download on <svg class="ico-p" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m22.018 13.298-3.919 2.218-3.515-3.493 3.543-3.521 3.891 2.202a1.49 1.49 0 0 1 0 2.594M1.337.924a1.5 1.5 0 0 0-.112.568v21.017c0 .217.045.419.124.6l11.155-11.087zm12.207 10.065 3.258-3.238L3.45.195a1.47 1.47 0 0 0-.946-.179zm0 2.067-11 10.933c.298.036.612-.016.906-.183l13.324-7.54z"/></svg>Google Play</span><span class="fl" aria-hidden="true">→</span></a></li>
     </ol>
     <p class="nota">Do it in this order, with the Google account you use on your phone. Google asks testers to stay signed up for 14 days in a row, so please don't leave early and, if you can, open the app now and then. Heads-up: the app is in Spanish for now.</p>
   </section>
 
   <section class="caja">
-    <h2>iPhone, or no testing for me</h2>
-    <p>You can start right now from your browser, nothing to install. It's the same app. The Android one adds phone-only things, like asking for your fingerprint when you open it.</p>
+    <div class="cab"><span class="ico"><svg class="ico-s" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FFFFFF" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg></span><div><span class="etq etq2">Nothing to install</span><h2>iPhone, or no testing for me</h2></div></div>
+    <p>You can start right now from your browser, nothing to install. It's the same app, except for what only exists on Android, like reading your bank notifications with the app closed, or widgets.</p>
     <a class="gran" href="https://urlife-zeta.vercel.app/">Open PalomApp in your browser</a>
     <p class="nota">On iPhone, open it in Safari and use Share → “Add to Home Screen” to keep it like any other app.</p>
   </section>
