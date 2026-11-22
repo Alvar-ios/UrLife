@@ -3218,7 +3218,7 @@ function envioSCAbrir(gid, d, personas) {
   F.personas.forEach(async (p) => {
     try { const t = await S.db.rpc('enlace_sin_cuenta', { p_id: p.uid }); if (t) p.url = APP_URL + '?soy=' + encodeURIComponent(t); } catch (e) { console.error(e); }
     p.listo = true;
-    if (FORM === F) updateSheet(envioSCHtml());
+    const hoja = $('#sheetBackdrop'); if (FORM === F && hoja && !hoja.dataset.cerrando) updateSheet(envioSCHtml()); // si la cerraron mientras se preparaba, no se vuelve a abrir
   });
 }
 function envioSCMsg(F, p) {

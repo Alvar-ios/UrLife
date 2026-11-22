@@ -44,5 +44,16 @@ function conGrupos(w, estado, creados) {
   e2.doc.querySelector('#crImporte').value = '10'; e2.doc.querySelector('#crImporte').dispatchEvent(new e2.w.Event('input', { bubbles: true }));
   click(e2, 'crGuardar'); await sleep(200);
   ok(c2.length === 1 && !/Gasto guardado/.test((e2.doc.querySelector('#sheetHost') || {}).textContent || ''), 'con personas con app: se guarda y no sale la oferta de WhatsApp');
+  // 3) casos raros (Calidad): enlace que falla, dos sin app, parte 0, editar, cerrar mientras se prepara
+  const mk = (rpcEnlace) => { const est = { grupos: [{ id: 'g1', nombre: 'Viaje', tipo: 'grupo', creado_por: 'uA', created_at: 'a' }], miembros: [{ grupo_id: 'g1', user_id: 'uA', nombre: 'Álvaro', rol: 'admin', created_at: 'a' }, { grupo_id: 'g1', user_id: 'uC', nombre: 'Carlos', rol: 'miembro', sinCuenta: true, created_at: 'b' }, { grupo_id: 'g1', user_id: 'uD', nombre: 'Dana', rol: 'miembro', sinCuenta: true, created_at: 'c' }], sinCuenta: [{ id: 'uC', grupo_id: 'g1', nombre: 'Carlos', creado_por: 'uA', created_at: 'b' }, { id: 'uD', grupo_id: 'g1', nombre: 'Dana', creado_por: 'uA', created_at: 'c' }] }, cr = [];
+    const en = makeEnv({ version: { juntos: 2 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }] }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => { conGrupos(w, est, cr); const r = w.Data.rpc; w.Data = Object.assign({}, w.Data, { rpc: async (fn, p) => fn === 'enlace_sin_cuenta' ? rpcEnlace(p) : r(fn, p) }); } }); return { en, cr }; };
+  const guardar = async (en, imp) => { en.w.__APP__.H.compRapido(['g:g1']); await sleep(60); const i = en.doc.querySelector('#crImporte'); i.value = imp; i.dispatchEvent(new en.w.Event('input', { bubbles: true })); click(en, 'crGuardar'); };
+  { const { en, cr } = mk(async () => { throw new Error('caída'); }); await sleep(150); await guardar(en, '30'); await sleep(250);
+    const wa = en.doc.querySelectorAll('#sheetHost a.wa-btn'); const t = wa[0] ? decodeURIComponent(wa[0].getAttribute('href')) : '';
+    ok(cr.length === 1 && wa.length === 2 && !/soy=/.test(t) && /sin él/.test(en.doc.querySelector('#sheetHost').textContent), 'enlace que falla: dos sin app, dos WhatsApp, sin enlace y con aviso'); }
+  { let suelta; const { en, cr } = mk(() => new Promise((r) => { suelta = r; })); await sleep(150); await guardar(en, '20'); await sleep(150);
+    ok(/Gasto guardado/.test(en.doc.querySelector('#sheetHost').textContent), 'mientras se prepara sale «Preparando»');
+    en.w.__APP__.H.closeSheet(); await sleep(600); suelta('TOK'); await sleep(200);
+    const b = en.doc.querySelector('#sheetBackdrop'); ok(!b || !b.classList.contains('open'), 'si se cierra la hoja mientras se prepara, no se vuelve a abrir'); }
   process.exit(fails ? 1 : 0);
 })();
