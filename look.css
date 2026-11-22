@@ -2893,3 +2893,14 @@ html[data-look="nuevo"] .jv-tab-punto { position: absolute; top: 8px; right: 10p
 html[data-look="nuevo"] .jv-gtot-pie { margin-top: 10px; text-align: right; }
 html[data-look="nuevo"] .tema-por-t { display: flex; align-items: center; }
 html[data-look="nuevo"] .tema-por-t .tema-nuevo { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 36px; }
+
+/* 23/11 · foto del grupo (docs/46 tanda 5) */
+html[data-look="nuevo"] .jv-g-foto { display: inline-block; width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; }
+html[data-look="nuevo"] .jv-g-foto.grande { width: 52px; height: 52px; border-radius: 16px; }
+html[data-look="nuevo"] .jv5-foto { flex: none; width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+html[data-look="nuevo"] .jv-foto-aj { display: flex; align-items: center; gap: 14px; margin: 4px 0 14px; }
+html[data-look="nuevo"] .jv-foto-btn { position: relative; display: inline-flex; cursor: pointer; }
+html[data-look="nuevo"] .jv-foto-cam { position: absolute; right: -4px; bottom: -4px; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; border: 2px solid var(--paper); }
+html[data-look="nuevo"] .jv-foto-cam .i { width: 13px; height: 13px; }
+html[data-look="nuevo"] .jv-foto-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+html[data-look="nuevo"] .jv-foto-txt .link { min-height: 32px; padding: 0; }

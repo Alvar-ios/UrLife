@@ -172,3 +172,8 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
   Antes, desplegar la función `avisar` SIN «Verify JWT» (usa `FCM_SERVICE_ACCOUNT`). Deshacer: ver la cabecera del SQL.
   Probada en un Postgres local con tablas de mentira: llama solo con sesión, solo gastos y pagos (no «Ahorro» ni ediciones),
   al entrar o volver a un grupo (no al crearlo ni al cambiar el nombre), freno 20/día, no repite, permisos cerrados, `id_de_otro`.
+
+- `2026-11-23_grupos_foto.sql` — **APLICADA el 23/11/2026.** Foto del grupo (docs/46 tanda 5): columna opcional `grupos.foto`
+  (data URL JPEG/WebP de ≤60 000 caracteres, regla `grupos_foto_formato`) y permiso de esa columna a `authenticated`, en una
+  transacción. La ven los miembros y la cambian los administradores con las reglas de siempre. Revisada por Datos y Seguridad
+  (columna mejor que un espacio de imágenes). Comprobado tras aplicarla: `select *` sigue funcionando y `anon` no la lee.
