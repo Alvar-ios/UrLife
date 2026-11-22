@@ -1963,6 +1963,7 @@ function tecRapidoHtml(tipo, cat, fecha) {
       '<button type="button" class="tec-cat mas" ' + act('tecMas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span><span class="tec-cat-n">Más</span></button></div>' +
     '<div class="tec-linea"><label class="chip tec-fecha">' + ic('calendar') + '<span id="tecFechaTxt">' + escapeHtml(tecFechaTxt(fecha)) + '</span><input type="date" id="tecFecha" aria-label="Fecha" value="' + escapeHtml(fecha) + '" ' + onChange('tecFecha') + '></label>' +
       (cu ? '<button type="button" class="chip tec-cuenta" id="tecCuenta" aria-label="Cuenta: ' + escapeHtml(cu.nombre) + '. Toca para cambiarla" ' + act('tecCuenta') + '><span class="dot" style="background:' + colorCuenta(cu) + '"></span>' + escapeHtml(cu.nombre) + '</button>' : '') +
+      (tipo === 'Gasto' && compartidosDisponible() ? '<button type="button" class="chip tec-comp" ' + act('tecCompartir') + '>' + ic('users') + 'Compartir</button>' : '') +
       '<button type="button" class="link tec-masdet" ' + act('tecMas') + '>Más detalles ' + ic('chevD') + '</button></div></div>';
 }
 function tecOkLbl(T) { return T.tecla === 'guardar' ? (T.etiqueta || 'Guardar') : 'Hecho'; }
@@ -2091,6 +2092,7 @@ function openMovForm(id, pre) {
     '<div class="handle"></div><div class="tec-cab"><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' + antesChip + '</div>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
     (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
+    (ex && !comp && compartidosDisponible() ? '<button type="button" class="btn sm ghost comp-arriba" id="compArriba"' + (TIPOS_COMPARTIBLES.indexOf(ex.tipo) >= 0 ? '' : ' hidden') + ' ' + act('compOnTop') + '>' + ic('users') + ' Compartir este gasto</button>' : '') +
     (tec ? tecCampoHtml(FORM.tec) + monBoxMov(ex, comp, tipoIni) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni) : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
       : '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div>' + monBoxMov(ex, comp, tipoIni) + '<div>') +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
@@ -3048,6 +3050,7 @@ function compFieldHtml() {
   if (!FORM || FORM.kind !== 'mov' || !compartidosDisponible()) return '';
   const cp = FORM.comp || (FORM.comp = { on: false }), t = TIPO_OBJ[FORM.tipo];
   if (TIPOS_COMPARTIBLES.indexOf(FORM.tipo) < 0) return FORM.compId ? '<div class="rec-hint">Solo se comparten gastos, facturas, ahorro y deudas: si lo guardas así, dejará de estar compartido.</div>' : '';
+  if (!cp.on && FORM.id && !FORM.compId) return '';
   if (!cp.on) return '<button type="button" class="comp-toggle" ' + act('compOn') + '>' + ic('users') + '<span>' + (t === 'ahorro' ? 'Aportar a una meta compartida' : t === 'deuda' ? 'Pagar una deuda compartida' : 'Compartir este gasto') + '</span>' + badge('compartir') + '</button>';
   const yo = miUid(), ds = destinosPara(FORM.tipo), c = FORM.compId ? compPorId(FORM.compId) : null;
   if (c && !ds.some((d) => d.k === 'g:' + c.grupoId)) ds.unshift({ k: 'g:' + c.grupoId, label: nombreDestino(grupoDe(c.grupoId)) });
@@ -3057,8 +3060,7 @@ function compFieldHtml() {
       '<button type="button" class="btn sm ghost" style="margin-top:10px;" ' + act('objNueva', t) + '>' + ic('plus') + (t === 'deuda' ? ' Crear deuda compartida' : ' Crear meta compartida') + '</button></div>';
   }
   if (!ds.length) {
-    return h + '<div class="rec-hint">Aún no compartes con nadie. Invita a una persona por WhatsApp y, cuando acepte, podréis compartir gastos.</div>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;"><button type="button" class="btn sm accent" ' + act('compInvitar') + '>' + ic('plus') + ' Invitar a una persona</button><button type="button" class="btn sm ghost" ' + act('compIrGrupos') + '>Grupos</button></div></div>';
+    return h + '<div class="comp-lbl">Con</div><div class="chips">' + otraPersonaChip('f') + '</div>' + invInlineHtml('f') + '</div>';
   }
   h += '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('compDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('f') + '</div>' + invInlineHtml('f');
   if (!cp.dest) return h + '<div class="rec-hint">Elige con quién lo compartes.</div></div>';
@@ -3119,6 +3121,7 @@ function compResumenHtml() {
 function refrescarComp(soloResumen) {
   if (soloResumen) { const r = $('#compResumen'); if (r) { r.innerHTML = compResumenHtml(); return; } }
   const f = $('#compField'); if (f) f.innerHTML = compFieldHtml();
+  const ca = $('#compArriba'); if (ca && FORM && FORM.kind === 'mov') ca.hidden = TIPOS_COMPARTIBLES.indexOf(FORM.tipo) < 0 || !!(FORM.comp && FORM.comp.on); // el de arriba solo con un gasto que aún no se comparte
   refrescarCuentaField();
 }
 // ¿puedo cambiar o borrar este gasto del grupo? Según el ajuste del grupo: todos, o quien lo apuntó (y los administradores)
@@ -3169,7 +3172,7 @@ async function saveCompartido(d) {
   const huerfana = t && previo && previo.objetivoId && cp.objetivo === previo.objetivoId && !ob && cp.dest === 'g:' + previo.grupoId;
   if (t && !huerfana && (!ob || ob.tipo !== t || cp.dest !== 'g:' + ob.grupoId)) return toast(t === 'deuda' ? 'Elige la deuda compartida' : 'Elige la meta compartida');
   if (FORM.guardando) return;
-  FORM.guardando = true;
+  const F0 = FORM; FORM.guardando = true;
   try {
     let grupoId = cp.dest.slice(2);
     if (cp.dest.indexOf('u:') === 0) {
@@ -3206,8 +3209,35 @@ async function saveCompartido(d) {
     const reglaNueva = FORM.recordar ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
     if (reglaNueva) guardarRegla(reglaNueva, d.categoria, FORM.tipo);
     toast(!ok ? 'Compartido guardado, pero no se pudo guardar tu copia' : previo ? 'Actualizado' : t === 'ahorro' ? 'Aportación añadida a «' + datos.categoria + '»' : t === 'deuda' ? 'Pago añadido a «' + datos.categoria + '»' : 'Gasto compartido añadido');
-    render(); terminarForm();
-  } finally { FORM.guardando = false; }
+    render();
+    const sinApp = previo ? [] : Object.keys(c.reparto || datos.reparto || {}).filter((u) => num((c.reparto || datos.reparto)[u]) > 0).map((u) => { const g = grupoDe(grupoId), m = g && g.miembros.find((x) => x.user_id === u && x.sinCuenta); return m ? { uid: u, nombre: m.nombre, parte: num((c.reparto || datos.reparto)[u]) } : null; }).filter(Boolean);
+    if (sinApp.length && !t) envioSCAbrir(grupoId, datos, sinApp); else terminarForm();
+  } finally { F0.guardando = false; }
+}
+/* Tras compartir un gasto con alguien sin app: ofrecer mandárselo por WhatsApp, con el detalle y su enlace para ocupar su sitio (docs/46, tanda 2) */
+function envioSCAbrir(gid, d, personas) {
+  const volver = S._volverGrupo; S._volverGrupo = null;
+  const F = FORM = { kind: 'envioSC', gid, volver, d, personas: personas.map((p) => Object.assign({}, p, { url: null, listo: false })) };
+  updateSheet(envioSCHtml());
+  F.personas.forEach(async (p) => {
+    try { const t = await S.db.rpc('enlace_sin_cuenta', { p_id: p.uid }); if (t) p.url = APP_URL + '?soy=' + encodeURIComponent(t); } catch (e) { console.error(e); }
+    p.listo = true;
+    const hoja = $('#sheetBackdrop'); if (FORM === F && hoja && !hoja.dataset.cerrando) updateSheet(envioSCHtml()); // si la cerraron mientras se preparaba, no se vuelve a abrir
+  });
+}
+function envioSCMsg(F, p) {
+  const g = grupoDe(F.gid), que = F.d.descripcion || F.d.categoria || 'un gasto';
+  return '¡Hola ' + p.nombre + '! He apuntado «' + que + '» (' + money(F.d.importe) + ') en PalomApp' + (g ? ' en «' + g.nombre + '»' : '') + ': te toca ' + money(p.parte) + '.' +
+    (p.url ? ' Míralo aquí y te guardo tu sitio, con todo lo que llevamos (vale 7 días): ' + p.url : '');
+}
+function envioSCHtml() {
+  const F = FORM;
+  return '<div class="handle"></div><h2>Gasto guardado</h2>' +
+    F.personas.map((p) => '<div class="card" style="margin-bottom:10px;"><b>' + escapeHtml(p.nombre) + '</b> no tiene PalomApp. Le toca <b class="tnum">' + money(p.parte) + '</b>.' +
+      (p.listo ? '<a class="btn accent block wa-btn" style="margin-top:10px;" href="https://wa.me/?text=' + encodeURIComponent(envioSCMsg(F, p)) + '" target="_blank" rel="noopener">Mandárselo por WhatsApp</a>' +
+        (p.url ? '' : '<div class="rec-hint" style="margin-top:6px;">No se pudo crear su enlace: el mensaje va sin él.</div>')
+        : '<div class="rec-hint" style="margin-top:10px;">Preparando el mensaje…</div>') + '</div>').join('') +
+    '<div class="actions"><button class="btn ghost block" ' + act('envioSCCerrar') + '>Ahora no</button></div>';
 }
 async function quitarCompartido() {
   const c = compPorId(FORM.compId);
@@ -3761,6 +3791,8 @@ function artFieldHtml(ex) {
     arts.map((a, i) => '<div class="tk-det-r"><span>' + (num(a.cantidad) && num(a.cantidad) !== 1 ? num(a.cantidad).toLocaleString(LOC()) + ' × ' : '') + escapeHtml(a.nombre) + '</span><b class="tnum">' + money(a.importe) + '</b></div>' + (edita ? artQuienHtml(a, i, ms, 'f') : '')).join('') + '</div><div id="artInfo"></div></details>';
 }
 /* «+ Otra persona»: invitar sin salir de lo que estás creando */
+function invElegir(ctx, k) { if (ctx === 't') H.tkDest([k]); else if (ctx === 'r') H.crDest([k]); else { compPrepararDestino(k); refrescarComp(); } }
+function invRepintar(ctx) { if (ctx === 't') updateSheet(ticketHtml()); else if (ctx === 'r') { if (FORM && FORM.kind === 'compRapido') updateSheet(compRapidoHtml()); } else refrescarComp(); }
 function otraPersonaChip(ctx) { return '<button type="button" class="chip nueva" ' + act('invAbrir', ctx) + '>+ Otra persona</button>'; }
 function invInlineHtml(ctx) {
   const v = S._inv;
@@ -3768,8 +3800,9 @@ function invInlineHtml(ctx) {
   if (v.url) return '<div class="inv-inline"><b>Enlace listo</b><div class="rec-hint">Mándaselo por WhatsApp. Cuando lo acepte, aparecerá aquí en «Con» y podrás repartir con esa persona.</div>' +
     '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(v.msg) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
     '<button type="button" class="link" ' + act('invCerrar') + '>Cerrar</button></div>';
-  return '<div class="inv-inline"><div class="rec-hint">Invita a alguien que aún no tienes: le llega un enlace por WhatsApp. Lo que estás creando no se pierde.</div>' +
-    '<button type="button" class="btn sm accent" ' + act('invCrear', ctx) + '>' + (v.creando ? 'Creando…' : 'Crear enlace de invitación') + '</button> <button type="button" class="link" ' + act('invCerrar') + '>Cancelar</button></div>';
+  return '<div class="inv-inline"><div class="field" style="display:flex;gap:8px;align-items:center;margin:0;"><input id="invNombre" type="text" maxlength="40" placeholder="Su nombre (p. ej. Carlos)" autocomplete="off"><button type="button" class="btn sm accent" style="flex:none;" ' + act('invSinApp', ctx) + '>' + (v.creando ? 'Añadiendo…' : 'Añadir') + '</button></div>' +
+    '<div class="rec-hint" style="margin-top:6px;">No necesita la app: el gasto se guarda ya y, si se la instala, se queda con lo suyo.</div>' +
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;"><button type="button" class="link" ' + act('invCrear', ctx) + '>Ya tiene la app: enviarle un enlace</button><button type="button" class="link" ' + act('invCerrar') + '>Cancelar</button></div></div>';
 }
 // Análisis mensual: en qué artículos se va el dinero (solo de gastos con ticket; con lo compartido, tu parte)
 function articulosTopHtml(movs) {
@@ -4618,7 +4651,7 @@ function insightsHtml() {
 const VERSIONES = {
   inicio: { txt: 'Inicio', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
-  juntos: { txt: 'Juntos', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: la lista de personas de antes de los círculos
+  juntos: { txt: 'Juntos', desde: '2026-11-22', variantes: [['filas', 'Nueva'], ['nueva', 'Antes'], ['v2', '22 oct'], ['antes', 'Primera']] }, // 22/11 (docs/46 tanda 3): grupos en filas, personas y metas a un enlace; «Antes» = la de tarjetas y círculos (13/11); «22 oct»: la lista de personas de antes de los círculos
   dinero: { txt: 'Dinero', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
   tu: { txt: 'Tú', desde: '2026-11-13', variantes: [['nueva', 'Por temas'], ['v2', 'Antes'], ['antes', 'Primera']] }, // 13/11: ajustes por temas; «Antes» = Tú de 22/10 (las pruebas antiguas fijan v2 o la primera)
   agenda: { txt: 'Agenda', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
@@ -4630,7 +4663,7 @@ const VERSIONES = {
 function seccionVersion() {
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
   if (S.tab === 'movimientos' && movVistaAct() === 'resumen') { const p = movPerNorm(S.movPeriodo); if (/^m:/.test(p) ? mesCerrado(+p.slice(2, 6), +p.slice(7, 9)) : /^y:/.test(p) && +p.slice(2) < mesActual().y) return 'balance'; if (/^m:/.test(p)) return 'movResumen'; }
-  if (S.tab === 'juntos' && gruposDisponible() && (S.grupos || []).length) return 'juntos';
+  if (S.tab === 'juntos' && gruposDisponible() && (S.grupos || []).length && !S.juntosVer) return 'juntos';
   if (S.tab === 'dinero' && !S.dineroVer) return 'dinero';
   if (S.tab === 'tu') return 'tu';
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) return 'agenda';
@@ -5974,7 +6007,8 @@ function renderJuntos() {
    compartir un gasto en una sola pantalla. La versión anterior sigue en el botón «Antes».
    ============================================================ */
 function juntosV2() { return versionDe('juntos') !== 'antes'; }
-function juntosV3() { return versionDe('juntos') === 'nueva'; }
+function juntosV3() { const v = versionDe('juntos'); return v === 'nueva' || v === 'filas'; }
+function juntosV4() { return versionDe('juntos') === 'filas'; }
 /* ---- Juntos v3 (23/10/2026, docs/14 B1 y B3): lo que debes y te deben en círculos (Personas | Grupos) y la actividad arriba, con lo nuevo marcado ---- */
 function eurosR(v) { return (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString(LOC())) + ' ' + sym(); }
 function cifraCirc(v) { return Math.abs(v) < 1 ? money(Math.abs(v)) : eurosR(Math.abs(v)); } // menos de 1 €: con céntimos (si no, «0 €»)
@@ -6048,6 +6082,56 @@ function juntosV3Html(ps, gs, frase, debes, teDeben, hayComp) {
   h += juntosObjHtml();
   return h;
 }
+/* ---- Juntos (22/11/2026, docs/46 tanda 3): tu cifra y «Compartir un gasto»; tus grupos en filas (los de dos, con la cara);
+   lo último en 3 líneas; «Por persona» y «Metas y deudas juntos» a un enlace (pantallas dentro de Juntos: S.juntosVer). ---- */
+const JV5_MAX_GRUPOS = 5;
+function juntosGrupoFilaHtml(x) {
+  const g = x.g, v = x.v, paz = Math.abs(v) < 0.005, yo = miUid(), otros = g.miembros.filter((m) => m.user_id !== yo && !esMio(g.id, m.user_id));
+  const dos = otros.length === 1, o = dos ? otros[0] : null;
+  const est = !x.hay ? 'sin gastos' : paz ? 'en paz' : v < 0 ? (dos ? 'le debes' : 'debes') : (dos ? 'te debe' : 'te deben');
+  const ico = dos ? caraHtml(aliasDe(g.id, o.user_id), o.nombre) : '<span class="jv5-ic" aria-hidden="true">' + ic('users') + '</span>';
+  const auto = dos && normName(g.nombre) === normName((g.miembros.find((m) => m.user_id === yo) || {}).nombre + ' y ' + o.nombre); // el nombre que pone la app al añadir a alguien sin app
+  const sub = dos ? (g.tipo === 'directo' ? 'solo vosotros dos' : [o.sinCuenta ? 'sin app' : '', auto ? '' : g.nombre].filter(Boolean).join(' · ') || 'solo vosotros dos') : g.miembros.length <= 1 ? 'Solo tú, de momento' : g.miembros.length + ' personas' + (g.miembros.some((m) => m.sinCuenta) ? ' · ' + g.miembros.filter((m) => m.sinCuenta).length + ' sin app' : '');
+  const nom = dos ? o.nombre : x.nombre;
+  return '<button type="button" class="jv5-g tappable ' + (!x.hay || paz ? 'paz' : v < 0 ? 'malo' : 'bueno') + '" ' + act('grupoVer', g.id) + '>' + ico +
+    '<span class="jv5-n"><b>' + escapeHtml(nom) + '</b><span>' + escapeHtml(sub) + '</span></span>' +
+    '<span class="jv5-v">' + (paz || !x.hay ? '' : '<b class="tnum">' + escapeHtml(money(Math.abs(v))) + '</b>') + '<span>' + est + '</span></span></button>';
+}
+function juntosV4Html(ps, gs, debes, teDeben, hayComp) {
+  if (S.juntosVer === 'personas') return juntosPersonasVerHtml(ps, gs);
+  if (S.juntosVer === 'metas' && !objCompartidos('ahorro').length && !objCompartidos('deuda').length) S.juntosVer = '';
+  if (S.juntosVer === 'metas') return '<button type="button" class="link jv5-volver" ' + act('juntosVer', '') + '>' + ic('chevL') + ' Juntos</button>' + juntosObjHtml();
+  const uso = juntosUso(), todos = S.juntosTodos || {};
+  const grs = gs.map((g) => { const hay = (S.compartidos || []).some((c) => c.grupoId === g.id); return { k: g.id, g, nombre: nombreDestino(g), hay, v: hay ? miSaldo(g.id) : 0 }; }).sort(jvPorUso(uso.g));
+  const cifras = !hayComp ? '<div class="jv3-paz">Aún no habéis compartido gastos</div>' : (debes < 0.005 && teDeben < 0.005) ? '<div class="jv3-paz">' + ic('checkCircle') + ' Estás en paz con todos</div>' :
+    '<div class="jv3-cifras tnum">' + (teDeben >= 0.005 ? '<span class="te">Te deben <b>' + money(teDeben) + '</b></span>' : '') + (debes >= 0.005 ? '<span class="de">' + (teDeben >= 0.005 ? '<i>·</i> ' : '') + 'Debes <b>' + money(debes) + '</b></span>' : '') + '</div>';
+  let h = '<div class="card jv-cab jv3-cab jv5-cab">' + cifras + '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
+  const n = todos.grupos ? grs.length : JV5_MAX_GRUPOS;
+  h += '<section class="jv4-sec jv5-sec"><div class="section-title">Tus grupos<button type="button" class="link" ' + act('openGrupos') + '>' + ic('plus') + ' Nuevo</button></div>' +
+    (grs.length ? '<div class="card jv5-grupos">' + grs.slice(0, n).map(juntosGrupoFilaHtml).join('') + '</div>' +
+      (grs.length > JV5_MAX_GRUPOS ? '<button type="button" class="link jv4-todos" ' + act('juntosTodos', 'grupos') + '>' + (todos.grupos ? 'Ver menos' : 'Ver todos (' + grs.length + ')') + '</button>' : '')
+      : '<div class="jv3-vacio">Aún no tienes grupos. Crea uno para la casa, un viaje o el pádel.</div>') + '</section>';
+  h += juntosActividadHtml({ titulo: 'Lo último', max: 3 });
+  const hayObj = objCompartidos('ahorro').length || objCompartidos('deuda').length;
+  h += '<div class="card jv5-links"><button type="button" class="jv5-link tappable" ' + act('juntosVer', 'personas') + '>' + ic('persona') + '<span>Por persona</span>' + (ps.length ? '<i class="tnum">' + ps.length + '</i>' : '') + ic('chevR') + '</button>' +
+    (hayObj ? '<button type="button" class="jv5-link tappable" ' + act('juntosVer', 'metas') + '>' + ic('piggy2') + '<span>Metas y deudas juntos</span>' + ic('chevR') + '</button>' : '') + '</div>';
+  return h;
+}
+// «Por persona»: los círculos de siempre (lo que te debe o le debes a cada uno, sumando todos los grupos)
+function juntosPersonasVerHtml(ps, gs) {
+  const yo = miUid(), uso = juntosUso(), todos = S.juntosTodos || {};
+  const vistos = new Set(ps.map((x) => x.uid)), paz = [];
+  gs.forEach((g) => g.miembros.forEach((m) => { const u = aliasDe(g.id, m.user_id); if (u !== yo && !esMio(g.id, m.user_id) && !vistos.has(u)) { vistos.add(u); paz.push({ uid: u, nombre: m.nombre }); } }));
+  const pers = ps.map((x) => ({ k: x.uid, nombre: x.nombre, v: x.neto, cara: caraHtml(x.uid, x.nombre, 'mini'), a: act('personaVer', x.uid) }))
+    .concat(paz.map((x) => ({ k: x.uid, nombre: x.nombre, v: 0, cara: caraHtml(x.uid, x.nombre, 'mini'), a: act('personaVer', x.uid) }))).sort(jvPorUso(uso.p));
+  const nP = todos.personas ? pers.length : JV_MAX_PERSONAS, maxP = Math.max(0, ...pers.map((x) => Math.abs(x.v)));
+  return '<button type="button" class="link jv5-volver" ' + act('juntosVer', '') + '>' + ic('chevL') + ' Juntos</button>' +
+    '<section class="jv4-sec jv4-personas-sec"><div class="section-title">Por persona<button type="button" class="link" ' + act('juntosInvitar') + '>' + ic('plus') + ' Invitar</button></div>' +
+    '<div class="rec-hint" style="margin:-4px 0 10px;">Sumando todos tus grupos.</div>' +
+    (pers.length ? '<div class="ins-circ jv3-circ jv4-personas' + (todos.personas ? ' todas' : pers.length > 4 ? ' muchos' : '') + '">' + pers.slice(0, nP).map((x, i) => juntosCircHtml(x, maxP, i)).join('') + '</div>' +
+      (pers.length > JV_MAX_PERSONAS ? '<button type="button" class="link jv4-todos" ' + act('juntosTodos', 'personas') + '>' + (todos.personas ? 'Ver menos' : 'Ver todas (' + pers.length + ')') + '</button>' : '')
+      : '<div class="jv3-vacio">Aún no hay nadie. Invita a alguien por WhatsApp.</div>') + '</section>';
+}
 /* B2 · metas y deudas juntos, visuales: una fila que se desliza; la meta con su forma, la deuda con su icono; «Faltan X» */
 function juntosObjHtml() {
   const ms = objCompartidos('ahorro'), ds = objCompartidos('deuda');
@@ -6062,16 +6146,17 @@ function juntosObjHtml() {
   return '<div class="section-title">Metas y deudas juntos' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('plus') + ' Nueva</button>' : '') + '</div>' +
     '<div class="jv-objs">' + ms.map(meta).join('') + ds.map(deuda).join('') + '</div>';
 }
-function juntosActividadHtml() {
+function juntosActividadHtml(o) {
+  o = o || {};
   // lo nuevo es lo de otros después de tu visita anterior (aunque al entrar ya se marque como visto)
   const vc = cfg().vistoJuntos || null, visto = S._vjPaso && (S._vjPaso.nuevo === vc || !vc) ? S._vjPaso.antes : vc;
   const cuando = (c) => (compCambiado(c) ? c.updatedAt : c.createdAt) || '';
   const todo = (S.compartidos || []).filter((c) => grupoDe(c.grupoId)).slice().sort((a, b) => cuando(b).localeCompare(cuando(a)));
   const esNueva = (c) => !!visto && (c.createdAt || '') > visto && !esMio(c.grupoId, c.creadoPor || c.pagadoPor);
-  const nuevas = todo.filter(esNueva).length, act3 = todo.filter((c, i) => i < 3 || esNueva(c)).slice(0, 6); // las 3 últimas y además lo nuevo, aunque lo tuyo sea más reciente
+  const nuevas = todo.filter(esNueva).length, act3 = todo.filter((c, i) => i < 3 || esNueva(c)).slice(0, o.max || 6); // las 3 últimas y además lo nuevo, aunque lo tuyo sea más reciente
   if (!act3.length) return '';
   const miNombre = String(cfg().nombre || '').trim() || 'Tú';
-  return '<div class="section-title">Actividad' + (nuevas ? '<span class="jv-nuevas">' + (nuevas === 1 ? '1 nueva' : nuevas + ' nuevas') + '</span>' : '') + '<button class="link" ' + act('irMovs', '_comp', 'todo') + '>Ver todo</button></div><div class="card jv-act">' + act3.map((c) => {
+  return '<div class="section-title">' + (o.titulo || 'Actividad') + (nuevas ? '<span class="jv-nuevas">' + (nuevas === 1 ? '1 nueva' : nuevas + ' nuevas') + '</span>' : '') + '<button class="link" ' + act('irMovs', '_comp', 'todo') + '>Ver todo</button></div><div class="card jv-act">' + act3.map((c) => {
     const quien = c.creadoPor || c.pagadoPor, yoQ = esMio(c.grupoId, quien), liq = c.tipo === 'Liquidación', parte = miParte(c), g = grupoDe(c.grupoId);
     const n = (u) => nombreDe(c.grupoId, u), mio = (u) => esMio(c.grupoId, u), a = Object.keys(c.reparto || {})[0], caraDe = liq ? c.pagadoPor : quien, camb = !liq && compCambiado(c);
     const que = liq ? (mio(c.pagadoPor) ? 'Pagaste a ' + n(a) : mio(a) ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a))
@@ -6095,11 +6180,24 @@ function dondeTxt(deudas) {
   const ns = [...new Set(deudas.map((d) => { const g = grupoDe(d.gid); return g && g.tipo === 'directo' ? 'entre vosotros dos' : 'en ' + (g ? g.nombre : 'un grupo'); }))];
   return ns.length <= 1 ? (ns[0] || '') : ns.slice(0, -1).join(', ') + ' y ' + ns[ns.length - 1].replace(/^en /, 'en ');
 }
-function pedirMsg(x) {
+// los últimos gastos que la persona tiene pendientes contigo (para que el mensaje diga de qué es)
+function pedirDetalle(x) {
+  const yo = miUid(), gids = x.deudas.map((d) => d.gid);
+  const cs = (S.compartidos || []).filter((c) => gids.indexOf(c.grupoId) >= 0 && c.tipo !== 'Liquidación' && c.pagadoPor === yo && num((c.reparto || {})[x.uid]) > 0)
+      .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')), out = [];
+  let acum = 0; // solo los más nuevos que explican lo que debe (los viejos ya pudieron saldarse)
+  for (const c of cs) { if (acum >= num(x.neto) - 0.005) break; acum += num(c.reparto[x.uid]); out.push('«' + (c.descripcion || c.categoria || 'gasto') + '» ' + money(c.reparto[x.uid])); if (out.length >= 4) break; }
+  return out;
+}
+function pedirMsg(x, url) {
   const yo = miUid(), todas = x.deudas.every((d) => d.a === yo);
   const grupos = todas ? [...new Set(x.deudas.map((d) => { const g = grupoDe(d.gid); return g && g.tipo === 'grupo' ? g.nombre : ''; }).filter(Boolean))] : [];
-  return '¡Hola, ' + String(x.nombre || '').split(' ')[0] + '! En PalomApp me sale que ' + (grupos.length ? 'de ' + grupos.join(' y ') + ' ' : '') + 'me debes ' + money(x.neto) + '. Cuando puedas, ¿me haces un Bizum? 🙌';
+  const det = pedirDetalle(x);
+  return '¡Hola, ' + String(x.nombre || '').split(' ')[0] + '! En PalomApp me sale que ' + (grupos.length ? 'de ' + grupos.join(' y ') + ' ' : '') + 'me debes ' + money(x.neto) + (det.length ? ' (' + det.slice(0, 3).join(', ') + (det.length > 3 ? '…' : '') + ')' : '') + '. Cuando puedas, ¿me haces un Bizum? 🙌' +
+    (url ? ' Aquí ves las cuentas y te guardo tu sitio (vale 7 días): ' + url : '');
 }
+// ¿esta persona está en tus grupos sin app? (entonces el mensaje lleva su enlace para entrar)
+function personaSinApp(x) { return x.deudas.some((d) => { const g = grupoDe(d.gid); return g && g.miembros.some((m) => m.user_id === x.uid && m.sinCuenta); }); }
 function renderJuntosV2() {
   if (!gruposDisponible()) return '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Compartir no está disponible aquí.</div>';
   const ps = juntosPersonas(), yo = miUid(), gs = (S.grupos || []).filter((g) => g.tipo === 'grupo' || (g.tipo === 'directo' && g.miembros.length >= 2));
@@ -6114,6 +6212,7 @@ function renderJuntosV2() {
     (basico() ? '<p class="jv-sin-app">¿Tus amigos no tienen PalomApp? No pasa nada: añádelos por su nombre.</p>' : '') +
     '<button class="btn accent block" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button>' +
     '<button class="btn ghost block" ' + act('openGrupos') + '>' + ic('users') + ' Crear un grupo</button></div>';
+  if (juntosV4()) return juntosV4Html(ps, gs, debes, teDeben, hayComp);
   if (juntosV3()) return juntosV3Html(ps, gs, frase, debes, teDeben, hayComp);
   let h = '<div class="card jv-cab"><div class="jv-frase">' + frase + '</div>' +
     (hayComp ? '<div class="jv-fichas">' + ficha('debes', 'Debes', debes, deb.length, 'de') + ficha('te', 'Te deben', teDeben, te.length, 'te') + '</div>' : '<div class="rec-hint" style="margin:4px 0 10px;">Divide una cena, un viaje o la casa con quien quieras; aquí verás quién debe a quién y lo saldáis en un toque.</div>') +
@@ -6165,7 +6264,7 @@ function personaVerHtml(uid, pedir) {
   const conElla = (c) => aliasDe(c.grupoId, c.pagadoPor) === uid || Object.keys(c.reparto || {}).some((u) => aliasDe(c.grupoId, u) === uid);
   const comps = (S.compartidos || []).filter((c) => x.deudas.some((d) => d.gid === c.grupoId) && c.tipo !== 'Liquidación' && conElla(c)).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).slice(0, 3);
   const dest = (() => { const d = (S.grupos || []).find((g) => g.tipo === 'directo' && g.miembros.some((m) => m.user_id === uid)); return d ? 'g:' + d.id : x.deudas.length ? 'g:' + x.deudas[0].gid : ''; })();
-  const msg = debo ? '' : pedirMsg(x);
+  const msg = debo ? '' : pedirMsg(x, FORM && FORM.kind === 'persona' && FORM.uid === uid ? FORM.pedirUrl : null);
   return '<div class="handle"></div><div class="jv-pcab">' + caraHtml(uid, x.nombre, 'grande') + '<div><h2>' + escapeHtml(x.nombre) + '</h2><span class="rec-hint" style="margin:0;">' + escapeHtml(dondeTxt(x.deudas)) + '</span></div></div>' +
     '<div class="jv-total ' + (debo ? 'de' : 'te') + '"><span>' + (debo ? 'Le debes' : 'Te debe') + '</span><b class="tnum">' + money(tot) + '</b></div>' +
     (x.deudas.length > 1 ? '<div class="card jv-desg-card">' + desg + '</div><div class="rec-hint" style="margin:-4px 0 10px;">Toca un grupo para ver de dónde sale.</div>' : '<button type="button" class="link jv-origen" ' + act('origenVer', x.deudas[0].gid, uid) + '>' + ic('list') + ' ¿De dónde sale?</button>') +
@@ -6237,12 +6336,12 @@ function grupoHtmlV2(g) {
 /* ---- compartir un gasto en una sola pantalla: con quién, cuánto, qué fue, quién pagó y para quién ---- */
 function compRapidoHtml() {
   const F = FORM, cp = F.comp, yo = miUid(), ds = destinosPara('Gasto');
-  if (!ds.length) return '<div class="handle"></div><h2>Compartir un gasto</h2><div class="rec-hint">Aún no compartes con nadie. Invita a una persona por WhatsApp o crea un grupo y, cuando acepten, podréis compartir gastos.</div><div class="actions"><button class="btn ghost block" ' + act('compIrGrupos') + '>Grupos y personas</button><button class="btn accent block" ' + act('juntosInvitar') + '>Invitar</button></div>';
+  if (!ds.length) return '<div class="handle"></div><h2>Compartir un gasto</h2><div class="cr-lbl">Con</div><div class="cr-con">' + otraPersonaChip('r') + '</div>' + invInlineHtml('r') + '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button></div>';
   const ms = cp.dest ? miembrosComp() : [], imp = numCampo(F.importe || ''), r = cp.dest && imp > 0 ? calcReparto(cp, imp, ms) : null, rep = r && r.reparto ? r.reparto : {};
   const pago = cp.pagador === yo, res = crResTxt(ms, imp, r);
   const cats = catsGasto().map((c) => c.nombre); if (F.cat && !cats.includes(F.cat)) cats.push(F.cat);
   return '<div class="handle"></div><h2>Compartir un gasto</h2>' +
-    '<div class="cr-lbl">Con</div><div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>' +
+    '<div class="cr-lbl">Con</div><div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('r') + '</div>' + invInlineHtml('r') +
     temaCajaHtml() +
     '<label class="cr-imp"><input id="crImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe total" value="' + escapeHtml(F.importe || '') + '" ' + onInput('crImporte') + '><span>' + sym() + '</span></label>' +
     '<div id="monBox" class="mon-box">' + monHtml() + '</div>' +
@@ -6712,6 +6811,7 @@ function abrirCompRapido(dest, pre) {
   const yo = miUid(); pre = pre || {};
   FORM = { kind: 'compRapido', tipo: 'Gasto', id: null, compId: null, comp: { on: true }, importe: pre.importe || '', desc: pre.desc || '', cat: pre.cat || 'Otros', catTocada: !!pre.cat, fecha: todayISO(), cuenta: cuentaRecordada('') };
   const k = dest || destinoPorDefecto(); if (k) compPrepararDestino(k);
+  S._inv = !destinosPara('Gasto').length ? { ctx: 'r' } : null;
   FORM.comp.pagador = FORM.comp.pagador || yo;
   temaAutoAplicar();
   if ($('#sheetBackdrop')) updateSheet(compRapidoHtml()); else openSheet(compRapidoHtml());
@@ -12797,6 +12897,7 @@ function atrasEnHoja(b) {
       '<div class="popup-btns"><button class="btn ghost block" ' + act('popupCerrar') + '>Seguir revisando</button><button class="btn accent block" ' + act('impVolverSi') + '>Volver</button></div>');
     return true;
   }
+  if (FORM && FORM.kind === 'envioSC') { H.envioSCCerrar(); return true; } // «Gasto guardado»: atrás = «Ahora no» (vuelve al grupo de donde venías)
   const v = botonVolverHoja(sh);
   if (v) { v.click(); return true; }
   // Persona → Saldar (sin botón «Volver»): a la persona, si se llegó desde ella
@@ -12814,6 +12915,7 @@ function atrasAndroid() {
   if (ob) { if (ob.step > 0 && !(ob.grupoId && obPasos(ob)[ob.step - 1] === 'invite')) { H.obBack(); return true; } return false; }
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
   if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
+  if (S.tab === 'juntos' && S.juntosVer) { S.juntosVer = ''; render(); return true; } // 22/11: de «Por persona» o «Metas», a Juntos
   if (S.tab === 'tu' && S.tuSub) { H.tuIr(['']); return true; } // 13/11: de una pantalla de ajustes, a Tú
   if (S.tab !== 'inicio') { H.goTab(['inicio']); return true; }
   return false;
@@ -12872,6 +12974,7 @@ const H = {
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
     const nueva = TAB_ALIAS[id] || id; if (nueva !== S.tab) S._entrando = true;
     if (nueva === 'tu' && S.tab !== 'tu') S.tuSub = '';
+    if (nueva === 'juntos') S.juntosVer = ''; // 22/11: tocar Juntos vuelve siempre a su pantalla principal
     if (nueva === 'inicio') { S.inicioVista = 'hoy'; S.inicioMes = ''; }
     S.tab = nueva; render(); window.scrollTo(0, 0);
   },
@@ -13291,6 +13394,10 @@ const H = {
   tecK: ([k]) => { const largo = H.tecK._largo; H.tecK._largo = false; if (largo && k === 'del') return; tecPulsar(k); }, // tras mantener «Borrar», su propio toque no cuenta
   tecAbrir: () => { if (!FORM || !FORM.tec) return; if (!FORM.tec.on) { tecAbrirTeclado(); sentir('tic'); } },
   tecMas: () => tecMasDetalles(),
+  // «Compartir» en el teclado corto: abre los detalles con lo de compartir ya activado
+  tecCompartir: () => { tecMasDetalles(); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
+  // «Compartir este gasto» arriba de un gasto ya apuntado
+  compOnTop: () => { const b = $('#compArriba'); if (b) b.hidden = true; H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
   tecVersion: ([n]) => tecVolverAVersion(n),
   tecCat: ([c]) => { const ant = ($('#fCategoria') || {}).value; if (ant !== c) { const sb = $('#fSub'); if (sb) sb.value = ''; } H.pickCat([c]); tecCuentaPintar(); $$('#tecCats .tec-cat').forEach((b) => { const on = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); tecSync(); },
   tecFecha: (_a, el) => { const v = el.value || todayISO(), f = $('#fFecha'); if (f) { f.value = v; if (H.onFechaChange) H.onFechaChange([], f); } const t = $('#tecFechaTxt'); if (t) t.textContent = tecFechaTxt(v); },
@@ -13330,8 +13437,34 @@ const H = {
     artRefrescar(ctx, Number(i));
   },
   artUnidReset: ([ctx, i]) => { const a = artsDeCtx(ctx)[Number(i)]; if (!a) return; a.unid = null; a.quien = null; artRefrescar(ctx, Number(i)); },
-  invAbrir: ([ctx]) => { S._inv = { ctx }; if (ctx === 't') updateSheet(ticketHtml()); else refrescarComp(); },
-  invCerrar: () => { const c = S._inv && S._inv.ctx; S._inv = null; if (c === 't') updateSheet(ticketHtml()); else refrescarComp(); },
+  invAbrir: ([ctx]) => { S._inv = { ctx }; invRepintar(ctx); },
+  invCerrar: () => { const c = S._inv && S._inv.ctx; S._inv = null; invRepintar(c); },
+  // «+ Otra persona» → solo su nombre: se crea un grupo de dos con ella (sin app) y se elige al momento, para que el gasto se guarde siempre
+  invSinApp: async ([ctx]) => {
+    const v = S._inv; if (!v || v.creando) return;
+    const el = $('#invNombre'), nombre = ((el && el.value) || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+    if (!nombre) { marcarCampo('#invNombre'); return toast('Escribe su nombre'); }
+    v.creando = true; { const b = $('#sheetHost [data-click^="invSinApp"]'); if (b) b.textContent = 'Añadiendo…'; }
+    const yo = miNombreAlguno(), k = normName(nombre);
+    const conApp = destinosCompartir().find((d) => normName(d.label) === k); // ya está en tus personas o grupos: se elige sin crear nada
+    if (conApp) { v.creando = false; S._inv = null; invElegir(ctx, conApp.k); return; }
+    const previo = (S.grupos || []).find((g) => g.tipo === 'grupo' && g.miembros.length === 2 && g.miembros.some((m) => m.sinCuenta && normName(m.nombre) === k));
+    let gid = previo ? previo.id : null;
+    if (!gid) {
+      const id = await accionGrupo(() => S.db.rpc('crear_grupo', { p_nombre: (yo + ' y ' + nombre).slice(0, 40), p_mi_nombre: yo }), null);
+      if (id && id !== true) {
+        try { await S.db.rpc('crear_sin_cuenta', { p_grupo: id, p_nombre: nombre }); gid = id; }
+        catch (e) { console.error(e); toast(errGrupo(e)); try { await S.db.rpc('cerrar_grupo', { p_grupo: id }); } catch (e2) { console.error(e2); } } // sin la persona el grupo queda vacío: se cierra
+        await cargarGrupos();
+      }
+    }
+    v.creando = false;
+    if (!gid) { if (S._inv === v) invRepintar(ctx); return; }
+    S._inv = null;
+    if (!juntosOn()) herrPoner({ juntos: true });
+    invElegir(ctx, 'g:' + gid);
+    toast(nombre + ' añadido, sin app');
+  },
   invCrear: async ([ctx]) => {
     const v = S._inv; if (!v || v.creando) return;
     v.creando = true;
@@ -13340,7 +13473,7 @@ const H = {
     if (!t || t === true) return;
     const url = APP_URL + '?unirse=' + encodeURIComponent(t);
     v.url = url; v.msg = mensajePersona(url);
-    if (ctx === 't') updateSheet(ticketHtml()); else refrescarComp();
+    invRepintar(ctx);
   },
   tkQuien: ([i, u], el) => {
     const a = FORM.t.articulos[Number(i)], todos = miembrosDeDestino(FORM.rep.dest).map((m) => m.uid);
@@ -13352,11 +13485,11 @@ const H = {
   },
   tkContinuar: () => tkContinuar(),
   // gastos compartidos
-  compOn: () => { verBadge('compartir'); FORM.comp = FORM.comp || {}; FORM.comp.on = true; if (S.grupos == null) cargarGrupos().then(() => refrescarComp()); compAsegurarDestino(); refrescarComp(); },
+  compOn: () => { verBadge('compartir'); FORM.comp = FORM.comp || {}; FORM.comp.on = true; if (S.grupos == null) cargarGrupos().then(() => { if (FORM && FORM.comp && FORM.comp.on && !S._inv && !TIPO_OBJ[FORM.tipo] && !destinosPara(FORM.tipo).length) S._inv = { ctx: 'f' }; refrescarComp(); }); compAsegurarDestino(); if (S.grupos != null && !TIPO_OBJ[FORM.tipo] && !destinosPara(FORM.tipo).length) S._inv = { ctx: 'f' }; refrescarComp(); },
   compOff: () => {
     const c = FORM.compId ? compPorId(FORM.compId) : null;
     if (c && c.pagadoPor !== miUid()) return toast('Solo quien lo pagó puede dejar de compartirlo. Si no se hizo, elimínalo.');
-    FORM.comp.on = false; refrescarComp();
+    FORM.comp.on = false; refrescarComp(); { const b = $('#compArriba'); if (b) b.hidden = false; }
     if (c) toast('Al guardar dejará de estar compartido y contará entero como tuyo');
   },
   compDest: ([k]) => { compPrepararDestino(k); refrescarComp(); },
@@ -13483,9 +13616,13 @@ const H = {
   histGasto: ([cid]) => { S._volverGrupo = null; openCompForm(cid); },
   origenVer: ([gid, volver]) => { FORM = { kind: 'origen', gid, volver: volver || '' }; if ($('#sheetBackdrop')) updateSheet(origenHtml(gid, volver)); else openSheet(origenHtml(gid, volver)); },
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
-  juntosVer: ([k]) => { S.juntosVer = k === 'grupos' ? 'grupos' : 'personas'; sentir('tic'); render(); }, // ya sin selector (fase 14): Grupos y Personas se ven a la vez
+  juntosVer: ([k]) => { S.juntosVer = k || ''; sentir('tic'); render(); window.scrollTo && window.scrollTo(0, 0); },
   juntosTodos: ([k]) => { const t = S.juntosTodos = Object.assign({}, S.juntosTodos); t[k] = !t[k]; sentir('tic'); render(); },
-  personaVer: ([uid]) => { FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid)); },
+  personaVer: ([uid]) => {
+    const F = FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid));
+    const x = juntosPersonas().find((p) => p.uid === uid);
+    if (x && x.neto > 0 && personaSinApp(x)) S.db.rpc('enlace_sin_cuenta', { p_id: uid }).then((t) => { if (t && FORM === F && $('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando) { F.pedirUrl = APP_URL + '?soy=' + encodeURIComponent(t); updateSheet(personaVerHtml(uid)); } }).catch((e) => console.error(e));
+  },
   saldarTodo: ([uid]) => { const pc = cuentaPrincipal(), dePersona = !!(FORM && FORM.kind === 'persona' && FORM.uid === uid && $('#sheetBackdrop')); FORM = { kind: 'saldarTodo', uid, cuenta: pc ? pc.id : null, dePersona }; if ($('#sheetBackdrop')) updateSheet(saldarTodoHtml()); else openSheet(saldarTodoHtml()); },
   saldarTodoGuardar: async () => {
     const f = FORM, yo = miUid(), x = juntosPersonas().find((p) => p.uid === f.uid), fecha = ($('#sFecha') || {}).value || todayISO();
@@ -13608,6 +13745,7 @@ const H = {
     toast('Tema borrado: sus gastos quedan «Sin tema»', { deshacer: async () => { try { const r = await S.db.carpetas.restaurar(id); temaAplicarLocal(r || t); temaRefrescarGrupo(); render(); toast('Tema recuperado'); } catch (e) { console.error(e); toast(errGrupo(e)); } } });
   },
   compRapido: ([dest]) => { S._volverGrupo = FORM && FORM.kind === 'grupo' ? FORM.id : null; abrirCompRapido(dest || ''); },
+  envioSCCerrar: () => { const v = FORM && FORM.kind === 'envioSC' ? FORM.volver : null; S._volverGrupo = v || null; terminarForm(); },
   crDest: ([k]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; compPrepararDestino(k); F.comp.pagador = F.comp.pagador || miUid(); F.temaTocado = false; F.temaNuevo = false; temaAutoAplicar(); updateSheet(compRapidoHtml()); },
   monAbrir: () => { const F = FORM; if (!F) return; F.mon = { on: true, moneda: monUlt(), txt: '', origen: 'bce', mano: '', cobro: '', cambio: null, fecha: '' }; monPintar(); monCargarCambio(); const el = $('#monImporte'); if (el) el.focus(); },
   monCerrar: () => { if (!FORM || !FORM.mon) return; FORM.mon.on = false; monPintar(); },

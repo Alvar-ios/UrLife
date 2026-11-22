@@ -38,8 +38,9 @@ const dia = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.
   ok(!('a1' in (A.cfg().apodosActivo || {})), 'borrar el apodo lo quita de la configuración');
   ok(A.S.movs ? A.S.movs.filter((m) => m.tipo === 'Inversión').every((m) => m.categoria === 'Fondo raro' || m.categoria === 'Otro') : true, 'el apodo no cambia los movimientos');
   // 3) versiones cerradas: sin botón «Antes» y con la variante nueva
-  for (const k of ['inicio', 'juntos', 'dinero', 'agenda', 'importe']) ok(A.VERSIONES[k].cerrada && A.VERSIONES[k].def === 0, 'versión «' + k + '» cerrada en la nueva');
-  for (const t of ['inicio', 'juntos', 'dinero', 'agenda']) { H.goTab([t]); await sleep(20); ok(!doc.querySelector('.cmp-fab, .comparar-fab, [data-click^="compararCambiar"]'), 'sin botón «Antes» en ' + t); }
+  // 22/11 (docs/46 tanda 3): Juntos vuelve a tener «Antes» (filas | tarjetas y círculos); lo prueba test197
+  for (const k of ['inicio', 'dinero', 'agenda', 'importe']) ok(A.VERSIONES[k].cerrada && A.VERSIONES[k].def === 0, 'versión «' + k + '» cerrada en la nueva');
+  for (const t of ['inicio', 'dinero', 'agenda']) { H.goTab([t]); await sleep(20); ok(!doc.querySelector('.cmp-fab, .comparar-fab, [data-click^="compararCambiar"]'), 'sin botón «Antes» en ' + t); }
   A.S.verAnterior = Object.assign({}, A.S.verAnterior, { importe: 0 }); H.goTab(['inicio']); A.openMovForm ? A.openMovForm(null) : H.openMovForm && H.openMovForm([]); await sleep(30);
   aviso(!doc.querySelector('.tec-antes'), 'sin botón «Antes» en la hoja de apuntar importe (VERSIONES.importe cerrada)'); H.closeSheet && H.closeSheet(); await sleep(10);
   // 4) forma de la meta: sin brillo ni detalles, % fuera de la línea del agua
