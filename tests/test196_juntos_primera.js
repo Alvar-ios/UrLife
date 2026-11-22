@@ -43,6 +43,13 @@ console.error = () => {};
   for (let i = 0; i < 4; i++) S.grupos.push({ id: 'gx' + i, nombre: 'Viaje ' + i, tipo: 'grupo', alias: {}, soyAdmin: true, miembros: [yo, m('uA', 'Ana'), m('uB', 'Bea')], todos: [yo, m('uA', 'Ana'), m('uB', 'Bea')] });
   A.render(); await sleep(20);
   ok(doc.querySelectorAll('#content .jv5-g').length === 5 && /Ver todos \(7\)/.test(txt()), 'con 7 grupos salen 5 y «Ver todos (7)»');
+  // dos grupos de dos con la misma persona sin app: se distinguen por el nombre del grupo
+  S.grupos.push({ id: 'g3', nombre: 'Viaje Roma', tipo: 'grupo', alias: {}, soyAdmin: true, miembros: [yo, m('sM2', 'Marta', { sinCuenta: true })], todos: [yo, m('sM2', 'Marta', { sinCuenta: true })] });
+  S.juntosTodos = { grupos: true }; A.render(); await sleep(20);
+  const fR = [...doc.querySelectorAll('#content .jv5-g')].find((f) => /Viaje Roma/.test(f.textContent));
+  const fA = [...doc.querySelectorAll('#content .jv5-g')].find((f) => /Marta/.test(f.textContent) && !/Viaje Roma/.test(f.textContent));
+  ok(!!fR && /sin app · Viaje Roma/.test(fR.textContent), 'grupo de dos con nombre propio: «sin app · Viaje Roma»');
+  ok(!!fA && !/Lucía y Marta/.test(fA.textContent), 'el que creó la app («Lucía y Marta») no repite el nombre');
   // la de antes sigue en «Antes»
   S.verAnterior = Object.assign({}, S.verAnterior, { juntos: 1 }); A.render(); await sleep(20);
   ok(!!doc.querySelector('#content .jv4-grupos') && !doc.querySelector('#content .jv5-g'), '«Antes»: la pantalla de tarjetas y círculos');

@@ -6090,7 +6090,8 @@ function juntosGrupoFilaHtml(x) {
   const dos = otros.length === 1, o = dos ? otros[0] : null;
   const est = !x.hay ? 'sin gastos' : paz ? 'en paz' : v < 0 ? (dos ? 'le debes' : 'debes') : (dos ? 'te debe' : 'te deben');
   const ico = dos ? caraHtml(aliasDe(g.id, o.user_id), o.nombre) : '<span class="jv5-ic" aria-hidden="true">' + ic('users') + '</span>';
-  const sub = dos ? (o.sinCuenta ? 'sin app' : g.tipo === 'directo' ? 'solo vosotros dos' : g.nombre) : g.miembros.length + ' personas' + (g.miembros.some((m) => m.sinCuenta) ? ' · ' + g.miembros.filter((m) => m.sinCuenta).length + ' sin app' : '');
+  const auto = dos && normName(g.nombre) === normName((g.miembros.find((m) => m.user_id === yo) || {}).nombre + ' y ' + o.nombre); // el nombre que pone la app al añadir a alguien sin app
+  const sub = dos ? (g.tipo === 'directo' ? 'solo vosotros dos' : [o.sinCuenta ? 'sin app' : '', auto ? '' : g.nombre].filter(Boolean).join(' · ') || 'solo vosotros dos') : g.miembros.length <= 1 ? 'Solo tú, de momento' : g.miembros.length + ' personas' + (g.miembros.some((m) => m.sinCuenta) ? ' · ' + g.miembros.filter((m) => m.sinCuenta).length + ' sin app' : '');
   const nom = dos ? o.nombre : x.nombre;
   return '<button type="button" class="jv5-g tappable ' + (!x.hay || paz ? 'paz' : v < 0 ? 'malo' : 'bueno') + '" ' + act('grupoVer', g.id) + '>' + ico +
     '<span class="jv5-n"><b>' + escapeHtml(nom) + '</b><span>' + escapeHtml(sub) + '</span></span>' +
@@ -6098,6 +6099,7 @@ function juntosGrupoFilaHtml(x) {
 }
 function juntosV4Html(ps, gs, debes, teDeben, hayComp) {
   if (S.juntosVer === 'personas') return juntosPersonasVerHtml(ps, gs);
+  if (S.juntosVer === 'metas' && !objCompartidos('ahorro').length && !objCompartidos('deuda').length) S.juntosVer = '';
   if (S.juntosVer === 'metas') return '<button type="button" class="link jv5-volver" ' + act('juntosVer', '') + '>' + ic('chevL') + ' Juntos</button>' + juntosObjHtml();
   const uso = juntosUso(), todos = S.juntosTodos || {};
   const grs = gs.map((g) => { const hay = (S.compartidos || []).some((c) => c.grupoId === g.id); return { k: g.id, g, nombre: nombreDestino(g), hay, v: hay ? miSaldo(g.id) : 0 }; }).sort(jvPorUso(uso.g));
@@ -13614,7 +13616,6 @@ const H = {
   histGasto: ([cid]) => { S._volverGrupo = null; openCompForm(cid); },
   origenVer: ([gid, volver]) => { FORM = { kind: 'origen', gid, volver: volver || '' }; if ($('#sheetBackdrop')) updateSheet(origenHtml(gid, volver)); else openSheet(origenHtml(gid, volver)); },
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
-  juntosVer: ([k]) => { S.juntosVer = k === 'grupos' ? 'grupos' : 'personas'; sentir('tic'); render(); }, // ya sin selector (fase 14): Grupos y Personas se ven a la vez
   juntosVer: ([k]) => { S.juntosVer = k || ''; sentir('tic'); render(); window.scrollTo && window.scrollTo(0, 0); },
   juntosTodos: ([k]) => { const t = S.juntosTodos = Object.assign({}, S.juntosTodos); t[k] = !t[k]; sentir('tic'); render(); },
   personaVer: ([uid]) => {
