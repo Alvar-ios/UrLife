@@ -2744,7 +2744,8 @@ function grupoAnadirAmigosHtml(g) {
 }
 async function abrirGrupo(id) {
   const prev = FORM && ((FORM.kind === 'grupo' && FORM.id === id) || (FORM.kind === 'saldar' && FORM.gid === id)) ? FORM : null;
-  FORM = { kind: 'grupo', id, invitaciones: [], ajustes: !!(prev && prev.kind === 'grupo' && prev.ajustes), grupoTab: prev ? prev.grupoTab : (S._grupoTabVolver || ''), temaVer: prev && prev.kind === 'grupo' ? prev.temaVer : (S._temaVolver && S._temaVolver.gid === id ? S._temaVolver.tid : '') };
+  const deVista = !prev && FORM && (FORM.kind === 'hist' || FORM.kind === 'origen') && FORM.gid === id ? FORM.grupoTab || '' : ''; // 23/11: de Historial o «¿De dónde sale?», a la pestaña de la que venías
+  FORM = { kind: 'grupo', id, invitaciones: [], ajustes: !!(prev && prev.kind === 'grupo' && prev.ajustes), grupoTab: prev ? prev.grupoTab : (deVista || S._grupoTabVolver || ''), temaVer: prev && prev.kind === 'grupo' ? prev.temaVer : (S._temaVolver && S._temaVolver.gid === id ? S._temaVolver.tid : '') };
   S._temaVolver = null; S._grupoTabVolver = null;
   if ($('#sheetBackdrop')) updateSheet(grupoHtml(id)); else openSheet(grupoHtml(id));
   try { FORM.invitaciones = await S.db.grupos.invitaciones(id); if (FORM.kind === 'grupo' && FORM.id === id) updateSheet(grupoHtml(id)); } catch (e) { /* sin lista de enlaces */ }
@@ -6373,10 +6374,11 @@ function grupoHtmlV4(g) {
   if (tab === 'gastos') {
     const gastos = cs.filter((c) => c.tipo !== 'Liquidación'), tot = gastos.reduce((a, c) => a + num(c.importe), 0), mia = gastos.reduce((a, c) => a + miParte(c), 0);
     const temaAbierto = temasDisponible() && F.temaVer ? temaPorId(F.temaVer) : null;
-    if (temaAbierto && temaAbierto.grupoId === g.id) return h + '<button type="button" class="link jv5-volver" ' + act('temaVer', '') + '>' + ic('chevL') + ' Todos los gastos</button>' + temaResumenHtml(g, temaAbierto) + '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('compRapidoTema', g.id, temaAbierto.id) + '>' + ic('plus') + ' Añadir gasto</button></div>';
+    if (temaAbierto && temaAbierto.grupoId === g.id) return h + temaResumenHtml(g, temaAbierto) + '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('compRapidoTema', g.id, temaAbierto.id) + '>' + ic('plus') + ' Añadir gasto</button></div>';
     if (temasDisponible()) h += temasDe(g.id).length ? porTemasHtml(g, F).replace('<div class="tema-por-t">Por temas', '<div class="tema-por-t">Temas<button type="button" class="link tema-nuevo" aria-label="Nuevo tema" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + '</button>') : (cs.length ? '<button type="button" class="chip tema-mas-suelto" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + ' Tema' + badge('temas') + '</button>' : '');
     const lista = cs.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.createdAt || '').localeCompare(a.createdAt || '')), n = F.verTodos ? lista.length : 8;
     h += lista.length ? '<div class="list">' + lista.slice(0, n).map(compRowGrupo).join('') + '</div>' + (lista.length > n ? '<button type="button" class="link" style="margin-top:8px;" ' + act('compVerTodos', g.id) + '>Ver todos (' + lista.length + ')</button>' : '') : '';
+    if (basico() && !descubierta('trayecto') && gastos.some((c) => c.categoria === 'Transporte' || /gasolina/.test(normDesc(c.descripcion || '')))) h += '<button type="button" class="link jv-tray" ' + act('descProbar', 'trayecto') + '>' + ic('coche2') + ' ¿Ibais en coche? Calcula la gasolina ' + ic('chevR') + '</button>'; // docs/38 §3.2
     if (gastos.length) h += '<div class="jv-gtot jv-gtot-pie">Entre todos <b class="tnum">' + money(tot) + '</b> · tu parte <b class="tnum">' + money(mia) + '</b></div>';
     return h + pie;
   }
@@ -12939,6 +12941,7 @@ function preguntarDescartar() {
 const ATRAS_VOLVER = [
   '[data-click^="grupoAjustesSalir|"]', // Grupo / Persona → Ajustes
   '[data-click^="histVolver|"]', // Grupo → Historial
+  '.jv5-volver[data-click="grupoTab|mas"]', // Grupo → Más → Planes
   '[data-click="temaFormCerrar"]', '.tema-cab [data-click="temaVer|"]', // Grupo → nuevo tema / un tema
   '[data-click^="impVolver|"]', // Importar → Columnas / Revisar
   '[data-click="recCuandoVolver"]', // Cobro o pago fijo → «Cuándo»
@@ -13670,7 +13673,7 @@ const H = {
   }),
   deudaCompVer: ([id]) => { const r = objCompartidos('deuda').find((x) => x.id === id); if (!r) return; FORM = { kind: 'deudaComp', id }; openSheet('<div class="handle"></div>' + objCardHtml(r) + '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>'); },
   irMovsDeuda: ([n]) => { const d = deudaPorNombre(n); closeSheet(); irMovs({ tipo: 'Deuda', periodo: 'todo', cat: n }); S.movCatAlias = d && (d.nombresAntes || []).length ? { cat: n, nombres: d.nombresAntes.slice() } : null; render(); },
-  histVer: ([gid]) => { const st = histEstado(gid); FORM = { kind: 'hist', gid }; const html = histHtml(gid); if ($('#sheetBackdrop')) updateSheet(html); else openSheet(html);
+  histVer: ([gid]) => { const st = histEstado(gid), tabG = FORM && FORM.kind === 'grupo' && FORM.id === gid ? FORM.grupoTab : ''; FORM = { kind: 'hist', gid, grupoTab: tabG }; const html = histHtml(gid); if ($('#sheetBackdrop')) updateSheet(html); else openSheet(html);
     if (!st.t || Date.now() - st.t > 15000) histCargar(gid).then(() => histMarcarVisto(gid)); else histMarcarVisto(gid); },
   histVolver: ([gid]) => { if (gid && grupoDe(gid)) abrirGrupo(gid); else closeSheet(); },
   histReintentar: ([gid]) => histCargar(gid),
@@ -13680,7 +13683,7 @@ const H = {
   histDetalle: ([gid, id]) => { FORM = { kind: 'histDet', gid, id }; updateSheet(histDetalleHtml(gid, id)); },
   histRecuperar: async ([gid, id]) => { await histRecuperar(gid, id); if (FORM && (FORM.kind === 'hist' || FORM.kind === 'histDet') && $('#sheetBackdrop')) { FORM = { kind: 'hist', gid }; updateSheet(histHtml(gid)); } },
   histGasto: ([cid]) => { S._volverGrupo = null; openCompForm(cid); },
-  origenVer: ([gid, volver]) => { FORM = { kind: 'origen', gid, volver: volver || '' }; if ($('#sheetBackdrop')) updateSheet(origenHtml(gid, volver)); else openSheet(origenHtml(gid, volver)); },
+  origenVer: ([gid, volver]) => { const tabG = FORM && FORM.kind === 'grupo' && FORM.id === gid ? FORM.grupoTab : ''; FORM = { kind: 'origen', gid, volver: volver || '', grupoTab: tabG }; if ($('#sheetBackdrop')) updateSheet(origenHtml(gid, volver)); else openSheet(origenHtml(gid, volver)); },
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
   juntosVer: ([k]) => { S.juntosVer = k || ''; sentir('tic'); render(); window.scrollTo && window.scrollTo(0, 0); },
   juntosTodos: ([k]) => { const t = S.juntosTodos = Object.assign({}, S.juntosTodos); t[k] = !t[k]; sentir('tic'); render(); },

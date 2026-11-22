@@ -70,7 +70,7 @@ console.error = () => {};
   if (hay('[data-click="grupoTab|planes"]')) {
     H.grupoTab(['planes']); await sleep(20);
     e.w.__atras(); await sleep(40);
-    conocido(abierta() && hay('[data-click="grupoTab|planes"]'), 'Planes → atrás de Android vuelve a «Más» (ahora cierra el grupo)');
+    ok(abierta() && hay('[data-click="grupoTab|planes"]'), 'Planes → atrás de Android vuelve a «Más» (ahora cierra el grupo)');
   } else console.log('SKIP Planes no disponible en esta prueba');
 
   // 5) Más → Historial → Volver: debería quedarse en «Más»
@@ -78,12 +78,12 @@ console.error = () => {};
   H.grupoTab(['mas']); await sleep(20);
   H.histVer(['g1']); await sleep(40);
   H.histVolver(['g1']); await sleep(60);
-  conocido(hay('.jv-tabs button.active') && doc.querySelector('#sheetHost .jv-tabs button.active').textContent.trim() === 'Más', 'Historial → Volver: sigue en «Más» (ahora vuelve a Gastos)');
+  ok(hay('.jv-tabs button.active') && doc.querySelector('#sheetHost .jv-tabs button.active').textContent.trim() === 'Más', 'Historial → Volver: sigue en «Más» (ahora vuelve a Gastos)');
   // Más → ¿De dónde sale? → Volver
   H.grupoTab(['mas']); await sleep(20);
   H.origenVer(['g1']); await sleep(30);
   doc.querySelector('#sheetHost .actions [data-click^="grupoVer|"]').click(); await sleep(60);
-  conocido(doc.querySelector('#sheetHost .jv-tabs button.active').textContent.trim() === 'Más', '«¿De dónde sale?» → Volver: sigue en «Más» (ahora vuelve a Gastos)');
+  ok(doc.querySelector('#sheetHost .jv-tabs button.active').textContent.trim() === 'Más', '«¿De dónde sale?» → Volver: sigue en «Más» (ahora vuelve a Gastos)');
 
   // 6) Punto en «Más» con cambios nuevos en el historial
   await cerrar();
