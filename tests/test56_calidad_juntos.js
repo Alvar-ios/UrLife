@@ -195,7 +195,7 @@ const gasto = (id, gid, imp, pag, rep, desc, por) => ({ id, grupoId: gid, fecha:
   ok(/Comparte gastos con quien quieras/.test(appTxt(z)) && /Compartir un gasto/.test(appTxt(z)) && /Crear un grupo/.test(appTxt(z)), 'usuario nuevo: una tarjeta «Comparte gastos con quien quieras» con «Compartir un gasto» y «Crear un grupo»');
   ok(!/NaN|undefined/.test(appTxt(z)), 'usuario nuevo: sin «NaN» ni «undefined»');
   Z.H.compRapido(['']); await sleep(20);
-  ok(/Invita/.test(sh(z)) && !/undefined/.test(sh(z)), 'usuario nuevo: «Compartir un gasto» le invita a invitar');
+  ok(!!z.doc.querySelector('#sheetHost #invNombre') && !/undefined/.test(sh(z)), 'usuario nuevo: «Compartir un gasto» le pide el nombre de la persona (antes: invitar)');
 
   console.log(fails ? 'FAILED ' + fails : 'ALL PASS');
   process.exit(fails ? 1 : 0);

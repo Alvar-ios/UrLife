@@ -3168,7 +3168,7 @@ async function saveCompartido(d) {
   const huerfana = t && previo && previo.objetivoId && cp.objetivo === previo.objetivoId && !ob && cp.dest === 'g:' + previo.grupoId;
   if (t && !huerfana && (!ob || ob.tipo !== t || cp.dest !== 'g:' + ob.grupoId)) return toast(t === 'deuda' ? 'Elige la deuda compartida' : 'Elige la meta compartida');
   if (FORM.guardando) return;
-  FORM.guardando = true;
+  const F0 = FORM; FORM.guardando = true;
   try {
     let grupoId = cp.dest.slice(2);
     if (cp.dest.indexOf('u:') === 0) {
@@ -3205,8 +3205,35 @@ async function saveCompartido(d) {
     const reglaNueva = FORM.recordar ? ((($('#fReglaTexto') || {}).value || '').trim()) : '';
     if (reglaNueva) guardarRegla(reglaNueva, d.categoria, FORM.tipo);
     toast(!ok ? 'Compartido guardado, pero no se pudo guardar tu copia' : previo ? 'Actualizado' : t === 'ahorro' ? 'Aportación añadida a «' + datos.categoria + '»' : t === 'deuda' ? 'Pago añadido a «' + datos.categoria + '»' : 'Gasto compartido añadido');
-    render(); terminarForm();
-  } finally { FORM.guardando = false; }
+    render();
+    const sinApp = previo ? [] : Object.keys(c.reparto || datos.reparto || {}).filter((u) => num((c.reparto || datos.reparto)[u]) > 0).map((u) => { const g = grupoDe(grupoId), m = g && g.miembros.find((x) => x.user_id === u && x.sinCuenta); return m ? { uid: u, nombre: m.nombre, parte: num((c.reparto || datos.reparto)[u]) } : null; }).filter(Boolean);
+    if (sinApp.length && !t) envioSCAbrir(grupoId, datos, sinApp); else terminarForm();
+  } finally { F0.guardando = false; }
+}
+/* Tras compartir un gasto con alguien sin app: ofrecer mandárselo por WhatsApp, con el detalle y su enlace para ocupar su sitio (docs/46, tanda 2) */
+function envioSCAbrir(gid, d, personas) {
+  const volver = S._volverGrupo; S._volverGrupo = null;
+  const F = FORM = { kind: 'envioSC', gid, volver, d, personas: personas.map((p) => Object.assign({}, p, { url: null, listo: false })) };
+  updateSheet(envioSCHtml());
+  F.personas.forEach(async (p) => {
+    try { const t = await S.db.rpc('enlace_sin_cuenta', { p_id: p.uid }); if (t) p.url = APP_URL + '?soy=' + encodeURIComponent(t); } catch (e) { console.error(e); }
+    p.listo = true;
+    if (FORM === F) updateSheet(envioSCHtml());
+  });
+}
+function envioSCMsg(F, p) {
+  const g = grupoDe(F.gid), que = F.d.descripcion || F.d.categoria || 'un gasto';
+  return '¡Hola ' + p.nombre + '! He apuntado «' + que + '» (' + money(F.d.importe) + ') en PalomApp' + (g ? ' en «' + g.nombre + '»' : '') + ': te toca ' + money(p.parte) + '.' +
+    (p.url ? ' Míralo aquí y te guardo tu sitio, con todo lo que llevamos (vale 7 días): ' + p.url : '');
+}
+function envioSCHtml() {
+  const F = FORM;
+  return '<div class="handle"></div><h2>Gasto guardado</h2>' +
+    F.personas.map((p) => '<div class="card" style="margin-bottom:10px;"><b>' + escapeHtml(p.nombre) + '</b> no tiene PalomApp. Le toca <b class="tnum">' + money(p.parte) + '</b>.' +
+      (p.listo ? '<a class="btn accent block wa-btn" style="margin-top:10px;" href="https://wa.me/?text=' + encodeURIComponent(envioSCMsg(F, p)) + '" target="_blank" rel="noopener">Mandárselo por WhatsApp</a>' +
+        (p.url ? '' : '<div class="rec-hint" style="margin-top:6px;">No se pudo crear su enlace: el mensaje va sin él.</div>')
+        : '<div class="rec-hint" style="margin-top:10px;">Preparando el mensaje…</div>') + '</div>').join('') +
+    '<div class="actions"><button class="btn ghost block" ' + act('envioSCCerrar') + '>Ahora no</button></div>';
 }
 async function quitarCompartido() {
   const c = compPorId(FORM.compId);
@@ -3760,6 +3787,8 @@ function artFieldHtml(ex) {
     arts.map((a, i) => '<div class="tk-det-r"><span>' + (num(a.cantidad) && num(a.cantidad) !== 1 ? num(a.cantidad).toLocaleString(LOC()) + ' × ' : '') + escapeHtml(a.nombre) + '</span><b class="tnum">' + money(a.importe) + '</b></div>' + (edita ? artQuienHtml(a, i, ms, 'f') : '')).join('') + '</div><div id="artInfo"></div></details>';
 }
 /* «+ Otra persona»: invitar sin salir de lo que estás creando */
+function invElegir(ctx, k) { if (ctx === 't') H.tkDest([k]); else if (ctx === 'r') H.crDest([k]); else { compPrepararDestino(k); refrescarComp(); } }
+function invRepintar(ctx) { if (ctx === 't') updateSheet(ticketHtml()); else if (ctx === 'r') { if (FORM && FORM.kind === 'compRapido') updateSheet(compRapidoHtml()); } else refrescarComp(); }
 function otraPersonaChip(ctx) { return '<button type="button" class="chip nueva" ' + act('invAbrir', ctx) + '>+ Otra persona</button>'; }
 function invInlineHtml(ctx) {
   const v = S._inv;
@@ -6237,12 +6266,12 @@ function grupoHtmlV2(g) {
 /* ---- compartir un gasto en una sola pantalla: con quién, cuánto, qué fue, quién pagó y para quién ---- */
 function compRapidoHtml() {
   const F = FORM, cp = F.comp, yo = miUid(), ds = destinosPara('Gasto');
-  if (!ds.length) return '<div class="handle"></div><h2>Compartir un gasto</h2><div class="rec-hint">Aún no compartes con nadie. Invita a una persona por WhatsApp o crea un grupo y, cuando acepten, podréis compartir gastos.</div><div class="actions"><button class="btn ghost block" ' + act('compIrGrupos') + '>Grupos y personas</button><button class="btn accent block" ' + act('juntosInvitar') + '>Invitar</button></div>';
+  if (!ds.length) return '<div class="handle"></div><h2>Compartir un gasto</h2><div class="cr-lbl">Con</div><div class="cr-con">' + otraPersonaChip('r') + '</div>' + invInlineHtml('r') + '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button></div>';
   const ms = cp.dest ? miembrosComp() : [], imp = numCampo(F.importe || ''), r = cp.dest && imp > 0 ? calcReparto(cp, imp, ms) : null, rep = r && r.reparto ? r.reparto : {};
   const pago = cp.pagador === yo, res = crResTxt(ms, imp, r);
   const cats = catsGasto().map((c) => c.nombre); if (F.cat && !cats.includes(F.cat)) cats.push(F.cat);
   return '<div class="handle"></div><h2>Compartir un gasto</h2>' +
-    '<div class="cr-lbl">Con</div><div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>' +
+    '<div class="cr-lbl">Con</div><div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('r') + '</div>' + invInlineHtml('r') +
     temaCajaHtml() +
     '<label class="cr-imp"><input id="crImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe total" value="' + escapeHtml(F.importe || '') + '" ' + onInput('crImporte') + '><span>' + sym() + '</span></label>' +
     '<div id="monBox" class="mon-box">' + monHtml() + '</div>' +
@@ -6712,6 +6741,7 @@ function abrirCompRapido(dest, pre) {
   const yo = miUid(); pre = pre || {};
   FORM = { kind: 'compRapido', tipo: 'Gasto', id: null, compId: null, comp: { on: true }, importe: pre.importe || '', desc: pre.desc || '', cat: pre.cat || 'Otros', catTocada: !!pre.cat, fecha: todayISO(), cuenta: cuentaRecordada('') };
   const k = dest || destinoPorDefecto(); if (k) compPrepararDestino(k);
+  S._inv = !destinosPara('Gasto').length ? { ctx: 'r' } : null;
   FORM.comp.pagador = FORM.comp.pagador || yo;
   temaAutoAplicar();
   if ($('#sheetBackdrop')) updateSheet(compRapidoHtml()); else openSheet(compRapidoHtml());
@@ -13330,8 +13360,8 @@ const H = {
     artRefrescar(ctx, Number(i));
   },
   artUnidReset: ([ctx, i]) => { const a = artsDeCtx(ctx)[Number(i)]; if (!a) return; a.unid = null; a.quien = null; artRefrescar(ctx, Number(i)); },
-  invAbrir: ([ctx]) => { S._inv = { ctx }; if (ctx === 't') updateSheet(ticketHtml()); else refrescarComp(); },
-  invCerrar: () => { const c = S._inv && S._inv.ctx; S._inv = null; if (c === 't') updateSheet(ticketHtml()); else refrescarComp(); },
+  invAbrir: ([ctx]) => { S._inv = { ctx }; invRepintar(ctx); },
+  invCerrar: () => { const c = S._inv && S._inv.ctx; S._inv = null; invRepintar(c); },
   // «+ Otra persona» → solo su nombre: se crea un grupo de dos con ella (sin app) y se elige al momento, para que el gasto se guarde siempre
   invSinApp: async ([ctx]) => {
     const v = S._inv; if (!v || v.creando) return;
@@ -13340,7 +13370,7 @@ const H = {
     v.creando = true;
     const yo = miNombreAlguno(), k = normName(nombre);
     const conApp = destinosCompartir().find((d) => normName(d.label) === k); // ya está en tus personas o grupos: se elige sin crear nada
-    if (conApp) { v.creando = false; S._inv = null; if (ctx === 't') H.tkDest([conApp.k]); else { compPrepararDestino(conApp.k); refrescarComp(); } return; }
+    if (conApp) { v.creando = false; S._inv = null; invElegir(ctx, conApp.k); return; }
     const previo = (S.grupos || []).find((g) => g.tipo === 'grupo' && g.miembros.length === 2 && g.miembros.some((m) => m.sinCuenta && normName(m.nombre) === k));
     let gid = previo ? previo.id : null;
     if (!gid) {
@@ -13352,10 +13382,10 @@ const H = {
       }
     }
     v.creando = false;
-    if (!gid) { if (S._inv === v) { if (ctx === 't') updateSheet(ticketHtml()); else refrescarComp(); } return; }
+    if (!gid) { if (S._inv === v) invRepintar(ctx); return; }
     S._inv = null;
     if (!juntosOn()) herrPoner({ juntos: true });
-    if (ctx === 't') H.tkDest(['g:' + gid]); else { compPrepararDestino('g:' + gid); refrescarComp(); }
+    invElegir(ctx, 'g:' + gid);
     toast(nombre + ' añadido, sin app');
   },
   invCrear: async ([ctx]) => {
@@ -13366,7 +13396,7 @@ const H = {
     if (!t || t === true) return;
     const url = APP_URL + '?unirse=' + encodeURIComponent(t);
     v.url = url; v.msg = mensajePersona(url);
-    if (ctx === 't') updateSheet(ticketHtml()); else refrescarComp();
+    invRepintar(ctx);
   },
   tkQuien: ([i, u], el) => {
     const a = FORM.t.articulos[Number(i)], todos = miembrosDeDestino(FORM.rep.dest).map((m) => m.uid);
@@ -13634,6 +13664,7 @@ const H = {
     toast('Tema borrado: sus gastos quedan «Sin tema»', { deshacer: async () => { try { const r = await S.db.carpetas.restaurar(id); temaAplicarLocal(r || t); temaRefrescarGrupo(); render(); toast('Tema recuperado'); } catch (e) { console.error(e); toast(errGrupo(e)); } } });
   },
   compRapido: ([dest]) => { S._volverGrupo = FORM && FORM.kind === 'grupo' ? FORM.id : null; abrirCompRapido(dest || ''); },
+  envioSCCerrar: () => { const v = FORM && FORM.kind === 'envioSC' ? FORM.volver : null; S._volverGrupo = v || null; terminarForm(); },
   crDest: ([k]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; compPrepararDestino(k); F.comp.pagador = F.comp.pagador || miUid(); F.temaTocado = false; F.temaNuevo = false; temaAutoAplicar(); updateSheet(compRapidoHtml()); },
   monAbrir: () => { const F = FORM; if (!F) return; F.mon = { on: true, moneda: monUlt(), txt: '', origen: 'bce', mano: '', cobro: '', cambio: null, fecha: '' }; monPintar(); monCargarCambio(); const el = $('#monImporte'); if (el) el.focus(); },
   monCerrar: () => { if (!FORM || !FORM.mon) return; FORM.mon.on = false; monPintar(); },
