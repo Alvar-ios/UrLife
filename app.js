@@ -2092,7 +2092,7 @@ function openMovForm(id, pre) {
     '<div class="handle"></div><div class="tec-cab"><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' + antesChip + '</div>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
     (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
-    (ex && !comp && compartidosDisponible() && TIPOS_COMPARTIBLES.indexOf(ex.tipo) >= 0 ? '<button type="button" class="btn sm ghost comp-arriba" id="compArriba" ' + act('compOnTop') + '>' + ic('users') + ' Compartir este gasto</button>' : '') +
+    (ex && !comp && compartidosDisponible() ? '<button type="button" class="btn sm ghost comp-arriba" id="compArriba"' + (TIPOS_COMPARTIBLES.indexOf(ex.tipo) >= 0 ? '' : ' hidden') + ' ' + act('compOnTop') + '>' + ic('users') + ' Compartir este gasto</button>' : '') +
     (tec ? tecCampoHtml(FORM.tec) + monBoxMov(ex, comp, tipoIni) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni) : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
       : '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div>' + monBoxMov(ex, comp, tipoIni) + '<div>') +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
@@ -3121,6 +3121,7 @@ function compResumenHtml() {
 function refrescarComp(soloResumen) {
   if (soloResumen) { const r = $('#compResumen'); if (r) { r.innerHTML = compResumenHtml(); return; } }
   const f = $('#compField'); if (f) f.innerHTML = compFieldHtml();
+  const ca = $('#compArriba'); if (ca && FORM && FORM.kind === 'mov') ca.hidden = TIPOS_COMPARTIBLES.indexOf(FORM.tipo) < 0 || !!(FORM.comp && FORM.comp.on); // el de arriba solo con un gasto que aún no se comparte
   refrescarCuentaField();
 }
 // ¿puedo cambiar o borrar este gasto del grupo? Según el ajuste del grupo: todos, o quien lo apuntó (y los administradores)
@@ -6130,8 +6131,11 @@ function dondeTxt(deudas) {
 // los últimos gastos que la persona tiene pendientes contigo (para que el mensaje diga de qué es)
 function pedirDetalle(x) {
   const yo = miUid(), gids = x.deudas.map((d) => d.gid);
-  return (S.compartidos || []).filter((c) => gids.indexOf(c.grupoId) >= 0 && c.tipo !== 'Liquidación' && c.pagadoPor === yo && num((c.reparto || {})[x.uid]) > 0)
-      .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).slice(0, 4).map((c) => '«' + (c.descripcion || c.categoria || 'gasto') + '» ' + money(c.reparto[x.uid]));
+  const cs = (S.compartidos || []).filter((c) => gids.indexOf(c.grupoId) >= 0 && c.tipo !== 'Liquidación' && c.pagadoPor === yo && num((c.reparto || {})[x.uid]) > 0)
+      .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')), out = [];
+  let acum = 0; // solo los más nuevos que explican lo que debe (los viejos ya pudieron saldarse)
+  for (const c of cs) { if (acum >= num(x.neto) - 0.005) break; acum += num(c.reparto[x.uid]); out.push('«' + (c.descripcion || c.categoria || 'gasto') + '» ' + money(c.reparto[x.uid])); if (out.length >= 4) break; }
+  return out;
 }
 function pedirMsg(x, url) {
   const yo = miUid(), todas = x.deudas.every((d) => d.a === yo);
