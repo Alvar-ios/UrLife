@@ -83,9 +83,7 @@ function conGrupos(w,estado){ // estado: {grupos:[], miembros:[]} mutable
  e2.w.__APP__.H.crearIr(['compartido']);await sleep(30);
  const ids=[...e2.doc.querySelectorAll('#sheetHost .field')].map(f=>f.id||'');
  ok(ids.indexOf('compField')===ids.indexOf('catField')+1&&ids.indexOf('compField')<ids.indexOf('subField'),'lo de compartir va justo después de la categoría (antes estaba al final)');
- ok(/Aún no compartes con nadie/.test(e2.doc.querySelector('#compField').textContent)&&!!e2.doc.querySelector('[data-click="compInvitar"]'),'sin amigos: botón «Invitar a una persona»');
- click(e2,'compInvitar');await sleep(10);
- ok(/Invitar a una persona/.test(e2.doc.querySelector('#sheetHost h2').textContent),'que abre la invitación');
+ ok(!!e2.doc.querySelector('#compField #invNombre')&&!!e2.doc.querySelector('#compField [data-click^="invSinApp"]'),'sin amigos: se pide solo su nombre («Añadir», sin app) — antes «Invitar a una persona»');
  // 9. Empieza aquí
  ok(/Empieza aquí/.test(e2.doc.querySelector('#content').textContent),'usuario nuevo: «Empieza aquí»');
  H.goTab(['inicio']);await sleep(10);

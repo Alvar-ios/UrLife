@@ -3057,8 +3057,7 @@ function compFieldHtml() {
       '<button type="button" class="btn sm ghost" style="margin-top:10px;" ' + act('objNueva', t) + '>' + ic('plus') + (t === 'deuda' ? ' Crear deuda compartida' : ' Crear meta compartida') + '</button></div>';
   }
   if (!ds.length) {
-    return h + '<div class="rec-hint">Aún no compartes con nadie. Invita a una persona por WhatsApp y, cuando acepte, podréis compartir gastos.</div>' +
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;"><button type="button" class="btn sm accent" ' + act('compInvitar') + '>' + ic('plus') + ' Invitar a una persona</button><button type="button" class="btn sm ghost" ' + act('compIrGrupos') + '>Grupos</button></div></div>';
+    return h + '<div class="comp-lbl">Con</div><div class="chips">' + otraPersonaChip('f') + '</div>' + invInlineHtml('f') + '</div>';
   }
   h += '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('compDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('f') + '</div>' + invInlineHtml('f');
   if (!cp.dest) return h + '<div class="rec-hint">Elige con quién lo compartes.</div></div>';
@@ -3768,8 +3767,9 @@ function invInlineHtml(ctx) {
   if (v.url) return '<div class="inv-inline"><b>Enlace listo</b><div class="rec-hint">Mándaselo por WhatsApp. Cuando lo acepte, aparecerá aquí en «Con» y podrás repartir con esa persona.</div>' +
     '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(v.msg) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
     '<button type="button" class="link" ' + act('invCerrar') + '>Cerrar</button></div>';
-  return '<div class="inv-inline"><div class="rec-hint">Invita a alguien que aún no tienes: le llega un enlace por WhatsApp. Lo que estás creando no se pierde.</div>' +
-    '<button type="button" class="btn sm accent" ' + act('invCrear', ctx) + '>' + (v.creando ? 'Creando…' : 'Crear enlace de invitación') + '</button> <button type="button" class="link" ' + act('invCerrar') + '>Cancelar</button></div>';
+  return '<div class="inv-inline"><div class="field" style="display:flex;gap:8px;align-items:center;margin:0;"><input id="invNombre" type="text" maxlength="40" placeholder="Su nombre (p. ej. Carlos)" autocomplete="off"><button type="button" class="btn sm accent" style="flex:none;" ' + act('invSinApp', ctx) + '>' + (v.creando ? 'Añadiendo…' : 'Añadir') + '</button></div>' +
+    '<div class="rec-hint" style="margin-top:6px;">No necesita la app: el gasto se guarda ya y, si se la instala, se queda con lo suyo.</div>' +
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;"><button type="button" class="link" ' + act('invCrear', ctx) + '>Ya tiene la app: enviarle un enlace</button><button type="button" class="link" ' + act('invCerrar') + '>Cancelar</button></div></div>';
 }
 // Análisis mensual: en qué artículos se va el dinero (solo de gastos con ticket; con lo compartido, tu parte)
 function articulosTopHtml(movs) {
@@ -13332,6 +13332,32 @@ const H = {
   artUnidReset: ([ctx, i]) => { const a = artsDeCtx(ctx)[Number(i)]; if (!a) return; a.unid = null; a.quien = null; artRefrescar(ctx, Number(i)); },
   invAbrir: ([ctx]) => { S._inv = { ctx }; if (ctx === 't') updateSheet(ticketHtml()); else refrescarComp(); },
   invCerrar: () => { const c = S._inv && S._inv.ctx; S._inv = null; if (c === 't') updateSheet(ticketHtml()); else refrescarComp(); },
+  // «+ Otra persona» → solo su nombre: se crea un grupo de dos con ella (sin app) y se elige al momento, para que el gasto se guarde siempre
+  invSinApp: async ([ctx]) => {
+    const v = S._inv; if (!v || v.creando) return;
+    const el = $('#invNombre'), nombre = ((el && el.value) || '').trim().slice(0, 40);
+    if (!nombre) { marcarCampo('#invNombre'); return toast('Escribe su nombre'); }
+    v.creando = true;
+    const yo = miNombreAlguno(), k = normName(nombre);
+    const conApp = destinosCompartir().find((d) => normName(d.label) === k); // ya está en tus personas o grupos: se elige sin crear nada
+    if (conApp) { v.creando = false; S._inv = null; if (ctx === 't') H.tkDest([conApp.k]); else { compPrepararDestino(conApp.k); refrescarComp(); } return; }
+    const previo = (S.grupos || []).find((g) => g.tipo === 'grupo' && g.miembros.length === 2 && g.miembros.some((m) => m.sinCuenta && normName(m.nombre) === k));
+    let gid = previo ? previo.id : null;
+    if (!gid) {
+      const id = await accionGrupo(() => S.db.rpc('crear_grupo', { p_nombre: (yo + ' y ' + nombre).slice(0, 40), p_mi_nombre: yo }), null);
+      if (id && id !== true) {
+        try { await S.db.rpc('crear_sin_cuenta', { p_grupo: id, p_nombre: nombre }); gid = id; }
+        catch (e) { console.error(e); toast(errGrupo(e)); try { await S.db.rpc('cerrar_grupo', { p_grupo: id }); } catch (e2) { console.error(e2); } } // sin la persona el grupo queda vacío: se cierra
+        await cargarGrupos();
+      }
+    }
+    v.creando = false;
+    if (!gid) { if (S._inv === v) { if (ctx === 't') updateSheet(ticketHtml()); else refrescarComp(); } return; }
+    S._inv = null;
+    if (!juntosOn()) herrPoner({ juntos: true });
+    if (ctx === 't') H.tkDest(['g:' + gid]); else { compPrepararDestino('g:' + gid); refrescarComp(); }
+    toast(nombre + ' añadido, sin app');
+  },
   invCrear: async ([ctx]) => {
     const v = S._inv; if (!v || v.creando) return;
     v.creando = true;
@@ -13352,7 +13378,7 @@ const H = {
   },
   tkContinuar: () => tkContinuar(),
   // gastos compartidos
-  compOn: () => { verBadge('compartir'); FORM.comp = FORM.comp || {}; FORM.comp.on = true; if (S.grupos == null) cargarGrupos().then(() => refrescarComp()); compAsegurarDestino(); refrescarComp(); },
+  compOn: () => { verBadge('compartir'); FORM.comp = FORM.comp || {}; FORM.comp.on = true; if (S.grupos == null) cargarGrupos().then(() => refrescarComp()); compAsegurarDestino(); if (S.grupos != null && !TIPO_OBJ[FORM.tipo] && !destinosPara(FORM.tipo).length) S._inv = { ctx: 'f' }; refrescarComp(); },
   compOff: () => {
     const c = FORM.compId ? compPorId(FORM.compId) : null;
     if (c && c.pagadoPor !== miUid()) return toast('Solo quien lo pagó puede dejar de compartirlo. Si no se hizo, elimínalo.');
