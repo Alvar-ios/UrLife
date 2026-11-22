@@ -2876,3 +2876,20 @@ html[data-look="nuevo"] .jv5-link span { flex: 1; }
 html[data-look="nuevo"] .jv5-link i { font-style: normal; font-size: 13px; color: var(--text-muted); }
 html[data-look="nuevo"] .jv5-link .i { width: 18px; height: 18px; color: var(--text-muted); }
 html[data-look="nuevo"] .jv5-volver { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin-bottom: 4px; }
+
+/* 22/11 · Juntos tanda 4 (docs/46): pantalla de un grupo */
+html[data-look="nuevo"] .jv-sit { display: flex; flex-direction: column; gap: 10px; margin: 4px 0 14px; padding: 14px; border-radius: 16px; background: var(--paper-raised); border: 1px solid var(--line); }
+html[data-look="nuevo"] .jv-sit.paz { flex-direction: row; align-items: center; gap: 10px; width: 100%; color: var(--income); font: inherit; font-size: 15px; text-align: left; }
+html[data-look="nuevo"] .jv-sit.paz .i { width: 20px; height: 20px; }
+html[data-look="nuevo"] .jv-sit-t { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 0; background: none; border: 0; color: inherit; font: inherit; text-align: left; }
+html[data-look="nuevo"] .jv-sit-t span { flex: 1; font-size: 15px; color: var(--text-muted); }
+html[data-look="nuevo"] .jv-sit-t b { font-size: 24px; font-weight: var(--num-peso, 700); letter-spacing: -.02em; }
+html[data-look="nuevo"] .jv-sit.te .jv-sit-t b { color: var(--income); } html[data-look="nuevo"] .jv-sit.de .jv-sit-t b { color: var(--expense); }
+html[data-look="nuevo"] .jv-sit-t .i { width: 16px; height: 16px; color: var(--text-faint); align-self: center; }
+html[data-look="nuevo"] .jv-sit-b { display: flex; gap: 8px; }
+html[data-look="nuevo"] .jv-sit-b .btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; }
+html[data-look="nuevo"] .jv-tabs button { position: relative; }
+html[data-look="nuevo"] .jv-tab-punto { position: absolute; top: 8px; right: 10px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+html[data-look="nuevo"] .jv-gtot-pie { margin-top: 10px; text-align: right; }
+html[data-look="nuevo"] .tema-por-t { display: flex; align-items: center; }
+html[data-look="nuevo"] .tema-por-t .tema-nuevo { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 36px; }

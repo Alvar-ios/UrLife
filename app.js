@@ -2687,15 +2687,8 @@ function grupoHtml(id) {
   const v2 = juntosV2(), aj = v2 && FORM && FORM.ajustes;
   if (v2 && !aj && (g.tipo === 'grupo' || otroDe(g))) return grupoHtmlV2(g);
   if (g.tipo === 'directo') return aj ? personaAjustesHtml(g) : personaHtml(g);
-  return '<div class="handle"></div><h2>' + (aj ? 'Ajustes · ' : '') + escapeHtml(g.nombre) + '</h2>' +
-    (!aj && g.miembros.length >= 2 ? cuentasGrupoHtml(g) + objetivosGrupoHtml(g) : '') +
-    (g.soyAdmin ? '<div class="field" style="margin-top:14px;"><label>Nombre del grupo</label><div style="display:flex;gap:8px;"><input id="gRenombrar" type="text" maxlength="60" value="' + escapeHtml(g.nombre) + '"><button class="btn sm ghost" ' + act('grupoRenombrar', g.id) + '>Guardar</button></div></div>' : '') +
-    '<div class="section-title">Miembros (' + g.miembros.length + ')' + (aj ? '' : badge('sincuenta')) + '</div><div class="list miembros-lista">' +
-    g.miembros.map((m, i) => miembroFilaHtml(g, m, i)).join('') + '</div>' +
-    sinCuentaAnadirHtml(g) + permisosGrupoHtml(g) +
-    (g.miembros.length >= 2 ? repartoHabitualHtml(g) : '') +
-    '<div class="field" style="margin-top:12px;"><label>Tu nombre en este grupo</label><div style="display:flex;gap:8px;"><input id="gMiNombreEd" type="text" maxlength="40" value="' + escapeHtml(g.miNombre) + '"><button class="btn sm ghost" ' + act('grupoMiNombre', g.id) + '>Guardar</button></div></div>' +
-    grupoAnadirAmigosHtml(g) +
+  const v4 = juntosV4() && aj; // 22/11 (docs/46 tanda 4): Miembros con «Añadir» e «Invitar» juntos arriba; luego reparto, permisos, tu nombre y salir
+  const invHtml =
     '<div class="section-title">Invitar a gente nueva</div><div class="card">' +
     '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin-bottom:10px;">' + (FORM && FORM.enlaceVarios ? 'Este enlace vale para <b>hasta 10 personas</b> durante <b>7 días</b>: puedes mandarlo al grupo de WhatsApp.' : 'Un enlace vale para <b>una persona</b> y caduca en <b>7 días</b>. Si es para varios, usa el enlace para varios.') + ' Al abrirlo, cada uno se une con su cuenta.</div>' +
     (FORM && FORM.ultimoEnlace
@@ -2704,7 +2697,17 @@ function grupoHtml(id) {
         '<div class="enlace-box">' + escapeHtml(FORM.ultimoEnlace) + '</div>' +
         '<button type="button" class="link" style="margin-top:8px;" ' + act('grupoInvitar', g.id) + '>Crear otro enlace (para una persona)</button>'
       : '<button class="btn accent block" ' + act('grupoInvitarVarios', g.id) + '>Enlace para varios (grupo de WhatsApp)</button><button class="btn ghost block" style="margin-top:8px;" ' + act('grupoInvitar', g.id) + '>Enlace para una persona</button>') +
-    (pendientes.length ? '<div class="rec-hint" style="margin-top:10px;">' + pendientes.length + (pendientes.length === 1 ? ' enlace pendiente' : ' enlaces pendientes') + ' · <button type="button" class="link" ' + act('grupoAnularTodos', g.id) + '>Anularlos</button></div>' : '') + '</div>' +
+    (pendientes.length ? '<div class="rec-hint" style="margin-top:10px;">' + pendientes.length + (pendientes.length === 1 ? ' enlace pendiente' : ' enlaces pendientes') + ' · <button type="button" class="link" ' + act('grupoAnularTodos', g.id) + '>Anularlos</button></div>' : '') + '</div>';
+  const miNombreHtml =
+    '<div class="field" style="margin-top:12px;"><label>Tu nombre en este grupo</label><div style="display:flex;gap:8px;"><input id="gMiNombreEd" type="text" maxlength="40" value="' + escapeHtml(g.miNombre) + '"><button class="btn sm ghost" ' + act('grupoMiNombre', g.id) + '>Guardar</button></div></div>';
+  return '<div class="handle"></div><h2>' + (aj ? 'Ajustes · ' : '') + escapeHtml(g.nombre) + '</h2>' +
+    (!aj && g.miembros.length >= 2 ? cuentasGrupoHtml(g) + objetivosGrupoHtml(g) : '') +
+    (g.soyAdmin ? '<div class="field" style="margin-top:14px;"><label>Nombre del grupo</label><div style="display:flex;gap:8px;"><input id="gRenombrar" type="text" maxlength="60" value="' + escapeHtml(g.nombre) + '"><button class="btn sm ghost" ' + act('grupoRenombrar', g.id) + '>Guardar</button></div></div>' : '') +
+    '<div class="section-title">Miembros (' + g.miembros.length + ')' + (aj ? '' : badge('sincuenta')) + '</div><div class="list miembros-lista">' +
+    g.miembros.map((m, i) => miembroFilaHtml(g, m, i)).join('') + '</div>' +
+    (v4 ? sinCuentaAnadirHtml(g) + grupoAnadirAmigosHtml(g) + invHtml + (g.miembros.length >= 2 ? repartoHabitualHtml(g) : '') + permisosGrupoHtml(g) : sinCuentaAnadirHtml(g) + permisosGrupoHtml(g) + (g.miembros.length >= 2 ? repartoHabitualHtml(g) : '')) +
+    miNombreHtml +
+    (v4 ? '' : grupoAnadirAmigosHtml(g) + invHtml) +
     '<div class="actions"><button class="btn ghost block" ' + (aj ? act('grupoAjustesSalir', g.id) : act('openGrupos')) + '>Volver</button></div>' +
     '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Salir del grupo</button>' +
     (g.soyAdmin && g.miembros.length > 1 ? '<button class="btn danger block" style="margin-top:8px;" ' + act('grupoCerrar', g.id) + '>Cerrar el grupo para todos</button>' : '');
@@ -2741,7 +2744,8 @@ function grupoAnadirAmigosHtml(g) {
 }
 async function abrirGrupo(id) {
   const prev = FORM && ((FORM.kind === 'grupo' && FORM.id === id) || (FORM.kind === 'saldar' && FORM.gid === id)) ? FORM : null;
-  FORM = { kind: 'grupo', id, invitaciones: [], ajustes: !!(prev && prev.kind === 'grupo' && prev.ajustes), grupoTab: prev ? prev.grupoTab : (S._grupoTabVolver || ''), temaVer: prev && prev.kind === 'grupo' ? prev.temaVer : (S._temaVolver && S._temaVolver.gid === id ? S._temaVolver.tid : '') };
+  const deVista = !prev && FORM && (FORM.kind === 'hist' || FORM.kind === 'origen') && FORM.gid === id ? FORM.grupoTab || '' : ''; // 23/11: de Historial o «¿De dónde sale?», a la pestaña de la que venías
+  FORM = { kind: 'grupo', id, invitaciones: [], ajustes: !!(prev && prev.kind === 'grupo' && prev.ajustes), grupoTab: prev ? prev.grupoTab : (deVista || S._grupoTabVolver || ''), temaVer: prev && prev.kind === 'grupo' ? prev.temaVer : (S._temaVolver && S._temaVolver.gid === id ? S._temaVolver.tid : '') };
   S._temaVolver = null; S._grupoTabVolver = null;
   if ($('#sheetBackdrop')) updateSheet(grupoHtml(id)); else openSheet(grupoHtml(id));
   try { FORM.invitaciones = await S.db.grupos.invitaciones(id); if (FORM.kind === 'grupo' && FORM.id === id) updateSheet(grupoHtml(id)); } catch (e) { /* sin lista de enlaces */ }
@@ -6290,6 +6294,7 @@ function saldarTodoHtml() {
 }
 /* ---- dentro de un grupo: lo tuyo arriba y «Gastos | Saldos»; lo de administrar en «Ajustes» ---- */
 function grupoHtmlV2(g) {
+  if (juntosV4()) return grupoHtmlV4(g);
   const yo = miUid(), F = FORM || {}, tab = F.grupoTab === 'saldos' ? 'saldos' : F.grupoTab === 'planes' && agendaDisponible() ? 'planes' : 'gastos', o = g.tipo === 'directo' ? otroDe(g) : null;
   if (F.temaForm && temasDisponible()) return temaFormHtml(g);
   const cs = (S.compartidos || []).filter((c) => c.grupoId === g.id), ds = deudasDe(g.id), mias = ds.filter((d) => esMio(g.id, d.de) || esMio(g.id, d.a));
@@ -6332,6 +6337,68 @@ function grupoHtmlV2(g) {
       '<div class="rec-hint">Cada grupo se cierra por su cuenta, con los menos pagos posibles.</div>';
   }
   return h + '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('compRapido', 'g:' + g.id) + '>' + ic('plus') + ' Añadir gasto</button></div>';
+}
+/* ---- Pantalla de un grupo (22/11/2026, docs/46 tanda 4): cabecera, «Tu situación» en una sola tarjeta y pestañas Gastos | Saldos | Más.
+   En «Más»: planes, metas y deudas del grupo, historial y gasolina. Los temas, una sola lista (sin la fila de chips). ---- */
+function grupoSituacionHtml(g, cs, mias) {
+  if (!cs.length) return '<div class="jv-tuyo paz">' + ic('users') + '<span>Aún no hay gastos aquí. Apunta el primero.</span></div>';
+  if (!mias.length) return '<button type="button" class="jv-sit paz tappable" ' + act('origenVer', g.id) + '>' + ic('checkCircle') + '<span>Estás en paz en este grupo</span></button>';
+  const yo = miUid(), debo = mias.filter((d) => esMio(g.id, d.de)), meDeben = mias.filter((d) => esMio(g.id, d.a));
+  if (mias.length === 1) {
+    const d = mias[0], yoDebo = esMio(g.id, d.de), otro = yoDebo ? d.a : d.de, nom = nombreDe(g.id, otro);
+    const x = !yoDebo ? juntosPersonas().find((p) => p.uid === aliasDe(g.id, otro)) : null;
+    return '<div class="jv-sit ' + (yoDebo ? 'de' : 'te') + '"><button type="button" class="jv-sit-t tappable" aria-label="¿De dónde sale?" ' + act('origenVer', g.id) + '><span>' + (yoDebo ? 'Debes a ' + escapeHtml(nom) : escapeHtml(nom) + ' te debe') + '</span><b class="tnum">' + money(d.importe) + '</b>' + ic('info') + '</button>' +
+      '<div class="jv-sit-b">' + (yoDebo ? '<button type="button" class="btn sm accent" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Saldar</button>'
+        : '<button type="button" class="btn sm ghost" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>Me ha pagado</button>' + (x ? '<button type="button" class="btn sm accent" ' + act('personaVer', x.uid) + '>' + ic('send') + ' Pedir</button>' : '')) + '</div></div>';
+  }
+  const tDe = r2(debo.reduce((a, d) => a + d.importe, 0)), tTe = r2(meDeben.reduce((a, d) => a + d.importe, 0));
+  return '<div class="jv-sit ' + (tTe >= tDe ? 'te' : 'de') + '"><button type="button" class="jv-sit-t tappable" aria-label="¿De dónde sale?" ' + act('origenVer', g.id) + '><span>' + [tTe ? 'Te deben ' + money(tTe) : '', tDe ? 'Debes ' + money(tDe) : ''].filter(Boolean).join(' · ') + '</span>' + ic('info') + '</button>' +
+    '<div class="jv-sit-b"><button type="button" class="btn sm accent" ' + act('grupoTab', 'saldos') + '>Ver quién y saldar</button></div></div>';
+}
+function grupoHtmlV4(g) {
+  const F = FORM || {}, tab = F.grupoTab === 'saldos' ? 'saldos' : (F.grupoTab === 'mas' || F.grupoTab === 'planes') ? F.grupoTab : 'gastos', o = g.tipo === 'directo' ? otroDe(g) : null;
+  if (F.temaForm && temasDisponible()) return temaFormHtml(g);
+  const cs = (S.compartidos || []).filter((c) => c.grupoId === g.id), ds = deudasDe(g.id), mias = ds.filter((d) => esMio(g.id, d.de) || esMio(g.id, d.a));
+  const sc = g.miembros.filter((m) => m.sinCuenta).length;
+  let h = '<div class="handle"></div><div class="jv-gcab">' + (o ? caraHtml(o.user_id, o.nombre, 'grande') : '<span class="jv-g-ic grande">' + escapeHtml(iniciales(g.nombre)) + '</span>') +
+    '<div class="jv-gcab-t"><h2>' + escapeHtml(nombreDestino(g)) + '</h2><span class="jv-caras">' + (o ? '<span class="jv-g-meta">solo vosotros dos</span>' : g.miembros.slice(0, 5).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '<span class="jv-g-meta">' + g.miembros.length + (g.miembros.length === 1 ? ' persona' : ' personas') + (sc ? ' · ' + sc + ' sin app' : '') + '</span>') + '</span></div>' +
+    '<button type="button" class="icon-btn jv-ajustes" aria-label="Ajustes del grupo" ' + act('grupoAjustes', g.id) + '>' + ic('gear') + '</button></div>';
+  h += introJuntosHtml(g.id);
+  if (g.miembros.length < 2) return h + '<div class="jv-tuyo paz">' + ic('users') + '<span>Aún estás solo en este grupo. Añade a alguien para empezar a compartir.</span></div>' +
+    '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('grupoAjustes', g.id) + '>' + ic('users') + ' Añadir gente</button></div>';
+  h += grupoSituacionHtml(g, cs, mias);
+  if (cs.length && historialOn()) { const st = histEstado(g.id); if (!st.cargando && (!st.t || Date.now() - st.t > 60000) && !(st.fallo && Date.now() - st.fallo < 60000)) setTimeout(() => histCargar(g.id), 0); }
+  const masN = (historialOn() && cs.length ? histNuevos(g.id) : 0);
+  h += '<div class="segmented jv-tabs">' + [['gastos', 'Gastos'], ['saldos', 'Saldos'], ['mas', 'Más']].map(([k, l]) => '<button class="' + (tab === k || (k === 'mas' && tab === 'planes') ? 'active' : '') + '" ' + act('grupoTab', k) + '>' + l + (k === 'mas' && (masN || badgeDot('planes')) ? '<i class="jv-tab-punto" aria-hidden="true"></i>' : '') + '</button>').join('') + '</div>';
+  const pie = '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('compRapido', 'g:' + g.id) + '>' + ic('plus') + ' Añadir gasto</button></div>';
+  if (tab === 'gastos') {
+    const gastos = cs.filter((c) => c.tipo !== 'Liquidación'), tot = gastos.reduce((a, c) => a + num(c.importe), 0), mia = gastos.reduce((a, c) => a + miParte(c), 0);
+    const temaAbierto = temasDisponible() && F.temaVer ? temaPorId(F.temaVer) : null;
+    if (temaAbierto && temaAbierto.grupoId === g.id) return h + temaResumenHtml(g, temaAbierto) + '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('compRapidoTema', g.id, temaAbierto.id) + '>' + ic('plus') + ' Añadir gasto</button></div>';
+    if (temasDisponible()) h += temasDe(g.id).length ? porTemasHtml(g, F).replace('<div class="tema-por-t">Por temas', '<div class="tema-por-t">Temas<button type="button" class="link tema-nuevo" aria-label="Nuevo tema" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + '</button>') : (cs.length ? '<button type="button" class="chip tema-mas-suelto" ' + act('temaFormAbrir', g.id, '') + '>' + ic('plus') + ' Tema' + badge('temas') + '</button>' : '');
+    const lista = cs.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || (b.createdAt || '').localeCompare(a.createdAt || '')), n = F.verTodos ? lista.length : 8;
+    h += lista.length ? '<div class="list">' + lista.slice(0, n).map(compRowGrupo).join('') + '</div>' + (lista.length > n ? '<button type="button" class="link" style="margin-top:8px;" ' + act('compVerTodos', g.id) + '>Ver todos (' + lista.length + ')</button>' : '') : '';
+    if (basico() && !descubierta('trayecto') && gastos.some((c) => c.categoria === 'Transporte' || /gasolina/.test(normDesc(c.descripcion || '')))) h += '<button type="button" class="link jv-tray" ' + act('descProbar', 'trayecto') + '>' + ic('coche2') + ' ¿Ibais en coche? Calcula la gasolina ' + ic('chevR') + '</button>'; // docs/38 §3.2
+    if (gastos.length) h += '<div class="jv-gtot jv-gtot-pie">Entre todos <b class="tnum">' + money(tot) + '</b> · tu parte <b class="tnum">' + money(mia) + '</b></div>';
+    return h + pie;
+  }
+  if (tab === 'planes') return h + '<button type="button" class="link jv5-volver" ' + act('grupoTab', 'mas') + '>' + ic('chevL') + ' Más</button>' + planesGrupoHtml(g) + '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('planGrupoNuevo', g.id, 'tarea') + '>' + ic('check') + ' Tarea</button><button class="btn accent block" ' + act('planGrupoNuevo', g.id, 'plan') + '>' + ic('plus') + ' Plan</button></div>';
+  if (tab === 'mas') {
+    const fila = (a, icono, t, extra) => '<button type="button" class="jv5-link tappable" ' + a + '>' + ic(icono) + '<span>' + t + '</span>' + (extra || '') + ic('chevR') + '</button>';
+    h += '<div class="card jv5-links">' +
+      (agendaDisponible() ? fila(act('grupoTab', 'planes'), 'calendar', 'Planes y tareas', badgeDot('planes')) : '') +
+      (cs.length && historialOn() ? fila(act('histVer', g.id), 'history', 'Historial de cambios', masN ? '<span class="jv-nuevas">' + (masN === 1 ? '1 nuevo' : masN + ' nuevos') + '</span>' : '') : '') +
+      (cs.length ? fila(act('origenVer', g.id), 'info', '¿De dónde sale cada cifra?') : '') +
+      (herrOn('trayecto') ? fila(act('grupoTray', g.id), 'coche2', 'Calcular la gasolina de un viaje') : '') + '</div>';
+    h += objetivosGrupoHtml(g);
+    return h + pie;
+  }
+  const sal = saldosDe(g.id), us = Object.keys(sal), max = Math.max(1, ...us.map((u) => Math.abs(sal[u])));
+  h += '<div class="card jv-saldos">' + (us.length ? us.sort((a, b) => sal[b] - sal[a]).map((u) => { const v = sal[u] / 100, w = Math.min(50, Math.abs(sal[u]) / max * 50).toFixed(1);
+    return '<div class="jv-s">' + caraHtml(aliasDe(g.id, u), nombreDe(g.id, u), 'mini') + '<span class="jv-s-n">' + escapeHtml(esMio(g.id, u) ? 'Tú' : nombreDe(g.id, u)) + '</span><span class="jv-s-bar"><i class="' + (v >= 0 ? 'te' : 'de') + '" style="width:' + w + '%"></i></span><b class="tnum" style="color:' + saldoColor(v) + '">' + (v >= 0.005 ? '+' : v <= -0.005 ? '−' : '') + money(Math.abs(v)) + '</b></div>'; }).join('') : '<div style="color:var(--text-faint);font-size:13.5px;">Aún no hay saldos.</div>') + '</div>';
+  if (ds.length) h += '<div class="section-title">Para quedar en paz · ' + ds.length + (ds.length === 1 ? ' pago' : ' pagos') + '</div><div class="card jv-pagos">' + ds.slice().sort((a, b) => (esMio(g.id, b.de) || esMio(g.id, b.a)) - (esMio(g.id, a.de) || esMio(g.id, a.a))).map((d) => { const mio = esMio(g.id, d.de) || esMio(g.id, d.a);
+    return '<div class="jv-pago' + (mio ? ' mio' : '') + '"><span>' + deudaTxt(d, g.id) + '</span>' + (mio ? '<button type="button" class="jv-btn ' + (esMio(g.id, d.de) ? 'saldar' : 'pedir') + '" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>' + (esMio(g.id, d.de) ? 'Saldar' : 'Me ha pagado') + '</button>' : '') + '</div>'; }).join('') + '</div>';
+  return h + pie;
 }
 /* ---- compartir un gasto en una sola pantalla: con quién, cuánto, qué fue, quién pagó y para quién ---- */
 function compRapidoHtml() {
@@ -12874,6 +12941,7 @@ function preguntarDescartar() {
 const ATRAS_VOLVER = [
   '[data-click^="grupoAjustesSalir|"]', // Grupo / Persona → Ajustes
   '[data-click^="histVolver|"]', // Grupo → Historial
+  '.jv5-volver[data-click="grupoTab|mas"]', // Grupo → Más → Planes
   '[data-click="temaFormCerrar"]', '.tema-cab [data-click="temaVer|"]', // Grupo → nuevo tema / un tema
   '[data-click^="impVolver|"]', // Importar → Columnas / Revisar
   '[data-click="recCuandoVolver"]', // Cobro o pago fijo → «Cuándo»
@@ -13089,7 +13157,7 @@ const H = {
     $$('#content .tu-grupo').forEach((g) => { if (g.classList.contains('tu-mas-btn')) { g.style.display = q ? 'none' : ''; return; } let vis = 0; g.querySelectorAll('[data-k]').forEach((b) => { const ok = !q || (b.getAttribute('data-k') || '').indexOf(q) >= 0; b.style.display = ok ? '' : 'none'; if (ok) vis++; }); g.style.display = vis && (q || !g.classList.contains('tu-mas') || S.tuMas) ? '' : 'none'; n += vis; });
     const z = $('#tuNada'); if (z) z.style.display = n ? 'none' : '';
   },
-  trAbrir: () => { S._volverGrupo = null; verBadge('trayecto'); trAbrir(null); },
+  trAbrir: () => { S._volverGrupo = null; S._trGrupo = null; verBadge('trayecto'); trAbrir(null); },
   trUsar: ([id]) => { const g = trCfg().guardados.find((x) => x.id === id); if (g) trAbrir(g); },
   trCoche: ([v]) => { FORM.cocheAbierto = String(v) === '1'; trRepintar(); },
   trProdSel: (_a, el) => H.trProd([el.value]),
@@ -13129,13 +13197,14 @@ const H = {
   },
   trApuntar: () => {
     const r = trCalc(); if (!r) { toast('Pon antes la distancia'); return; }
-    trRecordar(); S._volverGrupo = null;
+    trRecordar(); S._volverGrupo = null; S._trGrupo = null;
     openMovForm(null, { tipo: 'Gasto', importe: r.coste, categoria: trCategoria(), descripcion: trDescripcion() });
   },
   trCompartir: () => {
     const r = trCalc(); if (!r) { toast('Pon antes la distancia'); return; }
-    trRecordar(); S._volverGrupo = null;
-    abrirCompRapido('', { importe: String(r.coste).replace('.', ','), desc: trDescripcion(), cat: trCategoria() });
+    const tg = S._trGrupo && grupoDe(S._trGrupo) ? S._trGrupo : null; S._trGrupo = null;
+    trRecordar(); S._volverGrupo = tg;
+    abrirCompRapido(tg ? 'g:' + tg : '', { importe: String(r.coste).replace('.', ','), desc: trDescripcion(), cat: trCategoria() });
   },
   crearIr: ([k]) => {
     if (k === 'ticket') { closeSheet(); elegirFotoTicket(); return; } // en el mismo toque, para que el móvil deje abrir la cámara
@@ -13604,7 +13673,7 @@ const H = {
   }),
   deudaCompVer: ([id]) => { const r = objCompartidos('deuda').find((x) => x.id === id); if (!r) return; FORM = { kind: 'deudaComp', id }; openSheet('<div class="handle"></div>' + objCardHtml(r) + '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>'); },
   irMovsDeuda: ([n]) => { const d = deudaPorNombre(n); closeSheet(); irMovs({ tipo: 'Deuda', periodo: 'todo', cat: n }); S.movCatAlias = d && (d.nombresAntes || []).length ? { cat: n, nombres: d.nombresAntes.slice() } : null; render(); },
-  histVer: ([gid]) => { const st = histEstado(gid); FORM = { kind: 'hist', gid }; const html = histHtml(gid); if ($('#sheetBackdrop')) updateSheet(html); else openSheet(html);
+  histVer: ([gid]) => { const st = histEstado(gid), tabG = FORM && FORM.kind === 'grupo' && FORM.id === gid ? FORM.grupoTab : ''; FORM = { kind: 'hist', gid, grupoTab: tabG }; const html = histHtml(gid); if ($('#sheetBackdrop')) updateSheet(html); else openSheet(html);
     if (!st.t || Date.now() - st.t > 15000) histCargar(gid).then(() => histMarcarVisto(gid)); else histMarcarVisto(gid); },
   histVolver: ([gid]) => { if (gid && grupoDe(gid)) abrirGrupo(gid); else closeSheet(); },
   histReintentar: ([gid]) => histCargar(gid),
@@ -13614,7 +13683,7 @@ const H = {
   histDetalle: ([gid, id]) => { FORM = { kind: 'histDet', gid, id }; updateSheet(histDetalleHtml(gid, id)); },
   histRecuperar: async ([gid, id]) => { await histRecuperar(gid, id); if (FORM && (FORM.kind === 'hist' || FORM.kind === 'histDet') && $('#sheetBackdrop')) { FORM = { kind: 'hist', gid }; updateSheet(histHtml(gid)); } },
   histGasto: ([cid]) => { S._volverGrupo = null; openCompForm(cid); },
-  origenVer: ([gid, volver]) => { FORM = { kind: 'origen', gid, volver: volver || '' }; if ($('#sheetBackdrop')) updateSheet(origenHtml(gid, volver)); else openSheet(origenHtml(gid, volver)); },
+  origenVer: ([gid, volver]) => { const tabG = FORM && FORM.kind === 'grupo' && FORM.id === gid ? FORM.grupoTab : ''; FORM = { kind: 'origen', gid, volver: volver || '', grupoTab: tabG }; if ($('#sheetBackdrop')) updateSheet(origenHtml(gid, volver)); else openSheet(origenHtml(gid, volver)); },
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
   juntosVer: ([k]) => { S.juntosVer = k || ''; sentir('tic'); render(); window.scrollTo && window.scrollTo(0, 0); },
   juntosTodos: ([k]) => { const t = S.juntosTodos = Object.assign({}, S.juntosTodos); t[k] = !t[k]; sentir('tic'); render(); },
@@ -13645,6 +13714,7 @@ const H = {
   },
   grupoAjustes: ([id]) => { if (!FORM || FORM.kind !== 'grupo') FORM = { kind: 'grupo', id, invitaciones: [] }; FORM.ajustes = true; updateSheet(grupoHtml(id)); },
   grupoAjustesSalir: ([id]) => { if (FORM && FORM.kind === 'grupo') { FORM.ajustes = false; updateSheet(grupoHtml(id)); } else abrirGrupo(id); },
+  grupoTray: ([gid]) => { verBadge('trayecto'); S._volverGrupo = null; S._trGrupo = gid; trAbrir(null); }, // desde «Más» de un grupo: «Compartir» lo lleva a ese grupo
   grupoTab: ([k]) => { if (!FORM || FORM.kind !== 'grupo') return; if (k === 'planes') verBadge('planes'); FORM.grupoTab = k; updateSheet(grupoHtml(FORM.id)); },
   planNuevo: ([fecha]) => planAbrirForm({ tipo: 'plan', fecha: fecha || todayISO() }),
   planGrupoNuevo: ([gid, tipo]) => { planAbrirForm({ volver: gid, tipo: tipo === 'tarea' ? 'tarea' : 'plan', con: 'g:' + gid, fecha: tipo === 'tarea' ? '' : todayISO() }); },
