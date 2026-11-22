@@ -2854,3 +2854,25 @@ html[data-look="nuevo"] .bv-campos.dos .bv-campo-n { font-size: 12.5px; color: v
 
 html[data-look="nuevo"] .comp-arriba { margin: 0 0 12px; display: inline-flex; align-items: center; gap: 6px; }
 html[data-look="nuevo"] .comp-arriba[hidden] { display: none; }
+
+/* 22/11 · Juntos tanda 3 (docs/46): grupos en filas, enlaces a «Por persona» y «Metas» */
+html[data-look="nuevo"] .jv5-cab .jv3-cifras { margin-top: 0; }
+html[data-look="nuevo"] .jv5-grupos { padding: 4px 0; }
+html[data-look="nuevo"] .jv5-g { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 8px 14px; background: none; border: 0; border-bottom: 1px solid var(--line); text-align: left; color: inherit; font: inherit; }
+html[data-look="nuevo"] .jv5-g:last-child { border-bottom: 0; }
+html[data-look="nuevo"] .jv5-g .avatar, html[data-look="nuevo"] .jv5-ic { flex: none; width: 38px; height: 38px; border-radius: 50%; }
+html[data-look="nuevo"] .jv5-ic { display: inline-flex; align-items: center; justify-content: center; background: var(--paper-sunken); color: var(--text-muted); }
+html[data-look="nuevo"] .jv5-ic .i { width: 19px; height: 19px; }
+html[data-look="nuevo"] .jv5-n { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+html[data-look="nuevo"] .jv5-n b { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .jv5-n span, html[data-look="nuevo"] .jv5-v span { font-size: 12.5px; color: var(--text-muted); }
+html[data-look="nuevo"] .jv5-v { flex: none; display: flex; flex-direction: column; align-items: flex-end; }
+html[data-look="nuevo"] .jv5-v b { font-size: 15px; font-weight: var(--num-peso, 700); }
+html[data-look="nuevo"] .jv5-g.bueno .jv5-v b { color: var(--income); } html[data-look="nuevo"] .jv5-g.malo .jv5-v b { color: var(--expense); }
+html[data-look="nuevo"] .jv5-links { padding: 4px 0; margin-top: 14px; }
+html[data-look="nuevo"] .jv5-link { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 14px; background: none; border: 0; border-bottom: 1px solid var(--line); color: inherit; font: inherit; font-size: 15px; text-align: left; }
+html[data-look="nuevo"] .jv5-link:last-child { border-bottom: 0; }
+html[data-look="nuevo"] .jv5-link span { flex: 1; }
+html[data-look="nuevo"] .jv5-link i { font-style: normal; font-size: 13px; color: var(--text-muted); }
+html[data-look="nuevo"] .jv5-link .i { width: 18px; height: 18px; color: var(--text-muted); }
+html[data-look="nuevo"] .jv5-volver { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin-bottom: 4px; }

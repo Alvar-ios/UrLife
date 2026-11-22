@@ -16,7 +16,7 @@ function conGrupos(w, estado, creados) {
 }
 (async () => {
   const est = { grupos: [], miembros: [], sinCuenta: [] }, creados = [];
-  const e = makeEnv({ version: { juntos: 2 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }], nombre: 'Álvaro' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => conGrupos(w, est, creados) });
+  const e = makeEnv({ version: { juntos: 3 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }], nombre: 'Álvaro' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => conGrupos(w, est, creados) });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, doc = e.doc;
   // 1) hoja corta de Juntos sin nadie: pide el nombre
@@ -38,7 +38,7 @@ function conGrupos(w, estado, creados) {
   ok(usado === true && (!doc.querySelector('#sheetBackdrop') || !/Gasto guardado/.test(doc.querySelector('#sheetHost').textContent)), 'el atrás de Android en «Gasto guardado» lo cierra (como «Ahora no»)');
   // 2) con personas con app no sale la oferta
   const est2 = { grupos: [{ id: 'g1', nombre: 'Piso', tipo: 'grupo', creado_por: 'uA', created_at: 'a' }], miembros: [{ grupo_id: 'g1', user_id: 'uA', nombre: 'Álvaro', rol: 'admin', created_at: 'a' }, { grupo_id: 'g1', user_id: 'uB', nombre: 'Ana', rol: 'miembro', created_at: 'b' }], sinCuenta: [] }, c2 = [];
-  const e2 = makeEnv({ version: { juntos: 2 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }] }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => conGrupos(w, est2, c2) });
+  const e2 = makeEnv({ version: { juntos: 3 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }] }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => conGrupos(w, est2, c2) });
   await sleep(150);
   e2.w.__APP__.H.compRapido(['g:g1']); await sleep(60);
   e2.doc.querySelector('#crImporte').value = '10'; e2.doc.querySelector('#crImporte').dispatchEvent(new e2.w.Event('input', { bubbles: true }));
@@ -46,7 +46,7 @@ function conGrupos(w, estado, creados) {
   ok(c2.length === 1 && !/Gasto guardado/.test((e2.doc.querySelector('#sheetHost') || {}).textContent || ''), 'con personas con app: se guarda y no sale la oferta de WhatsApp');
   // 3) casos raros (Calidad): enlace que falla, dos sin app, parte 0, editar, cerrar mientras se prepara
   const mk = (rpcEnlace) => { const est = { grupos: [{ id: 'g1', nombre: 'Viaje', tipo: 'grupo', creado_por: 'uA', created_at: 'a' }], miembros: [{ grupo_id: 'g1', user_id: 'uA', nombre: 'Álvaro', rol: 'admin', created_at: 'a' }, { grupo_id: 'g1', user_id: 'uC', nombre: 'Carlos', rol: 'miembro', sinCuenta: true, created_at: 'b' }, { grupo_id: 'g1', user_id: 'uD', nombre: 'Dana', rol: 'miembro', sinCuenta: true, created_at: 'c' }], sinCuenta: [{ id: 'uC', grupo_id: 'g1', nombre: 'Carlos', creado_por: 'uA', created_at: 'b' }, { id: 'uD', grupo_id: 'g1', nombre: 'Dana', creado_por: 'uA', created_at: 'c' }] }, cr = [];
-    const en = makeEnv({ version: { juntos: 2 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }] }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => { conGrupos(w, est, cr); const r = w.Data.rpc; w.Data = Object.assign({}, w.Data, { rpc: async (fn, p) => fn === 'enlace_sin_cuenta' ? rpcEnlace(p) : r(fn, p) }); } }); return { en, cr }; };
+    const en = makeEnv({ version: { juntos: 3 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }] }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => { conGrupos(w, est, cr); const r = w.Data.rpc; w.Data = Object.assign({}, w.Data, { rpc: async (fn, p) => fn === 'enlace_sin_cuenta' ? rpcEnlace(p) : r(fn, p) }); } }); return { en, cr }; };
   const guardar = async (en, imp) => { en.w.__APP__.H.compRapido(['g:g1']); await sleep(60); const i = en.doc.querySelector('#crImporte'); i.value = imp; i.dispatchEvent(new en.w.Event('input', { bubbles: true })); click(en, 'crGuardar'); };
   { const { en, cr } = mk(async () => { throw new Error('caída'); }); await sleep(150); await guardar(en, '30'); await sleep(250);
     const wa = en.doc.querySelectorAll('#sheetHost a.wa-btn'); const t = wa[0] ? decodeURIComponent(wa[0].getAttribute('href')) : '';

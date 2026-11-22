@@ -17,7 +17,7 @@ function conGrupos(w, estado, creados) {
 (async () => {
   // A) Persona nueva: sin nadie con quien compartir todavía
   const est = { grupos: [], miembros: [], sinCuenta: [] }, creados = [];
-  const e = makeEnv({ version: { juntos: 2, crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }], nombre: 'Álvaro' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => conGrupos(w, est, creados) });
+  const e = makeEnv({ version: { juntos: 3, crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }], nombre: 'Álvaro' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => conGrupos(w, est, creados) });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, doc = e.doc;
   H.crearIr(['compartido']); await sleep(40);
@@ -53,7 +53,7 @@ function conGrupos(w, estado, creados) {
 
   // C) Si falla añadir a la persona, el gasto no se pierde y no queda un grupo vacío
   const est2 = { grupos: [], miembros: [], sinCuenta: [] }, c2 = [];
-  const e2 = makeEnv({ version: { juntos: 2, crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }] }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } },
+  const e2 = makeEnv({ version: { juntos: 3, crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }] }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } },
     pre: (w) => { conGrupos(w, est2, c2); const r0 = w.Data.rpc; w.Data.rpc = async (fn, p) => { if (fn === 'crear_sin_cuenta') { w.__rpcs.push([fn, p]); throw new Error('grupo_completo'); } return r0(fn, p); }; } });
   await sleep(150);
   e2.w.__APP__.H.crearIr(['compartido']); await sleep(40);

@@ -90,6 +90,7 @@ const activos = (e) => e.srv.comp.filter((c) => !c.borrado);
   await ir(e, 'juntos'); await sleep(80);
   ok(/Ana/.test(pantalla(e)) && /40/.test(pantalla(e)), 'Juntos enseña a Ana con 40 €');
   if (process.env.VER) console.log([...e.doc.querySelectorAll('#content [data-click]')].map((x) => x.getAttribute('data-click')).join(' '));
+  await tocar(e, 'juntosVer', 'personas', 'app', 60); // 22/11: las personas están en «Por persona»
   await tocar(e, 'personaVer', ANA, 'app', 60);
   ok(/Te debe/.test(hoja(e)) && /40,00/.test(hoja(e)), 'la hoja de Ana dice «Te debe 40,00 €»');
   const wa = e.doc.querySelector('#sheetHost a.wa-btn');

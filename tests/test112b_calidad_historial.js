@@ -130,11 +130,11 @@ async function juntos(e) { const A = e.w.__APP__; A.S.tab = 'juntos'; A.render()
   a.w.__APP__.H.openMovForm(['c:x1']); await sleep(40);
   ok(!a.doc.querySelector('#sheetHost .comp-autor b'), 'pie: el nombre se escapa');
 
-  // 6) versión anterior de Juntos (juntos:1): no cambia nada
+  // 6) versión anterior de Juntos (juntos:2): no cambia nada
   DB = nuevoDB();
   const o1 = gasto('o1', 'g1', 36, 'uB', { uA: 18, uB: 18 }, 'Cena', 'uB'); o1.createdAt = hace(2 * 1440); o1.updatedAt = hace(180); o1.editadoPor = 'uA';
   DB.comp.push(o1);
-  a = env('uA', { juntos: 1 }); await sleep(250);
+  a = env('uA', { juntos: 2 }); await sleep(250);
   const A = a.w.__APP__; A.S.tab = 'juntos'; A.render(); await sleep(30);
   ok(!/cambi(aste|ó)/i.test(appTxt(a)) && !a.doc.querySelector('#app .comp-autor'), 'Juntos «Antes»: sin «cambió» ni pie en la pestaña');
 

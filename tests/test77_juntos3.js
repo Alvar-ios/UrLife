@@ -42,9 +42,9 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(/Viaje Lisboa/.test(doc.querySelector('#sheetHost').textContent), 'tocar un grupo lo abre');
   H.closeSheet([]); await sleep(300);
   // versiones: «22 oct» sigue con la lista
-  S.verAnterior = Object.assign(S.verAnterior || {}, { juntos: 1 }); A.render(); await sleep(20);
+  S.verAnterior = Object.assign(S.verAnterior || {}, { juntos: 2 }); A.render(); await sleep(20);
   ok(doc.querySelector('.jv-ficha') && !doc.querySelector('.jv3-circ'), '«22 oct» enseña Juntos con la lista de personas');
-  S.verAnterior.juntos = 0; A.render(); await sleep(20);
+  S.verAnterior.juntos = 1; A.render(); await sleep(20);
   ok(doc.querySelector('.jv3-circ'), 'y «Nueva» vuelve a los círculos');
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.error(err); process.exit(1); });

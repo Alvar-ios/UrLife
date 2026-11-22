@@ -4651,7 +4651,7 @@ function insightsHtml() {
 const VERSIONES = {
   inicio: { txt: 'Inicio', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
-  juntos: { txt: 'Juntos', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: la lista de personas de antes de los círculos
+  juntos: { txt: 'Juntos', desde: '2026-11-22', variantes: [['filas', 'Nueva'], ['nueva', 'Antes'], ['v2', '22 oct'], ['antes', 'Primera']] }, // 22/11 (docs/46 tanda 3): grupos en filas, personas y metas a un enlace; «Antes» = la de tarjetas y círculos (13/11); «22 oct»: la lista de personas de antes de los círculos
   dinero: { txt: 'Dinero', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
   tu: { txt: 'Tú', desde: '2026-11-13', variantes: [['nueva', 'Por temas'], ['v2', 'Antes'], ['antes', 'Primera']] }, // 13/11: ajustes por temas; «Antes» = Tú de 22/10 (las pruebas antiguas fijan v2 o la primera)
   agenda: { txt: 'Agenda', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
@@ -4663,7 +4663,7 @@ const VERSIONES = {
 function seccionVersion() {
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
   if (S.tab === 'movimientos' && movVistaAct() === 'resumen') { const p = movPerNorm(S.movPeriodo); if (/^m:/.test(p) ? mesCerrado(+p.slice(2, 6), +p.slice(7, 9)) : /^y:/.test(p) && +p.slice(2) < mesActual().y) return 'balance'; if (/^m:/.test(p)) return 'movResumen'; }
-  if (S.tab === 'juntos' && gruposDisponible() && (S.grupos || []).length) return 'juntos';
+  if (S.tab === 'juntos' && gruposDisponible() && (S.grupos || []).length && !S.juntosVer) return 'juntos';
   if (S.tab === 'dinero' && !S.dineroVer) return 'dinero';
   if (S.tab === 'tu') return 'tu';
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) return 'agenda';
@@ -6007,7 +6007,8 @@ function renderJuntos() {
    compartir un gasto en una sola pantalla. La versión anterior sigue en el botón «Antes».
    ============================================================ */
 function juntosV2() { return versionDe('juntos') !== 'antes'; }
-function juntosV3() { return versionDe('juntos') === 'nueva'; }
+function juntosV3() { const v = versionDe('juntos'); return v === 'nueva' || v === 'filas'; }
+function juntosV4() { return versionDe('juntos') === 'filas'; }
 /* ---- Juntos v3 (23/10/2026, docs/14 B1 y B3): lo que debes y te deben en círculos (Personas | Grupos) y la actividad arriba, con lo nuevo marcado ---- */
 function eurosR(v) { return (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString(LOC())) + ' ' + sym(); }
 function cifraCirc(v) { return Math.abs(v) < 1 ? money(Math.abs(v)) : eurosR(Math.abs(v)); } // menos de 1 €: con céntimos (si no, «0 €»)
@@ -6081,6 +6082,54 @@ function juntosV3Html(ps, gs, frase, debes, teDeben, hayComp) {
   h += juntosObjHtml();
   return h;
 }
+/* ---- Juntos (22/11/2026, docs/46 tanda 3): tu cifra y «Compartir un gasto»; tus grupos en filas (los de dos, con la cara);
+   lo último en 3 líneas; «Por persona» y «Metas y deudas juntos» a un enlace (pantallas dentro de Juntos: S.juntosVer). ---- */
+const JV5_MAX_GRUPOS = 5;
+function juntosGrupoFilaHtml(x) {
+  const g = x.g, v = x.v, paz = Math.abs(v) < 0.005, yo = miUid(), otros = g.miembros.filter((m) => m.user_id !== yo && !esMio(g.id, m.user_id));
+  const dos = otros.length === 1, o = dos ? otros[0] : null;
+  const est = !x.hay ? 'sin gastos' : paz ? 'en paz' : v < 0 ? (dos ? 'le debes' : 'debes') : (dos ? 'te debe' : 'te deben');
+  const ico = dos ? caraHtml(aliasDe(g.id, o.user_id), o.nombre) : '<span class="jv5-ic" aria-hidden="true">' + ic('users') + '</span>';
+  const sub = dos ? (o.sinCuenta ? 'sin app' : g.tipo === 'directo' ? 'solo vosotros dos' : g.nombre) : g.miembros.length + ' personas' + (g.miembros.some((m) => m.sinCuenta) ? ' · ' + g.miembros.filter((m) => m.sinCuenta).length + ' sin app' : '');
+  const nom = dos ? o.nombre : x.nombre;
+  return '<button type="button" class="jv5-g tappable ' + (!x.hay || paz ? 'paz' : v < 0 ? 'malo' : 'bueno') + '" ' + act('grupoVer', g.id) + '>' + ico +
+    '<span class="jv5-n"><b>' + escapeHtml(nom) + '</b><span>' + escapeHtml(sub) + '</span></span>' +
+    '<span class="jv5-v">' + (paz || !x.hay ? '' : '<b class="tnum">' + escapeHtml(money(Math.abs(v))) + '</b>') + '<span>' + est + '</span></span></button>';
+}
+function juntosV4Html(ps, gs, debes, teDeben, hayComp) {
+  if (S.juntosVer === 'personas') return juntosPersonasVerHtml(ps, gs);
+  if (S.juntosVer === 'metas') return '<button type="button" class="link jv5-volver" ' + act('juntosVer', '') + '>' + ic('chevL') + ' Juntos</button>' + juntosObjHtml();
+  const uso = juntosUso(), todos = S.juntosTodos || {};
+  const grs = gs.map((g) => { const hay = (S.compartidos || []).some((c) => c.grupoId === g.id); return { k: g.id, g, nombre: nombreDestino(g), hay, v: hay ? miSaldo(g.id) : 0 }; }).sort(jvPorUso(uso.g));
+  const cifras = !hayComp ? '<div class="jv3-paz">Aún no habéis compartido gastos</div>' : (debes < 0.005 && teDeben < 0.005) ? '<div class="jv3-paz">' + ic('checkCircle') + ' Estás en paz con todos</div>' :
+    '<div class="jv3-cifras tnum">' + (teDeben >= 0.005 ? '<span class="te">Te deben <b>' + money(teDeben) + '</b></span>' : '') + (debes >= 0.005 ? '<span class="de">' + (teDeben >= 0.005 ? '<i>·</i> ' : '') + 'Debes <b>' + money(debes) + '</b></span>' : '') + '</div>';
+  let h = '<div class="card jv-cab jv3-cab jv5-cab">' + cifras + '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
+  const n = todos.grupos ? grs.length : JV5_MAX_GRUPOS;
+  h += '<section class="jv4-sec jv5-sec"><div class="section-title">Tus grupos<button type="button" class="link" ' + act('openGrupos') + '>' + ic('plus') + ' Nuevo</button></div>' +
+    (grs.length ? '<div class="card jv5-grupos">' + grs.slice(0, n).map(juntosGrupoFilaHtml).join('') + '</div>' +
+      (grs.length > JV5_MAX_GRUPOS ? '<button type="button" class="link jv4-todos" ' + act('juntosTodos', 'grupos') + '>' + (todos.grupos ? 'Ver menos' : 'Ver todos (' + grs.length + ')') + '</button>' : '')
+      : '<div class="jv3-vacio">Aún no tienes grupos. Crea uno para la casa, un viaje o el pádel.</div>') + '</section>';
+  h += juntosActividadHtml({ titulo: 'Lo último', max: 3 });
+  const hayObj = objCompartidos('ahorro').length || objCompartidos('deuda').length;
+  h += '<div class="card jv5-links"><button type="button" class="jv5-link tappable" ' + act('juntosVer', 'personas') + '>' + ic('persona') + '<span>Por persona</span>' + (ps.length ? '<i class="tnum">' + ps.length + '</i>' : '') + ic('chevR') + '</button>' +
+    (hayObj ? '<button type="button" class="jv5-link tappable" ' + act('juntosVer', 'metas') + '>' + ic('piggy2') + '<span>Metas y deudas juntos</span>' + ic('chevR') + '</button>' : '') + '</div>';
+  return h;
+}
+// «Por persona»: los círculos de siempre (lo que te debe o le debes a cada uno, sumando todos los grupos)
+function juntosPersonasVerHtml(ps, gs) {
+  const yo = miUid(), uso = juntosUso(), todos = S.juntosTodos || {};
+  const vistos = new Set(ps.map((x) => x.uid)), paz = [];
+  gs.forEach((g) => g.miembros.forEach((m) => { const u = aliasDe(g.id, m.user_id); if (u !== yo && !esMio(g.id, m.user_id) && !vistos.has(u)) { vistos.add(u); paz.push({ uid: u, nombre: m.nombre }); } }));
+  const pers = ps.map((x) => ({ k: x.uid, nombre: x.nombre, v: x.neto, cara: caraHtml(x.uid, x.nombre, 'mini'), a: act('personaVer', x.uid) }))
+    .concat(paz.map((x) => ({ k: x.uid, nombre: x.nombre, v: 0, cara: caraHtml(x.uid, x.nombre, 'mini'), a: act('personaVer', x.uid) }))).sort(jvPorUso(uso.p));
+  const nP = todos.personas ? pers.length : JV_MAX_PERSONAS, maxP = Math.max(0, ...pers.map((x) => Math.abs(x.v)));
+  return '<button type="button" class="link jv5-volver" ' + act('juntosVer', '') + '>' + ic('chevL') + ' Juntos</button>' +
+    '<section class="jv4-sec jv4-personas-sec"><div class="section-title">Por persona<button type="button" class="link" ' + act('juntosInvitar') + '>' + ic('plus') + ' Invitar</button></div>' +
+    '<div class="rec-hint" style="margin:-4px 0 10px;">Sumando todos tus grupos.</div>' +
+    (pers.length ? '<div class="ins-circ jv3-circ jv4-personas' + (todos.personas ? ' todas' : pers.length > 4 ? ' muchos' : '') + '">' + pers.slice(0, nP).map((x, i) => juntosCircHtml(x, maxP, i)).join('') + '</div>' +
+      (pers.length > JV_MAX_PERSONAS ? '<button type="button" class="link jv4-todos" ' + act('juntosTodos', 'personas') + '>' + (todos.personas ? 'Ver menos' : 'Ver todas (' + pers.length + ')') + '</button>' : '')
+      : '<div class="jv3-vacio">Aún no hay nadie. Invita a alguien por WhatsApp.</div>') + '</section>';
+}
 /* B2 · metas y deudas juntos, visuales: una fila que se desliza; la meta con su forma, la deuda con su icono; «Faltan X» */
 function juntosObjHtml() {
   const ms = objCompartidos('ahorro'), ds = objCompartidos('deuda');
@@ -6095,16 +6144,17 @@ function juntosObjHtml() {
   return '<div class="section-title">Metas y deudas juntos' + (compartidosDisponible() ? '<button class="link" ' + act('objNueva', 'ahorro') + '>' + ic('plus') + ' Nueva</button>' : '') + '</div>' +
     '<div class="jv-objs">' + ms.map(meta).join('') + ds.map(deuda).join('') + '</div>';
 }
-function juntosActividadHtml() {
+function juntosActividadHtml(o) {
+  o = o || {};
   // lo nuevo es lo de otros después de tu visita anterior (aunque al entrar ya se marque como visto)
   const vc = cfg().vistoJuntos || null, visto = S._vjPaso && (S._vjPaso.nuevo === vc || !vc) ? S._vjPaso.antes : vc;
   const cuando = (c) => (compCambiado(c) ? c.updatedAt : c.createdAt) || '';
   const todo = (S.compartidos || []).filter((c) => grupoDe(c.grupoId)).slice().sort((a, b) => cuando(b).localeCompare(cuando(a)));
   const esNueva = (c) => !!visto && (c.createdAt || '') > visto && !esMio(c.grupoId, c.creadoPor || c.pagadoPor);
-  const nuevas = todo.filter(esNueva).length, act3 = todo.filter((c, i) => i < 3 || esNueva(c)).slice(0, 6); // las 3 últimas y además lo nuevo, aunque lo tuyo sea más reciente
+  const nuevas = todo.filter(esNueva).length, act3 = todo.filter((c, i) => i < 3 || esNueva(c)).slice(0, o.max || 6); // las 3 últimas y además lo nuevo, aunque lo tuyo sea más reciente
   if (!act3.length) return '';
   const miNombre = String(cfg().nombre || '').trim() || 'Tú';
-  return '<div class="section-title">Actividad' + (nuevas ? '<span class="jv-nuevas">' + (nuevas === 1 ? '1 nueva' : nuevas + ' nuevas') + '</span>' : '') + '<button class="link" ' + act('irMovs', '_comp', 'todo') + '>Ver todo</button></div><div class="card jv-act">' + act3.map((c) => {
+  return '<div class="section-title">' + (o.titulo || 'Actividad') + (nuevas ? '<span class="jv-nuevas">' + (nuevas === 1 ? '1 nueva' : nuevas + ' nuevas') + '</span>' : '') + '<button class="link" ' + act('irMovs', '_comp', 'todo') + '>Ver todo</button></div><div class="card jv-act">' + act3.map((c) => {
     const quien = c.creadoPor || c.pagadoPor, yoQ = esMio(c.grupoId, quien), liq = c.tipo === 'Liquidación', parte = miParte(c), g = grupoDe(c.grupoId);
     const n = (u) => nombreDe(c.grupoId, u), mio = (u) => esMio(c.grupoId, u), a = Object.keys(c.reparto || {})[0], caraDe = liq ? c.pagadoPor : quien, camb = !liq && compCambiado(c);
     const que = liq ? (mio(c.pagadoPor) ? 'Pagaste a ' + n(a) : mio(a) ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a))
@@ -6160,6 +6210,7 @@ function renderJuntosV2() {
     (basico() ? '<p class="jv-sin-app">¿Tus amigos no tienen PalomApp? No pasa nada: añádelos por su nombre.</p>' : '') +
     '<button class="btn accent block" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button>' +
     '<button class="btn ghost block" ' + act('openGrupos') + '>' + ic('users') + ' Crear un grupo</button></div>';
+  if (juntosV4()) return juntosV4Html(ps, gs, debes, teDeben, hayComp);
   if (juntosV3()) return juntosV3Html(ps, gs, frase, debes, teDeben, hayComp);
   let h = '<div class="card jv-cab"><div class="jv-frase">' + frase + '</div>' +
     (hayComp ? '<div class="jv-fichas">' + ficha('debes', 'Debes', debes, deb.length, 'de') + ficha('te', 'Te deben', teDeben, te.length, 'te') + '</div>' : '<div class="rec-hint" style="margin:4px 0 10px;">Divide una cena, un viaje o la casa con quien quieras; aquí verás quién debe a quién y lo saldáis en un toque.</div>') +
@@ -12862,6 +12913,7 @@ function atrasAndroid() {
   if (ob) { if (ob.step > 0 && !(ob.grupoId && obPasos(ob)[ob.step - 1] === 'invite')) { H.obBack(); return true; } return false; }
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
   if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
+  if (S.tab === 'juntos' && S.juntosVer) { S.juntosVer = ''; render(); return true; } // 22/11: de «Por persona» o «Metas», a Juntos
   if (S.tab === 'tu' && S.tuSub) { H.tuIr(['']); return true; } // 13/11: de una pantalla de ajustes, a Tú
   if (S.tab !== 'inicio') { H.goTab(['inicio']); return true; }
   return false;
@@ -12920,6 +12972,7 @@ const H = {
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
     const nueva = TAB_ALIAS[id] || id; if (nueva !== S.tab) S._entrando = true;
     if (nueva === 'tu' && S.tab !== 'tu') S.tuSub = '';
+    if (nueva === 'juntos') S.juntosVer = ''; // 22/11: tocar Juntos vuelve siempre a su pantalla principal
     if (nueva === 'inicio') { S.inicioVista = 'hoy'; S.inicioMes = ''; }
     S.tab = nueva; render(); window.scrollTo(0, 0);
   },
@@ -13562,6 +13615,7 @@ const H = {
   origenVer: ([gid, volver]) => { FORM = { kind: 'origen', gid, volver: volver || '' }; if ($('#sheetBackdrop')) updateSheet(origenHtml(gid, volver)); else openSheet(origenHtml(gid, volver)); },
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
   juntosVer: ([k]) => { S.juntosVer = k === 'grupos' ? 'grupos' : 'personas'; sentir('tic'); render(); }, // ya sin selector (fase 14): Grupos y Personas se ven a la vez
+  juntosVer: ([k]) => { S.juntosVer = k || ''; sentir('tic'); render(); window.scrollTo && window.scrollTo(0, 0); },
   juntosTodos: ([k]) => { const t = S.juntosTodos = Object.assign({}, S.juntosTodos); t[k] = !t[k]; sentir('tic'); render(); },
   personaVer: ([uid]) => {
     const F = FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid));
