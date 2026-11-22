@@ -153,6 +153,7 @@ const activos = (e) => e.srv.comp.filter((c) => !c.borrado);
   paso('Historial del grupo');
   await ir(e, 'juntos');
   await tocar(e, 'grupoVer', 'g1', null, 80);
+  await tocar(e, 'grupoTab', 'mas', 'hoja', 60); // 22/11 (tanda 4): el historial está en «Más»
   if (process.env.VER) console.log('HOJA ' + hoja(e).replace(/\s+/g, ' ').slice(0, 600) + ' ## ' + [...e.doc.querySelectorAll('#sheetHost [data-click]')].map((x) => x.getAttribute('data-click')).join(' '));
   const hv = buscar(e, 'histVer', null, 'hoja');
   ok(!!hv, 'en el grupo está el historial');
