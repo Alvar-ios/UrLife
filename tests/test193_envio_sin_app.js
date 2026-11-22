@@ -34,8 +34,8 @@ function conGrupos(w, estado, creados) {
   ok(/Gasto guardado/.test(doc.querySelector('#sheetHost h2').textContent) && /Carlos/.test(doc.querySelector('#sheetHost').textContent), 'después ofrece mandárselo a Carlos');
   const txt = wa ? decodeURIComponent(wa.getAttribute('href')) : '';
   ok(/Cena/.test(txt) && /30/.test(txt) && /15/.test(txt) && /soy=TOKsc123/.test(txt), 'el WhatsApp dice qué gasto es, el total, su parte (15) y lleva su enlace');
-  click(e, 'envioSCCerrar'); await sleep(600);
-  ok(!doc.querySelector('#sheetBackdrop') || !/Gasto guardado/.test(doc.querySelector('#sheetHost').textContent), '«Ahora no» cierra');
+  const usado = e.w.__atras(); await sleep(600);
+  ok(usado === true && (!doc.querySelector('#sheetBackdrop') || !/Gasto guardado/.test(doc.querySelector('#sheetHost').textContent)), 'el atrás de Android en «Gasto guardado» lo cierra (como «Ahora no»)');
   // 2) con personas con app no sale la oferta
   const est2 = { grupos: [{ id: 'g1', nombre: 'Piso', tipo: 'grupo', creado_por: 'uA', created_at: 'a' }], miembros: [{ grupo_id: 'g1', user_id: 'uA', nombre: 'Álvaro', rol: 'admin', created_at: 'a' }, { grupo_id: 'g1', user_id: 'uB', nombre: 'Ana', rol: 'miembro', created_at: 'b' }], sinCuenta: [] }, c2 = [];
   const e2 = makeEnv({ version: { juntos: 2 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }] }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => conGrupos(w, est2, c2) });

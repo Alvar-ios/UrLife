@@ -1963,6 +1963,7 @@ function tecRapidoHtml(tipo, cat, fecha) {
       '<button type="button" class="tec-cat mas" ' + act('tecMas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span><span class="tec-cat-n">Más</span></button></div>' +
     '<div class="tec-linea"><label class="chip tec-fecha">' + ic('calendar') + '<span id="tecFechaTxt">' + escapeHtml(tecFechaTxt(fecha)) + '</span><input type="date" id="tecFecha" aria-label="Fecha" value="' + escapeHtml(fecha) + '" ' + onChange('tecFecha') + '></label>' +
       (cu ? '<button type="button" class="chip tec-cuenta" id="tecCuenta" aria-label="Cuenta: ' + escapeHtml(cu.nombre) + '. Toca para cambiarla" ' + act('tecCuenta') + '><span class="dot" style="background:' + colorCuenta(cu) + '"></span>' + escapeHtml(cu.nombre) + '</button>' : '') +
+      (tipo === 'Gasto' && compartidosDisponible() ? '<button type="button" class="chip tec-comp" ' + act('tecCompartir') + '>' + ic('users') + 'Compartir</button>' : '') +
       '<button type="button" class="link tec-masdet" ' + act('tecMas') + '>Más detalles ' + ic('chevD') + '</button></div></div>';
 }
 function tecOkLbl(T) { return T.tecla === 'guardar' ? (T.etiqueta || 'Guardar') : 'Hecho'; }
@@ -2091,6 +2092,7 @@ function openMovForm(id, pre) {
     '<div class="handle"></div><div class="tec-cab"><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' + antesChip + '</div>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
     (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
+    (ex && !comp && compartidosDisponible() && TIPOS_COMPARTIBLES.indexOf(ex.tipo) >= 0 ? '<button type="button" class="btn sm ghost comp-arriba" id="compArriba" ' + act('compOnTop') + '>' + ic('users') + ' Compartir este gasto</button>' : '') +
     (tec ? tecCampoHtml(FORM.tec) + monBoxMov(ex, comp, tipoIni) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni) : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
       : '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div>' + monBoxMov(ex, comp, tipoIni) + '<div>') +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
@@ -3048,6 +3050,7 @@ function compFieldHtml() {
   if (!FORM || FORM.kind !== 'mov' || !compartidosDisponible()) return '';
   const cp = FORM.comp || (FORM.comp = { on: false }), t = TIPO_OBJ[FORM.tipo];
   if (TIPOS_COMPARTIBLES.indexOf(FORM.tipo) < 0) return FORM.compId ? '<div class="rec-hint">Solo se comparten gastos, facturas, ahorro y deudas: si lo guardas así, dejará de estar compartido.</div>' : '';
+  if (!cp.on && FORM.id && !FORM.compId) return '';
   if (!cp.on) return '<button type="button" class="comp-toggle" ' + act('compOn') + '>' + ic('users') + '<span>' + (t === 'ahorro' ? 'Aportar a una meta compartida' : t === 'deuda' ? 'Pagar una deuda compartida' : 'Compartir este gasto') + '</span>' + badge('compartir') + '</button>';
   const yo = miUid(), ds = destinosPara(FORM.tipo), c = FORM.compId ? compPorId(FORM.compId) : null;
   if (c && !ds.some((d) => d.k === 'g:' + c.grupoId)) ds.unshift({ k: 'g:' + c.grupoId, label: nombreDestino(grupoDe(c.grupoId)) });
@@ -6124,11 +6127,21 @@ function dondeTxt(deudas) {
   const ns = [...new Set(deudas.map((d) => { const g = grupoDe(d.gid); return g && g.tipo === 'directo' ? 'entre vosotros dos' : 'en ' + (g ? g.nombre : 'un grupo'); }))];
   return ns.length <= 1 ? (ns[0] || '') : ns.slice(0, -1).join(', ') + ' y ' + ns[ns.length - 1].replace(/^en /, 'en ');
 }
-function pedirMsg(x) {
+// los últimos gastos que la persona tiene pendientes contigo (para que el mensaje diga de qué es)
+function pedirDetalle(x) {
+  const yo = miUid(), gids = x.deudas.map((d) => d.gid);
+  return (S.compartidos || []).filter((c) => gids.indexOf(c.grupoId) >= 0 && c.tipo !== 'Liquidación' && c.pagadoPor === yo && num((c.reparto || {})[x.uid]) > 0)
+      .sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).slice(0, 4).map((c) => '«' + (c.descripcion || c.categoria || 'gasto') + '» ' + money(c.reparto[x.uid]));
+}
+function pedirMsg(x, url) {
   const yo = miUid(), todas = x.deudas.every((d) => d.a === yo);
   const grupos = todas ? [...new Set(x.deudas.map((d) => { const g = grupoDe(d.gid); return g && g.tipo === 'grupo' ? g.nombre : ''; }).filter(Boolean))] : [];
-  return '¡Hola, ' + String(x.nombre || '').split(' ')[0] + '! En PalomApp me sale que ' + (grupos.length ? 'de ' + grupos.join(' y ') + ' ' : '') + 'me debes ' + money(x.neto) + '. Cuando puedas, ¿me haces un Bizum? 🙌';
+  const det = pedirDetalle(x);
+  return '¡Hola, ' + String(x.nombre || '').split(' ')[0] + '! En PalomApp me sale que ' + (grupos.length ? 'de ' + grupos.join(' y ') + ' ' : '') + 'me debes ' + money(x.neto) + (det.length ? ' (' + det.slice(0, 3).join(', ') + (det.length > 3 ? '…' : '') + ')' : '') + '. Cuando puedas, ¿me haces un Bizum? 🙌' +
+    (url ? ' Aquí ves las cuentas y te guardo tu sitio (vale 7 días): ' + url : '');
 }
+// ¿esta persona está en tus grupos sin app? (entonces el mensaje lleva su enlace para entrar)
+function personaSinApp(x) { return x.deudas.some((d) => { const g = grupoDe(d.gid); return g && g.miembros.some((m) => m.user_id === x.uid && m.sinCuenta); }); }
 function renderJuntosV2() {
   if (!gruposDisponible()) return '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Compartir no está disponible aquí.</div>';
   const ps = juntosPersonas(), yo = miUid(), gs = (S.grupos || []).filter((g) => g.tipo === 'grupo' || (g.tipo === 'directo' && g.miembros.length >= 2));
@@ -6194,7 +6207,7 @@ function personaVerHtml(uid, pedir) {
   const conElla = (c) => aliasDe(c.grupoId, c.pagadoPor) === uid || Object.keys(c.reparto || {}).some((u) => aliasDe(c.grupoId, u) === uid);
   const comps = (S.compartidos || []).filter((c) => x.deudas.some((d) => d.gid === c.grupoId) && c.tipo !== 'Liquidación' && conElla(c)).sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '')).slice(0, 3);
   const dest = (() => { const d = (S.grupos || []).find((g) => g.tipo === 'directo' && g.miembros.some((m) => m.user_id === uid)); return d ? 'g:' + d.id : x.deudas.length ? 'g:' + x.deudas[0].gid : ''; })();
-  const msg = debo ? '' : pedirMsg(x);
+  const msg = debo ? '' : pedirMsg(x, FORM && FORM.kind === 'persona' && FORM.uid === uid ? FORM.pedirUrl : null);
   return '<div class="handle"></div><div class="jv-pcab">' + caraHtml(uid, x.nombre, 'grande') + '<div><h2>' + escapeHtml(x.nombre) + '</h2><span class="rec-hint" style="margin:0;">' + escapeHtml(dondeTxt(x.deudas)) + '</span></div></div>' +
     '<div class="jv-total ' + (debo ? 'de' : 'te') + '"><span>' + (debo ? 'Le debes' : 'Te debe') + '</span><b class="tnum">' + money(tot) + '</b></div>' +
     (x.deudas.length > 1 ? '<div class="card jv-desg-card">' + desg + '</div><div class="rec-hint" style="margin:-4px 0 10px;">Toca un grupo para ver de dónde sale.</div>' : '<button type="button" class="link jv-origen" ' + act('origenVer', x.deudas[0].gid, uid) + '>' + ic('list') + ' ¿De dónde sale?</button>') +
@@ -12827,6 +12840,7 @@ function atrasEnHoja(b) {
       '<div class="popup-btns"><button class="btn ghost block" ' + act('popupCerrar') + '>Seguir revisando</button><button class="btn accent block" ' + act('impVolverSi') + '>Volver</button></div>');
     return true;
   }
+  if (FORM && FORM.kind === 'envioSC') { H.envioSCCerrar(); return true; } // «Gasto guardado»: atrás = «Ahora no» (vuelve al grupo de donde venías)
   const v = botonVolverHoja(sh);
   if (v) { v.click(); return true; }
   // Persona → Saldar (sin botón «Volver»): a la persona, si se llegó desde ella
@@ -13321,6 +13335,10 @@ const H = {
   tecK: ([k]) => { const largo = H.tecK._largo; H.tecK._largo = false; if (largo && k === 'del') return; tecPulsar(k); }, // tras mantener «Borrar», su propio toque no cuenta
   tecAbrir: () => { if (!FORM || !FORM.tec) return; if (!FORM.tec.on) { tecAbrirTeclado(); sentir('tic'); } },
   tecMas: () => tecMasDetalles(),
+  // «Compartir» en el teclado corto: abre los detalles con lo de compartir ya activado
+  tecCompartir: () => { tecMasDetalles(); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
+  // «Compartir este gasto» arriba de un gasto ya apuntado
+  compOnTop: () => { const b = $('#compArriba'); if (b) b.hidden = true; H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
   tecVersion: ([n]) => tecVolverAVersion(n),
   tecCat: ([c]) => { const ant = ($('#fCategoria') || {}).value; if (ant !== c) { const sb = $('#fSub'); if (sb) sb.value = ''; } H.pickCat([c]); tecCuentaPintar(); $$('#tecCats .tec-cat').forEach((b) => { const on = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); tecSync(); },
   tecFecha: (_a, el) => { const v = el.value || todayISO(), f = $('#fFecha'); if (f) { f.value = v; if (H.onFechaChange) H.onFechaChange([], f); } const t = $('#tecFechaTxt'); if (t) t.textContent = tecFechaTxt(v); },
@@ -13365,9 +13383,9 @@ const H = {
   // «+ Otra persona» → solo su nombre: se crea un grupo de dos con ella (sin app) y se elige al momento, para que el gasto se guarde siempre
   invSinApp: async ([ctx]) => {
     const v = S._inv; if (!v || v.creando) return;
-    const el = $('#invNombre'), nombre = ((el && el.value) || '').trim().slice(0, 40);
+    const el = $('#invNombre'), nombre = ((el && el.value) || '').replace(/\s+/g, ' ').trim().slice(0, 40);
     if (!nombre) { marcarCampo('#invNombre'); return toast('Escribe su nombre'); }
-    v.creando = true;
+    v.creando = true; { const b = $('#sheetHost [data-click^="invSinApp"]'); if (b) b.textContent = 'Añadiendo…'; }
     const yo = miNombreAlguno(), k = normName(nombre);
     const conApp = destinosCompartir().find((d) => normName(d.label) === k); // ya está en tus personas o grupos: se elige sin crear nada
     if (conApp) { v.creando = false; S._inv = null; invElegir(ctx, conApp.k); return; }
@@ -13408,11 +13426,11 @@ const H = {
   },
   tkContinuar: () => tkContinuar(),
   // gastos compartidos
-  compOn: () => { verBadge('compartir'); FORM.comp = FORM.comp || {}; FORM.comp.on = true; if (S.grupos == null) cargarGrupos().then(() => refrescarComp()); compAsegurarDestino(); if (S.grupos != null && !TIPO_OBJ[FORM.tipo] && !destinosPara(FORM.tipo).length) S._inv = { ctx: 'f' }; refrescarComp(); },
+  compOn: () => { verBadge('compartir'); FORM.comp = FORM.comp || {}; FORM.comp.on = true; if (S.grupos == null) cargarGrupos().then(() => { if (FORM && FORM.comp && FORM.comp.on && !S._inv && !TIPO_OBJ[FORM.tipo] && !destinosPara(FORM.tipo).length) S._inv = { ctx: 'f' }; refrescarComp(); }); compAsegurarDestino(); if (S.grupos != null && !TIPO_OBJ[FORM.tipo] && !destinosPara(FORM.tipo).length) S._inv = { ctx: 'f' }; refrescarComp(); },
   compOff: () => {
     const c = FORM.compId ? compPorId(FORM.compId) : null;
     if (c && c.pagadoPor !== miUid()) return toast('Solo quien lo pagó puede dejar de compartirlo. Si no se hizo, elimínalo.');
-    FORM.comp.on = false; refrescarComp();
+    FORM.comp.on = false; refrescarComp(); { const b = $('#compArriba'); if (b) b.hidden = false; }
     if (c) toast('Al guardar dejará de estar compartido y contará entero como tuyo');
   },
   compDest: ([k]) => { compPrepararDestino(k); refrescarComp(); },
@@ -13541,7 +13559,11 @@ const H = {
   juntosFiltro: ([k]) => { S._juntosFiltro = k || ''; render(); },
   juntosVer: ([k]) => { S.juntosVer = k === 'grupos' ? 'grupos' : 'personas'; sentir('tic'); render(); }, // ya sin selector (fase 14): Grupos y Personas se ven a la vez
   juntosTodos: ([k]) => { const t = S.juntosTodos = Object.assign({}, S.juntosTodos); t[k] = !t[k]; sentir('tic'); render(); },
-  personaVer: ([uid]) => { FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid)); },
+  personaVer: ([uid]) => {
+    const F = FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid));
+    const x = juntosPersonas().find((p) => p.uid === uid);
+    if (x && x.neto > 0 && personaSinApp(x)) S.db.rpc('enlace_sin_cuenta', { p_id: uid }).then((t) => { if (t && FORM === F && $('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando) { F.pedirUrl = APP_URL + '?soy=' + encodeURIComponent(t); updateSheet(personaVerHtml(uid)); } }).catch((e) => console.error(e));
+  },
   saldarTodo: ([uid]) => { const pc = cuentaPrincipal(), dePersona = !!(FORM && FORM.kind === 'persona' && FORM.uid === uid && $('#sheetBackdrop')); FORM = { kind: 'saldarTodo', uid, cuenta: pc ? pc.id : null, dePersona }; if ($('#sheetBackdrop')) updateSheet(saldarTodoHtml()); else openSheet(saldarTodoHtml()); },
   saldarTodoGuardar: async () => {
     const f = FORM, yo = miUid(), x = juntosPersonas().find((p) => p.uid === f.uid), fecha = ($('#sFecha') || {}).value || todayISO();
