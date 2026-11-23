@@ -6361,13 +6361,17 @@ function gruposFotoOn() { return !!(S.db && S.db.grupos && S.db.grupos.foto); }
 function fotoValida(f) { return typeof f === 'string' && f.length <= FOTO_MAX && /^data:image\/(jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(f); }
 function grupoIcHtml(g, cls) { return g && g.foto ? '<img class="jv-g-foto ' + (cls || '') + '" src="' + g.foto + '" alt="">' : '<span class="jv-g-ic ' + (cls || '') + '">' + escapeHtml(iniciales(g ? g.nombre : '?')) + '</span>'; }
 // recorta al centro, reduce a 192 px y la deja en JPEG; si pasa del tope, baja la calidad
+function fotoHojaAbierta(gid) {
+  const b = document.getElementById('sheetBackdrop');
+  return !!(FORM && FORM.kind === 'grupo' && FORM.id === gid && b && !b.dataset.cerrando);
+}
 function fotoReducir(file) {
   return new Promise((res, rej) => {
     const url = URL.createObjectURL(file), im = new Image();
     im.onload = () => { try {
       const lado = Math.min(im.naturalWidth || im.width, im.naturalHeight || im.height); if (!lado) throw new Error('vacia');
       const cv = document.createElement('canvas'); cv.width = cv.height = FOTO_LADO;
-      const cx = cv.getContext('2d'); cx.drawImage(im, ((im.naturalWidth || im.width) - lado) / 2, ((im.naturalHeight || im.height) - lado) / 2, lado, lado, 0, 0, FOTO_LADO, FOTO_LADO);
+      const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, FOTO_LADO, FOTO_LADO); cx.drawImage(im, ((im.naturalWidth || im.width) - lado) / 2, ((im.naturalHeight || im.height) - lado) / 2, lado, lado, 0, 0, FOTO_LADO, FOTO_LADO);
       let q = 0.8, d = cv.toDataURL('image/jpeg', q); while (d.length > FOTO_MAX && q > 0.35) { q -= 0.15; d = cv.toDataURL('image/jpeg', q); }
       URL.revokeObjectURL(url); if (!fotoValida(d)) throw new Error('grande'); res(d);
     } catch (e) { URL.revokeObjectURL(url); rej(e); } };
@@ -14346,12 +14350,12 @@ const H = {
     if (!/^image\//.test(f.type || '')) return toast('Elige una imagen');
     if (FORM && FORM.fotoSubiendo) return;
     let d; try { d = await fotoReducir(f); } catch (e) { console.error(e); return toast('No se ha podido leer esa imagen'); }
-    if (FORM) { FORM.fotoSubiendo = true; updateSheet(grupoHtml(gid)); }
+    if (FORM) { FORM.fotoSubiendo = true; if (fotoHojaAbierta(gid)) updateSheet(grupoHtml(gid)); }
     const ok = await accionGrupo(() => S.db.grupos.foto(gid, d), 'Foto puesta');
     if (FORM) FORM.fotoSubiendo = false;
-    if (ok) { render(); } if (FORM && FORM.kind === 'grupo' && FORM.id === gid) updateSheet(grupoHtml(gid));
+    if (ok) { render(); } if (fotoHojaAbierta(gid)) updateSheet(grupoHtml(gid));
   },
-  grupoFotoQuitar: async ([gid]) => { if (await accionGrupo(() => S.db.grupos.foto(gid, null), 'Foto quitada')) { render(); if (FORM && FORM.kind === 'grupo' && FORM.id === gid) updateSheet(grupoHtml(gid)); } },
+  grupoFotoQuitar: async ([gid]) => { if (await accionGrupo(() => S.db.grupos.foto(gid, null), 'Foto quitada')) { render(); if (fotoHojaAbierta(gid)) updateSheet(grupoHtml(gid)); } },
   grupoRenombrar: async ([id]) => { const n = ($('#gRenombrar').value || '').trim(); if (!n) return toast('Pon un nombre'); if (await accionGrupo(() => S.db.grupos.renombrar(id, n), 'Nombre cambiado')) abrirGrupo(id); },
   grupoMiNombre: async ([id]) => { const n = ($('#gMiNombreEd').value || '').trim(); if (!n) return toast('Pon un nombre'); if (await accionGrupo(() => S.db.grupos.miNombre(id, n), 'Guardado')) abrirGrupo(id); },
   grupoInvitar: async ([id]) => {
