@@ -2640,7 +2640,7 @@ async function cargarGrupos() {
       const nombres = sc.map((i) => ({ user_id: i.id, nombre: i.nombre, sinCuenta: true }));
       let reparto = g.reparto;
       if (reparto && typeof reparto === 'object' && Object.keys(alias).length) { reparto = {}; Object.keys(g.reparto).forEach((k) => { const u = alias[k] || k; reparto[u] = num(reparto[u]) + num(g.reparto[k]); }); }
-      return { id: g.id, nombre: g.nombre, tipo: g.tipo, reparto, edicion: g.edicion || 'todos', alias, creadoPor: g.creado_por || null,
+      return { id: g.id, nombre: g.nombre, tipo: g.tipo, reparto, edicion: g.edicion || 'todos', alias, creadoPor: g.creado_por || null, foto: fotoValida(g.foto) ? g.foto : null,
         miembros: activos.concat(sinCuenta).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || '')), todos: ms.concat(nombres), soyAdmin: !!(mio && mio.rol === 'admin'), miNombre: mio ? mio.nombre : '' };
     }).sort((a, b) => a.nombre.localeCompare(b.nombre));
     S._misAlias = misAlias; S._ef = null; // «tu parte» puede cambiar si ocupaste el sitio de alguien
@@ -2700,7 +2700,7 @@ function grupoHtml(id) {
     (pendientes.length ? '<div class="rec-hint" style="margin-top:10px;">' + pendientes.length + (pendientes.length === 1 ? ' enlace pendiente' : ' enlaces pendientes') + ' · <button type="button" class="link" ' + act('grupoAnularTodos', g.id) + '>Anularlos</button></div>' : '') + '</div>';
   const miNombreHtml =
     '<div class="field" style="margin-top:12px;"><label>Tu nombre en este grupo</label><div style="display:flex;gap:8px;"><input id="gMiNombreEd" type="text" maxlength="40" value="' + escapeHtml(g.miNombre) + '"><button class="btn sm ghost" ' + act('grupoMiNombre', g.id) + '>Guardar</button></div></div>';
-  return '<div class="handle"></div><h2>' + (aj ? 'Ajustes · ' : '') + escapeHtml(g.nombre) + '</h2>' +
+  return '<div class="handle"></div><h2>' + (aj ? 'Ajustes · ' : '') + escapeHtml(g.nombre) + '</h2>' + (v4 && gruposFotoOn() ? grupoFotoAjusteHtml(g) : '') +
     (!aj && g.miembros.length >= 2 ? cuentasGrupoHtml(g) + objetivosGrupoHtml(g) : '') +
     (g.soyAdmin ? '<div class="field" style="margin-top:14px;"><label>Nombre del grupo</label><div style="display:flex;gap:8px;"><input id="gRenombrar" type="text" maxlength="60" value="' + escapeHtml(g.nombre) + '"><button class="btn sm ghost" ' + act('grupoRenombrar', g.id) + '>Guardar</button></div></div>' : '') +
     '<div class="section-title">Miembros (' + g.miembros.length + ')' + (aj ? '' : badge('sincuenta')) + '</div><div class="list miembros-lista">' +
@@ -6093,7 +6093,7 @@ function juntosGrupoFilaHtml(x) {
   const g = x.g, v = x.v, paz = Math.abs(v) < 0.005, yo = miUid(), otros = g.miembros.filter((m) => m.user_id !== yo && !esMio(g.id, m.user_id));
   const dos = otros.length === 1, o = dos ? otros[0] : null;
   const est = !x.hay ? 'sin gastos' : paz ? 'en paz' : v < 0 ? (dos ? 'le debes' : 'debes') : (dos ? 'te debe' : 'te deben');
-  const ico = dos ? caraHtml(aliasDe(g.id, o.user_id), o.nombre) : '<span class="jv5-ic" aria-hidden="true">' + ic('users') + '</span>';
+  const ico = dos && !g.foto ? caraHtml(aliasDe(g.id, o.user_id), o.nombre) : g.foto ? '<img class="jv5-foto" src="' + g.foto + '" alt="">' : '<span class="jv5-ic" aria-hidden="true">' + ic('users') + '</span>';
   const auto = dos && normName(g.nombre) === normName((g.miembros.find((m) => m.user_id === yo) || {}).nombre + ' y ' + o.nombre); // el nombre que pone la app al añadir a alguien sin app
   const sub = dos ? (g.tipo === 'directo' ? 'solo vosotros dos' : [o.sinCuenta ? 'sin app' : '', auto ? '' : g.nombre].filter(Boolean).join(' · ') || 'solo vosotros dos') : g.miembros.length <= 1 ? 'Solo tú, de momento' : g.miembros.length + ' personas' + (g.miembros.some((m) => m.sinCuenta) ? ' · ' + g.miembros.filter((m) => m.sinCuenta).length + ' sin app' : '');
   const nom = dos ? o.nombre : x.nombre;
@@ -6299,7 +6299,7 @@ function grupoHtmlV2(g) {
   if (F.temaForm && temasDisponible()) return temaFormHtml(g);
   const cs = (S.compartidos || []).filter((c) => c.grupoId === g.id), ds = deudasDe(g.id), mias = ds.filter((d) => esMio(g.id, d.de) || esMio(g.id, d.a));
   const sc = g.miembros.filter((m) => m.sinCuenta).length;
-  let h = '<div class="handle"></div><div class="jv-gcab">' + (o ? caraHtml(o.user_id, o.nombre, 'grande') : '<span class="jv-g-ic grande">' + escapeHtml(iniciales(g.nombre)) + '</span>') +
+  let h = '<div class="handle"></div><div class="jv-gcab">' + (o ? caraHtml(o.user_id, o.nombre, 'grande') : grupoIcHtml(g, 'grande')) +
     '<div class="jv-gcab-t"><h2>' + escapeHtml(nombreDestino(g)) + '</h2><span class="jv-caras">' + (o ? '<span class="jv-g-meta">solo vosotros dos</span>' : g.miembros.slice(0, 5).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '<span class="jv-g-meta">' + g.miembros.length + (g.miembros.length === 1 ? ' persona' : ' personas') + (sc ? ' · ' + sc + ' sin app' : '') + '</span>') + '</span></div>' +
     '<button type="button" class="icon-btn jv-ajustes" aria-label="Ajustes del grupo" ' + act('grupoAjustes', g.id) + '>' + ic('gear') + '</button></div>';
   h += introJuntosHtml(g.id);
@@ -6355,12 +6355,42 @@ function grupoSituacionHtml(g, cs, mias) {
   return '<div class="jv-sit ' + (tTe >= tDe ? 'te' : 'de') + '"><button type="button" class="jv-sit-t tappable" aria-label="¿De dónde sale?" ' + act('origenVer', g.id) + '><span>' + [tTe ? 'Te deben ' + money(tTe) : '', tDe ? 'Debes ' + money(tDe) : ''].filter(Boolean).join(' · ') + '</span>' + ic('info') + '</button>' +
     '<div class="jv-sit-b"><button type="button" class="btn sm accent" ' + act('grupoTab', 'saldos') + '>Ver quién y saldar</button></div></div>';
 }
+/* ---- foto del grupo (23/11/2026, docs/46 tanda 5): pequeña, en la fila del grupo (grupos.foto), la ven solo sus miembros ---- */
+const FOTO_LADO = 192, FOTO_MAX = 60000;
+function gruposFotoOn() { return !!(S.db && S.db.grupos && S.db.grupos.foto); }
+function fotoValida(f) { return typeof f === 'string' && f.length <= FOTO_MAX && /^data:image\/(jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(f); }
+function grupoIcHtml(g, cls) { return g && g.foto ? '<img class="jv-g-foto ' + (cls || '') + '" src="' + g.foto + '" alt="">' : '<span class="jv-g-ic ' + (cls || '') + '">' + escapeHtml(iniciales(g ? g.nombre : '?')) + '</span>'; }
+// recorta al centro, reduce a 192 px y la deja en JPEG; si pasa del tope, baja la calidad
+function fotoHojaAbierta(gid) {
+  const b = document.getElementById('sheetBackdrop');
+  return !!(FORM && FORM.kind === 'grupo' && FORM.id === gid && b && !b.dataset.cerrando);
+}
+function fotoReducir(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { try {
+      const lado = Math.min(im.naturalWidth || im.width, im.naturalHeight || im.height); if (!lado) throw new Error('vacia');
+      const cv = document.createElement('canvas'); cv.width = cv.height = FOTO_LADO;
+      const cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, FOTO_LADO, FOTO_LADO); cx.drawImage(im, ((im.naturalWidth || im.width) - lado) / 2, ((im.naturalHeight || im.height) - lado) / 2, lado, lado, 0, 0, FOTO_LADO, FOTO_LADO);
+      let q = 0.8, d = cv.toDataURL('image/jpeg', q); while (d.length > FOTO_MAX && q > 0.35) { q -= 0.15; d = cv.toDataURL('image/jpeg', q); }
+      URL.revokeObjectURL(url); if (!fotoValida(d)) throw new Error('grande'); res(d);
+    } catch (e) { URL.revokeObjectURL(url); rej(e); } };
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('no_imagen')); };
+    im.src = url;
+  });
+}
+function grupoFotoAjusteHtml(g) {
+  if (!g.soyAdmin || g.tipo !== 'grupo') return '';
+  return '<div class="jv-foto-aj"><label class="jv-foto-btn tappable" aria-label="' + (g.foto ? 'Cambiar la foto del grupo' : 'Poner una foto al grupo') + '">' + grupoIcHtml(g, 'grande') + '<span class="jv-foto-cam" aria-hidden="true">' + ic('camera') + '</span>' +
+    '<input type="file" accept="image/*" hidden ' + onChange('grupoFoto', g.id) + '></label><div class="jv-foto-txt"><b>' + (FORM && FORM.fotoSubiendo ? 'Guardando…' : g.foto ? 'Foto del grupo' : 'Ponle una foto') + '</b>' +
+    (g.foto ? '<button type="button" class="link" ' + act('grupoFotoQuitar', g.id) + '>Quitar foto</button>' : '<span class="hint">La ven solo los del grupo</span>') + '</div></div>';
+}
 function grupoHtmlV4(g) {
   const F = FORM || {}, tab = F.grupoTab === 'saldos' ? 'saldos' : (F.grupoTab === 'mas' || F.grupoTab === 'planes') ? F.grupoTab : 'gastos', o = g.tipo === 'directo' ? otroDe(g) : null;
   if (F.temaForm && temasDisponible()) return temaFormHtml(g);
   const cs = (S.compartidos || []).filter((c) => c.grupoId === g.id), ds = deudasDe(g.id), mias = ds.filter((d) => esMio(g.id, d.de) || esMio(g.id, d.a));
   const sc = g.miembros.filter((m) => m.sinCuenta).length;
-  let h = '<div class="handle"></div><div class="jv-gcab">' + (o ? caraHtml(o.user_id, o.nombre, 'grande') : '<span class="jv-g-ic grande">' + escapeHtml(iniciales(g.nombre)) + '</span>') +
+  let h = '<div class="handle"></div><div class="jv-gcab">' + (o ? caraHtml(o.user_id, o.nombre, 'grande') : grupoIcHtml(g, 'grande')) +
     '<div class="jv-gcab-t"><h2>' + escapeHtml(nombreDestino(g)) + '</h2><span class="jv-caras">' + (o ? '<span class="jv-g-meta">solo vosotros dos</span>' : g.miembros.slice(0, 5).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '<span class="jv-g-meta">' + g.miembros.length + (g.miembros.length === 1 ? ' persona' : ' personas') + (sc ? ' · ' + sc + ' sin app' : '') + '</span>') + '</span></div>' +
     '<button type="button" class="icon-btn jv-ajustes" aria-label="Ajustes del grupo" ' + act('grupoAjustes', g.id) + '>' + ic('gear') + '</button></div>';
   h += introJuntosHtml(g.id);
@@ -14315,6 +14345,17 @@ const H = {
     try { FORM.invitaciones = await S.db.grupos.invitaciones(id); } catch (e) { /* */ }
     if (FORM.kind === 'grupo') updateSheet(grupoHtml(id));
   },
+  grupoFoto: async ([gid], el) => {
+    const f = el && el.files && el.files[0]; if (el) el.value = ''; if (!f) return;
+    if (!/^image\//.test(f.type || '')) return toast('Elige una imagen');
+    if (FORM && FORM.fotoSubiendo) return;
+    let d; try { d = await fotoReducir(f); } catch (e) { console.error(e); return toast('No se ha podido leer esa imagen'); }
+    if (FORM) { FORM.fotoSubiendo = true; if (fotoHojaAbierta(gid)) updateSheet(grupoHtml(gid)); }
+    const ok = await accionGrupo(() => S.db.grupos.foto(gid, d), 'Foto puesta');
+    if (FORM) FORM.fotoSubiendo = false;
+    if (ok) { render(); } if (fotoHojaAbierta(gid)) updateSheet(grupoHtml(gid));
+  },
+  grupoFotoQuitar: async ([gid]) => { if (await accionGrupo(() => S.db.grupos.foto(gid, null), 'Foto quitada')) { render(); if (fotoHojaAbierta(gid)) updateSheet(grupoHtml(gid)); } },
   grupoRenombrar: async ([id]) => { const n = ($('#gRenombrar').value || '').trim(); if (!n) return toast('Pon un nombre'); if (await accionGrupo(() => S.db.grupos.renombrar(id, n), 'Nombre cambiado')) abrirGrupo(id); },
   grupoMiNombre: async ([id]) => { const n = ($('#gMiNombreEd').value || '').trim(); if (!n) return toast('Pon un nombre'); if (await accionGrupo(() => S.db.grupos.miNombre(id, n), 'Guardado')) abrirGrupo(id); },
   grupoInvitar: async ([id]) => {
@@ -14905,6 +14946,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { herrOn, herrLista, obPasos, bvLista, bvPct, bvPiezas, bvSellosGanados, bvPpFilas, bvRecortes, bienvV2, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, tabsBarra, insightsCatalogo, herrPistaHtml };
+window.__APP__ = { fotoValida, fotoReducir, cargarGrupos, herrOn, herrLista, obPasos, bvLista, bvPct, bvPiezas, bvSellosGanados, bvPpFilas, bvRecortes, bienvV2, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, tabsBarra, insightsCatalogo, herrPistaHtml };
 if (!window.__NO_AUTOSTART__) main();
 })();

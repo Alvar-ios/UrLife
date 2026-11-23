@@ -289,6 +289,8 @@
     },
     invitaciones: function (grupoId) { return q(sb.from('grupo_invitaciones').select('token,expira,usada_en,created_at').eq('grupo_id', grupoId).order('created_at', { ascending: false })); },
     renombrar: function (grupoId, nombre) { return q(sb.from('grupos').update({ nombre: nombre }).eq('id', grupoId)); },
+    // foto del grupo (23/11, docs/46 tanda 5): data URL pequeña o null. Solo administradores (regla grupos_editar).
+    foto: function (grupoId, foto) { return q(sb.from('grupos').update({ foto: foto }).eq('id', grupoId).select('id')).then(function (d) { if (!d || !d.length) throw new Error('no_autorizado'); return d; }); },
     miNombre: function (grupoId, nombre) { return q(sb.from('grupo_miembros').update({ nombre: nombre }).eq('grupo_id', grupoId).eq('user_id', currentUid)); },
     // reparto habitual del grupo: { user_id: porcentaje } o null (a partes iguales). Solo administradores.
     // quién puede editar los gastos del grupo: 'todos' o 'autor' (y los administradores). Solo administradores.
