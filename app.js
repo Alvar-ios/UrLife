@@ -1059,6 +1059,7 @@ async function borrarCuentaOk() {
 async function limpiarAlSalir() {
   try { const id = lsGet('avDisp:' + miUid()) || S['_avDisp:' + miUid()]; if (id && window.Data && Data.moviles) await Data.moviles.quitar(id); } catch (e) { /* */ }
   try { if (avNat()) await avNat().vaciar(true); } catch (e) { /* */ }
+  try { if (atajosNat()) await atajosNat().cuenta(''); } catch (e) { /* */ } // iPhone: la cola de Atajos se vacía y no guarda nada sin sesión
   try { if (notifNat()) await notifNat().programar([]); } catch (e) { /* */ }
   try { const p = pushNat(); if (p) await p.olvidar(); } catch (e) { /* */ } // 13/11: el token de Juntos de este móvil deja de valer
   ['avTok:', 'avTokEn:', 'avTokIdioma:'].forEach((k) => { delete S['_' + k + miUid()]; try { localStorage.removeItem(k + miUid()); } catch (e) { /* */ } });
@@ -11231,7 +11232,7 @@ function avisoAMov(it) {
   const GEN = { nomina: 'Nómina', devolucion: 'Devolución', intereses: 'Intereses', dividendo: 'Dividendo', cajero: 'Cajero', recibo: 'Recibo' };
   const desc = persona ? (it.tipo === 'bizum' ? 'Bizum' + (it.entra ? ' recibido' : ' enviado') : 'Transferencia' + (it.entra ? ' recibida' : ' enviada'))
     : ((it.entra ? '' : String(it.comercio || '').trim()) || GEN[it.tipo] || (it.entra ? 'Ingreso' : 'Pago') + ' · ' + nombreDePaquete(it.pkg, it.app)); // en lo que entra no se guarda quién (suele ser una persona)
-  const kb = bancoDePaquete(it.pkg), cta = kb && kb !== 'wallet' ? cuentasCfg().find((c) => c.banco === kb) : null;
+  const kb = it.banco || bancoDePaquete(it.pkg), cta = kb && kb !== 'wallet' ? cuentasCfg().find((c) => c.banco === kb) : null;
   const regla = reglaPara(desc, tipo, cta ? cta.id : undefined), cats = categoriasPorTipo(tipo);
   let categoria = (regla && regla.categoria) || '';
   if (!categoria && tipo === 'Ingreso') {
@@ -11502,7 +11503,7 @@ function avisosTrasCargar() {
     else pushPreparar();
     pushPendienteAbrir();
     avisosRecoger();
-    if (!n && atajosNat()) { lsSet('guiaAbre', String((+lsGet('guiaAbre') || 0) + 1)); atajosNat().info().then((i) => { S._atajosInfo = i || {}; pedirRender(); }).catch(() => {}); }
+    if (!n && atajosNat()) { atajosNat().cuenta(miUid()).catch(() => {}).then(() => avisosRecoger()); lsSet('guiaAbre', String((+lsGet('guiaAbre') || 0) + 1)); atajosNat().info().then((i) => { S._atajosInfo = i || {}; pedirRender(); }).catch(() => {}); }
     if (n) { lsSet('guiaAbre', String((+lsGet('guiaAbre') || 0) + 1)); n.estado().then((e) => { S._avEst = e; pedirRender(); }).catch(() => {}); } // docs/47: aviso de Inicio
     impEntranteIni(); // C4: extracto compartido con PalomApp desde otra app
     // 13/11: Android 13+ no deja mandar avisos hasta que se dan permisos; se pide UNA vez al entrar (antes solo al tocar un interruptor de Avisos)
@@ -11661,35 +11662,39 @@ function guiaTarjetaHtml() {
    («Cuando llegue un aviso de mi banco → Apuntar aviso en PalomApp») y el texto llega a la app de iPhone, que lo guarda en el móvil.
    Aquí se lee con el mismo lector que Android (LA.leer) y solo se guarda el movimiento. Apple Pay: «Apuntar pago de Apple Pay». */
 function atajosNat() { return window.__nativo && window.__nativo.atajos ? window.__nativo.atajos : null; }
-function atajosBancoDe(nombre) { const q = normDesc(nombre || ''); if (!q) return null; const b = BANCOS.find((x) => q === normDesc(x.n) || q.indexOf(normDesc(x.n)) >= 0 || (x.alias && normDesc(x.alias) === q)); return b ? b.k : null; }
+function atajosBancoDe(nombre) { const q = normDesc(nombre || ''); if (!q) return null; const b = BANCOS.find((x) => q === normDesc(x.n) || q === x.k || q.indexOf(normDesc(x.n)) >= 0 || (x.alias && normDesc(x.alias) === q)); return b ? b.k : null; }
+// 24/11 (Datos y Seguridad): solo avisos de un banco elegido en la lista de la acción (nunca WhatsApp u otra app) y de Apple Pay; cada uno con su cuenta
 function atajosAItem(x) {
-  const k = atajosBancoDe(x.app || x.tarjeta || ''), pkgB = k && (PAQ_BANCOS.find((p) => p[0] === k) || [])[1];
-  const base = { id: x.id, ts: Number(x.ts) || Date.now(), pkg: pkgB || 'ios', app: x.app || (x.tipo === 'applepay' ? 'Apple Pay' : 'iPhone') };
+  const k = x.tipo === 'applepay' ? atajosBancoDe(x.tarjeta || '') : (BANCOS.some((b) => b.k === x.banco) ? x.banco : null);
+  if (x.tipo !== 'applepay' && !k) return null;
+  const pkgB = k && (PAQ_BANCOS.find((p) => p[0] === k) || [])[1], bn = k && BANCOS.find((b) => b.k === k);
+  const base = { id: x.id, uid: x.uid || '', ts: Number(x.ts) || Date.now(), pkg: pkgB || 'ios', banco: k || '', app: x.tipo === 'applepay' ? 'Apple Pay' : (bn ? bn.n : 'iPhone'), via: x.tipo === 'applepay' ? 'applepay' : 'aviso' };
   if (x.tipo === 'applepay') {
     const m = /\d[\d.,\s ]*/.exec(String(x.importe || '')), imp = m ? LA.numero(m[0].trim()) : null;
-    if (!(imp > 0)) return null;
-    return Object.assign(base, { importe: imp, entra: /^\s*\+/.test(String(x.importe)) , tipo: 'tarjeta', comercio: String(x.comercio || '').trim().slice(0, 40) });
+    if (!(imp > 0) || imp > 1000000) return null;
+    return Object.assign(base, { importe: imp, entra: /^\s*\+/.test(String(x.importe)), tipo: 'tarjeta', comercio: String(x.comercio || '').trim().slice(0, 40) });
   }
-  const r = LA.leer(base.pkg, x.titulo || '', x.texto || ''); if (!r) return null;
+  const r = LA.leer(base.pkg, '', x.texto || ''); if (!r) return null;
   return Object.assign(base, r);
 }
-// lo que llegó por Atajos, como la cola de Android (para avisosRecoger)
+// lo que llegó por Atajos, como la cola de Android (para avisosRecoger). El mismo pago por los dos caminos (aviso y Apple Pay)
+// se apunta una vez; dos pagos iguales por el mismo camino (dos cafés) se apuntan los dos.
 function atajosFuente() {
   const a = atajosNat(); if (!a) return null;
-  let malos = [];
   return {
     pendientes: async () => {
-      const lista = await a.pendientes().catch(() => []); malos = [];
-      const out = [];
+      const lista = await a.pendientes().catch(() => []), malos = [], out = [];
+      let vistos = []; try { vistos = JSON.parse(lsGet('atajosVistos') || '[]'); } catch (e) { /* */ }
+      vistos = vistos.filter((v) => Date.now() - v.ts < 60 * 60000);
       for (const x of lista) {
         const it = x && x.id ? atajosAItem(x) : null;
         if (!it) { if (x && x.id) malos.push(x.id); continue; }
-        // el mismo pago por dos caminos (aviso del banco y Apple Pay): una sola vez
-        const cerca = (imp, entra, ts) => Math.abs(imp - it.importe) < 0.005 && entra === !!it.entra && Math.abs(ts - it.ts) < 15 * 60000;
-        const dup = out.some((o) => cerca(o.importe, !!o.entra, o.ts)) || S.movimientos.some((m) => m.origen === 'aviso' && cerca(num(m.importe), m.tipo === 'Ingreso', Number(m.creadoEn) || 0));
+        const dup = vistos.concat(out).some((o) => o.via !== it.via && Math.abs(o.importe - it.importe) < 0.005 && !!o.entra === !!it.entra && Math.abs(o.ts - it.ts) < 15 * 60000);
+        vistos.push({ via: it.via, importe: it.importe, entra: !!it.entra, ts: it.ts });
         if (dup) { malos.push(it.id); continue; }
         out.push(it);
       }
+      lsSet('atajosVistos', JSON.stringify(vistos.slice(-40)));
       if (malos.length) await a.quitar(malos).catch(() => {});
       return out;
     },
@@ -11705,7 +11710,7 @@ function guiaIosDibujo(k) {
   if (k === 'disparador') return '<div class="gd" aria-hidden="true"><div class="gd-dos">' + movil('<div class="gd-cab"><b>Cuándo</b></div>' + fila('Hora del día', false, 'clock') + fila('Notificación', true, 'bell') + fila('Wallet', false, 'wallet') + guiaDedo('45%', '80%'), 'gd-peq') +
     movil('<div class="gd-cab"><b>Notificación</b></div><span class="gd-fila gd-tu"><span class="gd-ico b">' + ic('bank') + '</span><b>App: tu banco</b></span><span class="gd-op on"><i></i>Ejecutar inmediatamente</span>' + guiaDedo('47%', '14%'), 'gd-peq') + '</div></div>';
   if (k === 'accion') return '<div class="gd" aria-hidden="true">' + movil('<div class="gd-cab"><b>Acción</b></div><span class="gd-fila"><span class="gd-barra" style="width:40%"></span><small>PalomApp</small></span>' +
-    '<span class="gd-fila gd-tu">' + guiaApp() + '<b>Apuntar aviso en PalomApp</b></span><span class="gd-fila"><small>Texto del aviso:</small> <b class="gd-var">Entrada del atajo</b></span>' + guiaDedo('46%', '84%')) + '</div>';
+    '<span class="gd-fila gd-tu">' + guiaApp() + '<b>Apuntar aviso en PalomApp</b></span><span class="gd-fila"><small>Banco:</small> <b class="gd-var">El tuyo</b></span><span class="gd-fila"><small>Texto del aviso:</small> <b class="gd-var">Entrada del atajo</b></span>' + guiaDedo('38%', '84%')) + '</div>';
   if (k === 'applepay') return '<div class="gd" aria-hidden="true">' + movil('<div class="gd-cab"><b>Wallet</b></div><span class="gd-fila gd-tu"><span class="gd-ico b">' + ic('wallet') + '</span><b>Tus tarjetas</b></span>' +
     '<span class="gd-fila">' + guiaApp() + '<b>Apuntar pago de Apple Pay</b></span><span class="gd-fila"><small>Importe:</small> <b class="gd-var">Importe</b></span><span class="gd-fila"><small>Comercio:</small> <b class="gd-var">Comercio</b></span>') + '</div>';
   return guiaDibujo(k);
@@ -11718,7 +11723,7 @@ function guiaIosCuerpo(G) {
     '<div class="ob2-filas bv-filas">' + obFila('shield', 'v', 'El texto del aviso no sale de tu móvil', 'solo pasa el importe, el comercio y la fecha') + obFila('bank', 'r', 'Solo las apps que tú elijas', 'en Atajos eliges de qué apps se leen los avisos') + '</div>';
   if (p === 'abrir') return puntos() + guiaIosDibujo('abrir') + t('Abre Atajos') + txt('Abre la app <b>Atajos</b>, entra en <b>Automatización</b> y toca el <b>+</b> de arriba.');
   if (p === 'disparador') return puntos() + guiaIosDibujo('disparador') + t('Elige tu banco') + txt('Toca <b>Notificación</b>, elige la app de tu banco y marca <b>Ejecutar inmediatamente</b>. Toca <b>Siguiente</b>.');
-  if (p === 'accion') return puntos() + guiaIosDibujo('accion') + t('Añade PalomApp') + txt('Busca <b>PalomApp</b> y elige <b>Apuntar aviso en PalomApp</b>. En «Texto del aviso» pon <b>Entrada del atajo</b>. Toca <b>OK</b>.') +
+  if (p === 'accion') return puntos() + guiaIosDibujo('accion') + t('Añade PalomApp') + txt('Busca <b>PalomApp</b> y elige <b>Apuntar aviso en PalomApp</b>. En «Banco» elige el tuyo y en «Texto del aviso» pon <b>Entrada del atajo</b>. Toca <b>OK</b>.') +
     '<p class="gd-nota">¿Tienes más de un banco? Repite estos pasos con cada uno.</p>';
   if (p === 'applepay') return guiaIosDibujo('applepay') + t('Tus pagos con Apple Pay') + txt('En Atajos → <b>Automatización</b> → <b>+</b>, elige <b>Wallet</b> (o «Transacción»), marca tus tarjetas y <b>Ejecutar inmediatamente</b>. Añade <b>Apuntar pago de Apple Pay</b> y pon <b>Importe</b> y <b>Comercio</b> de la entrada del atajo.') +
     '<p class="gd-nota">Si un pago llega por los dos caminos, se apunta una sola vez.</p>';

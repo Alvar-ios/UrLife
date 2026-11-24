@@ -10,43 +10,113 @@ import AppIntents
  apunta el movimiento y borra la cola. El texto del aviso nunca sale del móvil.
 */
 
-// La cola de lo que llega por Atajos (máximo 200; lo más viejo se cae)
+// La cola de lo que llega por Atajos (24/11, revisión de Datos y Seguridad):
+// - un archivo por aviso en Application Support/atajos, FUERA de las copias de iCloud y con protección «completeUnlessOpen»
+//   (se puede escribir con el móvil bloqueado, que es cuando llegan los avisos; leerlo pide haberlo desbloqueado);
+// - cada aviso lleva la cuenta con sesión (`uid`); sin sesión no se guarda nada; al cerrar sesión se vacía;
+// - lo que tiene más de 7 días se tira; como mucho 50 y el texto cortado a 300 caracteres.
 enum AtajosCola {
-    static let clave = "atajosCola"
     static let lock = NSLock()
+    static let maxDias: Double = 7, maxAvisos = 50
+    static var dir: URL? {
+        guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
+        var d = base.appendingPathComponent("atajos", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: d.path) {
+            try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true, attributes: [.protectionKey: FileProtectionType.completeUnlessOpen])
+        }
+        var rv = URLResourceValues(); rv.isExcludedFromBackup = true; try? d.setResourceValues(rv)
+        return d
+    }
+    static var uid: String { UserDefaults.standard.string(forKey: "atajosUid") ?? "" }
+    static func ponerCuenta(_ u: String) {
+        lock.lock(); defer { lock.unlock() }
+        let antes = uid
+        UserDefaults.standard.set(u, forKey: "atajosUid")
+        if u.isEmpty || (!antes.isEmpty && antes != u) { vaciarSinLock() } // otra cuenta o nadie: lo pendiente no pasa a nadie
+    }
     static func anadir(_ x: [String: Any]) {
         lock.lock(); defer { lock.unlock() }
-        var l = (UserDefaults.standard.array(forKey: clave) as? [[String: Any]]) ?? []
+        let u = uid; guard !u.isEmpty, let d = dir else { return }
         var y = x
-        y["id"] = UUID().uuidString.lowercased()
-        y["ts"] = Date().timeIntervalSince1970 * 1000
-        l.append(y)
-        if l.count > 200 { l.removeFirst(l.count - 200) }
-        UserDefaults.standard.set(l, forKey: clave)
-        UserDefaults.standard.set(Date().timeIntervalSince1970 * 1000, forKey: "atajosUltimo")
+        let id = UUID().uuidString.lowercased(), ahora = Date().timeIntervalSince1970 * 1000
+        y["id"] = id; y["ts"] = ahora; y["uid"] = u
+        guard let data = try? JSONSerialization.data(withJSONObject: y) else { return }
+        try? data.write(to: d.appendingPathComponent(id + ".json"), options: [.atomic, .completeFileProtectionUnlessOpen])
+        UserDefaults.standard.set(ahora, forKey: "atajosUltimo")
+        _ = leerSinLock() // tira lo viejo y lo que sobra
     }
-    static func leer() -> [[String: Any]] { lock.lock(); defer { lock.unlock() }; return (UserDefaults.standard.array(forKey: clave) as? [[String: Any]]) ?? [] }
+    static func leerSinLock() -> [[String: Any]] {
+        guard let d = dir, let fs = try? FileManager.default.contentsOfDirectory(at: d, includingPropertiesForKeys: nil) else { return [] }
+        let limite = Date().timeIntervalSince1970 * 1000 - maxDias * 86400000
+        var l: [(URL, [String: Any])] = []
+        for f in fs where f.pathExtension == "json" {
+            guard let data = try? Data(contentsOf: f), let o = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { try? FileManager.default.removeItem(at: f); continue }
+            if ((o["ts"] as? Double) ?? 0) < limite { try? FileManager.default.removeItem(at: f); continue }
+            l.append((f, o))
+        }
+        l.sort { (($0.1["ts"] as? Double) ?? 0) < (($1.1["ts"] as? Double) ?? 0) }
+        while l.count > maxAvisos { try? FileManager.default.removeItem(at: l.removeFirst().0) }
+        return l.map { $0.1 }
+    }
+    static func leer() -> [[String: Any]] { lock.lock(); defer { lock.unlock() }; return leerSinLock() }
     static func quitar(_ ids: [String]) {
         lock.lock(); defer { lock.unlock() }
-        let fuera = Set(ids)
-        let l = ((UserDefaults.standard.array(forKey: clave) as? [[String: Any]]) ?? []).filter { !fuera.contains(($0["id"] as? String) ?? "") }
-        UserDefaults.standard.set(l, forKey: clave)
+        guard let d = dir else { return }
+        for id in ids where id.range(of: "^[a-z0-9-]{8,64}$", options: .regularExpression) != nil { try? FileManager.default.removeItem(at: d.appendingPathComponent(id + ".json")) }
+    }
+    static func vaciarSinLock() {
+        if let d = dir { try? FileManager.default.removeItem(at: d) }
+        UserDefaults.standard.removeObject(forKey: "atajosUltimo")
     }
 }
 
-// «Apuntar aviso en PalomApp»: en Atajos, «Texto del aviso» = Entrada del atajo (el aviso del banco)
+// El banco del aviso: se elige de una lista en la acción de Atajos (así nunca se lee un WhatsApp u otra app)
+@available(iOS 16.0, *)
+enum BancoAtajo: String, AppEnum {
+    case bbva, santander, caixabank, ing, sabadell, bankinter, unicaja, openbank, imagin, abanca, kutxabank, ibercaja, cajamar, evo, laboral, cajarural, selfbank, deutschebank, revolut, n26, wise, bunq, paypal, myinvestor, traderepublic
+    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Banco"
+    static var caseDisplayRepresentations: [BancoAtajo: DisplayRepresentation] = [
+            .bbva: "BBVA",
+            .santander: "Santander",
+            .caixabank: "CaixaBank",
+            .ing: "ING",
+            .sabadell: "Banco Sabadell",
+            .bankinter: "Bankinter",
+            .unicaja: "Unicaja",
+            .openbank: "Openbank",
+            .imagin: "imagin",
+            .abanca: "Abanca",
+            .kutxabank: "Kutxabank",
+            .ibercaja: "Ibercaja",
+            .cajamar: "Cajamar",
+            .evo: "EVO Banco",
+            .laboral: "Laboral Kutxa",
+            .cajarural: "Caja Rural",
+            .selfbank: "Self Bank",
+            .deutschebank: "Deutsche Bank",
+            .revolut: "Revolut",
+            .n26: "N26",
+            .wise: "Wise",
+            .bunq: "bunq",
+            .paypal: "PayPal",
+            .myinvestor: "MyInvestor",
+            .traderepublic: "Trade Republic"
+    ]
+}
+
+// «Apuntar aviso en PalomApp»: en Atajos, «Banco» = el tuyo y «Texto del aviso» = Entrada del atajo
 @available(iOS 16.0, *)
 struct ApuntarAvisoIntent: AppIntent {
     static var title: LocalizedStringResource = "Apuntar aviso en PalomApp"
     static var description = IntentDescription("Lee el aviso de tu banco y apunta el gasto o el ingreso en PalomApp. El texto no sale de tu móvil.")
     static var openAppWhenRun: Bool = false
+    @Parameter(title: "Banco") var banco: BancoAtajo
     @Parameter(title: "Texto del aviso") var texto: String
-    @Parameter(title: "Título") var titulo: String?
-    @Parameter(title: "App") var app: String?
+    static var parameterSummary: some ParameterSummary { Summary("Apuntar aviso de \(\.$banco): \(\.$texto)") }
     func perform() async throws -> some IntentResult {
-        let t = String(texto.prefix(600))
+        let t = String(texto.prefix(300))
         if !t.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            AtajosCola.anadir(["tipo": "aviso", "texto": t, "titulo": String((titulo ?? "").prefix(200)), "app": String((app ?? "").prefix(60))])
+            AtajosCola.anadir(["tipo": "aviso", "texto": t, "banco": banco.rawValue])
         }
         return .result()
     }
@@ -62,7 +132,7 @@ struct ApuntarPagoIntent: AppIntent {
     @Parameter(title: "Comercio") var comercio: String?
     @Parameter(title: "Tarjeta") var tarjeta: String?
     func perform() async throws -> some IntentResult {
-        AtajosCola.anadir(["tipo": "applepay", "importe": String(importe.prefix(40)), "comercio": String((comercio ?? "").prefix(80)), "tarjeta": String((tarjeta ?? "").prefix(60))])
+        AtajosCola.anadir(["tipo": "applepay", "importe": String(importe.prefix(40)), "comercio": String((comercio ?? "").prefix(60)), "tarjeta": String((tarjeta ?? "").prefix(40))])
         return .result()
     }
 }
@@ -83,8 +153,11 @@ public class AtajosPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "pendientes", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "quitar", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "info", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "info", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "cuenta", returnType: CAPPluginReturnPromise)
     ]
+    /// La cuenta con sesión ("" al salir: se vacía la cola)
+    @objc func cuenta(_ call: CAPPluginCall) { AtajosCola.ponerCuenta(call.getString("uid") ?? ""); call.resolve() }
     @objc func pendientes(_ call: CAPPluginCall) { call.resolve(["lista": AtajosCola.leer()]) }
     @objc func quitar(_ call: CAPPluginCall) {
         let ids = (call.getArray("ids") ?? []).compactMap { $0 as? String }

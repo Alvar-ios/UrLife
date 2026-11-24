@@ -104,6 +104,7 @@ if (Capacitor.isNativePlatform()) {
       pendientes: () => AT.pendientes().then((r) => (r && r.lista) || []),
       quitar: (ids) => AT.quitar({ ids }),
       info: () => AT.info(), // { ios: '27.1', usado: ms del último que llegó (0 = nunca) }
+      cuenta: (uid) => AT.cuenta({ uid: uid || '' }), // la cuenta con sesión; '' al salir (vacía la cola)
     };
     App.addListener('appStateChange', ({ isActive }) => { if (isActive && window.__avisosVolver) { try { window.__avisosVolver(); } catch (e) { /* */ } } });
   }
