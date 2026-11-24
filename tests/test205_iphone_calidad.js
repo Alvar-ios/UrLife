@@ -31,7 +31,7 @@ const cfgBase = { app: { compararVersiones: false, cuentas: [{ id: 'c-x', nombre
     e.w.Data.moviles = { registrar: async (p) => p.id, quitar: async () => {}, quitarTodos: async () => {} };
     await e.w.__APP__.main(); await sleep(2200);
     const av = e.w.__APP__.S.movimientos.filter((m) => m.origen === 'aviso');
-    okConocido(av.length === 2, 'dos cafés iguales, cada uno por aviso y por Apple Pay: se apuntan 2 (salen ' + av.length + ')');
+    ok(av.length === 2, 'dos cafés iguales, cada uno por aviso y por Apple Pay: se apuntan 2 (salen ' + av.length + ')');
     ok(!st.cola.length, 'la cola queda vacía');
   }
   // 2) el aviso se apunta en una vuelta; el Apple Pay del mismo pago llega en la siguiente → sigue habiendo uno
@@ -52,7 +52,7 @@ const cfgBase = { app: { compararVersiones: false, cuentas: [{ id: 'c-x', nombre
     st.cola.push({ id: 'd2', uid: 'u-1', tipo: 'applepay', importe: '7,35 €', comercio: 'Kiosco Mar', tarjeta: 'BBVA', ts: Date.now() - 94 * 60000 });
     e.w.__avisosVolver(); await sleep(500);
     const kio = S.movimientos.filter((m) => m.origen === 'aviso' && Math.abs(m.importe - 7.35) < 0.001).length;
-    okConocido(kio === 1, 'el mismo pago por Apple Pay recogido en otra apertura, pasada 1 h desde que llegó: una sola vez (salen ' + kio + ')');
+    ok(kio === 1, 'el mismo pago por Apple Pay recogido en otra apertura, pasada 1 h desde que llegó: una sola vez (salen ' + kio + ')');
     // 3) la guía: abrir, cerrar y volver a la app → no se reabre ni se repinta encima de otra cosa
     e.w.__APP__.H.goTab(['tu']); await sleep(60);
     e.w.__APP__.H.guiaAbrirDesde(['']); await sleep(500);

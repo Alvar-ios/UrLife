@@ -11637,6 +11637,7 @@ async function guiaAbrir(paso) {
 }
 // al volver a PalomApp desde los ajustes del móvil
 function guiaVolver() {
+  { const ob = S.onboarding; if (ob && bienvV2(ob) && ob.paso === 'G5' && !avNat() && atajosNat()) { atajosNat().info().then((i) => { if (S.onboarding === ob) { ob.atInfo = i || {}; render(); } }).catch(() => {}); return true; } }
   if (S._guia && S._guia.ios && guiaHojaAbierta()) { atajosNat().info().then((i) => { S._guia.info = i || {}; guiaPintar(); }).catch(() => {}); return true; }
   const ob = S.onboarding, enB = ob && ob.guia && bienvV2(ob) && ob.paso === 'G5';
   const G = enB ? ob.guia : guiaHojaAbierta() ? S._guia : null; if (!G) return false;
@@ -11684,17 +11685,18 @@ function atajosFuente() {
   return {
     pendientes: async () => {
       const lista = await a.pendientes().catch(() => []), malos = [], out = [];
+      // lo ya apuntado por Atajos (7 días, como la cola): cada pago de un camino empareja como mucho con UNO del otro (Calidad 24/11)
       let vistos = []; try { vistos = JSON.parse(lsGet('atajosVistos') || '[]'); } catch (e) { /* */ }
-      vistos = vistos.filter((v) => Date.now() - v.ts < 60 * 60000);
+      vistos = vistos.filter((v) => Date.now() - v.ts < 7 * 86400000);
       for (const x of lista) {
         const it = x && x.id ? atajosAItem(x) : null;
         if (!it) { if (x && x.id) malos.push(x.id); continue; }
-        const dup = vistos.concat(out).some((o) => o.via !== it.via && Math.abs(o.importe - it.importe) < 0.005 && !!o.entra === !!it.entra && Math.abs(o.ts - it.ts) < 15 * 60000);
+        const par = vistos.find((o) => !o.par && o.via !== it.via && Math.abs(o.importe - it.importe) < 0.005 && !!o.entra === !!it.entra && Math.abs(o.ts - it.ts) < 15 * 60000);
+        if (par) { par.par = true; malos.push(it.id); continue; } // el mismo pago, llegado por el otro camino
         vistos.push({ via: it.via, importe: it.importe, entra: !!it.entra, ts: it.ts });
-        if (dup) { malos.push(it.id); continue; }
         out.push(it);
       }
-      lsSet('atajosVistos', JSON.stringify(vistos.slice(-40)));
+      lsSet('atajosVistos', JSON.stringify(vistos.slice(-300)));
       if (malos.length) await a.quitar(malos).catch(() => {});
       return out;
     },
@@ -11710,7 +11712,7 @@ function guiaIosDibujo(k) {
   if (k === 'disparador') return '<div class="gd" aria-hidden="true"><div class="gd-dos">' + movil('<div class="gd-cab"><b>Cuándo</b></div>' + fila('Hora del día', false, 'clock') + fila('Notificación', true, 'bell') + fila('Wallet', false, 'wallet') + guiaDedo('45%', '80%'), 'gd-peq') +
     movil('<div class="gd-cab"><b>Notificación</b></div><span class="gd-fila gd-tu"><span class="gd-ico b">' + ic('bank') + '</span><b>App: tu banco</b></span><span class="gd-op on"><i></i>Ejecutar inmediatamente</span>' + guiaDedo('47%', '14%'), 'gd-peq') + '</div></div>';
   if (k === 'accion') return '<div class="gd" aria-hidden="true">' + movil('<div class="gd-cab"><b>Acción</b></div><span class="gd-fila"><span class="gd-barra" style="width:40%"></span><small>PalomApp</small></span>' +
-    '<span class="gd-fila gd-tu">' + guiaApp() + '<b>Apuntar aviso en PalomApp</b></span><span class="gd-fila"><small>Banco:</small> <b class="gd-var">El tuyo</b></span><span class="gd-fila"><small>Texto del aviso:</small> <b class="gd-var">Entrada del atajo</b></span>' + guiaDedo('38%', '84%')) + '</div>';
+    '<span class="gd-fila gd-tu">' + guiaApp() + '<b>Apuntar aviso en PalomApp</b></span><span class="gd-fila"><small>Banco:</small> <b class="gd-var">El tuyo</b></span><span class="gd-fila"><small>Texto del aviso:</small> <b class="gd-var">Entrada del atajo</b></span>' + guiaDedo('38%', '93%')) + '</div>';
   if (k === 'applepay') return '<div class="gd" aria-hidden="true">' + movil('<div class="gd-cab"><b>Wallet</b></div><span class="gd-fila gd-tu"><span class="gd-ico b">' + ic('wallet') + '</span><b>Tus tarjetas</b></span>' +
     '<span class="gd-fila">' + guiaApp() + '<b>Apuntar pago de Apple Pay</b></span><span class="gd-fila"><small>Importe:</small> <b class="gd-var">Importe</b></span><span class="gd-fila"><small>Comercio:</small> <b class="gd-var">Comercio</b></span>') + '</div>';
   return guiaDibujo(k);
@@ -11771,7 +11773,7 @@ function avisosHtml() {
     '<div class="card">' + fila('Silencio de 22:00 a 9:00', 'Lo que llegue de noche, a las 9:00', sw(ac.silencio, 'avRec', 'silencio')) + '</div>' +
     '<p class="rec-hint">Como mucho ' + AVISOS_MAX_DIA + ' avisos al día (los importantes aparte), sin cifras y sin publicidad.</p>';
   if (!e && atajosNat()) return h + '<div class="section-title">Avisos del banco</div>' + guiaTarjetaHtml().replace('PalomApp lee los avisos de tus apps de banco y apunta cada gasto o ingreso, con «Deshacer». El texto del aviso no sale de tu móvil.', 'Con la app Atajos de tu iPhone, cada aviso de tu banco o pago con Apple Pay se apunta solo, con «Deshacer». El texto del aviso no sale de tu móvil.');
-  if (!e) return h + '<p class="rec-hint">Los avisos del banco solo están en las apps de Android y de iPhone.</p>';
+  if (!e) return h + '<p class="rec-hint">Los avisos del banco solo están en la app de Android.</p>';
   if (!herrOn('avisosBanco') && !e.activo) return h + '<p class="rec-hint">Los avisos del banco están apagados en Tú → Mis herramientas.</p>';
   h += '<div class="section-title">Avisos del banco</div>';
   if (!e.activo || !e.permiso) return h + guiaTarjetaHtml() + avComprobarHtml(e, nok); // 24/11 (docs/47): la guía con dibujos
