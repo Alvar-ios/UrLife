@@ -31,6 +31,25 @@ public class AvisosBancoPlugin extends Plugin {
 
     private boolean permiso() { return NotificationManagerCompat.getEnabledListenerPackages(getContext()).contains(getContext().getPackageName()); }
 
+    /** De dónde se instaló la app: "play" (Google Play), "otro" o "" si no se sabe. */
+    private String instalador() {
+        try {
+            String pkg = getContext().getPackageName(), ins;
+            if (Build.VERSION.SDK_INT >= 30) ins = getContext().getPackageManager().getInstallSourceInfo(pkg).getInstallingPackageName();
+            else ins = getContext().getPackageManager().getInstallerPackageName(pkg);
+            if (ins == null) return "otro";
+            return "com.android.vending".equals(ins) ? "play" : "otro";
+        } catch (Exception e) { return ""; }
+    }
+
+    /** Si Android ya no le aplica el ahorro de batería a PalomApp («Sin restricciones»). */
+    private boolean bateriaLibre() {
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) getContext().getSystemService(Context.POWER_SERVICE);
+            return pm != null && pm.isIgnoringBatteryOptimizations(getContext().getPackageName());
+        } catch (Exception e) { return false; }
+    }
+
     @PluginMethod
     public void estado(PluginCall call) {
         try {
@@ -50,6 +69,10 @@ public class AvisosBancoPlugin extends Plugin {
             r.put("muestras", BuildConfig.DEBUG ? new JSONArray(p.getString("muestras", "[]")) : new JSONArray());
             r.put("prueba", BuildConfig.DEBUG);
             r.put("android", Build.VERSION.SDK_INT);
+            // 24/11 (docs/47): para que la guía se salte lo que no hace falta
+            r.put("instalador", instalador());
+            r.put("bateriaLibre", bateriaLibre());
+            r.put("marca", Build.MANUFACTURER == null ? "" : Build.MANUFACTURER.toLowerCase());
             call.resolve(r);
         } catch (Exception e) { call.reject(e.getMessage()); }
     }

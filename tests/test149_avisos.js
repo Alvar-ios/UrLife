@@ -47,11 +47,17 @@ const hoyISO = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0
   ok(!!e.doc.querySelector('[data-click="avAbrir"]'), 'en Tú está la fila «Avisos»');
   click(e, 'avAbrir'); await sleep(80);
   const sh = () => (e.doc.querySelector('#sheetHost') || {}).textContent || '';
-  ok(/no lee mensajes, WhatsApp ni redes sociales/.test(sh()) && /Nunca/.test(sh()), 'antes de pedir el permiso se explica qué hace');
-  click(e, 'avActivar'); await sleep(120);
+  ok(/Que se apunten solos tus pagos/.test(sh()) && /no sale de tu móvil/.test(sh()) && !!e.doc.querySelector('#sheetHost .gd-movil'), 'antes de pedir el permiso, la tarjeta de la guía explica qué hace (docs/47)');
+  click(e, 'guiaAbrirDesde'); await sleep(500);
+  ok(/Que se apunten solos/.test(sh()) && /nunca mensajes, WhatsApp, códigos ni claves/.test(sh()), 'la guía se abre por su portada');
+  e.w.__APP__.H.guiaIr(['acceso']); await sleep(80);
+  click(e, 'guiaAcceso'); await sleep(150);
   const c = llamadas.configurar.find((o) => 'activo' in o) || {};
-  ok(c.activo === true && (c.bancos || []).includes('es.bancosantander.apps') && (c.bancos || []).includes('de.traderepublic.app') && llamadas.ajustes === 1, '«Aceptar y activar» marca los bancos de serie y abre los ajustes de Android');
-  est.permiso = true; e.w.__avisosVolver(); await sleep(120);
+  ok(c.activo === true && (c.bancos || []).includes('es.bancosantander.apps') && (c.bancos || []).includes('de.traderepublic.app') && llamadas.ajustes === 1, '«Abrir ajustes» marca los bancos de serie y abre los ajustes de Android');
+  est.permiso = true; e.w.__avisosVolver(); await sleep(150);
+  ok(!/Deja que lea los avisos/.test(sh()) && /Que no se duerma|pruébalo/i.test(sh()), 'con el permiso dado, la guía pasa al paso siguiente');
+  e.w.__APP__.H.guiaCerrar([]); await sleep(300);
+  click(e, 'avAbrir'); await sleep(120);
   ok(/Qué apps se leen/.test(sh()) && /Trade Republic/.test(sh()), 'con el permiso dado, se ven las apps que se leen');
   // 12/11 (Datos y Seguridad): cerrar sesión apaga los avisos del banco y borra lo pendiente del móvil
   e.w.__APP__.H.closeSheet([]); await sleep(300);

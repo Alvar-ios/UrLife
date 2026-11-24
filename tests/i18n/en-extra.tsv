@@ -696,3 +696,72 @@ Foto puesta	Photo added
 Foto quitada	Photo removed
 Elige una imagen	Choose an image
 No se ha podido leer esa imagen	Couldn't read that image
+Pago de # en Mercado	Payment of # at Mercado
+Te han enviado #	You've been sent #
+Tu banco	Your bank
+Apuntado solo	Added automatically
+Deshacer	Undo
+¿Permitir que PalomApp te envíe notificaciones?	Allow PalomApp to send you notifications?
+Permitir	Allow
+No permitir	Don't allow
+Acceso a notificaciones	Notification access
+¿Permitir el acceso a las notificaciones de PalomApp?	Allow notification access for PalomApp?
+Cancelar	Cancel
+Información de la app	App info
+Ajuste restringido	Restricted setting
+Desinstalar	Uninstall
+Permitir ajustes restringidos	Allow restricted settings
+Batería	Battery
+Sin restricciones	Unrestricted
+Optimizada	Optimized
+Restringida	Restricted
+Inicio automático	Autostart
+Bizum recibido	Bizum received
+Paso # de #	Step # of #
+Que se apunten solos	Let them add themselves
+Ya está activado: cuando tu banco te avise de un pago, PalomApp lo apunta por ti.	It's on: when your bank notifies you of a payment, PalomApp adds it for you.
+Cuando tu banco te avise de un pago, PalomApp lo apunta por ti. Son 3 pasos y tardas un minuto.	When your bank notifies you of a payment, PalomApp adds it for you. It's 3 steps and takes a minute.
+Que PalomApp te avise	Let PalomApp notify you
+Así verás cada pago apuntado y podrás darle a «Deshacer» si no es tuyo.	You'll see each payment added and can tap “Undo” if it isn't yours.
+Android ya no pregunta: en los ajustes, activa las	Android won't ask again: in settings, turn on PalomApp's
+de PalomApp.	.
+En la ventana que sale, toca	In the window that appears, tap
+Deja que lea los avisos	Let it read notifications
+Se abrirán los ajustes del móvil. Busca	Your phone's settings will open. Find
+, activa el interruptor y toca	, turn on the switch and tap
+. Después vuelve aquí con la flecha de atrás.	. Then come back here with the back arrow.
+Aún no está dado. Vuelve a tocar «Abrir ajustes».	It isn't allowed yet. Tap “Open settings” again.
+¿Te sale en gris?	Is it greyed out?
+Android lo bloquea en las apps que no vienen de Google Play. Toca los	Android blocks it in apps that don't come from Google Play. Tap the
+de arriba, elige	at the top, choose
+y pon tu huella o PIN. Luego vuelve a probar el paso 2.	and use your fingerprint or PIN. Then try step 2 again.
+Que no se duerma	Keep it awake
+Algunos móviles apagan las apps para ahorrar batería. Entra en	Some phones shut apps down to save battery. Go to
+y elige	and choose
+y activa	and turn on
+¡Funciona!	It works!
+¡Listo! Ahora, pruébalo	Done! Now try it
+Ya se ha apuntado solo tu primer pago. Lo verás en Inicio con «Deshacer».	Your first payment has been added automatically. You'll see it on Home with “Undo”.
+Paga algo con tarjeta o pide a alguien un Bizum de # €. En unos segundos lo verás apuntado en Inicio.	Pay for something by card or ask someone for a # € Bizum. In a few seconds you'll see it on Home.
+Paga algo con tarjeta o pide a alguien un Bizum de #. En unos segundos lo verás apuntado en Inicio.	Pay for something by card or ask someone for a # Bizum. In a few seconds you'll see it on Home.
+Falta el paso 2: sin él no se apunta nada.	Step 2 is missing: without it nothing gets added.
+Empezar	Start
+Ahora no	Not now
+Saltar	Skip
+Permitir avisos	Allow notifications
+Abrir ajustes	Open settings
+Abrir ajustes de PalomApp	Open PalomApp settings
+Volver al paso 2	Back to step 2
+Ya lo he hecho	I've done it
+Entendido	Got it
+Seguir	Continue
+Mandarme un aviso de prueba	Send me a test notification
+Los avisos del banco se han parado	Bank notifications have stopped
+Android ha quitado el permiso. Vuelve a darlo en un minuto.	Android removed the permission. Give it again in a minute.
+Arreglarlo	Fix it
+Tus pagos pueden apuntarse solos	Your payments can add themselves
+Con los avisos de tu banco, en un minuto.	With your bank's notifications, in a minute.
+Ver cómo	See how
+Que se apunten solos tus pagos	Let your payments add themselves
+PalomApp lee los avisos de tus apps de banco y apunta cada gasto o ingreso, con «Deshacer». El texto del aviso no sale de tu móvil.	PalomApp reads notifications from your banking apps and adds each expense or income, with “Undo”. The notification text never leaves your phone.
+Ver cómo se activa	See how to turn it on
