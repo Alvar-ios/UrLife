@@ -126,7 +126,7 @@ struct ApuntarAvisoIntent: AppIntent {
 @available(iOS 16.0, *)
 struct ApuntarPagoIntent: AppIntent {
     static var title: LocalizedStringResource = "Apuntar pago de Apple Pay"
-    static var description = IntentDescription("Apunta en PalomApp un pago hecho con Apple Pay.")
+    static var description = IntentDescription("Apunta en PalomApp un pago hecho con la cartera del móvil.")
     static var openAppWhenRun: Bool = false
     @Parameter(title: "Importe") var importe: String
     @Parameter(title: "Comercio") var comercio: String?
