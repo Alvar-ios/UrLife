@@ -12,3 +12,13 @@ keystore.properties
 
 # Firebase (avisos de Juntos): lo escribe el workflow de Android desde los secretos; nunca al repositorio
 google-services.json
+
+# App de iPhone (24/11): lo genera «cap sync ios»
+movil/ios/App/App/public/
+movil/ios/App/App/capacitor.config.json
+movil/ios/App/App/config.xml
+movil/ios/App/build/
+movil/ios/DerivedData/
+xcuserdata/
+*.p8
+GoogleService-Info.plist

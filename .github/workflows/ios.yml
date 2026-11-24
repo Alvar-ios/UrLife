@@ -1,0 +1,80 @@
+# Compila la app de iPhone (PalomApp) en un Mac de GitHub (24/11/2026).
+# - Al subir cambios de la app a una rama de trabajo (fase*): solo comprueba que compila (para el simulador, sin firmar).
+# - A mano (Actions → «App de iPhone» → Run workflow): la firma y la sube a TestFlight (App Store Connect), si están los secretos.
+# Secretos (solo en GitHub, nunca en el repositorio, que es público):
+#   APPLE_TEAM_ID       el «Team ID» de la cuenta de Apple Developer (10 letras y números)
+#   ASC_KEY_ID          el «Key ID» de la clave de la API de App Store Connect
+#   ASC_ISSUER_ID       el «Issuer ID» de esa clave
+#   ASC_KEY_P8          el contenido del archivo AuthKey_XXXX.p8 (se descarga una sola vez)
+name: App de iPhone
+on:
+  push:
+    branches: ['fase**']
+    paths: ['movil/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión que verá el usuario (por ejemplo 1.0.0)'
+        required: true
+        default: '1.0.0'
+permissions:
+  contents: read
+jobs:
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      TIENE_FIRMA: ${{ secrets.ASC_KEY_P8 != '' && secrets.APPLE_TEAM_ID != '' && 'si' || 'no' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Versión de Xcode
+        run: xcodebuild -version
+      - name: Preparar la web dentro de la app
+        working-directory: movil
+        run: npm ci && npm run copiar && npx cap sync ios
+      - name: Comprobar que compila (simulador, sin firmar)
+        working-directory: movil/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -40
+          test ${PIPESTATUS[0]} -eq 0
+      - name: Firmar y subir a TestFlight
+        if: ${{ env.TIENE_FIRMA == 'si' && github.event_name == 'workflow_dispatch' }}
+        working-directory: movil/ios/App
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          VERSION: ${{ inputs.version }}
+          BUILD: ${{ github.run_number }}
+        run: |
+          set -eo pipefail
+          KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          trap 'rm -f "$KEY"' EXIT
+          printf '%s' "$ASC_KEY_P8" > "$KEY"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/PalomApp.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD" \
+            "${AUTH[@]}" archive | tail -40
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/PalomApp.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
+            "${AUTH[@]}" | tail -40
+          echo "Subida a App Store Connect: versión $VERSION ($BUILD). En unos minutos sale en TestFlight."

@@ -28,12 +28,12 @@
 <p class="idioma"><button type="button" data-l="es">Español</button> · <button type="button" data-l="en">English</button></p>
 <div data-version="es">
 <h1>Privacidad en PalomApp</h1>
-<p class="sub">Última actualización: 12 de noviembre de 2026</p>
+<p class="sub">Última actualización: 24 de noviembre de 2026</p>
 
 <p>PalomApp es una app para llevar tu dinero, tus planes y los gastos que compartes con otras personas. Esta página explica qué datos guarda, para qué y qué puedes hacer con ellos. Lo resumimos así: <b>tus datos son tuyos, no los vendemos, no hay publicidad ni seguimiento, y puedes borrarlo todo cuando quieras.</b></p>
 
 <h2>Quién es el responsable</h2>
-<p>El responsable de tus datos es la persona que publica PalomApp en Google Play (su nombre aparece en la ficha de la app). Para cualquier cosa sobre tus datos, escríbenos a <a href="mailto:cortex.studio.mkt@gmail.com">cortex.studio.mkt@gmail.com</a>.</p>
+<p>El responsable de tus datos es la persona que publica PalomApp en Google Play y en el App Store (su nombre aparece en la ficha de la app). Para cualquier cosa sobre tus datos, escríbenos a <a href="mailto:cortex.studio.mkt@gmail.com">cortex.studio.mkt@gmail.com</a>.</p>
 
 <h2>Qué datos guardamos</h2>
 <div class="tabla"><table>
@@ -47,8 +47,9 @@
 <tr><td>Si activas los avisos del banco: un identificador de tu móvil, su idioma y su zona horaria</td><td>Guardar en tu cuenta lo que leen tus avisos del banco</td><td>Nadie</td></tr>
 </table></div>
 <p>No pedimos tu ubicación, ni tus contactos, ni accedemos a tu banco. Los extractos que importas se leen en tu móvil y solo se guardan los movimientos que eliges.</p>
-<h2>Avisos del banco (solo en la app de Android, opcional)</h2>
+<h2>Avisos del banco (opcional)</h2>
 <p>Viene apagado. Si lo activas, PalomApp lee <b>en tu móvil</b> los avisos de las apps de banco que elijas para apuntar cada gasto o ingreso. El texto del aviso se lee y se descarta en el móvil: a tu cuenta solo pasa el movimiento (importe, comercio, fecha y cuenta). El movimiento se guarda en tu cuenta <b>aunque PalomApp esté cerrada</b>: para eso tu móvil tiene una clave propia, que se retira al apagar los avisos, al cerrar sesión o al borrar tu cuenta. Cada aviso apuntado así trae un botón «Deshacer». En un Bizum o una transferencia no se guarda el nombre de la otra persona. No miramos mensajes, WhatsApp ni redes sociales: solo apps de bancos y de pagos. Para proponerte un banco que falte, de esas apps solo se anota el nombre de la que avisa de un pago, nunca lo que dice. Nunca leemos códigos de verificación y no nos conectamos con tu banco. Solo se lee mientras tienes la sesión abierta en PalomApp. Lo leído y aún no apuntado se queda en tu móvil 7 días como mucho y se borra al apagarlo, al cerrar sesión o al borrar tu cuenta (al cerrar sesión, además, se apaga). Puedes apagarlo cuando quieras en Tú → Avisos, y quitar el permiso en los ajustes de Android.</p>
+<p>En iPhone, PalomApp no puede leer los avisos de otras apps. Si tú lo preparas en la app Atajos de Apple, cada aviso del banco que elijas o cada pago con Apple Pay se manda a PalomApp. El texto se guarda solo en tu iPhone, fuera de las copias de seguridad, hasta que abres PalomApp; entonces se lee en el móvil, se apunta el movimiento (importe, comercio, fecha y cuenta) y el texto se borra. Solo se aceptan avisos de los bancos de la lista y de Apple Pay. Lo que no se ha apuntado se borra a los 7 días, al cerrar sesión o al borrar tu cuenta. Para dejar de usarlo, borra la automatización en Atajos.</p>
 <p>Para saber si la app funciona, calculamos <b>cifras totales de uso</b> (por ejemplo, cuántas personas la usaron esta semana o cuántos grupos hay). Son solo recuentos de todos juntos: no seguimos a ninguna persona, no miramos lo que apuntas y las cifras de menos de 5 personas no se muestran.</p>
 
 <h2>Servicios que nos ayudan</h2>
@@ -56,6 +57,8 @@
 <ul>
 <li><b>Supabase</b>: guarda tu cuenta y tus datos.</li>
 <li><b>Vercel</b>: sirve la versión web.</li>
+<li><b>Apple</b>: distribuye la app de iPhone. Si usas Atajos o Apple Pay, eso ocurre en tu iPhone y Apple no recibe nada de PalomApp.</li>
+<li><b>Firebase (Google)</b>: en la app de Android, entrega los avisos de Juntos con la app cerrada. Recibe un identificador del móvil y el texto de ese aviso (quién apuntó o pagó, qué y cuánto), no el resto de lo que apuntas.</li>
 <li><b>Cloudflare Turnstile</b>: al entrar o crear la cuenta comprueba que no eres un robot (ve datos técnicos del navegador, no tu correo ni tus datos de la app).</li>
 <li><b>Anthropic</b>: si usas «Leer un ticket con una foto», la foto se envía para leerla. La foto no se guarda: solo los artículos que confirmas.</li>
 <li><b>OpenRouteService</b>: si usas «Calcular km» en la calculadora de trayecto, recibe los dos sitios que escribes. No se guardan.</li>
@@ -77,12 +80,12 @@
 </div>
 <div data-version="en" lang="en" hidden>
 <h1>Privacy in PalomApp</h1>
-<p class="sub">Last updated: 10 November 2026</p>
+<p class="sub">Last updated: 24 November 2026</p>
 
 <p>PalomApp is an app to keep track of your money, your plans and the expenses you share with other people. This page explains what data it keeps, what for and what you can do with it. In short: <b>your data is yours, we don't sell it, there are no ads or tracking, and you can delete everything whenever you want.</b></p>
 
 <h2>Who is responsible</h2>
-<p>The controller of your data is the person who publishes PalomApp on Google Play (their name appears on the app's listing). For anything about your data, write to us at <a href="mailto:cortex.studio.mkt@gmail.com">cortex.studio.mkt@gmail.com</a>.</p>
+<p>The controller of your data is the person who publishes PalomApp on Google Play and the App Store (their name appears on the app's listing). For anything about your data, write to us at <a href="mailto:cortex.studio.mkt@gmail.com">cortex.studio.mkt@gmail.com</a>.</p>
 
 <h2>What data we keep</h2>
 <div class="tabla"><table>
@@ -94,8 +97,9 @@
 <tr><td>Tasks and agenda</td><td>Getting organised</td><td>Only whoever you share it with</td></tr>
 </table></div>
 <p>We don't ask for your location or your contacts, and we don't access your bank. The statements you import are read on your phone and only the transactions you choose are saved.</p>
-<h2>Bank notifications (Android app only, optional)</h2>
+<h2>Bank notifications (optional)</h2>
 <p>It comes switched off. If you turn it on, PalomApp reads <b>on your phone</b> the notifications from the bank apps you choose, to add each expense or income. The notification text is read and discarded on the phone: only the transaction (amount, shop, date and account) goes to your account. For a Bizum or a transfer, the other person's name isn't saved. We don't look at messages, WhatsApp or social media: only bank and payment apps. To suggest a missing bank, from those apps we only note the name of the one that notifies a payment, never what it says. We never read verification codes and we don't connect to your bank. It's only read while you're logged in to PalomApp. What's been read and not yet added stays on your phone for 7 days at most and is deleted when you turn it off, log out or delete your account (logging out also turns it off). You can turn it off whenever you want in You → Notifications, and remove the permission in Android settings.</p>
+<p>On iPhone, PalomApp can't read other apps' notifications. If you set it up in Apple's Shortcuts app, each notification from the bank you choose or each Apple Pay payment is sent to PalomApp. The text is stored only on your iPhone, outside backups, until you open PalomApp; then it's read on the phone, the transaction (amount, shop, date and account) is added and the text is deleted. Only notifications from the banks on the list and Apple Pay are accepted. Anything not yet added is deleted after 7 days, when you log out or when you delete your account. To stop using it, delete the automation in Shortcuts.</p>
 <p>To know whether the app works, we calculate <b>total usage figures</b> (for example, how many people used it this week or how many groups there are). They're only counts of everyone together: we don't track anyone, we don't look at what you enter and figures for fewer than 5 people aren't shown.</p>
 
 <h2>Services that help us</h2>
@@ -103,6 +107,8 @@
 <ul>
 <li><b>Supabase</b>: stores your account and your data.</li>
 <li><b>Vercel</b>: serves the web version.</li>
+<li><b>Apple</b>: distributes the iPhone app. If you use Shortcuts or Apple Pay, that happens on your iPhone and Apple receives nothing from PalomApp.</li>
+<li><b>Firebase (Google)</b>: in the Android app, it delivers Shared notifications when the app is closed. It receives a phone identifier and the text of that notification (who added or paid, what and how much), not the rest of what you enter.</li>
 <li><b>Cloudflare Turnstile</b>: when you sign in or sign up it checks that you're not a robot (it sees technical browser data, not your email or your app data).</li>
 <li><b>Anthropic</b>: if you use «Read a receipt with a photo», the photo is sent to be read. The photo isn't saved: only the items you confirm.</li>
 <li><b>OpenRouteService</b>: if you use «Work out km» in the trip calculator, it receives the two places you type. They aren't saved.</li>

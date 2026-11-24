@@ -1059,6 +1059,7 @@ async function borrarCuentaOk() {
 async function limpiarAlSalir() {
   try { const id = lsGet('avDisp:' + miUid()) || S['_avDisp:' + miUid()]; if (id && window.Data && Data.moviles) await Data.moviles.quitar(id); } catch (e) { /* */ }
   try { if (avNat()) await avNat().vaciar(true); } catch (e) { /* */ }
+  try { if (atajosNat()) await atajosNat().cuenta(''); } catch (e) { /* */ } // iPhone: la cola de Atajos se vacía y no guarda nada sin sesión
   try { if (notifNat()) await notifNat().programar([]); } catch (e) { /* */ }
   try { const p = pushNat(); if (p) await p.olvidar(); } catch (e) { /* */ } // 13/11: el token de Juntos de este móvil deja de valer
   ['avTok:', 'avTokEn:', 'avTokIdioma:'].forEach((k) => { delete S['_' + k + miUid()]; try { localStorage.removeItem(k + miUid()); } catch (e) { /* */ } });
@@ -4574,11 +4575,11 @@ function renderInicioNuevo() {
   if (agcOn() && !S._agcTs && !S._agcCargando && S.grupos) setTimeout(() => agcCargar(), 0); // para que «Privada» esté a mano desde el +
   const piezas = () => (inicioV3() ? inicioPiezasHtml() : insightsHtmlV2() + estosDiasHtml(true));
   if (basico()) { // docs/38 §2.1: una sola tarjeta de ayuda; las piezas, cuando ya no se ve «Primeros pasos»; al final, «Descubre PalomApp»
-    const avisoB = inv || tuMesSugHtml() || infAvisoHtml(), pp = avisoB ? '' : ppEstado();
+    const avisoB = inv || guiaInicioHtml() || tuMesSugHtml() || infAvisoHtml(), pp = avisoB ? '' : ppEstado();
     const ayuda = avisoB || (pp === 'tarjeta' || pp === 'hecho' ? ppTarjetaHtml() : (pp === 'linea' ? ppLineaHtml() : '') + sugerenciaHtml());
     return heroMesHtmlV2() + avisosInicioHtml() + ayuda + (pp === 'tarjeta' ? '' : piezas()) + descLineaHtml();
   }
-  return heroMesHtmlV2() + avisosInicioHtml() + (inv || tuMesSugHtml() || aviso30Html() || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + piezas() + herrPistaHtml('inicio');
+  return heroMesHtmlV2() + avisosInicioHtml() + (inv || guiaInicioHtml() || tuMesSugHtml() || aviso30Html() || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + piezas() + herrPistaHtml('inicio');
 }
 // la cifra grande, con los céntimos más pequeños
 function cifraHtml(v) { const t = money(v), i = t.lastIndexOf(','); return i < 0 ? escapeHtml(t) : escapeHtml(t.slice(0, i)) + '<small>' + escapeHtml(t.slice(i)) + '</small>'; }
@@ -5233,7 +5234,7 @@ const HERRAMIENTAS = [
   { k: 'juntos', ic: 'users', n: 'Juntos', f: 'Gastos compartidos con tu pareja, tu casa o un viaje.', disp: () => compartidosDisponible(), datos: () => (S.compartidos || []).length > 0 || (S.grupos || []).length > 0 },
   { k: 'agenda', ic: 'calendar', n: 'Agenda y tareas', f: 'Lo que tienes que hacer, con su día.', datos: () => (S.tareas || []).length > 0 },
   { k: 'tickets', ic: 'camera', n: 'Lectura de tickets', f: 'Haz una foto al ticket y la app apunta el total.', disp: () => ticketsDisponible() },
-  { k: 'avisosBanco', ic: 'bell', n: 'Avisos del banco', f: 'Se apuntan solos tus pagos y bizums, con «Deshacer».', disp: () => !!avNat() },
+  { k: 'avisosBanco', ic: 'bell', n: 'Avisos del banco', f: 'Se apuntan solos tus pagos y bizums, con «Deshacer».', disp: () => !!(avNat() || atajosNat()) },
   { k: 'informes', ic: 'sparkle', n: 'Informes', f: 'Un resumen de tu mes en frases sencillas.', datos: () => { const o = (cfg().informes || {}).on; return !!o && (o === true || Object.keys(o).some((k) => o[k])); } },
   { k: 'trayecto', ic: 'coche2', n: 'Calculadora de trayecto', f: 'Cuánto cuesta un viaje en coche, con el precio de hoy.', datos: () => !!cfg().trayecto },
 ];
@@ -11102,6 +11103,128 @@ function catIngresoAviso(tipoAv, importe, cats, sinOtros) {
 }
 function catIngresoOtros(cats) { return (cats || categoriasPorTipo('Ingreso')).find((c) => /^otro|otros ingresos/.test(normDesc(c))) || (cats || []).find((c) => /otro/i.test(c)) || 'Otros ingresos'; }
 // lo leído → un movimiento de PalomApp
+/* ---- Lector de avisos del banco en JS (24/11/2026) ----
+   Copia exacta de LectorAvisos.java (Android) para el iPhone: allí el texto del aviso llega por Atajos (iOS 27) y se lee aquí, en el
+   propio móvil; a la cuenta solo pasa el movimiento (importe, comercio, fecha). Ante la duda, no devuelve nada. Si se cambia uno, cambiar el otro
+   (tests/test203 pasa al JS las mismas pruebas de Java). */
+const LA = (() => {
+  const F = 'iu';
+  // \b de Java (entiende acentos); el de JS solo ve letras sin acento
+  const B = '(?:(?<=[\\p{L}\\p{N}_])(?![\\p{L}\\p{N}_])|(?<![\\p{L}\\p{N}_])(?=[\\p{L}\\p{N}_]))';
+  const R = (src, fl) => new RegExp(src.split('\\b').join(B), fl);
+  const IGNORAR = R('c[oó]digo|\\bclave\\b|\\botp\\b|contrase[nñ]a|verificaci|verification|\\bcode\\b|' +
+    'confirma (tu|la|esta|el)|confirm (your|the)|pendiente|autoriza (la|esta|tu)|approve|preautoriz|retenci[oó]n|' +
+    'rechazad|denegad|declined|fallid|failed|no se ha podido|cancelad|anulad|revertid|retrocedid|reversed|insufficient|fondos insuficientes|caducad|expirad|expired|' +
+    'llegar[aá] (ma[nñ]ana|pronto|hoy|el d[ií]a)|se (cargar|cobrar|abonar|pagar)[aá]|cargaremos|cobraremos|abonaremos|pr[oó]ximo (recibo|cargo|pago)|vence|ma[nñ]ana se|recuerda|' +
+    'resumen|este mes has|esta semana has|en lo que va de|semanal|mensual|' +
+    'a tu (espacio|hucha|cuenta|ahorro|bolsillo|pocket|vault|meta)|entre tus cuentas|traspaso|to your (savings|space|pocket|vault)|' +
+    'te (ha|han) (solicitado|pedido)|te pide|solicitud de|' +
+    'orden de (compra|venta)|plan de inversi|acciones|\\betf\\b|participaciones|has cambiado|cambio de divisa|' +
+    'promoci[oó]n|sorteo|gana hasta|consigue|por cada amigo|invita a|cashback de hasta|descuento de|' +
+    'l[ií]mite de (gasto|tu tarjeta|cr[eé]dito)|inicio de sesi[oó]n|has iniciado|nuevo dispositivo', F);
+  const SALDO = R('(tu saldo|saldo( disponible| actual)?|balance)\\b[^.!\\n]*', 'giu');
+  const NUM = '(\\d{1,3}(?: \\d{3})+,\\d{2}|\\d{1,3}(?:[.\\u00a0\\u202f]\\d{3})+(?:,\\d{1,2})?|\\d{1,3}(?:,\\d{3})+(?:\\.\\d{1,2})?|\\d+(?:[.,]\\d{1,2})?)';
+  const SIG = '(?:(?<![\\p{L}\\d])([-−+])(?=€?\\d))?';
+  const IMP_DESPUES = R(SIG + '(?<![\\d/*.,])' + NUM + '\\s?(?:€|eur(?:os?)?\\b)', F);
+  const IMP_ANTES = R(SIG + '(?:€|\\beur)\\s?([-−+])?\\s?' + NUM, F);
+  const ENTRA = R('ingreso|ingresad|has recibido|te (han|ha) (enviado|transferido|pagado|devuelto|ingresado|hecho)|' +
+    'recibid[oa]s?|abono|abonad|devoluci[oó]n|devuelto|reembolso|n[oó]mina|intereses|dividendo|' +
+    'you (have )?received|received|refund|incoming|deposit|interest|paid you|been paid|sent you|has cobrado', F);
+  const SALE = R('compra|pago|has pagado|pagado|pagaste|has gastado|gastaste|te han cobrado|cobro de|charged|cargo|cargad|adeudo|recibo|retirada|has retirado|reintegro|cajero|has enviado|enviaste|' +
+    'con tarjeta|operaci[oó]n con|movimiento en tu tarjeta|autorizada|transferencia (enviada|realizada|emitida|ejecutada)|has (hecho|realizado|transferido)|' +
+    'you (spent|paid|sent)|spent|payment|paid|withdraw|purchase|card transaction', F);
+  const GANA_ENTRA = R('devoluci|reembolso|refund|devuelto|abono|te (ha|han) (enviado|transferido|pagado|devuelto)|has recibido|recibid[oa]|received|paid you|been paid|sent you|has cobrado', F);
+  const RECIBO_RECIBIDO = R('recibid[oa]s? (un|el|tu|nuevo) (nuevo )?recibo', F);
+  const GANA_SALE = R('\\brecibo\\b|adeudo|\\bcargo\\b|domiciliaci', F);
+  const TRAS_EN = R('(?:\\ben|\\bat|\\bin)\\s+(.+)', 'iu');
+  const MAYUS_TRAS = /^[\s:·-]*([A-ZÁÉÍÓÚÑÜ0-9][A-ZÁÉÍÓÚÑÜ0-9 .&'*-]{2,40})/u;
+  const CORTE = R('\\s+(con|el|la|de|del|on|with|using|mediante|desde tu|desde la|en tu|en la cuenta|a tu|por|via|vía|hoy|ayer|a las|at \\d|\\d{1,2}[/:]\\d{2}|tarjeta|card|terminada|acabada|\\*{2,}|•{2,}|x{3,}|concepto|ref|a|to|for|by|was|has been)\\b.*|[.!·|(\\[,;:].*', F);
+  const GENERICO = R('^(?:(tu|su|tus|cuenta|tarjeta|card|compra|pago|bizum|transferencia|transfer|recibo|ingreso|nuevo|nueva|movimiento|operaci[oó]n|cajero|efectivo|un cajero|' +
+    'aviso|alerta|notificaci[oó]n|santander|sabadell|n26|trade republic|bbva|caixabank|ing|revolut|openbank|bankinter|imagin|unicaja|abanca|paypal|google|wallet|euros?|eur)\\b.*)$', 'isu');
+  const limpiar = (s) => s == null ? '' : String(s).replace(/ /g, ' ').replace(/ /g, ' ').replace(/[\r\n\t]+/g, ' ').replace(/ {2,}/g, ' ').trim();
+  function numero(n) {
+    if (n == null) return null;
+    let s = String(n).replace(/[   ]/g, '');
+    const c = s.lastIndexOf(','), p = s.lastIndexOf('.');
+    if (c >= 0 && p >= 0) s = c > p ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+    else if (c >= 0) { const dec = s.slice(c + 1); s = dec.length === 3 && s.indexOf(',') === c ? s.replace(/,/g, '') : s.replace(',', '.'); }
+    else if (p >= 0) { const dec = s.slice(p + 1); if (dec.length === 3) s = s.replace(/\./g, ''); }
+    if (!/^[+-]?\d+(\.\d+)?$/.test(s)) return null;
+    return parseFloat(s);
+  }
+  function tipoDe(s, entra) {
+    const l = s.toLowerCase(), m = (re) => re.test(l);
+    if (l.includes('bizum')) return 'bizum';
+    if (m(/n[oó]mina|salario|sueldo|haberes|payroll/)) return 'nomina';
+    if (entra && m(/intereses|interest/)) return 'intereses';
+    if (entra && l.includes('dividendo')) return 'dividendo';
+    if (m(/cajero|retirada|has retirado|reintegro|withdraw|atm/)) return 'cajero';
+    if (m(/devoluci|devuelto|reembolso|refund/)) return 'devolucion';
+    if (m(/recibo|adeudo|domiciliaci|direct debit/)) return 'recibo';
+    if (m(/transferencia|transfer|traspaso|paypal|has enviado|te ha enviado|te ha pagado/)) return 'transferencia';
+    if (entra && m(/has recibido|te ha llegado|recibido de|received/)) return 'transferencia';
+    if (m(/tarjeta|card|compra|purchase|spent|pago|pagado|wallet|google pay|apple pay|contactless/)) return 'tarjeta';
+    return 'otro';
+  }
+  function pulir(c) {
+    if (c == null) return '';
+    c = String(c).replace(/["«»“”']/g, '').replace(/[^\p{L}\p{N}\s.&*-]/gu, '').replace(/\s{2,}/g, ' ').trim();
+    c = c.replace(/[\s:.*-]+$/, '');
+    if (c.length > 40) c = c.slice(0, 40).trim();
+    if (c.length < 2) return '';
+    if (c === c.toUpperCase() && /\p{L}{3,}/u.test(c)) {
+      let b = '', ini = true;
+      for (const ch of c.toLocaleLowerCase('es-ES')) { b += ini && /\p{L}/u.test(ch) ? ch.toLocaleUpperCase('es-ES') : ch; ini = !/[\p{L}\p{N}]/u.test(ch); }
+      c = b;
+    }
+    return c.normalize('NFC');
+  }
+  function primero(s) { // como en Java: «.+» se lo come todo, así que solo hay una coincidencia
+    if (!s) return null;
+    const m = TRAS_EN.exec(s); if (!m) return null;
+    const c = pulir(m[1].replace(CORTE, ''));
+    return c && !GENERICO.test(c) && !/^[\d\s.,€-]+$/.test(c) ? c : null;
+  }
+  function comercioDe(paquete, todo, titulo, ini, fin, tipo) {
+    const tras = fin >= 0 && fin <= todo.length ? todo.slice(fin) : '', antes = ini > 0 ? todo.slice(0, ini) : '';
+    let c = primero(tras);
+    if (c == null && (tipo === 'tarjeta' || tipo === 'recibo')) {
+      const m = MAYUS_TRAS.exec(tras);
+      if (m) { const k = pulir(m[1].replace(CORTE, '')); if (k && !GENERICO.test(k) && /\p{L}{2,}/u.test(k)) c = k; }
+    }
+    if (c == null) c = primero(antes);
+    const wallet = paquete && paquete.indexOf('com.google.android.apps.walletnfcrel') === 0;
+    if (c == null && wallet && titulo && !GENERICO.test(titulo) && !/\d/.test(titulo)) c = titulo;
+    return pulir(c);
+  }
+  function leer(paquete, titulo, texto) {
+    const t = limpiar(titulo), x = limpiar(texto);
+    let todo = (t ? t + '. ' : '') + x;
+    if (!todo.trim() || IGNORAR.test(todo)) return null;
+    todo = todo.replace(SALDO, ' ');
+    let imp = null, signo = null, ini = -1, fin = -1;
+    const m = IMP_DESPUES.exec(todo), a = IMP_ANTES.exec(todo);
+    if (m && (!a || m.index <= a.index)) { imp = numero(m[2]); signo = m[1] || null; ini = m.index; fin = m.index + m[0].length; }
+    else if (a) { imp = numero(a[3]); signo = a[1] || a[2] || null; ini = a.index; fin = a.index + a[0].length; }
+    if (imp == null || !(imp > 0) || imp > 1000000) return null;
+    let entra = null;
+    const e = ENTRA.test(todo), s = SALE.test(todo);
+    if (signo != null) entra = signo === '+';
+    else if (e && !s) entra = true;
+    else if (s && !e) entra = false;
+    else if (e && s) {
+      if (RECIBO_RECIBIDO.test(todo)) entra = false;
+      else if (GANA_ENTRA.test(todo)) entra = true;
+      else if (GANA_SALE.test(todo)) entra = false;
+      else { const ie = todo.search(ENTRA), iv = todo.search(SALE); entra = (ie < 0 ? Infinity : ie) <= (iv < 0 ? Infinity : iv); }
+    } else if (paquete && paquete.indexOf('com.google.android.apps.walletnfcrel') === 0) entra = false;
+    if (entra == null) return null;
+    const tipo = tipoDe(todo, entra);
+    const comercio = entra ? '' : comercioDe(paquete, todo, t, ini, fin, tipo);
+    return { importe: Math.round(imp * 100) / 100, entra, comercio, tipo };
+  }
+  return { leer, numero };
+})();
 function avisoAMov(it) {
   const tipo = it.entra ? 'Ingreso' : 'Gasto', importe = Math.round(Number(it.importe) * 100) / 100;
   // en un Bizum o una transferencia no se guarda el nombre de la otra persona (docs/39b)
@@ -11109,7 +11232,7 @@ function avisoAMov(it) {
   const GEN = { nomina: 'Nómina', devolucion: 'Devolución', intereses: 'Intereses', dividendo: 'Dividendo', cajero: 'Cajero', recibo: 'Recibo' };
   const desc = persona ? (it.tipo === 'bizum' ? 'Bizum' + (it.entra ? ' recibido' : ' enviado') : 'Transferencia' + (it.entra ? ' recibida' : ' enviada'))
     : ((it.entra ? '' : String(it.comercio || '').trim()) || GEN[it.tipo] || (it.entra ? 'Ingreso' : 'Pago') + ' · ' + nombreDePaquete(it.pkg, it.app)); // en lo que entra no se guarda quién (suele ser una persona)
-  const kb = bancoDePaquete(it.pkg), cta = kb && kb !== 'wallet' ? cuentasCfg().find((c) => c.banco === kb) : null;
+  const kb = it.banco || bancoDePaquete(it.pkg), cta = kb && kb !== 'wallet' ? cuentasCfg().find((c) => c.banco === kb) : null;
   const regla = reglaPara(desc, tipo, cta ? cta.id : undefined), cats = categoriasPorTipo(tipo);
   let categoria = (regla && regla.categoria) || '';
   if (!categoria && tipo === 'Ingreso') {
@@ -11140,7 +11263,7 @@ function avisoYaEsta(data, id) {
 function daysBetweenISO(a, b) { return Math.round((new Date(a + 'T12:00:00') - new Date(b + 'T12:00:00')) / 864e5); }
 let _avRecogiendo = false;
 async function avisosRecoger() {
-  const n = avNat(); if (!n || !S.user || !S.db || !S.loaded || !S.loaded.mov || !S.loaded.cfg || _avRecogiendo) return 0;
+  const n = avNat() || atajosFuente(); if (!n || !S.user || !S.db || !S.loaded || !S.loaded.mov || !S.loaded.cfg || _avRecogiendo) return 0;
   _avRecogiendo = true;
   try {
     const lista = await n.pendientes().catch(() => []); if (!lista.length) return 0;
@@ -11380,6 +11503,8 @@ function avisosTrasCargar() {
     else pushPreparar();
     pushPendienteAbrir();
     avisosRecoger();
+    if (!n && atajosNat()) { atajosNat().cuenta(miUid()).catch(() => {}).then(() => avisosRecoger()); lsSet('guiaAbre', String((+lsGet('guiaAbre') || 0) + 1)); atajosNat().info().then((i) => { S._atajosInfo = i || {}; pedirRender(); }).catch(() => {}); }
+    if (n) { lsSet('guiaAbre', String((+lsGet('guiaAbre') || 0) + 1)); n.estado().then((e) => { S._avEst = e; pedirRender(); }).catch(() => {}); } // docs/47: aviso de Inicio
     impEntranteIni(); // C4: extracto compartido con PalomApp desde otra app
     // 13/11: Android 13+ no deja mandar avisos hasta que se dan permisos; se pide UNA vez al entrar (antes solo al tocar un interruptor de Avisos)
     pedirNotifUnaVez(); // 13/11: no en mitad de la bienvenida (la nueva lo explica en su paso)
@@ -11397,6 +11522,230 @@ function pedirNotifUnaVez(ya) {
   if (!ya) { setTimeout(() => pedirNotifUnaVez(true), 1500); return; } // da tiempo a saber si toca la bienvenida
   if (S.onboarding || S._onboardPending) return; // al terminarla se vuelve a mirar (doObFinish)
   nn.permiso().then((r) => { if (String(r).indexOf('prompt') === 0) { lsSet('notifPedido:' + miUid(), '1'); return nn.pedir().then(() => programarRecordatoriosPronto()); } }).catch(() => {});
+}
+/* ---- GUÍA «Que se apunten solos» (docs/47, 24/11/2026) ----
+   Una sola guía con dibujos (que imitan un Android neutro) para dar los permisos de los avisos del banco.
+   Vive en la bienvenida (pantalla G5), en Tú → Avisos, en Primeros pasos y en un aviso de Inicio (una vez).
+   Estado: { paso: 'portada'|'notif'|'acceso'|'gris'|'bateria'|'prueba', est (avNat().estado()), notif, intento, enBienv }. */
+const GUIA_MARCAS_INICIO = ['xiaomi', 'redmi', 'poco', 'huawei', 'honor', 'oppo', 'vivo', 'realme', 'oneplus'];
+function guiaNueva(enBienv) { return { paso: 'portada', est: null, notif: null, intento: false, enBienv: !!enBienv }; }
+async function guiaCargar(G) {
+  const n = avNat(), nn = notifNat();
+  G.est = n ? await n.estado().catch(() => null) : null;
+  G.notif = nn ? await nn.permiso().catch(() => 'denied') : 'granted';
+  if (G.est) S._avEst = G.est;
+  return G;
+}
+function guiaHecho(G, k) {
+  const e = G.est || {};
+  if (k === 'notif') return G.notif === 'granted' || !notifNat();
+  if (k === 'acceso') return !!(e.activo && e.permiso);
+  if (k === 'bateria') return e.bateriaLibre === true || lsGet('guiaBat') === '1' || e.marca === 'google';
+  if (k === 'prueba') return (e.vistos || []).some((v) => v.leido && v.marcado);
+  return false;
+}
+// «¿Te sale en gris?»: solo a quien volvió sin el acceso y no tiene la app de Google Play
+function guiaGrisToca(G) { const e = G.est || {}; return !!G.intento && !guiaHecho(G, 'acceso') && e.instalador !== 'play'; }
+function guiaSiguiente(G, desde) {
+  const orden = ['portada', 'notif', 'acceso', 'bateria', 'prueba'];
+  for (let i = orden.indexOf(desde === 'gris' ? 'acceso' : desde) + 1; i < orden.length; i++) { const k = orden[i]; if (k === 'prueba' || !guiaHecho(G, k)) return k; }
+  return 'prueba';
+}
+// al volver de los ajustes del móvil: si el paso ya está, al siguiente
+function guiaRevisar(G) {
+  const p = G.paso;
+  if ((p === 'acceso' || p === 'gris') && guiaHecho(G, 'acceso')) { G.paso = guiaSiguiente(G, 'acceso'); sentir('ok'); if (!G.enBienv && !(cfg().bienv || {}).piloto) bvGuardarBienv({ piloto: true }); } // en la bienvenida lo hace bvPilotoRevisar (con su sello)
+  else if (p === 'acceso' && guiaGrisToca(G)) G.paso = 'gris';
+  else if ((p === 'notif' || p === 'bateria') && guiaHecho(G, p)) G.paso = guiaSiguiente(G, p);
+}
+/* -- dibujos (HTML/CSS propios; sin capturas ni marcas) -- */
+function guiaDedo(top, left) { return '<i class="gd-dedo" style="top:' + top + ';left:' + left + '"></i>'; }
+function guiaSw(on) { return '<span class="gd-sw' + (on ? ' on' : '') + '"></span>'; }
+function guiaApp() { return '<span class="gd-app">' + marcaHtml(18) + '</span>'; }
+function guiaDibujo(k, G) {
+  const movil = (inner, cls) => '<div class="gd-movil' + (cls ? ' ' + cls : '') + '">' + inner + '</div>';
+  const gris = (w) => '<span class="gd-fila"><span class="gd-ico"></span><span class="gd-barra" style="width:' + w + '"></span>' + guiaSw(false) + '</span>';
+  let h = '';
+  if (k === 'portada') h = movil('<div class="gd-aviso"><span class="gd-ico b">' + ic('bank') + '</span><span><b>Tu banco</b><small>Pago de 12,50 € en Mercado</small></span></div>' +
+    '<div class="gd-flecha">' + ic('chevD') + '</div>' +
+    '<div class="gd-mov"><span class="gd-app">' + marcaHtml(18) + '</span><span><b>Mercado</b><small>Apuntado solo</small></span><b class="neg tnum">−12,50 €</b></div><span class="gd-desh">Deshacer</span>', 'gd-portada');
+  else if (k === 'notif') h = movil('<div class="gd-fondo"></div><div class="gd-dialogo">' + guiaApp() + '<b>¿Permitir que PalomApp te envíe notificaciones?</b><span class="gd-bts"><span class="gd-bt si">Permitir</span><span class="gd-bt">No permitir</span></span></div>' + guiaDedo('62%', '50%'));
+  else if (k === 'acceso') h = '<div class="gd-dos">' +
+    movil('<div class="gd-cab">' + ic('chevL') + '<b>Acceso a notificaciones</b></div>' + gris('60%') + '<span class="gd-fila gd-tu">' + guiaApp() + '<b>PalomApp</b>' + guiaSw(false) + '</span>' + gris('45%') + gris('70%') + guiaDedo('47%', '82%'), 'gd-peq') +
+    movil('<div class="gd-fondo"></div><div class="gd-dialogo">' + guiaApp() + '<b>¿Permitir el acceso a las notificaciones de PalomApp?</b><span class="gd-bts"><span class="gd-bt si">Permitir</span><span class="gd-bt">Cancelar</span></span></div>' + guiaDedo('66%', '50%'), 'gd-peq') + '</div>';
+  else if (k === 'gris') h = '<div class="gd-dos">' +
+    movil('<div class="gd-cab">' + ic('chevL') + '<b>Información de la app</b><span class="gd-mas">⋮</span></div><span class="gd-fila gd-tu">' + guiaApp() + '<b>PalomApp</b></span>' + '<span class="gd-fila gd-off"><span class="gd-barra" style="width:55%"></span><small>Ajuste restringido</small></span>' + guiaDedo('13%', '88%'), 'gd-peq') +
+    movil('<div class="gd-cab">' + ic('chevL') + '<b>Información de la app</b></div><div class="gd-menu"><span>Desinstalar</span><span class="on">Permitir ajustes restringidos</span></div>' + guiaDedo('38%', '55%'), 'gd-peq') + '</div>';
+  else if (k === 'bateria') {
+    const auto = G && G.est && GUIA_MARCAS_INICIO.indexOf(G.est.marca || '') >= 0;
+    const op = (t, on) => '<span class="gd-op' + (on ? ' on' : '') + '"><i></i>' + t + '</span>';
+    h = '<div class="' + (auto ? 'gd-dos' : '') + '">' + movil('<div class="gd-cab">' + ic('chevL') + '<b>Batería</b></div>' + op('Sin restricciones', true) + op('Optimizada', false) + op('Restringida', false) + guiaDedo('33%', '14%'), auto ? 'gd-peq' : '') +
+      (auto ? movil('<div class="gd-cab">' + ic('chevL') + '<b>Inicio automático</b></div><span class="gd-fila gd-tu">' + guiaApp() + '<b>PalomApp</b>' + guiaSw(true) + '</span>' + gris('50%') + guiaDedo('30%', '82%'), 'gd-peq') : '') + '</div>';
+  } else if (k === 'prueba') h = movil('<div class="gd-aviso"><span class="gd-ico b">' + ic('bank') + '</span><span><b>Bizum recibido</b><small>Te han enviado 1,00 €</small></span></div>' +
+    '<div class="gd-flecha">' + ic('chevD') + '</div><div class="gd-cab gd-ini"><b>Inicio</b></div><div class="gd-mov brilla"><span class="gd-app">' + marcaHtml(18) + '</span><span><b>Bizum</b><small>Apuntado solo</small></span><b class="pos tnum">+1,00 €</b></div>', 'gd-portada');
+  return '<div class="gd" aria-hidden="true">' + h + '</div>';
+}
+/* -- textos de cada paso -- */
+function guiaPuntos(G) {
+  const pasos = ['notif', 'acceso', 'bateria'].filter((k) => k !== 'notif' || notifNat()), cur = G.paso === 'gris' ? 'acceso' : G.paso;
+  if (pasos.indexOf(cur) < 0) return '';
+  return '<div class="gd-puntos" aria-label="Paso ' + (pasos.indexOf(cur) + 1) + ' de ' + pasos.length + '">' + pasos.map((k) => '<i class="' + (k === cur ? 'cur' : guiaHecho(G, k) ? 'ok' : '') + '"></i>').join('') + '</div>';
+}
+function guiaCuerpoHtml(G, enBienv) {
+  const p = G.paso, e = G.est || {}, t = (x) => enBienv ? '<h1 class="ob2-h">' + x + '</h1>' : '<h2 class="gd-t">' + x + '</h2>', txt = (x) => '<p class="' + (enBienv ? 'ob2-p' : 'gd-p') + '">' + x + '</p>';
+  const auto = GUIA_MARCAS_INICIO.indexOf(e.marca || '') >= 0, listo = guiaHecho(G, 'acceso');
+  if (p === 'portada') return guiaDibujo('portada') + t('Que se apunten solos') +
+    txt(listo ? 'Ya está activado: cuando tu banco te avise de un pago, PalomApp lo apunta por ti.' : 'Cuando tu banco te avise de un pago, PalomApp lo apunta por ti. Son 3 pasos y tardas un minuto.') +
+    '<div class="ob2-filas bv-filas">' + obFila('shield', 'v', 'El texto del aviso no sale de tu móvil', 'solo pasa el importe, el comercio y la fecha') + obFila('bank', 'r', 'Solo tus apps de banco y de pagos', 'nunca mensajes, WhatsApp, códigos ni claves') + '</div>';
+  if (p === 'notif') return guiaPuntos(G) + guiaDibujo('notif') + t('Que PalomApp te avise') + txt('Así verás cada pago apuntado y podrás darle a «Deshacer» si no es tuyo.') +
+    '<p class="gd-nota">' + (G.notifNegado ? 'Android ya no pregunta: en los ajustes, activa las <b>Notificaciones</b> de PalomApp.' : 'En la ventana que sale, toca <b>Permitir</b>.') + '</p>';
+  if (p === 'acceso') return guiaPuntos(G) + guiaDibujo('acceso') + t('Deja que lea los avisos') + txt('Se abrirán los ajustes del móvil. Busca <b>PalomApp</b>, activa el interruptor y toca <b>Permitir</b>. Después vuelve aquí con la flecha de atrás.') +
+    (G.intento && !listo ? '<p class="gd-nota">' + ic('alert') + ' Aún no está dado. Vuelve a tocar «Abrir ajustes».</p>' : '');
+  if (p === 'gris') return guiaPuntos(G) + guiaDibujo('gris') + t('¿Te sale en gris?') + txt('Android lo bloquea en las apps que no vienen de Google Play. Toca los <b>⋮</b> de arriba, elige <b>Permitir ajustes restringidos</b> y pon tu huella o PIN. Luego vuelve a probar el paso 2.');
+  if (p === 'bateria') return guiaPuntos(G) + guiaDibujo('bateria', G) + t('Que no se duerma') + txt('Algunos móviles apagan las apps para ahorrar batería. Entra en <b>Batería</b> y elige <b>Sin restricciones</b>' + (auto ? ' y activa <b>Inicio automático</b>.' : '.'));
+  // prueba
+  const funciona = guiaHecho(G, 'prueba');
+  return guiaDibujo('prueba') + t(funciona ? '¡Funciona!' : '¡Listo! Ahora, pruébalo') +
+    txt(funciona ? 'Ya se ha apuntado solo tu primer pago. Lo verás en Inicio con «Deshacer».' : 'Paga algo con tarjeta o pide a alguien un Bizum de 1 €. En unos segundos lo verás apuntado en Inicio.') +
+    (listo ? '' : '<p class="gd-nota">' + ic('alert') + ' Falta el paso 2: sin él no se apunta nada.</p>');
+}
+// los botones de cada paso. `fuera`: la acción de «Ahora no» / de terminar (en la bienvenida, seguir; en la hoja, cerrar)
+function guiaBotones(G, enBienv) {
+  const p = G.paso, prim = (t, a) => '<button type="button" class="btn accent block" ' + a + '>' + t + '</button>', link = (t, a) => '<button type="button" class="link gd-link" ' + a + '>' + t + '</button>';
+  const ahoraNo = enBienv ? act('bvSaltar') : act('guiaCerrar'), seguir = enBienv ? act('bvSig') : act('guiaCerrar');
+  const dos = (t, a, t2, a2) => '<div class="ob2-dos"><button class="btn ghost" ' + a2 + '>' + t2 + '</button>' + prim(t, a) + '</div>';
+  if (p === 'portada') return guiaHecho(G, 'acceso') ? prim(enBienv ? 'Seguir' : 'Entendido', seguir) : dos('Empezar', act('guiaIr', guiaSiguiente(G, 'portada')), 'Ahora no', ahoraNo);
+  if (p === 'notif') return dos(G.notifNegado ? 'Abrir ajustes' : 'Permitir avisos', act('guiaNotif'), 'Saltar', act('guiaIr', guiaSiguiente(G, 'notif')));
+  if (p === 'acceso') return dos('Abrir ajustes', act('guiaAcceso'), 'Ahora no', ahoraNo);
+  if (p === 'gris') return prim('Abrir ajustes de PalomApp', act('guiaAbrirApp')) + link('Volver al paso 2', act('guiaIr', 'acceso'));
+  if (p === 'bateria') return dos('Abrir ajustes de PalomApp', act('guiaAbrirApp'), 'Saltar', act('guiaIr', 'prueba')) + link('Ya lo he hecho', act('guiaBatHecho'));
+  return prim(enBienv ? 'Seguir' : 'Entendido', seguir) + (guiaHecho(G, 'prueba') || !notifNat() ? '' : link('Mandarme un aviso de prueba', act('avProbar')));
+}
+function guiaActual() { const ob = S.onboarding; return ob && ob.guia && bienvV2(ob) && ob.paso === 'G5' ? ob.guia : S._guia || null; }
+function guiaHojaAbierta() { const b = $('#sheetBackdrop'); return !!(FORM && FORM.guia && b && !b.dataset.cerrando); }
+function guiaHojaHtml() { const G = S._guia; return '<div class="handle"></div><div class="gd-hoja">' + (G.ios ? guiaIosCuerpo(G) : guiaCuerpoHtml(G, false)) + '<div class="gd-pie">' + (G.ios ? guiaIosBotones(G) : guiaBotones(G, false)) + '</div></div>'; }
+function guiaPintar() {
+  const ob = S.onboarding;
+  if (ob && ob.guia && bienvV2(ob) && ob.paso === 'G5') { ob.avEst = ob.guia.est; return render(); }
+  if (guiaHojaAbierta()) updateSheet(guiaHojaHtml());
+}
+async function guiaAbrir(paso) {
+  if (!avNat()) return atajosNat() ? guiaIosAbrir() : undefined;
+  const G = S._guia = guiaNueva(false); await guiaCargar(G);
+  G.paso = paso && paso !== 'portada' ? paso : guiaHecho(G, 'acceso') ? guiaSiguiente(G, 'acceso') === 'prueba' && !guiaHecho(G, 'prueba') ? 'prueba' : 'portada' : 'portada';
+  FORM = { guia: true }; openSheet(guiaHojaHtml());
+}
+// al volver a PalomApp desde los ajustes del móvil
+function guiaVolver() {
+  { const ob = S.onboarding; if (ob && bienvV2(ob) && ob.paso === 'G5' && !avNat() && atajosNat()) { atajosNat().info().then((i) => { if (S.onboarding === ob) { ob.atInfo = i || {}; render(); } }).catch(() => {}); return true; } }
+  if (S._guia && S._guia.ios && guiaHojaAbierta()) { atajosNat().info().then((i) => { S._guia.info = i || {}; guiaPintar(); }).catch(() => {}); return true; }
+  const ob = S.onboarding, enB = ob && ob.guia && bienvV2(ob) && ob.paso === 'G5';
+  const G = enB ? ob.guia : guiaHojaAbierta() ? S._guia : null; if (!G) return false;
+  guiaCargar(G).then(() => { guiaRevisar(G); if (enB) { ob.avEst = G.est; if (guiaHecho(G, 'acceso')) ob.afinar.avisosBanco = true; if (G.notif === 'granted') ob.notif = 'granted'; bvPilotoRevisar(ob); } guiaPintar(); }).catch(() => {});
+  return true;
+}
+// Inicio: «Los avisos del banco se han parado» (siempre que pase) o, una sola vez, «Tus pagos pueden apuntarse solos»
+function guiaInicioHtml() {
+  if (!avNat() && atajosNat()) { const i = S._atajosInfo; if (!i || i.usado || S.movimientos.some((m) => m.origen === 'aviso') || S.onboarding || !herrOn('avisosBanco') || (cfg().guiaAvisos || {}).inicioVisto || (+lsGet('guiaAbre') || 0) < 2) return '';
+    return '<div class="card gd-ini"><span class="ob2-fic a">' + ic('bolt') + '</span><div class="inv-ini-x"><b>Tus pagos pueden apuntarse solos</b><span>Con la app Atajos de tu iPhone, en dos minutos.</span><div class="inv-ini-b"><button class="btn sm accent" ' + act('guiaInicio', 'ver') + '>Ver cómo</button><button class="btn sm ghost" ' + act('guiaInicio', 'no') + '>Ahora no</button></div></div></div>'; }
+  const e = S._avEst; if (!avNat() || !e || S.onboarding) return '';
+  if (e.activo && !e.permiso) return '<div class="card gd-ini"><span class="ob2-fic r">' + ic('alert') + '</span><div class="inv-ini-x"><b>Los avisos del banco se han parado</b><span>Android ha quitado el permiso. Vuelve a darlo en un minuto.</span><div class="inv-ini-b"><button class="btn sm accent" ' + act('guiaAbrirDesde', 'acceso') + '>Arreglarlo</button></div></div></div>';
+  if (e.activo && e.permiso || !herrOn('avisosBanco') || (cfg().guiaAvisos || {}).inicioVisto || (+lsGet('guiaAbre') || 0) < 2) return '';
+  return '<div class="card gd-ini"><span class="ob2-fic a">' + ic('bolt') + '</span><div class="inv-ini-x"><b>Tus pagos pueden apuntarse solos</b><span>Con los avisos de tu banco, en un minuto.</span><div class="inv-ini-b"><button class="btn sm accent" ' + act('guiaInicio', 'ver') + '>Ver cómo</button><button class="btn sm ghost" ' + act('guiaInicio', 'no') + '>Ahora no</button></div></div></div>';
+}
+// Tú → Avisos: la portada de la guía en pequeño
+function guiaTarjetaHtml() {
+  return '<div class="card gd-tarjeta">' + guiaDibujo('portada') + '<b>Que se apunten solos tus pagos</b><span>PalomApp lee los avisos de tus apps de banco y apunta cada gasto o ingreso, con «Deshacer». El texto del aviso no sale de tu móvil.</span>' +
+    '<button type="button" class="btn accent block" ' + act('guiaAbrirDesde', '') + '>Ver cómo se activa</button></div>';
+}
+/* ---- iPhone: que se apunten solos con Atajos (iOS 27) y Apple Pay (24/11/2026) ----
+   iPhone no deja a ninguna app leer los avisos de otra. Con Atajos, la persona crea una automatización
+   («Cuando llegue un aviso de mi banco → Apuntar aviso en PalomApp») y el texto llega a la app de iPhone, que lo guarda en el móvil.
+   Aquí se lee con el mismo lector que Android (LA.leer) y solo se guarda el movimiento. Apple Pay: «Apuntar pago de Apple Pay». */
+function atajosNat() { return window.__nativo && window.__nativo.atajos ? window.__nativo.atajos : null; }
+function atajosBancoDe(nombre) { const q = normDesc(nombre || ''); if (!q) return null; const b = BANCOS.find((x) => q === normDesc(x.n) || q === x.k || q.indexOf(normDesc(x.n)) >= 0 || (x.alias && normDesc(x.alias) === q)); return b ? b.k : null; }
+// 24/11 (Datos y Seguridad): solo avisos de un banco elegido en la lista de la acción (nunca WhatsApp u otra app) y de Apple Pay; cada uno con su cuenta
+function atajosAItem(x) {
+  const k = x.tipo === 'applepay' ? atajosBancoDe(x.tarjeta || '') : (BANCOS.some((b) => b.k === x.banco) ? x.banco : null);
+  if (x.tipo !== 'applepay' && !k) return null;
+  const pkgB = k && (PAQ_BANCOS.find((p) => p[0] === k) || [])[1], bn = k && BANCOS.find((b) => b.k === k);
+  const base = { id: x.id, uid: x.uid || '', ts: Number(x.ts) || Date.now(), pkg: pkgB || 'ios', banco: k || '', app: x.tipo === 'applepay' ? 'Apple Pay' : (bn ? bn.n : 'iPhone'), via: x.tipo === 'applepay' ? 'applepay' : 'aviso' };
+  if (x.tipo === 'applepay') {
+    const m = /\d[\d.,\s ]*/.exec(String(x.importe || '')), imp = m ? LA.numero(m[0].trim()) : null;
+    if (!(imp > 0) || imp > 1000000) return null;
+    return Object.assign(base, { importe: imp, entra: /^\s*\+/.test(String(x.importe)), tipo: 'tarjeta', comercio: String(x.comercio || '').trim().slice(0, 40) });
+  }
+  const r = LA.leer(base.pkg, '', x.texto || ''); if (!r) return null;
+  return Object.assign(base, r);
+}
+// lo que llegó por Atajos, como la cola de Android (para avisosRecoger). El mismo pago por los dos caminos (aviso y Apple Pay)
+// se apunta una vez; dos pagos iguales por el mismo camino (dos cafés) se apuntan los dos.
+function atajosFuente() {
+  const a = atajosNat(); if (!a) return null;
+  return {
+    pendientes: async () => {
+      const lista = await a.pendientes().catch(() => []), malos = [], out = [];
+      // lo ya apuntado por Atajos (7 días, como la cola): cada pago de un camino empareja como mucho con UNO del otro (Calidad 24/11)
+      let vistos = []; try { vistos = JSON.parse(lsGet('atajosVistos') || '[]'); } catch (e) { /* */ }
+      vistos = vistos.filter((v) => Date.now() - v.ts < 7 * 86400000);
+      for (const x of lista) {
+        const it = x && x.id ? atajosAItem(x) : null;
+        if (!it) { if (x && x.id) malos.push(x.id); continue; }
+        const par = vistos.find((o) => !o.par && o.via !== it.via && Math.abs(o.importe - it.importe) < 0.005 && !!o.entra === !!it.entra && Math.abs(o.ts - it.ts) < 15 * 60000);
+        if (par) { par.par = true; malos.push(it.id); continue; } // el mismo pago, llegado por el otro camino
+        vistos.push({ via: it.via, importe: it.importe, entra: !!it.entra, ts: it.ts });
+        out.push(it);
+      }
+      lsSet('atajosVistos', JSON.stringify(vistos.slice(-300)));
+      if (malos.length) await a.quitar(malos).catch(() => {});
+      return out;
+    },
+    quitar: (ids) => a.quitar(ids),
+  };
+}
+/* -- la guía de iPhone (misma hoja que la de Android) -- */
+function guiaIosDibujo(k) {
+  const movil = (inner, cls) => '<div class="gd-movil gd-ios' + (cls ? ' ' + cls : '') + '">' + inner + '</div>';
+  const fila = (t, on, icono) => '<span class="gd-fila' + (on ? ' gd-tu' : '') + '">' + (icono ? '<span class="gd-ico b">' + ic(icono) + '</span>' : '<span class="gd-ico"></span>') + '<b>' + t + '</b></span>';
+  if (k === 'abrir') return '<div class="gd" aria-hidden="true">' + movil('<div class="gd-cab"><b>Automatización</b><span class="gd-mas">+</span></div>' + '<span class="gd-fila"><span class="gd-barra" style="width:70%"></span></span><span class="gd-fila"><span class="gd-barra" style="width:50%"></span></span>' +
+    '<div class="gd-tabbar"><span>Atajos</span><span class="on">Automatización</span><span>Galería</span></div>' + guiaDedo('12%', '90%')) + '</div>';
+  if (k === 'disparador') return '<div class="gd" aria-hidden="true"><div class="gd-dos">' + movil('<div class="gd-cab"><b>Cuándo</b></div>' + fila('Hora del día', false, 'clock') + fila('Notificación', true, 'bell') + fila('Wallet', false, 'wallet') + guiaDedo('45%', '80%'), 'gd-peq') +
+    movil('<div class="gd-cab"><b>Notificación</b></div><span class="gd-fila gd-tu"><span class="gd-ico b">' + ic('bank') + '</span><b>App: tu banco</b></span><span class="gd-op on"><i></i>Ejecutar inmediatamente</span>' + guiaDedo('47%', '14%'), 'gd-peq') + '</div></div>';
+  if (k === 'accion') return '<div class="gd" aria-hidden="true">' + movil('<div class="gd-cab"><b>Acción</b></div><span class="gd-fila"><span class="gd-barra" style="width:40%"></span><small>PalomApp</small></span>' +
+    '<span class="gd-fila gd-tu">' + guiaApp() + '<b>Apuntar aviso en PalomApp</b></span><span class="gd-fila"><small>Banco:</small> <b class="gd-var">El tuyo</b></span><span class="gd-fila"><small>Texto del aviso:</small> <b class="gd-var">Entrada del atajo</b></span>' + guiaDedo('38%', '93%')) + '</div>';
+  if (k === 'applepay') return '<div class="gd" aria-hidden="true">' + movil('<div class="gd-cab"><b>Wallet</b></div><span class="gd-fila gd-tu"><span class="gd-ico b">' + ic('wallet') + '</span><b>Tus tarjetas</b></span>' +
+    '<span class="gd-fila">' + guiaApp() + '<b>Apuntar pago de Apple Pay</b></span><span class="gd-fila"><small>Importe:</small> <b class="gd-var">Importe</b></span><span class="gd-fila"><small>Comercio:</small> <b class="gd-var">Comercio</b></span>') + '</div>';
+  return guiaDibujo(k);
+}
+function guiaIosCuerpo(G) {
+  const p = G.paso, t = (x) => '<h2 class="gd-t">' + x + '</h2>', txt = (x) => '<p class="gd-p">' + x + '</p>', i = G.info || {}, v = parseInt(i.ios, 10) || 0, viejo = v && v < 27;
+  const puntos = () => { const ps = ['abrir', 'disparador', 'accion'], c = ps.indexOf(p); return c < 0 ? '' : '<div class="gd-puntos" aria-label="Paso ' + (c + 1) + ' de 3">' + ps.map((k, j) => '<i class="' + (j === c ? 'cur' : j < c ? 'ok' : '') + '"></i>').join('') + '</div>'; };
+  if (p === 'portada') return guiaDibujo('portada') + t('Que se apunten solos') +
+    txt(viejo ? 'Tu iPhone tiene iOS ' + v + '. Con iOS 27 se apuntan solos los avisos de tu banco; hasta entonces, puedes hacer que se apunten tus pagos con Apple Pay.' : 'Con la app Atajos de tu iPhone, cada aviso de tu banco se apunta solo en PalomApp. Lo preparas una vez y tardas dos minutos.') +
+    '<div class="ob2-filas bv-filas">' + obFila('shield', 'v', 'El texto del aviso no sale de tu móvil', 'solo pasa el importe, el comercio y la fecha') + obFila('bank', 'r', 'Solo las apps que tú elijas', 'en Atajos eliges de qué apps se leen los avisos') + '</div>';
+  if (p === 'abrir') return puntos() + guiaIosDibujo('abrir') + t('Abre Atajos') + txt('Abre la app <b>Atajos</b>, entra en <b>Automatización</b> y toca el <b>+</b> de arriba.');
+  if (p === 'disparador') return puntos() + guiaIosDibujo('disparador') + t('Elige tu banco') + txt('Toca <b>Notificación</b>, elige la app de tu banco y marca <b>Ejecutar inmediatamente</b>. Toca <b>Siguiente</b>.');
+  if (p === 'accion') return puntos() + guiaIosDibujo('accion') + t('Añade PalomApp') + txt('Busca <b>PalomApp</b> y elige <b>Apuntar aviso en PalomApp</b>. En «Banco» elige el tuyo y en «Texto del aviso» pon <b>Entrada del atajo</b>. Toca <b>OK</b>.') +
+    '<p class="gd-nota">¿Tienes más de un banco? Repite estos pasos con cada uno.</p>';
+  if (p === 'applepay') return guiaIosDibujo('applepay') + t('Tus pagos con Apple Pay') + txt('En Atajos → <b>Automatización</b> → <b>+</b>, elige <b>Wallet</b> (o «Transacción»), marca tus tarjetas y <b>Ejecutar inmediatamente</b>. Añade <b>Apuntar pago de Apple Pay</b> y pon <b>Importe</b> y <b>Comercio</b> de la entrada del atajo.') +
+    '<p class="gd-nota">Si un pago llega por los dos caminos, se apunta una sola vez.</p>';
+  const funciona = !!i.usado;
+  return guiaDibujo('prueba') + t(funciona ? '¡Funciona!' : '¡Listo! Ahora, pruébalo') + txt(funciona ? 'Ya ha llegado tu primer aviso. Lo verás apuntado en Inicio, con «Deshacer».' : 'Paga algo con tarjeta o pide a alguien un Bizum de 1 €. Cuando vuelvas a PalomApp lo verás apuntado en Inicio.');
+}
+function guiaIosBotones(G) {
+  const p = G.paso, i = G.info || {}, viejo = (parseInt(i.ios, 10) || 99) < 27, prim = (t, a) => '<button type="button" class="btn accent block" ' + a + '>' + t + '</button>', link = (t, a) => '<button type="button" class="link gd-link" ' + a + '>' + t + '</button>';
+  const dos = (t, a, t2, a2) => '<div class="ob2-dos"><button class="btn ghost" ' + a2 + '>' + t2 + '</button>' + prim(t, a) + '</div>';
+  if (p === 'portada') return viejo ? dos('Con Apple Pay', act('guiaIr', 'applepay'), 'Ahora no', act('guiaCerrar')) : dos('Empezar', act('guiaIr', 'abrir'), 'Ahora no', act('guiaCerrar')) + link('También con Apple Pay', act('guiaIr', 'applepay'));
+  if (p === 'abrir') return '<div class="ob2-dos"><button class="btn ghost" ' + act('guiaIr', 'disparador') + '>Siguiente</button><a class="btn accent block" href="shortcuts://">Abrir Atajos</a></div>';
+  if (p === 'disparador') return prim('Siguiente', act('guiaIr', 'accion'));
+  if (p === 'accion') return prim('Ya está', act('guiaIr', 'prueba'));
+  if (p === 'applepay') return '<div class="ob2-dos"><button class="btn ghost" ' + act('guiaIr', 'prueba') + '>Ya está</button><a class="btn accent block" href="shortcuts://">Abrir Atajos</a></div>';
+  return prim('Entendido', act('guiaCerrar')) + (viejo ? '' : link('También con Apple Pay', act('guiaIr', 'applepay')));
+}
+async function guiaIosAbrir() {
+  const a = atajosNat(); if (!a) return;
+  const G = S._guia = guiaNueva(false); G.ios = true; G.info = await a.info().catch(() => ({})) || {};
+  FORM = { guia: true }; openSheet(guiaHojaHtml());
 }
 // La hoja «Avisos» (Tú)
 async function avisosAbrir() {
@@ -11423,19 +11772,11 @@ function avisosHtml() {
     '<div class="section-title">Resumen</div><div class="card">' + fila('Tu semana y tu mes', 'El domingo a las 19:00 y cuando se cierra tu mes', sw(ac.resumen, 'avRec', 'resumen')) + '</div>' +
     '<div class="card">' + fila('Silencio de 22:00 a 9:00', 'Lo que llegue de noche, a las 9:00', sw(ac.silencio, 'avRec', 'silencio')) + '</div>' +
     '<p class="rec-hint">Como mucho ' + AVISOS_MAX_DIA + ' avisos al día (los importantes aparte), sin cifras y sin publicidad.</p>';
+  if (!e && atajosNat()) return h + '<div class="section-title">Avisos del banco</div>' + guiaTarjetaHtml().replace('PalomApp lee los avisos de tus apps de banco y apunta cada gasto o ingreso, con «Deshacer». El texto del aviso no sale de tu móvil.', 'Con la app Atajos de tu iPhone, cada aviso de tu banco o pago con Apple Pay se apunta solo, con «Deshacer». El texto del aviso no sale de tu móvil.');
   if (!e) return h + '<p class="rec-hint">Los avisos del banco solo están en la app de Android.</p>';
   if (!herrOn('avisosBanco') && !e.activo) return h + '<p class="rec-hint">Los avisos del banco están apagados en Tú → Mis herramientas.</p>';
   h += '<div class="section-title">Avisos del banco</div>';
-  if (!e.activo || !e.permiso) {
-    return h + (e.activo && !e.permiso ? avRestringidoHtml() : '') + '<div class="card av-explica"><b>PalomApp puede leer los avisos de tus apps de banco y apuntar solo cada gasto o ingreso.</b>' +
-      '<ul><li><b>Tú decides:</b> viene apagado y lo apagas cuando quieras.</li><li><b>Solo tus apps de banco y de pagos:</b> no lee mensajes, WhatsApp ni redes sociales. Para proponerte un banco que falte, solo apunta el nombre de la app que avisa de un pago, nunca lo que dice.</li>' +
-      '<li><b>Se queda en tu móvil:</b> el texto del aviso se lee y se descarta. A tu cuenta solo pasa el movimiento (importe, comercio y fecha).</li>' +
-      '<li><b>Nunca</b> lee códigos de verificación ni tus claves, y no se conecta con tu banco.</li>' +
-      '<li>Lo apunta en tu cuenta <b>aunque PalomApp esté cerrada</b>. Para eso tu móvil tiene una clave propia, que solo sirve para esto y se borra al cerrar sesión.</li>' +
-      '<li>Cada vez que apunte algo te avisará con un botón «Deshacer», y en Inicio podrás borrarlo con un toque.</li></ul>' +
-      '<p class="rec-hint">Para funcionar, Android te pedirá dar a PalomApp «Acceso a notificaciones». Al tocar «Aceptar» se abren los ajustes del móvil: busca PalomApp y actívalo.</p>' +
-      '<button type="button" class="btn accent block" ' + act('avActivar') + '>Aceptar y activar</button>' + (e.activo && !e.permiso ? '<p class="rec-hint">Falta el permiso en los ajustes del móvil.</p>' : '') + '</div>' + avComprobarHtml(e, nok);
-  }
+  if (!e.activo || !e.permiso) return h + guiaTarjetaHtml() + avComprobarHtml(e, nok); // 24/11 (docs/47): la guía con dibujos
   const marcados = new Set(e.bancos || []);
   const filaB = (pkg, nombre, prop) => fila(escapeHtml(nombreDePaquete(pkg, nombre)), prop ? 'Ha avisado de un pago: ¿la leemos?' : '', sw(marcados.has(pkg), 'avBanco', pkg));
   const conocidas = PAQ_BANCOS.map((x) => x[1]), mias = new Set(cuentasCfg().map((c) => c.banco).filter(Boolean));
@@ -12048,7 +12389,7 @@ function obNotifHtml(ob) {
   return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te avisamos de lo importante</h1><p class="ob2-p">PalomApp te avisa solo de lo que te sirve:</p>' +
     '<div class="ob2-filas">' + filas.map(([i, c, t, d]) => obFila(i, c, t, d)).join('') + '</div>' +
     '<div class="ob2-nota">' + ic('shield') + '<span>Sin publicidad. Como mucho ' + AVISOS_MAX_DIA + ' al día, nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.</span></div>' +
-    (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">Android no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '');
+    (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">El móvil no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '');
 }
 // 13/11 · Permiso 2 (solo Android): leer los avisos del banco. Qué ganas y qué pasa con tu privacidad
 function obAvBancoHtml(ob) {
@@ -12159,7 +12500,7 @@ function renderOnboarding() {
    ============================================================ */
 function bienvV2(ob) { return !!ob && versionDe('bienvenida') === 'v2'; }
 const BV_TOPE = 10;
-const BV_RECORTE = ['T1', 'D1', 'M2', 'G3', 'M1', 'J2', 'J3', 'J1', 'G5', 'G2']; // desde el final: Agenda, Deudas, M2 (se funde con M1)…
+const BV_RECORTE = ['T1', 'D1', 'M2', 'G3', 'M1', 'J2', 'J3', 'J1', 'G2']; // 24/11 (docs/47): G5 ya no se recorta // desde el final: Agenda, Deudas, M2 (se funde con M1)…
 const BV_OBJ = [
   { k: 'gastos', ic: 'wallet', n: 'Controlar mis gastos', f: 'Cuánto te queda y en qué se te va', herr: ['presupuestos', 'tickets', 'informes', 'avisosBanco'], cls: 'a' },
   { k: 'juntos', ic: 'users', n: 'Compartir gastos', f: 'Con tu pareja, tu casa o un viaje', herr: ['juntos', 'trayecto'], cls: 'b', principal: 'juntos', disp: () => compartidosDisponible() },
@@ -12198,16 +12539,13 @@ function bvHerrFinal(ob, k) {
   return ob.manual ? herrOn(k) : false; // al repetirla, lo no elegido se queda como estaba
 }
 function bvRama(ob, k) { const o = bvObjDef(k); return !!ob.objs[k] && (!o.principal || bvHerrFinal(ob, o.principal)); }
-function bvG5(ob) {
-  if (!avNat() || !bvHerrFinal(ob, 'avisosBanco')) return false;
-  const bs = ob.bancos.filter((k) => BANCOS.some((b) => b.k === k));
-  return !bs.length || bs.some((k) => PAQ_BANCOS.some((p) => p[0] === k));
-}
+function bvG5() { return !!(avNat() || atajosNat()); } // 24/11 (docs/47): la guía de los avisos del banco, a todos los de Android (y en iPhone, la de Atajos)
 // las pantallas que tocan (en orden fijo). conTodo: sin recortar
 function bvLista(ob, conTodo) {
   const L = [], unidoAlEmpezar = !!ob.grupoId && !ob.invJ3;
   L.push(bvInvActiva(ob) && !ob.invJ3 || unidoAlEmpezar ? 'I1' : 'hola', 'obj');
-  if (bvRama(ob, 'gastos')) { L.push('G1', 'G2', 'G3'); if (bvG5(ob)) L.push('G5'); }
+  if (bvRama(ob, 'gastos')) L.push('G1', 'G2', 'G3');
+  if (bvG5(ob)) L.push('G5');
   if (bvRama(ob, 'juntos') && !unidoAlEmpezar) {
     if (ob.grupoId) L.push('I1'); // se unió con el enlace de J3: la invitación se queda en su sitio
     else { L.push('J1'); if (ob.jCamino === 'invitado') { L.push('J3'); if (ob.invJ3 && bvInvActiva(ob)) L.push('I1'); } else if (ob.jCamino !== 'luego') L.push('J2'); }
@@ -12581,15 +12919,10 @@ function bvG3Html(ob) {
     '<div class="bv-cal" aria-hidden="true">' + ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((x) => '<i class="cab">' + x + '</i>').join('') + celdas.join('') + '</div>' +
     '<div class="bv-cal-txt"><span>Tu mes:</span> <b class="tnum">' + a.getDate() + '/' + (a.getMonth() + 1) + ' – ' + b.getDate() + '/' + (b.getMonth() + 1) + '</b></div>';
 }
-function bvG5Html(ob) {
-  const e = ob.avEst || {}, listo = !!(e.activo && e.permiso);
-  const bs = ob.bancos.map((k) => BANCOS.find((b) => b.k === k)).filter((b) => b && PAQ_BANCOS.some((p) => p[0] === b.k));
-  return (bs.length ? '<div class="bv-logos">' + bs.slice(0, 5).map((b) => bancoFichaHtml(b, 'bv-ficha-s')).join('') + '</div>' : '<span class="ob2-big-ic">' + ic('bolt') + '</span>') +
-    '<h1 class="ob2-h">Que se apunten solos</h1><p class="ob2-p">' + (bs.length ? '<span>Funciona con</span> <b>' + escapeHtml(bs.map((b) => b.n).join(' · ')) + '</b><span>' + (bs.length === 1 ? ', tu banco.' : ', tus bancos.') + '</span>' : 'Funciona con los bancos y apps de pago más usados.') + '</p>' +
-    '<div class="ob2-sec">Qué ganas</div><div class="ob2-filas bv-filas">' + obFila('checkCircle', 'a', 'Tus pagos y bizums, apuntados solos', 'al momento, aunque PalomApp esté cerrada') + obFila('repeat', 'b', '«Deshacer» en el propio aviso', 'si alguno no es tuyo') + '</div>' +
-    '<div class="ob2-sec">Tu privacidad</div><div class="ob2-filas bv-filas">' + obFila('shield', 'v', 'El texto del aviso no sale de tu móvil', 'solo pasa el importe, el comercio y la fecha') + obFila('bank', 'r', 'Solo tus apps de banco y de pagos', 'nunca mensajes, WhatsApp, códigos ni claves') + '</div>' +
-    (listo ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Activado: ya se apuntan solos</span></div>'
-      : ob.avPedido ? '<div class="ob2-nota">' + ic('alert') + '<span><b>¿Sale en gris o pone «Ajuste restringido»?</b> Abre los ajustes de PalomApp, toca ⋮ arriba a la derecha y elige «Permitir ajustes restringidos». Luego vuelve a tocar «Activar». <button type="button" class="link" ' + act('avAbrirApp', 'app') + '>Abrir ajustes de PalomApp</button></span></div>' : '');
+function bvG5Html(ob) { // 24/11 (docs/47): la guía «Que se apunten solos», dentro de la misma pantalla
+  if (!avNat()) { if (!ob.atInfo) { ob.atInfo = {}; atajosNat().info().then((i) => { ob.atInfo = i || {}; if (S.onboarding === ob) render(); }).catch(() => {}); } return guiaIosCuerpo({ paso: 'portada', info: ob.atInfo }).replace(/<h2 class="gd-t">([^<]*)<\/h2>/, '<h1 class="ob2-h">$1</h1>').replace('class="gd-p"', 'class="ob2-p"'); }
+  if (!ob.guia) { ob.guia = guiaNueva(true); if (ob.avEst) ob.guia.est = ob.avEst; guiaCargar(ob.guia).then(() => { if (S.onboarding === ob) { ob.avEst = ob.guia.est; render(); } }).catch(() => {}); }
+  return guiaCuerpoHtml(ob.guia, true);
 }
 function bvJ1Html() {
   const op = (k, icono, cls, t, d) => '<button type="button" class="ob2-puerta tappable" ' + act('bvJ1', k) + '><span class="ob2-fic ' + cls + '">' + ic(icono) + '</span><span><b>' + t + '</b><span>' + d + '</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
@@ -12653,7 +12986,7 @@ function bvN1Html(ob) {
   filas.length = 0; ord.slice(0, 5).forEach((f) => filas.push(f));
   return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te avisamos de lo importante</h1><p class="ob2-p">Sin publicidad. Máximo ' + AVISOS_MAX_DIA + ' al día.</p>' +
     '<div class="ob2-filas bv-filas">' + filas.map(([i, c, t, d]) => obFila(i, c, t, d)).join('') + '</div>' +
-    (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">Android no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '<div class="ob2-ayuda">Nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.</div>');
+    (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">El móvil no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '<div class="ob2-ayuda">Nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.</div>');
 }
 function bvFHtml(ob) {
   const n = String(cfg().nombre || ob.nombre || '').trim().split(' ')[0], P = bvPiezas(ob), pct = bvPct(ob), hizo = P.some(([k, v]) => v && k !== 'gusto');
@@ -12672,7 +13005,7 @@ function bvPieHtml(ob) {
   if (p === 'hola') return ob.confSaltar ? '<div class="ob2-dos"><button class="btn ghost" ' + act('bvNoSaltar') + '>Seguir</button><button class="btn accent block" ' + act('bvSaltarTodo') + '>Sí, saltar</button></div>' : sig(ob.manual ? 'Empezar' : 'Empezar');
   if (p === 'I1') { const I = ob.invite || {}; if (I.cargando) return ''; return I.info && I.info.valida ? '<button class="btn accent block" ' + act('bvUnirse') + '>' + (I.info.tipo === 'directo' ? 'Aceptar' : 'Unirme') + '</button>' : '<button class="btn accent block" ' + act('bvInvAplazar', I.info && I.info.motivo === 'red' ? '' : 'mal') + '>Seguir sin unirme</button>'; }
   if (p === 'obj') { const L = bvLista(ob, true), rec = bvRecortes(L), Lr = L.filter((c) => rec.indexOf(c) < 0), n = Lr.length - Lr.indexOf('obj') - 1; return sig(n > 1 ? 'Seguir (unas ' + n + ' pantallas)' : 'Seguir'); }
-  if (p === 'G5') return ob.avEst && ob.avEst.activo && ob.avEst.permiso ? sig('Seguir') : dos('Activar', act('bvAvBanco'));
+  if (p === 'G5') return !avNat() ? '<div class="ob2-dos"><button class="btn ghost" ' + act('bvSig') + '>Seguir</button><button class="btn accent block" ' + act('guiaAbrirDesde', '') + '>Ver cómo</button></div>' : guiaBotones(ob.guia || guiaNueva(true), true);
   if (p === 'J1') return '';
   if (p === 'J2') return ob.grupoCreado ? '<div class="ob2-dos"><button class="btn ghost" ' + act('bvSig') + '>Seguir</button><button type="button" class="btn accent block wa-btn" ' + act('bvInvitar') + (ob.creandoEnlace ? ' disabled' : '') + '>' + ic('send') + ' Invitar por WhatsApp</button></div>'
     : '<button class="btn accent block" ' + act('bvJCrear') + (ob.creandoGrupo ? ' disabled' : '') + '>' + (ob.creandoGrupo ? 'Creando…' : 'Crear grupo') + '</button>';
@@ -12723,7 +13056,7 @@ function bvPpCandidatas() {
   const R = {
     banco: { k: 'banco', ic: 'bank', t: 'Pon el saldo de tu banco', corto: 'tu banco', d: 'Así sabrás lo que te queda de verdad.', a: act('openCuentas'), hecho: g.banco },
     mes: { k: 'mes', ic: 'calendar', t: 'Elige cuándo empieza tu mes', corto: 'tu mes', d: 'Del 1 al 31 o desde el día que cobras.', a: act('tuMesAbrir'), hecho: g.mes },
-    piloto: { k: 'piloto', ic: 'bolt', t: 'Que se apunten solos tus pagos', corto: 'los avisos del banco', d: 'Con los avisos de tu banco, y «Deshacer».', a: act('avAbrir'), hecho: g.piloto, si: () => !!avNat() && herrOn('avisosBanco') },
+    piloto: { k: 'piloto', ic: 'bolt', t: 'Que se apunten solos tus pagos', corto: 'los avisos del banco', d: 'Con los avisos de tu banco, y «Deshacer».', a: act('guiaAbrirDesde', ''), hecho: g.piloto, si: () => !!(avNat() || atajosNat()) && herrOn('avisosBanco') },
     grupo: { k: 'grupo', ic: 'users', t: 'Crea tu grupo', corto: 'tu grupo', d: 'Para la casa, la pareja o un viaje.', a: act('openGrupos'), hecho: g.equipo, si: () => compartidosDisponible() && juntosOn() },
     invitar: { k: 'invitar', ic: 'send', t: 'Invita a tu grupo', corto: 'invitar al grupo', d: 'Por WhatsApp: verán los gastos que llevéis.', a: gc ? act('grupoVer', gc.id) : act('openGrupos'), hecho: !!b.invitado || !!(gc && gc.miembros.some((m) => !m.sinCuenta && m.user_id !== yo)), si: () => !!gc && juntosOn() },
     meta: { k: 'meta', ic: 'target', t: 'Crea tu primera meta', corto: 'tu meta', d: 'Un viaje, un colchón, la entrada de casa…', a: act('metaNueva'), hecho: g.meta, si: () => herrOn('metas') },
@@ -13019,8 +13352,8 @@ function atrasAndroid() {
   return false;
 }
 window.__atras = atrasAndroid;
-window.__avisosVolver = () => { avisosRecoger(); if (FORM && FORM.avisos && $('#sheetBackdrop')) avisosAbrir();
-  const ob = S.onboarding; if (ob && bienvV2(ob) && ob.paso === 'G5' && avNat()) { avNat().estado().then((e) => { if (S.onboarding === ob) { ob.avEst = e; bvPilotoRevisar(ob); render(); } }).catch(() => {}); return; }
+window.__avisosVolver = () => { avisosRecoger(); if (guiaVolver()) return; if (FORM && FORM.avisos && $('#sheetBackdrop')) avisosAbrir();
+  const ob = S.onboarding;
   if (ob && !bienvV2(ob) && obPasos(ob)[ob.step] === 'avbanco' && avNat()) avNat().estado().then((e) => { if (S.onboarding === ob) { ob.avEst = e; render(); } }).catch(() => {}); }; // 13/11: al volver de los ajustes de Android en la bienvenida // al volver de los ajustes de Android o de segundo plano
 window.__irA = (tab) => { try { closeSheet(); } catch (e) { /* */ } H.goTab([tab]); };
 function closeSheet() {
@@ -13046,6 +13379,27 @@ function confirmDelete(el, fn) {
 const H = {
   // 11/11 · Avisos (docs/39)
   avAbrir: () => avisosAbrir(),
+  // docs/47 · la guía «Que se apunten solos»
+  guiaAbrirDesde: ([paso]) => { if (FORM && FORM.avisos) closeSheet(); setTimeout(() => guiaAbrir(paso || ''), FORM && FORM.avisos ? 280 : 0); },
+  guiaInicio: ([que]) => { saveConfig({ guiaAvisos: Object.assign({}, cfg().guiaAvisos || {}, { inicioVisto: true }) }); if (que === 'ver') guiaAbrir(''); else render(); },
+  guiaCerrar: () => { closeSheet(); render(); },
+  guiaIr: ([paso]) => { const G = guiaActual(); if (!G) return; G.paso = paso; sentir('tic'); guiaPintar(); },
+  guiaNotif: async () => { const G = guiaActual(), nn = notifNat(); if (!G || !nn) return;
+    if (G.notifNegado) { if (avNat() && avNat().abrirApp) await avNat().abrirApp('notif').catch(() => {}); return; }
+    if (S.user) lsSet('notifPedido:' + miUid(), '1');
+    const r = await nn.pedir().catch(() => 'denied'); G.notif = r;
+    if (r === 'granted') { sentir('ok'); programarRecordatoriosPronto(); if (S.onboarding && S.onboarding.guia === G) S.onboarding.notif = 'granted'; G.paso = guiaSiguiente(G, 'notif'); } else G.notifNegado = true;
+    guiaPintar(); },
+  guiaAcceso: async () => { const G = guiaActual(), n = avNat(); if (!G || !n) return;
+    const e = G.est || {}, bancos = (e.bancos && e.bancos.length) ? e.bancos : PAQ_BANCOS.map((x) => x[1]);
+    await n.configurar({ activo: true, bancos }).catch(() => {});
+    if (!G.enBienv && !herrOn('avisosBanco')) herrPoner({ avisosBanco: true });
+    if (S.onboarding && S.onboarding.guia === G) { S.onboarding.avPedido = true; S.onboarding.afinar.avisosBanco = true; }
+    G.intento = true; await guiaCargar(G);
+    if (guiaHecho(G, 'acceso')) { guiaRevisar(G); return guiaPintar(); }
+    guiaPintar(); await n.abrirAjustes().catch(() => {}); },
+  guiaAbrirApp: async () => { const n = avNat(); if (n) await (n.abrirApp ? n.abrirApp('app') : n.abrirAjustes()).catch(() => {}); },
+  guiaBatHecho: () => { const G = guiaActual(); if (!G) return; lsSet('guiaBat', '1'); G.paso = 'prueba'; sentir('ok'); guiaPintar(); },
   avBorrar: ([id]) => borrarMovConDeshacer(id),
   avVale: () => { saveConfig({ avisosVisto: Date.now() }); render(); },
   avRec: ([k]) => { const a = avisosCfg(); a[k] = !a[k]; saveConfig({ avisos: a }); programarRecordatoriosPronto(); if (k === 'juntos' && a[k]) pushPreparar(true); if (a[k] && notifNat()) notifNat().pedir().then(() => avisosAbrir()); else avisosAbrir(); },
@@ -14946,6 +15300,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { fotoValida, fotoReducir, cargarGrupos, herrOn, herrLista, obPasos, bvLista, bvPct, bvPiezas, bvSellosGanados, bvPpFilas, bvRecortes, bienvV2, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, tabsBarra, insightsCatalogo, herrPistaHtml };
+window.__APP__ = { LA, fotoValida, fotoReducir, cargarGrupos, herrOn, herrLista, obPasos, bvLista, bvPct, bvPiezas, bvSellosGanados, bvPpFilas, bvRecortes, bienvV2, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, tabsBarra, insightsCatalogo, herrPistaHtml };
 if (!window.__NO_AUTOSTART__) main();
 })();

@@ -21,6 +21,7 @@ const ANCHOS = ARG.anchos ? String(ARG.anchos).split(',').map(Number) : [390, 37
 const TEMAS = (ARG.temas ? String(ARG.temas).split(',') : ['claro', 'oscuro']).map((t) => (/osc|dark/.test(t) ? 'dark' : 'light'));
 const LETRA = ARG.letra ? Number(ARG.letra) / 100 : 1, ALTO = ARG.teclado ? 500 : Number(ARG.alto) || 844, ESCALA = ARG.x1 ? 1 : 2;
 // puente falso de la app de Android (para ver Tú → Avisos): no lee ni manda nada
+const IOS = 'window.__nativo={ios:true,notif:{permiso:async()=>"granted",pedir:async()=>"granted",programar:async()=>{}},atajos:{pendientes:async()=>[],quitar:async()=>{},info:async()=>({ios:"27.1",usado:0}),cuenta:async()=>{}}};'; // 24/11 (Calidad): iPhone con Atajos
 const NATIVO = (activo) => 'window.__nativo={notif:{permiso:async()=>"granted",pedir:async()=>"granted",programar:async()=>{}},avisosBanco:{estado:async()=>(' + JSON.stringify(activo ? { activo: true, permiso: true, avisarme: true, pendientes: 2, bancos: ['es.bancosantander.apps', 'com.myinvestor.app', 'com.ejemplo.banco'], candidatos: [{ pkg: 'com.ejemplo.pagosdeprueba', nombre: 'Banco de Prueba con Nombre Largo' }] } : { activo: false, permiso: false }) + '),configurar:async()=>{},pendientes:async()=>[],quitar:async()=>{},vaciar:async()=>{},abiertoDesdeAviso:async()=>false,alAbrirDesdeAviso:()=>{}}};';
 const AVISOS_MOVS = 'A.S.movimientos=A.S.movimientos.filter((m)=>m.origen!=="aviso").concat([["Supermercado de la esquina con nombre largo",23.45,"Gasto","Supermercado"],["Bizum recibido",15,"Ingreso","Otros ingresos"],["Gasolinera",52.1,"Gasto","Transporte"]].map((x,i)=>({id:"av"+i,tipo:x[2],categoria:x[3],importe:x[1],fecha:new Date().toISOString().slice(0,10),descripcion:x[0],origen:"aviso",creadoEn:Date.now()-i*1000})));';
 const PANTALLAS = [
@@ -63,7 +64,20 @@ const PANTALLAS_MAS = [
   ['casi-nada-tu', 'A.S.config=Object.assign({},A.S.config,{herramientas:{juntos:false,agenda:false,metas:false,inversiones:false,deudas:false,presupuestos:false,informes:false,trayecto:false,tickets:false}});A.S.tab="tu";A.render()'],
   ['tu-mas', 'A.S.tab="tu";A.S.tuMas=true;A.render();setTimeout(()=>{const e=document.querySelector(".tu-mas, [data-click^=tuMasToggle]");if(e)e.scrollIntoView();},100)'],
   ['hoja-avisos', NATIVO(true) + 'A.S.tab="tu";A.render();A.H.avAbrir([])'],
+  ['guia-portada', NATIVO(false) + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));})()'],
+  ['guia-notif', NATIVO(false) + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));A.H.guiaIr(["notif"]);})()'],
+  ['guia-acceso', NATIVO(false) + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));A.H.guiaIr(["acceso"]);})()'],
+  ['guia-gris', NATIVO(false) + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));A.H.guiaIr(["gris"]);})()'],
+  ['guia-bateria', NATIVO(false) + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));A.H.guiaIr(["bateria"]);})()'],
+  ['guia-prueba', NATIVO(false) + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));A.H.guiaIr(["prueba"]);})()'],
   ['hoja-avisos-explica', NATIVO(false) + 'A.S.tab="tu";A.render();A.H.avAbrir([])'],
+  ['guia-ios-portada', IOS + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));})()'],
+  ['guia-ios-abrir', IOS + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));A.H.guiaIr(["abrir"]);})()'],
+  ['guia-ios-disparador', IOS + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));A.H.guiaIr(["disparador"]);})()'],
+  ['guia-ios-accion', IOS + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));A.H.guiaIr(["accion"]);})()'],
+  ['guia-ios-applepay', IOS + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));A.H.guiaIr(["applepay"]);})()'],
+  ['guia-ios-prueba', IOS + 'A.S.tab="tu";A.render();(async()=>{await A.H.guiaAbrirDesde([""]);await new Promise(r=>setTimeout(r,300));A.H.guiaIr(["prueba"]);})()'],
+  ['hoja-avisos-ios', IOS + 'A.S.tab="tu";A.render();A.H.avAbrir([])'],
   ['mov-calendario', 'A.S.tab="movimientos";A.render();A.H.setMovVista(["calendario"])'],
   ['agenda-calendario', 'A.H.irAgenda(["calendario"])'],
   ['hoja-cuenta', 'A.S.tab="dinero";A.render();A.H.cuentaVer(["c1"])'],

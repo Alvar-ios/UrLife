@@ -1,4 +1,4 @@
-// Puente entre la web de PalomApp y Android (Capacitor). Se empaqueta con esbuild en www/nativo.js.
+// Puente entre la web de PalomApp y Android o iPhone (Capacitor). Se empaqueta con esbuild en www/nativo.js.
 // Solo actúa dentro de la app; en la web no hace nada.
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
@@ -14,7 +14,7 @@ const { crearBloqueo } = require('./bloqueo.js');
 
 if (Capacitor.isNativePlatform()) {
   document.documentElement.classList.add('nativo');
-  const N = (window.__nativo = { android: Capacitor.getPlatform() === 'android', huella: false });
+  const N = (window.__nativo = { android: Capacitor.getPlatform() === 'android', ios: Capacitor.getPlatform() === 'ios', huella: false });
 
   // Barra de estado: iconos oscuros en claro y claros en oscuro, también si el usuario fuerza el tema en Tú
   const oscuro = () => { const t = document.documentElement.getAttribute('data-theme'); return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches; };
@@ -39,7 +39,7 @@ if (Capacitor.isNativePlatform()) {
     activado: () => { try { return localStorage.getItem('huella') === '1'; } catch (e) { return false; } },
     bloquear: () => document.documentElement.classList.add('bloqueada'),
     desbloquear: () => document.documentElement.classList.remove('bloqueada'),
-    autenticar: () => BiometricAuth.authenticate({ reason: 'Desbloquea PalomApp', cancelTitle: 'Cancelar', allowDeviceCredential: true, androidTitle: 'Desbloquea PalomApp', androidSubtitle: 'Con tu huella o el PIN del móvil' }),
+    autenticar: () => BiometricAuth.authenticate({ reason: 'Desbloquea PalomApp', iosFallbackTitle: 'Usar código', cancelTitle: 'Cancelar', allowDeviceCredential: true, androidTitle: 'Desbloquea PalomApp', androidSubtitle: 'Con tu huella o el PIN del móvil' }),
   });
   N.desbloquear = () => B.pedir(); // botón «Desbloquear» de la pantalla de bloqueo
   N.probarHuella = () => BiometricAuth.authenticate({ reason: 'Confirma que eres tú', allowDeviceCredential: true, androidTitle: 'Confirma que eres tú' });
@@ -97,15 +97,27 @@ if (Capacitor.isNativePlatform()) {
     };
   }
 
+  // 24/11 · iPhone: lo que llega por Atajos (avisos del banco en iOS 27 y pagos con Apple Pay). Vive en AppDelegate.swift.
+  if (N.ios) {
+    const AT = registerPlugin('Atajos');
+    N.atajos = {
+      pendientes: () => AT.pendientes().then((r) => (r && r.lista) || []),
+      quitar: (ids) => AT.quitar({ ids }),
+      info: () => AT.info(), // { ios: '27.1', usado: ms del último que llegó (0 = nunca) }
+      cuenta: (uid) => AT.cuenta({ uid: uid || '' }), // la cuenta con sesión; '' al salir (vacía la cola)
+    };
+    App.addListener('appStateChange', ({ isActive }) => { if (isActive && window.__avisosVolver) { try { window.__avisosVolver(); } catch (e) { /* */ } } });
+  }
+
   // 12/11 · tres canales: importantes (suenan), normales (sin sonido) y resumen. Android oculta el texto con el móvil bloqueado.
   let _canales = null;
-  const canales = () => _canales || (_canales = Promise.all([
+  const canales = () => _canales || (_canales = N.ios ? Promise.resolve() : Promise.all([
     LocalNotifications.createChannel({ id: 'importantes', name: 'Importantes', description: 'Lo que pide hacer algo hoy (p. ej. un pago sin saldo)', importance: 4, visibility: 0 }),
     LocalNotifications.createChannel({ id: 'normales', name: 'Para estar al día', description: 'Cobros y pagos fijos, Agenda, presupuestos y metas', importance: 2, visibility: 0 }),
     LocalNotifications.createChannel({ id: 'resumen', name: 'Resumen', description: 'Tu semana y tu mes', importance: 2, visibility: 0 }),
   ]).catch(() => {}));
   const aviso = (x) => ({ id: x.id, title: x.titulo, body: x.texto, schedule: { at: new Date(x.cuando), allowWhileIdle: true }, channelId: x.canal || (x.nivel === 'importante' ? 'importantes' : x.nivel === 'resumen' ? 'resumen' : 'normales'), smallIcon: 'ic_stat_paloma', iconColor: '#FFC93C', extra: { tab: x.tab || '' } });
-  LocalNotifications.deleteChannel && LocalNotifications.deleteChannel({ id: 'recordatorios' }).catch(() => {}); // el canal único de la primera versión
+  if (N.android && LocalNotifications.deleteChannel) LocalNotifications.deleteChannel({ id: 'recordatorios' }).catch(() => {}); // el canal único de la primera versión
 
   // 11/11 · Avisos de PalomApp que calcula el propio móvil (cobros y pagos fijos, Agenda): se programan en el teléfono
   N.notif = {

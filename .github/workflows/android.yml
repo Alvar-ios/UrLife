@@ -6,7 +6,7 @@ name: App de Android
 on:
   # al subir cambios de la app de Android a una rama de trabajo, se comprueba que compila (solo el APK de prueba)
   push:
-    branches: ['fase*']
+    branches: ['fase**']
     paths: ['movil/**', '.github/workflows/android.yml']
   workflow_dispatch:
     inputs:

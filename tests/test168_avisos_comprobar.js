@@ -21,7 +21,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(reg.pedir === 1, 'al entrar se pide UNA vez el permiso para mandar avisos (Android 13+)');
   const A = e.w.__APP__; await A.H.avAbrir([]); await sleep(150);
   const txt = (e.w.document.querySelector('.sheet') || e.w.document.body).textContent;
-  ok(/Ajuste restringido/.test(txt) && /Permitir ajustes restringidos/.test(txt), 'sin acceso a notificaciones explica los «ajustes restringidos» de Android');
+  ok(/Ver cómo se activa/.test(txt), 'sin acceso a notificaciones sale la tarjeta de la guía (los «ajustes restringidos» se explican dentro, docs/47)');
   ok(/Comprobar/.test(txt) && /Acceso a notificaciones/.test(txt) && /PalomApp puede mandarte avisos/.test(txt), 'sale la lista «Comprobar»');
   ok(/Llegó, pero no se entendió el texto/.test(txt), 'dice que llegó un aviso del Santander que no se entendió');
   ok(/CAFETERIA/.test(txt) && /solo versión de prueba/.test(txt), 'en la versión de prueba enseña el texto no entendido para poder mandarlo');
