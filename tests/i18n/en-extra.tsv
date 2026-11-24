@@ -765,3 +765,47 @@ Ver cómo	See how
 Que se apunten solos tus pagos	Let your payments add themselves
 PalomApp lee los avisos de tus apps de banco y apunta cada gasto o ingreso, con «Deshacer». El texto del aviso no sale de tu móvil.	PalomApp reads notifications from your banking apps and adds each expense or income, with “Undo”. The notification text never leaves your phone.
 Ver cómo se activa	See how to turn it on
+Con la app Atajos de tu iPhone, cada aviso de tu banco se apunta solo en PalomApp. Lo preparas una vez y tardas dos minutos.	With your iPhone's Shortcuts app, every notification from your bank is added to PalomApp automatically. You set it up once in two minutes.
+Solo las apps que tú elijas	Only the apps you choose
+en Atajos eliges de qué apps se leen los avisos	in Shortcuts you choose which apps' notifications are read
+Abre Atajos	Open Shortcuts
+Abre la app	Open the
+, entra en	app, go to
+y toca el	and tap the
+de arriba.	at the top.
+Elige tu banco	Choose your bank
+Toca	Tap
+, elige la app de tu banco y marca	, choose your bank's app and select
+. Toca	. Tap
+Añade PalomApp	Add PalomApp
+Busca	Search for
+y elige	and choose
+. En «Texto del aviso» pon	. In “Notification text” put
+¿Tienes más de un banco? Repite estos pasos con cada uno.	More than one bank? Repeat these steps for each one.
+Tus pagos con Apple Pay	Your Apple Pay payments
+Si un pago llega por los dos caminos, se apunta una sola vez.	If a payment arrives both ways, it's only added once.
+Ya ha llegado tu primer aviso. Lo verás apuntado en Inicio, con «Deshacer».	Your first notification has arrived. You'll see it on Home, with “Undo”.
+Paga algo con tarjeta o pide a alguien un Bizum de #. Cuando vuelvas a PalomApp lo verás apuntado en Inicio.	Pay for something by card or ask someone for a # Bizum. When you come back to PalomApp you'll see it on Home.
+Con Apple Pay	With Apple Pay
+También con Apple Pay	Also with Apple Pay
+Abrir Atajos	Open Shortcuts
+Siguiente	Next
+Ya está	Done
+Ver cómo	See how
+Con la app Atajos de tu iPhone, en dos minutos.	With your iPhone's Shortcuts app, in two minutes.
+Con la app Atajos de tu iPhone, cada aviso de tu banco o pago con Apple Pay se apunta solo, con «Deshacer». El texto del aviso no sale de tu móvil.	With your iPhone's Shortcuts app, every bank notification or Apple Pay payment is added automatically, with “Undo”. The notification text never leaves your phone.
+Los avisos del banco solo están en las apps de Android y de iPhone.	Bank notifications are only in the Android and iPhone apps.
+El móvil no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.	Your phone didn't give permission. You can turn it on later in You → Notifications.
+Automatización	Automation
+Cuándo	When
+Hora del día	Time of day
+Notificación	Notification
+App: tu banco	App: your bank
+Ejecutar inmediatamente	Run immediately
+Apuntar aviso en PalomApp	Add notification in PalomApp
+Texto del aviso:	Notification text:
+Entrada del atajo	Shortcut input
+Tus tarjetas	Your cards
+Apuntar pago de Apple Pay	Add Apple Pay payment
+Importe:	Amount:
+Comercio:	Merchant:
