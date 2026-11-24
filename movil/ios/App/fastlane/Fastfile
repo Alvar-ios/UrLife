@@ -1,0 +1,40 @@
+# Firma y sube la app de iPhone a TestFlight desde el Mac de GitHub (24/11/2026). Lo lanza .github/workflows/ios.yml.
+# Sin Mac ni móviles registrados: en cada subida se crea un certificado de distribución nuevo (con la clave de la API),
+# se firma, se sube y al final se REVOCA ese certificado. Revocarlo no afecta a lo ya subido (Apple vuelve a firmar
+# lo que reparte por TestFlight y el App Store). La clave privada vive solo en un llavero temporal del Mac de GitHub.
+default_platform(:ios)
+
+platform :ios do
+  lane :subir do
+    bundle = "es.palomapp.finanzas"
+    api = app_store_connect_api_key(key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], key_filepath: ENV["ASC_KEY_PATH"], in_house: false)
+    kc = "palomapp-ci"
+    kc_path = File.expand_path("~/Library/Keychains/#{kc}-db")
+    create_keychain(name: kc, password: ENV["KC_PASS"], default_keychain: false, unlock: true, timeout: 3600, lock_when_sleeps: false, add_to_search_list: true)
+    cert_id = nil
+    begin
+      get_certificates(api_key: api, development: false, force: true, keychain_path: kc_path, keychain_password: ENV["KC_PASS"], output_path: ENV["RUNNER_TEMP"])
+      cert_id = lane_context[SharedValues::CERT_CERTIFICATE_ID]
+      get_provisioning_profile(api_key: api, app_identifier: bundle, force: true, cert_id: cert_id, output_path: ENV["RUNNER_TEMP"])
+      perfil = lane_context[SharedValues::SIGH_NAME]
+      update_code_signing_settings(path: "App.xcodeproj", use_automatic_signing: false, team_id: ENV["APPLE_TEAM_ID"], targets: ["App"],
+        build_configurations: ["Release"], code_sign_identity: "Apple Distribution", profile_name: perfil, bundle_identifier: bundle)
+      build_app(project: "App.xcodeproj", scheme: "App", configuration: "Release", export_method: "app-store",
+        output_directory: ENV["RUNNER_TEMP"], output_name: "PalomApp.ipa",
+        xcargs: "MARKETING_VERSION=#{ENV['VERSION']} CURRENT_PROJECT_VERSION=#{ENV['BUILD']} OTHER_CODE_SIGN_FLAGS='--keychain #{kc_path}'",
+        export_options: { provisioningProfiles: { bundle => perfil } })
+      upload_to_testflight(api_key: api, ipa: File.join(ENV["RUNNER_TEMP"], "PalomApp.ipa"), skip_waiting_for_build_processing: true)
+    ensure
+      if cert_id
+        begin
+          Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.from(hash: api)
+          Spaceship::ConnectAPI::Certificate.all.select { |c| c.id == cert_id }.each(&:delete!)
+          UI.success("Certificado de esta subida revocado")
+        rescue => e
+          UI.important("No se pudo revocar el certificado #{cert_id}: #{e}. Revócalo a mano en developer.apple.com → Certificates.")
+        end
+      end
+      begin; delete_keychain(name: kc); rescue; end
+    end
+  end
+end
