@@ -49,6 +49,16 @@
       comp = [{ id: 'k1', grupoId: G1, fecha: dia(0), tipo: 'Gasto', categoria: 'Restaurantes', descripcion: 'Cena de bienvenida', importe: 147, pagadoPor: ANA, reparto: { [YO]: 49, [ANA]: 49, [BEA]: 49 }, modo: 'igual', creadoPor: ANA, createdAt: ts(0) }];
     } else { grupos = []; miembros = []; comp = []; }
   }
+  // 25/11 · capturas y vídeos de la App Store (tienda.js pone window.__TIENDA__): una nómina este mes y el anterior, y gastos del mes pasado
+  if (window.__TIENDA__) {
+    Object.keys(movs).forEach(function (k) { if (movs[k].tipo === 'Ingreso' && movs[k].categoria === 'Nómina') delete movs[k]; });
+    var ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1, 12), ant = function (n) { return iso(new Date(hoy.getFullYear(), hoy.getMonth() - 1, n, 12)); };
+    movs['t-n1'] = { tipo: 'Ingreso', categoria: 'Nómina', importe: 2350, fecha: iso(ini), descripcion: 'Nómina', metodoPago: 'Transferencia' };
+    movs['t-n0'] = { tipo: 'Ingreso', categoria: 'Nómina', importe: 2350, fecha: ant(1), descripcion: 'Nómina', metodoPago: 'Transferencia' };
+    [['Hogar', 620, 2, 'Alquiler'], ['Supermercado', 286.4, 9, 'Supermercado'], ['Restaurantes', 94.5, 15, 'Cenas'], ['Transporte', 61.2, 20, 'Gasolina']]
+      .forEach(function (x, i) { movs['t-g' + i] = { tipo: 'Gasto', categoria: x[0], importe: x[1], fecha: ant(x[2]), descripcion: x[3], metodoPago: 'Tarjeta' }; });
+    cfg.app.nombre = 'Álex';
+  }
   var store = { movimientos: movs, tareas: tareas, golf: {} };
   var vacio = function (next) { setTimeout(function () { next([]); }, 0); return function () {}; };
   var lista = function (o) { return Object.keys(o).map(function (id) { return { id: id, data: function () { return o[id]; } }; }); };
