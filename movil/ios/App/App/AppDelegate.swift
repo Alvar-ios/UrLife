@@ -184,10 +184,11 @@ public class AtajosPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
-// La pantalla de la app (Main.storyboard la usa) registra el puente de Atajos
+// La pantalla de la app (Main.storyboard la usa) registra los puentes de Atajos y de los widgets
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(AtajosPlugin())
+        bridge?.registerPluginInstance(PalomaWidgetsPlugin())
     }
 }
 

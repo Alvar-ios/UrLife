@@ -11,6 +11,7 @@ import { registerPlugin } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { PushNotifications } from '@capacitor/push-notifications';
 const { crearBloqueo } = require('./bloqueo.js');
+const { crearWidgetsIos } = require('./widgets-ios.js');
 
 if (Capacitor.isNativePlatform()) {
   document.documentElement.classList.add('nativo');
@@ -106,6 +107,8 @@ if (Capacitor.isNativePlatform()) {
       info: () => AT.info(), // { ios: '27.1', usado: ms del último aviso/pago que llegó (0 = nunca), prueba: ms de la última prueba «Probar PalomApp» }
       cuenta: (uid) => AT.cuenta({ uid: uid || '' }), // la cuenta con sesión; '' al salir (vacía la cola)
     };
+    // 25/11 · Widgets de la pantalla de inicio (docs/49): la web deja el resumen en la cajita compartida del móvil (PalomaWidgetsPlugin.swift)
+    N.widgets = crearWidgetsIos(registerPlugin('PalomaWidgets'));
     App.addListener('appStateChange', ({ isActive }) => { if (isActive && window.__avisosVolver) { try { window.__avisosVolver(); } catch (e) { /* */ } } });
   }
 
@@ -194,6 +197,8 @@ if (Capacitor.isNativePlatform()) {
 
   // Invitaciones: https://urlife-zeta.vercel.app/?unirse=… abre la app (App Links) y se pasa a la web de dentro
   App.addListener('appUrlOpen', ({ url }) => {
+    // 25/11: los widgets de iPhone abren la app con palomapp://gasto o palomapp://inicio
+    if (N.widgets && N.widgets.alUrl && N.widgets.alUrl(url)) return;
     try { const u = new URL(url); if (u.search) { location.search = u.search; } } catch (e) { /* */ }
   });
 }

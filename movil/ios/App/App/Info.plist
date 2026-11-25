@@ -68,6 +68,17 @@
 	<string>Para hacer una foto a un ticket y leerlo, o ponerle una foto a un grupo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Para elegir la foto de un ticket o de un grupo.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>es.palomapp.finanzas</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>palomapp</string>
+			</array>
+		</dict>
+	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
