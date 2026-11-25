@@ -17,9 +17,9 @@
 | Campo | Texto para pegar | Caracteres (límite) |
 |---|---|---|
 | **Nombre** (ya registrado) | `PalomApp: gastos y tareas` | 25 (30) |
-| **Subtítulo** (recomendado) | `Finanzas y cuentas en pareja` | 28 (30) |
+| **Subtítulo** (ELEGIDO por el dueño el 25/11) | `Tu dinero y el que compartes` | 28 (30) |
 | Alternativa 1 | `Ahorro y cuentas con tu pareja` | 30 (30) |
-| Alternativa 2 | `Tu dinero y el que compartes` | 28 (30) |
+| Alternativa 2 | `Finanzas y cuentas en pareja` | 28 (30) |
 | ~~El lema~~ | `Lo tuyo, lo nuestro, todo claro` | 31: **no cabe** (30) |
 | **Categoría principal** | Finanzas | — |
 | **Categoría secundaria** | Productividad | — |
@@ -176,7 +176,7 @@ Nota: la política de privacidad dice que PalomApp no está pensada para menores
 | Campo | Qué poner | Nota |
 |---|---|---|
 | **URL de la política de privacidad** | `https://urlife-zeta.vercel.app/privacidad.html` | Existe y está en español e inglés |
-| **URL de soporte** (obligatoria) | `https://urlife-zeta.vercel.app/privacidad.html` *(provisional)* | Apple exige que lleve a datos de contacto reales. **No hay página de ayuda ni de soporte en el repositorio.** `bienvenido.html` es la página para probadores de Android (no sirve: habla de Android) y la web principal es la pantalla de entrar, sin contacto. La de privacidad sí tiene el correo de contacto. **Conviene una página `soporte.html`** (correo, preguntas frecuentes, cómo borrar la cuenta); la haría Desarrollo y es un cambio en la web, así que necesita tu «publica» |
+| **URL de soporte** (obligatoria) | `https://urlife-zeta.vercel.app/soporte.html` (la página está hecha el 25/11 en `fase21/ios-widgets`; funciona cuando el dueño diga «publica»; hasta entonces, `privacidad.html`) | Apple exige que lleve a datos de contacto reales. **No hay página de ayuda ni de soporte en el repositorio.** `bienvenido.html` es la página para probadores de Android (no sirve: habla de Android) y la web principal es la pantalla de entrar, sin contacto. La de privacidad sí tiene el correo de contacto. **Conviene una página `soporte.html`** (correo, preguntas frecuentes, cómo borrar la cuenta); la haría Desarrollo y es un cambio en la web, así que necesita tu «publica» |
 | **URL de marketing** (opcional) | Vacía | Cuando haya web de presentación (paso 14 del plan) |
 | **Copyright** | `2026 [tu nombre completo, como en la cuenta de desarrollador]` | Apple pone el símbolo © solo |
 | **Precio** | Gratis (precio 0) en «Precios y disponibilidad» | Es el ajuste de precio, no un texto: en la ficha no escribimos «gratis» |
