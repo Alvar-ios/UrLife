@@ -6,7 +6,9 @@ default_platform(:ios)
 
 platform :ios do
   lane :subir do
+    # 25/11: dos paquetes que firmar: la app y su widget (cada uno con su perfil, los dos con el mismo certificado de esta subida)
     bundle = "es.palomapp.finanzas"
+    bundle_widget = "es.palomapp.finanzas.widget"
     api = app_store_connect_api_key(key_id: ENV["ASC_KEY_ID"], issuer_id: ENV["ASC_ISSUER_ID"], key_filepath: ENV["ASC_KEY_PATH"], in_house: false)
     kc = "palomapp-ci"
     kc_path = File.expand_path("~/Library/Keychains/#{kc}-db")
@@ -17,12 +19,17 @@ platform :ios do
       cert_id = lane_context[SharedValues::CERT_CERTIFICATE_ID]
       get_provisioning_profile(api_key: api, app_identifier: bundle, force: true, cert_id: cert_id, output_path: ENV["RUNNER_TEMP"])
       perfil = lane_context[SharedValues::SIGH_NAME]
+      get_provisioning_profile(api_key: api, app_identifier: bundle_widget, force: true, cert_id: cert_id, output_path: ENV["RUNNER_TEMP"])
+      perfil_widget = lane_context[SharedValues::SIGH_NAME]
+      UI.user_error!("Los dos perfiles salieron con el mismo nombre (#{perfil}): revisa los identificadores en developer.apple.com") if perfil == perfil_widget
       update_code_signing_settings(path: "App.xcodeproj", use_automatic_signing: false, team_id: ENV["APPLE_TEAM_ID"], targets: ["App"],
         build_configurations: ["Release"], code_sign_identity: "Apple Distribution", profile_name: perfil, bundle_identifier: bundle)
+      update_code_signing_settings(path: "App.xcodeproj", use_automatic_signing: false, team_id: ENV["APPLE_TEAM_ID"], targets: ["PalomaWidget"],
+        build_configurations: ["Release"], code_sign_identity: "Apple Distribution", profile_name: perfil_widget, bundle_identifier: bundle_widget)
       build_app(project: "App.xcodeproj", scheme: "App", configuration: "Release", export_method: "app-store",
         output_directory: ENV["RUNNER_TEMP"], output_name: "PalomApp.ipa",
         xcargs: "MARKETING_VERSION=#{ENV['VERSION']} CURRENT_PROJECT_VERSION=#{ENV['BUILD']} OTHER_CODE_SIGN_FLAGS='--keychain #{kc_path}'",
-        export_options: { provisioningProfiles: { bundle => perfil } })
+        export_options: { provisioningProfiles: { bundle => perfil, bundle_widget => perfil_widget } })
       upload_to_testflight(api_key: api, ipa: File.join(ENV["RUNNER_TEMP"], "PalomApp.ipa"), skip_waiting_for_build_processing: true)
     ensure
       if cert_id

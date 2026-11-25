@@ -19,7 +19,7 @@ process.argv.slice(2).forEach((a) => { const m = /^--([a-z0-9-]+)(?:=(.*))?$/.ex
 const RAIZ = path.join(__dirname, '..', '..'), SALIDA = path.resolve(LIBRES[0] || path.join(__dirname, 'salida'));
 const ANCHOS = ARG.anchos ? String(ARG.anchos).split(',').map(Number) : [390, 375];
 const TEMAS = (ARG.temas ? String(ARG.temas).split(',') : ['claro', 'oscuro']).map((t) => (/osc|dark/.test(t) ? 'dark' : 'light'));
-const LETRA = ARG.letra ? Number(ARG.letra) / 100 : 1, ALTO = ARG.teclado ? 500 : Number(ARG.alto) || 844, ESCALA = ARG.x1 ? 1 : 2;
+const LETRA = ARG.letra ? Number(ARG.letra) / 100 : 1, ALTO = ARG.teclado ? 500 : Number(ARG.alto) || 844, ESCALA = ARG.x1 ? 1 : Number(ARG.escala) || 2; // 25/11: --escala=3 para las capturas de la App Store (440 × 956 × 3 = 1320 × 2868)
 // puente falso de la app de Android (para ver Tú → Avisos): no lee ni manda nada
 const IOS = 'window.__nativo={ios:true,notif:{permiso:async()=>"granted",pedir:async()=>"granted",programar:async()=>{}},atajos:{pendientes:async()=>[],quitar:async()=>{},info:async()=>({ios:"27.1",usado:0}),cuenta:async()=>{}}};'; // 24/11 (Calidad): iPhone con Atajos
 const NATIVO = (activo) => 'window.__nativo={notif:{permiso:async()=>"granted",pedir:async()=>"granted",programar:async()=>{}},avisosBanco:{estado:async()=>(' + JSON.stringify(activo ? { activo: true, permiso: true, avisarme: true, pendientes: 2, bancos: ['es.bancosantander.apps', 'com.myinvestor.app', 'com.ejemplo.banco'], candidatos: [{ pkg: 'com.ejemplo.pagosdeprueba', nombre: 'Banco de Prueba con Nombre Largo' }] } : { activo: false, permiso: false }) + '),configurar:async()=>{},pendientes:async()=>[],quitar:async()=>{},vaciar:async()=>{},abiertoDesdeAviso:async()=>false,alAbrirDesdeAviso:()=>{}}};';
@@ -262,6 +262,12 @@ function revisarPagina() {
     await p.goto('file://' + path.join(RAIZ, 'index.html'));
     await p.waitForFunction(() => window.__APP__ && document.querySelector('#app').textContent.length > 50, null, { timeout: 15000 });
     await p.waitForTimeout(600);
+    // 25/11 · --tienda: capturas para la App Store. Datos inventados más «normales» (una nómina este mes y el anterior, y gastos del mes pasado)
+    if (ARG.tienda) await p.evaluate(() => { const A = window.__APP__, d = new Date(), iso = (x) => x.toISOString().slice(0, 10), a = new Date(d.getFullYear(), d.getMonth(), 1, 12), b = new Date(d.getFullYear(), d.getMonth() - 1, 1, 12);
+      const ant = (n) => iso(new Date(b.getFullYear(), b.getMonth(), n, 12));
+      A.S.movimientos = A.S.movimientos.concat([{ id: 't-n1', tipo: 'Ingreso', categoria: 'Nómina', importe: 2350, fecha: iso(a), descripcion: 'Nómina' }, { id: 't-n0', tipo: 'Ingreso', categoria: 'Nómina', importe: 2350, fecha: ant(1), descripcion: 'Nómina' },
+        { id: 't-g1', tipo: 'Gasto', categoria: 'Hogar', importe: 620, fecha: ant(2), descripcion: 'Alquiler' }, { id: 't-g2', tipo: 'Gasto', categoria: 'Supermercado', importe: 286.4, fecha: ant(9), descripcion: 'Supermercado' }, { id: 't-g3', tipo: 'Gasto', categoria: 'Restaurantes', importe: 94.5, fecha: ant(15), descripcion: 'Cena' }, { id: 't-g4', tipo: 'Gasto', categoria: 'Transporte', importe: 61.2, fecha: ant(20), descripcion: 'Gasolina' }]);
+      A.render(); });
     for (const [id, js] of LISTA) {
       await p.evaluate(() => { const A = window.__APP__; try { A.H.closeSheet([]); } catch (e) { /* */ } delete window.__nativo; A.S.tuMas = false; window.scrollTo(0, 0); });
       await p.waitForTimeout(350);

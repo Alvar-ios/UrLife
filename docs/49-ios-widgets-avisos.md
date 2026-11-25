@@ -57,7 +57,7 @@ La app y el widget son dos programas distintos. Para hablar entre ellos, Apple d
 | B2 | «Te queda» pequeño y mediano, ocultar cifras, «Apuntar gasto» | Reutiliza las reglas de `WidgetDatos` de Android, pasadas a Swift |
 | B3 | «Hoy en la Agenda» y, si se quiere, «Próximos pagos» | Añade campos al resumen y pruebas en la web |
 
-El dueño tiene que hacer en el portal de Apple (developer.apple.com → Certificates, Identifiers & Profiles): crear el **App Group** (`group.es.palomapp.finanzas`) y el identificador del widget (`es.palomapp.finanzas.widgets`). Si la clave de la API de `docs/48` no deja crearlos solos, se hace a mano en 5 minutos con una guía mía. **No lo hemos podido confirmar** sin la cuenta.
+El dueño tiene que hacer en el portal de Apple (developer.apple.com → Certificates, Identifiers & Profiles): crear el **App Group** (`group.es.palomapp.finanzas`) y el identificador del widget (`es.palomapp.finanzas.widget` (sin «s»: es el que usa el proyecto)). Si la clave de la API de `docs/48` no deja crearlos solos, se hace a mano en 5 minutos con una guía mía. **No lo hemos podido confirmar** sin la cuenta.
 
 ### 3.5 Riesgos
 

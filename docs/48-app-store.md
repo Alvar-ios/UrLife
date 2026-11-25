@@ -22,6 +22,6 @@ Desarrollo · 24/11/2026 · Rama del código: `fase18/permisos-iphone` (sin publ
 ## 3. Lo que falta o no está probado
 
 - **Avisos de Juntos con la app cerrada en iPhone**: aún no (necesitan la clave de avisos de Apple y Firebase). Los recordatorios del propio móvil sí funcionan.
-- Widgets y «Compartir con PalomApp» de un extracto: solo Android por ahora.
+- «Compartir con PalomApp» de un extracto: solo Android por ahora. Widgets en iPhone («Te queda este mes» y «Apuntar gasto», 25/11, docs/49 B1+B2): hechos, pendientes de ver en un iPhone real.
 - Nada se ha probado en un iPhone real: ni Face ID, ni Atajos, ni Apple Pay, ni la cámara para los tickets.
 - Los nombres exactos de las pantallas de Atajos en español («Notificación», «Wallet», «Entrada del atajo») no están comprobados en un iPhone con iOS 27.

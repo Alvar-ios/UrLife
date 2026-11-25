@@ -35,6 +35,11 @@ jobs:
       - name: Preparar la web dentro de la app
         working-directory: movil
         run: npm ci && npm run copiar && npx cap sync ios
+      - name: Pruebas de las reglas del widget (Swift, sin pantalla)
+        working-directory: movil/ios
+        run: |
+          swiftc -o "$RUNNER_TEMP/pruebas-widget" App/PalomaWidget/WidgetDatos.swift PruebasWidget/main.swift
+          "$RUNNER_TEMP/pruebas-widget"
       - name: Comprobar que compila (simulador, sin firmar)
         working-directory: movil/ios/App
         run: |
