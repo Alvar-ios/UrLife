@@ -2971,3 +2971,6 @@ html[data-look="nuevo"] .gd-tarjeta { display: flex; flex-direction: column; gap
 html[data-look="nuevo"] .gd-tarjeta span { color: var(--text-muted); line-height: 1.45; font-size: 13.5px; }
 html[data-look="nuevo"] .gd-tarjeta .btn { margin-top: 8px; }
 html[data-look="nuevo"] .gd-tarjeta .gd-movil span { font-size: inherit; color: inherit; line-height: normal; }
+/* 25/11 · iPhone, Tú → Avisos: último aviso recibido por Atajos y «Comprobar ahora» */
+html[data-look="nuevo"] .gd-estado { display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+html[data-look="nuevo"] .gd-estado .gd-nota { margin: 0; }

@@ -809,3 +809,19 @@ Tus tarjetas	Your cards
 Apuntar pago de Apple Pay	Add Apple Pay payment
 Importe:	Amount:
 Comercio:	Merchant:
+Todavía no ha llegado ningún aviso por Atajos.	No notification has arrived through Shortcuts yet.
+Último aviso recibido:	Last notification received:
+Hace más de dos semanas que no llega ninguno. Si has pagado con tarjeta, revisa tu automatización en Atajos.	It's been over two weeks since one arrived. If you've paid by card, check your automation in Shortcuts.
+Pulsa «Comprobar ahora» y haz un pago con tarjeta, o pide a alguien un Bizum de #. Si no quieres pagar nada, en Atajos busca	Tap “Check now” and pay by card, or ask someone for a Bizum of #. If you'd rather not pay anything, in Shortcuts look for
+y púlsalo: comprueba que Atajos y PalomApp se hablan.	and tap it: it checks that Shortcuts and PalomApp are talking.
+Esperando tu prueba…	Waiting for your test…
+Haz ahora un pago con Apple Pay o con la tarjeta de tu banco, o pide un Bizum de #. Cuando llegue a PalomApp te lo diré aquí. Puedes salir de la app y volver.	Pay now with Apple Pay or your bank card, or ask someone for a Bizum of #. When it reaches PalomApp I'll tell you here. You can leave the app and come back.
+¿Tarda? En Atajos, la automatización debe tener	Taking long? In Shortcuts, the automation must have
+y, en «Texto del aviso»,	and, in “Notification text”,
+. Con Apple Pay, en Ajustes → Wallet deja los	. With Apple Pay, go to Settings → Wallet and leave
+datos móviles	mobile data
+Atajos y PalomApp se hablan bien. Para comprobar tu automatización de verdad, haz un pago pequeño o pide un Bizum de #.	Shortcuts and PalomApp are talking fine. To check your automation for real, make a small payment or ask someone for a Bizum of #.
+Ha llegado tu aviso y PalomApp lo ha leído. Míralo en Inicio, con «Deshacer».	Your notification has arrived and PalomApp has read it. See it on Home, with “Undo”.
+Ya ha llegado tu primer aviso. Lo verás apuntado en Inicio, con «Deshacer». Puedes comprobarlo otra vez cuando quieras.	Your first notification has arrived. You'll see it on Home, with “Undo”. You can check again whenever you like.
+Probar PalomApp	Test PalomApp
+Comprobar ahora	Check now
