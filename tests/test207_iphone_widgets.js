@@ -2,7 +2,7 @@
 // «•••» con las cifras ocultas, nada al cerrar sesión, y los enlaces palomapp://gasto y palomapp://inicio abren el gasto nuevo y Inicio.
 // El lado iPhone se simula (window.__nativo con el puente real de movil/widgets-ios.js). Datos inventados.
 const { makeEnv, sleep } = require('./harness.js');
-const { crearWidgetsIos, queDeUrl } = require('../movil/widgets-ios.js');
+const { crearWidgetsIos, queDeUrl, searchDeEnlace } = require('../movil/widgets-ios.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const hoyISO = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
 const sheetAbierta = (e) => !!e.doc.querySelector('#sheetBackdrop') && !e.doc.querySelector('#sheetBackdrop').dataset.cerrando;
@@ -10,6 +10,7 @@ const sheetAbierta = (e) => !!e.doc.querySelector('#sheetBackdrop') && !e.doc.qu
 (async () => {
   // 1) El puente: qué enlaces entiende
   ok(queDeUrl('palomapp://gasto') === 'gasto' && queDeUrl('palomapp://inicio') === 'inicio' && queDeUrl('PALOMAPP://Gasto/') === 'gasto', 'los enlaces palomapp://gasto y palomapp://inicio se entienden');
+  ok(searchDeEnlace('https://urlife-zeta.vercel.app/?unirse=abc') === '?unirse=abc' && searchDeEnlace('palomapp://x?unirse=abc') === '' && searchDeEnlace('palomapp://x?borrar-cuenta') === '' && searchDeEnlace('https://otra.web/?unirse=abc') === '' && searchDeEnlace('') === '' && searchDeEnlace(null) === '', 'solo los enlaces https de la web de PalomApp pasan sus parámetros; palomapp://x?unirse o ?borrar-cuenta se ignoran');
   ok(queDeUrl('palomapp://otra') === '' && queDeUrl('https://urlife-zeta.vercel.app/?unirse=abc') === '' && queDeUrl('') === '' && queDeUrl(null) === '', 'lo demás (invitaciones, enlaces raros) no es de un widget');
   {
     const g = []; const W = crearWidgetsIos({ guardar: async (o) => { g.push(o); } });

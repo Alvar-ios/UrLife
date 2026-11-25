@@ -20,7 +20,7 @@
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
 		9AF18A7BB86A39DCDFDC06BD /* WidgetDatos.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7C5FF812B49B81083676B25 /* WidgetDatos.swift */; };
 		A1B2C3D41FED796500000002 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D41FED796500000001 /* PrivacyInfo.xcprivacy */; };
-		BAD0F0252E73C47E5C7605C7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 458DE5449D9FB46CB3FCD649 /* Foundation.framework */; };
+		C1325A84A4E69C28A96F4D02 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2B9236A27B95ACD99D7EB14C /* PrivacyInfo.xcprivacy */; };
 		DDA58F1930450D16C4622630 /* PalomaWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F08362CE083CA0EF1C7CDE58 /* PalomaWidget.swift */; };
 		EC5DD8252AB67C5D7B916DD5 /* PalomaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C648592EB59C34737487E4F5 /* PalomaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -51,8 +51,8 @@
 
 /* Begin PBXFileReference section */
 		145FE43DA4AC62B9B35D19F7 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		2B9236A27B95ACD99D7EB14C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
-		458DE5449D9FB46CB3FCD649 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -85,7 +85,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BAD0F0252E73C47E5C7605C7 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,6 +98,7 @@
 				F08362CE083CA0EF1C7CDE58 /* PalomaWidget.swift */,
 				145FE43DA4AC62B9B35D19F7 /* Info.plist */,
 				9283DD4AA13ACB4B1B2BBE7E /* PalomaWidget.entitlements */,
+				2B9236A27B95ACD99D7EB14C /* PrivacyInfo.xcprivacy */,
 			);
 			name = PalomaWidget;
 			path = PalomaWidget;
@@ -111,7 +111,6 @@
 				504EC3061FED79650016851F /* App */,
 				504EC3051FED79650016851F /* Products */,
 				3E8CA2592A88E4A4B69D8809 /* PalomaWidget */,
-				AE8E579AE882AE18321A6BF8 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -141,22 +140,6 @@
 				92D4B3FD24C8220B555A05D3 /* PalomaWidgetsPlugin.swift */,
 			);
 			path = App;
-			sourceTree = "<group>";
-		};
-		73A02609759AF90653AF8E2A /* iOS */ = {
-			isa = PBXGroup;
-			children = (
-				458DE5449D9FB46CB3FCD649 /* Foundation.framework */,
-			);
-			name = iOS;
-			sourceTree = "<group>";
-		};
-		AE8E579AE882AE18321A6BF8 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				73A02609759AF90653AF8E2A /* iOS */,
-			);
-			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -258,6 +241,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C1325A84A4E69C28A96F4D02 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

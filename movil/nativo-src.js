@@ -11,7 +11,7 @@ import { registerPlugin } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { PushNotifications } from '@capacitor/push-notifications';
 const { crearBloqueo } = require('./bloqueo.js');
-const { crearWidgetsIos } = require('./widgets-ios.js');
+const { crearWidgetsIos, searchDeEnlace } = require('./widgets-ios.js');
 
 if (Capacitor.isNativePlatform()) {
   document.documentElement.classList.add('nativo');
@@ -199,6 +199,6 @@ if (Capacitor.isNativePlatform()) {
   App.addListener('appUrlOpen', ({ url }) => {
     // 25/11: los widgets de iPhone abren la app con palomapp://gasto o palomapp://inicio
     if (N.widgets && N.widgets.alUrl && N.widgets.alUrl(url)) return;
-    try { const u = new URL(url); if (u.search) { location.search = u.search; } } catch (e) { /* */ }
+    { const q = searchDeEnlace(url); if (q) location.search = q; } // solo https de la web de PalomApp (antes cualquier esquema)
   });
 }

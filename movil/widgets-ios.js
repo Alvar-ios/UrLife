@@ -7,6 +7,11 @@ function queDeUrl(url) {
   const q = m ? m[1].toLowerCase() : '';
   return q === 'gasto' || q === 'inicio' ? q : '';
 }
+// 25/11 (Datos y Seguridad): del resto de enlaces solo se hace caso a los https de la web de PalomApp (invitaciones, etc.).
+// Cualquier otro esquema (palomapp://x?unirse=…, ?borrar-cuenta…) se ignora: otra app o web no puede abrir hojas de PalomApp con parámetros.
+function searchDeEnlace(url) {
+  try { const u = new URL(String(url || '')); return u.protocol === 'https:' && u.hostname === 'urlife-zeta.vercel.app' ? u.search : ''; } catch (e) { return ''; }
+}
 function crearWidgetsIos(plugin) {
   let pendiente = '';
   const oyentes = [];
@@ -24,4 +29,4 @@ function crearWidgetsIos(plugin) {
     },
   };
 }
-module.exports = { crearWidgetsIos, queDeUrl };
+module.exports = { crearWidgetsIos, queDeUrl, searchDeEnlace };
