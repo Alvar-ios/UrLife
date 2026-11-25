@@ -11630,7 +11630,7 @@ function guiaPintar() {
   if (guiaHojaAbierta()) updateSheet(guiaHojaHtml());
 }
 async function guiaAbrir(paso) {
-  if (!avNat()) return atajosNat() ? guiaIosAbrir() : undefined;
+  if (!avNat()) return atajosNat() ? guiaIosAbrir(paso) : undefined;
   const G = S._guia = guiaNueva(false); await guiaCargar(G);
   G.paso = paso && paso !== 'portada' ? paso : guiaHecho(G, 'acceso') ? guiaSiguiente(G, 'acceso') === 'prueba' && !guiaHecho(G, 'prueba') ? 'prueba' : 'portada' : 'portada';
   FORM = { guia: true }; openSheet(guiaHojaHtml());
@@ -11638,7 +11638,7 @@ async function guiaAbrir(paso) {
 // al volver a PalomApp desde los ajustes del móvil
 function guiaVolver() {
   { const ob = S.onboarding; if (ob && bienvV2(ob) && ob.paso === 'G5' && !avNat() && atajosNat()) { atajosNat().info().then((i) => { if (S.onboarding === ob) { ob.atInfo = i || {}; render(); } }).catch(() => {}); return true; } }
-  if (S._guia && S._guia.ios && guiaHojaAbierta()) { atajosNat().info().then((i) => { S._guia.info = i || {}; guiaPintar(); }).catch(() => {}); return true; }
+  if (S._guia && S._guia.ios && guiaHojaAbierta()) { atajosNat().info().then((i) => { if (!guiaIosRevisar(S._guia, i || {})) { S._guia.info = i || {}; guiaPintar(); } }).catch(() => {}); return true; }
   const ob = S.onboarding, enB = ob && ob.guia && bienvV2(ob) && ob.paso === 'G5';
   const G = enB ? ob.guia : guiaHojaAbierta() ? S._guia : null; if (!G) return false;
   guiaCargar(G).then(() => { guiaRevisar(G); if (enB) { ob.avEst = G.est; if (guiaHecho(G, 'acceso')) ob.afinar.avisosBanco = true; if (G.notif === 'granted') ob.notif = 'granted'; bvPilotoRevisar(ob); } guiaPintar(); }).catch(() => {});
@@ -11652,6 +11652,14 @@ function guiaInicioHtml() {
   if (e.activo && !e.permiso) return '<div class="card gd-ini"><span class="ob2-fic r">' + ic('alert') + '</span><div class="inv-ini-x"><b>Los avisos del banco se han parado</b><span>Android ha quitado el permiso. Vuelve a darlo en un minuto.</span><div class="inv-ini-b"><button class="btn sm accent" ' + act('guiaAbrirDesde', 'acceso') + '>Arreglarlo</button></div></div></div>';
   if (e.activo && e.permiso || !herrOn('avisosBanco') || (cfg().guiaAvisos || {}).inicioVisto || (+lsGet('guiaAbre') || 0) < 2) return '';
   return '<div class="card gd-ini"><span class="ob2-fic a">' + ic('bolt') + '</span><div class="inv-ini-x"><b>Tus pagos pueden apuntarse solos</b><span>Con los avisos de tu banco, en un minuto.</span><div class="inv-ini-b"><button class="btn sm accent" ' + act('guiaInicio', 'ver') + '>Ver cómo</button><button class="btn sm ghost" ' + act('guiaInicio', 'no') + '>Ahora no</button></div></div></div>';
+}
+// 25/11 · iPhone, Tú → Avisos: cuándo llegó el último aviso por Atajos y cómo comprobarlo
+function atajosEstadoHtml() {
+  const i = S._atajosInfo; if (!i) return '';
+  const usado = Number(i.usado) || 0, viejo = usado && Date.now() - usado > 14 * 86400000;
+  const linea = usado ? 'Último aviso recibido: <b>' + haceTxtTs(usado).toLowerCase() + '</b>' : 'Todavía no ha llegado ningún aviso por Atajos.';
+  return '<div class="card gd-estado"><span>' + linea + '</span>' + (viejo ? '<p class="gd-nota">' + ic('alert') + ' Hace más de dos semanas que no llega ninguno. Si has pagado con tarjeta, revisa tu automatización en Atajos.</p>' : '') +
+    '<button type="button" class="btn ghost block" ' + act('guiaAbrirDesde', 'prueba') + '>Comprobar ahora</button></div>';
 }
 // Tú → Avisos: la portada de la guía en pequeño
 function guiaTarjetaHtml() {
@@ -11689,6 +11697,7 @@ function atajosFuente() {
       let vistos = []; try { vistos = JSON.parse(lsGet('atajosVistos') || '[]'); } catch (e) { /* */ }
       vistos = vistos.filter((v) => Date.now() - v.ts < 7 * 86400000);
       for (const x of lista) {
+        if (x && x.id && x.tipo === 'prueba') { malos.push(x.id); continue; } // «Probar PalomApp»: no es un gasto; solo se quita de la cola
         const it = x && x.id ? atajosAItem(x) : null;
         if (!it) { if (x && x.id) malos.push(x.id); continue; }
         const par = vistos.find((o) => !o.par && o.via !== it.via && Math.abs(o.importe - it.importe) < 0.005 && !!o.entra === !!it.entra && Math.abs(o.ts - it.ts) < 15 * 60000);
@@ -11729,8 +11738,12 @@ function guiaIosCuerpo(G) {
     '<p class="gd-nota">¿Tienes más de un banco? Repite estos pasos con cada uno.</p>';
   if (p === 'applepay') return guiaIosDibujo('applepay') + t('Tus pagos con Apple Pay') + txt('En Atajos → <b>Automatización</b> → <b>+</b>, elige <b>Wallet</b> (o «Transacción»), marca tus tarjetas y <b>Ejecutar inmediatamente</b>. Añade <b>Apuntar pago de Apple Pay</b> y pon <b>Importe</b> y <b>Comercio</b> de la entrada del atajo.') +
     '<p class="gd-nota">Si un pago llega por los dos caminos, se apunta una sola vez.</p>';
-  const funciona = !!i.usado;
-  return guiaDibujo('prueba') + t(funciona ? '¡Funciona!' : '¡Listo! Ahora, pruébalo') + txt(funciona ? 'Ya ha llegado tu primer aviso. Lo verás apuntado en Inicio, con «Deshacer».' : 'Paga algo con tarjeta o pide a alguien un Bizum de 1 €. Cuando vuelvas a PalomApp lo verás apuntado en Inicio.');
+  // 25/11: «Comprobar ahora»: la app espera a que llegue algo por Atajos y lo confirma
+  if (G.pruebaOk) return guiaDibujo('prueba') + t('¡Funciona!') + (G.pruebaOk === 'real' ? txt('Ha llegado tu aviso y PalomApp lo ha leído. Míralo en Inicio, con «Deshacer».') :
+    txt('Atajos y PalomApp se hablan bien. Para comprobar tu automatización de verdad, haz un pago pequeño o pide un Bizum de 1 €.'));
+  if (G.pruebaEsp) return guiaDibujo('prueba') + t('Esperando tu prueba…') + txt('Haz ahora un pago con Apple Pay o con la tarjeta de tu banco, o pide un Bizum de 1 €. Cuando llegue a PalomApp te lo diré aquí. Puedes salir de la app y volver.') +
+    '<p class="gd-nota">' + ic('alert') + ' ¿Tarda? En Atajos, la automatización debe tener <b>Ejecutar inmediatamente</b> y, en «Texto del aviso», <b>Entrada del atajo</b>. Con Apple Pay, en Ajustes → Wallet deja los <b>datos móviles</b> activados.</p>';
+  return guiaDibujo('prueba') + t(i.usado ? '¡Funciona!' : '¡Listo! Ahora, pruébalo') + txt(i.usado ? 'Ya ha llegado tu primer aviso. Lo verás apuntado en Inicio, con «Deshacer». Puedes comprobarlo otra vez cuando quieras.' : 'Pulsa «Comprobar ahora» y haz un pago con tarjeta, o pide a alguien un Bizum de 1 €. Si no quieres pagar nada, en Atajos busca <b>Probar PalomApp</b> y púlsalo: comprueba que Atajos y PalomApp se hablan.');
 }
 function guiaIosBotones(G) {
   const p = G.paso, i = G.info || {}, viejo = (parseInt(i.ios, 10) || 99) < 27, prim = (t, a) => '<button type="button" class="btn accent block" ' + a + '>' + t + '</button>', link = (t, a) => '<button type="button" class="link gd-link" ' + a + '>' + t + '</button>';
@@ -11740,11 +11753,32 @@ function guiaIosBotones(G) {
   if (p === 'disparador') return prim('Siguiente', act('guiaIr', 'accion'));
   if (p === 'accion') return prim('Ya está', act('guiaIr', 'prueba'));
   if (p === 'applepay') return '<div class="ob2-dos"><button class="btn ghost" ' + act('guiaIr', 'prueba') + '>Ya está</button><a class="btn accent block" href="shortcuts://">Abrir Atajos</a></div>';
-  return prim('Entendido', act('guiaCerrar')) + (viejo ? '' : link('También con Apple Pay', act('guiaIr', 'applepay')));
+  if (G.pruebaOk) return prim('Entendido', act('guiaCerrar'));
+  if (G.pruebaEsp) return '<div class="ob2-dos"><button class="btn ghost" ' + act('guiaIosEsperar', 'no') + '>Cancelar</button><a class="btn accent block" href="shortcuts://">Abrir Atajos</a></div>';
+  return '<div class="ob2-dos"><button class="btn ghost" ' + act('guiaCerrar') + '>Entendido</button>' + prim('Comprobar ahora', act('guiaIosEsperar', 'si')) + '</div>' + (viejo ? '' : link('También con Apple Pay', act('guiaIr', 'applepay')));
 }
-async function guiaIosAbrir() {
+// ¿ha llegado algo por Atajos desde que se pulsó «Comprobar ahora»? 'real' = un aviso/pago de verdad; 'prueba' = el atajo «Probar PalomApp»; '' = nada
+function guiaIosLlegado(desde, i) { i = i || {}; return Number(i.usado) > desde ? 'real' : Number(i.prueba) > desde ? 'prueba' : ''; }
+function guiaIosRevisar(G, i) {
+  if (!G || !G.pruebaEsp) return false;
+  const r = guiaIosLlegado(G.pruebaEsp, i); if (!r) return false;
+  G.info = i; G.pruebaOk = r; G.pruebaEsp = 0; sentir('ok'); guiaPintar(); return true;
+}
+async function guiaIosEsperar(si) {
+  const G = S._guia, a = atajosNat(); if (!G || !G.ios) return;
+  if (si !== 'si') { G.pruebaEsp = 0; return guiaPintar(); }
+  G.pruebaOk = ''; G.pruebaEsp = Date.now() - 2000; guiaPintar(); // 2 s de margen por si el reloj del móvil y el de la app no coinciden al milisegundo
+  const mia = G.pruebaEsp; // mientras la hoja sigue abierta y en primer plano, se mira cada 2 s (al volver de otra app se mira en guiaVolver)
+  for (let n = 0; n < 150 && S._guia === G && G.pruebaEsp === mia && guiaHojaAbierta(); n++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    if (S._guia !== G || G.pruebaEsp !== mia) return;
+    const i = await a.info().catch(() => null); if (i && guiaIosRevisar(G, i)) return;
+  }
+}
+async function guiaIosAbrir(paso) {
   const a = atajosNat(); if (!a) return;
   const G = S._guia = guiaNueva(false); G.ios = true; G.info = await a.info().catch(() => ({})) || {};
+  if (paso === 'prueba') G.paso = 'prueba'; // 25/11: «Comprobar ahora» desde Tú → Avisos
   FORM = { guia: true }; openSheet(guiaHojaHtml());
 }
 // La hoja «Avisos» (Tú)
@@ -11752,6 +11786,7 @@ async function avisosAbrir() {
   const n = avNat(), nn = notifNat();
   S._avEst = n ? await n.estado().catch(() => null) : null;
   S._avNotif = nn ? await nn.permiso().catch(() => 'denied') : null;
+  if (!n && atajosNat()) S._atajosInfo = (await atajosNat().info().catch(() => null)) || S._atajosInfo || {};
   if (FORM && FORM.avisos && $('#sheetBackdrop')) return updateSheet(avisosHtml());
   FORM = { avisos: true }; openSheet(avisosHtml());
 }
@@ -11772,7 +11807,7 @@ function avisosHtml() {
     '<div class="section-title">Resumen</div><div class="card">' + fila('Tu semana y tu mes', 'El domingo a las 19:00 y cuando se cierra tu mes', sw(ac.resumen, 'avRec', 'resumen')) + '</div>' +
     '<div class="card">' + fila('Silencio de 22:00 a 9:00', 'Lo que llegue de noche, a las 9:00', sw(ac.silencio, 'avRec', 'silencio')) + '</div>' +
     '<p class="rec-hint">Como mucho ' + AVISOS_MAX_DIA + ' avisos al día (los importantes aparte), sin cifras y sin publicidad.</p>';
-  if (!e && atajosNat()) return h + '<div class="section-title">Avisos del banco</div>' + guiaTarjetaHtml().replace('PalomApp lee los avisos de tus apps de banco y apunta cada gasto o ingreso, con «Deshacer». El texto del aviso no sale de tu móvil.', 'Con la app Atajos de tu iPhone, cada aviso de tu banco o pago con Apple Pay se apunta solo, con «Deshacer». El texto del aviso no sale de tu móvil.');
+  if (!e && atajosNat()) return h + '<div class="section-title">Avisos del banco</div>' + guiaTarjetaHtml().replace('PalomApp lee los avisos de tus apps de banco y apunta cada gasto o ingreso, con «Deshacer». El texto del aviso no sale de tu móvil.', 'Con la app Atajos de tu iPhone, cada aviso de tu banco o pago con Apple Pay se apunta solo, con «Deshacer». El texto del aviso no sale de tu móvil.') + atajosEstadoHtml();
   if (!e) return h + '<p class="rec-hint">Los avisos del banco solo están en la app de Android.</p>';
   if (!herrOn('avisosBanco') && !e.activo) return h + '<p class="rec-hint">Los avisos del banco están apagados en Tú → Mis herramientas.</p>';
   h += '<div class="section-title">Avisos del banco</div>';
@@ -13383,6 +13418,7 @@ const H = {
   guiaAbrirDesde: ([paso]) => { if (FORM && FORM.avisos) closeSheet(); setTimeout(() => guiaAbrir(paso || ''), FORM && FORM.avisos ? 280 : 0); },
   guiaInicio: ([que]) => { saveConfig({ guiaAvisos: Object.assign({}, cfg().guiaAvisos || {}, { inicioVisto: true }) }); if (que === 'ver') guiaAbrir(''); else render(); },
   guiaCerrar: () => { closeSheet(); render(); },
+  guiaIosEsperar: ([si]) => guiaIosEsperar(si),
   guiaIr: ([paso]) => { const G = guiaActual(); if (!G) return; G.paso = paso; sentir('tic'); guiaPintar(); },
   guiaNotif: async () => { const G = guiaActual(), nn = notifNat(); if (!G || !nn) return;
     if (G.notifNegado) { if (avNat() && avNat().abrirApp) await avNat().abrirApp('notif').catch(() => {}); return; }

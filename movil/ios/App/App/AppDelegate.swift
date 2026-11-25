@@ -42,7 +42,8 @@ enum AtajosCola {
         y["id"] = id; y["ts"] = ahora; y["uid"] = u
         guard let data = try? JSONSerialization.data(withJSONObject: y) else { return }
         try? data.write(to: d.appendingPathComponent(id + ".json"), options: [.atomic, .completeFileProtectionUnlessOpen])
-        UserDefaults.standard.set(ahora, forKey: "atajosUltimo")
+        // 25/11: «Probar PalomApp» solo comprueba que Atajos y PalomApp se hablan; no cuenta como aviso recibido
+        UserDefaults.standard.set(ahora, forKey: (y["tipo"] as? String) == "prueba" ? "atajosPrueba" : "atajosUltimo")
         _ = leerSinLock() // tira lo viejo y lo que sobra
     }
     static func leerSinLock() -> [[String: Any]] {
@@ -67,6 +68,7 @@ enum AtajosCola {
     static func vaciarSinLock() {
         if let d = dir { try? FileManager.default.removeItem(at: d) }
         UserDefaults.standard.removeObject(forKey: "atajosUltimo")
+        UserDefaults.standard.removeObject(forKey: "atajosPrueba")
     }
 }
 
@@ -137,11 +139,25 @@ struct ApuntarPagoIntent: AppIntent {
     }
 }
 
+// «Probar PalomApp» (25/11): el usuario la pulsa en Atajos para ver que PalomApp la recibe. No apunta ningún gasto.
+@available(iOS 16.0, *)
+struct ProbarPalomAppIntent: AppIntent {
+    static var title: LocalizedStringResource = "Probar PalomApp"
+    static var description = IntentDescription("Comprueba que Atajos y PalomApp se están hablando. No apunta ningún gasto.")
+    static var openAppWhenRun: Bool = false
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        if AtajosCola.uid.isEmpty { return .result(dialog: "Abre PalomApp, entra con tu cuenta y vuelve a probar.") }
+        AtajosCola.anadir(["tipo": "prueba"])
+        return .result(dialog: "Listo: PalomApp ha recibido la prueba.")
+    }
+}
+
 @available(iOS 16.0, *)
 struct PalomaAtajos: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: ApuntarAvisoIntent(), phrases: ["Apuntar aviso en \(.applicationName)"], shortTitle: "Apuntar aviso", systemImageName: "bell.badge")
         AppShortcut(intent: ApuntarPagoIntent(), phrases: ["Apuntar pago en \(.applicationName)"], shortTitle: "Apuntar pago", systemImageName: "creditcard")
+        AppShortcut(intent: ProbarPalomAppIntent(), phrases: ["Probar \(.applicationName)"], shortTitle: "Probar", systemImageName: "checkmark.seal")
     }
 }
 
@@ -164,7 +180,7 @@ public class AtajosPlugin: CAPPlugin, CAPBridgedPlugin {
         AtajosCola.quitar(ids); call.resolve()
     }
     @objc func info(_ call: CAPPluginCall) {
-        call.resolve(["ios": UIDevice.current.systemVersion, "usado": UserDefaults.standard.double(forKey: "atajosUltimo")])
+        call.resolve(["ios": UIDevice.current.systemVersion, "usado": UserDefaults.standard.double(forKey: "atajosUltimo"), "prueba": UserDefaults.standard.double(forKey: "atajosPrueba")])
     }
 }
 
