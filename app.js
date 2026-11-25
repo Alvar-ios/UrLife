@@ -4375,7 +4375,7 @@ function renderTuV2() {
     '<div class="tu-grupo tu-mas-btn"><div class="card menu"><button type="button" class="menu-item" aria-expanded="' + (S.tuMas ? 'true' : 'false') + '" ' + act('tuMasToggle') + '><span class="ic">' + ic('sliders') + '</span>' + (bas ? '<span class="tu-mas-t">Más ajustes<small>Reglas, Informes, Tu mes, Papelera, Copia…</small></span>' : 'Más ajustes') + '<span class="menu-extra">' + (baja.length + mas.length) + '</span><span class="chev">' + ic(S.tuMas ? 'chevD' : 'chevR') + '</span></button></div></div>' +
     '<div class="tu-grupo tu-mas"' + (S.tuMas ? '' : ' style="display:none"') + '><div class="card menu">' + baja.join('') + mas.join('') + '</div></div>' +
     grupo('Tu cuenta', [mfaDisponible() ? it('openSeguridad', [], 'candado', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
-      window.__nativo && window.__nativo.huella ? '<button class="menu-item" data-k="huella bloqueo pin seguridad" ' + act('huellaCambiar') + '><span class="ic">' + ic('candado') + '</span>Pedir huella al abrir<span class="menu-extra">' + (lsGet('huella') === '1' ? 'Sí' : 'No') + '</span></button>' : '',
+      window.__nativo && window.__nativo.huella ? '<button class="menu-item" data-k="huella bloqueo pin seguridad" ' + act('huellaCambiar') + '><span class="ic">' + ic('candado') + '</span>' + (window.__nativo.ios ? 'Pedir Face ID al abrir' : 'Pedir huella al abrir') + '<span class="menu-extra">' + (lsGet('huella') === '1' ? 'Sí' : 'No') + '</span></button>' : '',
       it('abrirPrivacidad', [], 'shield', 'Privacidad', '', 'datos privacidad politica rgpd'),
       '<button class="menu-item tu2-salir" data-k="cerrar sesion salir" ' + act('logoutPreguntar') + '><span class="ic">' + ic('salir') + '</span>Cerrar sesión</button>',
       '<button class="menu-item tu2-borrar" data-k="borrar cuenta eliminar baja datos" ' + act('borrarCuentaAbrir') + '><span class="ic">' + ic('trash') + '</span>Borrar mi cuenta</button>']) +
@@ -4411,7 +4411,7 @@ function tuRamaFilas(id) {
     agcOn() ? it('agcAbrir', [], 'calendar', 'Compartir mi agenda', badge('agendaComp') + (agcCompartoAlgo() ? tuExtra(S.agcPermisos.length + (S.agcPermisos.length === 1 ? ' persona o grupo' : ' personas o grupos')) : ''), 'compartir agenda ver calendario pareja familia privada') : '']]];
   if (id === 'seguridad') return [
     ['Al abrir la app', [mfaDisponible() ? it('openSeguridad', [], 'candado', 'Verificación en dos pasos', '', 'seguridad contraseña') : '',
-      window.__nativo && window.__nativo.huella ? '<button class="menu-item" data-k="huella bloqueo pin seguridad" ' + act('huellaCambiar') + '><span class="ic">' + ic('candado') + '</span>Pedir huella al abrir<span class="menu-extra">' + (lsGet('huella') === '1' ? 'Sí' : 'No') + '</span></button>' : '',
+      window.__nativo && window.__nativo.huella ? '<button class="menu-item" data-k="huella bloqueo pin seguridad" ' + act('huellaCambiar') + '><span class="ic">' + ic('candado') + '</span>' + (window.__nativo.ios ? 'Pedir Face ID al abrir' : 'Pedir huella al abrir') + '<span class="menu-extra">' + (lsGet('huella') === '1' ? 'Sí' : 'No') + '</span></button>' : '',
       it('ocultarCifras', [], cifrasOcultas() ? 'ojoNo' : 'ojo', 'Ocultar cifras', tuExtra(cifrasOcultas() ? 'Sí' : 'No'), 'ocultar cifras importes ojo privacidad')]],
     ['Tus datos', [it('abrirPrivacidad', [], 'shield', 'Privacidad', '', 'datos privacidad politica rgpd'),
       '<button class="menu-item tu2-borrar" data-k="borrar cuenta eliminar baja datos" ' + act('borrarCuentaAbrir') + '><span class="ic">' + ic('trash') + '</span>Borrar mi cuenta</button>']]];
@@ -4443,7 +4443,7 @@ function tuRamas() {
       juntosOn() ? { id: 'juntos', n: 'Juntos', ic: 'users', c: 'j', d: nGr ? nGr + (nGr === 1 ? ' grupo' : ' grupos') : 'Grupos y personas', a: act('openGrupos'), bd: ['grupos'], k: 'compartir invitar whatsapp grupos personas' } : null,
       agendaOn() ? { id: 'agenda', ic: 'calendar', c: 'a', d: agcOn() ? 'Categorías de tareas y compartir tu agenda' : 'Categorías de tareas', bd: ['agendaComp'] } : null,
       notifNat() ? { id: 'avisos', n: 'Avisos', ic: 'bell', c: 'v', d: avNat() && herrOn('avisosBanco') ? 'Del banco y recordatorios' : 'Recordatorios', a: act('avAbrir'), k: 'avisos notificaciones banco recordatorios apuntar solo automatico' } : null].filter(Boolean),
-    [{ id: 'seguridad', ic: 'shield', c: 's', d: window.__nativo && window.__nativo.huella ? 'Huella, ocultar cifras, privacidad, borrar cuenta' : 'Ocultar cifras, privacidad, borrar cuenta' },
+    [{ id: 'seguridad', ic: 'shield', c: 's', d: window.__nativo && window.__nativo.huella ? (window.__nativo.ios ? 'Face ID, ocultar cifras, privacidad, borrar cuenta' : 'Huella, ocultar cifras, privacidad, borrar cuenta') : 'Ocultar cifras, privacidad, borrar cuenta' },
       { id: 'apariencia', ic: 'palette', c: 'p', d: 'Aspecto, tema' + (window.I18N ? ' e idioma' : ''), bd: ['aspecto', 'oscuro'] },
       { id: 'datos', ic: 'archive', c: 'x', d: 'Importar, descargar en Excel, copia, papelera', bd: ['importar', 'papelera'] }],
     [{ id: 'ayuda', ic: 'info', c: 'y', d: contactoHay() ? 'Escríbenos, novedades y la bienvenida' : 'Novedades y la bienvenida' }],
@@ -14555,10 +14555,10 @@ const H = {
   descartarNo: () => { const d = $('#descartarHoja'); if (d) d.remove(); },
   descartarSi: () => { const d = $('#descartarHoja'); if (d) d.remove(); closeSheet(); },
   huellaCambiar: async () => {
-    const N = window.__nativo; if (!N || !N.huella) return toast('Este móvil no tiene huella ni PIN configurado');
+    const N = window.__nativo; if (!N || !N.huella) return toast(N && N.ios ? 'Este iPhone no tiene Face ID ni código configurado' : 'Este móvil no tiene huella ni PIN configurado');
     const on = lsGet('huella') === '1';
     if (!on) { try { await N.probarHuella(); } catch (e) { return toast('No se ha podido confirmar'); } }
-    lsSet('huella', on ? '0' : '1'); toast(on ? 'Ya no se pedirá la huella' : 'Se pedirá la huella al abrir'); render();
+    lsSet('huella', on ? '0' : '1'); { const fid = N.ios; toast(on ? (fid ? 'Ya no se pedirá Face ID' : 'Ya no se pedirá la huella') : (fid ? 'Se pedirá Face ID al abrir' : 'Se pedirá la huella al abrir')); } render();
   },
   desbloquear: () => { if (window.__nativo && window.__nativo.desbloquear) window.__nativo.desbloquear(); }, // 13/11: sin quitar el bloqueo antes (lo quita la huella)
   abrirPrivacidad: () => abrirExterno(APP_URL + 'privacidad.html' + (window.I18N && I18N.lang !== 'es' ? '?lang=' + I18N.lang : '')),

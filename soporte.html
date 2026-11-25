@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ayuda y contacto · PalomApp</title>
+<link rel="icon" href="marca/icono.svg" type="image/svg+xml">
+<link rel="icon" href="marca/icono-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="marca/icono-180.png">
+<style>
+  :root { --bg: #F5F5F2; --card: #FFFFFF; --text: #14162B; --muted: #5A5C6E; --line: #E8E7E1; --accent: #6C4CF1; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0A0A0C; --card: #17171B; --text: #F3F3F7; --muted: #A4A5B4; --line: #2B2B33; --accent: #A895FF; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; } h2 { font-size: 19px; margin: 28px 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; }
+  a { color: var(--accent); }
+  .tabla { overflow-x: auto; }
+  .idioma { text-align: right; margin: 0 0 8px; font-size: 14px; } .idioma button { background: none; border: 0; color: var(--accent); font: inherit; cursor: pointer; padding: 4px; }
+</style>
+</head>
+<body>
+<main>
+<p class="idioma"><button type="button" data-l="es">Español</button> · <button type="button" data-l="en">English</button></p>
+<div data-version="es">
+<h1>Ayuda y contacto</h1>
+<p class="sub">PalomApp: gastos y tareas</p>
+<p>¿Tienes una duda, algo no te funciona o quieres proponer una mejora? Escríbenos a <a href="mailto:cortex.studio.mkt@gmail.com?subject=PalomApp">cortex.studio.mkt@gmail.com</a>. Respondemos en uno o dos días laborables. Si algo falla, cuéntanos qué estabas haciendo y qué móvil tienes; con una captura vamos más rápido.</p>
+<h2>Cosas que suelen preguntarse</h2>
+<p><b>Se me han ido los avisos del banco o los pagos con Apple Pay.</b> En Tú → Avisos hay una guía y un botón «Comprobar ahora» para ver si todo está bien configurado.</p>
+<p><b>Quiero cerrar sesión o cambiar de cuenta.</b> En Tú, abajo del todo.</p>
+<p><b>Quiero borrar mi cuenta y mis datos.</b> Mira <a href="borrar-cuenta.html">cómo borrar tu cuenta</a>.</p>
+<p><b>Qué datos guarda la app.</b> Está explicado en la <a href="privacidad.html">política de privacidad</a>.</p>
+</div>
+<div data-version="en" hidden>
+<h1>Help and contact</h1>
+<p class="sub">PalomApp: gastos y tareas</p>
+<p>Have a question, something isn't working or want to suggest an improvement? Write to us at <a href="mailto:cortex.studio.mkt@gmail.com?subject=PalomApp">cortex.studio.mkt@gmail.com</a>. We reply within one or two working days. If something fails, tell us what you were doing and which phone you have; a screenshot helps us go faster.</p>
+<h2>Common questions</h2>
+<p><b>My bank notifications or Apple Pay payments stopped being added.</b> In You → Notifications there is a guide and a “Check now” button to see if everything is set up correctly.</p>
+<p><b>I want to sign out or switch accounts.</b> In You, at the very bottom.</p>
+<p><b>I want to delete my account and my data.</b> See <a href="borrar-cuenta.html?lang=en">how to delete your account</a>.</p>
+<p><b>What data the app stores.</b> It is explained in the <a href="privacidad.html?lang=en">privacy policy</a>.</p>
+</div>
+</main>
+
+<script>var TITULOS = { es: 'Ayuda y contacto · PalomApp', en: 'Help and contact · PalomApp' };</script>
+<script>
+/* C1 (idiomas): español o inglés. ?lang=en|es, lo elegido en la app (localStorage «idioma») o el idioma del navegador */
+(function () {
+  var q = /[?&]lang=(es|en)/.exec(location.search), g = null; try { g = localStorage.getItem('idioma'); } catch (e) { /* */ }
+  var l = q ? q[1] : (g === 'es' || g === 'en') ? g : (/^es/i.test(navigator.language || 'es') ? 'es' : 'en');
+  function poner(x) { document.documentElement.lang = x; document.querySelectorAll('[data-version]').forEach(function (d) { d.hidden = d.getAttribute('data-version') !== x; }); document.title = TITULOS[x]; }
+  document.querySelectorAll('.idioma button').forEach(function (b) { b.onclick = function () { poner(b.getAttribute('data-l')); }; });
+  poner(l);
+})();
+</script>
+</body>
+</html>
