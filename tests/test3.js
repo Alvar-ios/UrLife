@@ -34,6 +34,7 @@ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
  const e=makeEnv({version:{dinero:3,inicio:2},cfg:{app:cfgApp,meta:{onboarded:true}},movs});
  e.store.tareas.t1=tareas[0];e.store.tareas.t2=tareas[1];
  await sleep(60);
+ for(let i=0;i<40&&!e.doc.querySelector('.hero');i++)await sleep(50); // 26/11 (Calidad): con la máquina ocupada, 60 ms no bastaban para pintar Inicio y la prueba fallaba a veces (también en main)
  const S=e.w.__APP__.S;
  // nav (Bloque 9: 4 secciones + botón + central; «Tú» arriba)
  const tabs=[...e.doc.querySelectorAll('.tabbar .tab')].map(b=>b.textContent.trim());
@@ -87,6 +88,7 @@ const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
  ok(true,'tabs switch without errors');
  // empty config
  const e2=makeEnv({version:{dinero:3},cfg:{app:{categoriasGasto:[{nombre:'X'}]},meta:{onboarded:true}}});await sleep(60);
+ for(let i=0;i<40&&(!e2.doc.querySelector('#content')||e2.doc.querySelector('#content .esqueleto'));i++)await sleep(50); // 26/11 (Calidad): igual que arriba, esperar a que deje de «cargar»
  e2.w.__APP__.H.goTab(['calendario']);ok(/Sin eventos/.test(e2.doc.querySelector('#content').textContent),'empty calendar ok');
  console.log(fails?'FAILED '+fails:'ALL PASS');
 })().catch(x=>{console.error(x);process.exit(1)});

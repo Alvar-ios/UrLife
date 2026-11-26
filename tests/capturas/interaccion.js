@@ -394,7 +394,7 @@ async function dobleToque(p, vp) {
       await p.touchscreen.tap(c.x, c.y); await p.waitForTimeout(70); await p.touchscreen.tap(c.x, c.y);
       await p.waitForTimeout(600);
       const d = await leer(p), rr = await restos(p);
-      const uno = (/abre hoja «([^»]*)»/.exec(t.resultado) || [])[1];
+      const uno = (/abre hoja «(.*?)»(?=, |$| ·)/.exec(t.resultado) || [])[1]; // 26/11 (Calidad): títulos con «» dentro («Tu «Así vas»») se cortaban y salía un falso «acaba en otra hoja»
       if (!d.hoja) hallazgo('doble', 'dudoso', t.pantalla, vp, 'doble toque: abre y cierra', t.boton, 'el segundo toque (70 ms después) cae en el fondo de la hoja y la cierra');
       else if (d.hoja.titulo !== uno) hallazgo('doble', 'dudoso', t.pantalla, vp, 'doble toque: acaba en otra hoja', t.boton, '«' + uno + '» → «' + d.hoja.titulo + '» (el segundo toque pulsa lo que hay debajo del dedo en la hoja)');
       if (d.escr > e0.escr) hallazgo('doble', 'fallo', t.pantalla, vp, 'doble toque guarda algo', t.boton, (d.escr - e0.escr) + ' escrituras');
@@ -467,9 +467,9 @@ async function atras(p, vp) {
   await caso('Dinero → Inversiones → un activo', null, [tab('dinero'), '#content [data-click="dm3Tab|inversiones"]', '#content [data-click^="verActivo|"]'], (ret, a, d) => (!a.hoja ? 'dudoso: no se ha abierto' : ret === true && !d.hoja && d.tab === 'dinero' ? true : 'debe cerrar la hoja y quedarse en Dinero'));
   await caso('Juntos → Por persona', null, [tab('juntos'), '#content [data-click^="juntosVer"], #content [data-click*="personas"]'], (ret, a, d) => (!a.sub.split('|')[2] ? 'dudoso: no se ha llegado a «Por persona»' : ret === true && d.tab === 'juntos' && !d.sub.split('|')[2] ? true : 'debe volver a Juntos'));
   await caso('Agenda (botón de arriba)', null, ['#tbAgenda, .tabbar [data-tab="agenda"]'], (ret, a, d) => ret === true && d.tab === 'inicio' ? true : 'debe volver a Inicio');
-  await caso('Agenda → Calendario', 'A.H.irAgenda(["tareas"])', ['#content [data-click*="calendario"]'], (ret, a, d) => (a.sub.split('|')[5] !== 'calendario' ? 'dudoso: no se ha llegado al calendario' : ret === true && (d.sub.split('|')[5] === 'tareas' || d.tab === 'inicio') ? (d.tab === 'inicio' ? 'dudoso: desde el calendario de la Agenda, atrás va a Inicio (no a la semana)' : true) : 'debe salir del calendario'));
+  await caso('Agenda → Calendario', 'A.H.irAgenda(["tareas"])', ['#content [data-click*="calendario"]'], (ret, a, d) => (a.sub.split('|')[5] !== 'calendario' ? 'dudoso: no se ha llegado al calendario' : ret === true && d.tab === 'inicio' && d.sub.split('|')[3] === 'tareas' ? true : ret === true && d.tab === 'inicio' ? 'desde el calendario de la Agenda, atrás debe ir a la semana (decisión del dueño, 26/11), no a Inicio' : 'debe salir del calendario')); // 26/11 (Calidad): la Agenda vive en Inicio (d.tab siempre es «inicio»): se mira S.inicioVista (campo 3)
   await caso('Movimientos → Lista', null, [tab('movimientos'), '#content [data-click="setMovVista|lista"]'], (ret, a, d) => ret === true && d.tab === 'inicio' ? 'dudoso: desde Lista, atrás va a Inicio (no a Resumen)' : ret === true ? true : 'no lo resuelve');
-  await caso('Inicio → «Gastos» de la tarjeta (Movimientos con filtro)', null, ['#content [data-click^="irMovs|_gastos"]'], (ret, a, d) => (a.tab !== 'movimientos' ? 'dudoso: no se ha llegado' : ret === true && d.tab === 'inicio' ? true : 'debe volver a Inicio'));
+  await caso('Inicio → «Gastos» de la tarjeta (Movimientos con filtro)', null, ['#content [data-click^="irMovs|_gastos"]'], (ret, a, d) => (a.tab !== 'movimientos' ? 'dudoso: no se ha llegado' : ret === true && d.tab === 'inicio' ? true : 'debe volver a Inicio, de donde venías (como el enlace «‹ Volver a Inicio»); ahora va al Resumen y quita el filtro'));
   await caso('Movimientos → buscar', null, [tab('movimientos'), '#content [data-click="setMovVista|lista"]', '#content [data-click="movBuscarAbrir"]'], (ret, a, d) => ret === true && d.tab === 'inicio' ? 'dudoso: con la búsqueda abierta, atrás va a Inicio (no cierra la búsqueda)' : ret === true ? true : 'no lo resuelve');
   // hojas dentro de hojas
   await caso('Grupo → Ajustes', null, [tab('juntos'), '#content [data-click^="grupoVer|"]', '#sheetHost [data-click^="grupoAjustes|"]'], (ret, a, d) => (!a.hoja ? 'dudoso: no se ha abierto' : ret === true && d.hoja && d.hoja.titulo !== a.hoja.titulo ? true : 'debe volver al grupo (no cerrar todo)'));
@@ -490,7 +490,7 @@ async function atras(p, vp) {
 
 // ---------- 7 · guardar con doble toque: cuántas veces se escribe ----------
 async function guardarDoble(p, vp) {
-  const caso = async (nombre, prepJs, pasos, guardarSel, contar) => {
+  const caso = async (nombre, prepJs, pasos, guardarSel, contar, hojaTras) => { // hojaTras: título de la hoja que la app abre a propósito al guardar (p. ej. «Metas»)
     try { await cargar(p); await prep(p, prepJs);
       for (const s of pasos) { if (typeof s === 'function') await s(); else if (!(await tocarSel(p, s, 420))) throw new Error('no encuentro ' + s); } // 26/11: 420 ms, como una persona (tras abrir o cerrar una hoja, la app no atiende toques durante 350 ms: frenarToques)
       await p.waitForTimeout(400);
@@ -500,7 +500,7 @@ async function guardarDoble(p, vp) {
       if (!c.q.bien) hallazgo('guardar', 'fallo', 'guardar: ' + nombre, vp, 'el botón de guardar está tapado', guardarSel, c.q.quien);
       await p.touchscreen.tap(c.x, c.y); await p.waitForTimeout(60); await p.touchscreen.tap(c.x, c.y); await p.waitForTimeout(900);
       const d = await p.evaluate(contar), rr = await restos(p), e1 = await leer(p);
-      if (e1.tab !== e0.tab || e1.sub !== e0.sub || (e1.hoja && !e1.hoja.cerrando)) hallazgo('guardar', 'fallo', 'guardar: ' + nombre, vp, 'el segundo toque cae en lo de detrás', guardarSel, 'tras guardar, el segundo toque ' + (e1.tab !== e0.tab ? 'cambia a la pestaña «' + e1.tab + '»' : e1.sub !== e0.sub ? 'cambia de vista (' + e1.sub + ')' : 'abre «' + e1.hoja.titulo + '»'));
+      if (e1.tab !== e0.tab || e1.sub !== e0.sub || (e1.hoja && !e1.hoja.cerrando && e1.hoja.titulo !== hojaTras)) hallazgo('guardar', 'fallo', 'guardar: ' + nombre, vp, 'el segundo toque cae en lo de detrás', guardarSel, 'tras guardar, el segundo toque ' + (e1.tab !== e0.tab ? 'cambia a la pestaña «' + e1.tab + '»' : e1.sub !== e0.sub ? 'cambia de vista (' + e1.sub + ')' : 'abre «' + e1.hoja.titulo + '»'));
       informe.guardar = informe.guardar || []; informe.guardar.push({ vp: vp.join('x'), caso: nombre, antes: a, despues: d });
       if (d - a > 1) hallazgo('guardar', 'fallo', 'guardar: ' + nombre, vp, 'doble toque guarda dos veces', guardarSel, 'de ' + a + ' a ' + d);
       else if (d - a < 1) hallazgo('guardar', 'dudoso', 'guardar: ' + nombre, vp, 'no se ha guardado', guardarSel, 'de ' + a + ' a ' + d + (p._err.length ? ' · ' + p._err.join(' | ').slice(0, 120) : ''));
@@ -514,7 +514,7 @@ async function guardarDoble(p, vp) {
   await caso('compartir un gasto', 'A.H.goTab(["juntos"])', ['#content [data-click^="compRapido"]', async () => { const s = await p.$('#sheetHost [data-click="tecK|5"]'); if (s) { await tocarSel(p, '#sheetHost [data-click="tecK|5"]', 80); } else { await p.fill('#sheetHost #crImporte', '5'); } const d = await p.$('#sheetHost #crDesc'); if (d) await p.fill('#sheetHost #crDesc', 'Prueba'); }],
     '#sheetHost .actions.fija .btn.accent, #sheetHost [data-click^="compRapidoGuardar"], #sheetHost [data-click="tecK|ok"]', nEscr('compartidos'));
   await caso('tarea rápida en la Agenda', 'A.H.irAgenda(["tareas"])', [async () => { await p.fill('#agRapida', 'Tarea de prueba'); }], '#content [data-click="agRapida"]', nEscr('tareas'));
-  await caso('meta nueva', 'A.H.goTab(["dinero"])', ['#content [data-click="dm3Tab|metas"]', '#content [data-click="metaNueva"]', async () => { await p.fill('#sheetHost #mNombre', 'Meta de prueba'); const o = await p.$('#sheetHost #mObjetivo'); if (o) await p.fill('#sheetHost #mObjetivo', '500'); }], '#sheetHost .actions.fija .btn.accent', () => (window.__APP__.cfg().ahorro || []).length);
+  await caso('meta nueva', 'A.H.goTab(["dinero"])', ['#content [data-click="dm3Tab|metas"]', '#content [data-click="metaNueva"]', async () => { await p.fill('#sheetHost #mNombre', 'Meta de prueba'); const o = await p.$('#sheetHost #mObjetivo'); if (o) await p.fill('#sheetHost #mObjetivo', '500'); }], '#sheetHost .actions.fija .btn.accent', () => (window.__APP__.cfg().ahorro || []).length, 'Metas'); // 26/11 (Calidad): al guardar una meta nueva la app enseña la lista «Metas» (metaGuardar → metasListaHtml); no es el segundo toque
   await caso('aportar a una meta', 'A.H.goTab(["dinero"])', ['#content [data-click="dm3Tab|metas"]', '#content [data-click^="metaAportarR|"]', '#sheetHost [data-click="tecK|4"]'], '#sheetHost [data-click="tecK|ok"], #sheetHost .actions.fija .btn.accent', nEscr('movimientos'));
   await caso('traspaso', 'A.H.goTab(["dinero"])', ['#content [data-click="crearIr|traspaso"]', '#sheetHost [data-click="tecK|3"]'], '#sheetHost [data-click="tecK|ok"], #sheetHost .actions.fija .btn.accent', nEscr('movimientos'));
   await caso('editar un movimiento', 'A.H.goTab(["movimientos"]);A.H.setMovVista(["lista"])', ['#content [data-click="openMovForm|m2"]'], '#sheetHost .actions.fija .btn.accent', nEscr('movimientos'));

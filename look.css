@@ -2652,7 +2652,7 @@ html[data-look="nuevo"] .ob2-nota .link { display: inline; padding: 0; }
 /* fase14 · «Puedes activar más herramientas…»: una línea discreta al final de una pantalla que se ha quedado vacía */
 html[data-look="nuevo"] .herr-pista { display: flex; align-items: center; gap: 4px; margin: 18px 0 4px; padding: 4px 4px 4px 0; border: 1px dashed var(--line); border-radius: 16px; }
 html[data-look="nuevo"] .herr-pista-t { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 4px 6px 12px; background: none; border: 0; font: inherit; font-size: 13px; line-height: 1.35; color: var(--text-faint); text-align: left; cursor: pointer; }
-html[data-look="nuevo"] .herr-pista-t b { color: var(--accent); font-weight: 600; }
+html[data-look="nuevo"] .herr-pista-t b { color: var(--accent); font-weight: 600; white-space: nowrap; } /* 26/11: «Tú → Mis herramientas» no se parte */
 html[data-look="nuevo"] .herr-pista-ic { width: 30px; height: 30px; flex: none; border-radius: 10px; display: grid; place-items: center; color: var(--accent); background: var(--accent-soft); }
 html[data-look="nuevo"] .herr-pista-ic .i { width: 17px; height: 17px; }
 html[data-look="nuevo"] .herr-pista-x { flex: none; width: 44px; height: 44px; display: grid; place-items: center; background: none; border: 0; border-radius: 12px; color: var(--text-faint); cursor: pointer; }
@@ -2988,5 +2988,5 @@ html[data-look="nuevo"] .topbar h1.tb-largo { font-size: 19px; letter-spacing: -
 html[data-look="nuevo"] .ins-aro b.muy-largo { font-size: 10px; letter-spacing: -.04em; }
 /* 26/11 (docs/salud/2026-11-26-interaccion.md, fallo 3): con una hoja abierta, la pantalla de detrás ya no se desplaza
    (ni deslizando en lo oscuro ni al llegar al final de la hoja). La hoja tiene su propio desplazamiento y no se ve afectada. */
-html[data-look="nuevo"] .sheet-backdrop, html[data-look="nuevo"] .popup-backdrop, .descartar { overscroll-behavior: contain; touch-action: none; }
-html[data-look="nuevo"] .sheet, html[data-look="nuevo"] .popup, .descartar-c { overscroll-behavior: contain; touch-action: pan-y; }
+html[data-look="nuevo"] .sheet-backdrop, html[data-look="nuevo"] .popup-backdrop, html[data-look="nuevo"] .descartar { overscroll-behavior: contain; touch-action: pinch-zoom; }
+html[data-look="nuevo"] .sheet, html[data-look="nuevo"] .popup, html[data-look="nuevo"] .descartar-c { overscroll-behavior: contain; touch-action: pan-y pinch-zoom; } /* se puede seguir ampliando con dos dedos */

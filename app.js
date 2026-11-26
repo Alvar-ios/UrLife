@@ -1248,7 +1248,7 @@ function empiezaHtml() {
   const paso = (n, p) => '<button class="empieza-paso" ' + p.a + '><span class="n">' + n + '</span><span><b>' + p.t + '</b><span class="d">' + p.d + '</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
   const nuevo = !S.movimientos.length;
   return '<div class="empieza"><div class="empieza-cab"><h3>' + (nuevo ? 'Empieza aquí' : 'Sácale más partido') + '</h3><button type="button" class="link" ' + act('empiezaOcultar') + '>Ocultar</button></div>' +
-    '<p>' + (nuevo ? '' : hechos + ' de ' + pasos.length + ' pasos hechos.') + '</p>' +
+    (nuevo ? '' : '<p>' + hechos + ' de ' + pasos.length + ' pasos hechos.</p>') +
     pend.slice(0, nuevo ? 2 : 3).map((p, i) => paso(i + 1, p)).join('') + '</div>';
 }
 function renderInicio() {
@@ -2079,7 +2079,7 @@ function openMovForm(id, pre) {
   const compDest = pre && pre.comp, objPre = pre && pre.objetivo;
   pre = (!ex && pre) || {};
   const tipoIni = ex ? ex.tipo : pre.tipo ? pre.tipo : (S.tab === 'movimientos' && TIPOS.indexOf(S.movFiltroTipo) >= 0 ? S.movFiltroTipo : 'Gasto');
-  FORM = { kind: 'mov', volverGrupo: S._volverGrupo || null, id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : (pre && pre.tipoActivo) || '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
+  FORM = { kind: 'mov', volverGrupo: S._volverGrupo || null, volverPersona: S._volverPersona || null, id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : (pre && pre.tipoActivo) || '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
   if (compDest) { FORM.comp = { on: true, objetivo: objPre || null }; compPrepararDestino(compDest); }
   FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) || (!ex && pre.tipo === 'Inversión' && pre.categoria && !pre.activoId) ? 'manual' : 'auto';
   FORM.metaSel = ex ? metaDeMov(ex) : (pre.metaSel || '');
@@ -2117,7 +2117,7 @@ function openMovForm(id, pre) {
     (comp ? (puedeEditarComp(comp) ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>' : '<div class="rec-hint" style="margin-top:10px;">' + AVISO_PERMISO + '</div>')
       : ex ? (convertibleATraspaso(ex) ? '<button class="btn ghost block" style="margin-top:10px;" ' + act('movAtraspaso', ex.id) + '>' + ic('swap') + ' Convertir en traspaso</button>' : '') +
         '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteMov') + '>' + ic('trash') + ' Eliminar movimiento</button>' : '') +
-    '<div class="actions"' + (corta ? ' hidden' : '') + '><button class="btn ghost block" ' + (S._volverGrupo ? act('grupoVer', S._volverGrupo) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
+    '<div class="actions"' + (corta ? ' hidden' : '') + '><button class="btn ghost block" ' + (FORM.volverGrupo ? act('grupoVer', FORM.volverGrupo) : FORM.volverPersona ? act('personaVer', FORM.volverPersona) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
     (tec ? tecladoHtml(FORM.tec) : '')
   );
   syncCatField(); refrescarCatAviso();
@@ -2695,7 +2695,7 @@ function grupoHtml(id) {
   const v4 = juntosV4() && aj; // 22/11 (docs/46 tanda 4): Miembros con «Añadir» e «Invitar» juntos arriba; luego reparto, permisos, tu nombre y salir
   const invHtml =
     '<div class="section-title">Invitar a gente nueva</div><div class="card">' +
-    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin-bottom:10px;">' + (FORM && FORM.enlaceVarios ? 'Vale para <b>hasta 10 personas</b> durante <b>7 días</b>.' : 'Los enlaces caducan en <b>7 días</b>.') + ' Al abrirlo, cada uno se une con su cuenta.</div>' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin-bottom:10px;">' + (FORM && FORM.enlaceVarios ? 'Vale para <b>hasta 10 personas</b> durante <b>7 días</b>.' : 'Los enlaces caducan en <b>7 días</b>.') + '</div>' +
     (FORM && FORM.ultimoEnlace
       ? '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(FORM.ultimoMsg || FORM.ultimoEnlace) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
         '<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn ghost block" ' + act('grupoCopiar') + '>Copiar enlace</button>' + (navigator.share ? '<button class="btn ghost block" ' + act('grupoCompartir') + '>Compartir…</button>' : '') + '</div>' +
@@ -4208,7 +4208,7 @@ function trRefrescar() { const r = $('#trRes'); if (r) r.innerHTML = trResHtml()
 function trRepintar() { if (FORM && FORM.kind === 'trayecto') updateSheet(trayHtml()); }
 function trAbrir(g) {
   const t = trCfg(), prod = g && TR_PRODS[g.prod] ? g.prod : t.prod;
-  FORM = { kind: 'trayecto', cocheAbierto: !cfg().trayecto, modo: 'km', de: '', a: '', km: g ? String(g.km).replace('.', ',') : '', vuelta: g ? !!g.vuelta : false, prod, consumo: g && g.consumo ? String(g.consumo).replace('.', ',') : t.consumo ? String(t.consumo).replace('.', ',') : '', precio: '', provincia: t.provincia, personas: 1 };
+  FORM = { kind: 'trayecto', cocheAbierto: !cfg().trayecto, modo: 'km', de: '', a: '', km: g ? String(g.km).replace('.', ',') : '', kmIni: g ? String(g.km).replace('.', ',') : '', vuelta: g ? !!g.vuelta : false, prod, consumo: g && g.consumo ? String(g.consumo).replace('.', ',') : t.consumo ? String(t.consumo).replace('.', ',') : '', precio: '', provincia: t.provincia, personas: 1 };
   if ($('#sheetBackdrop')) updateSheet(trayHtml()); else openSheet(trayHtml());
   trCargarPrecios();
 }
@@ -6220,7 +6220,7 @@ function renderJuntosV2() {
   const frase = !gs.length ? 'Aún no compartes con nadie' : 'En ' + (nG ? (nG === 1 ? 'tu grupo' : 'tus ' + nG + ' grupos') : '') + (nG && conSolas ? ' y con cada persona' : !nG ? 'lo que compartes con cada persona' : '') + ', todo sumado';
   const ficha = (k, t, v, n, cls) => '<button type="button" class="jv-ficha ' + cls + (f === k ? ' on' : '') + '" ' + act('juntosFiltro', f === k ? '' : k) + '><span>' + t + '</span><b class="tnum">' + money(v) + '</b><i>' + (n ? n + (n === 1 ? ' persona' : ' personas') : 'nadie') + '</i></button>';
   if (!gs.length && !hayComp) return '<div class="card jv-vacio"><span class="jv-vacio-ic">' + ic('users') + '</span><h2>Comparte gastos con quien quieras</h2>' +
-    '<p>Divide una cena, un viaje o la casa, y saldad en un toque.</p>' +
+    '<p>Divide una cena, un viaje o la casa, y salda en un toque.</p>' +
     (basico() ? '<p class="jv-sin-app">¿Tus amigos no tienen PalomApp? No pasa nada: añádelos por su nombre.</p>' : '') +
     '<button class="btn accent block" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button>' +
     '<button class="btn ghost block" ' + act('openGrupos') + '>' + ic('users') + ' Crear un grupo</button></div>';
@@ -6811,7 +6811,7 @@ function planFormHtml() {
     ms.map((m) => { const u = aliasDe(g.id, m.user_id); return '<button type="button" class="cr-cara' + (F.asignado && aliasDe(g.id, F.asignado) === aliasDe(g.id, m.user_id) ? ' on' : '') + '" ' + act('planQuien', m.user_id) + '>' + caraHtml(u, m.nombre) + '<span>' + escapeHtml(esMio(g.id, m.user_id) ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>'; }).join('') + '</div></div>'; }
   if (plan && F.con === 'yo') h += privadaCampoHtml(F.privada, 'pPrivada', 'planPrivada', F.id && agendaPorId(F.id) && agendaPorId(F.id).privada);
   if (plan) h += '<div class="field"><label for="pLugar">¿Dónde? <span class="hint">· opcional</span></label><div class="plan-lugar">' + ic('pin') + '<input id="pLugar" type="text" maxlength="120" placeholder="Restaurante, dirección…" value="' + escapeHtml(F.lugar) + '"></div></div>' +
-    '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => chip('planAviso', k, F.aviso === k, l, k === 'antes' ? ic('bell') : '')).join('') + '</div><div class="rec-hint" style="margin:6px 0 0;">Te lo recordamos en Inicio al abrir la app.</div></div>';
+    '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => chip('planAviso', k, F.aviso === k, l, k === 'antes' ? ic('bell') : '')).join('') + '</div><div class="rec-hint" style="margin:6px 0 0;">Te lo recuerdo en Inicio al abrir la app.</div></div>';
   h += '<details class="tf-mas"' + (F.notaAbierta ? ' open' : '') + '><summary>Nota' + ic('chevD') + '</summary><div class="field"><textarea id="pNota" rows="3" maxlength="1000" aria-label="Nota">' + escapeHtml(F.nota) + '</textarea></div></details>';
   h += '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('planGuardar') + '>Guardar</button></div>';
   return h;
@@ -7860,7 +7860,7 @@ function histDiaTxt(iso) {
 const HIST_ICONO = { creado: ['plus', 'cr'], editado: ['edit', 'ed'], borrado: ['trash', 'bo'], recuperado: ['history', 're'] };
 function histHtml(gid) {
   const st = histEstado(gid), g = gid ? grupoDe(gid) : null;
-  let h = '<div class="handle"></div><h2>Historial</h2><div class="rec-hint" style="margin-top:-4px;">' + escapeHtml(g ? nombreDestino(g) : '') + '</div>';
+  let h = '<div class="handle"></div><h2>Historial</h2>' + (g ? '<div class="rec-hint" style="margin-top:-4px;">' + escapeHtml(nombreDestino(g)) + '</div>' : '');
   if (gid && !g) return h + '<div class="card">Este grupo ya no está disponible.</div>';
   const todas = histJuntar(st.filas);
   const personas = []; todas.forEach((f) => { if (f.por && !personas.some((p) => esMio(gid || f.gid, p) ? esMio(gid || f.gid, f.por) : p === f.por)) personas.push(f.por); });
@@ -10352,7 +10352,7 @@ function impHtml() {
         (r.estado === 'juntos' ? ' · <b style="color:var(--accent)">ya está en Juntos: ' + escapeHtml(r.con.que) + '</b>' : '') +
         (r.estado === 'otraCuenta' ? ' · <b style="color:var(--accent)">ya importado en ' + escapeHtml(r.con.que) + ': márcalo si es otro</b>' : '') +
         (r.estado === 'sinCuenta' ? ' · <b style="color:var(--accent)">ya lo tenías, sin cuenta: márcalo para ponerlo en ' + escapeHtml(nombreCuenta(IMP.cuenta)) + '</b>' : '') +
-        (r.estado === 'convertir' ? ' · <b style="color:var(--accent)">¿es el ' + escapeHtml(r.con.tipo === 'Ingreso' ? 'ingreso' : 'gasto') + ' de ' + escapeHtml(nombreCuenta(r.otra)) + ' del ' + escapeHtml(fmtDateShort(r.con.fecha)) + ' (' + escapeHtml(r.con.que) + ')? Lo convertiremos en un traspaso ' + escapeHtml(r.con.tipo === 'Ingreso' ? nombreCuenta(IMP.cuenta) + ' → ' + nombreCuenta(r.otra) : nombreCuenta(r.otra) + ' → ' + nombreCuenta(IMP.cuenta)) + '</b>' : '') +
+        (r.estado === 'convertir' ? ' · <b style="color:var(--accent)">¿es el ' + escapeHtml(r.con.tipo === 'Ingreso' ? 'ingreso' : 'gasto') + ' de ' + escapeHtml(nombreCuenta(r.otra)) + ' del ' + escapeHtml(fmtDateShort(r.con.fecha)) + ' (' + escapeHtml(r.con.que) + ')? Lo convertiré en un traspaso ' + escapeHtml(r.con.tipo === 'Ingreso' ? nombreCuenta(IMP.cuenta) + ' → ' + nombreCuenta(r.otra) : nombreCuenta(r.otra) + ' → ' + nombreCuenta(IMP.cuenta)) + '</b>' : '') +
         (r.estado === 'traspaso' && !r.comoTras ? ' · <b style="color:var(--accent)">traspaso entre cuentas: apúntalo con «Traspaso»</b>' : '') +
         (r.estado === 'traspaso' && r.comoTras ? ' · <b style="color:var(--accent)">' + (r.otra ? 'parece un traspaso ' + (r.sig < 0 ? 'a ' : 'desde ') + escapeHtml(nombreCuenta(r.otra)) : 'traspaso: ¿con qué cuenta?') + '</b>' : '') +
         (r.estado === 'traspaso' && !r.comoTras && r.otra !== undefined ? ' · <b style="color:var(--accent)">lo guardas como ' + escapeHtml(r.tipo === 'Ingreso' ? 'ingreso' : 'gasto') + '</b>' : '') +
@@ -13340,7 +13340,7 @@ function hojaConAlgoEscrito() {
   const desc = ((($('#fDesc') || {}).value || ($('#crDesc') || {}).value) || '').trim(), tit = (($('#tNombre') || {}).value || '').trim();
   const nuevo = !FORM.id && !FORM.compId; // 26/11: un gasto compartido ya guardado se edita con FORM.compId (no preguntaba «¿Descartar?» sin haber cambiado nada)
   if (nuevo && imp2.replace(/[0,.\s]/g, '')) return true;
-  if (FORM.kind === 'trayecto') return !!String((($('#trKm') || {}).value) || '').replace(/[0,.\s]/g, ''); // 26/11: Trayecto con km escritos pregunta antes de cerrarse
+  if (FORM.kind === 'trayecto') { const v = String((($('#trKm') || {}).value) || '').trim(); return !!v.replace(/[0,.\s]/g, '') && v !== String(FORM.kmIni || ''); } // 26/11: Trayecto con km escritos (distintos de los que ya traía) pregunta antes de cerrarse
   return (nuevo && !!imp.replace(/[0,.\s]/g, '')) || (nuevo && (!!desc || !!tit));
 }
 function preguntarDescartar() {
@@ -13389,12 +13389,18 @@ function atrasEnHoja(b) {
   if (FORM && FORM.kind === 'saldarTodo' && FORM.dePersona && sh && sh.querySelector('[data-click="saldarTodoGuardar"]')) { H.personaVer([FORM.uid]); return true; }
   return false;
 }
+// 26/11: un gasto abierto desde la hoja de un grupo o de una persona vuelve allí (atrás, «Descartar»). Devuelve true si ha vuelto.
+function volverDeHoja() {
+  if (FORM && FORM.volverGrupo && grupoDe(FORM.volverGrupo)) { H.grupoVer([FORM.volverGrupo]); return true; }
+  if (FORM && FORM.volverPersona) { H.personaVer([FORM.volverPersona]); return true; }
+  return false;
+}
 function atrasAndroid() {
   if ($('#popupBackdrop')) { cerrarPopup(); return true; } // la ventanita primero (sobre Inicio o sobre una hoja)
   const dsc = $('#descartarHoja'); if (dsc) { dsc.remove(); return true; }
   const b = $('#sheetBackdrop');
   if (b && !b.dataset.cerrando) { if (atrasEnHoja(b)) return true; if (hojaConAlgoEscrito()) preguntarDescartar();
-    else if (FORM && FORM.volverGrupo && grupoDe(FORM.volverGrupo)) H.grupoVer([FORM.volverGrupo]); // 26/11 (decisión del dueño): de un gasto abierto desde un grupo, atrás vuelve al grupo
+    else if (volverDeHoja()) { /* 26/11 (decisión del dueño): de un gasto abierto desde un grupo (o una persona), atrás vuelve allí */ }
     else closeSheet(); return true; }
   // 13/11 (Calidad): en la bienvenida, atrás vuelve al paso anterior (antes cerraba la app); en el primer paso, sale como siempre
   const ob = S.onboarding;
@@ -13403,6 +13409,7 @@ function atrasAndroid() {
   // 26/11 (decisión del dueño): del calendario de la Agenda, atrás va a la semana; de la Lista de Movimientos, al Resumen
   if (S.tab === 'inicio' && S.inicioVista === 'calendario') { H.setInicioVista(['tareas']); return true; }
   if (S.tab === 'inicio' && S.inicioVista === 'tareas') { H.setInicioVista(['hoy']); return true; }
+  if (S.tab === 'movimientos' && !S._movBuscando && S.volverA) { H.volver(); return true; } // 26/11: si llegaste desde otra pantalla, atrás vuelve allí (como «‹ Volver a …»)
   if (S.tab === 'movimientos' && !S._movBuscando && movVistaAct() !== 'resumen') { H.setMovVista(['resumen']); return true; }
   if (S.tab === 'movimientos' && S._movBuscando) { H.movBuscarCerrar(); return true; } // 26/11: con la búsqueda abierta, atrás la cierra (antes iba a Inicio)
   if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
@@ -13423,6 +13430,7 @@ function closeSheet() {
   frenarToques(); // 26/11: el segundo toque de «Guardar» no cae en la pantalla de detrás
   b.dataset.cerrando = '1';
   b.classList.remove('open');
+  { const vg = S._volverGrupo, vp = S._volverPersona; setTimeout(() => { if (!$('#sheetBackdrop')) { if (S._volverGrupo === vg) S._volverGrupo = null; if (S._volverPersona === vp) S._volverPersona = null; } }, 320); } // 26/11 (Calidad): al cerrar a mano, se olvida de qué grupo venías
   const gen = _sheetGen;
   setTimeout(() => { if (gen !== _sheetGen) return; const h = $('#sheetHost'); if (h && !h.querySelector('.sheet-backdrop.open')) h.innerHTML = ''; }, 220);
 }
@@ -14055,8 +14063,9 @@ const H = {
   compIrGrupos: () => H.openGrupos([]),
   compInvitar: () => { FORM = { kind: 'personaNueva' }; updateSheet(personaNuevaHtml()); },
   deleteComp: (_a, el) => confirmDelete(el, doDeleteComp),
-  compAbrir: ([id, gid]) => { S._volverGrupo = gid || null; openCompForm(id); },
-  compNuevoEn: ([gid]) => { S._volverGrupo = gid; openMovForm(null, { tipo: 'Gasto', comp: 'g:' + gid }); },
+  compAbrir: ([id, gid]) => { const hoja = $('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando; // 26/11 (Calidad): solo se vuelve a la hoja de la que se venía
+    S._volverPersona = hoja && FORM && FORM.kind === 'persona' ? FORM.uid : null; S._volverGrupo = hoja && FORM && FORM.kind === 'grupo' ? (gid || FORM.id) : null; openCompForm(id); },
+  compNuevoEn: ([gid]) => { S._volverGrupo = gid; S._volverPersona = null; openMovForm(null, { tipo: 'Gasto', comp: 'g:' + gid }); },
   compVerTodos: ([gid]) => { FORM.verTodos = true; updateSheet(grupoHtml(gid)); },
   juntosPersona: ([uid]) => {
     const x = juntosPersonas().find((p) => p.uid === uid); if (!x) return;
@@ -14207,7 +14216,7 @@ const H = {
       if (FORM !== F) return; F.tema = t.id; F.temaTocado = true; F.temaNuevo = false; F.temaNom = ''; sentir('ok'); updateSheet(compRapidoHtml()); }
     catch (e) { console.error(e); toast(errGrupo(e)); } finally { F.creandoTema = false; }
   },
-  compRapidoTema: ([gid, tid]) => { S._volverGrupo = gid; S._temaVolver = { gid, tid }; abrirCompRapido('g:' + gid); if (temaPorId(tid)) { FORM.tema = tid; FORM.temaTocado = true; updateSheet(compRapidoHtml()); } },
+  compRapidoTema: ([gid, tid]) => { S._volverGrupo = gid; S._volverPersona = null; S._temaVolver = { gid, tid }; abrirCompRapido('g:' + gid); if (temaPorId(tid)) { FORM.tema = tid; FORM.temaTocado = true; updateSheet(compRapidoHtml()); } },
   temaVer: ([id]) => { if (!FORM || FORM.kind !== 'grupo') return; if (id) verBadge('temas'); FORM.temaVer = id || ''; FORM.temaMenu = null; FORM.grupoTab = 'gastos'; sentir('tic'); updateSheet(grupoHtml(FORM.id)); },
   temasTodos: () => { if (FORM) { FORM.temasTodos = !FORM.temasTodos; temaRefrescarGrupo(); } },
   temasCerrados: () => { if (FORM) { FORM.temasCerrados = !FORM.temasCerrados; temaRefrescarGrupo(); } },
@@ -14260,7 +14269,7 @@ const H = {
     S.carpetas = (S.carpetas || []).filter((x) => x.id !== id); if (FORM) { FORM.temaMenu = null; FORM.temaVer = ''; } temaRefrescarGrupo(); render();
     toast('Tema borrado: sus gastos quedan «Sin tema»', { deshacer: async () => { try { const r = await S.db.carpetas.restaurar(id); temaAplicarLocal(r || t); temaRefrescarGrupo(); render(); toast('Tema recuperado'); } catch (e) { console.error(e); toast(errGrupo(e)); } } });
   },
-  compRapido: ([dest]) => { S._volverGrupo = FORM && FORM.kind === 'grupo' ? FORM.id : null; abrirCompRapido(dest || ''); },
+  compRapido: ([dest]) => { S._volverPersona = null; S._volverGrupo = FORM && FORM.kind === 'grupo' ? FORM.id : null; abrirCompRapido(dest || ''); },
   envioSCCerrar: () => { const v = FORM && FORM.kind === 'envioSC' ? FORM.volver : null; S._volverGrupo = v || null; terminarForm(); },
   crDest: ([k]) => { const F = FORM; if (!F || F.kind !== 'compRapido') return; compPrepararDestino(k); F.comp.pagador = F.comp.pagador || miUid(); F.temaTocado = false; F.temaNuevo = false; temaAutoAplicar(); updateSheet(compRapidoHtml()); },
   monAbrir: () => { const F = FORM; if (!F) return; F.mon = { on: true, moneda: monUlt(), txt: '', origen: 'bce', mano: '', cobro: '', cambio: null, fecha: '' }; monPintar(); monCargarCambio(); const el = $('#monImporte'); if (el) el.focus(); },
@@ -14579,7 +14588,7 @@ const H = {
   metaTipo: ([t]) => { if (FORM.kind !== 'meta') return; metaLeerForm(); FORM.tipoMeta = t; updateSheet(metaEditorHtml()); },
   exportCsv: () => exportCsv(),
   descartarNo: () => { const d = $('#descartarHoja'); if (d) d.remove(); },
-  descartarSi: () => { const d = $('#descartarHoja'); if (d) d.remove(); closeSheet(); },
+  descartarSi: () => { const d = $('#descartarHoja'); if (d) d.remove(); if (!volverDeHoja()) closeSheet(); }, // 26/11: «Descartar» también vuelve al grupo o a la persona de la que venías
   huellaCambiar: async () => {
     const N = window.__nativo; if (!N || !N.huella) return toast(N && N.ios ? 'Este iPhone no tiene Face ID ni código configurado' : 'Este móvil no tiene huella ni PIN configurado');
     const on = lsGet('huella') === '1';
@@ -14599,7 +14608,7 @@ const H = {
   },
   ocultarCifras: () => { const v = !cifrasOcultas(); S._ocultas = v; lsSet('cifrasOcultas', v ? '1' : '0'); aplicarOcultar(); sentir('tic'); toast(v ? 'Cifras ocultas' : 'Cifras a la vista'); render(); widgetsPronto(); },
   reintentarCarga: () => location.reload(),
-  tbVolver: () => { if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) H.setInicioVista(['hoy']); else if (S.tab === 'tu' && S.tuSub) H.tuIr(['']); else H.goTab(['inicio']); },
+  tbVolver: () => { if (S.tab === 'inicio' && S.inicioVista === 'calendario') H.setInicioVista(['tareas']); else if (S.tab === 'inicio' && S.inicioVista === 'tareas') H.setInicioVista(['hoy']); else if (S.tab === 'tu' && S.tuSub) H.tuIr(['']); else H.goTab(['inicio']); },
   metaGuardar: () => metaGuardar(),
   metaCuentaElegir: ([id]) => { if (!FORM || FORM.kind !== 'meta') return; metaLeerForm(); FORM.cuentaMeta = id || ''; updateSheet(metaEditorHtml()); sentir('tic'); },
   aportarRDesde: ([id]) => { if (!FORM || FORM.kind !== 'aportarR' || !cuentaPorId(id)) return; FORM.desde = id; const t = FORM.tec, imp = FORM.importe; updateSheet(aportarRHtml()); FORM.importe = imp; if (t) tecSync(); sentir('tic'); },
