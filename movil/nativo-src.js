@@ -112,6 +112,11 @@ if (Capacitor.isNativePlatform()) {
     App.addListener('appStateChange', ({ isActive }) => { if (isActive && window.__avisosVolver) { try { window.__avisosVolver(); } catch (e) { /* */ } } });
   }
 
+  // 26/11 · Copia local sin conexión (docs/52): la clave con la que la web cifra la copia vive en el Keystore (Android) o el Llavero (iPhone)
+  const CL = registerPlugin('ClaveLocal');
+  N.claveLocal = () => CL.obtener().then((r) => r && r.clave);
+  N.olvidarClaveLocal = () => CL.olvidar().catch(() => {});
+
   // 12/11 · tres canales: importantes (suenan), normales (sin sonido) y resumen. Android oculta el texto con el móvil bloqueado.
   let _canales = null;
   const canales = () => _canales || (_canales = N.ios ? Promise.resolve() : Promise.all([

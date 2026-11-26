@@ -2990,3 +2990,20 @@ html[data-look="nuevo"] .ins-aro b.muy-largo { font-size: 10px; letter-spacing: 
    (ni deslizando en lo oscuro ni al llegar al final de la hoja). La hoja tiene su propio desplazamiento y no se ve afectada. */
 html[data-look="nuevo"] .sheet-backdrop, html[data-look="nuevo"] .popup-backdrop, html[data-look="nuevo"] .descartar { overscroll-behavior: contain; touch-action: pinch-zoom; }
 html[data-look="nuevo"] .sheet, html[data-look="nuevo"] .popup, html[data-look="nuevo"] .descartar-c { overscroll-behavior: contain; touch-action: pan-y pinch-zoom; } /* se puede seguir ampliando con dos dedos */
+/* 26/11 (docs/52): aviso fino de «sin conexión» / cambios por subir. Solo se ve cuando hay algo que decir. */
+.sinc-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 95; height: calc(28px + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px); display: flex; align-items: center; justify-content: center; background: var(--surface2, #EEF0F6); color: var(--ink, #14172A); border-bottom: 1px solid var(--line, rgba(0,0,0,.08)); font-size: 12.5px; font-weight: 700; }
+.sinc-bar[hidden] { display: none; }
+.sinc-bar button { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 14px; cursor: pointer; max-width: 100%; }
+.sinc-bar .i { width: 14px; height: 14px; flex: none; }
+.sinc-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sinc-bar.sin { background: #FFF1DC; color: #8A4A07; } .sinc-bar.mal { background: #FDE7E4; color: #A12A1B; } .sinc-bar.ok { background: #E3F4EB; color: #1F6B49; }
+html[data-theme="dark"] .sinc-bar, html.dark .sinc-bar { background: #232842; color: #E9EBF7; }
+html[data-theme="dark"] .sinc-bar.sin, html.dark .sinc-bar.sin { background: #3A2A12; color: #FFC989; }
+html[data-theme="dark"] .sinc-bar.mal, html.dark .sinc-bar.mal { background: #3D1D1A; color: #FFA79C; }
+html[data-theme="dark"] .sinc-bar.ok, html.dark .sinc-bar.ok { background: #14301F; color: #8FE0B4; }
+html.con-sinc #app { padding-top: calc(28px + env(safe-area-inset-top, 0px)); }
+.sinc-lista { display: grid; gap: 10px; margin: 8px 0 12px; }
+.sinc-fila { padding: 10px 12px; border: 1px solid var(--line, rgba(0,0,0,.1)); border-radius: 14px; display: grid; gap: 8px; }
+.sinc-t { display: grid; gap: 2px; } .sinc-t small { opacity: .7; }
+.sinc-a { display: flex; gap: 8px; flex-wrap: wrap; } .sinc-a .btn { flex: 1 1 120px; }
+@media (prefers-color-scheme: dark) { html:not([data-theme="light"]) .sinc-bar { background: #232842; color: #E9EBF7; } html:not([data-theme="light"]) .sinc-bar.sin { background: #3A2A12; color: #FFC989; } html:not([data-theme="light"]) .sinc-bar.mal { background: #3D1D1A; color: #FFA79C; } html:not([data-theme="light"]) .sinc-bar.ok { background: #14301F; color: #8FE0B4; } }

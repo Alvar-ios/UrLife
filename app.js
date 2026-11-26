@@ -98,6 +98,8 @@ const ICONS = {
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
 };
 ICONS.globo = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18"/></svg>';
+ICONS.sinRed = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 9a15 15 0 0 1 4-2.6M21.5 9a15 15 0 0 0-9.5-3.9"/><path d="M5.5 12.5a10 10 0 0 1 3-1.9M18.5 12.5a10 10 0 0 0-3.6-2.1"/><path d="M9 16a5 5 0 0 1 6 0"/><path d="M12 19.5h.01"/><path d="m3 3 18 18"/></svg>';
+ICONS.sincro = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.3-4.5L4 8.5"/><path d="M4 4v4.5h4.5"/><path d="M4 13a8 8 0 0 0 14.3 4.5L20 15.5"/><path d="M20 20v-4.5h-4.5"/></svg>';
 ICONS.trendUp = ICONS.piggy; // la «hucha» de antes es una flecha que sube: Apartar usa ahora piggy2, una hucha de verdad
 function ic(name) {
   const s = ICONS[name];
@@ -680,9 +682,66 @@ function errMsg(e) {
   const code = e && e.code;
   if (code === '23505') return 'Ya existe un registro con ese identificador.';
   if (code === '42501' || code === 'PGRST301' || code === 401 || code === 403) return 'No tienes permiso para guardar este cambio (revisa tu sesión).';
+  if (code === 'sin_conexion') return 'Sin conexión: Juntos solo se puede mirar.';
+  if (code === 'sin_espacio') return 'No he podido guardarlo en este móvil: no queda espacio.';
   if (code === 'network' || code === 'TypeError') return 'No se pudo conectar. Revisa tu conexión a internet.';
   return 'No se pudo guardar. Revisa tu conexión.';
 }
+/* ---- Sin conexión (docs/52): aviso fino, cola de cambios y hoja «cambios sin subir» ---- */
+function sinRedAhora() { return navigator.onLine === false || !!(window.Data && Data.sinc && Data.sinc.estado().sinRed); }
+function necesitoRed(msg) { if (!sinRedAhora()) return false; toast(msg || 'Necesito conexión para esto', { aviso: true }); return true; }
+function sincTextoBarra() {
+  const e = window.Data && Data.sinc ? Data.sinc.estado() : null; if (!e || !e.activo) return null;
+  const n = e.total, c = n === 1 ? '1 cambio' : n + ' cambios';
+  if (e.fallos || e.revisar) { const m = e.fallos + e.revisar; return { ic: 'alert', t: m === 1 ? '1 cambio no se ha subido' : m + ' cambios no se han subido', cls: 'mal' }; }
+  if (e.sinRed) return { ic: 'sinRed', t: n ? 'Sin conexión · ' + c + ' por subir' : 'Sin conexión', cls: 'sin' };
+  if (e.subiendo && n) return { ic: 'sincro', t: 'Subiendo ' + c + '…', cls: 'sube' };
+  if (n) return { ic: 'sincro', t: c === '1 cambio' ? '1 cambio por subir' : c + ' por subir', cls: 'sube' };
+  if (S._sincTodo) return { ic: 'check', t: 'Todo al día', cls: 'ok' };
+  return null;
+}
+function sincPintar() {
+  const el = $('#sincBar'); if (!el) return;
+  const e = window.Data && Data.sinc ? Data.sinc.estado() : null;
+  if (e && S._sincAntes && S._sincAntes.total > 0 && e.total === 0 && !e.sinRed && !e.fallos && !e.revisar) { S._sincTodo = true; clearTimeout(S._sincTodoT); S._sincTodoT = setTimeout(() => { S._sincTodo = false; sincPintar(); }, 2500); }
+  S._sincAntes = e;
+  const b = sincTextoBarra();
+  if (!b) { el.hidden = true; el.className = 'sinc-bar'; el.innerHTML = ''; document.documentElement.classList.remove('con-sinc'); }
+  else {
+    el.hidden = false; el.className = 'sinc-bar ' + b.cls;
+    el.innerHTML = '<button type="button" ' + act('sincAbrir') + '>' + ic(b.ic) + '<span>' + escapeHtml(b.t) + '</span></button>';
+    document.documentElement.classList.add('con-sinc');
+  }
+  if (FORM && FORM.kind === 'sinc' && $('#sheetBackdrop')) updateSheet(sincHojaHtml());
+}
+function sincIniciar() {
+  if (S._sincOn) return; S._sincOn = true;
+  try { if (window.Data && Data.sinc) Data.sinc.onChange(sincPintar); } catch (e) { /* */ }
+  window.addEventListener('online', sincPintar); window.addEventListener('offline', sincPintar);
+}
+function sincTexto(o) {
+  const d = o.data || {}, acc = o.tipo === 'borrar' ? 'Quitar' : o.tipo === 'crear' ? 'Apuntar' : 'Cambiar';
+  if (o.col === 'movimientos') return acc + ' ' + String(d.descripcion || d.categoria || 'un movimiento').slice(0, 40) + (d.importe != null && o.tipo !== 'borrar' ? ' · ' + eur2(Number(d.importe) || 0) : '');
+  if (o.col === 'tareas') return acc + ' ' + String(d.titulo || d.nombre || 'una tarea').slice(0, 40);
+  if (/^config/.test(o.col || '') || o.tipo === 'cfg' || o.tipo === 'cfgset') return 'Ajustes';
+  return acc + ' ' + (o.col || 'un cambio');
+}
+function sincHojaHtml() {
+  const lista = Data.sinc.lista().map((o) => Object.assign({ texto: sincTexto(o) }, o)), F = FORM || {};
+  const fila = (o) => {
+    const mal = o.estado === 'revisar', fallo = o.estado === 'fallo';
+    let acc = '';
+    if (mal) acc = '<button class="btn ghost" ' + act('sincForzar', o.idOp) + '>' + (o.motivo === 'borrado' ? 'Recuperarlo' : 'Quedarme con el mío') + '</button>';
+    else if (fallo) acc = '<button class="btn ghost" ' + act('sincReintentar', o.idOp) + '>Reintentar</button>';
+    const des = F.descartando === o.idOp ? '<button class="btn danger" ' + act('sincDescartar', o.idOp) + '>Seguro, descartar</button>' : '<button class="btn ghost" ' + act('sincDescartar', o.idOp) + '>Descartar</button>';
+    const nota = mal ? (o.motivo === 'borrado' ? 'Ya no existe en tu cuenta.' : 'Ha cambiado desde otro sitio.') : fallo ? 'No se ha podido subir.' : 'Esperando para subir.';
+    return '<div class="sinc-fila"><div class="sinc-t"><b>' + escapeHtml(o.texto || 'Cambio') + '</b><small>' + escapeHtml(nota) + '</small></div>' + ((mal || fallo) ? '<div class="sinc-a">' + acc + des + '</div>' : '') + '</div>';
+  };
+  return '<div class="handle"></div><h2>Cambios sin subir</h2>' +
+    (lista.length ? '<div class="sinc-lista">' + lista.map(fila).join('') + '</div>' : '<p class="rec-hint">No hay nada pendiente.</p>') +
+    '<div class="actions">' + (lista.length ? '<button class="btn accent block" ' + act('sincReintentar', '') + '>Reintentar todo</button>' : '') + '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
+}
+function sincAbrirHoja() { FORM = { kind: 'sinc' }; openSheet(sincHojaHtml()); }
 async function withRetry(fn, tries) {
   tries = tries || 4;
   let last;
@@ -1009,7 +1068,7 @@ function renderShell() {
     '<div class="tb-r"><span id="compararHost"></span><span id="ojoTb"></span><button class="icon-btn tb-btn tb-agenda" id="tbAgenda" aria-label="Agenda"' + (S.config && (!agendaOn() || agendaEnBarra()) ? ' hidden style="display:none"' : '') + ' ' + act('irAgenda', 'tareas') + '>' + ic('calendar') + '<span class="tb-n" id="tbAgendaN" hidden></span></button><button class="icon-btn tb-btn" aria-label="Buscar" ' + act('openBuscar') + '>' + ic('search') + '</button>' +
     '<button class="tb-avatar" id="tbAvatar" aria-label="Tú y ajustes" ' + act('goTab', 'tu') + '>' + inicialUsuario() + '</button></div></header><main id="content"></main></div>' +
     '<nav class="tabbar" aria-label="Secciones">' + tabbarDentro() + '</nav>' +
-    '<div id="sheetHost"></div><div class="toast" id="toast" role="status"></div>' +
+    '<div id="sheetHost"></div><div class="toast" id="toast" role="status"></div><div class="sinc-bar" id="sincBar" hidden></div>' +
     '<div class="bloqueo" aria-live="polite">' + ic('candado') + '<b>PalomApp está bloqueada</b><button class="btn accent" ' + act('desbloquear') + '>Desbloquear</button></div>';
 }
 
@@ -1059,6 +1118,7 @@ async function borrarCuentaOk() {
 // nada de esa persona: se apagan los avisos del banco (la siguiente cuenta tendría que aceptarlos otra vez) y se borra lo pendiente.
 // Si la sesión caduca sola no se llama: basta con que Android deje de leer (uid vacío) y lo pendiente se recoge al volver.
 async function limpiarAlSalir() {
+  try { if (window.Data && Data.sinc) await Data.sinc.olvidar(); } catch (e) { /* */ } // cerrar sesión a propósito: fuera la copia de este móvil
   try { const id = lsGet('avDisp:' + miUid()) || S['_avDisp:' + miUid()]; if (id && window.Data && Data.moviles) await Data.moviles.quitar(id); } catch (e) { /* */ }
   try { if (avNat()) await avNat().vaciar(true); } catch (e) { /* */ }
   try { if (atajosNat()) await atajosNat().cuenta(''); } catch (e) { /* */ } // iPhone: la cola de Atajos se vacía y no guarda nada sin sesión
@@ -3525,6 +3585,7 @@ const TICKET_LADO = 1568, TICKET_CALIDAD = 0.85;
 function ticketsDisponible() { return activosDisponible(); }
 const ERR_TICKET = {
   sin_clave: 'La lectura de tickets aún no está activada. Mientras tanto puedes apuntar el gasto a mano.',
+  sin_red: 'Necesito conexión para leer el ticket.',
   limite: 'Has usado todas las lecturas de tickets de este mes. Se renuevan el día 1.',
   clave_mala: 'La lectura de tickets no está disponible ahora mismo. Apunta el gasto a mano.',
   sin_saldo: 'La lectura de tickets no está disponible ahora mismo. Apunta el gasto a mano.',
@@ -3536,6 +3597,7 @@ const ERR_TICKET = {
 };
 function errTicket(k) { if (k === 'limite') return 'Has usado las ' + ticketsUso().limite + ' lecturas de este mes. Vuelven el ' + ticketsVuelven() + '.'; return ERR_TICKET[k] || 'No se pudo leer el ticket. Revisa tu conexión e inténtalo de nuevo.'; }
 async function ticketsApi(body) {
+  if (sinRedAhora()) return { error: 'sin_red' };
   const c = window.SUPABASE_CONFIG, ses = await window.Auth.getSession();
   if (!ses || !ses.access_token) return { error: 'sin_sesion' };
   const r = await fetch(c.url + '/functions/v1/tickets-ia', {
@@ -3565,6 +3627,7 @@ function reducirFoto(file) {
   });
 }
 function elegirFotoTicket() {
+  if (necesitoRed('Necesito conexión para leer el ticket')) return;
   if (!ticketsDisponible()) return toast('La lectura de tickets no está disponible aquí');
   verBadge('ticket');
   const inp = document.createElement('input');
@@ -4230,6 +4293,7 @@ function trRecordar(extra) { const t = cfg().trayecto || {}; saveConfig({ trayec
 function trDescripcion() { const p = TR_PRODS[FORM.prod], base = p.g === 'electrico' ? 'Carga del coche' : 'Gasolina'; const ruta = FORM.ruta ? ' · ' + FORM.ruta : ''; /* solo las localidades que devolvió el cálculo, nunca la calle escrita */ return (base + ruta).slice(0, 80); }
 function trCategoria() { const cs = catsGasto().map((c) => c.nombre); return cs.includes('Transporte') ? 'Transporte' : (cs.find((c) => /transporte|coche/i.test(c)) || 'Otros'); }
 async function trayectoApi(accion, extra) {
+  if (sinRedAhora()) throw new Error('sin_red');
   const c = window.SUPABASE_CONFIG; const ses = await window.Auth.getSession();
   if (!ses || !ses.access_token) throw new Error('sin_sesion');
   const r = await fetch(c.url + '/functions/v1/trayecto', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ses.access_token, apikey: c.anonKey }, body: JSON.stringify(Object.assign({ accion }, extra || {})) });
@@ -14381,6 +14445,7 @@ const H = {
   deleteTarea: (_a, el) => confirmDelete(el, doDeleteTarea),
   impAbrir: () => { verBadge('importar'); impAbrir(); },
   impArchivo: async (_, el) => {
+    if (sinRedAhora()) { IMP.error = 'Necesito conexión para importar.'; updateSheet(impHtml()); return; }
     const f = el.files && el.files[0]; if (!f) return;
     if (f.size > 15 * 1024 * 1024) { IMP.error = 'El archivo es demasiado grande (máx. 15 MB).'; updateSheet(impHtml()); return; }
     IMP.error = ''; IMP.cargando = true; updateSheet(impHtml());
@@ -14600,6 +14665,7 @@ const H = {
   borrarCuentaAbrir: () => { FORM = { kind: 'borrarCuenta' }; openSheet(borrarCuentaHtml()); },
   borrarCuentaOk: () => borrarCuentaOk(),
   nuevaContrasenaOk: async () => {
+    if (necesitoRed()) return;
     const a = ($('#ncPass') || {}).value || '', b = ($('#ncPass2') || {}).value || '';
     if (a.length < 8) return renderNuevaContrasena('Tiene que tener al menos 8 caracteres.');
     if (a !== b) return renderNuevaContrasena('Las dos contraseñas no coinciden.');
@@ -15007,6 +15073,7 @@ const H = {
   obOtros: () => { const ob = S.onboarding; if (!ob) return; ob.otrosAbiertos = true; render(); setTimeout(() => { const el = $('#obOtroNombre'); if (el) el.focus(); }, 60); },
   obOtroAnadir: () => { const ob = S.onboarding, el = $('#obOtroNombre'), n = ((el && el.value) || '').trim().slice(0, 30); if (!ob || !n) return; if (!ob.fijos.some((f) => normName(f.nombre) === normName(n))) ob.fijos.push({ nombre: n, importe: '', dia: '' }); render(); },
   obUnirse: async () => {
+    if (necesitoRed('Necesito conexión para unirme al grupo')) return;
     const ob = S.onboarding; if (!ob || !ob.invite || ob.uniendo) return; ob.uniendo = true;
     const i = ob.invite.info || {}, nombre = String(ob.nombre || '').trim().slice(0, 40) || nombreSugerido();
     const id = await accionGrupo(() => S.db.rpc('unirse', { p_token: ob.invite.token, p_nombre: nombre }), i.tipo === 'directo' ? '¡Ya compartís gastos!' : '¡Te has unido al grupo!');
@@ -15171,7 +15238,15 @@ const H = {
     try { await window.Auth.resetPassword(email, await captchaCodigo()); renderLoginScreen('Te he enviado un correo con instrucciones para cambiar tu contraseña.'); }
     catch (e) { renderLoginScreen('No se pudo enviar el correo. Inténtalo de nuevo en unos minutos.'); }
   },
-  doLogout: async () => { if (_movsPend.size) return toast('Espera un momento: aún se está guardando lo último', { aviso: true }); closeSheet(); await limpiarAlSalir(); await window.Auth.signOut(); }, // Calidad 11/11
+  sincAbrir: () => sincAbrirHoja(),
+  sincReintentar: async ([id]) => { try { await Data.sinc.reintentar(id || undefined); } catch (e) { /* */ } sincPintar(); },
+  sincForzar: async ([id]) => { try { await Data.sinc.forzar(id); } catch (e) { /* */ } sincPintar(); },
+  sincDescartar: async ([id]) => {
+    if (!FORM || FORM.kind !== 'sinc') return;
+    if (FORM.descartando !== id) { FORM.descartando = id; updateSheet(sincHojaHtml()); return; } // el segundo toque confirma
+    FORM.descartando = null; try { await Data.sinc.descartar(id); } catch (e) { /* */ } sincPintar();
+  },
+  doLogout: async () => { if (window.Data && Data.sinc && Data.sinc.estado().total > 0) { toast('Aún tienes cambios sin subir', { aviso: true }); return sincAbrirHoja(); } if (_movsPend.size) return toast('Espera un momento: aún se está guardando lo último', { aviso: true }); closeSheet(); await limpiarAlSalir(); await window.Auth.signOut(); }, // Calidad 11/11
 };
 const debouncedSearch = debounce((v) => { S.movQuery = v; S.movLimit = MOV_FILAS; const l = $('#movList'); if (l) l.innerHTML = renderMovList(); }, 160);
 
@@ -15305,6 +15380,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) widg
    ARRANQUE
    ============================================================ */
 async function enterApp(session) {
+  sincIniciar();
   S.user = session.user;
   S.db = window.Data;
   if (/[?&]borrar-cuenta/.test(location.search || '')) setTimeout(() => { if (!S.onboarding) H.borrarCuentaAbrir([]); }, 1800); // enlace de Google Play

@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import Security
 import AppIntents
 
 /*
@@ -184,11 +185,50 @@ public class AtajosPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
+// Clave de la copia local sin conexión (docs/52). La web cifra con AES-GCM la copia de tus datos y la cola de cambios
+// pendientes; aquí solo se guarda la clave: 32 bytes aleatorios en el Llavero (Keychain) de este iPhone, solo con el móvil
+// desbloqueado alguna vez y sin pasar a otros aparatos ni a iCloud. olvidar() la borra al cerrar sesión.
+@objc(ClaveLocalPlugin)
+public class ClaveLocalPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "ClaveLocalPlugin"
+    public let jsName = "ClaveLocal"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "obtener", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "olvidar", returnType: CAPPluginReturnPromise)
+    ]
+    private static let servicio = "es.palomapp.finanzas.clavelocal"
+    private static func consulta() -> [String: Any] {
+        return [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: servicio, kSecAttrAccount as String: "clave"]
+    }
+    @objc func obtener(_ call: CAPPluginCall) {
+        var q = ClaveLocalPlugin.consulta()
+        q[kSecReturnData as String] = true
+        q[kSecMatchLimit as String] = kSecMatchLimitOne
+        var out: AnyObject?
+        if SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess, let d = out as? Data, d.count == 32 {
+            call.resolve(["clave": d.base64EncodedString()]); return
+        }
+        var raw = [UInt8](repeating: 0, count: 32)
+        guard SecRandomCopyBytes(kSecRandomDefault, 32, &raw) == errSecSuccess else { call.reject("clave_no_disponible"); return }
+        SecItemDelete(ClaveLocalPlugin.consulta() as CFDictionary)
+        var nuevo = ClaveLocalPlugin.consulta()
+        nuevo[kSecValueData as String] = Data(raw)
+        nuevo[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        guard SecItemAdd(nuevo as CFDictionary, nil) == errSecSuccess else { call.reject("clave_no_disponible"); return }
+        call.resolve(["clave": Data(raw).base64EncodedString()])
+    }
+    @objc func olvidar(_ call: CAPPluginCall) {
+        SecItemDelete(ClaveLocalPlugin.consulta() as CFDictionary)
+        call.resolve()
+    }
+}
+
 // La pantalla de la app (Main.storyboard la usa) registra los puentes de Atajos y de los widgets
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(AtajosPlugin())
         bridge?.registerPluginInstance(PalomaWidgetsPlugin())
+        bridge?.registerPluginInstance(ClaveLocalPlugin())
     }
 }
 
