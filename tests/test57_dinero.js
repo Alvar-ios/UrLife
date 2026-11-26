@@ -83,7 +83,7 @@ const movs = [{ id: 'a1', tipo: 'Ahorro', categoria: 'Viaje a Japón', metaId: '
   let dq = A.cfg().deudas.find((d) => d.nombre === 'Coche viejo');
   ok(dq.previo === 50 && A.deudaStats(dq).pend === 350, 'cuadrar: el banco dice 350 → «Ya pagado» 50 y quedan 350');
   A.H.deudaCuadrar(['Coche viejo']); await sleep(10); doc.querySelector('#dqBanco').value = '600'; await A.H.deudaCuadrarOk([]); await sleep(20);
-  ok(/subiremos el total/.test(sh()) && A.cfg().deudas.find((d) => d.nombre === 'Coche viejo').previo === 50, 'si el banco dice más de lo que queda: avisa y pide confirmación (no guarda aún)');
+  ok(/subiré el total/.test(sh()) && A.cfg().deudas.find((d) => d.nombre === 'Coche viejo').previo === 50, 'si el banco dice más de lo que queda: avisa y pide confirmación (no guarda aún)');
   await A.H.deudaCuadrarOk([]); await sleep(30);
   dq = A.cfg().deudas.find((d) => d.nombre === 'Coche viejo');
   ok(dq.objetivo === 700 && dq.previo === 0 && A.deudaStats(dq).pend === 600, 'al confirmar: total 700, «Ya pagado» 0 y quedan 600');

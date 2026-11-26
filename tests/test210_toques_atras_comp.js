@@ -29,7 +29,9 @@ const pregunta = (e) => !!e.doc.querySelector('#descartarHoja');
   ok(!pregunta(e), 'sin cambiar nada, atrás NO pregunta «¿Descartar este gasto?»');
   // pase lo que pase, no se borra ni se cambia nada en el servidor
   const d = e.doc.querySelector('#descartarHoja [data-click="descartarSi"]'); if (d) { d.click(); await sleep(260); }
-  ok(!hojaAbierta(e), 'al final la hoja queda cerrada');
+  ok(hojaAbierta(e) && /Viaje inventado/.test(e.doc.querySelector('#sheetHost').textContent) && !/Hotel inventado/.test(e.doc.querySelector('#sheetHost .sheet h2') ? e.doc.querySelector('#sheetHost .sheet h2').textContent : ''), 'atrás vuelve a la hoja del grupo (26/11, decisión del dueño)');
+  ok(atras(e) === true, 'otro atrás'); await sleep(260);
+  ok(!hojaAbierta(e), 'y cierra el grupo');
   ok(e.srv.comp.length === 1 && !e.srv.comp[0].borrado && e.srv.comp[0].importe === 80, 'el gasto compartido sigue igual en el servidor (80 €, sin borrar)');
   ok(!e.srv.llamadas.some((l) => /compartidos\.(borrar|editar)/.test(l[0])), 'no se llama a borrar ni a editar');
 

@@ -100,7 +100,7 @@ const clicks = (e, pre) => [...e.doc.querySelectorAll('[data-click^="' + pre + '
   ok(/Le debes\s*35,00/.test(sh(a)), 'la hoja de Bea dice «Le debes 35 €» (antes abría el piso con 30 €) [' + sh(a).slice(0, 120) + ']');
   ok(/Solo vosotros dos\s*−5,00/.test(sh(a)) && /Piso\s*−30,00/.test(sh(a)), 'desglose: a solas 5 € y Piso 30 €');
   A.H.saldarTodo(['uB']); await sleep(30);
-  ok(/Ya le he pagado 35,00/.test(sh(a)), 'Saldar: botón «Ya le he pagado 35 €»');
+  ok(/Le he pagado 35,00/.test(sh(a)), 'Saldar: botón «Le he pagado 35 €»');
   await A.H.saldarTodoGuardar([]); await sleep(80);
   const liqs = DB.comp.filter((c) => c.tipo === 'Liquidación' && !c.borrado);
   ok(liqs.length === 2 && liqs.some((c) => c.grupoId === 'g1' && c.importe === 30) && liqs.some((c) => c.grupoId === 'g2' && c.importe === 5), 'se apunta un pago por grupo (30 € en Piso y 5 € a solas)');
@@ -152,7 +152,7 @@ const clicks = (e, pre) => [...e.doc.querySelectorAll('[data-click^="' + pre + '
   B.H.personaVer(['uA']); await sleep(20);
   const wa = b.doc.querySelector('#sheetHost a.wa-btn');
   ok(wa && /wa\.me/.test(wa.href) && /me%20debes%2047%2C00/.test(wa.href) && /Piso/.test(decodeURIComponent(wa.href)), '«Pedir por WhatsApp» lleva un mensaje amable con 47 € y el grupo');
-  ok(/Ya me ha pagado/.test(sh(b)), 'y «Ya me ha pagado» para apuntarlo');
+  ok(/Me ha pagado/.test(sh(b)), 'y «Ya me ha pagado» para apuntarlo');
 
   console.log(fails ? 'FAILED ' + fails : 'ALL PASS');
   process.exit(fails ? 1 : 0);

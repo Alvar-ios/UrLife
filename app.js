@@ -659,7 +659,7 @@ function aspectoHtml() {
     '<div class="asp-sec"><div class="section-title">Sensaciones</div>' +
     '<div class="asp-fila"><div class="t">Vibración<span>Un toque suave al guardar, completar o conseguir una meta.</span></div><button type="button" class="link" ' + act('probarSens', 'ok') + '>Probar</button>' + sw('vibra', v) + '</div>' +
     '<div class="asp-fila"><div class="t">Sonido<span>Sonidos cortos y suaves. Se pueden apagar aquí en cualquier momento.</span></div><button type="button" class="link" ' + act('probarSens', 'hito') + '>Probar</button>' + sw('sonido', so) + '</div>' +
-    (typeof navigator !== 'undefined' && !navigator.vibrate ? '<div class="asp-nota">Este dispositivo no deja que las páginas web vibren (pasa en iPhone). Probamos un truco de iOS 17.4 o más que puede funcionar o no. En Android, y en la app instalada, sí funciona.</div>' : '') + '</div>' +
+    (typeof navigator !== 'undefined' && !navigator.vibrate ? '<div class="asp-nota">Este dispositivo no deja que las páginas web vibren (pasa en iPhone). Pruebo un truco de iOS 17.4 o más que puede funcionar o no. En Android, y en la app instalada, sí funciona.</div>' : '') + '</div>' +
     '<div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 function refrescarAspecto() { if (FORM && FORM.kind === 'aspecto' && $('#sheetBackdrop')) { const sc = $('#sheetBackdrop .sheet'), y = sc ? sc.scrollTop : 0; updateSheet(aspectoHtml()); const sh = $('#sheetBackdrop .sheet'); if (sh) sh.scrollTop = y; } }
@@ -1155,7 +1155,7 @@ async function mfaSheetHtml() {
   } catch (e) { return '<div class="handle"></div><h2>Verificación en dos pasos</h2><p>No se pudo consultar. Revisa tu conexión.</p><div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>'; }
   if (verified) {
     return '<div class="handle"></div><h2>Verificación en dos pasos</h2>' +
-      '<p style="line-height:1.5;"><b style="color:var(--income);">Activada.</b> Al iniciar sesión te pediremos el código de tu app autenticadora.</p>' +
+      '<p style="line-height:1.5;"><b style="color:var(--income);">Activada.</b> Al iniciar sesión te pediré el código de tu app autenticadora.</p>' +
       '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn danger block" ' + act('mfaDisable', verified.id) + '>Desactivar</button></div>';
   }
   return '<div class="handle"></div><h2>Verificación en dos pasos</h2>' +
@@ -1230,8 +1230,8 @@ function render() {
 function empiezaPasos() {
   const hayMovs = S.movimientos.length > 0;
   const pasos = [
-    { k: 'saldo', hecho: cuentasCfg().length > 0, t: 'Pon el saldo de tu banco', d: 'Así sabrás lo que tienes de verdad.', a: act('openCuentas') },
-    { k: 'gasto', hecho: hayMovs, t: 'Apunta tu primer gasto', d: 'Con el botón + del centro, cuando quieras.', a: act('crearIr', 'gasto') },
+    { k: 'saldo', hecho: cuentasCfg().length > 0, t: 'Pon el saldo de tu banco', d: 'Copia el de la app de tu banco.', a: act('openCuentas') },
+    { k: 'gasto', hecho: hayMovs, t: 'Apunta tu primer gasto', d: 'Con el botón + del centro.', a: act('crearIr', 'gasto') },
     { k: 'banco', hecho: hayMovs, t: 'Trae tus movimientos del banco', d: 'Importa el extracto o un Excel, sin duplicados.', a: act('impAbrir') },
     { k: 'pres', hecho: catsGasto().some((c) => num(c.presupuesto) > 0), t: 'Pon tus presupuestos', d: 'Cuánto quieres gastar al mes en cada cosa.', a: act('openListEditor', 'categoriasGasto') },
     { k: 'meta', hecho: metasCfg().length > 0 || (S.objetivos || []).some((o) => o.tipo === 'ahorro'), t: 'Crea una meta', d: 'La entrada de la casa, un viaje, un colchón…', a: act('metaNueva') },
@@ -1248,7 +1248,7 @@ function empiezaHtml() {
   const paso = (n, p) => '<button class="empieza-paso" ' + p.a + '><span class="n">' + n + '</span><span><b>' + p.t + '</b><span class="d">' + p.d + '</span></span><span class="chev-s">' + ic('chevR') + '</span></button>';
   const nuevo = !S.movimientos.length;
   return '<div class="empieza"><div class="empieza-cab"><h3>' + (nuevo ? 'Empieza aquí' : 'Sácale más partido') + '</h3><button type="button" class="link" ' + act('empiezaOcultar') + '>Ocultar</button></div>' +
-    '<p>' + (nuevo ? 'En un par de minutos tendrás tus números al día.' : hechos + ' de ' + pasos.length + ' pasos hechos.') + '</p>' +
+    '<p>' + (nuevo ? '' : hechos + ' de ' + pasos.length + ' pasos hechos.') + '</p>' +
     pend.slice(0, nuevo ? 2 : 3).map((p, i) => paso(i + 1, p)).join('') + '</div>';
 }
 function renderInicio() {
@@ -1465,7 +1465,7 @@ function movVistaSegHtml() {
   return '<div class="segmented mov-vista">' + MOV_VISTAS.map(([id, l]) => '<button class="' + (v === id ? 'active' : '') + '" ' + act('setMovVista', id) + '>' + l + '</button>').join('') + '</div>';
 }
 function movVacioHtml() {
-  return '<div class="card mov-vacio"><span class="mov-vacio-ic">' + ic('list') + '</span><b>Aquí verás en qué se va tu dinero</b><p>Apunta tu primer gasto o trae el extracto de tu banco.</p>' +
+  return '<div class="card mov-vacio"><span class="mov-vacio-ic">' + ic('list') + '</span><b>Aquí verás en qué se va tu dinero</b>' +
     '<button class="btn accent block" ' + act('crearIr', 'gasto') + '>' + ic('plus') + ' Apuntar un gasto</button><button class="btn ghost block" ' + act('impAbrir') + '>' + ic('fileIn') + ' Importar extracto</button></div>';
 }
 function renderMovTab() {
@@ -1666,7 +1666,7 @@ function renderMovList() {
   const enTodo = acotado && S.movQuery.trim() ? '<button class="link buscar-todo" ' + act('setMovModo', 'todo') + '>' + ic('search') + ' Buscar en todo el historial</button>' : '';
   if (!movs.length && !tras.length) {
     const donde = /^m:/.test(per) ? ' en ' + periodoTxt(per).toLowerCase() : /^y:/.test(per) ? ' en ' + per.slice(2) : ' aquí';
-    return '<div class="empty"><div class="big">' + ic('wallet') + '</div><b>Sin movimientos' + escapeHtml(donde) + '</b><div style="margin-top:4px;">' + (!S.movimientos.length ? 'Apunta el primero con el botón + o haz una foto a un ticket.' : acotado ? 'Cambia de mes con las flechas o mira todo tu historial.' : 'Cambia el filtro o añade uno nuevo.') + '</div>' +
+    return '<div class="empty"><div class="big">' + ic('wallet') + '</div><b>Sin movimientos' + escapeHtml(donde) + '</b>' + (!S.movimientos.length || acotado ? '' : '<div style="margin-top:4px;">Cambia el filtro o añade uno nuevo.</div>') +
       (acotado && S.movimientos.length ? '<div class="cta"><button class="btn ghost" ' + act('setMovModo', 'todo') + '>Ver todo el historial</button></div>' : '') +
       '<div class="cta"><button class="btn accent" ' + act('openMovForm') + '>' + ic('plus') + ' Añadir movimiento</button>' + (ticketsDisponible() ? ' <button class="btn ghost" ' + act('ticketFoto') + '>' + ic('camera') + ' Foto de ticket</button>' : '') + '</div></div>';
   }
@@ -1826,7 +1826,7 @@ function tipoActivoDe(a) { return TIPOS_ACTIVO.indexOf(a && a.tipo) >= 0 ? a.tip
 function errPrecioMsg(e) {
   if (e === 'limite') return 'Hoy se han agotado las consultas gratuitas de precios. Escribe tú las participaciones o inténtalo mañana.';
   // 11/11: los precios automáticos gratuitos solo llegan a un año atrás (más antiguo = sin precio). No se bloquea: se guarda igual.
-  if (e === 'sin_precio') return 'No tenemos el precio de ese día (los automáticos llegan hasta hace un año). Pon el precio al que compraste cada participación, o cuántas compraste. Si no lo sabes, se guarda igual y lo completas luego.';
+  if (e === 'sin_precio') return 'No tengo el precio de ese día (los automáticos llegan hasta hace un año). Pon el precio al que compraste cada participación, o cuántas compraste. Si no lo sabes, se guarda igual y lo completas luego.';
   if (e === 'sin_divisa') return 'No hay tipo de cambio para esa fecha. Pon el precio en euros de cada participación, o cuántas compraste. Si no lo sabes, se guarda igual.';
   return 'No se pudo consultar el precio. Revisa tu conexión o escribe tú las participaciones.';
 }
@@ -2079,7 +2079,7 @@ function openMovForm(id, pre) {
   const compDest = pre && pre.comp, objPre = pre && pre.objetivo;
   pre = (!ex && pre) || {};
   const tipoIni = ex ? ex.tipo : pre.tipo ? pre.tipo : (S.tab === 'movimientos' && TIPOS.indexOf(S.movFiltroTipo) >= 0 ? S.movFiltroTipo : 'Gasto');
-  FORM = { kind: 'mov', id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : (pre && pre.tipoActivo) || '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
+  FORM = { kind: 'mov', volverGrupo: S._volverGrupo || null, id: mio ? mio.id : null, tipo: tipoIni, tipoActivoIni: ex ? ex.tipoActivo : (pre && pre.tipoActivo) || '', compId: comp ? comp.id : null, comp: comp ? compFormDesde(comp) : { on: false } };
   if (compDest) { FORM.comp = { on: true, objetivo: objPre || null }; compPrepararDestino(compDest); }
   FORM.invModo = (ex && ex.tipo === 'Inversión' && !ex.activoId) || (!ex && pre.tipo === 'Inversión' && pre.categoria && !pre.activoId) ? 'manual' : 'auto';
   FORM.metaSel = ex ? metaDeMov(ex) : (pre.metaSel || '');
@@ -2659,7 +2659,7 @@ function gruposListaHtml() {
   const ps = (S.grupos || []).filter((g) => g.tipo === 'directo');
   const saldoMeta = (g) => ((S.compartidos || []).some((c) => c.grupoId === g.id) ? ' · <span style="color:' + saldoColor(miSaldo(g.id)) + '">' + saldoTxt(miSaldo(g.id)) + '</span>' : '');
   return '<div class="handle"></div><h2>Grupos y personas</h2>' +
-    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Para compartir gastos, metas y deudas con otras personas (por ejemplo, «Casa» o «Viaje»). Lo tuyo sigue siendo privado: solo se ve lo que compartas en cada grupo.</div>' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Lo tuyo sigue siendo privado: solo se ve lo que compartas.</div>' +
     (S.grupos == null ? '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Cargando…</div>'
       : '<div class="section-title">Grupos</div>' + (gs.length ? '<div class="list">' + gs.map((g) => '<div class="row" ' + act('grupoVer', g.id) + '><div class="avatars">' + g.miembros.slice(0, 4).map(avatarHtml).join('') + '</div>' +
         '<div class="main"><div class="ttl">' + escapeHtml(g.nombre) + '</div><div class="meta">' + g.miembros.map((m) => escapeHtml(m.nombre)).join(', ') + saldoMeta(g) + '</div></div><span class="chev-s">' + ic('chevR') + '</span></div>').join('') + '</div>'
@@ -2670,7 +2670,7 @@ function gruposListaHtml() {
 }
 function amigosListaHtml(ps, saldoMeta) {
   const am = amigos(), pend = ps.filter((g) => !otroDe(g));
-  if (!am.length && !pend.length) return '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Invita a alguien una vez y ya será tu amigo aquí: podrás compartir gastos con él y meterlo en cualquier grupo sin volver a invitarle.</div>';
+  if (!am.length && !pend.length) return '<div class="card" style="color:var(--text-faint);font-size:13.5px;">Invita a alguien una vez y podrás meterlo en cualquier grupo sin volver a invitarle.</div>';
   return '<div class="list">' + am.map((a, i) => { const d = directoCon(a.uid), gsx = (S.grupos || []).filter((g) => g.tipo === 'grupo' && g.miembros.some((m) => m.user_id === a.uid)).map((g) => g.nombre);
     return '<div class="row" ' + (d ? act('grupoVer', d.id) : act('amigoVer', a.uid)) + '>' + avatarHtml({ nombre: a.nombre }, i + 1) +
       '<div class="main"><div class="ttl">' + escapeHtml(a.nombre) + '</div><div class="meta">' + (gsx.length ? 'En ' + escapeHtml(gsx.join(', ')) : 'Sin grupo') + (d ? saldoMeta(d) : '') + '</div></div><span class="chev-s">' + ic('chevR') + '</span></div>'; }).join('') +
@@ -2695,7 +2695,7 @@ function grupoHtml(id) {
   const v4 = juntosV4() && aj; // 22/11 (docs/46 tanda 4): Miembros con «Añadir» e «Invitar» juntos arriba; luego reparto, permisos, tu nombre y salir
   const invHtml =
     '<div class="section-title">Invitar a gente nueva</div><div class="card">' +
-    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin-bottom:10px;">' + (FORM && FORM.enlaceVarios ? 'Este enlace vale para <b>hasta 10 personas</b> durante <b>7 días</b>: puedes mandarlo al grupo de WhatsApp.' : 'Un enlace vale para <b>una persona</b> y caduca en <b>7 días</b>. Si es para varios, usa el enlace para varios.') + ' Al abrirlo, cada uno se une con su cuenta.</div>' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin-bottom:10px;">' + (FORM && FORM.enlaceVarios ? 'Vale para <b>hasta 10 personas</b> durante <b>7 días</b>.' : 'Los enlaces caducan en <b>7 días</b>.') + ' Al abrirlo, cada uno se une con su cuenta.</div>' +
     (FORM && FORM.ultimoEnlace
       ? '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(FORM.ultimoMsg || FORM.ultimoEnlace) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
         '<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn ghost block" ' + act('grupoCopiar') + '>Copiar enlace</button>' + (navigator.share ? '<button class="btn ghost block" ' + act('grupoCompartir') + '>Compartir…</button>' : '') + '</div>' +
@@ -2732,7 +2732,7 @@ function miembroFilaHtml(g, m, i) {
 }
 function sinCuentaAnadirHtml(g) {
   if (g.tipo !== 'grupo') return '';
-  return '<div class="card sc-anadir"><div class="rec-hint" style="margin:0 0 8px;">¿Alguien no tiene la app? Añádelo solo con su nombre y apúntale gastos como a cualquiera. Si un día se la instala, se queda con todo lo suyo.</div>' +
+  return '<div class="card sc-anadir"><div class="rec-hint" style="margin:0 0 8px;">¿Alguien sin la app? Añádelo con su nombre. Si un día se la instala, se queda con lo suyo.</div>' +
     '<div class="field" style="display:flex;gap:8px;align-items:center;margin:0;"><input id="gSinCuenta" type="text" maxlength="40" placeholder="Nombre (p. ej. Marta)"><button class="btn sm accent" style="flex:none;" ' + act('sinCuentaAnadir', g.id) + '>' + ic('plus') + ' Añadir</button></div></div>';
 }
 function permisosGrupoHtml(g) {
@@ -3145,7 +3145,7 @@ function openCompForm(cid) {
   const c = compPorId(cid);
   if (!c) return toast('Ese gasto compartido ya no existe');
   if (c.tipo === 'Liquidación' || !grupoDe(c.grupoId)) {
-    FORM = { kind: 'compInfo', id: cid };
+    FORM = { kind: 'compInfo', id: cid, volverGrupo: S._volverGrupo || null };
     if ($('#sheetBackdrop')) updateSheet(compInfoHtml(c)); else openSheet(compInfoHtml(c));
     return;
   }
@@ -3308,7 +3308,7 @@ function saldarHtml(f) {
     '<div class="field"><label>Importe (' + sym() + ')</label><input id="sImporte" type="number" step="0.01" min="0" inputmode="decimal" value="' + f.max + '"><div class="rec-hint">Puedes poner menos si es un pago parcial.</div></div>' +
     '<div class="field"><label>Fecha</label><input id="sFecha" type="date" value="' + todayISO() + '"></div>' +
     (hayVariasCuentas() && (f.de === yo || f.a === yo) ? '<div class="field"><label>' + (f.de === yo ? 'Desde la cuenta' : 'A la cuenta') + '</label><div class="chips" id="saldarCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (f.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('saldarCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
-    '<div class="rec-hint" style="margin-bottom:6px;">Apúntalo cuando el dinero ya se haya enviado (Bizum, transferencia o en mano). No cuenta como gasto ni como ingreso: solo deja las cuentas a cero.</div>' +
+    '<div class="rec-hint" style="margin-bottom:6px;">Apúntalo cuando ya se haya pagado. No cuenta como gasto ni ingreso.</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('grupoVer', f.gid) + '>Volver</button><button class="btn accent block" ' + act('saldarGuardar') + '>Registrar pago</button></div>';
 }
 function personaHtml(g) {
@@ -3340,7 +3340,7 @@ function mensajePersona(url) { return 'Hola, te invito a compartir gastos conmig
 function personaNuevaHtml() {
   const f = FORM;
   return '<div class="handle"></div><h2>Invitar a una persona</h2>' +
-    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Para compartir gastos con alguien sin crear un grupo (una cena, un regalo…). Le llega un enlace por WhatsApp y, cuando lo acepte, podréis compartir gastos.</div>' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 10px;">Le llega un enlace por WhatsApp. Cuando lo acepte, podréis compartir gastos.</div>' +
     (f.url
       ? '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(f.msg) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
         '<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn ghost block" ' + act('grupoCopiar') + '>Copiar enlace</button>' + (navigator.share ? '<button class="btn ghost block" ' + act('grupoCompartir') + '>Compartir…</button>' : '') + '</div>' +
@@ -3809,7 +3809,7 @@ function otraPersonaChip(ctx) { return '<button type="button" class="chip nueva"
 function invInlineHtml(ctx) {
   const v = S._inv;
   if (!v || v.ctx !== ctx) return '';
-  if (v.url) return '<div class="inv-inline"><b>Enlace listo</b><div class="rec-hint">Mándaselo por WhatsApp. Cuando lo acepte, aparecerá aquí en «Con» y podrás repartir con esa persona.</div>' +
+  if (v.url) return '<div class="inv-inline"><b>Enlace listo</b><div class="rec-hint">Cuando lo acepte, saldrá aquí en «Con».</div>' +
     '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(v.msg) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
     '<button type="button" class="link" ' + act('invCerrar') + '>Cerrar</button></div>';
   return '<div class="inv-inline"><div class="field" style="display:flex;gap:8px;align-items:center;margin:0;"><input id="invNombre" type="text" maxlength="40" placeholder="Su nombre (p. ej. Carlos)" autocomplete="off"><button type="button" class="btn sm accent" style="flex:none;" ' + act('invSinApp', ctx) + '>' + (v.creando ? 'Añadiendo…' : 'Añadir') + '</button></div>' +
@@ -4033,7 +4033,7 @@ function openTareaFormV2(id, op) {
   const tg = (attrName, valores, sel, action) => '<div class="type-toggle" id="' + attrName + 'Toggle">' + valores.map(([v, l]) => '<button type="button" ' + (attrName === 'prio' ? 'data-p' : 'data-e') + '="' + v + '" class="' + (v === sel ? 'active' : '') + '" ' + act(action, v) + '>' + l + '</button>').join('') + '</div>';
   openSheet(
     '<div class="handle"></div><h2>' + (ex ? 'Editar tarea' : 'Nueva tarea') + '</h2>' + (!ex && agendaDisponible() ? '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="true" class="active">Tarea</button><button type="button" role="tab" aria-selected="false" ' + act('tfAPlan') + '>Plan</button></div>' : '') +
-    '<div class="field tf-que"><input id="tNombre" type="text" maxlength="120" aria-label="¿Qué hay que hacer?" placeholder="¿Qué hay que hacer?" value="' + escapeHtml(ex ? ex.nombre : '') + '" ' + onInput('tNombreInput') + '>' + (ex ? '' : '<div class="rec-hint">Por ejemplo: llamar al casero, renovar el DNI…</div>') + '</div>' +
+    '<div class="field tf-que"><input id="tNombre" type="text" maxlength="120" aria-label="¿Qué hay que hacer?" placeholder="¿Qué hay que hacer?" value="' + escapeHtml(ex ? ex.nombre : '') + '" ' + onInput('tNombreInput') + '>' + '</div>' +
     '<div class="field"><label>¿Para cuándo?</label><input type="hidden" id="tFecha" value="' + escapeHtml(fecha) + '"><div class="chips tf-fechas" id="tFechaChips">' + tFechaChips(fecha) + '</div></div>' + (ex ? (ex.estado !== 'Completado' ? tfConHtml(ex.id) : '') : tfConHtml()) + privadaCampoHtml(ex ? !!ex.privada : false, 'tPrivada') +
     '<div class="field"><label>Categoría <span class="hint">· opcional</span></label><input type="hidden" id="tCategoria" value="' + escapeHtml(ex ? (ex.categoria || '') : '') + '"><div id="tCatChips"></div></div>' +
     (ex ? '<div class="field"><label>Estado</label>' + tg('est', [['Pendiente', 'Pendiente'], ['Iniciado', 'En curso'], ['Completado', 'Hecha']], FORM.estado, 'pickEstado') + '</div>' : '') +
@@ -4484,15 +4484,15 @@ function tuSubHtml(id) {
   let cuerpo;
   if (id === 'herramientas') cuerpo = herrHtml();
   else cuerpo = tuSecciones(tuRamaFilas(id));
-  return '<div class="tu3-sub"><button type="button" class="tu3-volver" ' + act('tuIr', '') + '>' + ic('chevL') + ' Volver</button>' + cuerpo + '</div>'; // el título va arriba, en la cabecera
+  return '<div class="tu3-sub">' + cuerpo + '</div>'; // el título y la flecha atrás van arriba, en la cabecera (26/11: fuera el «‹ Volver» repetido)
 }
 // «Mis herramientas»: un interruptor por herramienta (la base no se puede apagar). Nada se borra
 function herrHtml() {
   const fila = (d) => { const on = herrOn(d.k), datos = !on && herrTieneDatos(d.k);
     return '<div class="herr-fila' + (on ? '' : ' off') + '"><span class="herr-ic">' + ic(d.ic) + '</span><span class="herr-t"><b>' + d.n + '</b><span>' + d.f + '</span>' +
-      (datos ? '<span class="herr-nota">' + ic('check') + ' Tus datos se quedan guardados</span>' : '') + '</span>' +
+      '</span>' +
       (d.base ? '<span class="herr-siempre">Siempre</span>' : '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + d.n + '" ' + act('herrCambiar', d.k) + '></button>') + '</div>'; };
-  return '<p class="rec-hint herr-intro">Enciende solo lo que quieras usar. Lo que apagues desaparece de las pestañas, de Inicio y del +, pero <b>no se borra nada</b>: al encenderlo vuelve tal cual.</p>' +
+  return '<p class="rec-hint herr-intro">Lo que apagues se esconde, pero <b>no se borra nada</b>.</p>' +
     '<div class="card herr-lista">' + herrLista().map(fila).join('') + '</div>' + tuSecciones(tuRamaFilas('herramientas'));
 }
 function tuNombreHtml() {
@@ -4504,7 +4504,7 @@ function ticketsInfoHtml() {
   const t = ticketsUso(), pct = t.quedan == null ? 0 : Math.round(t.usados / t.limite * 100);
   return '<div class="handle"></div><h2>Fotos de tickets</h2>' +
     '<p class="rec-hint">Haz una foto a un ticket y la app lee los artículos y el total por ti. La foto no se guarda en ningún sitio.</p>' +
-    '<div class="card tk-uso-card">' + (t.quedan == null ? '<b>' + t.limite + ' lecturas al mes</b><div class="rec-hint">Sabrás cuántas te quedan después de leer el primero.</div>'
+    '<div class="card tk-uso-card">' + (t.quedan == null ? '<b>' + t.limite + ' lecturas al mes</b>'
       : '<b class="tnum">' + (t.quedan === 0 ? 'No te quedan lecturas' : 'Te quedan ' + t.quedan + ' de ' + t.limite) + '</b><div class="tk-barra' + (t.quedan === 0 ? ' agotado' : t.quedan <= 10 ? ' pocos' : '') + '"><i style="width:' + pct + '%"></i></div>' +
         '<div class="rec-hint">Vuelven el ' + ticketsVuelven() + '.</div>') + '</div>' +
     '<div class="actions">' + (t.quedan === 0 ? '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button>' : '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('crearIr', 'ticket') + '>' + ic('camera') + ' Leer un ticket</button>') + '</div>';
@@ -4512,7 +4512,7 @@ function ticketsInfoHtml() {
 const ESCR_TIPOS = [['falla', 'alert', 'Algo falla'], ['idea', 'bulb', 'Una idea'], ['gusta', 'sonrisa', 'Me gusta']];
 function escrHtml() {
   const F = FORM || {};
-  return '<div class="handle"></div><h2>Escríbenos</h2><p class="rec-hint">¿Algo falla, echas algo de menos o hay algo que te encanta? Cuéntanoslo: lo lee quien hace PalomApp.</p>' +
+  return '<div class="handle"></div><h2>Escríbenos</h2><p class="rec-hint">Lo lee quien hace PalomApp.</p>' +
     '<div class="chips escr-tipos">' + ESCR_TIPOS.map(([k, i, l]) => '<button type="button" class="chip' + (F.tipo === k ? ' active' : '') + '" aria-pressed="' + (F.tipo === k) + '" ' + act('escrTipo', k) + '>' + ic(i) + ' ' + l + '</button>').join('') + '</div>' +
     '<div class="field"><label for="escrTxt">Tu mensaje</label><textarea id="escrTxt" rows="5" placeholder="Escribe aquí…">' + escapeHtml(F.txt || '') + '</textarea></div>' +
     '<p class="rec-hint">Solo se añade la versión de la app y el tipo de móvil. Nada de tus cifras.</p>' +
@@ -4606,7 +4606,7 @@ function heroMesHtml() {
     '<span class="hero2-flechas">' + ojoBtnHtml() + '<button type="button" class="hero-arrow" aria-label="Mes anterior" ' + (ant ? act('inicioMes', -1) : 'disabled') + '>' + ic('chevL') + '</button>' +
     '<button type="button" class="hero-arrow" aria-label="Mes siguiente" ' + (actual ? 'disabled' : act('inicioMes', 1)) + '>' + ic('chevR') + '</button></span></div>' +
     '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (disp < 0 ? ' neg' : '') + (nuevo ? ' vacio' : '') + '">' + cifraHtml(disp) + '</span></button>' +
-    (nuevo ? '<p class="hero-nuevo">Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.</p>' : heroBarraHtml(k)) +
+    (nuevo ? '<p class="hero-nuevo">Apunta lo que cobras y lo que gastas.</p>' : heroBarraHtml(k)) +
     (pv ? '<button type="button" class="hero-prev tappable" ' + act('previstoAbrir') + '><span class="prev-tag">Previsto</span><span class="prev-l">a fin de mes</span><b class="tnum">' + money(pv.total) + '</b>' + ic('chevR') + '</button>' : '') +
     (nuevo || !actual ? '' : lineaCuentasHtml()) + '</section>';
 }
@@ -4725,7 +4725,7 @@ function heroMesHtmlV2() {
       (deJuntos > 0.004 ? '<p class="hero-nuevo hero-juntos">' + (Math.abs(deJuntos - gasMes) < 0.005 ? 'Todo es tu parte en Juntos.' : 'De ellos, ' + money(deJuntos) + ' son tu parte en Juntos.') + '</p>' : '') +
       '<button type="button" class="link hero-cobras" ' + act('crearIr', 'ingreso') + '>Apunta lo que cobras y verás cuánto te queda ' + ic('chevR') + '</button>' :
     '<button type="button" class="hero-main tappable' + anim + '" ' + act('heroResumen') + '><span class="hero-k">' + (banco ? 'En tu banco hoy' : actual ? 'Te queda este mes' : disp < 0 && k.facturas + k.gastos + k.deuda > k.ingresos ? 'En ' + MESES[m - 1].toLowerCase() + ' gastaste más de lo que entró' : disp < 0 ? 'En ' + MESES[m - 1].toLowerCase() + ' apartaste más de lo que te quedaba' : 'Te quedó en ' + MESES[m - 1].toLowerCase()) + '</span><span class="hero-v tnum' + (!banco && disp < 0 ? ' neg' : '') + (nuevo && !banco ? ' vacio' : '') + '">' + cifraHtml(banco ? enTusCuentas() : disp) + '</span></button>' +
-    (nuevo ? '<p class="hero-nuevo">' + (banco ? 'Apunta lo que gastas y aquí verás cuánto te queda este mes.' : 'Apunta lo que cobras y lo que gastas, y aquí verás cómo vas.') + '</p>' : (inicioV3() ? heroCifrasHtml(k, y, m) : heroBarraHtml(k)))) +
+    (nuevo ? '<p class="hero-nuevo">' + (banco ? 'Apunta lo que gastas y aquí verás cuánto te queda este mes.' : 'Apunta lo que cobras y lo que gastas.') + '</p>' : (inicioV3() ? heroCifrasHtml(k, y, m) : heroBarraHtml(k)))) +
     (cu || pr ? '<div class="h2-datos">' + pr + cu + '</div>' : '') + '</section>';
 }
 /* ===== INICIO v3 (22/10, docs/14-inicio-juntos.md): cifras del mes, «Así vas» con iconos y a tu gusto, avisos ===== */
@@ -4998,7 +4998,7 @@ function previstoHtml() {
       fila('Previsto a fin de mes', '', money(pv.total), 'total') + '</div>' +
       (pv.sinImporte.length ? '<div class="rec-hint" style="margin:-4px 0 12px;">' + escapeHtml(pv.sinImporte.join(', ')) + ': sin importe guardado, no se cuenta' + (pv.sinImporte.length > 1 ? 'n' : '') + '.</div>' : '')
       : '<div class="card" style="font-size:14px;">Ahora mismo no queda ningún cobro fijo por llegar en tu mes.</div>') +
-    '<div class="info-card"><span class="info-ic">' + ic('sparkle') + '</span><div><b>Es una previsión, no un dato real.</b> Se calcula con el importe de tus cobros y pagos fijos, y tu nómina puede variar de un mes a otro. Sirve para planificarte.</div></div>' +
+    '<div class="info-card"><span class="info-ic">' + ic('sparkle') + '</span><div><b>Es una previsión, no un dato real.</b> Se calcula con el importe de tus cobros y pagos fijos, y tu nómina puede variar de un mes a otro.</div></div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('openRecurrentes') + '>Ver mis fijos</button><button class="btn accent block" ' + act('closeSheet') + '>Entendido</button></div>';
 }
 /* «Tu mes»: del 1 al 31, o desde el día que cobras */
@@ -5024,7 +5024,7 @@ function tuMesHtml() {
   const op = (k, t, d, extra) => '<button type="button" class="tumes-op' + (F.modo === k ? ' on' : '') + '" role="radio" aria-checked="' + (F.modo === k) + '" ' + act('tuMesModo', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + t + '</b><span>' + d + '</span></span></button>' + (F.modo === k && extra ? extra : '');
   const dias = []; for (let d = 2; d <= 31; d++) dias.push(d);
   return '<div class="handle"></div><h2>Tu mes</h2>' +
-    '<div class="rec-hint" style="margin:-8px 0 14px;">Elige cuándo empieza tu mes. Solo cambia cómo se agrupan tus números: no se mueve ni se borra nada.</div>' +
+    '<div class="rec-hint" style="margin:-8px 0 14px;">Elige cuándo empieza tu mes. No se mueve ni se borra nada.</div>' +
     '<div role="radiogroup" aria-label="Cuándo empieza tu mes">' + op('natural', 'Del 1 al 31', 'El mes del calendario. ' + ej({ modo: 'natural', dia: 1 }) + '.') +
     op('nomina', 'Desde que llega mi nómina', 'Empieza el día que te llega de verdad, aunque se adelante o se retrase.', tuMesNominaHtml()) +
     op('cobro', 'Desde un día fijo', 'Tu mes va de un día fijo al siguiente. ' + ej({ modo: 'cobro', dia: F.dia }) + '.',
@@ -5234,7 +5234,7 @@ function basico() { return nivel() === 'basico'; }
    «Lo básico / Todo» (nivel) sigue aparte: dice cuánto se pliega lo que está encendido.
    ============================================================ */
 const HERRAMIENTAS = [
-  { k: 'gastos', ic: 'arrowDown', n: 'Gastos e ingresos', f: 'Lo que entra y lo que sale. Es la base: siempre está.', base: true },
+  { k: 'gastos', ic: 'arrowDown', n: 'Gastos e ingresos', f: 'Lo que entra y lo que sale.', base: true },
   { k: 'presupuestos', ic: 'checkCircle', n: 'Presupuestos', f: 'Un tope al mes para cada cosa, y aviso si te pasas.', datos: () => catsGasto().some((c) => num(c.presupuesto) > 0) },
   { k: 'metas', ic: 'target', n: 'Metas de ahorro', f: 'Aparta para un viaje o un colchón y mira cuánto te falta.', datos: () => metasCfg().length > 0 },
   { k: 'inversiones', ic: 'trendUp', n: 'Inversiones', f: 'Lo que tienes invertido y cuánto ganas.', datos: () => (S.movimientos || []).some((m) => m.tipo === 'Inversión') },
@@ -5273,7 +5273,7 @@ function herrPistaHtml(donde) {
   if (!S.config || basico() || cfg().herrPista === 'fuera') return '';
   const n = herrApagadas(), total = herrLista().filter((d) => !d.base).length;
   if (donde === 'inicio' ? n < Math.max(3, Math.ceil(total / 2)) : n < 1) return '';
-  return '<div class="herr-pista ' + donde + '"><button type="button" class="herr-pista-t tappable" ' + act('herrPistaIr') + '><span class="herr-pista-ic">' + ic('sliders') + '</span><span>Puedes activar más herramientas en <b>Tú → Mis herramientas</b></span></button>' +
+  return '<div class="herr-pista ' + donde + '"><button type="button" class="herr-pista-t tappable" ' + act('herrPistaIr') + '><span class="herr-pista-ic">' + ic('sliders') + '</span><span>Más herramientas en <b>Tú → Mis herramientas</b></span></button>' +
     '<button type="button" class="herr-pista-x" aria-label="No volver a enseñarlo" ' + act('herrPistaFuera') + '>' + ic('close') + '</button></div>';
 }
 function agendaOn() { return herrOn('agenda'); }
@@ -5321,7 +5321,7 @@ const DESCUBRE = [
   { k: 'agenda', ic: 'calendar', n: 'Agenda y tareas', f: 'Lo que tienes que hacer, con su día, y aviso en Inicio.', b: 'Probar', a: ['irAgenda', ['tareas']], si: () => (S.tareas || []).length > 0 },
   { k: 'presu', ic: 'checkCircle', n: 'Presupuestos', f: 'Elige cuánto quieres gastar al mes en cada cosa.', b: 'Activar', a: ['openListEditor', ['categoriasGasto']], si: () => catsGasto().some((c) => num(c.presupuesto) > 0) },
   { k: 'fijos', ic: 'repeat', n: 'Cobros y pagos fijos', f: 'La nómina y los recibos, para ver cómo acabarás el mes.', b: 'Activar', a: ['openRecurrentes', []], si: () => (cfg().cobros || []).concat(cfg().facturas || []).some((x) => x && x.nombre) },
-  { k: 'importar', ic: 'fileIn', n: 'Importar del banco', f: 'Trae el extracto o un Excel y lo colocamos solo, sin duplicados.', b: 'Probar', a: ['impAbrir', []], si: () => (cfg().importLotes || []).length > 0 },
+  { k: 'importar', ic: 'fileIn', n: 'Importar del banco', f: 'Trae el extracto o un Excel y lo coloco solo, sin duplicados.', b: 'Probar', a: ['impAbrir', []], si: () => (cfg().importLotes || []).length > 0 },
   { k: 'metas', ic: 'target', n: 'Metas de ahorro', f: 'Aparta para un viaje o un colchón y mira cuánto te falta.', b: 'Activar', a: ['metaNueva', []], si: () => metasCfg().length > 0 || (S.objetivos || []).some((o) => o.tipo === 'ahorro') },
   { k: 'deudas', ic: 'deuda', n: 'Deudas', f: 'Un préstamo o la tarjeta: cuánto queda y cuándo acabas.', b: 'Activar', a: ['deudaNueva', []], si: () => (cfg().deudas || []).some((d) => d && d.nombre) },
   { k: 'inversiones', ic: 'trendUp', n: 'Inversiones', f: 'Lo que tienes invertido y cuánto ganas.', b: 'Probar', a: ['crearIr', ['inversion']], si: () => (S.movimientos || []).some((m) => m.tipo === 'Inversión') },
@@ -5343,7 +5343,6 @@ function descubreHtml() {
     '<div class="desc-tramos" aria-hidden="true">' + ds.map((d, i) => '<i class="' + (i < n ? 'on' : '') + '"></i>').join('') + '</div>' +
     '<div class="desc-lista">' + ds.filter((d) => !d.hecha).concat(ds.filter((d) => d.hecha)).map(fila).join('') + '</div>' +
     descEsperanHtml() +
-    '<p class="rec-hint desc-pie">Y en Tú también: Reglas de categorías, Tu mes, Compartir mi agenda, Ocultar cifras, Copia de seguridad, Aspecto.</p>' +
     (basico() ? '<div class="desc-todo"><button type="button" class="btn ghost block" ' + act('descTodo') + '>Quiero verlo todo ya</button></div>' : ''); // al final de la lista, sin quedarse fijo abajo
 }
 // 13/11 (docs/45 §3.4): lo apagado en «Mis herramientas» no desaparece sin nombre: «N herramientas más esperando» con «Encender»
@@ -5365,7 +5364,7 @@ function descTuHtml() {
 function nivelHtml() {
   const v = (FORM && FORM.v) || nivel(), op = (k, t, d) => '<button type="button" class="av-op' + (v === k ? ' on' : '') + '" role="radio" aria-checked="' + (v === k) + '" ' + act('nivelElegir', k) + '><span class="av-op-t"><b>' + t + '</b><span class="nivel-d">' + d + '</span></span><span class="av-radio"></span></button>';
   return '<div class="handle"></div><h2>Qué ves en la app</h2><div class="nivel-ops">' + op('basico', 'Lo básico', 'Lo justo para apuntar y compartir. Lo demás, plegado y en Descubre PalomApp.') + op('todo', 'Todo', 'Todas las herramientas a la vista, en el + y en Tú.') + '</div>' +
-    '<p class="rec-hint">No se borra ni se pierde nada: solo cambia lo que ves. Lo puedes cambiar cuando quieras.</p>' +
+    '<p class="rec-hint">No se borra nada: solo cambia lo que ves.</p>' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('nivelGuardar') + '>Guardar</button></div>';
 }
 /* ---- «Primeros pasos» (solo en «Lo básico»): 3 filas que se marcan solas ---- */
@@ -5383,7 +5382,7 @@ function ppFilasBase() {
   }
   return [{ ic: 'plus', t: 'Apunta tu primer gasto', d: herrOn('tickets') ? 'O hazle una foto al ticket.' : 'Lo que te has gastado hoy.', a: act('crearIr', 'gasto'), hecho: (S.movimientos || []).length > 0 }].concat(compartidosDisponible() && juntosOn() ? [
     { ic: 'users', t: 'Comparte un gasto con alguien', d: 'Basta con su nombre: no hace falta que tenga la app.', a: act('crearIr', 'compartido'), hecho: cs.some(compMio) }] : []).concat([
-    { ic: 'bank', t: 'Pon el saldo de tu banco', d: 'Así sabrás lo que te queda de verdad.', a: act('openCuentas'), hecho: cuentasCfg().some(conSaldo) }]); // sin Juntos disponible, la fila de compartir no sale
+    { ic: 'bank', t: 'Pon el saldo de tu banco', d: 'Copia el de la app de tu banco.', a: act('openCuentas'), hecho: cuentasCfg().some(conSaldo) }]); // sin Juntos disponible, la fila de compartir no sale
 }
 // estado: '' (no sale), 'tarjeta', 'linea' (plegada a los 7 días) o 'hecho' (¡Ya lo tienes!, ese día)
 function ppEstado() {
@@ -5418,7 +5417,7 @@ function sugCandidatas() {
   if (manual.length >= 2 && ticketsDisponible() && !(tk.usados > 0) && tk.quedan !== 0) out.push({ k: 'ticket', ic: 'camera', t: '¿Tienes el ticket a mano?', f: 'Hazle una foto y la app apunta el total por ti.', b: 'Probar', a: ['ticketFoto', []] });
   if (cuentasCfg().some((c) => conSaldo(c) && c.fecha && String(c.fecha).slice(0, 10) < hoy)) out.push({ k: 'metas', ic: 'target', t: '¿Ahorras para algo?', f: 'Un viaje, la entrada de la casa, un colchón…', b: 'Crear meta', a: ['metaNueva', []] });
   const hace14 = addDaysISO(hoy, -14);
-  if (manual.filter((m) => (m.fecha || '') >= hace14).length >= 15) out.push({ k: 'importar', ic: 'fileIn', t: '¿Te cansas de apuntar?', f: 'Trae el extracto de tu banco y lo colocamos solo.', b: 'Importar', a: ['impAbrir', []] });
+  if (manual.filter((m) => (m.fecha || '') >= hace14).length >= 15) out.push({ k: 'importar', ic: 'fileIn', t: '¿Te cansas de apuntar?', f: 'Trae el extracto de tu banco y lo coloco solo.', b: 'Importar', a: ['impAbrir', []] });
   const plazos = movs.filter((m) => (m.tipo === 'Gasto' || m.tipo === 'Factura') && /prestamo|hipoteca|financiacion|cuota/.test(normDesc((m.descripcion || '') + ' ' + (m.categoria || '') + ' ' + (m.subcategoria || ''))));
   if (new Set(plazos.map((m) => mesDe(m.fecha || ''))).size >= 2) out.push({ k: 'deudas', ic: 'deuda', t: '¿Estás pagando algo a plazos?', f: 'Apúntalo como deuda y verás cuánto te queda y cuándo acabas.', b: 'Apuntar deuda', a: ['deudaNueva', []] });
   if (d >= 13 && (S.movimientos || []).length >= 20) out.push({ k: 'inicio', ic: 'sliders', t: 'Pon en Inicio lo que más miras', f: 'Una meta, tus cuentas, el calendario de gastos…', b: 'Elegir', a: ['iwEditar', []] });
@@ -5624,7 +5623,7 @@ function iwInvHtml(x, i) {
   const vigente = Hs && Hs.clave === clave && Date.now() - Hs.ts < (Hs.error ? 60000 : 600000);
   // los precios se piden solo cuando la pieza se ve en pantalla (y se guardan 10 minutos)
   if (!vigente && i >= 0 && activosDisponible()) { S._iwInvPend = { ids, desde, clave }; setTimeout(iwInvObservar, 0); }
-  if (!Hs || Hs.clave !== clave || Hs.error || !Object.keys(Hs.series || {}).length) return iwCaja('inv', tit, per[1], a, '<div class="iw-invb" data-iw-inv="1">' + (Hs && Hs.clave === clave && Hs.error ? iwVacio('No hemos podido cargar los precios.') : iwVacio('Cargando precios…')) + '</div>');
+  if (!Hs || Hs.clave !== clave || Hs.error || !Object.keys(Hs.series || {}).length) return iwCaja('inv', tit, per[1], a, '<div class="iw-invb" data-iw-inv="1">' + (Hs && Hs.clave === clave && Hs.error ? iwVacio('No he podido cargar los precios.') : iwVacio('Cargando precios…')) + '</div>');
   const serie = serieCartera(movs, Hs.series); conRentab(serie);
   if (serie.length < 2) return iwCaja('inv', tit, per[1], a, iwVacio('Aún no hay suficientes días para la gráfica.'));
   const ini = per[2] ? addDiasISO(todayISO(), -per[2]) : desde; let i0 = serie.findIndex((p) => p.d >= ini); if (i0 < 0) i0 = 0;
@@ -5728,7 +5727,7 @@ function balanceAnioHtml(y) {
     if (peor.disponible < 0) { const c = Object.entries(gastoPorCategoria(peor.movs)).sort((a, b) => b[1] - a[1])[0]; if (c && c[1] > 0) txt += ' Lo que más pesó: ' + (c[0] && c[0] !== 'undefined' && c[0] !== 'null' ? c[0] : 'Sin categoría') + ' (' + moneyShort(c[1]) + ').'; }
     L.push(['arrowDown', txt]); }
   if (conAnt.length === 12) { const d = t.disponible - ant.t.disponible; L.push(['comparar', 'Frente a ' + (y - 1) + ': ' + (Math.abs(d) < 0.5 ? 'el mismo balance.' : money(Math.abs(d)) + (d > 0 ? ' más' : ' menos') + ' a tu favor.')]); }
-  else if (conAnt.length) L.push(['info', 'De ' + (y - 1) + ' solo tienes apuntes desde ' + MESES[conAnt[0].m - 1].toLowerCase() + ', así que no comparamos los dos años.']);
+  else if (conAnt.length) L.push(['info', 'De ' + (y - 1) + ' solo tienes apuntes desde ' + MESES[conAnt[0].m - 1].toLowerCase() + ', así que no comparo los dos años.']);
   return html + '<section class="card bal-frente"><div class="bal-cab"><span class="bal-ic">' + ic('sparkle') + '</span><span>Lo destacado de ' + y + '</span></div>' +
     L.slice(0, 5).map(([i, tx]) => '<div class="bal-lin"><span class="bal-lin-ic">' + ic(i) + '</span><span>' + escapeHtml(tx) + '</span></div>').join('') + '</section>';
 }
@@ -5834,7 +5833,7 @@ function infAjustesHtml() {
   const ahora = [['w:' + lunesDe(todayISO()), 'Esta semana'], ['m:' + mesDe(todayISO()), 'Este mes'], ['a:' + mesActual().y, 'Lo que llevas de año']];
   const ant = INF_TIPOS.filter(([t]) => C.on[t]).map(([t]) => infUltimo(t)).filter((c) => infPeriodo(c).k.movs.length);
   return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('infVer', (FORM && FORM.clave) || infUltimo('mes')) + '>' + ic('chevL') + ' Informes</button><h2>Tus informes</h2>' +
-    '<p class="sheet-sub">Se hacen en tu móvil, sin coste y sin que salga ningún dato. Cuando hay uno nuevo, te avisamos en Inicio.</p>' +
+    '<p class="sheet-sub">Se hacen en tu móvil, sin que salga ningún dato. Te aviso en Inicio.</p>' +
     '<div class="card inf-togs">' + INF_TIPOS.map(tog).join('') + '</div>' +
     '<div class="section-title">Hazme uno ahora</div><div class="chips">' + ahora.map(([c, l]) => '<button type="button" class="chip" ' + act('infVer', c) + '>' + l + '</button>').join('') + '</div>' +
     (ant.length ? '<div class="section-title">Los últimos</div><div class="card inf-lista">' + ant.map((c) => { const P = infPeriodo(c); return '<button type="button" class="inf-li tappable" ' + act('infVer', c) + '><span><b>' + escapeHtml(P.titulo) + '</b><small>' + (INF_TIPOS.find((x) => x[0] === P.tipo) || [])[2] + '</small></span>' + (!vistos[c] ? '<span class="badge-new">NUEVO</span>' : '') + ic('chevR') + '</button>'; }).join('') + '</div>' : '');
@@ -6221,7 +6220,7 @@ function renderJuntosV2() {
   const frase = !gs.length ? 'Aún no compartes con nadie' : 'En ' + (nG ? (nG === 1 ? 'tu grupo' : 'tus ' + nG + ' grupos') : '') + (nG && conSolas ? ' y con cada persona' : !nG ? 'lo que compartes con cada persona' : '') + ', todo sumado';
   const ficha = (k, t, v, n, cls) => '<button type="button" class="jv-ficha ' + cls + (f === k ? ' on' : '') + '" ' + act('juntosFiltro', f === k ? '' : k) + '><span>' + t + '</span><b class="tnum">' + money(v) + '</b><i>' + (n ? n + (n === 1 ? ' persona' : ' personas') : 'nadie') + '</i></button>';
   if (!gs.length && !hayComp) return '<div class="card jv-vacio"><span class="jv-vacio-ic">' + ic('users') + '</span><h2>Comparte gastos con quien quieras</h2>' +
-    '<p>Divide una cena, un viaje o la casa: aquí verás quién debe a quién y lo saldáis en un toque.</p>' +
+    '<p>Divide una cena, un viaje o la casa, y saldad en un toque.</p>' +
     (basico() ? '<p class="jv-sin-app">¿Tus amigos no tienen PalomApp? No pasa nada: añádelos por su nombre.</p>' : '') +
     '<button class="btn accent block" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button>' +
     '<button class="btn ghost block" ' + act('openGrupos') + '>' + ic('users') + ' Crear un grupo</button></div>';
@@ -6283,7 +6282,7 @@ function personaVerHtml(uid, pedir) {
     (x.deudas.length > 1 ? '<div class="card jv-desg-card">' + desg + '</div><div class="rec-hint" style="margin:-4px 0 10px;">Toca un grupo para ver de dónde sale.</div>' : '<button type="button" class="link jv-origen" ' + act('origenVer', x.deudas[0].gid, uid) + '>' + ic('list') + ' ¿De dónde sale?</button>') +
     (debo ? '<button class="btn accent block" ' + act('saldarTodo', uid) + '>Saldar ' + money(tot) + '</button>'
       : '<div class="jv-msg">' + escapeHtml(msg) + '</div><a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">' + ic('send') + ' Pedir por WhatsApp</a>' +
-        '<button class="btn ghost block" style="margin-top:8px;" ' + act('saldarTodo', uid) + '>Ya me ha pagado</button>') +
+        '<button class="btn ghost block" style="margin-top:8px;" ' + act('saldarTodo', uid) + '>Me ha pagado</button>') +
     (dest ? '<button type="button" class="link" style="margin-top:12px;" ' + act('compRapido', dest) + '>' + ic('plus') + ' Compartir un gasto con ' + escapeHtml(String(x.nombre).split(' ')[0]) + '</button>' : '') +
     (comps.length ? '<div class="section-title">Lo último que habéis compartido</div><div class="list">' + comps.map(compRowGrupo).join('') + '</div>' : '');
 }
@@ -6297,8 +6296,8 @@ function saldarTodoHtml() {
     '<div class="card jv-desg-card">' + mias.map((d) => { const g = grupoDe(d.gid), mia = d.de === yo; return '<div class="jv-desg"><span>' + escapeHtml(g && g.tipo === 'directo' ? 'Solo vosotros dos' : g ? g.nombre : 'Grupo') + '</span><span class="tnum">' + (mia ? 'le pagas ' : 'te paga ') + '<b class="' + (mia ? 'neg' : 'pos') + '">' + money(d.importe) + '</b></span></div>'; }).join('') + '</div>' +
     (hayVariasCuentas() ? '<div class="field"><label>' + (debo ? 'Desde la cuenta' : 'A la cuenta') + '</label><div class="chips" id="saldarCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (F.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('saldarCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
     '<div class="field jv-fecha"><label>Fecha</label><button type="button" class="chip active" id="sFechaChip" ' + act('sFechaVer') + '>' + ic('calendar') + ' Hoy</button><input id="sFecha" type="date" value="' + todayISO() + '" hidden></div>' +
-    '<div class="rec-hint" style="margin-bottom:10px;">Apúntalo cuando el dinero ya se haya enviado (Bizum, transferencia o en mano). No cuenta como gasto ni como ingreso: solo deja las cuentas a cero.</div>' +
-    '<button class="btn accent block" ' + act('saldarTodoGuardar') + '>' + (debo ? 'Ya le he pagado ' : 'Ya me ha pagado ') + money(tot) + '</button>' +
+    '<div class="rec-hint" style="margin-bottom:10px;">Apúntalo cuando ya se haya pagado. No cuenta como gasto ni ingreso.</div>' +
+    '<button class="btn accent block" ' + act('saldarTodoGuardar') + '>' + (debo ? 'Le he pagado ' : 'Me ha pagado ') + money(tot) + '</button>' +
     (mias.length === 1 ? '<button type="button" class="link" style="margin-top:10px;" ' + act('saldarAbrir', mias[0].gid, mias[0].de, mias[0].a, mias[0].importe) + '>Pagar solo una parte</button>' : '');
 }
 /* ---- dentro de un grupo: lo tuyo arriba y «Gastos | Saldos»; lo de administrar en «Ajustes» ---- */
@@ -6652,7 +6651,6 @@ function temaResumenHtml(g, t) {
   if (!t.cerrada && temaCandidatos(g.id, t).length) h += '<button type="button" class="btn ghost block tema-meter-b" ' + act('temaMeterAbrir', t.id) + '>' + ic('plus') + ' Añadir gastos ya apuntados' + (temaEsViaje(t) ? ' al viaje' : '') + '</button>';
   if (FORM && FORM.temaCerrarPre === t.id) { const pend = deudasDe(g.id).length;
     h += '<div class="card tema-cierre"><b>' + (temaEsViaje(t) ? 'Cómo quedó el viaje' : 'Cerrar «' + escapeHtml(t.nombre) + '»') + '</b>' +
-      '<span>' + escapeHtml(money(tot) + ' ' + entre + ' · tu parte ' + money(mia) + (dias > 1 ? ' · unos ' + Math.round(tot / dias).toLocaleString(LOC()) + ' € al día' : '')) + '</span>' +
       (pend ? '<span class="tema-cierre-av">' + ic('alert') + ' Aún ' + (pend === 1 ? 'hay 1 pago' : 'hay ' + pend + ' pagos') + ' para quedar en paz en el grupo. <button type="button" class="link" ' + act('grupoTab', 'saldos') + '>Ver saldos</button></span>' : '<span class="tema-cierre-ok">' + ic('checkCircle') + ' Estáis en paz en el grupo.</span>') +
       '<span class="tema-cierre-n">Al cerrarlo ya no sale al apuntar gastos. Se puede volver a abrir.</span>' +
       '<div class="actions"><button class="btn ghost block" ' + act('temaCerrarNo') + '>Ahora no</button><button class="btn accent block" ' + act('temaCerrar', t.id) + '>' + (temaEsViaje(t) ? 'Cerrar el viaje' : 'Cerrar tema') + '</button></div></div>'; }
@@ -6661,7 +6659,7 @@ function temaResumenHtml(g, t) {
   if (quien.length && tot > 0) h += '<div class="tema-sec">Quién pagó qué</div><div class="tema-quien">' + quien.map((u) => '<div class="tema-q"><span>' + escapeHtml(esMio(g.id, u) ? 'Tú' : nombreDe(g.id, u)) + '</span><span class="tema-q-bar"><i style="width:' + (pagos[u] / tot * 100).toFixed(1) + '%;background:' + colorPersona(u) + '"></i></span><b class="tnum">' + money(pagos[u]) + '</b></div>').join('') + '</div>';
   if (cs.length && tot > 0) h += '<div class="tema-sec">En qué se fue</div><div class="tema-cats" aria-hidden="true">' + cs.map(([k, v]) => '<i style="flex:' + (v / tot).toFixed(4) + ';background:' + colorCat(k) + '"></i>').join('') + '</div>' +
     '<div class="tema-cats-l">' + cs.map(([k, v]) => '<span><i style="background:' + colorCat(k) + '"></i>' + escapeHtml(k) + ' ' + Math.round(v / tot * 100) + ' %</span>').join('') + '</div>';
-  h += '<div class="rec-hint tema-saldos">Quién debe a quién se ve en <button type="button" class="link" ' + act('grupoTab', 'saldos') + '>Saldos</button>, con todo el grupo junto.</div>';
+  h += '<div class="rec-hint tema-saldos">Quién debe a quién, en <button type="button" class="link" ' + act('grupoTab', 'saldos') + '>Saldos</button>.</div>';
   const lista = gs.slice().sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
   h += lista.length ? '<div class="list">' + lista.map(compRowGrupo).join('') + '</div>' : '<div class="jv-tuyo paz">' + ic('tag') + '<span>Aún no hay gastos en este tema.</span></div>';
   return h;
@@ -6915,7 +6913,7 @@ function planesGrupoHtml(g) {
 }
 function abrirCompRapido(dest, pre) {
   const yo = miUid(); pre = pre || {};
-  FORM = { kind: 'compRapido', tipo: 'Gasto', id: null, compId: null, comp: { on: true }, importe: pre.importe || '', desc: pre.desc || '', cat: pre.cat || 'Otros', catTocada: !!pre.cat, fecha: todayISO(), cuenta: cuentaRecordada('') };
+  FORM = { kind: 'compRapido', volverGrupo: S._volverGrupo || null, tipo: 'Gasto', id: null, compId: null, comp: { on: true }, importe: pre.importe || '', desc: pre.desc || '', cat: pre.cat || 'Otros', catTocada: !!pre.cat, fecha: todayISO(), cuenta: cuentaRecordada('') };
   const k = dest || destinoPorDefecto(); if (k) compPrepararDestino(k);
   S._inv = !destinosPara('Gasto').length ? { ctx: 'r' } : null;
   FORM.comp.pagador = FORM.comp.pagador || yo;
@@ -6984,7 +6982,7 @@ function renderDineroV2() {
   const deudas = (cfg().deudas || []).filter((d) => d && d.nombre), dComp = objCompartidos('deuda');
   const nada = !p.nCuentas && !hayInv && !deudas.length && !dComp.length && !ms.activas.length && !ms.hechas.length;
   if (nada) return '<div class="card dm-empezar"><div class="dm-emp-t">Empieza por aquí</div>' +
-    [['bank', 'Pon el saldo de tu banco', 'Así sabrás lo que tienes de verdad', 'openCuentas'], ['target', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva', 'metas'], ['deuda', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva', 'deudas']]
+    [['bank', 'Pon el saldo de tu banco', 'Copia el de la app de tu banco.', 'openCuentas'], ['target', 'Crea tu primera meta', 'Un viaje, la casa, un colchón…', 'metaNueva', 'metas'], ['deuda', 'Apunta una deuda', 'Un préstamo, el coche, la tarjeta…', 'deudaNueva', 'deudas']]
       .filter((x) => herrOn(x[4])).map(([i, t, d, a]) => '<button type="button" class="dm-emp tappable" ' + act(a) + '><span class="dm-ic">' + ic(i) + '</span><span class="dm-emp-x"><b>' + t + '</b><span>' + d + '</span></span>' + ic('chevR') + '</button>').join('') + '</div>';
   if (dineroV3()) return dinero3Html(p, ms, hayInv, deudas, dComp);
   return lqtHtml(p) + dmCuentasHtml() + dmMetasHtml(ms) + (hayInv ? dmInversionesHtml() : '') + dmDeudasHtml(deudas, dComp);
@@ -7026,7 +7024,7 @@ function dinero3Html(p, ms, hayInv, deudas, dComp) {
 const ICONO_CUENTA = { corriente: 'bank', ahorro: 'piggy2', efectivo: 'wallet', broker: 'trendUp', otra: 'wallet' };
 function dm3CuentasHtml(p) {
   const cs = cuentasCfg(), pc = cuentaPrincipal();
-  if (!cs.length) return '<button type="button" class="card dm-emp tappable" ' + act('openCuentas') + '><span class="dm-ic">' + ic('bank') + '</span><span class="dm-emp-x"><b>Pon el saldo de tu banco</b><span>Así sabrás lo que tienes de verdad</span></span>' + ic('chevR') + '</button>';
+  if (!cs.length) return '<button type="button" class="card dm-emp tappable" ' + act('openCuentas') + '><span class="dm-ic">' + ic('bank') + '</span><span class="dm-emp-x"><b>Pon el saldo de tu banco</b><span>Copia el de la app de tu banco.</span></span>' + ic('chevR') + '</button>';
   const conSaldo = cs.filter((c) => cuentaEnTengo(c) && num(saldoCuenta(c)) > 0), tot = conSaldo.reduce((a, c) => a + num(saldoCuenta(c)), 0);
   const barra = tot > 0 && conSaldo.length > 1 ? '<div class="dm3-reparto" aria-hidden="true">' + conSaldo.map((c) => '<i style="width:' + (num(saldoCuenta(c)) / tot * 100).toFixed(1) + '%;background:' + colorCuenta(c) + '"></i>').join('') + '</div>' +
     '<div class="dm3-rep-ley">' + conSaldo.map((c) => '<span><i style="background:' + colorCuenta(c) + '"></i>' + escapeHtml(c.nombre) + ' ' + Math.round(num(saldoCuenta(c)) / tot * 100) + ' %</span>').join('') + '</div>' : '';
@@ -7055,7 +7053,7 @@ function dmComoHtml() {
     fila('En tus cuentas', p.banco, p.banco < 0 ? '−' : '+') + fila('Inversiones, lo que valen hoy', p.inv, '+') +
     (p.ahorroDentro ? '' : fila('Apartado para metas', p.ahorro, '+')) + fila('Deudas, lo que queda', p.deudas, '−') +
     '<div class="dm-como-f tot"><span>Lo que tienes</span><b class="tnum">' + money(p.total) + '</b></div></div>' +
-    '<div class="rec-hint">' + (p.ahorroDentro ? 'Lo apartado para tus metas (' + money(p.ahorro) + ') ya está dentro de tus cuentas: apartar no saca dinero del banco, así que no se suma dos veces. ¿Tienes el ahorro en otra cuenta? Añádela en Tú → Cuentas y saldos. ' : '') +
+    '<div class="rec-hint">' + (p.ahorroDentro ? 'Lo apartado para tus metas (' + money(p.ahorro) + ') ya está dentro de tus cuentas: apartar no saca dinero del banco, así que no se suma dos veces. ¿Tienes el ahorro en otra cuenta? Añádela en Cuentas. ' : '') +
     'Lo de Juntos no cuenta hasta que se paga.' + (p.sinValor ? ' Las inversiones sin precio automático cuentan por lo que aportaste.' : '') + ' Sin intereses.</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Entendido</button></div>';
 }
@@ -7063,7 +7061,7 @@ function dmCuentasHtml() {
   const cs = cuentasCfg();
   return '<div class="section-title" id="dm-cuentas">Cuentas' + (cs.length > 1 ? '<button class="link" ' + act('crearIr', 'traspaso') + '>' + ic('swap') + ' Traspaso</button>' : '') + '<button class="link" ' + act('openCuentas') + '>Editar</button></div>' +
     (cs.length ? '<div class="card dm-cuentas">' + sinSaldoAvisoHtml() + '<div class="list">' + cs.map(cuentaFilaHtml).join('') + '</div></div>'
-      : '<button type="button" class="card dm-emp tappable" ' + act('openCuentas') + '><span class="dm-ic">' + ic('bank') + '</span><span class="dm-emp-x"><b>Pon el saldo de tu banco</b><span>Así sabrás lo que tienes de verdad</span></span>' + ic('chevR') + '</button>');
+      : '<button type="button" class="card dm-emp tappable" ' + act('openCuentas') + '><span class="dm-ic">' + ic('bank') + '</span><span class="dm-emp-x"><b>Pon el saldo de tu banco</b><span>Copia el de la app de tu banco.</span></span>' + ic('chevR') + '</button>');
 }
 
 /* ---- Metas: tres formas de verlas ---- */
@@ -7209,7 +7207,7 @@ function metaVerHtml(k) {
   if (!r.conseguida && r.obj > 0 && r.falta > 0) {
     if (r.fecha && r.dias != null && r.dias < 0) consejo = 'La fecha ya pasó y faltan ' + money(r.falta) + '. Puedes ponerle otra fecha en «Editar».';
     else if (r.fecha && r.necesario != null) consejo = (r.estado === 'verde' ? 'Vas bien: ' : '') + 'Para llegar en ' + mesLargo(r.fecha) + ': ' + money(Math.ceil(r.necesario)) + ' al mes.' + (r.ritmo > 0 ? ' Ahora ' + (vos ? 'apartáis' : 'apartas') + ' unos ' + money(Math.round(r.ritmo)) + '.' : '');
-    else if (r.llegada) consejo = 'A este ritmo (' + money(Math.round(r.ritmo)) + ' al mes) llegarías en ' + mesLargo(r.llegada) + '. Ponle una fecha y te diremos cuánto apartar.';
+    else if (r.llegada) consejo = 'A este ritmo (' + money(Math.round(r.ritmo)) + ' al mes) llegarías en ' + mesLargo(r.llegada) + '. Ponle una fecha y te diré cuánto apartar.';
     else consejo = 'Aún no hay aportaciones recientes. Con un poco cada mes, la verás avanzar.';
   }
   const mas = FORM && FORM.mas;
@@ -7276,7 +7274,7 @@ function aportarRHtml() {
     '<div class="chips dm-ap-chips">' + chips + '</div>' +
     '<div class="cr-res" id="apPrev">' + escapeHtml(prev) + '</div>' +
     '<div class="field jv-fecha"><label>Fecha</label><button type="button" class="chip active" id="apFechaChip" ' + act('apFechaVer') + '>' + ic('calendar') + ' Hoy</button><input id="apFecha" type="date" value="' + todayISO() + '" hidden></div>' +
-    (() => { const dest = cuentaDeMeta(F.key); if (!dest) return '<div class="rec-hint">Apartar no saca dinero del banco: es para que sepas que ese dinero tiene dueño.</div>';
+    (() => { const dest = cuentaDeMeta(F.key); if (!dest) return '<div class="rec-hint">Apartar no saca dinero del banco.</div>';
       if (!F.desde || !cuentaPorId(F.desde) || F.desde === dest) F.desde = cuentaDesdeDefecto(dest);
       return '<div class="field"><label>Desde</label><div class="chips">' + cuentasCfg().filter((c) => c.id !== dest && conSaldo(c)).map((c) => '<button type="button" class="chip' + (F.desde === c.id ? ' active' : '') + '" aria-pressed="' + (F.desde === c.id) + '" ' + act('aportarRDesde', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' +
         '<div class="rec-hint">El dinero pasará de ' + escapeHtml(nombreCuenta(F.desde)) + ' a ' + escapeHtml(nombreCuenta(dest)) + ', donde guardas esta meta. En tu mes cuenta como apartado, igual que siempre.</div>'; })() +
@@ -7620,7 +7618,7 @@ function deudaVerHtml(nombre) {
     msg = 'Acabas en ' + mesLargo(r.acaba) + (dif != null && dif > 0 ? ', ' + dif + (dif === 1 ? ' mes' : ' meses') + ' antes de lo previsto' : dif != null && dif < 0 ? ', ' + (-dif) + (dif === -1 ? ' mes' : ' meses') + ' después de lo previsto' : '') + '. ' + (r.cuota ? 'Pagas ' + money(r.ritmo) + ' al mes.' : 'Pagas unos ' + money(Math.round(r.ritmo)) + ' al mes (lo de los últimos 3 meses).');
     if (r.fecha && r.mes && r.ritmo < r.mes) msg += ' Para acabar en ' + mesLargo(r.fecha) + ' harían falta ' + money(Math.ceil(r.mes)) + ' al mes.';
   } else if (r.fecha && r.mes) msg = 'Para acabar en ' + mesLargo(r.fecha) + ': ' + money(Math.ceil(r.mes)) + ' al mes.';
-  else msg = 'Pon «Pagas al mes» en «Editar» y te diremos cuándo acabas.';
+  else msg = 'Pon «Pagas al mes» en «Editar» y te diré cuándo acabas.';
   // ¿y si pagas más?
   const base = r.ritmo > 0.005 ? r.ritmo : r.mes || 0, extra = Number(F.extra) || 0;
   let simula = '';
@@ -7655,7 +7653,7 @@ function deudaFormHtml() {
     '<div class="field"><label>Ya pagado <span class="hint">· opcional</span></label><input id="dPrevio" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.previo)) + '"></div></div>' +
     '<div><div class="field"><label>Al mes <span class="hint">· opcional</span></label><input id="dCuota" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.cuotaMes)) + '"></div>' +
     '</div>' + mesAnioCampoHtml('Acabar en', 'dFecha', (F.fecha || '').slice(0, 7), 'deudaMes') +
-    '<div class="dm-nota">' + ic('alert') + '<span>«Ya pagado» es lo que pagaste antes de usar la app. No contamos intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</span></div>' +
+    '<div class="dm-nota">' + ic('alert') + '<span>«Ya pagado» es lo que pagaste antes de usar la app. No cuento intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</span></div>' +
     '<div id="dAviso"></div><button class="btn accent block" ' + act('deudaGuardar') + '>Guardar deuda</button>';
 }
 // Selector de mes y año propio (el del sistema enseña «--------- ----»): 12 meses y el año con − y +. Guarda 'AAAA-MM' en un campo oculto
@@ -7699,7 +7697,7 @@ async function deudaGuardar() {
 function deudaCuadrarHtml() {
   const F = FORM, d = deudaPorNombre(F.nombre), r = d ? deudaStats(d) : null;
   if (!r) return deudaVerHtml(F.nombre);
-  return '<div class="handle"></div><h2>Cuadrar con el banco</h2><div class="rec-hint">La app dice que quedan <b>' + money(r.pend) + '</b>. ¿Cuánto te queda según tu banco? Ajustamos «Ya pagado» para que cuadre; no se crea ni se cambia ningún movimiento.</div>' +
+  return '<div class="handle"></div><h2>Cuadrar con el banco</h2><div class="rec-hint">La app dice que quedan <b>' + money(r.pend) + '</b>. ¿Cuánto te queda según tu banco? Ajusto «Ya pagado» para que cuadre; no se crea ni se cambia ningún movimiento.</div>' +
     '<div class="field"><label>¿Cuánto te queda según tu banco?</label><input id="dqBanco" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(F.banco || '') + '"></div>' +
     (F.aviso ? '<div class="dm-consejo k-justo">' + nbEur(escapeHtml(F.aviso)) + '</div>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('deudaVer', F.nombre) + '>Volver</button><button class="btn accent block" ' + act('deudaCuadrarOk') + '>' + (F.aviso ? 'Sí, cuadrar así' : 'Cuadrar') + '</button></div>';
@@ -7712,7 +7710,7 @@ async function deudaCuadrarOk() {
   if (i < 0) return toast('Esta deuda ya no existe');
   const d = lista[i], r = deudaStats(d), pagos = r.pagado - num(d.previo), previo = r2(num(d.objetivo) - pagos - queda);
   if (previo < -0.005 && String(F.banco) !== String(v)) {
-    F.banco = v; F.aviso = 'Tu banco dice que queda más de lo que calcula la app (seguramente por los intereses). Para cuadrar, subiremos el total de la deuda a ' + money(r2(pagos + queda)) + ' y dejaremos «Ya pagado» a 0.';
+    F.banco = v; F.aviso = 'Tu banco dice que queda más de lo que calcula la app (seguramente por los intereses). Para cuadrar, subiré el total de la deuda a ' + money(r2(pagos + queda)) + ' y dejaré «Ya pagado» a 0.';
     return updateSheet(deudaCuadrarHtml());
   }
   lista[i] = previo < -0.005 ? Object.assign({}, d, { objetivo: r2(pagos + queda), previo: 0 }) : Object.assign({}, d, { previo: Math.max(0, previo) });
@@ -7744,7 +7742,7 @@ function origenHtml(gid, volver) {
   }).filter(Boolean);
   return '<div class="handle"></div><h2>¿De dónde sale?</h2><div class="rec-hint" style="margin-top:-4px;">' + escapeHtml(nombreDestino(g)) + '</div>' +
     '<div class="jv-total ' + (Math.abs(tot) < 0.005 ? 'paz' : tot < 0 ? 'de' : 'te') + '"><span>' + (Math.abs(tot) < 0.005 ? 'Estás en paz' : tot > 0 ? 'Te deben' : 'Debes') + '</span><b class="tnum">' + money(Math.abs(tot)) + '</b></div>' +
-    '<div class="rec-hint">Sumamos lo que has pagado y restamos tu parte de cada gasto. Lo que queda es tu saldo.</div>' +
+    '<div class="rec-hint">Sumo lo que has pagado y resto tu parte de cada gasto. Lo que queda es tu saldo.</div>' +
     (filas.length ? '<div class="card og-card">' + filas.join('') + '<div class="og-f tot"><span>Tu saldo</span><b class="tnum" style="color:' + saldoColor(tot) + '">' + sg(tot) + '</b></div></div>' : '<div class="card empty-mini">Aún no hay nada tuyo en este grupo.</div>') +
     (g.tipo === 'grupo' && g.miembros.length > 2 ? '<div class="rec-hint">Para quedar en paz, la app junta los saldos de todo el grupo y propone los menos pagos posibles. Por eso puede que pagues a alguien que no pagó justo tus gastos: al final, las cuentas cuadran igual.</div>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + (volver ? act('personaVer', volver) : act('grupoVer', gid)) + '>Volver</button></div>';
@@ -7862,7 +7860,7 @@ function histDiaTxt(iso) {
 const HIST_ICONO = { creado: ['plus', 'cr'], editado: ['edit', 'ed'], borrado: ['trash', 'bo'], recuperado: ['history', 're'] };
 function histHtml(gid) {
   const st = histEstado(gid), g = gid ? grupoDe(gid) : null;
-  let h = '<div class="handle"></div><h2>Historial</h2><div class="rec-hint" style="margin-top:-4px;">' + escapeHtml((g ? nombreDestino(g) + ' · ' : '') + 'quién apuntó, cambió o borró') + '</div>';
+  let h = '<div class="handle"></div><h2>Historial</h2><div class="rec-hint" style="margin-top:-4px;">' + escapeHtml(g ? nombreDestino(g) : '') + '</div>';
   if (gid && !g) return h + '<div class="card">Este grupo ya no está disponible.</div>';
   const todas = histJuntar(st.filas);
   const personas = []; todas.forEach((f) => { if (f.por && !personas.some((p) => esMio(gid || f.gid, p) ? esMio(gid || f.gid, f.por) : p === f.por)) personas.push(f.por); });
@@ -8618,7 +8616,7 @@ function bancoElegirHtml() {
   const vis = BANCOS.filter(coincide);
   return '<div class="handle"></div><button class="link volver" ' + act('bancoVolver') + '>' + ic('chevL') + (F.nueva ? ' Cuentas y saldos' : ' Volver') + '</button><h2>¿De qué banco es?</h2>' +
     '<div class="field"><input type="search" id="bcoQ" placeholder="Busca tu banco o bróker" autocomplete="off" value="' + escapeHtml(F.q || '') + '" ' + onInput('bancoBuscar') + '></div><div id="bcoRes">' +
-    (q ? grupo('Resultados', vis) || '<div class="rec-hint">No lo tenemos. Elige «Otro, o sin banco» y ponle tú el nombre.</div>' : grupo('Los más usados', vis.filter((b) => b.tipo === 'banco' && b.top)) + grupo('Brókers e inversión', vis.filter((b) => b.tipo === 'broker')) + grupo('Otros bancos', vis.filter((b) => b.tipo === 'banco' && !b.top))) + '</div>' +
+    (q ? grupo('Resultados', vis) || '<div class="rec-hint">No lo tengo. Elige «Otro, o sin banco» y ponle tú el nombre.</div>' : grupo('Los más usados', vis.filter((b) => b.tipo === 'banco' && b.top)) + grupo('Brókers e inversión', vis.filter((b) => b.tipo === 'broker')) + grupo('Otros bancos', vis.filter((b) => b.tipo === 'banco' && !b.top))) + '</div>' +
     '<button type="button" class="btn ghost block" style="margin-top:12px;" ' + act('bancoElegir', '') + '>' + ic('wallet') + ' Otro, o sin banco</button>' +
     '<div class="rec-hint" style="margin-top:10px;">Los nombres y logos son de cada banco; solo sirven para que reconozcas tu cuenta.</div>';
 }
@@ -8793,7 +8791,7 @@ function saldoVirtual(c, real) { const k = compartidosCuenta(c); return { neto: 
 function cuentaDosSaldosHtml(c, real) {
   const k = saldoVirtual(c, real);
   return '<div class="saldo-virtual"><div><span class="sv-l">Saldo virtual</span><span class="sv-d">contando Juntos: ' + (k.neto ? (k.neto > 0 ? 'te deben ' + money(k.neto) : 'debes ' + money(-k.neto)) : 'estáis en paz') + '</span></div><b class="tnum">' + money(k.v) + '</b></div>' +
-    '<div class="rec-hint" style="margin:6px 2px 12px;">El saldo real es lo que pone tu app del banco: un gasto compartido que pagas tú baja entero, y sube cuando te lo devuelven al saldar (Bizum). El virtual es lo que tendrías si saldarais ahora.</div>';
+    '<div class="rec-hint" style="margin:6px 2px 12px;">Un gasto compartido que pagas tú baja entero y sube cuando te lo devuelven. El virtual es lo que tendrías si saldarais ahora.</div>';
 }
 // en la ficha de una cuenta, los compartidos enseñan lo que salió de ella (no solo tu parte)
 function filasDeCuentaHtml(lista, id) { const prev = S.movCuenta; S.movCuenta = id; try { return lista.map((m) => esTraspaso(m) ? renderTraspasoRow(m, true) : renderMovRowBase(m)).join(''); } finally { S.movCuenta = prev; } }
@@ -8880,7 +8878,7 @@ function openTraspasoForm(id, pre) {
   const conv = !!FORM.convertir, tec = tecladoOn() && !conv;
   if (tec) FORM.tec = { on: !t, txt: tecTxtDe(t ? t.importe : pre.importe), neg: false, sinNeg: true, reemplazar: !!(t || pre.importe), tecla: t ? 'hecho' : 'guardar', pie: 'Escribe cuánto pasas', alGuardar: () => saveTraspaso() };
   const h = '<div class="handle"></div><h2>' + (t ? 'Editar traspaso' : conv ? 'Convertir en traspaso' : 'Traspaso entre cuentas') + '</h2>' +
-    '<div class="rec-hint" style="margin:-6px 0 12px;">' + (conv ? 'Este movimiento dejará de contar como gasto o ingreso y pasará a ser un traspaso entre tus cuentas. No se duplica: es el mismo movimiento.' : 'Pasar dinero de una cuenta tuya a otra (también sacar del cajero). No es gasto ni ingreso: no cambia «Te queda este mes».') + '</div>' +
+    '<div class="rec-hint" style="margin:-6px 0 12px;">' + (conv ? 'Este movimiento dejará de contar como gasto o ingreso y pasará a ser un traspaso entre tus cuentas. No se duplica: es el mismo movimiento.' : 'También para sacar del cajero. No cambia «Te queda este mes».') + '</div>' +
     (tec ? tecCampoHtml(FORM.tec) : '<div class="field"><label>Importe (' + sym() + ')</label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(t ? t.importe : pre.importe) + '"></div>') +
     '<div class="field"><label>Desde</label>' + trasChipsHtml('desde') + '</div>' +
     '<div class="field"><label>A</label>' + trasChipsHtml('a') + '</div>' +
@@ -8944,7 +8942,6 @@ function bancoPoner(k, iFijo) {
 function cuentasHtml() {
   const cs = cfg().cuentas || [];
   return '<div class="handle"></div><h2>Cuentas y saldos</h2>' +
-    '<div class="rec-hint" style="margin:-8px 0 12px;">Toca una cuenta para cambiar su saldo, su tipo o su color.</div>' +
     (cs.length ? '<div class="card cuentas-lista">' + cs.map((c, i) => {
       const v = saldoCuenta(c), pc = cuentaPrincipal();
       return '<button class="row cuenta-fila tappable" ' + act('cuentaEditar', i) + '>' + (bancoFichaHtml(bancoDe(c), 'aj') || '<span class="aj-ic" style="--cc:' + colorCuenta(c) + '">' + ic(ICONO_CUENTA[tipoCuenta(c)] || 'wallet') + '</span>') +
@@ -10305,7 +10302,7 @@ function impHtml() {
   const h2 = (t) => '<div class="handle"></div><h2>' + t + '</h2>';
   if (I.paso === 'archivo') {
     return h2('Importar movimientos') +
-      '<div style="font-size:13.5px;color:var(--text-muted);line-height:1.5;margin:-6px 0 12px;">Sirve para el extracto de tu banco y para tu Excel de gastos. Antes de guardar verás una vista previa, y si importas dos veces el mismo archivo no se duplica nada.</div>' +
+      '<div style="font-size:13.5px;color:var(--text-muted);line-height:1.5;margin:-6px 0 12px;">Verás una vista previa antes de guardar. Si importas dos veces el mismo archivo, no se duplica nada.</div>' +
       '<div class="imp-note imp-formatos">' + ic('fileIn') + ' <span>Formatos: Excel, CSV y Norma 43 de tu banco' + (esAndroidApp() ? '.<br>También puedes compartir el extracto desde la app de tu banco con PalomApp.' : '.') + '</span></div>' +
       '<label class="imp-drop"><input type="file" id="impFile" accept="' + IMP_ACCEPT + '" ' + onChange('impArchivo') + '><span>' + ic('fileIn') + ' Elegir archivo</span></label>' +
       (I.error ? '<div class="alert" style="margin-top:12px;">' + ic('alert') + '<div>' + escapeHtml(I.error) + '</div></div>' : '') +
@@ -10370,7 +10367,7 @@ function impHtml() {
         '<select ' + onChange('impCat', k) + '>' + opts + '</select></div>' +
         (r.otra !== undefined && hayVariasCuentas() && IMP.cuenta ? '<button type="button" class="link imp-volver-tras" ' + act('impTras', k, '1') + '>Es un traspaso</button>' : '')) +
         (r.estado === 'dup' && r.con && r.con.sinCuentaId ? '<label class="imp-asig"><input type="checkbox" ' + (r.asignar ? 'checked' : '') + ' ' + onChange('impAsignar', k) + '> Ponerle la cuenta ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ' (no la tenía)</label>' : '') +
-        (r.estado === 'quizas' && r.con && r.con.sinCuentaId && r.respondido && !r.incluir ? '<div class="rec-hint">Le pondremos la cuenta ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ', que no tenía.</div>' : '') +
+        (r.estado === 'quizas' && r.con && r.con.sinCuentaId && r.respondido && !r.incluir ? '<div class="rec-hint">Le pondré la cuenta ' + escapeHtml(nombreCuenta(IMP.cuenta)) + ', que no tenía.</div>' : '') +
         (r.estado === 'quizas' ? '<div class="imp-mismo"><button type="button" class="chip' + (r.respondido && !r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '1') + '>Es el mismo</button><button type="button" class="chip' + (r.respondido && r.incluir ? ' active' : '') + '" ' + act('impMismo', k, '0') + '>Son distintos</button></div>' : '') +
         (r.ofrecerRegla ? '<button type="button" class="link" style="font-size:12px;" ' + act('impRegla', k) + '>Recordar: «' + escapeHtml(r.ofrecerRegla) + '» → ' + escapeHtml(r.categoria) + '</button>' : '') +
         '</div></div>';
@@ -10389,11 +10386,11 @@ function impHtml() {
       (nTras ? '<div class="imp-note">' + ic('swap') + ' ' + nTras + (nTras === 1 ? ' traspaso entre tus cuentas: no cuenta como gasto ni ingreso.' : ' traspasos entre tus cuentas: no cuentan como gasto ni ingreso.') + '</div>' : '') +
       (ok.some((r) => r.estado === 'otraMitad') ? '<div class="imp-note">✓ ' + ok.filter((r) => r.estado === 'otraMitad').length + ' ya estaban como traspaso desde tu otra cuenta: se omiten.</div>' : '') +
       (nSinC ? '<div class="imp-note">' + ic('fileIn') + ' ' + nSinC + (nSinC === 1 ? ' fila ya estaba importada, pero sin cuenta' : ' filas ya estaban importadas, pero sin cuenta') + '. Van desmarcadas: marca las que quieras poner en ' + escapeHtml(nombreCuenta(cuenta0)) + '. <button type="button" class="link" ' + act('impSinCuentaTodas') + '>Marcar las ' + nSinC + '</button></div>' : '') +
-      (nConv ? '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> ' + nConv + (nConv === 1 ? ' fila parece un traspaso que ya tenías apuntado como gasto o ingreso en tu otra cuenta' : ' filas parecen traspasos que ya tenías apuntados como gasto o ingreso en tu otra cuenta') + '. Dinos si lo convertimos; si no contestas, esa fila no se importa.</div>' : '') +
+      (nConv ? '<div class="imp-note warn"><span class="ic-warn">' + ic('alert') + '</span> ' + nConv + (nConv === 1 ? ' fila parece un traspaso que ya tenías apuntado como gasto o ingreso en tu otra cuenta' : ' filas parecen traspasos que ya tenías apuntados como gasto o ingreso en tu otra cuenta') + '. Dime si lo convierto; si no contestas, esa fila no se importa.</div>' : '') +
       (nArr ? '<div class="imp-note">' + ic('swap') + ' Además se ' + (nArr === 1 ? 'arreglará 1 movimiento' : 'arreglarán ' + nArr + ' movimientos') + ' que ya tenías. Se puede deshacer.</div>' : '') +
       (nImp ? '<div class="imp-note">✓ ' + nImp + (nImp === 1 ? ' fila ya estaba importada' : ' filas ya estaban importadas') + ': se omiten.</div>' : '') +
       (nDup ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nDup + (nDup === 1 ? ' fila ya la tenías' : ' filas ya las tenías') + ' (mismo importe y fecha' + (cuenta0 ? ' en ' + escapeHtml(nombreCuenta(cuenta0)) : '') + ', o ya está en Juntos). Van desmarcadas; márcalas si son distintas.</div>' : '') +
-      (nQ ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nQ + (nQ === 1 ? ' fila se parece' : ' filas se parecen') + ' a algo que apuntaste unos días antes o después. Dinos si es lo mismo.</div>' : '') +
+      (nQ ? '<div class="imp-note warn">' + '<span class="ic-warn">' + ic('alert') + '</span> ' + nQ + (nQ === 1 ? ' fila se parece' : ' filas se parecen') + ' a algo que apuntaste unos días antes o después. Dime si es lo mismo.</div>' : '') +
       (nAnul ? '<div class="imp-note">' + nAnul + (nAnul === 1 ? ' fila anulada por el banco se omite.' : ' filas anuladas por el banco se omiten.') + '</div>' : '') +
       (err.length ? '<div class="imp-note">' + err.length + (err.length === 1 ? ' fila no se ha podido leer' : ' filas no se han podido leer') + ' (sin fecha o importe válidos) y se omiten.</div>' : '') +
       (sinCat ? '<div class="imp-note">' + sinCat + ' sin categoría: se guardarán como «Sin categoría» y podrás cambiarlas luego.</div>' : '') +
@@ -10409,7 +10406,7 @@ function impHtml() {
   if (I.paso === 'importando') return h2('Importando…') + '<div style="color:var(--text-muted);font-size:14px;">Guardando ' + I.total + ' movimientos. No cierres la app.</div>';
   if (I.paso === 'hecho') {
     return h2(I.fallo ? 'Importación incompleta' : '¡Importado!') +
-      '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '<span class="ic-warn">' + ic('alert') + '</span> ' + 'No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '<span class="ic-ok">' + ic('checkCircle') + '</span> ' + (I.hechos ? 'Se han guardado <b>' + I.hechos + '</b> ' + (I.hechos === 1 ? 'movimiento' : 'movimientos') + (hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? ' en <b>' + escapeHtml(nombreCuenta(I.cuenta)) + '</b>.' : '.') : I.arreglados ? '' : 'No había nada nuevo: ya tenías todo lo de este archivo.') + (I.arreglados ? ' Se ' + (I.arreglados === 1 ? 'ha arreglado <b>1</b> movimiento' : 'han arreglado <b>' + I.arreglados + '</b> movimientos') + ' que ya tenías.' : '') + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Más.' : '')) + '</div>' +
+      '<div style="font-size:14px;line-height:1.5;">' + (I.fallo ? '<span class="ic-warn">' + ic('alert') + '</span> ' + 'No se ha podido guardar todo (' + escapeHtml(I.fallo) + '). Lo que sí se guardó está en el lote y puedes deshacerlo.' : '<span class="ic-ok">' + ic('checkCircle') + '</span> ' + (I.hechos ? 'Se han guardado <b>' + I.hechos + '</b> ' + (I.hechos === 1 ? 'movimiento' : 'movimientos') + (hayVariasCuentas() && I.cuenta && cuentaPorId(I.cuenta) ? ' en <b>' + escapeHtml(nombreCuenta(I.cuenta)) + '</b>.' : '.') : I.arreglados ? '' : 'No había nada nuevo: ya tenías todo lo de este archivo.') + (I.arreglados ? ' Se ' + (I.arreglados === 1 ? 'ha arreglado <b>1</b> movimiento' : 'han arreglado <b>' + I.arreglados + '</b> movimientos') + ' que ya tenías.' : '') + (I.configNuevos ? ' También se ha añadido a tu configuración lo nuevo (categorías, facturas, metas…): revísalo en Tú.' : '')) + '</div>' +
       impSaldoTarjetaHtml(I) +
       (I.hechos || I.arreglados ? '<div style="font-size:12.5px;color:var(--text-faint);margin-top:8px;">Si algo no te cuadra, puedes deshacer esta importación entera desde Tú → Importaciones.</div>' : '') +
       '<div class="actions">' + (I.hechos || I.arreglados ? '<button class="btn ghost block" ' + act('impDeshacer', I.lote) + '>Deshacer</button>' : '') + '<button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
@@ -11337,7 +11334,7 @@ function avisosInicioHtml() {
   const fila = (m) => '<div class="av-fila"><button type="button" class="av-txt tappable" ' + act('openMovForm', m.id) + '><b>' + escapeHtml(m.descripcion || m.categoria) + '</b><span>' +
     escapeHtml(fmtDateShort(m.fecha)) + ' · ' + escapeHtml(m.categoria || '') + '</span></button><b class="av-imp tnum ' + (m.tipo === 'Ingreso' ? 'pos' : 'neg') + '">' + (m.tipo === 'Ingreso' ? '+' : '−') + money(m.importe) + '</b>' +
     '<button type="button" class="icon-btn av-borrar" aria-label="Borrar ' + escapeHtml(m.descripcion || '') + '" ' + act('avBorrar', m.id) + '>' + ic('trash') + '</button></div>';
-  return '<div class="card av-card"><div class="av-cab"><span class="ic">' + ic('bell') + '</span><div><b>Apuntados de tus avisos</b><span>Si alguno no es correcto, bórralo o tócalo para cambiarlo.</span></div></div>' +
+  return '<div class="card av-card"><div class="av-cab"><span class="ic">' + ic('bell') + '</span><div><b>Apuntados de tus avisos</b><span>Toca uno para cambiarlo.</span></div></div>' +
     l.slice(0, 5).map(fila).join('') + (l.length > 5 ? '<div class="av-mas">y ' + (l.length - 5) + ' más en Movimientos</div>' : '') +
     '<button type="button" class="btn sm ghost block" ' + act('avVale') + '>Están bien</button></div>';
 }
@@ -11606,7 +11603,7 @@ function guiaCuerpoHtml(G, enBienv) {
   if (p === 'portada') return guiaDibujo('portada') + t('Que se apunten solos') +
     txt(listo ? 'Ya está activado: cuando tu banco te avise de un pago, PalomApp lo apunta por ti.' : 'Cuando tu banco te avise de un pago, PalomApp lo apunta por ti. Son 3 pasos y tardas un minuto.') +
     '<div class="ob2-filas bv-filas">' + obFila('shield', 'v', 'El texto del aviso no sale de tu móvil', 'solo pasa el importe, el comercio y la fecha') + obFila('bank', 'r', 'Solo tus apps de banco y de pagos', 'nunca mensajes, WhatsApp, códigos ni claves') + '</div>';
-  if (p === 'notif') return guiaPuntos(G) + guiaDibujo('notif') + t('Que PalomApp te avise') + txt('Así verás cada pago apuntado y podrás darle a «Deshacer» si no es tuyo.') +
+  if (p === 'notif') return guiaPuntos(G) + guiaDibujo('notif') + t('Que PalomApp te avise') + txt('Para enseñarte cada pago apuntado, con «Deshacer».') +
     '<p class="gd-nota">' + (G.notifNegado ? 'Android ya no pregunta: en los ajustes, activa las <b>Notificaciones</b> de PalomApp.' : 'En la ventana que sale, toca <b>Permitir</b>.') + '</p>';
   if (p === 'acceso') return guiaPuntos(G) + guiaDibujo('acceso') + t('Deja que lea los avisos') + txt('Se abrirán los ajustes del móvil. Busca <b>PalomApp</b>, activa el interruptor y toca <b>Permitir</b>. Después vuelve aquí con la flecha de atrás.') +
     (G.intento && !listo ? '<p class="gd-nota">' + ic('alert') + ' Aún no está dado. Vuelve a tocar «Abrir ajustes».</p>' : '');
@@ -11752,7 +11749,7 @@ function guiaIosCuerpo(G) {
     txt('Atajos y PalomApp se hablan bien. Para comprobar tu automatización de verdad, haz un pago pequeño o pide un Bizum de 1 €.'));
   if (G.pruebaEsp) return guiaDibujo('prueba') + t('Esperando tu prueba…') + txt('Haz ahora un pago con Apple Pay o con la tarjeta de tu banco, o pide un Bizum de 1 €. Cuando llegue a PalomApp te lo diré aquí. Puedes salir de la app y volver.') +
     '<p class="gd-nota">' + ic('alert') + ' ¿Tarda? En Atajos, la automatización debe tener <b>Ejecutar inmediatamente</b> y, en «Texto del aviso», <b>Entrada del atajo</b>. Con Apple Pay, en Ajustes → Wallet deja los <b>datos móviles</b> activados.</p>';
-  return guiaDibujo('prueba') + t(i.usado ? '¡Funciona!' : '¡Listo! Ahora, pruébalo') + txt(i.usado ? 'Ya ha llegado tu primer aviso. Lo verás apuntado en Inicio, con «Deshacer». Puedes comprobarlo otra vez cuando quieras.' : 'Pulsa «Comprobar ahora» y haz un pago con tarjeta, o pide a alguien un Bizum de 1 €. Si no quieres pagar nada, en Atajos busca <b>Probar PalomApp</b> y púlsalo: comprueba que Atajos y PalomApp se hablan.');
+  return guiaDibujo('prueba') + t(i.usado ? '¡Funciona!' : '¡Listo! Ahora, pruébalo') + txt(i.usado ? 'Ya ha llegado tu primer aviso. Lo verás en Inicio, con «Deshacer».' : 'Pulsa «Comprobar ahora» y paga con tarjeta o pide un Bizum de 1 €. Sin pagar: en Atajos, pulsa <b>Probar PalomApp</b>.');
 }
 function guiaIosBotones(G) {
   const p = G.paso, i = G.info || {}, viejo = (parseInt(i.ios, 10) || 99) < 27, prim = (t, a) => '<button type="button" class="btn accent block" ' + a + '>' + t + '</button>', link = (t, a) => '<button type="button" class="link gd-link" ' + a + '>' + t + '</button>';
@@ -11858,7 +11855,7 @@ function avComprobarHtml(e, nok) {
     e.muestras.map((m) => '<div class="av-opt"><div><b>' + escapeHtml(m.app || '') + '</b><span>' + escapeHtml(m.texto || '') + '</span></div></div>').join('') +
     '<button type="button" class="btn sm block" ' + act('avCopiarMuestras') + '>Copiar los textos</button></div>';
   h += '<button type="button" class="btn block" ' + act('avProbar') + '>Mandarme un aviso de prueba</button>' +
-    '<p class="rec-hint">¿El aviso de prueba no llega o los avisos del banco dejan de leerse al rato? En algunos móviles (Xiaomi, Huawei, Oppo, Samsung…) hay que abrir los ajustes de PalomApp, poner la batería «Sin restricciones» y, si existe, activar «Inicio automático».</p>' +
+    '<p class="rec-hint">¿No llega o deja de leer al rato? Pon la batería de PalomApp en «Sin restricciones» y, si existe, activa «Inicio automático».</p>' +
     '<button type="button" class="btn sm block" ' + act('avAbrirApp', 'app') + '>Abrir ajustes de PalomApp</button>';
   return h;
 }
@@ -11923,7 +11920,7 @@ async function recConfirmar(kind, idx, iso) {
   const data = Object.assign({ creadoEn: Date.now(), importe, fecha: iso, descripcion: '', metodoPago: '' }, preRec(rc, {}));
   const ok = await write(() => anadir('movimientos', data));
   _busy.delete(lock);
-  if (ok) { marcarRec(rc.key, iso, 'ok'); render(); toast((rc.kind === 'cobro' ? 'Cobro' : 'Pago') + ' registrado: ' + money(importe) + '. Puedes editarlo en Movimientos.'); }
+  if (ok) { marcarRec(rc.key, iso, 'ok'); render(); toast((rc.kind === 'cobro' ? 'Cobro' : 'Pago') + ' registrado: ' + money(importe) + '.'); }
 }
 // Aprender la regla a partir de las fechas reales (sin servidor): prueba todo el catálogo y se queda con la que mejor explica tus fechas.
 function fechasHistorial(tipo, nombre) {
@@ -11973,7 +11970,7 @@ function recListaHtml() {
   const cob = rs.filter((r) => r.kind === 'cobro'), fac = rs.filter((r) => r.kind === 'factura');
   const vacio = (t) => '<div class="card" style="color:var(--text-faint);font-size:13.5px;">' + t + '</div>';
   return '<div class="handle"></div><h2>Cobros y pagos fijos</h2>' +
-    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 6px;">Con cada uno te avisamos en Inicio el día anterior y el mismo día, y lo verás en el calendario.</div>' +
+    '<div style="font-size:13px;color:var(--text-muted);line-height:1.45;margin:-6px 0 6px;">Te aviso en Inicio el día antes y el mismo día.</div>' +
     '<div class="section-title">Ingresos fijos</div>' + (cob.length ? '<div class="list">' + cob.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade tu nómina u otro cobro fijo.')) +
     '<div class="section-title">Pagos fijos</div>' + (fac.length ? '<div class="list">' + fac.map(fila).join('') + '</div>' : vacio('Aún no tienes ninguno. Añade el alquiler, la luz o una suscripción.')) +
     '<button type="button" class="rec-fest tappable" ' + act('festivosAbrir') + '>' + ic('calendar') + '<span>Festivos</span><span class="menu-extra">' + (festivosCfg().on ? escapeHtml((ZONAS_FESTIVOS.find((z) => z[0] === festivosCfg().zona) || [])[1] || '') : 'solo fines de semana') + '</span>' + ic('chevR') + '</button>' +
@@ -12073,7 +12070,7 @@ function festivosHtml() {
       '<div class="rec-ops" role="radiogroup" id="festZonas">' + zs.map(([k, n]) => '<button type="button" class="tumes-op' + (F.zona === k ? ' on' : '') + '" role="radio" aria-checked="' + (F.zona === k) + '" ' + act('festivosZona', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + escapeHtml(n) + '</b></span></button>').join('') + '</div>';
     h += '<div class="section-title">Fiestas de tu pueblo <span class="hint">· opcional</span></div><div class="rec-hint" style="margin-top:-6px;">Cada municipio tiene 2. Pon las de tu sitio de trabajo.</div>' +
       anios.map((a) => '<div class="fest-loc"><span>' + a + '</span>' + [0, 1].map((i) => '<input type="date" aria-label="Fiesta local ' + (i + 1) + ' de ' + a + '" min="' + a + '-01-01" max="' + a + '-12-31" value="' + escapeHtml(((F.locales || {})[a] || [])[i] || '') + '" ' + onChange('festivosLocal', a, i) + '>').join('') + '</div>').join('');
-    if (falta.length) h += '<div class="rec-hint">Aún no tenemos los festivos de ' + falta.join(' y ') + ': ese año solo se saltan los fines de semana.</div>';
+    if (falta.length) h += '<div class="rec-hint">Aún no tengo los festivos de ' + falta.join(' y ') + ': ese año solo se saltan los fines de semana.</div>';
     const rs = recurrentes().filter((rc) => rc.regla && rc.regla.t);
     if (rs.length && F.zona) { const antes = cfg().festivos, ahora = { on: true, zona: F.zona, locales: F.locales || {} };
       const prox = (rc, fz) => { S.config = Object.assign({}, S.config || {}, { festivos: fz }); try { return ocurrencias(rc.regla, todayISO(), uAdd(todayISO(), 400))[0] || null; } finally { S.config = Object.assign({}, S.config, { festivos: antes }); } };
@@ -12398,10 +12395,10 @@ function obHolaHtml(ob) {
   if (bienvNueva(ob) || bienvPasos(ob)) return marcaHtml(72, 'marca-ob') + '<h1 class="ob2-h">¡Hola!</h1><p class="ob2-p">Esto es PalomApp: tus gastos y lo que compartes, en un solo sitio.</p>' +
     '<div class="ob2-filas">' + obFila('plus', 'a', 'Apunta un gasto en dos toques', ticketsDisponible() ? 'o hazle una foto al ticket' : 'o trae el extracto de tu banco') +
     obFila('users', 'b', 'Comparte gastos en Juntos', 'aunque los demás no tengan la app') +
-    obFila('sparkle', 'v', 'Y mucho más, cuando quieras', 'cuentas, metas, presupuestos, agenda… te lo iremos enseñando') + '</div>' +
+    obFila('sparkle', 'v', 'Y mucho más, cuando quieras', 'cuentas, metas, presupuestos, agenda… te lo iré enseñando') + '</div>' +
     '<div class="field"><label for="obNombre">¿Cómo te llamas?</label><input id="obNombre" type="text" maxlength="40" autocomplete="given-name" placeholder="' + escapeHtml(nombreSugerido()) + '" value="' + escapeHtml(ob.nombre || '') + '" ' + onInput('obSet', 'nombre') + '>' +
     '<div class="ob2-ayuda">Así te verán las personas con las que compartas gastos.</div></div>';
-  return marcaHtml(72, 'marca-ob') + '<h1 class="ob2-h">' + (ob.manual ? 'Así es PalomApp' : '¡Hola!') + '</h1><p class="ob2-p">Esto es PalomApp: tu dinero, tus gastos y lo que compartes, en un solo sitio. ' + (ob.manual ? 'Repasa lo básico; aquí no se borra nada.' : 'Lo dejamos listo en un minuto.') + '</p>' +
+  return marcaHtml(72, 'marca-ob') + '<h1 class="ob2-h">' + (ob.manual ? 'Así es PalomApp' : '¡Hola!') + '</h1><p class="ob2-p">Esto es PalomApp: tu dinero, tus gastos y lo que compartes, en un solo sitio. ' + (ob.manual ? 'Repasa lo básico; aquí no se borra nada.' : 'Lo dejo listo en un minuto.') + '</p>' +
     '<div class="ob2-filas">' + obFila('plus', 'a', 'Apunta un gasto en dos toques', ticketsDisponible() ? 'o hazle una foto al ticket' : 'o trae el extracto de tu banco') +
     obFila('chart', 'v', 'Mira cuánto te queda este mes', 'y en qué se te va el dinero') + obFila('users', 'b', 'Comparte gastos en Juntos', 'quién debe a quién, y saldar con un toque') +
     obFila('wallet', 'r', 'Tus cuentas, metas y deudas', 'todo en Dinero, de un vistazo') + '</div>' +
@@ -12430,7 +12427,7 @@ function obNotifHtml(ob) {
   const filas = [['alert', 'r', 'Un pago fijo de mañana sin saldo', 'Si en su cuenta no hay bastante, el día antes']].concat([['repeat', 'a', 'Tus cobros y pagos fijos', 'El día antes, a las 9:00']],
     obHerrOn(ob, 'presupuestos') ? [['checkCircle', 'v', 'Cuando llegas al 80 % de un presupuesto', 'y si te pasas']] : [], obHerrOn(ob, 'metas') ? [['target', 'b', 'Cuando consigues una meta', '']] : [],
     obHerrOn(ob, 'agenda') ? [['calendar', 'b', 'Tus tareas del día', 'Por la mañana, todas juntas']] : []);
-  return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te avisamos de lo importante</h1><p class="ob2-p">PalomApp te avisa solo de lo que te sirve:</p>' +
+  return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te aviso de lo importante</h1><p class="ob2-p">PalomApp te avisa solo de lo que te sirve:</p>' +
     '<div class="ob2-filas">' + filas.map(([i, c, t, d]) => obFila(i, c, t, d)).join('') + '</div>' +
     '<div class="ob2-nota">' + ic('shield') + '<span>Sin publicidad. Como mucho ' + AVISOS_MAX_DIA + ' al día, nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.</span></div>' +
     (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">El móvil no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '');
@@ -12458,7 +12455,7 @@ function obBancoHtml(ob) {
         '<div class="field"><label for="obSaldo">Saldo de hoy</label><label class="cr-imp ob2-saldo"><input id="obSaldo" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(ob.saldo || '').length) + '" value="' + escapeHtml(ob.saldo || '') + '" ' + onInput('obSet', 'saldo') + '><span>' + sym() + '</span></label></div>') +
     ob.extra.map((x, i) => '<div class="ob2-extra"><input type="text" maxlength="30" aria-label="Nombre de la otra cuenta" value="' + escapeHtml(x.nombre) + '" ' + onInput('obSet', 'extra.' + i + '.nombre') + '><input type="text" inputmode="decimal" class="tnum" aria-label="Saldo" placeholder="0 ' + sym() + '" value="' + escapeHtml(x.saldo) + '" ' + onInput('obSet', 'extra.' + i + '.saldo') + '><button type="button" class="ob2-ic" aria-label="Quitar" ' + act('obExtraQuitar', i) + '>' + ic('close') + '</button></div>').join('') +
     '<button type="button" class="link ob2-mas" ' + act('obExtra') + '>' + ic('plus') + (ya.length ? ' Añadir otra cuenta' : ' Añadir efectivo u otra cuenta') + '</button>' +
-    '<div class="ob2-nota">' + ic('shield') + '<span>No nos conectamos a tu banco. Solo tú ves tus cifras.</span></div>';
+    '<div class="ob2-nota">' + ic('shield') + '<span>No me conecto a tu banco. Solo tú ves tus cifras.</span></div>';
 }
 function obMesHtml(ob) {
   const c = cfg(), ya = (c.cobros || []).concat(c.facturas || []).filter((x) => x && x.nombre), tiene = (n) => ya.some((x) => normName(x.nombre) === normName(n));
@@ -12466,7 +12463,7 @@ function obMesHtml(ob) {
   const chip = (n, on, a, dis) => '<button type="button" class="chip' + (on ? ' active' : '') + '"' + (dis ? ' disabled' : '') + ' ' + (dis ? '' : a) + '>' + (on ? ic('check') + ' ' : '') + escapeHtml(n) + '</button>';
   const fila = (f, i) => '<div class="ob2-fijo"><span>' + escapeHtml(f.nombre) + '</span><input type="text" inputmode="decimal" class="tnum" aria-label="Importe de ' + escapeHtml(f.nombre) + '" placeholder="aprox. €" value="' + escapeHtml(f.importe) + '" ' + onInput('obSet', 'fijos.' + i + '.importe') + '><input type="text" inputmode="numeric" class="tnum" aria-label="Día" placeholder="día" value="' + escapeHtml(f.dia) + '" ' + onInput('obSet', 'fijos.' + i + '.dia') + '></div>';
   const elegidos = ob.fijos.map((f) => f.nombre);
-  return '<h1 class="ob2-h">¿Qué se repite cada mes?</h1><p class="ob2-p">Así te avisamos de lo que toca y verás cómo acabarás el mes.</p>' +
+  return '<h1 class="ob2-h">¿Qué se repite cada mes?</h1><p class="ob2-p">Así te aviso de lo que toca y verás cómo acabarás el mes.</p>' +
     '<div class="ob2-sec">Lo que cobras</div>' +
     (nominaYa ? '<div class="ob2-ayuda">' + ic('checkCircle') + ' Ya tienes apuntado: ' + escapeHtml(cobrosYa.map((x) => x.nombre).join(', ')) + '. Para cambiarlo: Tú → Cobros y pagos fijos.</div>'
       : '<div class="ob2-nom">' + chip('Nómina', ob.nomina.on, act('obNomina')) +
@@ -12498,7 +12495,7 @@ function obInviteHtml(ob) {
   const I = ob.invite, i = I.info || {};
   if (I.cargando) return '<h1 class="ob2-h">Abriendo tu invitación…</h1><p class="ob2-p">Un momento.</p>';
   if (!i.valida) {
-    const txt = i.motivo === 'ya_miembro' ? 'Ya eres miembro de «' + escapeHtml(i.nombre || '') + '».' : i.motivo === 'caducada' ? 'Esta invitación ha caducado. Pide un enlace nuevo a quien te invitó.' : i.motivo === 'usada' ? 'Este enlace ya se ha usado. Cada enlace vale para una persona: pide uno nuevo.' : i.motivo === 'red' ? 'No hemos podido abrir la invitación: parece que no hay conexión. Sigue con la bienvenida y la tendrás esperando en Inicio.' : 'No hemos podido abrir esta invitación.';
+    const txt = i.motivo === 'ya_miembro' ? 'Ya eres miembro de «' + escapeHtml(i.nombre || '') + '».' : i.motivo === 'caducada' ? 'Esta invitación ha caducado. Pide un enlace nuevo a quien te invitó.' : i.motivo === 'usada' ? 'Este enlace ya se ha usado. Cada enlace vale para una persona: pide uno nuevo.' : i.motivo === 'red' ? 'No he podido abrir la invitación: parece que no hay conexión. Sigue con la bienvenida y la tendrás esperando en Inicio.' : 'No he podido abrir esta invitación.';
     return '<span class="ob2-big-ic">' + ic('users') + '</span><h1 class="ob2-h">Invitación</h1><p class="ob2-p">' + txt + '</p>';
   }
   const dir = i.tipo === 'directo', quien = escapeHtml(i.invita || (dir ? i.nombre : '') || 'Alguien');
@@ -12920,7 +12917,7 @@ function bvObjHtml(ob) {
   const t = (o) => { const bloq = o.k === 'juntos' && ob.grupoId, on = bloq || !!ob.objs[o.k];
     return bvTarjeta(o.k, o.ic, o.cls, o.n, bloq ? 'Ya estás en ' + escapeHtml(ob.grupoNombre || 'tu grupo') : o.f, on, bloq ? 'aria-disabled="true"' : act('bvObj', o.k), (bloq ? ' bloq' : '') + (ob._objToque === o.k ? ' rebota' : '')); };
   const Lr = L.filter((c) => rec.indexOf(c) < 0), quedan = Lr.length - Lr.indexOf('obj') - 1;
-  return bvPreviaHtml(ob, false) + '<h1 class="ob2-h">¿Para qué quieres PalomApp?</h1><p class="ob2-p">' + (rec.length ? 'Lo dejamos listo en unas ' + quedan + ' pantallas; lo demás, en Primeros pasos.' : 'Elige todo lo que quieras. Lo cambias cuando quieras.') + '</p>' +
+  return bvPreviaHtml(ob, false) + '<h1 class="ob2-h">¿Para qué quieres PalomApp?</h1><p class="ob2-p">' + (rec.length ? 'Lo demás, en Primeros pasos.' : 'Elige todo lo que quieras.') + '</p>' +
     '<div class="bv-cards">' + ds.map(t).join('') + '</div>' +
     '<div class="bv-obj-pie"><button type="button" class="link" ' + act('bvAfinar') + '>' + ic('sliders') + ' Afinar herramienta a herramienta</button></div>';
 }
@@ -12930,7 +12927,7 @@ function bvG1Html(ob) {
   const top = BANCOS.filter((b) => b.tipo === 'banco' && b.top), extra = sel.map((k) => BANCOS.find((b) => b.k === k)).filter((b) => b && top.indexOf(b) < 0);
   const rej = top.concat(extra).map((b) => tile(b.k, bancoFichaHtml(b, 'bv-ficha'), b.n)).join('') +
     tile('otro', '<span class="bco-ficha bv-ficha bv-ficha-ic">' + ic('wallet') + '</span>', 'Otro') + tile('efectivo', '<span class="bco-ficha bv-ficha bv-ficha-ic">' + ic('cash') + '</span>', 'Efectivo');
-  const res = () => { const vis = BANCOS.filter((b) => !q || [b.n, b.k, b.alias].some((x) => normDesc(x).indexOf(q) >= 0)); return vis.length ? vis.map((b) => '<button type="button" class="bco-fila tappable' + (sel.indexOf(b.k) >= 0 ? ' on' : '') + '" ' + act('bvBanco', b.k) + '>' + bancoFichaHtml(b) + '<span>' + escapeHtml(b.n) + '</span>' + (sel.indexOf(b.k) >= 0 ? ic('check') : '') + '</button>').join('') : '<div class="rec-hint">No lo tenemos. Elige «Otro».</div>'; };
+  const res = () => { const vis = BANCOS.filter((b) => !q || [b.n, b.k, b.alias].some((x) => normDesc(x).indexOf(q) >= 0)); return vis.length ? vis.map((b) => '<button type="button" class="bco-fila tappable' + (sel.indexOf(b.k) >= 0 ? ' on' : '') + '" ' + act('bvBanco', b.k) + '>' + bancoFichaHtml(b) + '<span>' + escapeHtml(b.n) + '</span>' + (sel.indexOf(b.k) >= 0 ? ic('check') : '') + '</button>').join('') : '<div class="rec-hint">No lo tengo. Elige «Otro».</div>'; };
   return '<h1 class="ob2-h">¿Cuál es tu banco?</h1><p class="ob2-p">Toca el tuyo. Puedes elegir varios.</p>' +
     (ob.bancosMas ? '<div class="field bv-buscar"><input type="search" id="bvBcoQ" placeholder="Busca tu banco o bróker" aria-label="Busca tu banco o bróker" autocomplete="off" value="' + escapeHtml(ob.bancoQ || '') + '" ' + onInput('bvBancoBuscar') + '></div><div class="card bco-lista bv-bco-res" id="bvBcoRes">' + res() + '</div>' +
       '<button type="button" class="link bv-mas" ' + act('bvBancosMas') + '>' + ic('chevL') + ' Volver a los más usados</button>'
@@ -12941,7 +12938,7 @@ function bvG2Html(ob) {
   if (!fs.length) return '<span class="ob2-big-ic">' + ic('bank') + '</span><h1 class="ob2-h">Tus cuentas ya tienen saldo</h1><p class="ob2-p">Aquí no se cambia nada. Si alguna no coincide con tu banco, usa «Cuadrar» en la cuenta (en Dinero).</p>';
   return '<h1 class="ob2-h">¿Cuánto tienes hoy?</h1><p class="ob2-p">Copia el saldo de la app de tu banco.</p>' +
     '<div class="bv-campos">' + fs.map((f) => bvCampoHtml(ob, f.k, (f.b ? bancoFichaHtml(f.b, 'bv-ficha-s') : '<span class="bco-ficha bv-ficha-s bv-ficha-ic">' + ic(f.efectivo ? 'cash' : 'bank') + '</span>') + '<span class="bv-campo-n">' + escapeHtml(f.nombre) + '</span>', 'Saldo de ' + f.nombre)).join('') + '</div>' +
-    '<div class="ob2-nota bv-nota">' + ic('shield') + '<span>No nos conectamos a tu banco. Solo tú ves tus cifras.</span></div>' + bvTecHtml();
+    '<div class="ob2-nota bv-nota">' + ic('shield') + '<span>No me conecto a tu banco. Solo tú ves tus cifras.</span></div>' + bvTecHtml();
 }
 function bvMesRango(ob) {
   const hoy = parseISO(todayISO());
@@ -12997,21 +12994,21 @@ function bvM1Html(ob) {
     '<div class="bv-metas" role="radiogroup" aria-label="Ideas de meta">' + BV_METAS.map(([k, icono, t]) => { const ej = k === 'colchon' ? '3 meses de gastos' : k === 'otra' ? 'La que quieras' : moneyShort(bvMetaEjemplo(k));
       return '<button type="button" class="bv-plant bv-meta tappable' + (ob.metaPlant === k ? ' on' : '') + '" role="radio" aria-checked="' + (ob.metaPlant === k) + '" ' + act('bvMeta', k) + '>' + ic(icono) + '<span>' + t + '</span><small class="tnum">' + ej + '</small></button>'; }).join('') + '</div>' +
     '<div class="field"><label for="bvMNombre">¿Cómo la llamamos?</label><input id="bvMNombre" type="text" maxlength="40" placeholder="Viaje a Lisboa, Colchón…" value="' + escapeHtml(ob.metaNombre || '') + '" ' + onInput('obSet', 'metaNombre') + '></div>' +
-    (solo ? '<div class="ob2-ayuda">Le ponemos la cifra del ejemplo; la cambias cuando quieras en Dinero.</div>' : '');
+    (solo ? '<div class="ob2-ayuda">Le pongo la cifra del ejemplo; la cambias cuando quieras en Dinero.</div>' : '');
 }
 function bvM2Html(ob) {
   const v = tecNum(ob.vals.meta), n = ob.metaMeses, mes = v > 0 && n ? Math.ceil(v / n / 5) * 5 : 0, ll = n ? Math.min(100, Math.round(100 / n)) : 8;
   const chip = (k, t) => '<button type="button" class="chip' + (n === k ? ' active' : '') + '" aria-pressed="' + (n === k) + '" ' + act('bvMetaPlazo', k) + '>' + t + '</button>';
-  return '<h1 class="ob2-h">¿Cuánto y para cuándo?</h1><p class="ob2-p">Te decimos cuánto apartar al mes.</p>' + bvCampoHtml(ob, 'meta', '<span class="bv-campo-n">' + escapeHtml(String(ob.metaNombre || 'Tu meta')) + '</span>', 'Cuánto quieres juntar') +
+  return '<h1 class="ob2-h">¿Cuánto y para cuándo?</h1><p class="ob2-p">Te digo cuánto apartar al mes.</p>' + bvCampoHtml(ob, 'meta', '<span class="bv-campo-n">' + escapeHtml(String(ob.metaNombre || 'Tu meta')) + '</span>', 'Cuánto quieres juntar') +
     '<div class="chips bv-chips bv-chips4">' + chip(3, '3 meses') + chip(6, '6 meses') + chip(12, '12 meses') + chip(0, 'Sin fecha') + '</div>' +
     '<div class="bv-vivo"><span class="bv-tarro" style="--ll:' + ll + '%"><i></i></span><b>' + (mes ? 'Unos ' + moneyShort(mes) + ' al mes' : n ? 'Pon cuánto quieres juntar' : 'Sin prisa: aparta lo que puedas') + '</b></div>' + bvTecHtml();
 }
 function bvD1Html(ob) {
   const a = bvDeudaAcaba(ob);
-  return '<h1 class="ob2-h">¿Qué estás pagando?</h1><p class="ob2-p">Así verás cuánto te queda y cuándo acabas.</p>' +
+  return '<h1 class="ob2-h">¿Qué estás pagando?</h1>' +
     '<div class="bv-plants bv-plants-s" role="radiogroup" aria-label="Qué deuda">' + BV_DEUDAS.map(([k, icono, t]) => '<button type="button" class="bv-plant tappable' + (ob.deudaPlant === k ? ' on' : '') + '" role="radio" aria-checked="' + (ob.deudaPlant === k) + '" ' + act('bvDeuda', k) + '>' + ic(icono) + '<span>' + t + '</span></button>').join('') + '</div>' +
     '<div class="bv-campos dos">' + bvCampoHtml(ob, 'dq', '<span class="bv-campo-n">Te queda</span>', 'Te queda') + bvCampoHtml(ob, 'dc', '<span class="bv-campo-n">Pagas al mes</span>', 'Pagas al mes') + '</div>' +
-    '<div class="bv-vivo"><span class="ob2-fic r">' + ic('flag') + '</span><b>' + (a ? 'Acabas en ' + MESES[a.getMonth()].toLowerCase() + ' de ' + a.getFullYear() : 'Pon las dos cifras y te decimos cuándo acabas') + '</b></div>' + bvTecHtml();
+    '<div class="bv-vivo"><span class="ob2-fic r">' + ic('flag') + '</span><b>' + (a ? 'Acabas en ' + MESES[a.getMonth()].toLowerCase() + ' de ' + a.getFullYear() : 'Pon las dos cifras y te digo cuándo acabas') + '</b></div>' + bvTecHtml();
 }
 function bvT1Html(ob) {
   const dia = (k, t) => '<button type="button" class="chip' + (ob.tareaDia === k ? ' active' : '') + '" aria-pressed="' + (ob.tareaDia === k) + '" ' + act('bvTareaDia', k) + '>' + t + '</button>';
@@ -13028,7 +13025,7 @@ function bvN1Html(ob) {
   const ord = [filas[0], filas[1]].concat(filas.slice(2).filter((f) => f[0] !== 'checkCircle'), filas.filter((f) => f[0] === 'checkCircle'));
   if (h('juntos')) ord.splice(2, 0, ['users', 'b', 'Lo que te apuntan en Juntos', 'Un gasto contigo o un pago']);
   filas.length = 0; ord.slice(0, 5).forEach((f) => filas.push(f));
-  return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te avisamos de lo importante</h1><p class="ob2-p">Sin publicidad. Máximo ' + AVISOS_MAX_DIA + ' al día.</p>' +
+  return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te aviso de lo importante</h1><p class="ob2-p">Sin publicidad. Máximo ' + AVISOS_MAX_DIA + ' al día.</p>' +
     '<div class="ob2-filas bv-filas">' + filas.map(([i, c, t, d]) => obFila(i, c, t, d)).join('') + '</div>' +
     (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">El móvil no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '<div class="ob2-ayuda">Nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.</div>');
 }
@@ -13036,9 +13033,9 @@ function bvFHtml(ob) {
   const n = String(cfg().nombre || ob.nombre || '').trim().split(' ')[0], P = bvPiezas(ob), pct = bvPct(ob), hizo = P.some(([k, v]) => v && k !== 'gusto');
   const g = bvSellosGanados(ob), sellos = BV_SELLOS.filter(([k]) => g[k]);
   const falta = bvPpPendientes().slice(0, 2).map((f) => f.corto), ap = bvApagadas();
-  if (!hizo) return '<div class="bv-centro">' + marcaHtml(80, 'marca-ob bv-paloma aterriza') + '<h1 class="ob2-h">Todo listo</h1><p class="ob2-p">Te esperamos en Inicio con tus primeros pasos.</p></div>' +
+  if (!hizo) return '<div class="bv-centro">' + marcaHtml(80, 'marca-ob bv-paloma aterriza') + '<h1 class="ob2-h">Todo listo</h1><p class="ob2-p">Te espero en Inicio con tus primeros pasos.</p></div>' +
     (ap.length ? '<div class="bv-esperan">' + ic('sparkle') + '<span><b>' + ap.length + (ap.length === 1 ? ' herramienta más esperando' : ' herramientas más esperando') + ':</b> ' + ap.slice(0, 3).map((d) => '<span>' + d.n + '</span>').join(' · ') + (ap.length > 3 ? ' …' : '') + '</span><button type="button" class="link" ' + act('bvAfinar') + '>Encender</button></div>' : '');
-  return '<div class="bv-centro">' + marcaHtml(64, 'marca-ob bv-paloma aterriza') + '<h1 class="ob2-h">' + (n ? '¡Lista, <span>' + escapeHtml(n) + '</span>!' : '¡Lista!') + '</h1><p class="ob2-p"><span>Tu PalomApp al ' + pct + ' %.</span>' + (pct < 100 ? ' <span>Lo que falta, en Inicio.</span>' : '') + '</p>' +
+  return '<div class="bv-centro">' + marcaHtml(64, 'marca-ob bv-paloma aterriza') + '<h1 class="ob2-h">' + (n ? '¡Lista, <span>' + escapeHtml(n) + '</span>!' : '¡Lista!') + '</h1>' + (pct < 100 ? '<p class="ob2-p"><span>Lo que falta, en Inicio.</span></p>' : '') + '' +
     (sellos.length ? '<div class="bv-sellos" aria-label="Sellos">' + sellos.map(([k, i, t]) => '<span class="bv-sello" title="' + t + '"><i>' + ic(i) + '</i><small>' + t + '</small></span>').join('') + '</div>' : '') + '</div>' +
     bvPreviaHtml(ob, true) +
     (falta.length ? '<div class="bv-falta-l">' + ic('clock') + '<span><span>Te falta:</span> ' + falta.map((x) => '<b>' + escapeHtml(x) + '</b>').join(' · ') + '</span></div>' : '') +
@@ -13098,7 +13095,7 @@ function bvPpCandidatas() {
   const c = cfg(), b = c.bienv || {}, o = bvObjsCfg(), g = bvSellosGanados(null), yo = miUid();
   const gc = b.grupoCreado ? grupoDe(b.grupoCreado) : null;
   const R = {
-    banco: { k: 'banco', ic: 'bank', t: 'Pon el saldo de tu banco', corto: 'tu banco', d: 'Así sabrás lo que te queda de verdad.', a: act('openCuentas'), hecho: g.banco },
+    banco: { k: 'banco', ic: 'bank', t: 'Pon el saldo de tu banco', corto: 'tu banco', d: 'Copia el de la app de tu banco.', a: act('openCuentas'), hecho: g.banco },
     mes: { k: 'mes', ic: 'calendar', t: 'Elige cuándo empieza tu mes', corto: 'tu mes', d: 'Del 1 al 31 o desde el día que cobras.', a: act('tuMesAbrir'), hecho: g.mes },
     piloto: { k: 'piloto', ic: 'bolt', t: 'Que se apunten solos tus pagos', corto: 'los avisos del banco', d: 'Con los avisos de tu banco, y «Deshacer».', a: act('guiaAbrirDesde', ''), hecho: g.piloto, si: () => !!(avNat() || atajosNat()) && herrOn('avisosBanco') },
     grupo: { k: 'grupo', ic: 'users', t: 'Crea tu grupo', corto: 'tu grupo', d: 'Para la casa, la pareja o un viaje.', a: act('openGrupos'), hecho: g.equipo, si: () => compartidosDisponible() && juntosOn() },
@@ -13139,7 +13136,7 @@ function tuMesSugDia() {
 function tuMesSugHtml() {
   const d = tuMesSugDia(); if (!d) return '';
   return '<div class="card inv-ini tumes-sug"><span class="ob2-fic b">' + ic('calendar') + '</span><div class="inv-ini-x"><b>Cobras hacia el día ' + d + '. ¿Empezamos tu mes ese día?</b>' +
-    '<span>Así «Te queda» cuenta desde que cobras hasta el siguiente cobro, y no sale en negativo a mitad de mes.</span>' +
+    '<span>«Te queda» contará de un cobro al siguiente.</span>' +
     '<div class="inv-ini-b"><button class="btn sm accent" ' + act('tuMesSugSi', d) + '>Sí, desde el ' + d + '</button><button class="btn sm ghost" ' + act('tuMesSugNo') + '>No</button></div></div></div>';
 }
 function invitacionInicioHtml() {
@@ -13396,12 +13393,17 @@ function atrasAndroid() {
   if ($('#popupBackdrop')) { cerrarPopup(); return true; } // la ventanita primero (sobre Inicio o sobre una hoja)
   const dsc = $('#descartarHoja'); if (dsc) { dsc.remove(); return true; }
   const b = $('#sheetBackdrop');
-  if (b && !b.dataset.cerrando) { if (atrasEnHoja(b)) return true; if (hojaConAlgoEscrito()) preguntarDescartar(); else closeSheet(); return true; }
+  if (b && !b.dataset.cerrando) { if (atrasEnHoja(b)) return true; if (hojaConAlgoEscrito()) preguntarDescartar();
+    else if (FORM && FORM.volverGrupo && grupoDe(FORM.volverGrupo)) H.grupoVer([FORM.volverGrupo]); // 26/11 (decisión del dueño): de un gasto abierto desde un grupo, atrás vuelve al grupo
+    else closeSheet(); return true; }
   // 13/11 (Calidad): en la bienvenida, atrás vuelve al paso anterior (antes cerraba la app); en el primer paso, sale como siempre
   const ob = S.onboarding;
   if (ob && bienvV2(ob)) { if (ob.confSaltar) { ob.confSaltar = false; render(); return true; } return bvAtras(ob); } // 13/11 (docs/45)
   if (ob) { if (ob.step > 0 && !(ob.grupoId && obPasos(ob)[ob.step - 1] === 'invite')) { H.obBack(); return true; } return false; }
-  if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
+  // 26/11 (decisión del dueño): del calendario de la Agenda, atrás va a la semana; de la Lista de Movimientos, al Resumen
+  if (S.tab === 'inicio' && S.inicioVista === 'calendario') { H.setInicioVista(['tareas']); return true; }
+  if (S.tab === 'inicio' && S.inicioVista === 'tareas') { H.setInicioVista(['hoy']); return true; }
+  if (S.tab === 'movimientos' && !S._movBuscando && movVistaAct() !== 'resumen') { H.setMovVista(['resumen']); return true; }
   if (S.tab === 'movimientos' && S._movBuscando) { H.movBuscarCerrar(); return true; } // 26/11: con la búsqueda abierta, atrás la cierra (antes iba a Inicio)
   if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
   if (S.tab === 'juntos' && S.juntosVer) { S.juntosVer = ''; render(); return true; } // 22/11: de «Por persona» o «Metas», a Juntos
@@ -13714,7 +13716,7 @@ const H = {
   iwCat: () => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.vista = 'cat'; FORM.aviso = ''; updateSheet(iwEdHtml()); },
   iwFiltro: ([k]) => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.filtro = k; updateSheet(iwEdHtml()); },
   iwMover: ([i, d]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; i = Number(i); const j = i + Number(d); if (j < 0 || j >= F.lista.length) return; const t = F.lista[i]; F.lista[i] = F.lista[j]; F.lista[j] = t; F.aviso = ''; sentir('tic'); iwGuardar(); },
-  iwQuitar: ([i]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; const x = F.lista.splice(Number(i), 1)[0]; if (!x) return; F.aviso = IW_TIPOS[x.t].recom ? 'Has quitado «' + IW_TIPOS[x.t].n + '». Te recomendamos tenerla: puedes volver a añadirla cuando quieras.' : ''; sentir('tic'); iwGuardar(); },
+  iwQuitar: ([i]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; const x = F.lista.splice(Number(i), 1)[0]; if (!x) return; F.aviso = IW_TIPOS[x.t].recom ? 'Has quitado «' + IW_TIPOS[x.t].n + '». Te recomiendo tenerla: puedes volver a añadirla cuando quieras.' : ''; sentir('tic'); iwGuardar(); },
   iwAnadir: ([t]) => { const F = FORM; if (!F || F.kind !== 'iwEd' || !IW_TIPOS[t] || F.lista.length >= IW_MAX) return; if (!IW_TIPOS[t].varias && F.lista.some((x) => x.t === t)) return;
     if (IW_TIPOS[t].opc && !IW_TIPOS[t].sinPregunta) { F.vista = 'opc'; F.i = -1; F.nuevo = t; updateSheet(iwEdHtml()); return; }
     F.lista.push({ t }); F.vista = 'lista'; F.aviso = ''; sentir('ok'); iwGuardar(); },
@@ -15157,7 +15159,7 @@ const H = {
   doForgotPassword: async () => {
     const email = ($('#loginEmail').value || '').trim();
     if (!email) return renderLoginScreen('Escribe tu correo arriba y vuelve a tocar el enlace.');
-    try { await window.Auth.resetPassword(email, await captchaCodigo()); renderLoginScreen('Te hemos enviado un correo con instrucciones para cambiar tu contraseña.'); }
+    try { await window.Auth.resetPassword(email, await captchaCodigo()); renderLoginScreen('Te he enviado un correo con instrucciones para cambiar tu contraseña.'); }
     catch (e) { renderLoginScreen('No se pudo enviar el correo. Inténtalo de nuevo en unos minutos.'); }
   },
   doLogout: async () => { if (_movsPend.size) return toast('Espera un momento: aún se está guardando lo último', { aviso: true }); closeSheet(); await limpiarAlSalir(); await window.Auth.signOut(); }, // Calidad 11/11

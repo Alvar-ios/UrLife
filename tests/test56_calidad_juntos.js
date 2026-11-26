@@ -132,7 +132,7 @@ const gasto = (id, gid, imp, pag, rep, desc, por) => ({ id, grupoId: gid, fecha:
   notifyComp(); await sleep(40); A.render(); await sleep(20);
   A.H.personaVer(['sCarlos']); await sleep(20);
   const wa = a.doc.querySelector('#sheetHost a.wa-btn');
-  ok(/Te debe\s*20,00/.test(sh(a)) && wa && /wa\.me/.test(wa.href) && /Ya me ha pagado/.test(sh(a)), 'Carlos (sin app) le debe 20 a Ana: hoja con «Pedir por WhatsApp» y «Ya me ha pagado»');
+  ok(/Te debe\s*20,00/.test(sh(a)) && wa && /wa\.me/.test(wa.href) && /Me ha pagado/.test(sh(a)), 'Carlos (sin app) le debe 20 a Ana: hoja con «Pedir por WhatsApp» y «Ya me ha pagado»');
   A.H.saldarTodo(['sCarlos']); await sleep(20); await A.H.saldarTodoGuardar([]); await sleep(80);
   ok(liqs().some((x) => x.pagadoPor === 'sCarlos' && x.reparto.uA === 20), '«Ya me ha pagado» de una persona sin cuenta: pago de Carlos a Ana (20 €)');
   liqs().forEach((x) => { x.borrado = true; }); notifyComp(); await sleep(40);

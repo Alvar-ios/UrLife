@@ -24,13 +24,12 @@ const YO = 'u-yo';
 
   paso('Tú → Mis herramientas: apagar varias');
   await ir(e, 'tu'); await tocar(e, 'tuIr', 'Mis herramientas', 'app');
-  ok(/Enciende solo lo que quieras usar/.test(pantalla(e)) && !!doc.querySelector('#content .herr-siempre'), 'la pantalla explica que no se borra nada; «Gastos e ingresos» siempre');
+  ok(/Lo que apagues se esconde/.test(pantalla(e)) && !!doc.querySelector('#content .herr-siempre'), 'la pantalla explica que no se borra nada; «Gastos e ingresos» siempre');
   for (const n of ['Agenda y tareas', 'Juntos', 'Metas de ahorro', 'Deudas', 'Inversiones', 'Presupuestos', 'Calculadora de trayecto', 'Informes', 'Lectura de tickets']) {
     const b = buscar(e, 'herrCambiar', n, 'app'); if (!b) { ok(n === 'Lectura de tickets', 'interruptor de «' + n + '»'); continue; }
     b.click(); await sleep(40);
   }
-  ok(/Tus datos se quedan guardados/.test(aviso(e)) || /se quedan guardados/.test(pantalla(e)), 'al apagar algo con datos: «Tus datos se quedan guardados»');
-  ok([...doc.querySelectorAll('#content .herr-nota')].length >= 4, 'y la nota se queda junto a cada herramienta apagada con datos');
+  ok(![...doc.querySelectorAll('#content .herr-nota')].length && /no se borra nada/.test(pantalla(e)), 'arriba, una vez, «no se borra nada»; sin la nota repetida en cada fila (26/11)');
   ok(app(e).herramientas && app(e).herramientas.agenda === false && app(e).herramientas.juntos === false, 'se guarda en config.herramientas (lo apagado, en false)');
   ok(datos() === antes, 'no se ha borrado ningún dato (movimientos, tareas, metas, deudas, presupuestos, Inicio)');
 

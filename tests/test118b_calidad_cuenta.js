@@ -161,7 +161,7 @@ const fila = (I, re) => I.filas.find((r) => re.test(r.desc || ''));
   /* 12. Textos */
   e = await env([{ id: 'a2', tipo: 'Gasto', categoria: 'Otros', importe: 12, fecha: '2026-10-10', descripcion: 'libro' }], DOS); A = e.w.__APP__;
   await abrir(e, 'x.csv', csv([['12/10/2026', 'LIBRERIA EJEMPLO', '-12,00']]), 'cs'); await revisar(e);
-  ok(/Es el mismo/.test(sh(e)) && /Son distintos/.test(sh(e)) && /Dinos si es lo mismo/.test(sh(e)), 'quizás: botones «Es el mismo» / «Son distintos» y aviso');
+  ok(/Es el mismo/.test(sh(e)) && /Son distintos/.test(sh(e)) && /Dime si es lo mismo/.test(sh(e)), 'quizás: botones «Es el mismo» / «Son distintos» y aviso');
 
   console.log(fails ? 'FAILED ' + fails : 'ALL OK'); process.exit(fails ? 1 : 0);
 })().catch((err) => { console.log(String(err && err.stack || err)); process.exit(1); });

@@ -75,7 +75,7 @@ const gastosMes = (X) => { const d = new Date(); return X.kpisMes(d.getFullYear(
 
   /* 1. Añadir a alguien sin la app */
   A.H.grupoVer(['g1']); await sleep(30);
-  ok(/¿Alguien no tiene la app\?/.test(sh(a)), 'en el grupo se ofrece añadir a alguien sin la app');
+  ok(/¿Alguien sin la app\?/.test(sh(a)), 'en el grupo se ofrece añadir a alguien sin la app');
   ok(!A.badgeActivo('sincuenta') || /Miembros \(2\) <span class="badge-new ">NUEVO/.test(a.doc.querySelector('#sheetHost').innerHTML), 'Parche 7: «Miembros» lleva la etiqueta NUEVO');
   a.doc.querySelector('#gSinCuenta').value = 'Marta';
   click(a, 'sinCuentaAnadir', 'g1'); await sleep(40);

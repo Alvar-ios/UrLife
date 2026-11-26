@@ -61,7 +61,7 @@ const viejo = { id: 'm_viejo', tipo: 'Gasto', importe: 500, categoria: 'Otros', 
   I = await importar(e, 'ci', 'ing.csv', ING); r = fila(I, /LIBRERIA/);
   ok(r.estado === 'quizas' && r.con.sinCuentaId === 'man1', '«¿es el mismo?» con uno sin cuenta');
   A.H.impMismo([idx(I, r), '0']); ok(!r.asignar && r.incluir, '«Son distintos»: se importa aparte y no se toca el antiguo');
-  A.H.impMismo([idx(I, r), '1']); ok(r.asignar && !r.incluir && /Le pondremos la cuenta Cuenta naranja, que no tenía/.test(e.doc.querySelector('#sheetHost').textContent), '«Es el mismo»: avisa de que le pondrá la cuenta');
+  A.H.impMismo([idx(I, r), '1']); ok(r.asignar && !r.incluir && /Le pondré la cuenta Cuenta naranja, que no tenía/.test(e.doc.querySelector('#sheetHost').textContent), '«Es el mismo»: avisa de que le pondrá la cuenta');
   await A.H.impEjecutar([]); await sleep(80);
   ok(e.store.movimientos.man1.cuentaId === 'ci' && e.store.movimientos.man1.fecha === '2026-10-16', 'se le pone la cuenta y conserva su fecha');
   await cerrar(e);

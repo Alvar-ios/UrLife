@@ -16,7 +16,7 @@ const mesAtras = (n, dia) => iso(new Date(hoy.getFullYear(), hoy.getMonth() - n,
   ok(/\+600/.test(doc.querySelector('.iw-mb-pie').textContent), 'el pie dice lo que te queda este mes (+600)');
   const alto = (b, c) => parseFloat(b.querySelector('i.' + c).style.height);
   ok(alto(mb[3], 'gas') > alto(mb[3], 'ing') && Math.abs(alto(mb[3], 'gas') - 72) < 0.5, 'barras proporcionales (el mes de 1.300 € llega arriba)');
-  ok(/Aún no tienes|Pon las participaciones|Cargando|No hemos podido/.test(doc.querySelector('.iw-inv, .iw-caja, section.iw:last-of-type') ? doc.body.textContent : ''), 'Inversiones sin precios: un aviso, sin romper Inicio');
+  ok(/Aún no tienes|Pon las participaciones|Cargando|No he podido/.test(doc.querySelector('.iw-inv, .iw-caja, section.iw:last-of-type') ? doc.body.textContent : ''), 'Inversiones sin precios: un aviso, sin romper Inicio');
   // con precios (como si ya se hubieran cargado)
   const serie = []; for (let d = new Date(hoy.getFullYear(), hoy.getMonth() - 3, 1); d <= hoy; d.setDate(d.getDate() + 1)) serie.push([iso(d), 100 + serie.length * 0.1]);
   S.historico = { ts: Date.now(), clave: 'a1|' + mesAtras(3, 1), series: { a1: serie } }; A.render(); await sleep(20);

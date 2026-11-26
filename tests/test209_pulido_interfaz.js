@@ -45,6 +45,14 @@ const hoy = new Date().toISOString().slice(0, 10);
   ok(!!$('#descartarHoja') && /trayecto/.test($('#descartarHoja').textContent), 'atrás en Trayecto con km escritos pregunta «¿Descartar este trayecto?»');
   w.__atras(); await sleep(10); H.closeSheet([]); await sleep(260);
 
+  // Atrás (decisión del dueño, 26/11): Lista → Resumen; Calendario de la Agenda → Semana
+  H.goTab(['movimientos']); await sleep(20); H.setMovVista(['lista']); await sleep(30);
+  ok(w.__atras() === true && A.S.tab === 'movimientos' && A.S.movVista === 'resumen', 'atrás desde Movimientos → Lista va al Resumen');
+  ok(w.__atras() === true && A.S.tab === 'inicio', 'y otro atrás, a Inicio');
+  H.irAgenda(['tareas']); await sleep(20); H.setInicioVista(['calendario']); await sleep(30);
+  ok(w.__atras() === true && A.S.inicioVista === 'tareas', 'atrás desde el calendario de la Agenda va a la semana');
+  ok(w.__atras() === true && A.S.inicioVista === 'hoy', 'y otro atrás, a Inicio');
+
   // Botones rojos antes de la barra fija (debajo quedaban medio tapados)
   const antesDeBarra = (re) => { const b = Array.from(doc.querySelectorAll('#sheetHost button')).find((x) => re.test(x.textContent)), a = doc.querySelectorAll('#sheetHost .actions'); return !!b && a.length > 0 && !!(b.compareDocumentPosition(a[a.length - 1]) & 4); };
   A.H.openTareaForm(['t1']);

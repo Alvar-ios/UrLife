@@ -39,7 +39,7 @@ const movs = [{ id: 'g1', tipo: 'Gasto', categoria: 'Comida', importe: 90, fecha
   H.iwVista(['lista']); H.iwMover([0, 1]); await sleep(5);
   ok(S().config.inicioWidgets[0].t === 'dias' && S().config.inicioWidgets[1].t === 'asivas', 'flecha: cambia el orden');
   H.iwQuitar([1]); await sleep(5);
-  ok(!S().config.inicioWidgets.some((x) => x.t === 'asivas') && /Te recomendamos tenerla/.test(doc.body.textContent), 'quitar Así vas avisa que se recomienda');
+  ok(!S().config.inicioWidgets.some((x) => x.t === 'asivas') && /Te recomiendo tenerla/.test(doc.body.textContent), 'quitar Así vas avisa que se recomienda');
   H.closeSheet([]); await sleep(400);
   ok(!doc.querySelector('.ins-circ'), 'sin Así vas en Inicio');
   // piezas en Inicio
