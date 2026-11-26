@@ -5,25 +5,27 @@ Regla común: primero se demuestra cada fallo con una prueba automática que fal
 
 ---
 
-## Sesión 1 (ahora) · El dinero siempre cuadra y no se pierde nada
+## Sesión 1 (ahora) · Que la interfaz funcione bien y diga solo lo necesario
 
-**Rama:** `fase23/auditoria-dinero`. **Departamentos:** Calidad (pruebas) y Datos y Seguridad (guardado, Supabase y RLS).
+**Rama:** `fase23/pulido-interfaz`. **Departamentos:** Calidad (pruebas tocando de verdad y capturas), Producto y Diseño (textos y criterio), Marketing y Comunicación (tono de los textos).
 
-### Qué se revisa
-1. **Cálculos de «Tu mes»:** `mesDe`, `rangoMes`, `kpisMes`, `balanceMesHtml`; mes desde el día de cobro (días 29-31, febrero, años bisiestos, cambio de hora), lo previsto siempre aparte, sin `fecha.slice(0, 7)` escondidos.
-2. **Cuentas y saldos:** `saldoCuenta`, `saldoCuentaEn`, traspasos (no cuentan como gasto ni ingreso), «Convertir en traspaso», metas ligadas (`esAporteLigado`, `conSaldo`: lo apartado no se suma dos veces), «Lo que tienes».
-3. **Juntos:** saldos de cada grupo y por persona con gente sin cuenta, repartos por porcentaje o importe con céntimos que no cuadran (33,33 × 3), «Saldar todo», deshacer y recuperar, grupos cerrados, metas y deudas compartidas, `efectoMio` = lo que dice «¿De dónde sale?».
-4. **Deudas e inversiones:** pagos buscados por nombre antiguo (`movsDeuda`), participaciones, divisas, activos sin precio.
-5. **Guardar sin perder ni duplicar:** `anadir`, `movPendiente`/`movPendienteFin`, reintentos, corte de internet a mitad, dos móviles tocando lo mismo, «Deshacer» de cada sitio, importar extractos dos veces, borrar cuenta.
-6. **Servidor (solo lectura):** permisos RLS de las tablas compartidas, funciones `security definer`, que nadie pueda ver o cambiar lo de otro grupo. Si hiciera falta un cambio en Supabase, se propone y se espera el «sí».
-7. **La prueba que falla los días 25** (`test105`): arreglarla para que no dependa del día.
+### Qué se revisa, pantalla a pantalla
+(Inicio, +, teclado del importe, Movimientos, Dinero, Juntos y cada grupo, Agenda, Tú, bienvenida, hojas de Ajustes, Informes, Trayecto, Importar, guía de avisos.)
+1. **Botones:** que todos hagan lo que dicen, sin dobles toques, sin botones muertos ni tapados (por la barra de abajo, el teclado o la muesca del iPhone), con tamaño cómodo para el dedo.
+2. **Desplazamiento:** que se pueda llegar al final de cada pantalla y hoja, que el fondo no se mueva con una hoja abierta, que al volver atrás no salte a otra posición, y que no haya desplazamiento hacia los lados.
+3. **Animaciones:** sin parpadeos ni repintados de toda la pantalla, hojas que suben y bajan suaves, sin saltos al cambiar de pestaña o de mes, y nada que se quede a medias si se toca rápido.
+4. **Textos que se cortan o se pisan:** a 360, 375, 390 y 430 px, en claro y oscuro, con letra grande del móvil, con importes largos (123.456,78 €) y nombres largos. Se usa `tests/capturas/revisar.js` y se amplía donde haga falta.
+5. **Texto que sobra:** explicaciones largas, frases tipo asistente («Aquí puedes…», «Te ayudamos a…», «Recuerda que…»), avisos repetidos, subtítulos que dicen lo mismo que el título y textos de ayuda que ya no hacen falta. Se propone recortar o quitar, manteniendo las palabras de la app («Aportar», etc.).
+6. **Atrás de Android y gesto de iPhone:** que siempre cierren lo de arriba y nunca saquen de la app sin querer.
+
+### Cómo
+- Primero una pasada con capturas y pruebas que tocan (`tests/toques_comun.js`) para hacer la lista de fallos, ordenada por lo que más se nota.
+- **Los textos a quitar o acortar se enseñan al dueño en una lista (antes → después) antes de cambiarlos.** Los fallos claros (algo cortado, un botón tapado) se arreglan directamente.
+- Cada arreglo con su prueba. Al final, capturas de antes y después.
 
 ### Qué sale
-- Un informe corto en el chat: lo que estaba mal, cómo afectaba al usuario y qué se ha arreglado, ordenado por gravedad.
-- Las pruebas nuevas en `tests/` y los arreglos en la rama, con Calidad revisándolo antes de darlo por terminado.
-- Lo que no dé tiempo, apuntado aquí abajo para otra sesión.
-
----
+- Una lista corta en el chat de lo arreglado y de lo que queda.
+- Todo en la rama, sin publicar. No se puede ver en un móvil real desde aquí: lo comprobáis vosotros con la versión de prueba.
 
 ## Sesión 2 (después) · Funcionar sin internet
 
@@ -45,6 +47,9 @@ Regla común: primero se demuestra cada fallo con una prueba automática que fal
 Avisos de Juntos en iPhone con la app cerrada (APNs). Necesita un iPhone real para cada prueba.
 
 ---
+
+## Para más adelante
+- **El dinero siempre cuadra y no se pierde nada:** auditoría de cálculos («Tu mes», saldos de cuentas, traspasos, metas ligadas, saldos de Juntos con céntimos, deudas, inversiones), guardado sin duplicar ni perder (reintentos, cortes de red, dos móviles a la vez, deshacer) y permisos del servidor. También arreglar `test105`, que falla los días 25.
 
 ## Pendiente tras las sesiones
 _(se rellena al terminar cada una)_
