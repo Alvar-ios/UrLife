@@ -132,6 +132,8 @@ function monedaCod() { const c = S && S.config && S.config.moneda; return MONEDA
 function sym() { return MONEDAS[monedaCod()].s; }
 function fmtM(n) { const d = MONEDAS[monedaCod()].dec; return agrupar(n.toLocaleString(LOC(), { minimumFractionDigits: d, maximumFractionDigits: d })); }
 function money(n) { return conSym(fmtM(num(n))); }
+// 26/11: en textos seguidos, la cifra y el «€» no se separan de línea («434,00 / €» con letra grande)
+function nbEur(h) { return String(h).replace(/(\d) (€|\$|£)/g, '$1\u00A0$2'); }
 // Rótulo de lo que apartas e inviertes (antes «Ahorro»)
 function apInvTxt() { return 'Apartado e invertido'; }
 function moneyShort(n) {
@@ -1030,8 +1032,8 @@ function borrarCuentaHtml(msg) {
     (msg ? '<div class="alert" style="margin-bottom:12px;">' + ic('alert') + '<div>' + msg + '</div></div>' : '') +
     '<div class="field"><label for="bcPass">Tu contraseña</label><input id="bcPass" type="password" autocomplete="current-password"></div>' +
     '<div class="field"><label for="bcConf">Escribe BORRAR para confirmar</label><input id="bcConf" type="text" autocapitalize="characters" autocomplete="off" value="' + escapeHtml(F.conf || '') + '"></div>' +
-    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn danger block" ' + act('borrarCuentaOk') + (F.borrando ? ' disabled' : '') + '>' + (F.borrando ? 'Borrando…' : 'Borrar mi cuenta') + '</button></div>' +
-    '<button type="button" class="link" style="display:block;margin:12px auto 0;font-size:12.5px;" ' + act('abrirPrivacidad') + '>Qué se borra y qué se conserva</button>';
+    '<button type="button" class="link" style="display:block;margin:0 auto 4px;font-size:12.5px;" ' + act('abrirPrivacidad') + '>Qué se borra y qué se conserva</button>' + // 26/11: antes iba debajo de los botones y quedaba medio tapado
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn danger block" ' + act('borrarCuentaOk') + (F.borrando ? ' disabled' : '') + '>' + (F.borrando ? 'Borrando…' : 'Borrar mi cuenta') + '</button></div>';
 }
 async function borrarCuentaOk() {
   const F = FORM; if (!F || F.kind !== 'borrarCuenta' || F.borrando) return;
@@ -1193,6 +1195,7 @@ function render() {
   const ojo = $('#ojoTb'); if (ojo) ojo.innerHTML = cifrasOcultas() && S.tab !== 'inicio' ? ojoBtnHtml() : ''; // Calidad 10/11: volver a ver las cifras desde cualquier pestaña
   if (cifrasOcultas()) setTimeout(taparCifrasTexto, 0);
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : S.tab === 'tu' && S.tuSub && versionDe('tu') === 'nueva' && TU_RAMAS_N[S.tuSub] ? TU_RAMAS_N[S.tuSub] : TITULOS[S.tab];
+  if (title) title.classList.toggle('tb-largo', title.textContent.length > 12); // 26/11: «Mis herramientas», «Seguridad y privacidad» caben sin «…»
   if (!allLoaded()) { c.innerHTML = loadingHtml(); return; }
   const _agEl = document.activeElement && document.activeElement.id === 'agRapida' ? document.activeElement : null, _agV = _agEl ? _agEl.value : null;
   if (S.tab === 'inicio') c.innerHTML = renderInicioNuevo();
@@ -2110,10 +2113,11 @@ function openMovForm(id, pre) {
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
     metodos.concat(ex && ex.metodoPago && metodos.indexOf(ex.metodoPago) < 0 ? [ex.metodoPago] : []).map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' + // barrido 08/11: no se pierde la que ya no está en tu lista
     '<div id="artField">' + artFieldHtml(comp || ex) + '</div></div>' +
-    '<div class="actions"' + (corta ? ' hidden' : '') + '><button class="btn ghost block" ' + (S._volverGrupo ? act('grupoVer', S._volverGrupo) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
+    // 26/11: «Convertir en traspaso» y «Eliminar» van antes de la barra fija «Cancelar · Guardar» (debajo quedaban medio tapados)
     (comp ? (puedeEditarComp(comp) ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>' : '<div class="rec-hint" style="margin-top:10px;">' + AVISO_PERMISO + '</div>')
       : ex ? (convertibleATraspaso(ex) ? '<button class="btn ghost block" style="margin-top:10px;" ' + act('movAtraspaso', ex.id) + '>' + ic('swap') + ' Convertir en traspaso</button>' : '') +
         '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteMov') + '>' + ic('trash') + ' Eliminar movimiento</button>' : '') +
+    '<div class="actions"' + (corta ? ' hidden' : '') + '><button class="btn ghost block" ' + (S._volverGrupo ? act('grupoVer', S._volverGrupo) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
     (tec ? tecladoHtml(FORM.tec) : '')
   );
   syncCatField(); refrescarCatAviso();
@@ -4548,7 +4552,7 @@ function herrAjustarTab() {
   if (tb && [...tb.querySelectorAll('[data-tab]')].map((b) => b.getAttribute('data-tab')).join() !== want) { tb.className = 'tabbar'; tb.innerHTML = tabbarDentro(); } // solo los botones: una hoja abierta no se toca
   const rail = $('.rail'), brand = rail && rail.querySelector('.brand'), wantR = tabsNav().map((t) => t.id).join();
   if (brand && [...rail.querySelectorAll('.tab[data-tab]:not(.rail-tu)')].map((b) => b.getAttribute('data-tab')).join() !== wantR) { rail.querySelectorAll('.tab[data-tab]:not(.rail-tu)').forEach((b) => b.remove()); brand.insertAdjacentHTML('afterend', tabsNav().map(tabBtn).join('')); }
-  const agArriba = agendaOn() && !agendaEnBarra(); // con la Agenda en la barra de abajo, el botón de arriba sobra
+  const agArriba = agendaOn() && !agendaEnBarra() && !(S.tab === 'tu' && S.tuSub); // con la Agenda en la barra de abajo, el botón de arriba sobra; 26/11: en las pantallas de ajustes de Tú también (el título no cabía: «Seguridad y priva…»)
   const tbA = $('#tbAgenda'); if (tbA) { tbA.hidden = !agArriba; tbA.style.display = agArriba ? '' : 'none'; } // el CSS de la cabecera gana a «hidden»
   document.body.classList.toggle('ag-en-barra', agendaEnBarra()); document.body.classList.toggle('tu-en-barra', tabRelleno() != null && !agendaEnBarra()); document.body.classList.toggle('tu-raiz', S.tab === 'tu' && !S.tuSub);
 }
@@ -4957,7 +4961,7 @@ function insightsHtmlV2() {
   return '<div class="section-title">Así vas' + badge('asivas') + '</div><div class="ins-circ">' + ds.map((x, i) =>
     '<button type="button" class="ins-c tappable ' + (x.tono || '') + '"' + (x.color ? ' style="--ic:' + x.color + '"' : '') + ' aria-label="' + escapeHtml(x.frase) + '" ' + act('insVer', i) + '>' +
       '<span class="ins-aro"><svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="' + R + '" class="ins-aro-f"/><circle cx="32" cy="32" r="' + R + '" class="ins-aro-v" stroke-dasharray="' + (C * Math.max(0.04, Math.min(1, x.aro))).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 32 32)" style="animation-delay:' + (i * 0.08).toFixed(2) + 's"/></svg>' +
-      '<b class="tnum' + (x.valor.length > 5 ? ' largo' : '') + '">' + escapeHtml(x.valor) + '</b></span>' +
+      '<b class="tnum' + (x.valor.length > 7 ? ' largo muy-largo' : x.valor.length > 5 ? ' largo' : '') + '">' + escapeHtml(x.valor) + '</b></span>' +
       '<span class="ins-l1">' + escapeHtml(x.l1) + '</span><span class="ins-l2">' + escapeHtml(x.l2) + '</span></button>').join('') + '</div>';
 }
 /* Lo previsto a fin de mes: lo que te queda hoy + cobros fijos que faltan − pagos fijos que faltan.
@@ -6025,7 +6029,7 @@ function juntosCircHtml(x, max, i) {
   const v = x.v, paz = Math.abs(v) < 0.005, tono = paz ? 'paz' : v < 0 ? 'malo' : 'bueno';
   const est = paz ? 'en paz' : x.grupo ? (v < 0 ? 'debes' : 'te deben') : (v < 0 ? 'le debes' : 'te debe');
   return '<button type="button" class="ins-c jv-c tappable ' + tono + '" aria-label="' + escapeHtml(x.nombre + ': ' + (paz ? 'en paz' : est + ' ' + money(Math.abs(v)))) + '" ' + x.a + '>' +
-    '<span class="ins-aro">' + juntosAro(v, max, i) + (paz ? '<span class="jv-c-ok" aria-hidden="true">' + ic('check') + '</span>' : '<b class="tnum' + (cifraCirc(v).length > 5 ? ' largo' : '') + '">' + escapeHtml(cifraCirc(v)) + '</b>') +
+    '<span class="ins-aro">' + juntosAro(v, max, i) + (paz ? '<span class="jv-c-ok" aria-hidden="true">' + ic('check') + '</span>' : '<b class="tnum' + (cifraCirc(v).length > 7 ? ' largo muy-largo' : cifraCirc(v).length > 5 ? ' largo' : '') + '">' + escapeHtml(cifraCirc(v)) + '</b>') +
     '<span class="jv-c-cara">' + x.cara + '</span></span><span class="ins-l1">' + escapeHtml(x.nombre) + '</span><span class="ins-l2">' + est + '</span></button>';
 }
 /* ---- Juntos (13/11/2026, fase 14): Grupos y Personas a la vista, cada uno con su forma (grupo = tarjeta cuadrada; persona = círculo)
@@ -6443,7 +6447,7 @@ function compRapidoHtml() {
     temaCajaHtml() +
     '<label class="cr-imp"><input id="crImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe total" value="' + escapeHtml(F.importe || '') + '" ' + onInput('crImporte') + '><span>' + sym() + '</span></label>' +
     '<div id="monBox" class="mon-box">' + monHtml() + '</div>' +
-    '<div class="field cr-que"><input id="crDesc" type="text" maxlength="80" placeholder="¿Qué fue? (cena, súper, gasolina…)" value="' + escapeHtml(F.desc || '') + '" ' + onInput('crDesc') + '>' +
+    '<div class="field cr-que"><input id="crDesc" type="text" maxlength="80" placeholder="¿Qué fue? Cena, súper…" aria-label="Qué fue" value="' + escapeHtml(F.desc || '') + '" ' + onInput('crDesc') + '>' +
       '<select id="crCat" aria-label="Categoría" ' + onChange('crCat') + '>' + cats.map((c) => '<option' + (c === F.cat ? ' selected' : '') + '>' + escapeHtml(c) + '</option>').join('') + '</select></div>' +
     (cp.dest ? '<div class="cr-lbl">Pagó</div><div class="cr-caras">' + ms.map((m) => '<button type="button" class="cr-cara' + (cp.pagador === m.uid ? ' on' : '') + '" ' + act('crPagador', m.uid) + '>' + caraHtml(m.uid, m.nombre) + '<span>' + escapeHtml(m.uid === yo ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>').join('') + '</div>' +
       '<div class="cr-lbl">Para quién' + (cp.modo !== 'igual' ? ' <span class="hint">· ' + (cp.modo === 'porcentaje' ? 'como siempre (' + ms.map((m) => (cp.vals || {})[m.uid] || 0).join(' / ') + ' %)' : 'por importe') + '</span>' : ' <span class="hint">· a partes iguales</span>') + '</div>' +
@@ -7209,7 +7213,7 @@ function metaVerHtml(k) {
     '<button type="button" class="icon-btn" aria-label="Editar meta" ' + act(vos ? 'objEditar' : 'metaEditar', r.id) + '>' + ic('edit') + '</button></div>' +
     '<div class="dm-hring">' + (metasVariante() === 'formas' ? formaHtml(metaForma(r), r.pct, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132, { color: metaColor(r), grande: true }) : anilloEmojiHtml(r.pct, col === 'var(--text-muted)' ? 'var(--accent)' : col, '<b class="tnum">' + (r.pct == null ? '—' : Math.round(r.pct) + ' %') + '</b>', 132)) +
     '<div class="dm-hring-x"><b class="tnum">' + money(Math.max(0, r.valor)) + '</b><span>' + (r.obj > 0 ? 'de ' + money(r.obj) : '') + (r.fecha ? ' · hasta ' + mesLargo(r.fecha) : '') + '</span>' + (r.falta > 0 ? '<span>Quedan <b class="tnum">' + money(r.falta) + '</b></span>' : '') + (consejo ? '' : '<span class="dm-est" style="color:' + col + '">' + escapeHtml(e.t) + '</span>') + '</div></div>' +
-    (consejo ? '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(consejo) + '</div>' : '') +
+    (consejo ? '<div class="dm-consejo k-' + e.k + '">' + nbEur(escapeHtml(consejo)) + '</div>' : '') +
     (!vos && cuentaDeMeta(r.id) ? '<div class="rec-hint dm-meta-cuenta">' + ic('bank') + ' Guardado en ' + escapeHtml(nombreCuenta(cuentaDeMeta(r.id))) + (metaCuentaAviso(cuentaDeMeta(r.id)) ? '<br><span style="color:var(--warn)">' + escapeHtml(metaCuentaAviso(cuentaDeMeta(r.id))) + '</span>' : '') + '</div>' : '') +
     (r.conseguida ? '' : '<button class="btn accent block" ' + act('metaAportarR', r.key) + '>' + ic('plus') + ' Aportar</button>') +
     '<div class="dm-hbtns"><button class="btn ghost block" ' + act('usoAbrir', r.key) + '>He usado dinero</button><button class="btn ghost block" ' + act('metaMas') + '>' + (mas ? 'Menos' : 'Más') + '</button></div>' +
@@ -7628,7 +7632,7 @@ function deudaVerHtml(nombre) {
     '<button type="button" class="icon-btn" aria-label="Editar deuda" ' + act('deudaEditar', d.nombre) + '>' + ic('edit') + '</button></div>' +
     '<div class="dm-dq"><span>Quedan</span><b class="tnum">' + money(r.pend) + '</b><span>' + (r.total > 0 ? 'de ' + money(r.total) + ' · llevas pagado el ' + Math.round(pct) + ' %' : 'Ponle el total en «Editar»') + '</span></div>' +
     '<div class="dm-deuda-bar grande"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
-    '<div class="dm-consejo k-' + e.k + '">' + escapeHtml(msg) + '</div>' + simula +
+    '<div class="dm-consejo k-' + e.k + '">' + nbEur(escapeHtml(msg)) + '</div>' + simula +
     '<button class="btn accent block" style="margin-top:14px;" ' + act('deudaPagar', d.nombre) + '>' + ic('plus') + ' Apuntar un pago</button>' +
     '<div class="dm-hbtns"><button class="btn ghost block" ' + act('deudaCuadrar', d.nombre) + '>Cuadrar con el banco</button><button class="btn ghost dm-masb" aria-label="Más" ' + act('deudaMasMenu') + '>' + ic('more') + '</button></div>' +
     (F.menu ? '<div class="card dm-hmas"><button type="button" class="dm-hmas-b" ' + act('deudaEditar', d.nombre) + '>' + ic('edit') + '<span><b>Editar</b><span>Nombre, dibujo, total, ya pagado, al mes y fecha</span></span></button>' +
@@ -7693,7 +7697,7 @@ function deudaCuadrarHtml() {
   if (!r) return deudaVerHtml(F.nombre);
   return '<div class="handle"></div><h2>Cuadrar con el banco</h2><div class="rec-hint">La app dice que quedan <b>' + money(r.pend) + '</b>. ¿Cuánto te queda según tu banco? Ajustamos «Ya pagado» para que cuadre; no se crea ni se cambia ningún movimiento.</div>' +
     '<div class="field"><label>¿Cuánto te queda según tu banco?</label><input id="dqBanco" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(F.banco || '') + '"></div>' +
-    (F.aviso ? '<div class="dm-consejo k-justo">' + escapeHtml(F.aviso) + '</div>' : '') +
+    (F.aviso ? '<div class="dm-consejo k-justo">' + nbEur(escapeHtml(F.aviso)) + '</div>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('deudaVer', F.nombre) + '>Volver</button><button class="btn accent block" ' + act('deudaCuadrarOk') + '>' + (F.aviso ? 'Sí, cuadrar así' : 'Cuadrar') + '</button></div>';
 }
 async function deudaCuadrarOk() {
@@ -7873,7 +7877,7 @@ function histHtml(gid) {
     const cara = f.por ? caraHtml(aliasDe(f.gid, f.por), q === 'Tú' ? (String(cfg().nombre || '').trim() || 'Tú') : q) : '<span class="avatar cara" style="background:var(--text-faint)" aria-hidden="true">?</span>';
     const rec = histPuedeRecuperar(f);
     h += '<div class="hist-f' + (rec ? ' con-rec' : '') + '"><button type="button" class="hist-main tappable" ' + act('histDetalle', gid, f.id) + '><span class="hist-cara">' + cara + '<i class="hist-ins ' + cls + '">' + ic(ico) + '</i></span>' +
-      '<span class="hist-x"><b>' + histFraseHtml(f) + '</b><span>' + histLineaHtml(f) + (rec && ef != null && Math.abs(ef) >= 0.005 ? escapeHtml(' · ' + (ef > 0 ? '+' : '−') + money(Math.abs(ef)) + ' a tu saldo') : '') + '</span></span>' +
+      '<span class="hist-x"><b>' + histFraseHtml(f) + '</b><span>' + nbEur(histLineaHtml(f)) + (rec && ef != null && Math.abs(ef) >= 0.005 ? nbEur(escapeHtml(' · ' + (ef > 0 ? '+' : '−') + money(Math.abs(ef)) + ' a tu saldo')) : '') + '</span></span>' +
       (rec ? '' : '<span class="hist-v">' + (ef == null ? (f.lote ? '' : '<span>sin cambio</span>') : '<b class="tnum" style="color:' + saldoColor(ef) + '">' + (ef > 0.004 ? '+' : ef < -0.004 ? '−' : '') + money(Math.abs(ef)) + '</b><span>tu saldo</span>') + '</span>') + '</button>' +
       (rec ? '<button type="button" class="hist-rec" ' + act('histRecuperar', gid, f.id) + ' aria-label="Recuperar «' + escapeHtml(histNombreGasto(f)) + '»">' + ic('history') + ' Recuperar</button>' : '') + '</div>';
   });
@@ -7972,7 +7976,7 @@ const BUSCAR_ACCIONES = [
 ];
 function buscarAcciones() { return BUSCAR_ACCIONES.filter(([t]) => herrOn(BUSCAR_HERR[t])); } // sin lo apagado en «Mis herramientas»
 function buscarHtml() {
-  return '<div class="handle"></div><div class="field buscar-campo"><input type="search" id="qBuscar" placeholder="Buscar: Mercadona, luz, 42,50, metas…" aria-label="Buscar en la app" autocomplete="off" ' + onInput('buscarGlobal') + '></div>' +
+  return '<div class="handle"></div><div class="field buscar-campo"><input type="search" id="qBuscar" placeholder="Buscar: Mercadona, luz…" aria-label="Buscar en la app" autocomplete="off" ' + onInput('buscarGlobal') + '></div>' +
     '<div id="buscarRes">' + buscarResHtml('') + '</div>';
 }
 function buscarResHtml(q0) {
@@ -11566,7 +11570,7 @@ function guiaDibujo(k, G) {
   const movil = (inner, cls) => '<div class="gd-movil' + (cls ? ' ' + cls : '') + '">' + inner + '</div>';
   const gris = (w) => '<span class="gd-fila"><span class="gd-ico"></span><span class="gd-barra" style="width:' + w + '"></span>' + guiaSw(false) + '</span>';
   let h = '';
-  if (k === 'portada') h = movil('<div class="gd-aviso"><span class="gd-ico b">' + ic('bank') + '</span><span><b>Tu banco</b><small>Pago de 12,50 € en Mercado</small></span></div>' +
+  if (k === 'portada') h = movil('<div class="gd-aviso"><span class="gd-ico b">' + ic('bank') + '</span><span><b>Tu banco</b><small>Pago de 12,50&nbsp;€ en Mercado</small></span></div>' +
     '<div class="gd-flecha">' + ic('chevD') + '</div>' +
     '<div class="gd-mov"><span class="gd-app">' + marcaHtml(18) + '</span><span><b>Mercado</b><small>Apuntado solo</small></span><b class="neg tnum">−12,50 €</b></div><span class="gd-desh">Deshacer</span>', 'gd-portada');
   else if (k === 'notif') h = movil('<div class="gd-fondo"></div><div class="gd-dialogo">' + guiaApp() + '<b>¿Permitir que PalomApp te envíe notificaciones?</b><span class="gd-bts"><span class="gd-bt si">Permitir</span><span class="gd-bt">No permitir</span></span></div>' + guiaDedo('62%', '50%'));

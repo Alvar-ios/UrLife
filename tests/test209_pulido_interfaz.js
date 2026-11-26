@@ -1,0 +1,35 @@
+// 26/11/2026 · Sesión 1 de docs/51 (pulido de interfaz): lo que se cortaba, se tapaba o se repetía.
+console.error = () => {};
+const { makeEnv, sleep } = require('./harness.js');
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+const hoy = new Date().toISOString().slice(0, 10);
+(async () => {
+  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, cfg: { app: { nombre: 'Prueba' }, meta: { onboarded: true } },
+    movs: [{ id: 'm1', tipo: 'Gasto', categoria: 'Supermercado', importe: 12.5, fecha: hoy, descripcion: 'Compra' }] });
+  await sleep(250);
+  const { w, doc } = e, A = w.__APP__, H = A.H, $ = (s) => doc.querySelector(s);
+
+  // «Borrar mi cuenta»: el enlace «Qué se borra…» va ENCIMA de los botones (debajo quedaba medio tapado por la barra fija)
+  H.borrarCuentaAbrir([]); await sleep(30);
+  const link = Array.from(doc.querySelectorAll('#sheetHost button')).find((b) => /Qué se borra/.test(b.textContent)), acts = $('#sheetHost .actions');
+  ok(link && acts && (link.compareDocumentPosition(acts) & 4), 'Borrar mi cuenta: «Qué se borra y qué se conserva» va antes de «Cancelar · Borrar mi cuenta»');
+  H.closeSheet([]); await sleep(30);
+
+  // Editar un movimiento: «Eliminar movimiento» va antes de la barra «Cancelar · Guardar»
+  A.S.tab = 'movimientos'; A.render(); H.openMovForm(['m1']); await sleep(40);
+  const del = Array.from(doc.querySelectorAll('#sheetHost button')).find((b) => /Eliminar movimiento/.test(b.textContent)), acts2 = $('#sheetHost .actions');
+  ok(del && acts2 && (del.compareDocumentPosition(acts2) & 4), 'Editar movimiento: «Eliminar movimiento» va antes de la barra de botones');
+  H.closeSheet([]); await sleep(30);
+
+  // Tú → Seguridad y privacidad: título largo más pequeño y sin el botón de la Agenda arriba (no cabía: «Seguridad y priva…»)
+  H.goTab(['tu']); await sleep(20); H.tuIr(['seguridad']); await sleep(30);
+  ok($('#pageTitle').textContent === 'Seguridad y privacidad' && $('#pageTitle').classList.contains('tb-largo'), 'Tú → Seguridad: el título lleva la clase de título largo');
+  ok($('#tbAgenda').hidden, 'Tú → Seguridad: sin el botón de la Agenda en la cabecera');
+  H.tuIr(['']); await sleep(30);
+  ok(!$('#pageTitle').classList.contains('tb-largo'), 'Tú: el título corto vuelve a su tamaño');
+  H.goTab(['inicio']); await sleep(30);
+  ok(!$('#tbAgenda').hidden, 'Inicio: el botón de la Agenda vuelve');
+
+  e.w.close();
+  console.log(fails ? '\n' + fails + ' FALLOS' : '\nTODO BIEN'); process.exit(fails ? 1 : 0);
+})().catch((x) => { console.error(x); process.exit(1); });
