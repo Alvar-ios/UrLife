@@ -12,7 +12,8 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   const bs = $$('.info-i');
   ok(bs.length >= 1, 'Mis herramientas: hay al menos una «i»');
   const b = bs[0], t = doc.getElementById(b.getAttribute('aria-controls'));
-  ok(b.tagName === 'BUTTON' && b.getAttribute('aria-label') === 'Más información' && b.getAttribute('aria-expanded') === 'false', 'la «i» es un botón con nombre y cerrada');
+  ok(b.tagName === 'BUTTON' && !!b.getAttribute('aria-label') && b.getAttribute('aria-expanded') === 'false', 'la «i» es un botón con nombre y cerrada');
+  ok(b.classList.contains('con-etiq') && b.getAttribute('aria-label') === b.textContent.trim(), 'con etiqueta: el nombre accesible es la etiqueta visible');
   ok(t && t.hasAttribute('hidden') && /no se borra nada/.test(t.textContent), 'el texto está en la pantalla pero escondido');
   ok(!$('.rec-hint.herr-intro'), 'ya no hay texto de ayuda suelto arriba');
 
@@ -63,5 +64,14 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
     ok(!tt.hasAttribute('hidden') && A.form() === f0 && !!$('#sheetBackdrop'), 'en una hoja, la «i» despliega sin cerrar ni repintar la hoja'); }
   else ok(false, '«Tu Así vas» tiene su «i»');
 
+  // Ninguna «i» queda suelta: o lleva etiqueta propia, o está dentro de un título/etiqueta con texto al lado; y nunca hay dos seguidas
+  const suelta = (bb) => { if (bb.classList.contains('con-etiq')) return !bb.textContent.trim(); const d = bb.closest('label,h2,b'); if (!d) return true; return ![...d.childNodes].filter((n) => n !== bb && !(n.nodeType === 1 && n.classList.contains('info-txt'))).map((n) => n.textContent).join('').trim(); };
+  const pantallas = [() => { H.goTab(['tu']); H.tuIr(['herramientas']); }, () => { H.tuIr(['']); H.tuIr(['perfil']); }, () => { H.goTab(['inicio']); H.cuentaEditar(['1']); }, () => { H.closeSheet([]); H.goTab(['dinero']); H.metaNueva([]); }, () => { H.closeSheet([]); H.goTab(['inicio']); H.asiVasAbrir(['0']); }];
+  let total = 0, sueltas = 0, seguidas = 0;
+  for (const ir of pantallas) { try { ir(); } catch (x) {} await sleep(90); const todas = $$('.info-i'); total += todas.length; todas.forEach((bb) => { if (suelta(bb)) sueltas++; const sig = bb.nextElementSibling && bb.nextElementSibling.nextElementSibling; if (sig && sig.classList && sig.classList.contains('info-fila')) seguidas++; }); }
+  ok(total >= 4, 'se revisaron «i» de varias pantallas (' + total + ')');
+  ok(sueltas === 0, 'ninguna «i» queda suelta, sin título ni etiqueta (' + sueltas + ' sueltas)');
+  ok(seguidas === 0, 'no hay dos «i» seguidas');
+  H.closeSheet([]); await sleep(260);
   console.log(fails ? 'FALLOS: ' + fails : 'TODO OK'); process.exit(fails ? 1 : 0);
 })();

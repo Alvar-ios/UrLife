@@ -596,13 +596,14 @@ const onChange = (n, ...a) => attr('change', n, ...a);
 /* «i» de más información: el texto va oculto y se despliega al tocarla. Solo muestra u oculta en el DOM:
    no repinta, no toca FORM y no apila hojas. infoI(texto) devuelve el botón y su texto; se pone junto a la etiqueta. */
 let INFO_N = 0;
-function infoI(texto) {
+function infoI(texto, etiqueta) {
   const id = 'info' + (++INFO_N);
-  return '<button type="button" class="info-i" aria-label="Más información" aria-expanded="false" aria-controls="' + id + '" ' + act('infoVer', id) + '>' + ic('info') + '</button>' +
+  return '<button type="button" class="info-i' + (etiqueta ? ' con-etiq' : '') + '" aria-label="' + escapeHtml(etiqueta || 'Más información') + '" aria-expanded="false" aria-controls="' + id + '" ' + act('infoVer', id) + '>' + ic('info') + (etiqueta ? '<span>' + escapeHtml(etiqueta) + '</span>' : '') + '</button>' +
     '<span class="info-txt" id="' + id + '" hidden>' + texto + '</span>';
 }
-/* La «i» sola, en su propia línea, en el sitio donde antes estaba el texto de ayuda. */
-function infoSola(texto) { return '<div class="info-fila">' + infoI(texto) + '</div>'; }
+/* La «i» con una etiqueta corta («Cómo funciona»), en su propia línea, donde no hay un título o etiqueta al lado donde pegarla.
+   Si hay un título o una etiqueta visible, mejor infoI(texto) dentro de él. */
+function infoSola(etiqueta, texto) { return '<div class="info-fila">' + infoI(texto, etiqueta) + '</div>'; }
 
 /* ---------------- Estado ---------------- */
 // 12/11 (diagnóstico de rendimiento): la Lista empieza con 40 filas y trae 60 más al acercarse al final (o con «Mostrar más»)
@@ -1006,7 +1007,7 @@ function perfilHtml() {
     (F.avatar === 'dibujo' ? '<div class="perfil-dib" role="radiogroup" aria-label="Dibujo">' + PERFIL_DIBUJOS.map((k) => '<button type="button" role="radio" aria-checked="' + (F.icono === k) + '" aria-label="' + (PERFIL_DIBUJO_NOMBRE[k] || 'Dibujo') + '" class="perfil-d' + (F.icono === k ? ' on' : '') + '" ' + act('perfilIcono', k) + '>' + ic(k) + '</button>').join('') + '</div>' : '') +
     '<div class="field"><label>Color</label><div class="perfil-cols" role="radiogroup" aria-label="Color">' + COLORES_PERSONA_NUEVO.map((c, i) => '<button type="button" role="radio" aria-checked="' + (miColor(p) === c) + '" aria-label="Color ' + (i + 1) + '" class="perfil-c' + (miColor(p) === c ? ' on' : '') + '" style="background:' + c + '" ' + act('perfilColor', c) + '>' + (miColor(p) === c ? ic('check') : '') + '</button>').join('') + '</div></div>' +
     '<div class="field"><label for="tuNombreIn">Tu nombre</label><input id="tuNombreIn" type="text" maxlength="40" autocomplete="given-name" value="' + escapeHtml(nombre) + '" ' + onInput('perfilNombreIn') + '></div>' +
-    '' + infoSola('Tu nombre lo ven las personas con las que compartes. El dibujo y el color, de momento, solo tú.') + '' +
+    '' + infoSola('Quién lo ve', 'Tu nombre lo ven las personas con las que compartes. El dibujo y el color, de momento, solo tú.') + '' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('tuNombreGuardar') + '>Guardar</button></div>';
 }
 function renderShell() {
@@ -2690,7 +2691,7 @@ function amigosListaHtml(ps, saldoMeta) {
 function grupoNuevoHtml() {
   return '<div class="handle"></div><h2>Nuevo grupo</h2>' +
     '<div class="field"><label>Nombre del grupo</label><input id="gNombre" type="text" maxlength="60" placeholder="Casa"></div>' +
-    '<div class="field"><label>Tu nombre en el grupo</label><input id="gMiNombre" type="text" maxlength="40" value="' + escapeHtml(miNombreAlguno()) + '">' + infoSola('Es como te verán los demás.') + '</div>' +
+    '<div class="field"><label>Tu nombre en el grupo ' + infoI('Es como te verán los demás.') + '</label><input id="gMiNombre" type="text" maxlength="40" value="' + escapeHtml(miNombreAlguno()) + '">' + '</div>' +
     (amigos().length ? '<div class="field"><label>Añadir ya a tus amigos <span class="hint">· sin volver a invitarles</span></label><div class="amigos-sel">' +
       amigos().map((a) => '<label class="comp-row"><input type="checkbox" class="amigo-chk" value="' + escapeHtml(a.uid) + '"><span>' + escapeHtml(a.nombre) + '</span></label>').join('') + '</div></div>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('openGrupos') + '>Cancelar</button><button class="btn accent block" ' + act('grupoCrear') + '>Crear</button></div>';
@@ -2738,12 +2739,12 @@ function miembroFilaHtml(g, m, i) {
   return '<div class="row static miembro-fila' + (sc ? ' sin-cuenta' : '') + '">' + (juntosV2() ? caraHtml(aliasDe(g.id, m.user_id), m.nombre) : avatarHtml(m, i)) + '<div class="main"><div class="ttl">' + escapeHtml(m.nombre) + (m.user_id === yo ? ' <span class="hint">(tú)</span>' : '') + '</div>' +
     '<div class="meta">' + (sc ? '<span class="tag-sincuenta">sin cuenta</span>' : m.rol === 'admin' ? 'Administrador' : 'Miembro') + '</div>' +
     (botones ? '<div class="miembro-acc">' + botones + '</div>' : '') +
-    (enl ? '<div class="sc-enlace"><a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(enl.msg) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a><button class="btn ghost block" style="margin-top:6px;" ' + act('sinCuentaCopiar') + '>Copiar enlace</button>' + infoSola('Vale para ' + escapeHtml(m.nombre) + ', una sola vez y durante 7 días. Al abrirlo ocupa su sitio y se queda con sus gastos.') + '</div>' : '') +
+    (enl ? '<div class="sc-enlace"><a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(enl.msg) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a><button class="btn ghost block" style="margin-top:6px;" ' + act('sinCuentaCopiar') + '>Copiar enlace</button>' + infoSola('Sobre el enlace', 'Vale para ' + escapeHtml(m.nombre) + ', una sola vez y durante 7 días. Al abrirlo ocupa su sitio y se queda con sus gastos.') + '</div>' : '') +
     '</div></div>';
 }
 function sinCuentaAnadirHtml(g) {
   if (g.tipo !== 'grupo') return '';
-  return '<div class="card sc-anadir">' + infoSola('¿Alguien sin la app? Añádelo con su nombre. Si un día se la instala, se queda con lo suyo.') + '' +
+  return '<div class="card sc-anadir">' + infoSola('Sin la app', '¿Alguien sin la app? Añádelo con su nombre. Si un día se la instala, se queda con lo suyo.') + '' +
     '<div class="field" style="display:flex;gap:8px;align-items:center;margin:0;"><input id="gSinCuenta" type="text" maxlength="40" placeholder="Nombre (p. ej. Marta)"><button class="btn sm accent" style="flex:none;" ' + act('sinCuentaAnadir', g.id) + '>' + ic('plus') + ' Añadir</button></div></div>';
 }
 function permisosGrupoHtml(g) {
@@ -2751,12 +2752,12 @@ function permisosGrupoHtml(g) {
   const autor = g.edicion === 'autor';
   return '<div class="section-title">Quién puede cambiar los gastos</div><div class="card">' +
     (g.soyAdmin ? '<div class="seg-mini">' + [['todos', 'Todos'], ['autor', 'Quien lo apuntó']].map(([k, l]) => '<button type="button" class="chip' + (g.edicion === k ? ' active' : '') + '" ' + act('grupoEdicion', g.id, k) + '>' + l + '</button>').join('') + '</div>' : '') +
-    '' + infoSola('' + (autor ? 'Cada gasto solo lo puede cambiar o borrar quien lo apuntó, y también los administradores.' : 'Cualquier miembro puede cambiar o borrar cualquier gasto del grupo.') + (g.soyAdmin ? '' : ' Lo deciden los administradores.') + '') + '</div>';
+    '' + infoSola('Cómo funciona', '' + (autor ? 'Cada gasto solo lo puede cambiar o borrar quien lo apuntó, y también los administradores.' : 'Cualquier miembro puede cambiar o borrar cualquier gasto del grupo.') + (g.soyAdmin ? '' : ' Lo deciden los administradores.') + '') + '</div>';
 }
 function grupoAnadirAmigosHtml(g) {
   const fuera = amigos().filter((a) => !g.miembros.some((m) => m.user_id === a.uid));
   if (!fuera.length) return '';
-  return '<div class="section-title">Añadir a tus amigos' + badge('amigos') + '</div><div class="card">' + infoSola('Ya compartes con ellos: entran al momento, sin enlace.') + '<div class="chips">' +
+  return '<div class="section-title">Añadir a tus amigos' + badge('amigos') + '</div><div class="card">' + infoSola('Cómo funciona', 'Ya compartes con ellos: entran al momento, sin enlace.') + '<div class="chips">' +
     fuera.map((a) => '<button type="button" class="chip" ' + act('grupoAnadir', g.id, a.uid) + '>' + ic('plus') + ' ' + escapeHtml(a.nombre) + '</button>').join('') + '</div></div>';
 }
 async function abrirGrupo(id) {
@@ -2815,7 +2816,7 @@ function reclamarHtml() {
     (n ? '<div class="field"><label>¿Esos gastos cuentan también en tus números?</label>' +
       '<div class="rec-hint" style="margin:0 0 8px;">En las cuentas del grupo cuentan siempre. Aquí decides si también salen en tu Inicio y tus Movimientos, en los meses en que se hicieron. <b>Si ya los habías apuntado tú en la app, elige «No»</b> para no contarlos dos veces.</div>' +
       '<div class="chips">' + [['1', 'Sí, que cuenten'], ['0', 'No, solo en el grupo']].map(([k, l]) => '<button type="button" class="chip' + ((FORM.historial ? '1' : '0') === k ? ' active' : '') + '" ' + act('reclamarHistorial', k) + '>' + l + '</button>').join('') + '</div></div>' : '') +
-    '' + infoSola('Tus movimientos siguen siendo privados: el grupo solo verá lo que compartas en él.') + '' +
+    '' + infoSola('Privacidad', 'Tus movimientos siguen siendo privados: el grupo solo verá lo que compartas en él.') + '' +
     '<div class="actions"><button class="btn ghost block" ' + act('reclamarCerrar', '') + '>Ahora no</button><button class="btn accent block" ' + act('reclamarConfirmar') + '>Entrar</button></div>';
 }
 function unirseHtml() {
@@ -3125,7 +3126,7 @@ function compRepartoHtml() {
   } else {
     h = ms.map((m) => '<div class="comp-row"><span class="n">' + nom(m) + '</span><input type="number" step="0.01" min="0" inputmode="decimal" class="comp-val" placeholder="0" value="' + escapeHtml((cp.vals || {})[m.uid] || '') + '" ' + onInput('compVal', m.uid) + '><span class="u">' + (cp.modo === 'porcentaje' ? '%' : sym()) + '</span></div>').join('');
   }
-  return '<div class="comp-rows">' + h + '</div>' + (FORM.tipo === 'Ahorro' ? '' + infoSola('En una hucha, normalmente cada uno aporta lo suyo: marca solo a quien aporta.') + '' : '') +
+  return '<div class="comp-rows">' + h + '</div>' + (FORM.tipo === 'Ahorro' ? '' + infoSola('Quién aporta', 'En una hucha, normalmente cada uno aporta lo suyo: marca solo a quien aporta.') + '' : '') +
     '<div id="compResumen" class="comp-resumen">' + compResumenHtml() + '</div>';
 }
 function compResumenHtml() {
@@ -3137,7 +3138,7 @@ function compResumenHtml() {
   let t = 'Tu parte: <b class="tnum">' + money(mia) + '</b>';
   if (cp.pagador === yo) { const d = r2(imp - mia); if (d > 0) t += ' · te deben <b class="tnum">' + money(d) + '</b>'; }
   else if (mia > 0) t += ' · debes <b class="tnum">' + money(mia) + '</b> a ' + escapeHtml(pag ? pag.nombre : 'quien pagó');
-  return t + '' + infoSola('En tus números cuenta solo tu parte.') + '';
+  return t + '' + infoSola('Tu parte', 'En tus números cuenta solo tu parte.') + '';
 }
 function refrescarComp(soloResumen) {
   if (soloResumen) { const r = $('#compResumen'); if (r) { r.innerHTML = compResumenHtml(); return; } }
@@ -3171,7 +3172,7 @@ function compInfoHtml(c) {
     (liq ? '<b>' + n(c.pagadoPor) + '</b> pagó <b class="tnum">' + money(c.importe) + '</b> a <b>' + n(a) + '</b>'
       : 'Total <b class="tnum">' + money(c.importe) + '</b> · ' + escapeHtml(compQuienTxt(c)) + '<br>Tu parte: <b class="tnum">' + money(miParte(c)) + '</b>' + (c.descripcion ? '<br>' + escapeHtml(c.descripcion) : '')) +
     '<br><span style="color:var(--text-faint);">' + fmtDateLong(c.fecha) + ' · ' + escapeHtml(nombreDestino(g)) + '</span></div>' + compAutorHtml(c) +
-    (liq ? '' + infoSola('No cuenta como gasto ni como ingreso: solo deja las cuentas a cero.') + '' : '') +
+    (liq ? '' + infoSola('Qué significa', 'No cuenta como gasto ni como ingreso: solo deja las cuentas a cero.') + '' : '') +
     (!g ? '<div class="rec-hint" style="margin-top:8px;">Ya no estás en este grupo, así que no puedes cambiarlo.</div>' : '') +
     '<div class="actions">' + (g ? '<button class="btn ghost block" ' + act('grupoVer', g.id) + '>Ver cuentas</button>' : '') + '<button class="btn accent block" ' + act('closeSheet') + '>Cerrar</button></div>' +
     (g && liq ? '<button class="btn danger block" style="margin-top:10px;" ' + act('liqEliminar', c.id) + '>' + ic('trash') + ' Eliminar este pago</button>' : '');
@@ -3316,10 +3317,10 @@ function saldarHtml(f) {
   const yo = miUid(), n = (u) => escapeHtml(nombreDe(f.gid, u));
   return '<div class="handle"></div><h2>Saldar cuentas</h2>' +
     '<div class="unirse-card"><div class="unirse-nombre">' + (f.de === yo ? 'Tú pagas a ' + n(f.a) : f.a === yo ? n(f.de) + ' te paga' : n(f.de) + ' paga a ' + n(f.a)) + '</div><div class="unirse-meta">Se debe ' + money(f.max) + '</div></div>' +
-    '<div class="field"><label>Importe (' + sym() + ')</label><input id="sImporte" type="number" step="0.01" min="0" inputmode="decimal" value="' + f.max + '">' + infoSola('Puedes poner menos si es un pago parcial.') + '</div>' +
+    '<div class="field"><label>Importe (' + sym() + ') ' + infoI('Puedes poner menos si es un pago parcial.') + '</label><input id="sImporte" type="number" step="0.01" min="0" inputmode="decimal" value="' + f.max + '">' + '</div>' +
     '<div class="field"><label>Fecha</label><input id="sFecha" type="date" value="' + todayISO() + '"></div>' +
     (hayVariasCuentas() && (f.de === yo || f.a === yo) ? '<div class="field"><label>' + (f.de === yo ? 'Desde la cuenta' : 'A la cuenta') + '</label><div class="chips" id="saldarCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (f.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('saldarCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
-    '' + infoSola('Apúntalo cuando ya se haya pagado. No cuenta como gasto ni ingreso.') + '' +
+    '' + infoSola('Qué pasa al saldar', 'Apúntalo cuando ya se haya pagado. No cuenta como gasto ni ingreso.') + '' +
     '<div class="actions"><button class="btn ghost block" ' + act('grupoVer', f.gid) + '>Volver</button><button class="btn accent block" ' + act('saldarGuardar') + '>Registrar pago</button></div>';
 }
 function personaHtml(g) {
@@ -3341,7 +3342,7 @@ function personaHtml(g) {
 }
 function personaAjustesHtml(g) {
   const o = otroDe(g);
-  return '<div class="handle"></div><h2>Ajustes · ' + escapeHtml(o.nombre) + '</h2>' + infoSola('Gastos que compartes solo con ' + escapeHtml(o.nombre) + ', sin grupo.') + '' +
+  return '<div class="handle"></div><h2>Ajustes · ' + escapeHtml(o.nombre) + ' ' + infoI('Gastos que compartes solo con ' + escapeHtml(o.nombre) + ', sin grupo.') + '</h2>' + '' +
     '<div class="field" style="margin-top:12px;"><label>Tu nombre aquí</label><div style="display:flex;gap:8px;"><input id="gMiNombreEd" type="text" maxlength="40" value="' + escapeHtml(g.miNombre) + '"><button class="btn sm ghost" ' + act('grupoMiNombre', g.id) + '>Guardar</button></div></div>' +
     // 26/11: los botones rojos van antes de la barra fija de abajo (debajo quedaban medio tapados)
     '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Dejar de compartir con ' + escapeHtml(o.nombre) + '</button>' +
@@ -3355,9 +3356,9 @@ function personaNuevaHtml() {
     (f.url
       ? '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(f.msg) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
         '<div style="display:flex;gap:8px;margin-top:8px;"><button class="btn ghost block" ' + act('grupoCopiar') + '>Copiar enlace</button>' + (navigator.share ? '<button class="btn ghost block" ' + act('grupoCompartir') + '>Compartir…</button>' : '') + '</div>' +
-        '<div class="enlace-box">' + escapeHtml(f.url) + '</div>' + infoSola('Vale para una persona y caduca en 7 días.') + '' +
+        '<div class="enlace-box">' + escapeHtml(f.url) + '</div>' + infoSola('Sobre el enlace', 'Vale para una persona y caduca en 7 días.') + '' +
         '<div class="actions"><button class="btn accent block" ' + act('openGrupos') + '>Listo</button></div>'
-      : '<div class="field"><label>Tu nombre</label><input id="pMiNombre" type="text" maxlength="40" value="' + escapeHtml(miNombreAlguno()) + '">' + infoSola('Es como te verá la otra persona.') + '</div>' +
+      : '<div class="field"><label>Tu nombre ' + infoI('Es como te verá la otra persona.') + '</label><input id="pMiNombre" type="text" maxlength="40" value="' + escapeHtml(miNombreAlguno()) + '">' + '</div>' +
         '<div class="actions"><button class="btn ghost block" ' + act('openGrupos') + '>Cancelar</button><button class="btn accent block" ' + act('personaCrear') + '>Crear enlace</button></div>');
 }
 function repartoTxt(g) {
@@ -3368,11 +3369,11 @@ function repartoTxt(g) {
 function repartoHabitualHtml(g) {
   return '<div class="section-title">Reparto habitual</div><div class="card"><div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;font-size:14px;">' + escapeHtml(repartoTxt(g)) + '</div>' +
     (g.soyAdmin ? '<button class="btn sm ghost" ' + act('grupoRepartoAbrir', g.id) + '>Cambiar</button>' : '') + '</div>' +
-    '' + infoSola('Es lo que sale por defecto al compartir un gasto en este grupo; en cada gasto se puede cambiar.') + '</div>';
+    '' + infoSola('Para qué sirve', 'Es lo que sale por defecto al compartir un gasto en este grupo; en cada gasto se puede cambiar.') + '</div>';
 }
 function grupoRepartoHtml(g) {
   const r = g.reparto && typeof g.reparto === 'object' ? g.reparto : {}, iguales = pctsCuadrados(g.miembros.map((m) => ({ u: m.user_id, x: 1 })));
-  return '<div class="handle"></div><h2>Reparto habitual</h2>' + infoSola('Porcentaje de cada uno en los gastos de «' + escapeHtml(g.nombre) + '». Tienen que sumar 100 %.') + '' +
+  return '<div class="handle"></div><h2>Reparto habitual ' + infoI('Porcentaje de cada uno en los gastos de «' + escapeHtml(g.nombre) + '». Tienen que sumar 100 %.') + '</h2>' + '' +
     '<div class="field comp-rows">' + g.miembros.map((m, i) => '<div class="comp-row">' + avatarHtml(m, i) + '<span class="n">' + escapeHtml(m.nombre) + '</span><input type="number" step="0.01" min="0" inputmode="decimal" class="comp-val" id="rep_' + m.user_id + '" value="' + (r[m.user_id] != null ? r[m.user_id] : iguales[m.user_id]) + '"><span class="u">%</span></div>').join('') + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('grupoRepartoIgual', g.id) + '>A partes iguales</button><button class="btn accent block" ' + act('grupoRepartoGuardar', g.id) + '>Guardar</button></div>' +
     '<button type="button" class="link" style="margin-top:12px;" ' + act('grupoVer', g.id) + '>' + ic('chevL') + ' Volver</button>';
@@ -3458,10 +3459,10 @@ function objEditorHtml() {
     (!F.id ? '<div class="field"><label>Con</label>' + (ds.length ? '<div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (F.dest === d.k ? 'active' : '') + '" ' + act('objDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + '</div>'
         : '<div class="rec-hint">Primero crea un grupo o invita a una persona (Tú → Grupos y personas).</div>') + '</div>' : '') +
     '<div class="field"><label>Nombre</label><input id="oNombre" type="text" maxlength="60" placeholder="' + (deuda ? 'Hipoteca' : 'Viaje a Japón') + '" value="' + v(F.nombre) + '"' + (deuda ? '' : ' ' + onInput('objNombreIn')) + '></div>' +
-    (deuda ? '' : formaElegirHtml(F.forma, F.nombre, 'objFormaElegir') + '' + infoSola('La forma es la misma para todo el grupo.') + '') +
+    (deuda ? '' : formaElegirHtml(F.forma, F.nombre, 'objFormaElegir') + '' + infoSola('Cómo funciona', 'La forma es la misma para todo el grupo.') + '') +
     '<div class="field"><label>' + (deuda ? 'Total de la deuda' : 'Objetivo') + ' (' + sym() + ')</label><input id="oObjetivo" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="oFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
-    '<div class="field"><label>' + (deuda ? 'Ya pagado antes' : 'Ya ahorrado antes') + ' (' + sym() + ') <span class="hint">· opcional</span></label><input id="oPrevio" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.previo) + '">' + infoSola('Lo que ya ' + (deuda ? 'habíais pagado' : 'teníais ahorrado') + ' entre todos antes de apuntarlo aquí.') + '</div>' +
+    '<div class="field"><label>' + (deuda ? 'Ya pagado antes' : 'Ya ahorrado antes') + ' (' + sym() + ') <span class="hint">· opcional</span> ' + infoI('Lo que ya ' + (deuda ? 'habíais pagado' : 'teníais ahorrado') + ' entre todos antes de apuntarlo aquí.') + '</label><input id="oPrevio" type="number" step="0.01" min="0" inputmode="decimal" value="' + v(F.previo) + '">' + '</div>' +
     (deuda ? '' : hitosEditorHtml()) +
     '<div class="actions"><button class="btn ghost block" ' + cancelar + '>Cancelar</button><button class="btn accent block" ' + act('objGuardar') + '>Guardar</button></div>' +
     (o ? '<button class="btn danger block" style="margin-top:10px;" ' + act('objEliminar') + '>' + ic('trash') + ' Eliminar ' + (deuda ? 'deuda' : 'meta') + ' compartida</button><div class="rec-hint" style="text-align:center;">Se quita para todos. Lo ya aportado o pagado no se borra.</div>' : '');
@@ -3683,7 +3684,7 @@ function artUnidInner(a, i, ms, ctx) {
   }).join('');
   if (d.s > d.Q) h += '<div class="tk-warn" style="margin-top:6px;">Has repartido ' + fmtUn(d.s) + ' y solo hay ' + d.Q + ' unidades.</div>';
   else if (d.libres.length > 1 && d.s > 0) h += '<div class="rec-hint">Quedan ' + fmtUn(d.resto) + ' sin asignar: se reparten a partes iguales entre quienes no han puesto nada.</div>';
-  else if (!d.s) h += '' + infoSola('Sin tocar nada: a partes iguales. Pon las unidades de cada uno si no es así.') + '';
+  else if (!d.s) h += '' + infoSola('Cómo se reparte', 'Sin tocar nada: a partes iguales. Pon las unidades de cada uno si no es así.') + '';
   if (d.s) h += '<button type="button" class="link" ' + act('artUnidReset', ctx, i) + '>Volver a partes iguales</button>';
   return h;
 }
@@ -3733,7 +3734,7 @@ function tkBarraActualizar(F) {
 }
 function ticketHtml() {
   const F = FORM, yo = miUid();
-  if (F.cargando) return '<div class="handle"></div><h2>Leyendo el ticket…</h2><div class="card tk-cargando"><div class="spinner"></div><div>' + (F.preciso ? 'Lectura precisa: tarda un poco más.' : 'Tarda unos segundos.') + '</div>' + infoSola('La foto no se guarda: se lee y se descarta.') + '</div>';
+  if (F.cargando) return '<div class="handle"></div><h2>Leyendo el ticket…</h2><div class="card tk-cargando"><div class="spinner"></div><div>' + (F.preciso ? 'Lectura precisa: tarda un poco más.' : 'Tarda unos segundos.') + '</div>' + infoSola('Privacidad', 'La foto no se guarda: se lee y se descarta.') + '</div>';
   if (F.error && !F.t) {
     return '<div class="handle"></div><h2>Foto de ticket</h2><div class="card" style="font-size:14px;line-height:1.5;">' + escapeHtml(errTicket(F.error)) + '</div>' +
       '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button>' +
@@ -3763,7 +3764,7 @@ function ticketHtml() {
       : '<div class="comp-box"><div class="comp-head"><b>' + ic('users') + ' Repartir por artículos</b><button type="button" class="link" ' + act('tkRep', '0') + '>No repartir</button></div>' +
         '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (rep.dest === d.k ? 'active' : '') + '" ' + act('tkDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('t') + '</div>' + invInlineHtml('t') +
         (rep.dest ? '<div class="comp-lbl">Pagó</div><div class="chips">' + ms.map((m) => '<button type="button" class="chip ' + (rep.pagador === m.uid ? 'active' : '') + '" ' + act('tkPagador', m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>' +
-          '' + infoSola('En cada artículo, marca quién lo toma (lo que marquéis varios se divide a partes iguales). Si hay varias unidades, pon cuántas toma cada uno.') + '' +
+          '' + infoSola('Cómo marcar', 'En cada artículo, marca quién lo toma (lo que marquéis varios se divide a partes iguales). Si hay varias unidades, pon cuántas toma cada uno.') + '' +
           tkBarraHtml(F) + '<div id="tkResumen">' + tkResumenHtml(F) + '</div>' : '') + '</div>') + '</div>' : '') +
     (F.limite ? '<div class="rec-hint" style="margin-top:10px;">Lecturas este mes: ' + F.usados + ' de ' + F.limite + '. La foto no se ha guardado.' + (F.limite - F.usados <= 10 ? ' <span class="tk-pocos">Te quedan ' + Math.max(0, F.limite - F.usados) + '. Vuelven el ' + ticketsVuelven() + '.</span>' : '') + '</div>' : '') +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('tkContinuar') + '>Continuar</button></div>';
@@ -3824,7 +3825,7 @@ function invInlineHtml(ctx) {
     '<a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(v.msg) + '" target="_blank" rel="noopener">Enviar por WhatsApp</a>' +
     '<button type="button" class="link" ' + act('invCerrar') + '>Cerrar</button></div>';
   return '<div class="inv-inline"><div class="field" style="display:flex;gap:8px;align-items:center;margin:0;"><input id="invNombre" type="text" maxlength="40" placeholder="Su nombre (p. ej. Carlos)" autocomplete="off"><button type="button" class="btn sm accent" style="flex:none;" ' + act('invSinApp', ctx) + '>' + (v.creando ? 'Añadiendo…' : 'Añadir') + '</button></div>' +
-    '' + infoSola('No necesita la app: el gasto se guarda ya y, si se la instala, se queda con lo suyo.') + '' +
+    '' + infoSola('Sin la app', 'No necesita la app: el gasto se guarda ya y, si se la instala, se queda con lo suyo.') + '' +
     '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;"><button type="button" class="link" ' + act('invCrear', ctx) + '>Ya tiene la app: enviarle un enlace</button><button type="button" class="link" ' + act('invCerrar') + '>Cancelar</button></div></div>';
 }
 // Análisis mensual: en qué artículos se va el dinero (solo de gastos con ticket; con lo compartido, tu parte)
@@ -4503,18 +4504,18 @@ function herrHtml() {
     return '<div class="herr-fila' + (on ? '' : ' off') + '"><span class="herr-ic">' + ic(d.ic) + '</span><span class="herr-t"><b>' + d.n + '</b><span>' + d.f + '</span>' +
       '</span>' +
       (d.base ? '<span class="herr-siempre">Siempre</span>' : '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + d.n + '" ' + act('herrCambiar', d.k) + '></button>') + '</div>'; };
-  return '' + infoSola('Lo que apagues se esconde, pero <b>no se borra nada</b>.') + '' +
+  return '' + infoSola('Qué pasa al apagar', 'Lo que apagues se esconde, pero <b>no se borra nada</b>.') + '' +
     '<div class="card herr-lista">' + herrLista().map(fila).join('') + '</div>' + tuSecciones(tuRamaFilas('herramientas'));
 }
 function tuNombreHtml() {
   return '<div class="handle"></div><h2>Tu nombre</h2><div class="field"><label for="tuNombreIn">¿Cómo te llamas?</label><input id="tuNombreIn" type="text" maxlength="40" autocomplete="given-name" value="' + escapeHtml(String(cfg().nombre || '').trim() || nombreSugerido()) + '"></div>' +
-    '' + infoSola('Así te verán las personas con las que compartas gastos. En los grupos que ya tienes, tu nombre se cambia dentro de cada grupo.') + '' +
+    '' + infoSola('Quién lo ve', 'Así te verán las personas con las que compartas gastos. En los grupos que ya tienes, tu nombre se cambia dentro de cada grupo.') + '' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('tuNombreGuardar') + '>Guardar</button></div>';
 }
 function ticketsInfoHtml() {
   const t = ticketsUso(), pct = t.quedan == null ? 0 : Math.round(t.usados / t.limite * 100);
   return '<div class="handle"></div><h2>Fotos de tickets</h2>' +
-    '' + infoSola('Haz una foto a un ticket y la app lee los artículos y el total por ti. La foto no se guarda en ningún sitio.') + '' +
+    '' + infoSola('Cómo funciona', 'Haz una foto a un ticket y la app lee los artículos y el total por ti. La foto no se guarda en ningún sitio.') + '' +
     '<div class="card tk-uso-card">' + (t.quedan == null ? '<b>' + t.limite + ' lecturas al mes</b>'
       : '<b class="tnum">' + (t.quedan === 0 ? 'No te quedan lecturas' : 'Te quedan ' + t.quedan + ' de ' + t.limite) + '</b><div class="tk-barra' + (t.quedan === 0 ? ' agotado' : t.quedan <= 10 ? ' pocos' : '') + '"><i style="width:' + pct + '%"></i></div>' +
         '<div class="rec-hint">Vuelven el ' + ticketsVuelven() + '.</div>') + '</div>' +
@@ -4523,10 +4524,10 @@ function ticketsInfoHtml() {
 const ESCR_TIPOS = [['falla', 'alert', 'Algo falla'], ['idea', 'bulb', 'Una idea'], ['gusta', 'sonrisa', 'Me gusta']];
 function escrHtml() {
   const F = FORM || {};
-  return '<div class="handle"></div><h2>Escríbenos</h2>' + infoSola('Lo lee quien hace PalomApp.') + '' +
+  return '<div class="handle"></div><h2>Escríbenos ' + infoI('Lo lee quien hace PalomApp.') + '</h2>' + '' +
     '<div class="chips escr-tipos">' + ESCR_TIPOS.map(([k, i, l]) => '<button type="button" class="chip' + (F.tipo === k ? ' active' : '') + '" aria-pressed="' + (F.tipo === k) + '" ' + act('escrTipo', k) + '>' + ic(i) + ' ' + l + '</button>').join('') + '</div>' +
     '<div class="field"><label for="escrTxt">Tu mensaje</label><textarea id="escrTxt" rows="5" placeholder="Escribe aquí…">' + escapeHtml(F.txt || '') + '</textarea></div>' +
-    '' + infoSola('Solo se añade la versión de la app y el tipo de móvil. Nada de tus cifras.') + '' +
+    '' + infoSola('Qué se envía', 'Solo se añade la versión de la app y el tipo de móvil. Nada de tus cifras.') + '' +
     '<div class="actions escr-acc">' + (CONTACTO.whatsapp ? '<button class="btn accent block" ' + act('escrEnviar', 'wa') + '>' + ic('send') + ' Enviar por WhatsApp</button>' : '') +
     (CONTACTO.correo ? '<button class="btn ' + (CONTACTO.whatsapp ? 'ghost' : 'accent') + ' block" ' + act('escrEnviar', 'mail') + '>Enviar por correo</button>' : '') + '</div>';
 }
@@ -4880,7 +4881,7 @@ function asiVasHtml() {
     const on = sub ? v[sel].indexOf(key + ':') === 0 : v[sel] === key, ej = cat[key] ? cat[key].valor + ' · ' + cat[key].l1 + ' ' + cat[key].l2 : d;
     return '<button type="button" class="av-op' + (on ? ' on' : '') + (otro >= 0 ? ' usado' : '') + '"' + (sub ? '' : ' role="radio" aria-checked="' + on + '"') + ' ' + (sub ? act('asiVasSub', key) : act('asiVasElegir', key)) + '><span class="av-op-ic">' + ic(icono2) + '</span><span class="av-op-t"><b>' + escapeHtml(t) + '</b><span>' + escapeHtml(otro >= 0 ? 'Ya está en el círculo ' + (otro + 1) : key === 'auto' ? d : ej) + '</span></span>' + (sub ? '<span class="chev">' + ic('chevR') + '</span>' : '<span class="av-radio"></span>') + '</button>';
   }).join('');
-  return '<div class="handle"></div><h2>Tu «Así vas»</h2>' + infoSola('Elige qué enseña cada círculo. Los «Auto» cambian solos según tu mes.') + '' + huecos +
+  return '<div class="handle"></div><h2>Tu «Así vas» ' + infoI('Elige qué enseña cada círculo. Los «Auto» cambian solos según tu mes.') + '</h2>' + '' + huecos +
     '<div class="section-title">Círculo ' + (sel + 1) + '</div><div class="card menu av-lista">' + lista + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('asiVasReset') + '>Todo automático</button><button class="btn accent block" ' + act('asiVasGuardar') + '>Listo</button></div>';
 }
@@ -5028,19 +5029,19 @@ function tuMesNominaHtml() {
   return '<div class="tumes-nom">' + (perdida ? '<div class="rec-hint tumes-aviso" role="status" style="margin:0 0 8px;">' + (todos.some((r) => normName(r.nombre) === normName(guardada)) ? '«' + escapeHtml(guardada) + '» no llega una vez al mes, así que no sirve para empezar tu mes.' : 'Ya no encuentro «' + escapeHtml(guardada) + '».') + ' Mientras tanto, tu mes empieza el día ' + mesCfg().dia + '. Elige tu nómina y toca «Listo».</div>' : '') + (cobs.length > 1 ? '<div class="chips">' + cobs.map((r) => '<button type="button" class="chip' + (r.nombre === rc.nombre ? ' active' : '') + '" aria-pressed="' + (r.nombre === rc.nombre) + '" ' + act('tuMesNomina', r.nombre) + '>' + escapeHtml(r.nombre) + '</button>').join('') + '</div>' : '') +
     '<div class="tumes-nom-c">' + ic('repeat') + '<span><b>' + escapeHtml(rc.nombre) + '</b> · ' + escapeHtml(reglaTexto(rc.regla).charAt(0).toLowerCase() + reglaTexto(rc.regla).slice(1)) + '</span><button type="button" class="link" ' + act('recEditar', 'cobro', rc.idx) + '>Cambiar</button></div>' +
     linea(act0, false) + linea(sig, true) +
-    '' + infoSola('La fecha siguiente es una previsión. Si tu nómina se retrasa, tu mes no cambia hasta que llegue; si pasan más de 7 días, cuenta desde el día previsto. Si se adelanta, empieza ese mismo día.') + '</div>';
+    '' + infoSola('Sobre la fecha', 'La fecha siguiente es una previsión. Si tu nómina se retrasa, tu mes no cambia hasta que llegue; si pasan más de 7 días, cuenta desde el día previsto. Si se adelanta, empieza ese mismo día.') + '</div>';
 }
 function tuMesHtml() {
   const F = FORM, { y, m } = mesActual(), ej = (c) => { const r = rangoMes(y, m, c); return MESES[m - 1] + ': ' + (fmtDateShort(r.desde) + ' – ' + fmtDateShort(r.hasta)).toLowerCase(); };
   const op = (k, t, d, extra) => '<button type="button" class="tumes-op' + (F.modo === k ? ' on' : '') + '" role="radio" aria-checked="' + (F.modo === k) + '" ' + act('tuMesModo', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + t + '</b><span>' + d + '</span></span></button>' + (F.modo === k && extra ? extra : '');
   const dias = []; for (let d = 2; d <= 31; d++) dias.push(d);
   return '<div class="handle"></div><h2>Tu mes</h2>' +
-    '' + infoSola('Elige cuándo empieza tu mes. No se mueve ni se borra nada.') + '' +
+    '' + infoSola('Qué cambia', 'Elige cuándo empieza tu mes. No se mueve ni se borra nada.') + '' +
     '<div role="radiogroup" aria-label="Cuándo empieza tu mes">' + op('natural', 'Del 1 al 31', 'El mes del calendario. ' + ej({ modo: 'natural', dia: 1 }) + '.') +
     op('nomina', 'Desde que llega mi nómina', 'Empieza el día que te llega de verdad, aunque se adelante o se retrase.', tuMesNominaHtml()) +
     op('cobro', 'Desde un día fijo', 'Tu mes va de un día fijo al siguiente. ' + ej({ modo: 'cobro', dia: F.dia }) + '.',
       '<div class="field tumes-dia" id="fTuMesDia"><label>Cobro el día</label><div class="rec-dias" role="radiogroup" aria-label="Cobro el día">' + dias.map((d) => '<button type="button" class="rec-dia' + (d === F.dia ? ' on' : '') + '" role="radio" aria-checked="' + (d === F.dia) + '" ' + act('tuMesDiaB', d) + '>' + d + '</button>').join('') + '</div></div>' +
-      '' + infoSola('Elige el día más temprano en que sueles cobrar. Si cae en fin de semana, tu mes empieza el viernes anterior; si el mes no tiene ese día, el último.') + '') +
+      '' + infoSola('Cómo se elige', 'Elige el día más temprano en que sueles cobrar. Si cae en fin de semana, tu mes empieza el viernes anterior; si el mes no tiene ese día, el último.') + '') +
     '</div><div class="actions"><button class="btn accent block" ' + act('tuMesGuardar') + '>Listo</button></div>';
 }
 /* «Estos días»: lo que hay que hacer o mirar (como mucho 3 a la vista) */
@@ -5375,7 +5376,7 @@ function descTuHtml() {
 function nivelHtml() {
   const v = (FORM && FORM.v) || nivel(), op = (k, t, d) => '<button type="button" class="av-op' + (v === k ? ' on' : '') + '" role="radio" aria-checked="' + (v === k) + '" ' + act('nivelElegir', k) + '><span class="av-op-t"><b>' + t + '</b><span class="nivel-d">' + d + '</span></span><span class="av-radio"></span></button>';
   return '<div class="handle"></div><h2>Qué ves en la app</h2><div class="nivel-ops">' + op('basico', 'Lo básico', 'Lo justo para apuntar y compartir. Lo demás, plegado y en Descubre PalomApp.') + op('todo', 'Todo', 'Todas las herramientas a la vista, en el + y en Tú.') + '</div>' +
-    '' + infoSola('No se borra nada: solo cambia lo que ves.') + '' +
+    '' + infoSola('Qué cambia', 'No se borra nada: solo cambia lo que ves.') + '' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('nivelGuardar') + '>Guardar</button></div>';
 }
 /* ---- «Primeros pasos» (solo en «Lo básico»): 3 filas que se marcan solas ---- */
@@ -6150,7 +6151,7 @@ function juntosPersonasVerHtml(ps, gs) {
   const nP = todos.personas ? pers.length : JV_MAX_PERSONAS, maxP = Math.max(0, ...pers.map((x) => Math.abs(x.v)));
   return '<button type="button" class="link jv5-volver" ' + act('juntosVer', '') + '>' + ic('chevL') + ' Juntos</button>' +
     '<section class="jv4-sec jv4-personas-sec"><div class="section-title">Por persona<button type="button" class="link" ' + act('juntosInvitar') + '>' + ic('plus') + ' Invitar</button></div>' +
-    '' +
+    infoSola('Qué suma', 'Cada cifra suma lo de todos tus grupos.') +
     (pers.length ? '<div class="ins-circ jv3-circ jv4-personas' + (todos.personas ? ' todas' : pers.length > 4 ? ' muchos' : '') + '">' + pers.slice(0, nP).map((x, i) => juntosCircHtml(x, maxP, i)).join('') + '</div>' +
       (pers.length > JV_MAX_PERSONAS ? '<button type="button" class="link jv4-todos" ' + act('juntosTodos', 'personas') + '>' + (todos.personas ? 'Ver menos' : 'Ver todas (' + pers.length + ')') + '</button>' : '')
       : '<div class="jv3-vacio">Aún no hay nadie. Invita a alguien por WhatsApp.</div>') + '</section>';
@@ -6290,7 +6291,7 @@ function personaVerHtml(uid, pedir) {
   const msg = debo ? '' : pedirMsg(x, FORM && FORM.kind === 'persona' && FORM.uid === uid ? FORM.pedirUrl : null);
   return '<div class="handle"></div><div class="jv-pcab">' + caraHtml(uid, x.nombre, 'grande') + '<div><h2>' + escapeHtml(x.nombre) + '</h2><span class="rec-hint" style="margin:0;">' + escapeHtml(dondeTxt(x.deudas)) + '</span></div></div>' +
     '<div class="jv-total ' + (debo ? 'de' : 'te') + '"><span>' + (debo ? 'Le debes' : 'Te debe') + '</span><b class="tnum">' + money(tot) + '</b></div>' +
-    (x.deudas.length > 1 ? '<div class="card jv-desg-card">' + desg + '</div>' + infoSola('Toca un grupo para ver de dónde sale.') + '' : '<button type="button" class="link jv-origen" ' + act('origenVer', x.deudas[0].gid, uid) + '>' + ic('list') + ' ¿De dónde sale?</button>') +
+    (x.deudas.length > 1 ? '<div class="card jv-desg-card">' + desg + '</div>' + infoSola('Cómo funciona', 'Toca un grupo para ver de dónde sale.') + '' : '<button type="button" class="link jv-origen" ' + act('origenVer', x.deudas[0].gid, uid) + '>' + ic('list') + ' ¿De dónde sale?</button>') +
     (debo ? '<button class="btn accent block" ' + act('saldarTodo', uid) + '>Saldar ' + money(tot) + '</button>'
       : '<div class="jv-msg">' + escapeHtml(msg) + '</div><a class="btn accent block wa-btn" href="https://wa.me/?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">' + ic('send') + ' Pedir por WhatsApp</a>' +
         '<button class="btn ghost block" style="margin-top:8px;" ' + act('saldarTodo', uid) + '>Me ha pagado</button>') +
@@ -6307,7 +6308,7 @@ function saldarTodoHtml() {
     '<div class="card jv-desg-card">' + mias.map((d) => { const g = grupoDe(d.gid), mia = d.de === yo; return '<div class="jv-desg"><span>' + escapeHtml(g && g.tipo === 'directo' ? 'Solo vosotros dos' : g ? g.nombre : 'Grupo') + '</span><span class="tnum">' + (mia ? 'le pagas ' : 'te paga ') + '<b class="' + (mia ? 'neg' : 'pos') + '">' + money(d.importe) + '</b></span></div>'; }).join('') + '</div>' +
     (hayVariasCuentas() ? '<div class="field"><label>' + (debo ? 'Desde la cuenta' : 'A la cuenta') + '</label><div class="chips" id="saldarCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (F.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('saldarCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
     '<div class="field jv-fecha"><label>Fecha</label><button type="button" class="chip active" id="sFechaChip" ' + act('sFechaVer') + '>' + ic('calendar') + ' Hoy</button><input id="sFecha" type="date" value="' + todayISO() + '" hidden></div>' +
-    '' + infoSola('Apúntalo cuando ya se haya pagado. No cuenta como gasto ni ingreso.') + '' +
+    '' + infoSola('Qué pasa al saldar', 'Apúntalo cuando ya se haya pagado. No cuenta como gasto ni ingreso.') + '' +
     '<button class="btn accent block" ' + act('saldarTodoGuardar') + '>' + (debo ? 'Le he pagado ' : 'Me ha pagado ') + money(tot) + '</button>' +
     (mias.length === 1 ? '<button type="button" class="link" style="margin-top:10px;" ' + act('saldarAbrir', mias[0].gid, mias[0].de, mias[0].a, mias[0].importe) + '>Pagar solo una parte</button>' : '');
 }
@@ -6353,7 +6354,7 @@ function grupoHtmlV2(g) {
       return '<div class="jv-s">' + caraHtml(aliasDe(g.id, u), nombreDe(g.id, u), 'mini') + '<span class="jv-s-n">' + escapeHtml(esMio(g.id, u) ? 'Tú' : nombreDe(g.id, u)) + '</span><span class="jv-s-bar"><i class="' + (v >= 0 ? 'te' : 'de') + '" style="width:' + w + '%"></i></span><b class="tnum" style="color:' + saldoColor(v) + '">' + (v >= 0.005 ? '+' : v <= -0.005 ? '−' : '') + money(Math.abs(v)) + '</b></div>'; }).join('') : '<div class="empty-mini">Sin saldos todavía.</div>') + '</div>';
     if (ds.length) h += '<div class="section-title">Para quedar en paz · ' + ds.length + (ds.length === 1 ? ' pago' : ' pagos') + '</div><div class="card jv-pagos">' + ds.slice().sort((a, b) => (esMio(g.id, b.de) || esMio(g.id, b.a)) - (esMio(g.id, a.de) || esMio(g.id, a.a))).map((d) => { const mio = esMio(g.id, d.de) || esMio(g.id, d.a);
       return '<div class="jv-pago' + (mio ? ' mio' : '') + '"><span>' + deudaTxt(d, g.id) + '</span>' + (mio ? '<button type="button" class="jv-btn ' + (esMio(g.id, d.de) ? 'saldar' : 'pedir') + '" ' + act('saldarAbrir', g.id, d.de, d.a, d.importe) + '>' + (esMio(g.id, d.de) ? 'Saldar' : 'Me ha pagado') + '</button>' : '') + '</div>'; }).join('') + '</div>' +
-      '' + infoSola('Cada grupo se cierra por su cuenta, con los menos pagos posibles.') + '';
+      '' + infoSola('Cómo se salda', 'Cada grupo se cierra por su cuenta, con los menos pagos posibles.') + '';
   }
   return h + '<div class="actions jv-gacc"><button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button><button class="btn accent block" ' + act('compRapido', 'g:' + g.id) + '>' + ic('plus') + ' Añadir gasto</button></div>';
 }
@@ -6522,10 +6523,10 @@ function monHtml() {
   h += '<div class="segmented sm mon-modo">' + (sinBce ? [] : [['bce', 'Cambio del día']]).concat([['mano', 'Poner el cambio'], ['cobro', 'Lo que me cobraron']]).map(([k, l]) => '<button type="button" class="' + (M.origen === k ? 'active' : '') + '" ' + act('monOrigen', k) + '>' + l + '</button>').join('') + '</div>';
   if (M.origen === 'mano') h += '<div class="mon-fila mon-mano"><span>1 € =</span><input id="monMano" class="tnum" type="text" inputmode="decimal" placeholder="1,08" aria-label="Cambio: cuántas unidades por 1 euro" value="' + escapeHtml(M.mano || '') + '" ' + onInput('monMano') + '><span>' + escapeHtml(inf[1] || 'de esa moneda') + '</span></div>' +
     (sinBce ? '<div class="rec-hint">El Banco Central Europeo no publica esa moneda. Escribe el cambio que te den o lo que te cobraron en euros.</div>' : '');
-  if (M.origen === 'cobro') h += '<div class="mon-fila mon-mano"><span>Me cobraron</span><input id="monCobro" class="tnum" type="text" inputmode="decimal" placeholder="0,00" aria-label="Lo que te cobraron en euros" value="' + escapeHtml(M.cobro || '') + '" ' + onInput('monCobro') + '><span>€</span></div>' + infoSola('Lo que dice tu banco o la tarjeta, con la comisión.') + '';
+  if (M.origen === 'cobro') h += '<div class="mon-fila mon-mano"><span>Me cobraron</span><input id="monCobro" class="tnum" type="text" inputmode="decimal" placeholder="0,00" aria-label="Lo que te cobraron en euros" value="' + escapeHtml(M.cobro || '') + '" ' + onInput('monCobro') + '><span>€</span></div>' + infoSola('Qué poner', 'Lo que dice tu banco o la tarjeta, con la comisión.') + '';
   if (M.origen !== 'bce') h += '<div class="mon-res" id="monRes">' + (eur != null ? '= <b class="tnum">' + money(eur) + '</b>' : '') + '</div>' + (M.aviso && !M.cambio ? '<span class="mon-aviso">' + escapeHtml(M.aviso) + '</span>' : '');
   h += '<button type="button" class="btn accent block mon-usar" id="monUsar" ' + act('monUsar') + (eur == null ? ' disabled' : '') + '>' + (eur == null ? 'Escribe el importe' : 'Usar ' + money(eur)) + '</button>' +
-    '' + infoSola('Se guarda en euros, y la cifra en esa moneda se apunta en la descripción.') + '</div>';
+    '' + infoSola('Qué se guarda', 'Se guarda en euros, y la cifra en esa moneda se apunta en la descripción.') + '</div>';
   return h;
 }
 function monBoxMov(ex, comp, tipo) { return !ex && !comp && (tipo === 'Gasto' || tipo === 'Factura') ? '<div id="monBox" class="mon-box">' + monHtml() + '</div>' : ''; }
@@ -6708,7 +6709,7 @@ function temaMeterHtml(g, t) {
     (cerca.length && !F.temaVerTodos ? '<button type="button" class="link" ' + act('temaSelTodosFechas') + '>Marcar los ' + cerca.length + ' de esas fechas</button>' : '') +
     '<div class="tema-sel-lista">' + ver.map(fila).join('') + '</div>' +
     (!F.temaVerTodos && resto.length && cerca.length ? '<button type="button" class="link" ' + act('temaVerTodosB') + '>Ver también otros ' + resto.length + ' gastos</button>' : '') +
-    '' + infoSola('¿Un gasto tuyo que no compartiste? Ábrelo, pulsa «Compartir» y elige este viaje.') + '' +
+    '' + infoSola('Otros gastos', '¿Un gasto tuyo que no compartiste? Ábrelo, pulsa «Compartir» y elige este viaje.') + '' +
     '<div class="actions"><button class="btn ghost block" ' + act('temaMeterCerrar') + '>Cancelar</button><button class="btn accent block" ' + act('temaMeterOk', t.id) + (n ? '' : ' disabled') + '>' + (n ? 'Añadir ' + n : 'Elige gastos') + '</button></div></div>';
 }
 function temaGastosEnFechas(gid, desde, hasta) {
@@ -6801,28 +6802,28 @@ function planFormHtml() {
   const marcada = fechas.some((x) => x[1] === F.fecha), dO = F.fecha && !marcada ? parseISO(F.fecha) : null;
   const g = F.con.indexOf('g:') === 0 ? grupoDe(F.con.slice(2)) : null;
   let h = '<div class="handle"></div><h2>' + (F.id ? (plan ? 'Editar plan' : 'Editar tarea') : (F.deTarea ? 'Compartir tarea' : plan ? 'Nuevo plan' : 'Nueva tarea compartida')) + '</h2>';
-  if (F.deTarea) h += '' + infoSola('Tu tarea pasa a ser compartida. La prioridad, la categoría y «Repetir» no se pasan.') + '';
+  if (F.deTarea) h += '' + infoSola('Qué se pasa', 'Tu tarea pasa a ser compartida. La prioridad, la categoría y «Repetir» no se pasan.') + '';
   if (!F.id && !F.deTarea) h += '<div class="segmented plan-tipo" role="tablist"><button type="button" role="tab" aria-selected="' + !plan + '" class="' + (plan ? '' : 'active') + '" ' + act('planTipo', 'tarea') + '>Tarea</button><button type="button" role="tab" aria-selected="' + plan + '" class="' + (plan ? 'active' : '') + '" ' + act('planTipo', 'plan') + '>Plan</button></div>';
   h += '<div class="field tf-que"><input id="pTitulo" type="text" maxlength="120" aria-label="' + (plan ? '¿Qué plan es?' : '¿Qué hay que hacer?') + '" placeholder="' + (plan ? '¿Qué plan es?' : '¿Qué hay que hacer?') + '" value="' + escapeHtml(F.titulo) + '"></div>' +
-    (plan && !F.id ? '' + infoSola('Por ejemplo: cena de cumple de Ana, vuelo a Roma…') + '' : '');
+    (plan && !F.id ? '' + infoSola('Ejemplo', 'Por ejemplo: cena de cumple de Ana, vuelo a Roma…') + '' : '');
   h += '<div class="field"><label>' + (plan ? '¿Cuándo?' : '¿Para cuándo? <span class="hint">· opcional</span>') + '</label><div class="chips">' + fechas.map(([l, v]) => chip('planFecha', v, F.fecha === v, l)).join('') +
     '<label class="chip tf-otro' + (dO ? ' active' : '') + '">' + ic('calendar') + '<span>' + (dO ? DIAS_LARGO[dowMon(dO)].slice(0, 3) + ' ' + dO.getDate() + ' ' + MESES_ABR[dO.getMonth()].toLowerCase() : 'Otro día…') + '</span><input type="date" id="pFechaOtro" aria-label="Elegir otro día" value="' + (dO ? F.fecha : '') + '" ' + onChange('planFechaOtro') + '></label></div></div>';
   if (plan) h += '<div class="field"><label>¿A qué hora?</label><div class="chips">' + chip('planHoraModo', 'dia', F.horaModo === 'dia', 'Todo el día') + chip('planHoraModo', 'hora', F.horaModo === 'hora', 'A una hora', ic('clock')) + chip('planHoraModo', 'varios', F.horaModo === 'varios', 'Varios días') + '</div>' +
     (F.horaModo === 'hora' ? '<input id="pHora" type="time" class="plan-hora" aria-label="Hora" value="' + escapeHtml(F.hora) + '">' : '') +
     (F.horaModo === 'varios' ? '<div class="tema-fechas plan-hasta"><span>Hasta</span><input id="pFin" type="date" aria-label="Hasta" min="' + escapeHtml(F.fecha) + '" value="' + escapeHtml(F.fechaFin) + '"></div>' : '') + '</div>';
   if (!F.id) h += '<div class="field"><label>Con' + (F.con !== 'yo' ? ' <span class="hint">· ' + (F.con.indexOf('u:') === 0 || (g && g.tipo === 'directo') ? 'lo veréis los dos' : 'lo verán todos') + '</span>' : '') + '</label><div class="chips plan-con">' + chip('planCon', 'yo', F.con === 'yo', 'Solo yo') + gs.map((x) => chip('planCon', 'g:' + x.id, F.con === 'g:' + x.id, nombreDestino(x), x.tipo === 'grupo' ? ic('users') : '')).join('') + personasParaPlanes().map((p) => chip('planCon', 'u:' + p.uid, F.con === 'u:' + p.uid, p.nombre, caraHtml(p.uid, p.nombre, 'mini'))).join('') + '</div>' +
-    (!plan && !gs.length && !personasParaPlanes().length ? '' + infoSola('Las tareas compartidas son de un grupo. Las tuyas, apúntalas como siempre.') + '' : '') + '</div>';
+    (!plan && !gs.length && !personasParaPlanes().length ? '' + infoSola('Tareas compartidas', 'Las tareas compartidas son de un grupo. Las tuyas, apúntalas como siempre.') + '' : '') + '</div>';
   else if (g) h += '<div class="rec-hint plan-de">' + ic('users') + ' ' + escapeHtml(nombreDestino(g)) + ' · lo ven todos</div>';
   const pu = !F.id && F.con.indexOf('u:') === 0 ? amigos().find((p) => p.uid === F.con.slice(2)) : null;
   if (!plan && pu) h += '<div class="field"><label>¿Quién se encarga?</label><div class="cr-caras plan-quien">' +
     [['', '<span class="avatar cara plan-cualquiera">' + ic('users') + '</span>', 'Quien pueda'], [miUid(), caraHtml(miUid(), miNombreAlguno()), 'Tú'], [pu.uid, caraHtml(pu.uid, pu.nombre), pu.nombre]].map(([u, cara, l]) => '<button type="button" class="cr-cara' + ((F.asignado || '') === u ? ' on' : '') + '" ' + act('planQuien', u) + '>' + cara + '<span>' + escapeHtml(l) + '</span></button>').join('') +
-    '</div>' + (F.asignado === pu.uid ? '<div class="rec-hint">' + ic('bell') + ' ' + escapeHtml(pu.nombre) + ' lo verá arriba en su Inicio.</div>' : '') + '' + infoSola('Se creará vuestro espacio para compartir (como en Juntos).') + '</div>';
+    '</div>' + (F.asignado === pu.uid ? '<div class="rec-hint">' + ic('bell') + ' ' + escapeHtml(pu.nombre) + ' lo verá arriba en su Inicio.</div>' : '') + '' + infoSola('Qué se crea', 'Se creará vuestro espacio para compartir (como en Juntos).') + '</div>';
   if (!plan && g) { const ms = g.miembros.filter((m) => !m.baja); h += '<div class="field"><label>¿Quién se encarga?</label><div class="cr-caras plan-quien">' +
     '<button type="button" class="cr-cara' + (!F.asignado ? ' on' : '') + '" ' + act('planQuien', '') + '><span class="avatar cara plan-cualquiera">' + ic('users') + '</span><span>Quien pueda</span></button>' +
     ms.map((m) => { const u = aliasDe(g.id, m.user_id); return '<button type="button" class="cr-cara' + (F.asignado && aliasDe(g.id, F.asignado) === aliasDe(g.id, m.user_id) ? ' on' : '') + '" ' + act('planQuien', m.user_id) + '>' + caraHtml(u, m.nombre) + '<span>' + escapeHtml(esMio(g.id, m.user_id) ? 'Tú' : String(m.nombre).split(' ')[0]) + '</span></button>'; }).join('') + '</div></div>'; }
   if (plan && F.con === 'yo') h += privadaCampoHtml(F.privada, 'pPrivada', 'planPrivada', F.id && agendaPorId(F.id) && agendaPorId(F.id).privada);
   if (plan) h += '<div class="field"><label for="pLugar">¿Dónde? <span class="hint">· opcional</span></label><div class="plan-lugar">' + ic('pin') + '<input id="pLugar" type="text" maxlength="120" placeholder="Restaurante, dirección…" value="' + escapeHtml(F.lugar) + '"></div></div>' +
-    '<div class="field"><label>Avisarme</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => chip('planAviso', k, F.aviso === k, l, k === 'antes' ? ic('bell') : '')).join('') + '</div>' + infoSola('Te lo recuerdo en Inicio al abrir la app.') + '</div>';
+    '<div class="field"><label>Avisarme ' + infoI('Te lo recuerdo en Inicio al abrir la app.') + '</label><div class="chips">' + AVISOS_PLAN.map(([k, l]) => chip('planAviso', k, F.aviso === k, l, k === 'antes' ? ic('bell') : '')).join('') + '</div>' + '</div>';
   h += '<details class="tf-mas"' + (F.notaAbierta ? ' open' : '') + '><summary>Nota' + ic('chevD') + '</summary><div class="field"><textarea id="pNota" rows="3" maxlength="1000" aria-label="Nota">' + escapeHtml(F.nota) + '</textarea></div></details>';
   h += '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('planGuardar') + '>Guardar</button></div>';
   return h;
@@ -7285,10 +7286,10 @@ function aportarRHtml() {
     '<div class="chips dm-ap-chips">' + chips + '</div>' +
     '<div class="cr-res" id="apPrev">' + escapeHtml(prev) + '</div>' +
     '<div class="field jv-fecha"><label>Fecha</label><button type="button" class="chip active" id="apFechaChip" ' + act('apFechaVer') + '>' + ic('calendar') + ' Hoy</button><input id="apFecha" type="date" value="' + todayISO() + '" hidden></div>' +
-    (() => { const dest = cuentaDeMeta(F.key); if (!dest) return '' + infoSola('Apartar no saca dinero del banco.') + '';
+    (() => { const dest = cuentaDeMeta(F.key); if (!dest) return '' + infoSola('Qué es apartar', 'Apartar no saca dinero del banco.') + '';
       if (!F.desde || !cuentaPorId(F.desde) || F.desde === dest) F.desde = cuentaDesdeDefecto(dest);
       return '<div class="field"><label>Desde</label><div class="chips">' + cuentasCfg().filter((c) => c.id !== dest && conSaldo(c)).map((c) => '<button type="button" class="chip' + (F.desde === c.id ? ' active' : '') + '" aria-pressed="' + (F.desde === c.id) + '" ' + act('aportarRDesde', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' +
-        '' + infoSola('El dinero pasará de ' + escapeHtml(nombreCuenta(F.desde)) + ' a ' + escapeHtml(nombreCuenta(dest)) + ', donde guardas esta meta. En tu mes cuenta como apartado, igual que siempre.') + ''; })() +
+        '' + ('<div class="rec-hint">' + ('El dinero pasará de ' + escapeHtml(nombreCuenta(F.desde)) + ' a ' + escapeHtml(nombreCuenta(dest)) + ', donde guardas esta meta. En tu mes cuenta como apartado, igual que siempre.') + '</div>') + ''; })() +
     '<button class="btn accent block" id="apGuardar" ' + act('aportarRGuardar') + '>' + (imp > 0 ? 'Aportar ' + money(imp) : 'Aportar') + '</button>' +
     (tec ? tecladoHtml(F.tec) : '');
 }
@@ -7448,7 +7449,7 @@ function invCadaUnoHtml(R) {
       '<span class="inv-cu-b"><i class="' + (x.v != null && x.v < 0 ? 'neg' : 'pos') + '" style="width:' + w.toFixed(1) + '%"></i></span>' +
       '<span class="inv-cu-v"><b class="tnum" style="color:' + (x.v == null ? 'var(--text-faint)' : x.v >= 0 ? 'var(--income)' : 'var(--expense)') + '">' + (anio ? invAnualTxt(x.v) : pct1(x.v)) + '</b><span class="tnum">' + (anio ? (x.v == null ? 'menos de un mes' : 'al año') : signoN(x.vv.gan) + money(Math.abs(x.vv.gan))) + '</span></span></button>'; };
   return '<div class="section-title">Qué tal va cada uno</div><div class="card inv-cu"><div class="segmented inv-cu-seg">' + [['total', 'Desde que empezaste'], ['anio', 'Al año']].map(([k, l]) => '<button type="button" class="' + ((anio ? 'anio' : 'total') === k ? 'active' : '') + '" aria-pressed="' + ((anio ? 'anio' : 'total') === k) + '" ' + act('invBarras', k) + '>' + l + '</button>').join('') + '</div>' +
-    conV.concat(sinV).map(fila).join('') + '' + infoSola('' + (anio ? 'Al año, según cuándo metiste cada euro (como la del total).' + (filas.some((x) => x.v != null && invDiasActivo(x.g) < 365) ? ' Con menos de un año de datos es orientativo.' : '') : 'Lo que ganas o pierdes sobre lo que metiste.') + ' Toca uno para abrir su hoja.') + '</div>';
+    conV.concat(sinV).map(fila).join('') + '' + infoSola('Cómo se calcula', '' + (anio ? 'Al año, según cuándo metiste cada euro (como la del total).' + (filas.some((x) => x.v != null && invDiasActivo(x.g) < 365) ? ' Con menos de un año de datos es orientativo.' : '') : 'Lo que ganas o pierdes sobre lo que metiste.') + ' Toca uno para abrir su hoja.') + '</div>';
 }
 // nombre corto de un activo: su símbolo (BTC, IWDA) o las primeras letras del nombre
 // nombre corto que se reconoce (29/10, docs/22 §3): el apodo que pongas o el nombre sin palabras de relleno, 16 letras como mucho
@@ -7474,7 +7475,7 @@ function invLineasChipsHtml(movs, series, multi, apila) {
   return '<div class="tr-lineas" role="group" aria-label="Activos en la gráfica"><button type="button" class="chip tr-tot' + (multi ? '' : ' active') + '" aria-pressed="' + !multi + '" ' + act('invLinea', 'total') + '><i style="background:' + (apila ? 'var(--ink)' : 'var(--accent)') + '"></i>Total</button>' +
     vis.map((a) => '<button type="button" class="chip' + (sel.indexOf(a.id) >= 0 ? ' active' : '') + '" aria-pressed="' + (sel.indexOf(a.id) >= 0) + '" aria-label="' + escapeHtml(a.nombre) + '" title="' + escapeHtml(a.nombre) + '" ' + act('invLinea', a.id) + '><i style="background:' + a.color + '"></i>' + escapeHtml(invCorto(a.id, a.nombre)) + '</button>').join('') +
     (as.length > vis.length ? '<button type="button" class="chip" ' + act('invLineasElegir') + '>Elegir…</button>' : '') + '</div>' +
-    '' + infoSola('' + (multi ? (apila ? 'Cada franja es lo que vale ese activo; lo gris, el resto. El borde de arriba es el total.' : 'La línea gruesa es el total; las finas, cada activo.') : 'Toca un activo para verlo en la gráfica.') + '') + '';
+    '' + infoSola('Cómo leerlo', '' + (multi ? (apila ? 'Cada franja es lo que vale ese activo; lo gris, el resto. El borde de arriba es el total.' : 'La línea gruesa es el total; las finas, cada activo.') : 'Toca un activo para verlo en la gráfica.') + '') + '';
 }
 function invLineasHojaHtml() {
   const R = invResumen(), sel = invLineasSel(), H0 = S.historico, conSerie = new Set(H0 && H0.series ? Object.keys(H0.series).filter((k) => (H0.series[k] || []).length) : []), as = R.grupos.filter((g) => g.activoId && conSerie.has(g.activoId));
@@ -7511,7 +7512,7 @@ function inflacionV2Html(grupos, valorActual) {
       '<div class="dm-inf-v">' + (dif >= 0 ? '<span class="ic-ok">' + ic('checkCircle') + '</span> ' + '<b>Le ganas por ' + Math.abs(dif).toFixed(1).replace('.', ',') + ' puntos.</b> Tu dinero compra un ' + pct1(real).replace('+', '') + ' más cada año.' : '<span class="ic-warn">' + ic('alert') + '</span> ' + '<b>La inflación te gana por ' + Math.abs(dif).toFixed(1).replace('.', ',') + ' puntos.</b> Tu dinero compra un ' + pct1(real).replace('−', '') + ' menos cada año.') + '</div>';
   }
   return '<div class="section-title">¿Le ganas a la inflación?</div><div class="card dm-inf">' + cuerpo + chips +
-    '' + infoSola('Al año, según cuándo metiste cada euro' + (dias < 365 ? ' (con menos de un año de datos es orientativo)' : '') + '. Inflación: ' + escapeHtml(inf.que) + ', ' + escapeHtml(inf.periodo) + ' · ' + escapeHtml(inf.fuente) + '.') + '</div>';
+    '' + infoSola('Cómo se calcula', 'Al año, según cuándo metiste cada euro' + (dias < 365 ? ' (con menos de un año de datos es orientativo)' : '') + '. Inflación: ' + escapeHtml(inf.que) + ', ' + escapeHtml(inf.periodo) + ' · ' + escapeHtml(inf.fuente) + '.') + '</div>';
 }
 function invRentaHojaHtml() {
   const R = invResumen();
@@ -7550,7 +7551,7 @@ function activoGraficaHtml(g, col) {
     '<div class="act-graf-c">' + cab + '</div>' +
     '<svg viewBox="0 0 ' + W + ' ' + Hh + '" preserveAspectRatio="none" class="act-svg" role="img" aria-label="' + (modoR ? 'Evolución del precio de ' : 'Evolución del valor de ') + escapeHtml(g.nombre) + '">' + (modoR ? '<line x1="0" x2="' + W + '" y1="' + Y(0).toFixed(1) + '" y2="' + Y(0).toFixed(1) + '" stroke="var(--text-faint)" stroke-dasharray="2 4" stroke-width="1" vector-effect="non-scaling-stroke"/>' : '') +
     '<path d="' + curvaSuave(xy) + '" fill="none" stroke="' + (col || 'var(--savings)') + '" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linecap="round"/>' + compras + '</svg>' +
-    (modoR ? '' + infoSola('Solo cuenta cómo se movió el precio: aportar no cambia la línea. Los puntos son tus compras.') + '' : '') +
+    (modoR ? '' + infoSola('Cómo se calcula', 'Solo cuenta cómo se movió el precio: aportar no cambia la línea. Los puntos son tus compras.') + '' : '') +
     '<div class="segmented tr-chips">' + PERIODOS_INV.map((x) => '<button type="button" class="' + (x[0] === per[0] ? 'active' : '') + '" aria-pressed="' + (x[0] === per[0]) + '" ' + act('activoPer', x[0]) + '>' + x[1] + '</button>').join('') + '</div></div>';
 }
 // índices repartidos (conserva el primero y el último)
@@ -7651,7 +7652,7 @@ function deudaVerHtml(nombre) {
     (F.menu ? '<div class="card dm-hmas"><button type="button" class="dm-hmas-b" ' + act('deudaEditar', d.nombre) + '>' + ic('edit') + '<span><b>Editar</b><span>Nombre, dibujo, total, ya pagado, al mes y fecha</span></span></button>' +
       '<button type="button" class="dm-hmas-b peligro" ' + act('deudaEliminar', d.nombre) + '>' + ic('trash') + '<span><b>Eliminar deuda</b><span>Sus pagos siguen en Movimientos</span></span></button></div>' : '') +
     (pagos.length ? '<div class="section-title">Últimos pagos<button class="link" ' + act('irMovsDeuda', d.nombre) + '>Ver todos</button></div><div class="card dm-ult">' + pagos.slice(0, 3).map((x) => '<div class="dm-ult-f"><span>' + fmtDateShort(x.fecha) + '</span><b class="tnum">' + money(x.importe) + '</b></div>').join('') + '</div>' : '') +
-    (num(d.previo) ? '<div class="rec-hint">Incluye ' + money(num(d.previo)) + ' que pagaste antes de usar la app. Sin intereses.</div>' : '' + infoSola('Sin contar intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».') + '');
+    (num(d.previo) ? '<div class="rec-hint">Incluye ' + money(num(d.previo)) + ' que pagaste antes de usar la app. Sin intereses.</div>' : '' + infoSola('Sobre los intereses', 'Sin contar intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».') + '');
 }
 function deudaFormHtml() {
   const F = FORM, antiguo = F.emoji && !DEUDA_ICONOS.some((x) => x[0] === F.emoji) && EMOJI_IC[F.emoji] ? [[F.emoji, EMOJI_IC[F.emoji], EMOJI_NOMBRE[F.emoji] || 'El de antes']] : [];
@@ -7664,7 +7665,7 @@ function deudaFormHtml() {
     '<div class="field"><label>Ya pagado <span class="hint">· opcional</span></label><input id="dPrevio" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.previo)) + '"></div></div>' +
     '<div><div class="field"><label>Al mes <span class="hint">· opcional</span></label><input id="dCuota" type="text" inputmode="decimal" placeholder="0 €" value="' + escapeHtml(n(F.cuotaMes)) + '"></div>' +
     '</div>' + mesAnioCampoHtml('Acabar en', 'dFecha', (F.fecha || '').slice(0, 7), 'deudaMes') +
-    '' + infoSola('' + ic('alert') + '<span>«Ya pagado» es lo que pagaste antes de usar la app. No cuento intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</span>') + '' +
+    '' + infoSola('Cómo funciona', '' + ic('alert') + '<span>«Ya pagado» es lo que pagaste antes de usar la app. No cuento intereses: si tu banco dice otra cifra, usa «Cuadrar con el banco».</span>') + '' +
     '<div id="dAviso"></div><button class="btn accent block" ' + act('deudaGuardar') + '>Guardar deuda</button>';
 }
 // Selector de mes y año propio (el del sistema enseña «--------- ----»): 12 meses y el año con − y +. Guarda 'AAAA-MM' en un campo oculto
@@ -7753,9 +7754,9 @@ function origenHtml(gid, volver) {
   }).filter(Boolean);
   return '<div class="handle"></div><h2>¿De dónde sale?</h2><div class="rec-hint" style="margin-top:-4px;">' + escapeHtml(nombreDestino(g)) + '</div>' +
     '<div class="jv-total ' + (Math.abs(tot) < 0.005 ? 'paz' : tot < 0 ? 'de' : 'te') + '"><span>' + (Math.abs(tot) < 0.005 ? 'Estás en paz' : tot > 0 ? 'Te deben' : 'Debes') + '</span><b class="tnum">' + money(Math.abs(tot)) + '</b></div>' +
-    '' + infoSola('Sumo lo que has pagado y resto tu parte de cada gasto. Lo que queda es tu saldo.') + '' +
+    '' + infoSola('Cómo se calcula', 'Sumo lo que has pagado y resto tu parte de cada gasto. Lo que queda es tu saldo.') + '' +
     (filas.length ? '<div class="card og-card">' + filas.join('') + '<div class="og-f tot"><span>Tu saldo</span><b class="tnum" style="color:' + saldoColor(tot) + '">' + sg(tot) + '</b></div></div>' : '<div class="card empty-mini">Aún no hay nada tuyo en este grupo.</div>') +
-    (g.tipo === 'grupo' && g.miembros.length > 2 ? '' + infoSola('Para quedar en paz, la app junta los saldos de todo el grupo y propone los menos pagos posibles. Por eso puede que pagues a alguien que no pagó justo tus gastos: al final, las cuentas cuadran igual.') + '' : '') +
+    (g.tipo === 'grupo' && g.miembros.length > 2 ? '' + infoSola('Por qué esos pagos', 'Para quedar en paz, la app junta los saldos de todo el grupo y propone los menos pagos posibles. Por eso puede que pagues a alguien que no pagó justo tus gastos: al final, las cuentas cuadran igual.') + '' : '') +
     '<div class="actions"><button class="btn ghost block" ' + (volver ? act('personaVer', volver) : act('grupoVer', gid)) + '>Volver</button></div>';
 }
 /* ---- Historial del grupo, tanda 1 (docs/27, 30/10/2026): quién apuntó, cambió o borró cada gasto. Solo ver. ---- */
@@ -7895,9 +7896,9 @@ function histHtml(gid) {
       (rec ? '<button type="button" class="hist-rec" ' + act('histRecuperar', gid, f.id) + ' aria-label="Recuperar «' + escapeHtml(histNombreGasto(f)) + '»">' + ic('history') + ' Recuperar</button>' : '') + '</div>';
   });
   if (dia) h += '</div>';
-  if (vis.some(histPuedeRecuperar)) h += '' + infoSola('Recuperar devuelve el gasto tal cual estaba, para todo el grupo. Todo el grupo verá que lo has recuperado tú.') + '';
+  if (vis.some(histPuedeRecuperar)) h += '' + ('<div class="rec-hint">' + ('Recuperar devuelve el gasto tal cual estaba, para todo el grupo. Todo el grupo verá que lo has recuperado tú.') + '</div>') + '';
   if (st.mas && st.filas.length) h += '<button type="button" class="btn ghost block hist-mas" ' + act('histMas', gid) + (st.cargando ? ' disabled' : '') + '>' + (st.cargando ? 'Cargando…' : 'Ver más') + '</button>';
-  h += '' + infoSola('Se guarda 6 meses. Lo ven todos los del grupo.') + '';
+  h += '' + infoSola('Cuánto se guarda', 'Se guarda 6 meses. Lo ven todos los del grupo.') + '';
   return h + '<div class="actions"><button class="btn ghost block" ' + act('histVolver', gid) + '>Volver</button></div>';
 }
 function histDetalleHtml(gid, id) {
@@ -7911,7 +7912,7 @@ function histDetalleHtml(gid, id) {
       if (k === 'reparto') { const us = Object.keys(Object.assign({}, f.antes.reparto || {}, f.despues.reparto || {}));
         return us.map((u) => '<div class="hist-tf"><span>' + escapeHtml(esMio(f.gid, u) ? 'Tu parte' : 'Parte de ' + histPersona(f, u)) + '</span><s>' + escapeHtml(money(num((f.antes.reparto || {})[u]))) + '</s><b>' + escapeHtml(money(num((f.despues.reparto || {})[u]))) + '</b></div>').join(''); }
       return '<div class="hist-tf"><span>' + escapeHtml(l) + '</span><s>' + escapeHtml(histValor(f, k, f.antes[k])) + '</s><b>' + escapeHtml(histValor(f, k, f.despues[k])) + '</b></div>'; }).join('') + '</div>' +
-      '' + infoSola('Lo que no sale aquí no cambió.') + ''; }
+      '' + infoSola('Qué no sale', 'Lo que no sale aquí no cambió.') + ''; }
   else h += '<div class="card hist-tabla"><div class="hist-tf"><span>Importe</span><b>' + money(f.accion === 'creado' ? num(f.despues.importe) : f.importe) + '</b></div><div class="hist-tf"><span>Pagó</span><b>' + escapeHtml(histPersona(f, f.accion === 'creado' ? f.despues.pagado_por : f.pagadoPor)) + '</b></div></div>' +
     (f.accion === 'borrado' ? '<div class="rec-hint">' + (!f.borrado ? 'Ya se ha recuperado.' : histPuedeRecuperar(f) ? (function () { const v = efectoMio(histGasto(f, 'despues')); return 'Sigue borrado.' + (Math.abs(v) < 0.005 ? '' : ' Al recuperarlo, tu saldo en el grupo ' + (v > 0 ? 'sube ' : 'baja ') + money(Math.abs(v)) + '.'); })() : 'Sigue borrado.') + '</div>' : '');
   if (ef != null) h += '<div class="hist-saldo ' + (ef < -0.004 ? 'de' : ef > 0.004 ? 'te' : 'paz') + '"><span>' + (f.accion === 'borrado' ? 'Al borrarlo, a tu saldo' : 'A tu saldo en el grupo') + '</span><b class="tnum">' + (ef > 0.004 ? '+' : ef < -0.004 ? '−' : '') + money(Math.abs(ef)) + '</b></div>';
@@ -7995,7 +7996,7 @@ function buscarHtml() {
 function buscarResHtml(q0) {
   const q = normDesc(q0);
   if (!q) return '<div class="section-title">Atajos</div><div class="chips">' + buscarAcciones().slice(0, 8).map(([t, , h, a]) => '<button type="button" class="chip chip-ic" ' + act('buscarIr', h, ...a) + '>' + ic(ATAJO_IC[t] || 'chevR') + ' ' + escapeHtml(t) + '</button>').join('') + '</div>' +
-    '' + infoSola('Busca movimientos por tienda, categoría o importe, tus tareas y cualquier ajuste.') + '';
+    '' + infoSola('Qué puedes buscar', 'Busca movimientos por tienda, categoría o importe, tus tareas y cualquier ajuste.') + '';
   const pal = q.split(' ').filter(Boolean), casa = (txt) => { const t = normDesc(txt); return pal.every((w) => t.indexOf(w) >= 0); };
   const acc = buscarAcciones().filter(([t, k]) => casa(t + ' ' + k)).slice(0, 5);
   const cats = [...new Set(categoriasPorTipo('Gasto').concat(categoriasPorTipo('Factura')))].filter((c) => casa(c)).slice(0, 4);
@@ -8132,13 +8133,13 @@ function metaOpciones() {
 function metaSelHtml() {
   const ops = metaOpciones();
   const nueva = '<button type="button" class="chip chip-nueva" ' + act('metaNuevaForm') + '>' + ic('plus') + ' Nueva meta</button>';
-  if (!ops.length) return FORM && FORM.tipo === 'Ahorro' ? '<div class="field"><label>¿Para qué meta? <span class="hint">· opcional</span></label><div class="chips" id="metaChips">' + nueva + '</div>' + infoSola('Apartar es pasar dinero a tu ahorro (no es un gasto). Si es para algo concreto (la casa, un viaje), crea una meta.') + '</div>' : '';
+  if (!ops.length) return FORM && FORM.tipo === 'Ahorro' ? '<div class="field"><label>¿Para qué meta? <span class="hint">· opcional</span></label><div class="chips" id="metaChips">' + nueva + '</div>' + infoSola('Qué es apartar', 'Apartar es pasar dinero a tu ahorro (no es un gasto). Si es para algo concreto (la casa, un viaje), crea una meta.') + '</div>' : '';
   const inv = FORM && FORM.tipo === 'Inversión', sels = inv ? (FORM.metaSels || []) : [(FORM && FORM.metaSel) || ''];
   const on = (k) => (k === '' ? (inv ? !sels.length : !sels[0]) : sels.indexOf(k) >= 0);
   return '<div class="field"><label>¿Para qué meta?' + badge('metasH') + ' <span class="hint">· opcional</span></label><div class="chips" id="metaChips">' +
     [{ k: '', nombre: 'Sin meta' }].concat(ops).map((o) => '<button type="button" class="chip ' + (on(o.k) ? 'active' : '') + '" ' + act('pickMeta', o.k) + '>' + (o.comp ? ic('users') + ' ' : '') + escapeHtml(o.nombre) + '</button>').join('') + nueva + '</div>' +
-    (FORM && FORM.tipo === 'Ahorro' ? '' + infoSola('Apartar es pasar dinero a tu ahorro: no cuenta como gasto.') + '' : '') +
-    (inv ? '' + infoSola('Una inversión puede contar para varias metas a la vez. Aparece siempre en Inversiones.') + '' : '') + '</div>';
+    (FORM && FORM.tipo === 'Ahorro' ? '' + infoSola('Qué es apartar', 'Apartar es pasar dinero a tu ahorro: no cuenta como gasto.') + '' : '') +
+    (inv ? '' + infoSola('Sobre inversiones', 'Una inversión puede contar para varias metas a la vez. Aparece siempre en Inversiones.') + '' : '') + '</div>';
 }
 // Una inversión puede estar en varias metas a la vez (metaIds); metaId es la primera. Un apartado, en una sola.
 function metasDeMov(x) {
@@ -8193,7 +8194,7 @@ function hitosEditorHtml() {
       '<input class="amt" type="number" step="0.01" inputmode="decimal" aria-label="Importe del hito" placeholder="Importe ' + sym() + '" value="' + (h.importe == null ? '' : escapeHtml(h.importe)) + '" ' + onChange('hitoCampo', i, 'importe') + '>' +
       '<input class="hf" type="date" aria-label="Fecha del hito (opcional)" title="Fecha (opcional)" value="' + escapeHtml(h.fecha || '') + '" ' + onChange('hitoCampo', i, 'fecha') + '>' +
       '<button type="button" class="rm" aria-label="Quitar hito" ' + act('hitoQuitar', i) + '>' + ic('close') + '</button></div>').join('') + '</div>' +
-    (hs.length ? '' + infoSola('La fecha es opcional: con ella verás si llegas a tiempo a ese hito.') + '' : '') +
+    (hs.length ? '' + infoSola('Para qué sirve', 'La fecha es opcional: con ella verás si llegas a tiempo a ese hito.') + '' : '') +
     '<button type="button" class="link" ' + act('hitoAdd') + '>' + ic('plus') + ' Añadir hito</button></div>';
 }
 function hitosBarHtml(r) {
@@ -8309,12 +8310,12 @@ function usoHtml() {
     '<div class="field"><label>¿Cuánto? (' + sym() + ')</label><input id="uImporte" type="number" step="0.01" inputmode="decimal" placeholder="0,00" value="' + escapeHtml(F.imp || '') + '"></div>' +
     '<div class="field"><label>¿Para qué?</label><div class="segmented" id="usoPara"><button type="button" class="' + (obj ? 'active' : '') + '" ' + act('usoPara', 'objetivo') + '>Para el objetivo</button>' +
     '<button type="button" class="' + (obj ? '' : 'active') + '" ' + act('usoPara', 'otro') + '>Para otra cosa</button></div>' +
-    '' + infoSola('' + (obj ? 'La meta quedará como <b>conseguida</b> 🎉 (por ejemplo, la entrada de la casa).' : 'Baja lo que tiene la meta y sigue activa (por ejemplo, una urgencia).') + '') + '</div>' +
+    '' + ('<div class="rec-hint">' + ('' + (obj ? 'La meta quedará como <b>conseguida</b> 🎉 (por ejemplo, la entrada de la casa).' : 'Baja lo que tiene la meta y sigue activa (por ejemplo, una urgencia).') + '') + '</div>') + '</div>' +
     '<div class="field"><label>Fecha</label><input id="uFecha" type="date" value="' + escapeHtml(F.fecha || todayISO()) + '"></div>' +
     '<div class="field"><label>Nota <span class="hint">· opcional</span></label><input id="uNota" type="text" maxlength="80" placeholder="' + (obj ? 'Entrada del piso' : 'Arreglo del coche') + '" value="' + escapeHtml(F.nota || '') + '"></div>' +
     '<label class="comp-row uso-gasto"><input type="checkbox" ' + (F.gasto ? 'checked' : '') + ' ' + onChange('usoGasto') + '><span>Apuntarlo también como gasto del mes</span></label>' +
     (F.gasto ? '<div class="field"><label>Categoría del gasto</label><select id="uCat">' + catsGasto().map((c) => '<option' + (c.nombre === F.cat ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select></div>' : '') +
-    '' + infoSola('Por defecto no cuenta como gasto: es dinero que ya tenías apartado o invertido.') + '' +
+    '' + infoSola('Qué cuenta', 'Por defecto no cuenta como gasto: es dinero que ya tenías apartado o invertido.') + '' +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('usoGuardar') + '>Guardar</button></div>';
 }
 async function usoGuardar() {
@@ -8434,14 +8435,14 @@ function metasListaHtml() {
 function metaEditorHtml() {
   const F = FORM, v = (x) => (x == null ? '' : escapeHtml(x));
   return '<div class="handle"></div><h2>' + (F.id ? 'Editar meta' : 'Nueva meta') + '</h2>' +
-    '' + infoSola('Una meta junta lo que apartas y lo que inviertes para ella. Al apuntar un movimiento eliges «¿Para qué meta?».') + '' +
+    '' + infoSola('Qué es una meta', 'Una meta junta lo que apartas y lo que inviertes para ella. Al apuntar un movimiento eliges «¿Para qué meta?».') + '' +
     '<div class="field"><label>Nombre</label><input id="mNombre" type="text" placeholder="Entrada de la casa" value="' + v(F.nombre) + '" ' + onInput('metaNombreIn') + '></div>' + (metasVariante() === 'formas' ? formaElegirHtml(F.forma, F.nombre) + metaColoresHtml(F.color || metaColor({ id: F.id }), 'metaColorElegir') : '') +
     metaCuentaCampoHtml() +
     '<div class="field"><label>Objetivo (' + sym() + ')</label><input id="mObjetivo" type="number" step="0.01" inputmode="decimal" value="' + v(F.objetivo) + '"></div>' +
     '<div class="field"><label>Fecha objetivo <span class="hint">· opcional</span></label><input id="mFecha" type="date" value="' + v(F.fechaObjetivo) + '"></div>' +
     '<div class="field"><label>Lo que ya tenías antes (' + sym() + ') <span class="hint">· opcional</span></label><input id="mFuera" type="number" step="0.01" inputmode="decimal" value="' + v(F.yaAhorrado) + '"></div>' +
     hitosEditorHtml() +
-    '<div class="field"><label>Rentabilidad anual esperada de lo invertido (%) <span class="hint">· opcional</span></label><input id="mRent" type="number" step="0.1" inputmode="decimal" placeholder="Automática" value="' + v(F.rentabilidad) + '">' + infoSola('Si lo dejas vacío se calcula con tu histórico (o un 4 % prudente).') + '</div>' +
+    '<div class="field"><label>Rentabilidad anual esperada de lo invertido (%) <span class="hint">· opcional</span> ' + infoI('Si lo dejas vacío se calcula con tu histórico (o un 4 % prudente).') + '</label><input id="mRent" type="number" step="0.1" inputmode="decimal" placeholder="Automática" value="' + v(F.rentabilidad) + '">' + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('openMetas') + '>Cancelar</button><button class="btn accent block" ' + act('metaGuardar') + '>Guardar</button></div>' +
     (F.id ? '<button class="btn danger block" style="margin-top:10px;" ' + act('metaEliminar') + '>' + ic('trash') + ' Eliminar meta</button><div class="rec-hint" style="text-align:center;">Eliminar la meta no borra ningún movimiento.</div>' : '');
 }
@@ -8452,7 +8453,7 @@ function metaCuentaCampoHtml() {
   const ch = (id, txt, dot) => '<button type="button" class="chip' + ((F.cuentaMeta || '') === id ? ' active' : '') + '" aria-pressed="' + ((F.cuentaMeta || '') === id) + '" ' + act('metaCuentaElegir', id) + '>' + (dot ? '<span class="dot" style="background:' + dot + '"></span>' : '') + escapeHtml(txt) + '</button>';
   return '<div class="field"><label>¿Dónde guardas este dinero? <span class="hint">· opcional</span></label><div class="chips">' + ch('', 'En ninguna cuenta concreta') + cs.map((c) => ch(c.id, c.nombre, colorCuenta(c))).join('') + '</div>' +
     (F.cuentaMeta && cuentaPorId(F.cuentaMeta) && !conSaldo(cuentaPorId(F.cuentaMeta)) ? '<div class="rec-hint" style="color:var(--warn)">' + escapeHtml(nombreCuenta(F.cuentaMeta)) + ' no tiene saldo puesto: hasta que se lo pongas (Tú → Cuentas), aportar no moverá dinero.</div>' : '') +
-    (F.cuentaMeta && conSaldo(cuentaPorId(F.cuentaMeta)) ? '' + infoSola('' + (F.cuentaMeta !== F.cuentaMetaOrig ? 'A partir de ahora, al aportar, el dinero pasará de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '. Lo que ya llevabas no cambia.' : 'Al aportar, el dinero pasa de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '.') + '') + '' : '') + '</div>';
+    (F.cuentaMeta && conSaldo(cuentaPorId(F.cuentaMeta)) ? '' + ('<div class="rec-hint">' + ('' + (F.cuentaMeta !== F.cuentaMetaOrig ? 'A partir de ahora, al aportar, el dinero pasará de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '. Lo que ya llevabas no cambia.' : 'Al aportar, el dinero pasa de tu cuenta a ' + escapeHtml(nombreCuenta(F.cuentaMeta)) + '.') + '') + '</div>') + '' : '') + '</div>';
 }
 function metaAbrirEditor(id) {
   const m = id ? metasCfg().find((x) => x.id === id) : null;
@@ -8629,7 +8630,7 @@ function bancoElegirHtml() {
     '<div class="field"><input type="search" id="bcoQ" placeholder="Busca tu banco o bróker" autocomplete="off" value="' + escapeHtml(F.q || '') + '" ' + onInput('bancoBuscar') + '></div><div id="bcoRes">' +
     (q ? grupo('Resultados', vis) || '<div class="rec-hint">No lo tengo. Elige «Otro, o sin banco» y ponle tú el nombre.</div>' : grupo('Los más usados', vis.filter((b) => b.tipo === 'banco' && b.top)) + grupo('Brókers e inversión', vis.filter((b) => b.tipo === 'broker')) + grupo('Otros bancos', vis.filter((b) => b.tipo === 'banco' && !b.top))) + '</div>' +
     '<button type="button" class="btn ghost block" style="margin-top:12px;" ' + act('bancoElegir', '') + '>' + ic('wallet') + ' Otro, o sin banco</button>' +
-    '' + infoSola('Los nombres y logos son de cada banco; solo sirven para que reconozcas tu cuenta.') + '';
+    '' + infoSola('Sobre los logos', 'Los nombres y logos son de cada banco; solo sirven para que reconozcas tu cuenta.') + '';
 }
 const TIPOS_CUENTA = [['corriente', 'Corriente'], ['ahorro', 'Ahorro'], ['efectivo', 'Efectivo'], ['broker', 'Bróker'], ['otra', 'Otra']];
 const COLORES_CUENTA = ['#64748B', '#0F8A87', '#B83FB8', '#C2416C', '#5B5BD6', '#0891B2']; // 22/10: sin el azul de fijos, el verde de ingresos ni el color de deudas
@@ -8746,7 +8747,7 @@ function cuadrarDifHtml(c, banco) {
   const dif = Math.round((banco - calc) * 100) / 100;
   if (!dif) return '<span class="cuadra-ok">Cuadra: la app y el banco dicen lo mismo.</span>';
   return 'La app calcula <b class="tnum">' + money(calc) + '</b>. Diferencia: <b class="tnum ' + (dif > 0 ? 'pos' : 'neg') + '">' + (dif > 0 ? '+' : '−') + money(Math.abs(dif)) + '</b>.' +
-    '' + infoSola('Si falta algún movimiento, apúntalo antes y vuelve a cuadrar. Si no, al guardar la diferencia se queda como ajuste (no cuenta como gasto ni como ingreso).') + '' +
+    '' + ('<div class="rec-hint">' + ('Si falta algún movimiento, apúntalo antes y vuelve a cuadrar. Si no, al guardar la diferencia se queda como ajuste (no cuenta como gasto ni como ingreso).') + '</div>') + '' +
     (c.id ? '<button type="button" class="link" ' + act('irMovsCuenta', c.id) + '>Buscar lo que falta en sus movimientos</button>' : '');
 }
 function cuadrarHtml(i) {
@@ -8777,7 +8778,7 @@ function lineaCuentasHtml() {
 function cuentasHojaHtml() {
   return '<div class="handle"></div><h2>En tus cuentas</h2>' +
     '<div class="cuentas-total tnum">' + money(enTusCuentas()) + '</div>' +
-    '' + infoSola('Suma las cuentas que tienen activado «Sumar». Lo cambias en Editar cuentas.') + '' + sinSaldoAvisoHtml() +
+    '' + infoSola('Qué suma', 'Suma las cuentas que tienen activado «Sumar». Lo cambias en Editar cuentas.') + '' + sinSaldoAvisoHtml() +
     '<div class="list">' + cuentasCfg().map(cuentaFilaHtml).join('') + '</div>' +
     '<div class="actions"><button class="btn ghost block" ' + act('openCuentas') + '>Editar cuentas</button><button class="btn accent block" ' + act('crearIr', 'traspaso') + '>' + ic('swap') + ' Traspaso</button></div>';
 }
@@ -8802,7 +8803,7 @@ function saldoVirtual(c, real) { const k = compartidosCuenta(c); return { neto: 
 function cuentaDosSaldosHtml(c, real) {
   const k = saldoVirtual(c, real);
   return '<div class="saldo-virtual"><div><span class="sv-l">Saldo virtual</span><span class="sv-d">contando Juntos: ' + (k.neto ? (k.neto > 0 ? 'te deben ' + money(k.neto) : 'debes ' + money(-k.neto)) : 'estáis en paz') + '</span></div><b class="tnum">' + money(k.v) + '</b></div>' +
-    '' + infoSola('Un gasto compartido que pagas tú baja entero y sube cuando te lo devuelven. El virtual es lo que tendrías si saldarais ahora.') + '';
+    '' + infoSola('Qué es «virtual»', 'Un gasto compartido que pagas tú baja entero y sube cuando te lo devuelven. El virtual es lo que tendrías si saldarais ahora.') + '';
 }
 // en la ficha de una cuenta, los compartidos enseñan lo que salió de ella (no solo tu parte)
 function filasDeCuentaHtml(lista, id) { const prev = S.movCuenta; S.movCuenta = id; try { return lista.map((m) => esTraspaso(m) ? renderTraspasoRow(m, true) : renderMovRowBase(m)).join(''); } finally { S.movCuenta = prev; } }
@@ -8817,14 +8818,14 @@ function cuentaVerHtml(id) {
     '<button class="btn ghost block" ' + act('irMovsCuenta', id) + '>Ver movimientos</button></div>' +
     '<button type="button" class="link cuenta-imp" ' + act('impEnCuenta', id) + '>' + ic('fileIn') + ' Importar extracto en esta cuenta</button>' +
     (ult.length ? '<div class="section-title">Últimos movimientos</div><div class="list">' + filasDeCuentaHtml(ult, id) + '</div>' : '') +
-    (sin && hayVariasCuentas() ? '<div class="card asignar-aviso"><b>' + sin + (sin === 1 ? ' movimiento sin cuenta' : ' movimientos sin cuenta') + '</b>' + infoSola('Ahora cuentan como de la principal. Puedes pasar a «' + escapeHtml(c.nombre) + '» los que sean suyos.') + '' +
+    (sin && hayVariasCuentas() ? '<div class="card asignar-aviso"><b>' + sin + (sin === 1 ? ' movimiento sin cuenta' : ' movimientos sin cuenta') + '</b>' + infoSola('Qué significa', 'Ahora cuentan como de la principal. Puedes pasar a «' + escapeHtml(c.nombre) + '» los que sean suyos.') + '' +
       '<button class="btn ghost block" style="margin-top:8px;" ' + act('asigCuentaAbrir', id) + '>Asignar movimientos</button></div>' : '');
 }
 function asigCuentaHtml() {
   const F = FORM, c = cuentaPorId(F.cuenta), lista = movsSinCuenta(), vis = lista.slice(0, F.limite), n = F.sel.size;
   const todos = lista.length && lista.every((m) => F.sel.has(m.id));
   return '<div class="handle"></div><h2>Asignar a «' + escapeHtml(c ? c.nombre : '') + '»</h2>' +
-    '' + infoSola('Marca los movimientos que salieron de (o entraron en) esta cuenta. Los que no marques siguen contando como de la principal.') + '' +
+    '' + infoSola('Cómo funciona', 'Marca los movimientos que salieron de (o entraron en) esta cuenta. Los que no marques siguen contando como de la principal.') + '' +
     (lista.length ? '<button type="button" class="link" ' + act('asigCuentaTodos') + '>' + (todos ? 'Quitar la selección' : 'Seleccionar todos (' + lista.length + ')') + '</button>' +
       '<div class="list asignar-lista">' + vis.map((m) => '<button type="button" class="row asignar-fila' + (F.sel.has(m.id) ? ' on' : '') + '" ' + act('asigCuentaMarcar', m.id) + '><span class="asignar-check">' + (F.sel.has(m.id) ? ic('check') : '') + '</span>' +
         '<div class="main"><div class="ttl">' + escapeHtml(m.categoria || 'Sin categoría') + '</div><div class="meta">' + escapeHtml([fmtDateShort(m.fecha) + ' ' + (m.fecha || '').slice(0, 4), tipoTxt(m.tipo), m.descripcion].filter(Boolean).join(' · ')) + '</div></div>' +
@@ -8960,7 +8961,7 @@ function cuentasHtml() {
         '<div class="amt tnum">' + (v == null ? '<span style="color:var(--accent)">Pon el saldo</span>' : money(v)) + '</div><span class="chev-s">' + ic('chevR') + '</span></button>';
     }).join('') + '</div>'
       : '<div class="card" style="padding:16px;color:var(--text-faint);font-size:13.5px;">Aún no has añadido ninguna cuenta.</div>') +
-    (cuentasCfg().length >= 2 ? '' + infoSola('Los movimientos sin cuenta cuentan como de la principal.') + '' : '') +
+    (cuentasCfg().length >= 2 ? '' + infoSola('Cómo funciona', 'Los movimientos sin cuenta cuentan como de la principal.') + '' : '') +
     '<div style="margin-top:12px;"><button class="btn ghost block" ' + act('cuentaAnadir') + '>' + ic('plus') + ' Añadir cuenta</button></div>' +
     '<div class="actions"><button class="btn accent block" ' + act('cuentasListo') + '>Listo</button></div>';
 }
@@ -8977,8 +8978,8 @@ function cuentaEdHtml(i) {
     '<div class="field"><label>Tipo</label><select aria-label="Tipo de cuenta" ' + onChange('cuentaCampo', i, 'tipo') + '>' + TIPOS_CUENTA.map(([k, l]) => '<option value="' + k + '"' + (tipoCuenta(c) === k ? ' selected' : '') + '>' + l + '</option>').join('') + '</select></div>' +
     '<div class="field"><label>' + (bancoDe(c) ? 'Color en gráficos' : 'Color') + '</label><span class="cuenta-colores">' + COLORES_CUENTA.map((col) => '<button type="button" class="cuenta-color' + (colorCuenta(c) === col ? ' on' : '') + '" style="background:' + col + '" aria-label="Color" ' + act('cuentaColor', i, col) + '></button>').join('') + '</span></div>' +
     '<div class="card cuenta-ajustes">' +
-      '<div class="cuenta-ajuste"><div><b>Sumar en «En tus cuentas»</b>' + infoSola('Para las cuentas del día a día. El ahorro y el bróker, mejor fuera.') + '</div><button type="button" class="switch' + (cuentaEnTengo(c) ? ' on' : '') + '" role="switch" aria-checked="' + cuentaEnTengo(c) + '" aria-label="Sumar en En tus cuentas" ' + act('cuentaTengo', i) + '></button></div>' +
-      (varias && c.nombre ? '<div class="cuenta-ajuste"><div><b>Cuenta principal</b>' + infoSola('' + (esP ? 'Es tu cuenta principal: aquí van los movimientos sin cuenta y los compartidos en los que no elegiste otra.' : 'Aquí irían los movimientos sin cuenta y los compartidos en los que no elijas otra.') + '') + '</div>' +
+      '<div class="cuenta-ajuste"><div><b>Sumar en «En tus cuentas» ' + infoI('Para las cuentas del día a día. El ahorro y el bróker, mejor fuera.') + '</b>' + '</div><button type="button" class="switch' + (cuentaEnTengo(c) ? ' on' : '') + '" role="switch" aria-checked="' + cuentaEnTengo(c) + '" aria-label="Sumar en En tus cuentas" ' + act('cuentaTengo', i) + '></button></div>' +
+      (varias && c.nombre ? '<div class="cuenta-ajuste"><div><b>Cuenta principal ' + infoI('' + (esP ? 'Es tu cuenta principal: aquí van los movimientos sin cuenta y los compartidos en los que no elegiste otra.' : 'Aquí irían los movimientos sin cuenta y los compartidos en los que no elijas otra.') + '') + '</b>' + '</div>' +
         (esP ? '<span class="chip active">Principal</span>' : '<button type="button" class="chip" ' + act('cuentaPrincipal', i) + '>Hacer principal</button>') + '</div>' : '') +
     '</div></div>' +
     '<button class="btn danger block" style="margin-top:14px;" aria-label="Quitar" ' + act('cuentaQuitar', i) + '>' + ic('trash') + ' Quitar esta cuenta</button>' +
@@ -10501,7 +10502,7 @@ function impCuentaHtml(I) {
     ? '<select id="impCuentaSel" aria-label="Cuenta del extracto" ' + onChange('impCuentaSel') + '><option value="">Elige la cuenta…</option>' + cs.map((c) => '<option value="' + escapeHtml(c.id) + '"' + (I.cuenta === c.id ? ' selected' : '') + '>' + escapeHtml(c.nombre) + '</option>').join('') + '</select>'
     : '<div class="chips imp-cuentas">' + cs.map((c) => '<button type="button" class="chip' + (I.cuenta === c.id ? ' active' : '') + '" aria-pressed="' + (I.cuenta === c.id) + '" ' + act('impCuenta', c.id) + '>' + punto(c) + escapeHtml(c.nombre) + '</button>').join('') + '</div>';
   return '<div class="imp-cuenta"><label>¿De qué cuenta es este extracto?</label>' + elegir +
-    (I.cuentaRecordada && I.cuenta ? '<div class="rec-hint">La última vez importaste este formato en ' + escapeHtml(nombreCuenta(I.cuenta)) + '.</div>' : !I.cuenta ? '' + infoSola('Elígela para que cada movimiento vaya a su cuenta y no se repita lo que ya tenías.') + '' : '') + '</div>';
+    (I.cuentaRecordada && I.cuenta ? '<div class="rec-hint">La última vez importaste este formato en ' + escapeHtml(nombreCuenta(I.cuenta)) + '.</div>' : !I.cuenta ? '' + ('<div class="rec-hint">' + ('Elígela para que cada movimiento vaya a su cuenta y no se repita lo que ya tenías.') + '</div>') + '' : '') + '</div>';
 }
 // lo ya apuntado con lo que se compara una fila: de esta cuenta, sin cuenta (lo antiguo) y lo que pagaste tú en Juntos
 function impCandidatos(cuenta) {
@@ -10887,7 +10888,7 @@ function reglaCuentaHtml() {
   const F = FORM || {}, cs = cuentasCfg(), ch = (accion, v, on, txt) => '<button type="button" class="chip' + (on ? ' active' : '') + '" aria-pressed="' + !!on + '" ' + act(accion, v) + '>' + escapeHtml(txt) + '</button>';
   return '<div class="field"><label>Solo en</label><div class="chips">' + ch('reglaCuenta', '', !F.rgCuenta, 'Cualquier cuenta') + cs.map((c) => ch('reglaCuenta', c.id, F.rgCuenta === c.id, c.nombre)).join('') + '</div></div>' +
     '<div class="field"><label>Entonces es</label><div class="chips">' + ch('reglaEs', '', F.rgEs !== 'tras', 'Una categoría') + ch('reglaEs', 'tras', F.rgEs === 'tras', 'Un traspaso') + '</div>' +
-    (F.rgEs === 'tras' ? '<select id="rgTras" aria-label="Con qué cuenta" style="margin-top:8px;"><option value="">Con qué cuenta…</option>' + cs.filter((c) => c.id !== F.rgCuenta).map((c) => '<option value="' + escapeHtml(c.id) + '">Con ' + escapeHtml(c.nombre) + '</option>').join('') + '</select>' + infoSola('Al importar, lo que contenga ese texto se guarda como traspaso entre tus cuentas (la dirección sale del signo).') + '' : '') + '</div>';
+    (F.rgEs === 'tras' ? '<select id="rgTras" aria-label="Con qué cuenta" style="margin-top:8px;"><option value="">Con qué cuenta…</option>' + cs.filter((c) => c.id !== F.rgCuenta).map((c) => '<option value="' + escapeHtml(c.id) + '">Con ' + escapeHtml(c.nombre) + '</option>').join('') + '</select>' + infoSola('Cómo funciona', 'Al importar, lo que contenga ese texto se guarda como traspaso entre tus cuentas (la dirección sale del signo).') + '' : '') + '</div>';
 }
 function guardarRegla(texto, categoria, tipo, extra) {
   const t = normDesc(texto); if (!t || !categoria) return false;
@@ -11752,14 +11753,14 @@ function guiaIosCuerpo(G) {
   if (p === 'abrir') return puntos() + guiaIosDibujo('abrir') + t('Abre Atajos') + txt('Abre la app <b>Atajos</b>, entra en <b>Automatización</b> y toca el <b>+</b> de arriba.');
   if (p === 'disparador') return puntos() + guiaIosDibujo('disparador') + t('Elige tu banco') + txt('Toca <b>Notificación</b>, elige la app de tu banco y marca <b>Ejecutar inmediatamente</b>. Toca <b>Siguiente</b>.');
   if (p === 'accion') return puntos() + guiaIosDibujo('accion') + t('Añade PalomApp') + txt('Busca <b>PalomApp</b> y elige <b>Apuntar aviso en PalomApp</b>. En «Banco» elige el tuyo y en «Texto del aviso» pon <b>Entrada del atajo</b>. Toca <b>OK</b>.') +
-    '' + infoSola('¿Tienes más de un banco? Repite estos pasos con cada uno.') + '';
+    '' + infoSola('Varios bancos', '¿Tienes más de un banco? Repite estos pasos con cada uno.') + '';
   if (p === 'applepay') return guiaIosDibujo('applepay') + t('Tus pagos con Apple Pay') + txt('En Atajos → <b>Automatización</b> → <b>+</b>, elige <b>Wallet</b> (o «Transacción»), marca tus tarjetas y <b>Ejecutar inmediatamente</b>. Añade <b>Apuntar pago de Apple Pay</b> y pon <b>Importe</b> y <b>Comercio</b> de la entrada del atajo.') +
-    '' + infoSola('Si un pago llega por los dos caminos, se apunta una sola vez.') + '';
+    '' + infoSola('Pagos repetidos', 'Si un pago llega por los dos caminos, se apunta una sola vez.') + '';
   // 25/11: «Comprobar ahora»: la app espera a que llegue algo por Atajos y lo confirma
   if (G.pruebaOk) return guiaDibujo('prueba') + t('¡Funciona!') + (G.pruebaOk === 'real' ? txt('Ha llegado tu aviso y PalomApp lo ha leído. Míralo en Inicio, con «Deshacer».') :
     txt('Atajos y PalomApp se hablan bien. Para comprobar tu automatización de verdad, haz un pago pequeño o pide un Bizum de 1 €.'));
   if (G.pruebaEsp) return guiaDibujo('prueba') + t('Esperando tu prueba…') + txt('Haz ahora un pago con Apple Pay o con la tarjeta de tu banco, o pide un Bizum de 1 €. Cuando llegue a PalomApp te lo diré aquí. Puedes salir de la app y volver.') +
-    '' + infoSola('' + ic('alert') + ' ¿Tarda? En Atajos, la automatización debe tener <b>Ejecutar inmediatamente</b> y, en «Texto del aviso», <b>Entrada del atajo</b>. Con Apple Pay, en Ajustes → Wallet deja los <b>datos móviles</b> activados.') + '';
+    '' + infoSola('Si tarda', '' + ic('alert') + ' ¿Tarda? En Atajos, la automatización debe tener <b>Ejecutar inmediatamente</b> y, en «Texto del aviso», <b>Entrada del atajo</b>. Con Apple Pay, en Ajustes → Wallet deja los <b>datos móviles</b> activados.') + '';
   return guiaDibujo('prueba') + t(i.usado ? '¡Funciona!' : '¡Listo! Ahora, pruébalo') + txt(i.usado ? 'Ya ha llegado tu primer aviso. Lo verás en Inicio, con «Deshacer».' : 'Pulsa «Comprobar ahora» y paga con tarjeta o pide un Bizum de 1 €. Sin pagar: en Atajos, pulsa <b>Probar PalomApp</b>.');
 }
 function guiaIosBotones(G) {
@@ -11823,7 +11824,7 @@ function avisosHtml() {
       (S._pushOk === false ? '<p class="rec-hint">Esta versión de la app aún no puede recibirlos con la app cerrada.</p>' : '') : '') +
     '<div class="section-title">Resumen</div><div class="card">' + fila('Tu semana y tu mes', 'El domingo a las 19:00 y cuando se cierra tu mes', sw(ac.resumen, 'avRec', 'resumen')) + '</div>' +
     '<div class="card">' + fila('Silencio de 22:00 a 9:00', 'Lo que llegue de noche, a las 9:00', sw(ac.silencio, 'avRec', 'silencio')) + '</div>' +
-    '' + infoSola('Como mucho ' + AVISOS_MAX_DIA + ' avisos al día (los importantes aparte), sin cifras y sin publicidad.') + '';
+    '' + infoSola('Cuántos avisos', 'Como mucho ' + AVISOS_MAX_DIA + ' avisos al día (los importantes aparte), sin cifras y sin publicidad.') + '';
   if (!e && atajosNat()) return h + '<div class="section-title">Avisos del banco</div>' + guiaTarjetaHtml().replace('PalomApp lee los avisos de tus apps de banco y apunta cada gasto o ingreso, con «Deshacer». El texto del aviso no sale de tu móvil.', 'Con la app Atajos de tu iPhone, cada aviso de tu banco o pago con Apple Pay se apunta solo, con «Deshacer». El texto del aviso no sale de tu móvil.') + atajosEstadoHtml();
   if (!e) return h + '<p class="rec-hint">Los avisos del banco solo están en la app de Android.</p>';
   if (!herrOn('avisosBanco') && !e.activo) return h + '<p class="rec-hint">Los avisos del banco están apagados en Tú → Mis herramientas.</p>';
@@ -11838,7 +11839,7 @@ function avisosHtml() {
     fila('Avisarme cuando apunte algo', 'Sin cifras con el móvil bloqueado', sw(e.avisarme !== false, 'avAvisarme')) + '</div>';
   if ((e.candidatos || []).length) h += '<div class="section-title">Apps que han avisado de un pago</div><div class="card">' + e.candidatos.map((c) => filaB(c.pkg, c.nombre, true)).join('') + '</div>';
   h += '<div class="section-title">Qué apps se leen</div><div class="card">' + orden.concat(otras).map((p) => filaB(p, '')).join('') + '</div>' +
-    '' + infoSola('Si tu banco no está, déjalo activado: cuando avise de un pago, aparecerá arriba para que lo marques.') + '';
+    '' + infoSola('Si tu banco no está', 'Si tu banco no está, déjalo activado: cuando avise de un pago, aparecerá arriba para que lo marques.') + '';
   return h + avComprobarHtml(e, nok);
 }
 // 13/11 · Android bloquea el «Acceso a notificaciones» de las apps instaladas desde un archivo (no desde Google Play)
@@ -11862,11 +11863,11 @@ function avComprobarHtml(e, nok) {
     vistos.slice(0, 8).map((v) => '<div class="av-opt"><div>' + ok(v.leido && v.marcado) + ' <b>' + escapeHtml(nombreDePaquete(v.pkg, v.app)) + '</b><span><i>' + escapeHtml(haceTxtTs(v.ts)) + '</i> · <i>' +
       (!v.marcado ? 'Esta app no está marcada para leerse' : v.leido ? 'Entendido y apuntado' : 'Llegó, pero no se entendió el texto') + '</i></span></div></div>').join('') +
     '</div>';
-  if (e.prueba && (e.muestras || []).length) h += '<div class="section-title">Avisos no entendidos (solo versión de prueba)</div><div class="card">' + infoSola('Se guardan solo en este móvil. Cópialos y mándaselos a quien te pasó la app (puedes tachar nombres o cifras): así PalomApp aprende a leerlos.') + '' +
+  if (e.prueba && (e.muestras || []).length) h += '<div class="section-title">Avisos no entendidos (solo versión de prueba)</div><div class="card">' + infoSola('Qué hacer con esto', 'Se guardan solo en este móvil. Cópialos y mándaselos a quien te pasó la app (puedes tachar nombres o cifras): así PalomApp aprende a leerlos.') + '' +
     e.muestras.map((m) => '<div class="av-opt"><div><b>' + escapeHtml(m.app || '') + '</b><span>' + escapeHtml(m.texto || '') + '</span></div></div>').join('') +
     '<button type="button" class="btn sm block" ' + act('avCopiarMuestras') + '>Copiar los textos</button></div>';
   h += '<button type="button" class="btn block" ' + act('avProbar') + '>Mandarme un aviso de prueba</button>' +
-    '' + infoSola('¿No llega o deja de leer al rato? Pon la batería de PalomApp en «Sin restricciones» y, si existe, activa «Inicio automático».') + '' +
+    '' + infoSola('Si no llega', '¿No llega o deja de leer al rato? Pon la batería de PalomApp en «Sin restricciones» y, si existe, activa «Inicio automático».') + '' +
     '<button type="button" class="btn sm block" ' + act('avAbrirApp', 'app') + '>Abrir ajustes de PalomApp</button>';
   return h;
 }
@@ -12006,10 +12007,10 @@ function recParamsHtml(r) {
   const sel = (id, opts, val, field) => '<select id="' + id + '" ' + onChange('recParam', field) + '>' + opts.map(([v, l]) => '<option value="' + v + '"' + (String(val == null ? '' : val) === String(v) ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>';
   const ajuste = (val) => '<div class="field"><label>Si cae en fin de semana</label>' + sel('recAjuste', [['', 'Se queda ese día'], ['antes', 'Se adelanta al viernes'], ['despues', 'Se pasa al lunes']], val, 'ajuste') + '</div>';
   if (!r) return '';
-  if (r.t === 'dia') return '<div class="field"><label>Día del mes</label><input id="recDia" type="number" min="1" max="31" inputmode="numeric" value="' + escapeHtml(r.dia) + '" ' + onInput('recParam', 'dia') + '>' + infoSola('Si el mes tiene menos días, se usa el último.') + '</div>' + ajuste(r.ajuste);
+  if (r.t === 'dia') return '<div class="field"><label>Día del mes ' + infoI('Si el mes tiene menos días, se usa el último.') + '</label><input id="recDia" type="number" min="1" max="31" inputmode="numeric" value="' + escapeHtml(r.dia) + '" ' + onInput('recParam', 'dia') + '>' + '</div>' + ajuste(r.ajuste);
   if (r.t === 'quincenal') return ajuste(r.ajuste);
   if (r.t === 'nesimo') return '<div class="field"><label>Cuál</label><div style="display:flex;gap:8px;">' + sel('recN', [['1', 'Primer'], ['2', 'Segundo'], ['3', 'Tercer'], ['4', 'Cuarto'], ['-1', 'Último']], r.n, 'n') + sel('recDow', DOW_LARGO.map((d, i) => [String(i), d]), r.dow, 'dow') + '</div></div>';
-  if (r.t === 'meses') return '<div class="field"><label>Cada cuántos meses</label><input id="recCadaM" type="number" min="1" max="24" inputmode="numeric" value="' + escapeHtml(r.cada) + '" ' + onInput('recParam', 'cada') + '>' + infoSola('3 = trimestral, 6 = semestral, 12 = anual.') + '</div>' +
+  if (r.t === 'meses') return '<div class="field"><label>Cada cuántos meses ' + infoI('3 = trimestral, 6 = semestral, 12 = anual.') + '</label><input id="recCadaM" type="number" min="1" max="24" inputmode="numeric" value="' + escapeHtml(r.cada) + '" ' + onInput('recParam', 'cada') + '>' + '</div>' +
     '<div class="field"><label>Una fecha en la que ocurrió u ocurrirá</label><input id="recAnclaM" type="date" value="' + escapeHtml(r.ancla || '') + '" ' + onChange('recParam', 'ancla') + '></div>' + ajuste(r.ajuste);
   if (r.t === 'semanas') return '<div class="field"><label>Cada cuántas semanas</label><input id="recCada" type="number" min="1" max="52" inputmode="numeric" value="' + escapeHtml(r.cada) + '" ' + onInput('recParam', 'cada') + '></div>' +
     '<div class="field"><label>Una fecha en la que ocurrió u ocurrirá</label><input id="recAncla" type="date" value="' + escapeHtml(r.ancla || '') + '" ' + onChange('recParam', 'ancla') + '></div>';
@@ -12076,10 +12077,10 @@ function festivosHtml() {
   let h = '<div class="handle"></div><div class="tema-cab"><button type="button" class="icon-btn" aria-label="Volver" ' + act('festivosCerrar') + '>' + ic('chevL') + '</button><h2>Festivos</h2></div>' +
     '<div class="asp-fila"><div class="t">Saltar festivos en los días hábiles<span>Si lo enciendes, «día hábil» y «si cae en fin de semana» también se saltan los festivos de tu zona.</span></div><button type="button" class="switch' + (F.on ? ' on' : '') + '" role="switch" aria-checked="' + !!F.on + '" aria-label="Saltar festivos" ' + act('festivosOn') + '></button></div>';
   if (F.on) {
-    h += '<div class="section-title">¿Dónde trabajas?</div>' + infoSola('Los bancos y las nóminas siguen el calendario del sitio de trabajo.') + '' +
+    h += '<div class="section-title">¿Dónde trabajas?</div>' + infoSola('Para qué sirve', 'Los bancos y las nóminas siguen el calendario del sitio de trabajo.') + '' +
       '<div class="field"><input type="search" id="festBusca" placeholder="Buscar comunidad" aria-label="Buscar comunidad" value="' + escapeHtml(F.busca || '') + '" ' + onInput('festivosBusca') + '></div>' +
       '<div class="rec-ops" role="radiogroup" id="festZonas">' + zs.map(([k, n]) => '<button type="button" class="tumes-op' + (F.zona === k ? ' on' : '') + '" role="radio" aria-checked="' + (F.zona === k) + '" ' + act('festivosZona', k) + '><span class="tumes-radio"></span><span class="tumes-txt"><b>' + escapeHtml(n) + '</b></span></button>').join('') + '</div>';
-    h += '<div class="section-title">Fiestas de tu pueblo <span class="hint">· opcional</span></div>' + infoSola('Cada municipio tiene 2. Pon las de tu sitio de trabajo.') + '' +
+    h += '<div class="section-title">Fiestas de tu pueblo <span class="hint">· opcional</span></div>' + infoSola('Para qué sirve', 'Cada municipio tiene 2. Pon las de tu sitio de trabajo.') + '' +
       anios.map((a) => '<div class="fest-loc"><span>' + a + '</span>' + [0, 1].map((i) => '<input type="date" aria-label="Fiesta local ' + (i + 1) + ' de ' + a + '" min="' + a + '-01-01" max="' + a + '-12-31" value="' + escapeHtml(((F.locales || {})[a] || [])[i] || '') + '" ' + onChange('festivosLocal', a, i) + '>').join('') + '</div>').join('');
     if (falta.length) h += '<div class="rec-hint">Aún no tengo los festivos de ' + falta.join(' y ') + ': ese año solo se saltan los fines de semana.</div>';
     const rs = recurrentes().filter((rc) => rc.regla && rc.regla.t);
@@ -12111,7 +12112,7 @@ function recEditorHtml() {
     (esCobro ? '' : recCatCampoHtml()) +
     (hayVariasCuentas() ? '<div class="field"><label>' + (esCobro ? 'Llega a la cuenta' : 'Sale de la cuenta') + '</label><div class="chips" id="recCuentas">' + cuentasCfg().map((c) => '<button type="button" class="chip' + (c.id === (F.cuenta || (cuentaPrincipal() || {}).id) ? ' active' : '') + '" ' + act('recCuenta', c.id) + '><span class="dot" style="background:' + colorCuenta(c) + '"></span>' + escapeHtml(c.nombre) + '</button>').join('') + '</div></div>' : '') +
     '<div class="field"><label>Importe previsto (' + sym() + ') <span class="hint">· opcional</span></label><input id="recImporte" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(F.importe) + '" ' + onInput('recCampo', 'importe') + '></div>' +
-    recCampoReglaHtml(r, esCobro) + (esCobro && !(r && r.t) ? '' + infoSola('Lo más habitual: entre el 1 y el 5, entre el 28 y el 30, o el último día hábil. Si dudas, usa «Aprender de mi historial».') + '' : '') +
+    recCampoReglaHtml(r, esCobro) + (esCobro && !(r && r.t) ? '' + infoSola('Cómo elegir', 'Lo más habitual: entre el 1 y el 5, entre el 28 y el 30, o el último día hábil. Si dudas, usa «Aprender de mi historial».') + '' : '') +
     '<button type="button" class="link" style="margin:0 0 6px;" ' + act('recAprender') + '>' + ic('sparkle') + ' Aprender de mi historial</button>' + aprendido + sugerencia +
     (esCobro ? '<div class="field" style="margin-top:10px;"><label>Pagas extra <span class="hint">· meses en que cobras el doble</span></label><div class="chips">' + meses + '</div></div>' : '') +
     '<div class="rec-prev" id="recPrev">' + recPreviewHtml() + '</div>' +
@@ -12225,7 +12226,7 @@ function repetirFieldHtml(rep) {
   const opts = [['', 'No se repite'], ['dia', 'Cada día'], ['semana', 'Cada semana'], ['mes', 'Cada mes'], ['anio', 'Cada año'], ['custom', 'Personalizado…']];
   return '<div class="field"><label>Repetir' + badge('repetir') + '</label><select id="tRepetir" ' + onChange('tRepetirCambio') + '>' + opts.map(([v, l]) => '<option value="' + v + '"' + (sel === v ? ' selected' : '') + '>' + l + '</option>').join('') + '</select>' +
     '<div id="tRepCustom">' + (sel === 'custom' ? repCustomHtml(rep) : '') + '</div>' +
-    '' + infoSola('Al completarla se crea sola la siguiente.') + '</div>';
+    '' + infoSola('Cómo funciona', 'Al completarla se crea sola la siguiente.') + '</div>';
 }
 
 /* ============================================================
@@ -12422,7 +12423,7 @@ function obEmpiezaHtml() {
   return '<h1 class="ob2-h">¿Por dónde empiezas?</h1><div class="ob2-puertas">' + op('gasto', 'plus', 'a', 'Apuntar un gasto', 'Lo que te has gastado hoy') +
     (compartidosDisponible() ? op('compartido', 'users', 'b', 'Compartir gastos con alguien', 'Una cena, la casa, un viaje') : '') +
     op('banco', 'bank', 'r', 'Poner mi banco al día', 'Copia el saldo de la app de tu banco') + '</div>' +
-    '' + infoSola('Lo demás lo encuentras en <b>Descubre PalomApp</b>, en Inicio y en Tú.') + '';
+    '' + infoSola('Dónde está todo', 'Lo demás lo encuentras en <b>Descubre PalomApp</b>, en Inicio y en Tú.') + '';
 }
 // 13/11 · ¿Qué quieres usar? Tarjetas que se marcan y desmarcan (la base siempre); se cambia luego en Tú → Mis herramientas
 function obHerrHtml(ob) {
@@ -12440,7 +12441,7 @@ function obNotifHtml(ob) {
     obHerrOn(ob, 'agenda') ? [['calendar', 'b', 'Tus tareas del día', 'Por la mañana, todas juntas']] : []);
   return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te aviso de lo importante</h1><p class="ob2-p">PalomApp te avisa solo de lo que te sirve:</p>' +
     '<div class="ob2-filas">' + filas.map(([i, c, t, d]) => obFila(i, c, t, d)).join('') + '</div>' +
-    '' + infoSola('' + ic('shield') + '<span>Sin publicidad. Como mucho ' + AVISOS_MAX_DIA + ' al día, nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.</span>') + '' +
+    '' + infoSola('Sobre los avisos', '' + ic('shield') + '<span>Sin publicidad. Como mucho ' + AVISOS_MAX_DIA + ' al día, nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.</span>') + '' +
     (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">El móvil no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '');
 }
 // 13/11 · Permiso 2 (solo Android): leer los avisos del banco. Qué ganas y qué pasa con tu privacidad
@@ -12460,13 +12461,13 @@ function obBancoHtml(ob) {
   const ya = cuentasCfg(), unido = ob.grupoId ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Ya estás en <b>' + escapeHtml(ob.grupoNombre || 'el grupo') + '</b></span></div>' : '';
   return unido + '<span class="ob2-big-ic">' + ic('bank') + '</span><h1 class="ob2-h">' + (ya.length ? 'Tus cuentas' : '¿Cuánto tienes hoy en el banco?') + '</h1>' +
     (ya.length ? '<p class="ob2-p">Ya tienes estas. Aquí no se borra nada: solo puedes añadir.</p><div class="ob2-cuentas">' + ya.map((c) => { const v = saldoCuenta(c); return '<div class="ob2-cta"><span class="dot" style="background:' + colorCuenta(c) + '"></span><span>' + escapeHtml(c.nombre) + '</span><b class="tnum">' + (v == null ? '—' : money(v)) + '</b></div>'; }).join('') + '</div>' +
-      '' + infoSola('¿No coincide con tu banco? Usa «Cuadrar» en la cuenta (en Dinero): ajusta el saldo y no toca tus movimientos.') + ''
+      '' + infoSola('Si no coincide', '¿No coincide con tu banco? Usa «Cuadrar» en la cuenta (en Dinero): ajusta el saldo y no toca tus movimientos.') + ''
       : '<p class="ob2-p">Mira la app de tu banco y copia el saldo de tu cuenta principal. Desde aquí, PalomApp suma y resta lo que apuntes.</p>' +
         '<div class="field"><label for="obCuenta">Nombre de la cuenta</label><input id="obCuenta" type="text" maxlength="30" value="' + escapeHtml(ob.cuentaNombre) + '" ' + onInput('obSet', 'cuentaNombre') + '></div>' +
         '<div class="field"><label for="obSaldo">Saldo de hoy</label><label class="cr-imp ob2-saldo"><input id="obSaldo" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(ob.saldo || '').length) + '" value="' + escapeHtml(ob.saldo || '') + '" ' + onInput('obSet', 'saldo') + '><span>' + sym() + '</span></label></div>') +
     ob.extra.map((x, i) => '<div class="ob2-extra"><input type="text" maxlength="30" aria-label="Nombre de la otra cuenta" value="' + escapeHtml(x.nombre) + '" ' + onInput('obSet', 'extra.' + i + '.nombre') + '><input type="text" inputmode="decimal" class="tnum" aria-label="Saldo" placeholder="0 ' + sym() + '" value="' + escapeHtml(x.saldo) + '" ' + onInput('obSet', 'extra.' + i + '.saldo') + '><button type="button" class="ob2-ic" aria-label="Quitar" ' + act('obExtraQuitar', i) + '>' + ic('close') + '</button></div>').join('') +
     '<button type="button" class="link ob2-mas" ' + act('obExtra') + '>' + ic('plus') + (ya.length ? ' Añadir otra cuenta' : ' Añadir efectivo u otra cuenta') + '</button>' +
-    '' + infoSola('' + ic('shield') + '<span>No me conecto a tu banco. Solo tú ves tus cifras.</span>') + '';
+    '' + infoSola('Privacidad', '' + ic('shield') + '<span>No me conecto a tu banco. Solo tú ves tus cifras.</span>') + '';
 }
 function obMesHtml(ob) {
   const c = cfg(), ya = (c.cobros || []).concat(c.facturas || []).filter((x) => x && x.nombre), tiene = (n) => ya.some((x) => normName(x.nombre) === normName(n));
@@ -12486,8 +12487,8 @@ function obMesHtml(ob) {
     OB_FIJOS.concat(ob.otrosAbiertos ? OB_FIJOS_MAS : []).concat(elegidos.filter((n) => OB_FIJOS.concat(OB_FIJOS_MAS).indexOf(n) < 0)).filter((n) => !tiene(n) && !factYa.some((y) => normName(y).indexOf(normName(n)) >= 0)).map((n) => chip(n, elegidos.indexOf(n) >= 0, act('obFijo', n), false)).join('') +
     (ob.otrosAbiertos ? '' : '<button type="button" class="chip" ' + act('obOtros') + '>' + ic('plus') + ' Otro</button>') + '</div>' +
     (ob.otrosAbiertos ? '<div class="ob2-otro"><input id="obOtroNombre" type="text" maxlength="30" placeholder="Otro (p. ej. Comunidad)"><button type="button" class="btn sm ghost" ' + act('obOtroAnadir') + '>Añadir</button></div>' : '') +
-    (ob.fijos.length ? '<div class="ob2-fijos">' + ob.fijos.map(fila).join('') + '</div>' + infoSola('El importe y el día son opcionales: puedes ponerlos después.') + '' : '') +
-    (ya.length ? '' + infoSola('Lo que ya tienes sale marcado. Para cambiar o quitar uno: Tú → Cobros y pagos fijos.') + '' : '');
+    (ob.fijos.length ? '<div class="ob2-fijos">' + ob.fijos.map(fila).join('') + '</div>' + infoSola('Importe y día', 'El importe y el día son opcionales: puedes ponerlos después.') + '' : '') +
+    (ya.length ? '' + infoSola('Lo que ya tienes', 'Lo que ya tienes sale marcado. Para cambiar o quitar uno: Tú → Cobros y pagos fijos.') + '' : '');
 }
 function obListoHtml(ob) {
   const n = String(cfg().nombre || ob.nombre || '').trim(), pc = cuentaPrincipal(), v = pc ? saldoCuenta(pc) : null, chips = [];
@@ -12500,7 +12501,7 @@ function obListoHtml(ob) {
   return '<span class="ob2-big-ic ok">' + ic('checkCircle') + '</span><h1 class="ob2-h">¡Todo listo' + (n ? ', ' + escapeHtml(n.split(' ')[0]) : '') + '!</h1>' +
     (chips.length ? '<div class="ob2-res">' + chips.map(([i, t]) => '<span>' + ic(i) + escapeHtml(t) + '</span>').join('') + '</div>' : '<p class="ob2-p">Puedes poner tu banco y lo de cada mes cuando quieras desde Dinero y Tú.</p>') +
     '<div class="ob2-sec">Así se mueve uno por la app</div><div class="ob2-barra">' + tab('home', 'Inicio', 'cómo vas') + tab('list', 'Movimientos', 'todo lo apuntado') + tab('plus', 'Apuntar', 'gasto, ticket…', true) + (juntosOn() ? tab('users', 'Juntos', 'con otros') : '') + tab('wallet', 'Dinero', 'cuentas y metas') + '</div>' +
-    '' + infoSola('Tus ajustes, categorías y esta bienvenida están en <b>Tú</b>: tu inicial, arriba a la derecha.') + '';
+    '' + infoSola('Dónde están tus ajustes', 'Tus ajustes, categorías y esta bienvenida están en <b>Tú</b>: tu inicial, arriba a la derecha.') + '';
 }
 function obInviteHtml(ob) {
   const I = ob.invite, i = I.info || {};
@@ -12912,7 +12913,7 @@ function bvAfinarHtml(ob) {
   const fila = (d) => { const on = directo ? herrOn(d.k) : bvHerrFinal(ob, d.k);
     return '<div class="herr-fila' + (on ? '' : ' off') + '"><span class="herr-ic">' + ic(d.ic) + '</span><span class="herr-t"><b>' + d.n + '</b><span>' + d.f + '</span></span>' +
       (d.base ? '<span class="herr-siempre">Siempre</span>' : '<button type="button" class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + d.n + '" ' + act('bvAfinarCambiar', d.k) + '></button>') + '</div>'; };
-  return '<div class="handle"></div><h2>Herramienta a herramienta</h2>' + infoSola('Lo que apagues solo se esconde: <b>no se borra nada</b> y lo enciendes cuando quieras en Tú → Mis herramientas.') + '' +
+  return '<div class="handle"></div><h2>Herramienta a herramienta</h2>' + infoSola('Qué pasa al apagar', 'Lo que apagues solo se esconde: <b>no se borra nada</b> y lo enciendes cuando quieras en Tú → Mis herramientas.') + '' +
     '<div class="card herr-lista">' + herrLista().map(fila).join('') + '</div><div class="actions"><button class="btn accent block" ' + act('closeSheet') + '>Listo</button></div>';
 }
 
@@ -12949,7 +12950,7 @@ function bvG2Html(ob) {
   if (!fs.length) return '<span class="ob2-big-ic">' + ic('bank') + '</span><h1 class="ob2-h">Tus cuentas ya tienen saldo</h1><p class="ob2-p">Aquí no se cambia nada. Si alguna no coincide con tu banco, usa «Cuadrar» en la cuenta (en Dinero).</p>';
   return '<h1 class="ob2-h">¿Cuánto tienes hoy?</h1><p class="ob2-p">Copia el saldo de la app de tu banco.</p>' +
     '<div class="bv-campos">' + fs.map((f) => bvCampoHtml(ob, f.k, (f.b ? bancoFichaHtml(f.b, 'bv-ficha-s') : '<span class="bco-ficha bv-ficha-s bv-ficha-ic">' + ic(f.efectivo ? 'cash' : 'bank') + '</span>') + '<span class="bv-campo-n">' + escapeHtml(f.nombre) + '</span>', 'Saldo de ' + f.nombre)).join('') + '</div>' +
-    '' + infoSola('' + ic('shield') + '<span>No me conecto a tu banco. Solo tú ves tus cifras.</span>') + '' + bvTecHtml();
+    '' + infoSola('Privacidad', '' + ic('shield') + '<span>No me conecto a tu banco. Solo tú ves tus cifras.</span>') + '' + bvTecHtml();
 }
 function bvMesRango(ob) {
   const hoy = parseISO(todayISO());
@@ -13005,7 +13006,7 @@ function bvM1Html(ob) {
     '<div class="bv-metas" role="radiogroup" aria-label="Ideas de meta">' + BV_METAS.map(([k, icono, t]) => { const ej = k === 'colchon' ? '3 meses de gastos' : k === 'otra' ? 'La que quieras' : moneyShort(bvMetaEjemplo(k));
       return '<button type="button" class="bv-plant bv-meta tappable' + (ob.metaPlant === k ? ' on' : '') + '" role="radio" aria-checked="' + (ob.metaPlant === k) + '" ' + act('bvMeta', k) + '>' + ic(icono) + '<span>' + t + '</span><small class="tnum">' + ej + '</small></button>'; }).join('') + '</div>' +
     '<div class="field"><label for="bvMNombre">¿Cómo la llamamos?</label><input id="bvMNombre" type="text" maxlength="40" placeholder="Viaje a Lisboa, Colchón…" value="' + escapeHtml(ob.metaNombre || '') + '" ' + onInput('obSet', 'metaNombre') + '></div>' +
-    (solo ? '' + infoSola('Le pongo la cifra del ejemplo; la cambias cuando quieras en Dinero.') + '' : '');
+    (solo ? '' + infoSola('Sobre el ejemplo', 'Le pongo la cifra del ejemplo; la cambias cuando quieras en Dinero.') + '' : '');
 }
 function bvM2Html(ob) {
   const v = tecNum(ob.vals.meta), n = ob.metaMeses, mes = v > 0 && n ? Math.ceil(v / n / 5) * 5 : 0, ll = n ? Math.min(100, Math.round(100 / n)) : 8;
@@ -13038,7 +13039,7 @@ function bvN1Html(ob) {
   filas.length = 0; ord.slice(0, 5).forEach((f) => filas.push(f));
   return '<span class="ob2-big-ic">' + ic('bell') + '</span><h1 class="ob2-h">Te aviso de lo importante</h1><p class="ob2-p">Sin publicidad. Máximo ' + AVISOS_MAX_DIA + ' al día.</p>' +
     '<div class="ob2-filas bv-filas">' + filas.map(([i, c, t, d]) => obFila(i, c, t, d)).join('') + '</div>' +
-    (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">El móvil no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '' + infoSola('Nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.') + '');
+    (ok ? '<div class="ob2-ok">' + ic('checkCircle') + '<span>Avisos permitidos</span></div>' : no ? '<div class="ob2-ayuda">El móvil no ha dado el permiso. Puedes activarlo más tarde en Tú → Avisos.</div>' : '' + infoSola('Sobre los avisos', 'Nada de noche y sin cifras con el móvil bloqueado. Los eliges uno a uno en Tú → Avisos.') + '');
 }
 function bvFHtml(ob) {
   const n = String(cfg().nombre || ob.nombre || '').trim().split(' ')[0], P = bvPiezas(ob), pct = bvPct(ob), hizo = P.some(([k, v]) => v && k !== 'gusto');
@@ -13239,7 +13240,7 @@ function catsEditorHtml() {
   const lista = catsGasto(), pers = lista.filter((c) => !c.std);
   const pres = (c) => '<input class="amt" type="text" inputmode="decimal" autocomplete="off" placeholder="' + sym() + '/mes" aria-label="Presupuesto al mes de ' + escapeHtml(c.nombre) + '" value="' + importeCampo(c.presupuesto) + '" ' + onChange('catPres', c.nombre) + '>';
   return '<div class="handle"></div><h2>Categorías y presupuestos</h2>' +
-    '' + infoSola('Las estándar son iguales para todos y no se pueden borrar: así un gasto compartido cae en la misma categoría para cada uno. Ponles un presupuesto al mes si quieres.') + '' +
+    '' + infoSola('Sobre las estándar', 'Las estándar son iguales para todos y no se pueden borrar: así un gasto compartido cae en la misma categoría para cada uno. Ponles un presupuesto al mes si quieres.') + '' +
     '<div class="section-title" style="margin-top:4px;">Estándar</div><div class="card config-list">' +
     lista.filter((c) => c.std).map((c) => { const s = catStd(c.nombre); return '<div class="cat-std-row"><span class="mov-ic t-cat" style="--cc:' + colorCat(c.nombre) + '" aria-hidden="true">' + ic(s.ic) + '</span><div class="cn"><b>' + escapeHtml(c.nombre) + '</b><span>' + escapeHtml(s.d) + '</span></div>' + pres(c) + '</div>'; }).join('') + '</div>' +
     '<div class="section-title">Tus categorías personalizadas</div>' +
