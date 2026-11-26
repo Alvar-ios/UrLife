@@ -52,4 +52,7 @@ Avisos de Juntos en iPhone con la app cerrada (APNs). Necesita un iPhone real pa
 - **El dinero siempre cuadra y no se pierde nada:** auditoría de cálculos («Tu mes», saldos de cuentas, traspasos, metas ligadas, saldos de Juntos con céntimos, deudas, inversiones), guardado sin duplicar ni perder (reintentos, cortes de red, dos móviles a la vez, deshacer) y permisos del servidor. También arreglar `test105`, que falla los días 25.
 
 ## Pendiente tras las sesiones
-_(se rellena al terminar cada una)_
+**Sesión 1 (26/11, rama `fase23/pulido-interfaz`):** hecha, falta que el dueño la pruebe y diga «publica». Queda pendiente:
+- Ver en un móvil real el freno al doble toque (que ningún toque normal se pierda, sobre todo en el teclado del importe justo al abrir) y que con una hoja abierta se pueda seguir ampliando con dos dedos.
+- Lo que ya estaba igual antes: el nombre largo de un grupo se pisa con las caras a 360 px; «32,00 €» partido en «¿De dónde sale?»; la hoja de novedades no deja tocar el último botón.
+- Movimientos en el móvil de 430 px y con letra grande solo se han visto con capturas.

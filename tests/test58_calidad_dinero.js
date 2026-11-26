@@ -125,7 +125,7 @@ async function abrir(cfgApp, movs, extra) {
     // cuadrar
     e.A.H.deudaCuadrar(['Otra']); await sleep(10); e.doc.querySelector('#dqBanco').value = '2.500'; await e.A.H.deudaCuadrarOk([]); await sleep(20);
     const o = e.A.cfg().deudas.find((x) => x && x.nombre === 'Otra');
-    ok(/subiremos el total/.test(e.sh()) && !o.previo, '[grave] cuadrar «2.500» (más de lo que queda) debería pedir confirmación; lo lee como 2,50 € y guarda «Ya pagado» ' + o.previo);
+    ok(/subiré el total/.test(e.sh()) && !o.previo, '[grave] cuadrar «2.500» (más de lo que queda) debería pedir confirmación; lo lee como 2,50 € y guarda «Ya pagado» ' + o.previo);
     e.A.H.deudaCuadrar(['Doble']); await sleep(10); e.doc.querySelector('#dqBanco').value = '-5'; await e.A.H.deudaCuadrarOk([]); await sleep(20);
     ok(/Pon lo que te queda/.test(e.toast()), 'cuadrar con un número negativo no se acepta');
     // eliminar, editar otra cosa y deshacer

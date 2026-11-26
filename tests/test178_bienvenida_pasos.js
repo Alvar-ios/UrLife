@@ -22,7 +22,7 @@ const pasoN = (e) => (pantalla(e).match(/Paso (\d+) de (\d+)/) || []).slice(1).j
   ok(!('herramientas' in app(e)), 'aún no se guarda nada (se guarda al pasar de paso)');
   await tocar(e, 'obNext', /Siguiente|Empezar/, null, 500);
   ok(app(e).herramientas && Object.keys(app(e).herramientas).sort().join() === 'agenda,deudas,inversiones' && Object.values(app(e).herramientas).every((v) => v === false), 'al pasar se guarda lo quitado: ' + JSON.stringify(app(e).herramientas));
-  ok(/banco/.test(pantalla(e)) && pasoN(e) === '3/4' && !/Te avisamos/.test(pantalla(e)), 'paso 3: tu banco (sin pasos de permisos en la web)');
+  ok(/banco/.test(pantalla(e)) && pasoN(e) === '3/4' && !/Te aviso de/.test(pantalla(e)), 'paso 3: tu banco (sin pasos de permisos en la web)');
   await escribir(e, '#obSaldo', '1.200'); await tocar(e, 'obNext', /Siguiente|Empezar/, null, 500);
   ok(/¡Todo listo/.test(pantalla(e)) && (app(e).cuentas || []).length === 1, 'paso 4: ¡Todo listo! con la cuenta guardada');
   await tocar(e, 'obFinish', '', null, 500);
@@ -40,7 +40,7 @@ const pasoN = (e) => (pantalla(e).match(/Paso (\d+) de (\d+)/) || []).slice(1).j
   ok(reg.pedidos === 0, 'en Android no se pide el permiso de avisos de golpe en mitad de la bienvenida');
   ok(pasoN(e) === '1/6', 'Android: 6 pasos (' + pasoN(e) + ')');
   await tocar(e, 'obNext', /Siguiente|Empezar/, null, 500); await tocar(e, 'obNext', /Siguiente|Empezar/, null, 500);
-  ok(/Te avisamos de lo importante/.test(pantalla(e)) && /sin saldo/.test(pantalla(e)) && /Como mucho 3 al día/.test(pantalla(e)) && /Sin publicidad/.test(pantalla(e)), 'paso 3: qué te avisamos (pagos sin saldo, fijos, presupuesto, metas, tareas), sin publicidad y máx. 3 al día');
+  ok(/Te aviso de lo importante/.test(pantalla(e)) && /sin saldo/.test(pantalla(e)) && /Como mucho 3 al día/.test(pantalla(e)) && /Sin publicidad/.test(pantalla(e)), 'paso 3: qué te avisamos (pagos sin saldo, fijos, presupuesto, metas, tareas), sin publicidad y máx. 3 al día');
   await tocar(e, 'obNotif', null, null, 100);
   ok(reg.pedidos === 1 && /Avisos permitidos/.test(pantalla(e)), 'el botón pide el permiso de Android y dice «Avisos permitidos»');
   await tocar(e, 'obNext', /Siguiente|Empezar/, null, 500);
@@ -61,7 +61,7 @@ const pasoN = (e) => (pantalla(e).match(/Paso (\d+) de (\d+)/) || []).slice(1).j
   e = await abrir({ cfg: {}, version: { bienvenida: 0 }, pre: nativo(reg2) });
   await tocar(e, 'obNext', /Siguiente|Empezar/, null, 500); await tocar(e, 'obHerr', 'Avisos del banco');
   await tocar(e, 'obNext', /Siguiente|Empezar/, null, 500);
-  ok(pasoN(e) === '3/5' && /Te avisamos/.test(pantalla(e)), 'quedan 5 pasos');
+  ok(pasoN(e) === '3/5' && /Te aviso de/.test(pantalla(e)), 'quedan 5 pasos');
   await tocar(e, 'obNext', 'no', null, 500);
   ok(/banco/.test(pantalla(e)) && !/Que se apunten solos/.test(pantalla(e)) && reg2.pedidos === 0 && !reg2.conf.some((o) => o.activo), '«Ahora no» en los avisos: no se pide nada y se salta el de los avisos del banco');
 

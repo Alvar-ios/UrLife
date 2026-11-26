@@ -10,7 +10,7 @@ const pad=n=>String(n).padStart(2,'0');const d=new Date(),ym=d.getFullYear()+'-'
  click(v,'crearIr','gasto');await sleep(20);ok(/Nuevo (movimiento|gasto|ingreso|gasto fijo)|Nueva inversión|Apartar dinero|Pago de deuda/.test(doc.querySelector('#sheetHost').textContent),'«Apunta tu primer gasto» abre el formulario');
  A.H.closeSheet([]);await sleep(250);
  A.H.goTab(['movimientos']);A.H.setMovVista(['lista']);await sleep(10);
- ok(!/Ver todo el historial/.test(txt())&&/Apunta el primero/.test(txt()),'Movimientos vacío: sin «Ver todo el historial» y con pista');
+ ok(!/Ver todo el historial/.test(txt())&&!/Apunta el primero/.test(txt()),'Movimientos vacío: sin «Ver todo el historial» y sin la frase que repetía los botones (26/11)');
  A.H.goTab(['dinero']);A.H.setDineroSub(['metas']);await sleep(10);
  ok(!!doc.querySelector('[data-click="metaNueva"]')&&/Crear mi primera meta/.test(txt()),'metas vacías: botón «Crear mi primera meta»');
  A.H.verAnio([]);await sleep(10);

@@ -26,7 +26,7 @@ const sh = (e) => e.doc.querySelector('#sheetHost').textContent.replace(/\s+/g, 
   let e = await env([viejo], TRES), A = e.w.__APP__;
   let I = await importar(e, 'ci', 'ing_ejemplo.csv'), r = I.filas.find((x) => /TRANSFERENCIA DESDE SANTANDER/.test(x.desc || ''));
   ok(r && r.estado === 'convertir' && !r.incluir && !r.convertir, 'ING: la transferencia desde Santander se reconoce como el gasto antiguo, sin marcar nada');
-  ok(/Lo convertiremos en un traspaso Santander → Cuenta naranja/.test(sh(e)) && /Sí, convertir/.test(sh(e)), 'pregunta «¿es el gasto de Santander…? Lo convertiremos en un traspaso Santander → Cuenta naranja»');
+  ok(/Lo convertiré en un traspaso Santander → Cuenta naranja/.test(sh(e)) && /Sí, convertir/.test(sh(e)), 'pregunta «¿es el gasto de Santander…? Lo convertiré en un traspaso Santander → Cuenta naranja»');
   // 2 · sin contestar: no cambia nada
   await A.H.impEjecutar([]); await sleep(60);
   ok(JSON.stringify(guardados(e).find((m) => m.id === 'm_viejo')) === JSON.stringify(viejo), 'sin pulsar «Sí», el gasto antiguo no cambia');

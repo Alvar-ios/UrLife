@@ -77,7 +77,7 @@ async function buscar(e, q) {
     H.goTab(['movimientos']); await sleep(10);
     ok(/Sin gastos registrados/.test(txt(e)) && !e.doc.querySelector('.kpi-chip') && e.doc.querySelectorAll('.mov-flechas .mov-flecha[disabled]').length === 2, 'usuario nuevo: Resumen vacío, sin chip y con las dos flechas apagadas');
     H.setMovVista(['lista']); await sleep(5);
-    ok(/Apunta el primero/.test(txt(e)), 'usuario nuevo: la Lista invita a apuntar el primero');
+    ok(!/Apunta el primero/.test(txt(e)) && /Sin movimientos/.test(txt(e)), 'usuario nuevo: la Lista dice «Sin movimientos», sin repetir lo de los botones (26/11)');
     H.setMovVista(['calendario']); await sleep(5); click(e, 'movMesAbrir'); await sleep(5); H.closeSheet([]); await sleep(250);
     H.setMovVista(['lista']); await sleep(5); H.movFiltrosAbrir([]); await sleep(5); H.closeSheet([]); await sleep(250);
   } catch (x) { err = x.message; }

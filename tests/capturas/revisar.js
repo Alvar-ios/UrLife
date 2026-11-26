@@ -228,6 +228,19 @@ function revisarPagina() {
       const rg = document.createRange(); rg.setStart(n, m.index); rg.setEnd(n, m.index + m[0].length);
       const rs = Array.from(rg.getClientRects()).filter((r) => r.width > 0); if (rs.length > 1 && Math.abs(rs[rs.length - 1].top - rs[0].top) > 4) out.push({ tipo: 'importe partido en dos líneas', donde: nombre(el), txt: m[0] });
     } }); });
+  // 26/11 (docs/51, sesión 1): botones con el texto partido en dos líneas, y títulos y pestañas que acaban en «…»
+  document.querySelectorAll(SEL).forEach((el) => {
+    if (!vis(el) || !el.matches('button, .btn, [role=button], a.btn')) return;
+    // un mismo trozo de texto (p. ej. «Añadir gasto») que ocupa dos líneas; los botones con varias piezas apiladas a propósito no cuentan
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) { const t = n.textContent.trim(); if (!t || t.split(/\s+/).length > 4) continue; const rg = document.createRange(); rg.selectNodeContents(n);
+      const tops = new Set(Array.from(rg.getClientRects()).filter((r) => r.width > 2).map((r) => Math.round(r.top / 6)));
+      if (tops.size > 1 && !el.closest('.tab, .rail')) { out.push({ tipo: 'botón en dos líneas', donde: nombre(el), txt: t.slice(0, 40) }); break; } }
+  });
+  // 26/11: lo que va DESPUÉS de la barra fija de botones de una hoja queda medio tapado («Qué se borra y qué se conserva»)
+  const fija = document.querySelector('#sheetHost .actions.fija');
+  for (let n = fija && fija.nextElementSibling; n; n = n.nextElementSibling) if (!n.matches('.tec') && vis(n) && (n.textContent || '').trim()) out.push({ tipo: 'debajo de la barra de botones (medio tapado)', donde: nombre(n), txt: n.textContent.trim().slice(0, 50) });
+  document.querySelectorAll('#pageTitle, .tabbar .tab > span:not(.ic)').forEach((el) => { if (vis(el) && el.scrollWidth > el.clientWidth + 1) out.push({ tipo: 'título o pestaña con «…»', donde: nombre(el) || el.id, txt: el.textContent.trim() }); });
   // textos que se pisan entre sí (dos textos distintos, ninguno dentro del otro)
   const arriba = (el, r) => { const x = r.left + r.width / 2, y = r.top + r.height / 2; if (x < 0 || y < 0 || x > W || y > window.innerHeight) return false; const t = document.elementFromPoint(x, y); return !!t && (t === el || el.contains(t)); };
   const T = [];

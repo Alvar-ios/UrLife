@@ -68,7 +68,7 @@ const grupoRpc = (e) => {
   await seguir(e);
   const cs = app(e).cuentas || [];
   ok(cs.length === 2 && cs.some((c) => c.banco === 'bbva' && c.saldo == null && c.principal) && cs.some((c) => c.tipo === 'efectivo'), 'G1 crea las cuentas (sin saldo aún; BBVA principal)');
-  ok(paso_(e) === 'G2' && e.doc.querySelectorAll('#app .bv-campo').length === 2 && e.doc.querySelectorAll('#app .bv-tec .tec-k').length === 12 && /No nos conectamos a tu banco/.test(pantalla(e)), 'G2: una fila por cuenta y el teclado de la app');
+  ok(paso_(e) === 'G2' && e.doc.querySelectorAll('#app .bv-campo').length === 2 && e.doc.querySelectorAll('#app .bv-tec .tec-k').length === 12 && /No me conecto a tu banco/.test(pantalla(e)), 'G2: una fila por cuenta y el teclado de la app');
   await teclear(e, '1234,5');
   ok(/1\.234,5/.test(e.doc.querySelector('#app .bv-campo.on').textContent), 'el teclado escribe con miles y coma (1.234,5)');
   await teclear(e, '67'); ok(/1\.234,56/.test(e.doc.querySelector('#app .bv-campo.on').textContent), 'máximo dos decimales');
@@ -97,7 +97,7 @@ const grupoRpc = (e) => {
   e = await abrir({ cfg: {}, version: V, pre: nativo(reg), espera: 400 }); grupoRpc(e);
   await escribir(e, '#obNombre', 'Leo'); await seguir(e);
   for (const t of ['Compartir gastos', 'Ahorrar para algo', 'Pagar una deuda', 'Organizar mi día', 'Ver mis inversiones']) await tocar(e, 'bvObj', t);
-  ok(/Lo dejamos listo en unas 8 pantallas/.test(pantalla(e)) && /Seguir \(unas 8 pantallas\)/.test(pantalla(e)), 'con todo marcado avisa: «Lo dejamos listo en unas 8 pantallas» (más; 10 en total)');
+  ok(/Seguir \(unas 8 pantallas\)/.test(pantalla(e)) && !/Lo dejamos listo/.test(pantalla(e)), 'con todo marcado, el botón avisa «Seguir (unas 8 pantallas)» (26/11: sin repetirlo en el texto)');
   await seguir(e);
   const L = e.A.bvLista(e.S.onboarding), rec = e.S.onboarding.recortadas;
   ok(L.length === 10 && L.join() === 'hola,obj,G1,G2,G5,J1,J2,M1,N1,F', 'Android con todo: 10 pantallas (' + L.join(',') + ')');

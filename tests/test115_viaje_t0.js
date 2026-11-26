@@ -36,7 +36,7 @@ const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return i
   ok(/Cerrar el viaje/.test(sh().textContent) && !/Cerrar tema/.test(sh().textContent), 'con avión, el menú dice «Cerrar el viaje»');
   H.temaCerrarPre(['t1']); await sleep(10);
   const t = sh().textContent;
-  ok(/Cómo quedó el viaje/.test(t) && /60,00 € entre los dos · tu parte 30,00 €/.test(t), 'antes de cerrar: «Cómo quedó el viaje» con total y tu parte');
+  ok(/Cómo quedó el viaje/.test(t) && /Gastado entre los dos\s*60,00/.test(t) && /Tu parte\s*30,00/.test(t), 'antes de cerrar: «Cómo quedó el viaje», y el total y tu parte justo debajo (26/11: sin repetirlos en la tarjeta)');
   ok(/Aún hay 1 pago para quedar en paz/.test(t) && /Ver saldos/.test(t), 'avisa de que quedan pagos en el grupo, con «Ver saldos»');
   H.temaCerrarNo([]); await sleep(10);
   ok(!/Cómo quedó el viaje/.test(sh().textContent), '«Ahora no» lo quita sin cerrar');

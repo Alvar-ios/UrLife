@@ -29,7 +29,7 @@ const clics = (raiz) => [...raiz.querySelectorAll('[data-click]')].map((b) => b.
     ok(ramas.length >= 6, 'abren su pantalla: ' + ramas.join(', ') + tag);
     for (const r of ramas) {
       H.tuIr([r]); await sleep(15);
-      ok(!!cont().querySelector('.tu3-volver') && doc.querySelector('#pageTitle').textContent.length > 1, 'pantalla «' + r + '» con «Volver» y su título arriba' + tag);
+      ok(!cont().querySelector('.tu3-volver') && !doc.querySelector('#tbVolver').hidden && doc.querySelector('#pageTitle').textContent.length > 1, 'pantalla «' + r + '» con la flecha atrás y su título arriba (26/11: sin el «‹ Volver» repetido)' + tag);
       clics(cont()).forEach((c) => ahora.add(c));
       H.tuIr(['']); await sleep(10);
     }

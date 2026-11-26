@@ -1579,7 +1579,7 @@ html[data-look="nuevo"] .tema-chips { flex-wrap: nowrap; overflow-x: auto; scrol
 html[data-look="nuevo"] .tema-chips::-webkit-scrollbar { display: none; }
 html[data-look="nuevo"] .tema-chips .chip { flex: none; display: inline-flex; align-items: center; gap: 5px; min-height: 36px; background: var(--paper-raised); }
 html[data-look="nuevo"] .tema-chips .chip .i { width: 15px; height: 15px; }
-html[data-look="nuevo"] .tema-chips .chip.active { background: var(--accent); color: #fff; }
+html[data-look="nuevo"] .tema-chips .chip.active { background: var(--accent); color: var(--accent-ink); } /* 26/11: en oscuro el blanco sobre morado claro no se leía */
 html[data-look="nuevo"] .tema-por { margin-top: 8px; font-size: 12px; color: var(--text-muted); }
 html[data-look="nuevo"] .tema-nuevo-f { display: grid; gap: 8px; margin-top: 10px; }
 html[data-look="nuevo"] .tema-nuevo-f input { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-raised); color: var(--ink); font: inherit; }
@@ -2305,7 +2305,7 @@ html[data-look="nuevo"] .row .ttl.con-ic .comp-tag { flex: none; }
 /* docs/29 tanda 0: viaje (gasto por día y «Cerrar el viaje») */
 html[data-look="nuevo"] .tema-dia { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: -2px 0 10px; }
 html[data-look="nuevo"] .tema-dia svg { width: 15px; height: 15px; flex: none; }
-html[data-look="nuevo"] .tema-cierre { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
+html[data-look="nuevo"] .tema-cierre { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; margin-bottom: 14px; } /* 26/11: pegada a las cifras de debajo, parecía que las tapaba */
 html[data-look="nuevo"] .tema-cierre b { font-size: 15.5px; }
 html[data-look="nuevo"] .tema-cierre > span { color: var(--text-dim); line-height: 1.45; }
 html[data-look="nuevo"] .tema-cierre svg { width: 15px; height: 15px; vertical-align: -3px; }
@@ -2486,7 +2486,7 @@ html[data-look="nuevo"] .ob2-puerta > span:nth-child(2) span { display: block; f
 /* Juntos vacío */
 html[data-look="nuevo"] .jv-sin-app { font-size: 13px; color: var(--text-faint); }
 /* Pistas de primera vez */
-html[data-look="nuevo"] .pista { position: fixed; z-index: 60; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--accent); color: var(--accent-ink, #fff); font-size: 13.5px; font-weight: 600; line-height: 1.35; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+html[data-look="nuevo"] .pista { position: absolute; z-index: 60; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--accent); color: var(--accent-ink, #fff); font-size: 13.5px; font-weight: 600; line-height: 1.35; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
 html[data-look="nuevo"] .pista::before { content: ''; position: absolute; top: -6px; left: calc(var(--pf, 50%) - 6px); width: 12px; height: 12px; background: inherit; transform: rotate(45deg); border-radius: 2px; }
 html[data-look="nuevo"] .pista span { flex: 1; }
 html[data-look="nuevo"] .pista .link { flex: none; min-height: 36px; color: inherit; text-decoration: underline; font-weight: 700; }
@@ -2652,7 +2652,7 @@ html[data-look="nuevo"] .ob2-nota .link { display: inline; padding: 0; }
 /* fase14 · «Puedes activar más herramientas…»: una línea discreta al final de una pantalla que se ha quedado vacía */
 html[data-look="nuevo"] .herr-pista { display: flex; align-items: center; gap: 4px; margin: 18px 0 4px; padding: 4px 4px 4px 0; border: 1px dashed var(--line); border-radius: 16px; }
 html[data-look="nuevo"] .herr-pista-t { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 4px 6px 12px; background: none; border: 0; font: inherit; font-size: 13px; line-height: 1.35; color: var(--text-faint); text-align: left; cursor: pointer; }
-html[data-look="nuevo"] .herr-pista-t b { color: var(--accent); font-weight: 600; }
+html[data-look="nuevo"] .herr-pista-t b { color: var(--accent); font-weight: 600; white-space: nowrap; } /* 26/11: «Tú → Mis herramientas» no se parte */
 html[data-look="nuevo"] .herr-pista-ic { width: 30px; height: 30px; flex: none; border-radius: 10px; display: grid; place-items: center; color: var(--accent); background: var(--accent-soft); }
 html[data-look="nuevo"] .herr-pista-ic .i { width: 17px; height: 17px; }
 html[data-look="nuevo"] .herr-pista-x { flex: none; width: 44px; height: 44px; display: grid; place-items: center; background: none; border: 0; border-radius: 12px; color: var(--text-faint); cursor: pointer; }
@@ -2974,3 +2974,19 @@ html[data-look="nuevo"] .gd-tarjeta .gd-movil span { font-size: inherit; color: 
 /* 25/11 · iPhone, Tú → Avisos: último aviso recibido por Atajos y «Comprobar ahora» */
 html[data-look="nuevo"] .gd-estado { display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
 html[data-look="nuevo"] .gd-estado .gd-nota { margin: 0; }
+
+/* 26/11 (docs/51, sesión 1) · móviles estrechos (≤ 380 px):
+   - la pestaña «Movimientos» de abajo cabía con «…» («Movimie…»): un pelín más pequeña y más junta
+   - botones cortos partidos en dos líneas («Añadir / gasto», «Ver / movimientos», «He usado / dinero»): menos relleno a los lados
+   - títulos largos de la cabecera («Mis herramien…», «Seguridad y pr…»): más pequeños (clase tb-largo, la pone render()) */
+@media (max-width: 380px) {
+  html[data-look="nuevo"] .tabbar .tab > span:not(.ic) { font-size: 10.5px; letter-spacing: -.025em; padding: 0; }
+  html[data-look="nuevo"] .btn { padding-left: 12px; padding-right: 12px; gap: 6px; }
+}
+html[data-look="nuevo"] .topbar h1.tb-largo { font-size: 19px; letter-spacing: -.02em; }
+/* 26/11 · «+1.038 €» tocaba el borde del anillo de «Así vas» */
+html[data-look="nuevo"] .ins-aro b.muy-largo { font-size: 10px; letter-spacing: -.04em; }
+/* 26/11 (docs/salud/2026-11-26-interaccion.md, fallo 3): con una hoja abierta, la pantalla de detrás ya no se desplaza
+   (ni deslizando en lo oscuro ni al llegar al final de la hoja). La hoja tiene su propio desplazamiento y no se ve afectada. */
+html[data-look="nuevo"] .sheet-backdrop, html[data-look="nuevo"] .popup-backdrop, html[data-look="nuevo"] .descartar { overscroll-behavior: contain; touch-action: pinch-zoom; }
+html[data-look="nuevo"] .sheet, html[data-look="nuevo"] .popup, html[data-look="nuevo"] .descartar-c { overscroll-behavior: contain; touch-action: pan-y pinch-zoom; } /* se puede seguir ampliando con dos dedos */
