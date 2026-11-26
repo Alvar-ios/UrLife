@@ -82,6 +82,8 @@ const PANTALLAS_MAS = [
   ['agenda-calendario', 'A.H.irAgenda(["calendario"])'],
   ['hoja-cuenta', 'A.S.tab="dinero";A.render();A.H.cuentaVer(["c1"])'],
   ['hoja-cuentas', 'A.S.tab="dinero";A.render();A.H.openCuentas([])'],
+  ['hoja-cuenta-editar', 'A.S.tab="dinero";A.render();A.H.cuentaEditar(["0"])'],
+  ['tu-herramientas', 'A.S.tab="tu";A.render();A.H.tuIr(["herramientas"])'],
   ['hoja-persona', 'A.S.tab="juntos";A.render();A.H.personaVer(["u-ana"])'],
   ['hoja-compartir', 'A.S.tab="juntos";A.render();A.H.compRapido(["g:"+C.G1])'],
   ['hoja-origen', 'A.S.tab="juntos";A.render();A.H.origenVer([C.G1])'],
@@ -241,6 +243,10 @@ function revisarPagina() {
   const fija = document.querySelector('#sheetHost .actions.fija');
   for (let n = fija && fija.nextElementSibling; n; n = n.nextElementSibling) if (!n.matches('.tec') && vis(n) && (n.textContent || '').trim()) out.push({ tipo: 'debajo de la barra de botones (medio tapado)', donde: nombre(n), txt: n.textContent.trim().slice(0, 50) });
   document.querySelectorAll('#pageTitle, .tabbar .tab > span:not(.ic)').forEach((el) => { if (vis(el) && el.scrollWidth > el.clientWidth + 1) out.push({ tipo: 'título o pestaña con «…»', donde: nombre(el) || el.id, txt: el.textContent.trim() }); });
+  // 26/11 («i» de más información): zona táctil de al menos 44 × 44 px y sin salirse de la pantalla
+  document.querySelectorAll('.info-i').forEach((el) => { if (!vis(el)) return; const r = el.getBoundingClientRect();
+    if (r.width < 43.5 || r.height < 43.5) out.push({ tipo: '«i» con zona táctil pequeña', donde: nombre(el) || 'info-i', txt: Math.round(r.width) + '×' + Math.round(r.height) });
+    if (r.left < -0.5 || r.right > W + 0.5) out.push({ tipo: '«i» fuera de la pantalla', donde: nombre(el) || 'info-i', txt: Math.round(r.left) + '–' + Math.round(r.right) }); });
   // textos que se pisan entre sí (dos textos distintos, ninguno dentro del otro)
   const arriba = (el, r) => { const x = r.left + r.width / 2, y = r.top + r.height / 2; if (x < 0 || y < 0 || x > W || y > window.innerHeight) return false; const t = document.elementFromPoint(x, y); return !!t && (t === el || el.contains(t)); };
   const T = [];
