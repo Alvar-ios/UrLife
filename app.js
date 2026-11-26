@@ -2713,9 +2713,10 @@ function grupoHtml(id) {
     (v4 ? sinCuentaAnadirHtml(g) + grupoAnadirAmigosHtml(g) + invHtml + (g.miembros.length >= 2 ? repartoHabitualHtml(g) : '') + permisosGrupoHtml(g) : sinCuentaAnadirHtml(g) + permisosGrupoHtml(g) + (g.miembros.length >= 2 ? repartoHabitualHtml(g) : '')) +
     miNombreHtml +
     (v4 ? '' : grupoAnadirAmigosHtml(g) + invHtml) +
-    '<div class="actions"><button class="btn ghost block" ' + (aj ? act('grupoAjustesSalir', g.id) : act('openGrupos')) + '>Volver</button></div>' +
+    // 26/11: los botones rojos van antes de la barra fija de abajo (debajo quedaban medio tapados)
     '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Salir del grupo</button>' +
-    (g.soyAdmin && g.miembros.length > 1 ? '<button class="btn danger block" style="margin-top:8px;" ' + act('grupoCerrar', g.id) + '>Cerrar el grupo para todos</button>' : '');
+    (g.soyAdmin && g.miembros.length > 1 ? '<button class="btn danger block" style="margin-top:8px;" ' + act('grupoCerrar', g.id) + '>Cerrar el grupo para todos</button>' : '') +
+    '<div class="actions"><button class="btn ghost block" ' + (aj ? act('grupoAjustesSalir', g.id) : act('openGrupos')) + '>Volver</button></div>';
 }
 function miembroFilaHtml(g, m, i) {
   const yo = miUid(), sc = !!m.sinCuenta, puedeQuitarSc = sc && (g.soyAdmin || m.creado_por === yo);
@@ -3323,15 +3324,17 @@ function personaHtml(g) {
   }
   return '<div class="handle"></div><h2>' + escapeHtml(o.nombre) + '</h2><div style="font-size:13px;color:var(--text-muted);margin:-6px 0 4px;">Gastos que compartes solo con ' + escapeHtml(o.nombre) + ', sin grupo.</div>' +
     cuentasGrupoHtml(g) + objetivosGrupoHtml(g) +
-    '<div class="actions"><button class="btn ghost block" ' + act('openGrupos') + '>Volver</button></div>' +
-    '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Dejar de compartir con ' + escapeHtml(o.nombre) + '</button>';
+    // 26/11: los botones rojos van antes de la barra fija de abajo (debajo quedaban medio tapados)
+    '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Dejar de compartir con ' + escapeHtml(o.nombre) + '</button>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('openGrupos') + '>Volver</button></div>';
 }
 function personaAjustesHtml(g) {
   const o = otroDe(g);
   return '<div class="handle"></div><h2>Ajustes · ' + escapeHtml(o.nombre) + '</h2><div class="rec-hint">Gastos que compartes solo con ' + escapeHtml(o.nombre) + ', sin grupo.</div>' +
     '<div class="field" style="margin-top:12px;"><label>Tu nombre aquí</label><div style="display:flex;gap:8px;"><input id="gMiNombreEd" type="text" maxlength="40" value="' + escapeHtml(g.miNombre) + '"><button class="btn sm ghost" ' + act('grupoMiNombre', g.id) + '>Guardar</button></div></div>' +
-    '<div class="actions"><button class="btn ghost block" ' + act('grupoAjustesSalir', g.id) + '>Volver</button></div>' +
-    '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Dejar de compartir con ' + escapeHtml(o.nombre) + '</button>';
+    // 26/11: los botones rojos van antes de la barra fija de abajo (debajo quedaban medio tapados)
+    '<button class="btn danger block" style="margin-top:10px;" ' + act('grupoSalir', g.id) + '>Dejar de compartir con ' + escapeHtml(o.nombre) + '</button>' +
+    '<div class="actions"><button class="btn ghost block" ' + act('grupoAjustesSalir', g.id) + '>Volver</button></div>';
 }
 function mensajePersona(url) { return 'Hola, te invito a compartir gastos conmigo en PalomApp. Ábrelo aquí (vale 7 días y para una sola persona): ' + url; }
 function personaNuevaHtml() {
@@ -4039,8 +4042,9 @@ function openTareaFormV2(id, op) {
       repetirFieldHtml(ex ? ex.repetir : null) +
       '<div class="field"><label for="tComentario">Nota <span class="hint">· opcional</span></label><input id="tComentario" type="text" value="' + escapeHtml(ex ? ex.comentario : '') + '"></div>' +
     '</details>' +
-    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTarea') + '>Guardar</button></div>' +
-    (ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTarea') + '>' + ic('trash') + ' Eliminar tarea</button>' : '')
+    // 26/11: los botones rojos van antes de la barra fija de abajo (debajo quedaban medio tapados)
+    (ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTarea') + '>' + ic('trash') + ' Eliminar tarea</button>' : '') +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTarea') + '>Guardar</button></div>'
   );
   tCatPintar();
   if (!ex) setTimeout(() => { const el = $('#tNombre'); if (el) el.focus(); }, 80);
@@ -5451,7 +5455,7 @@ function pintarPista() {
   h.innerHTML = '<div class="pista" role="status" data-pista="' + p.k + '"><span>' + PISTAS[p.k][1] + '</span><button type="button" class="link" ' + act('pistaOk', p.k) + '>Entendido</button></div>';
   const g = h.firstChild, r = p.el.getBoundingClientRect(), W = window.innerWidth || 375, ancho = Math.min(280, W - 24);
   const izq = Math.max(12, Math.min(W - ancho - 12, r.left + r.width / 2 - ancho / 2));
-  g.style.width = ancho + 'px'; g.style.left = izq + 'px'; g.style.top = Math.round(r.bottom + 10) + 'px'; g.style.setProperty('--pf', Math.round(Math.max(14, Math.min(ancho - 14, r.left + r.width / 2 - izq))) + 'px');
+  g.style.width = ancho + 'px'; g.style.left = izq + 'px'; g.style.top = Math.round(r.bottom + (window.scrollY || 0) + 10) + 'px'; /* 26/11: va con la página (antes se quedaba fija al desplazar y tapaba otras filas) */ g.style.setProperty('--pf', Math.round(Math.max(14, Math.min(ancho - 14, r.left + r.width / 2 - izq))) + 'px');
 }
 
 /* ---- Hoja «Editar Inicio»: flechas, quitar, opciones y «Añadir a Inicio» ---- */
@@ -9785,8 +9789,9 @@ function openTareaForm(id, op) {
     '<div class="field"><label>Fecha límite <span class="hint">· opcional</span></label><input id="tFecha" type="date" value="' + (ex && ex.fechaLimite ? ex.fechaLimite : '') + '"></div>' +
     repetirFieldHtml(ex ? ex.repetir : null) +
     '<div class="field"><label>Comentario <span class="hint">· opcional</span></label><input id="tComentario" type="text" value="' + escapeHtml(ex ? ex.comentario : '') + '"></div>' +
-    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTarea') + '>Guardar</button></div>' +
-    (ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTarea') + '>' + ic('trash') + ' Eliminar tarea</button>' : '')
+    // 26/11: los botones rojos van antes de la barra fija de abajo (debajo quedaban medio tapados)
+    (ex ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTarea') + '>' + ic('trash') + ' Eliminar tarea</button>' : '') +
+    '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTarea') + '>Guardar</button></div>'
   );
   tCatPintar();
   if (!ex) setTimeout(() => { const el = $('#tNombre'); if (el) el.focus(); }, 80);
@@ -13303,8 +13308,16 @@ function vincularEtiquetas(raiz) {
   if (!raiz) return;
   raiz.querySelectorAll('.field > label:not([for])').forEach((l) => { const c = l.parentNode.querySelector('input:not([type=hidden]), select, textarea'); if (c && c.id) l.htmlFor = c.id; });
 }
+// 26/11 (docs/salud/2026-11-26-interaccion.md, fallos 1 y 2): el segundo toque de un doble toque caía en la hoja que se
+// acababa de abrir (cambiaba la categoría, abría otra hoja…) o, al cerrar, en la pantalla de detrás. Durante 350 ms después
+// de abrir, cambiar de hoja o cerrar, los toques de verdad (isTrusted) no cuentan. Los clics de las pruebas y los que hace
+// la propia app (.click()) no son «de verdad» y no se frenan.
+let _toqueFrenoHasta = 0, _hojaKind = null;
+function frenarToques(ms) { _toqueFrenoHasta = Date.now() + (ms || 350); }
+function toqueFrenado(e) { return !!(e && e.isTrusted && Date.now() < _toqueFrenoHasta); }
 function openSheet(html) {
   const host = $('#sheetHost'); if (!host) return;
+  frenarToques(); _hojaKind = FORM ? FORM.kind : null;
   const ph = $('#pistaHost'); if (ph) ph.innerHTML = ''; // nunca una pista con una hoja abierta
   _sheetGen++;
   host.innerHTML = '<div class="sheet-backdrop" id="sheetBackdrop" role="dialog" aria-modal="true"><div class="sheet">' + SHEET_X() + html + '</div></div>';
@@ -13314,7 +13327,7 @@ function openSheet(html) {
   requestAnimationFrame(() => { const b = $('#sheetBackdrop'); if (b && !b.dataset.cerrando) b.classList.add('open'); animarSegmentados($('#sheetHost')); });
   document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear'));
 }
-function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { s.innerHTML = SHEET_X() + html; limitarBadges(s); fijarAcciones(s); vincularEtiquetas(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
+function updateSheet(html) { const b = $('#sheetBackdrop'), s = b && !b.dataset.cerrando ? b.querySelector('.sheet') : null; if (s) { if ((FORM ? FORM.kind : null) !== _hojaKind) { frenarToques(); _hojaKind = FORM ? FORM.kind : null; } s.innerHTML = SHEET_X() + html; limitarBadges(s); fijarAcciones(s); vincularEtiquetas(s); animarSegmentados(s); document.body.classList.toggle('crear-abierto', !!(FORM && FORM.kind === 'crear')); } else openSheet(html); } // si se estaba cerrando, se abre de nuevo
 /* ---- App de Android: botón y gesto de atrás (docs/32 A1). Devuelve true si la app lo ha resuelto; false = salir ---- */
 function hojaConAlgoEscrito() {
   // 11/11 (Calidad): una meta, una deuda o un cobro o pago fijo NUEVOS a medio escribir también preguntan antes de descartarse
@@ -13328,13 +13341,15 @@ function hojaConAlgoEscrito() {
   const imp = FORM.tec ? String(FORM.tec.txt || '') : (($('#fImporte') || {}).value || ($('#apImporte') || {}).value || '');
   const imp2 = (($('#crImporte') || {}).value || '');
   const desc = ((($('#fDesc') || {}).value || ($('#crDesc') || {}).value) || '').trim(), tit = (($('#tNombre') || {}).value || '').trim();
-  if (!FORM.id && imp2.replace(/[0,.\s]/g, '')) return true;
-  return (!FORM.id && !!imp.replace(/[0,.\s]/g, '')) || (!FORM.id && (!!desc || !!tit));
+  const nuevo = !FORM.id && !FORM.compId; // 26/11: un gasto compartido ya guardado se edita con FORM.compId (no preguntaba «¿Descartar?» sin haber cambiado nada)
+  if (nuevo && imp2.replace(/[0,.\s]/g, '')) return true;
+  if (FORM.kind === 'trayecto') return !!String((($('#trKm') || {}).value) || '').replace(/[0,.\s]/g, ''); // 26/11: Trayecto con km escritos pregunta antes de cerrarse
+  return (nuevo && !!imp.replace(/[0,.\s]/g, '')) || (nuevo && (!!desc || !!tit));
 }
 function preguntarDescartar() {
   if ($('#descartarHoja')) return;
   const d = document.createElement('div'); d.id = 'descartarHoja'; d.className = 'descartar';
-  d.innerHTML = '<div class="descartar-c" role="alertdialog" aria-labelledby="descTit"><b id="descTit">¿Descartar ' + ({ tarea: 'este plan', meta: 'esta meta', deudaForm: 'esta deuda', rec: 'este pago fijo' }[FORM && FORM.kind] || 'este gasto') + '?</b><p>Lo que has escrito no se guardará.</p>' +
+  d.innerHTML = '<div class="descartar-c" role="alertdialog" aria-labelledby="descTit"><b id="descTit">¿Descartar ' + ({ tarea: 'este plan', meta: 'esta meta', deudaForm: 'esta deuda', rec: 'este pago fijo', trayecto: 'este trayecto' }[FORM && FORM.kind] || 'este gasto') + '?</b><p>Lo que has escrito no se guardará.</p>' +
     '<div class="actions"><button class="btn ghost block" data-click="descartarNo">Seguir editando</button><button class="btn danger block" data-click="descartarSi">Descartar</button></div></div>';
   document.body.appendChild(d);
 }
@@ -13368,6 +13383,9 @@ function atrasEnHoja(b) {
     return true;
   }
   if (FORM && FORM.kind === 'envioSC') { H.envioSCCerrar(); return true; } // «Gasto guardado»: atrás = «Ahora no» (vuelve al grupo de donde venías)
+  // 26/11 (docs/salud/2026-11-26-interaccion.md): en la guía de avisos, atrás vuelve al paso anterior; en «Aportar» abierto desde una meta, a la meta
+  if (FORM && FORM.guia && S._guia && guiaHojaAbierta() && (S._guia.hist || []).length) { S._guia.paso = S._guia.hist.pop(); guiaPintar(); return true; }
+  if (FORM && FORM.kind === 'aportarR' && FORM.deMeta && !hojaConAlgoEscrito()) { H.metaVer([FORM.key]); return true; }
   const v = botonVolverHoja(sh);
   if (v) { v.click(); return true; }
   // Persona → Saldar (sin botón «Volver»): a la persona, si se llegó desde ella
@@ -13384,6 +13402,7 @@ function atrasAndroid() {
   if (ob && bienvV2(ob)) { if (ob.confSaltar) { ob.confSaltar = false; render(); return true; } return bvAtras(ob); } // 13/11 (docs/45)
   if (ob) { if (ob.step > 0 && !(ob.grupoId && obPasos(ob)[ob.step - 1] === 'invite')) { H.obBack(); return true; } return false; }
   if (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0) { H.setInicioVista(['hoy']); return true; }
+  if (S.tab === 'movimientos' && S._movBuscando) { H.movBuscarCerrar(); return true; } // 26/11: con la búsqueda abierta, atrás la cierra (antes iba a Inicio)
   if (S.tab === 'dinero' && S.dineroVer) { S.dineroVer = ''; render(); return true; }
   if (S.tab === 'juntos' && S.juntosVer) { S.juntosVer = ''; render(); return true; } // 22/11: de «Por persona» o «Metas», a Juntos
   if (S.tab === 'tu' && S.tuSub) { H.tuIr(['']); return true; } // 13/11: de una pantalla de ajustes, a Tú
@@ -13399,6 +13418,7 @@ function closeSheet() {
   document.body.classList.remove('crear-abierto');
   if (FORM && FORM.tec) FORM.tec.on = false; // el teclado de la app deja de escuchar
   const b = $('#sheetBackdrop'); if (!b) return;
+  frenarToques(); // 26/11: el segundo toque de «Guardar» no cae en la pantalla de detrás
   b.dataset.cerrando = '1';
   b.classList.remove('open');
   const gen = _sheetGen;
@@ -13423,7 +13443,7 @@ const H = {
   guiaInicio: ([que]) => { saveConfig({ guiaAvisos: Object.assign({}, cfg().guiaAvisos || {}, { inicioVisto: true }) }); if (que === 'ver') guiaAbrir(''); else render(); },
   guiaCerrar: () => { closeSheet(); render(); },
   guiaIosEsperar: ([si]) => guiaIosEsperar(si),
-  guiaIr: ([paso]) => { const G = guiaActual(); if (!G) return; G.paso = paso; sentir('tic'); guiaPintar(); },
+  guiaIr: ([paso]) => { const G = guiaActual(); if (!G) return; if (G.paso && G.paso !== paso) (G.hist = G.hist || []).push(G.paso); G.paso = paso; sentir('tic'); guiaPintar(); }, // 26/11: G.hist = pasos de antes (atrás vuelve uno)
   guiaNotif: async () => { const G = guiaActual(), nn = notifNat(); if (!G || !nn) return;
     if (G.notifNegado) { if (avNat() && avNat().abrirApp) await avNat().abrirApp('notif').catch(() => {}); return; }
     if (S.user) lsSet('notifPedido:' + miUid(), '1');
@@ -14053,7 +14073,7 @@ const H = {
   metaVer: ([k]) => { FORM = { kind: 'metaVer', key: k }; if ($('#sheetBackdrop')) updateSheet(metaVerHtml(k)); else openSheet(metaVerHtml(k)); },
   metaMas: () => { if (!FORM || FORM.kind !== 'metaVer') return; FORM.mas = !FORM.mas; updateSheet(metaVerHtml(FORM.key)); },
   metaAportesTodas: () => { if (!FORM || FORM.kind !== 'metaVer') return; FORM.aportesTodas = !FORM.aportesTodas; sentir('tic'); updateSheet(metaVerHtml(FORM.key)); },
-  metaAportarR: ([k]) => { verBadge('metasH'); FORM = { kind: 'aportarR', key: k, importe: '' }; if ($('#sheetBackdrop')) updateSheet(aportarRHtml()); else openSheet(aportarRHtml()); if (FORM.tec) tecSync(); else setTimeout(() => { const el = $('#apImporte'); if (el) el.focus(); }, 120); },
+  metaAportarR: ([k]) => { verBadge('metasH'); const deMeta = !!(FORM && FORM.kind === 'metaVer' && FORM.key === k && $('#sheetBackdrop')); FORM = { kind: 'aportarR', key: k, importe: '', deMeta }; if ($('#sheetBackdrop')) updateSheet(aportarRHtml()); else openSheet(aportarRHtml()); if (FORM.tec) tecSync(); else setTimeout(() => { const el = $('#apImporte'); if (el) el.focus(); }, 120); },
   aportarRImp: ([v]) => { if (!FORM || FORM.kind !== 'aportarR') return; FORM.importe = String(v); sentir('tic'); if (FORM.tec) { FORM.tec.txt = tecTxtDe(v); FORM.tec.reemplazar = true; tecSync(true); } else updateSheet(aportarRHtml()); },
   aportarRInput: (_a, el) => {
     const F = FORM; if (!F || F.kind !== 'aportarR') return; F.importe = el.value; el.size = Math.max(1, el.value.length);
@@ -15156,6 +15176,7 @@ function dispatch(kind, e) {
   if (fn) fn(parts.slice(1).map(decodeURIComponent), el, e);
 }
 document.addEventListener('click', (e) => {
+  if (toqueFrenado(e)) { e.preventDefault(); e.stopPropagation(); return; } // 26/11: doble toque al abrir o cerrar una hoja
   if (e.target && e.target.classList && e.target.classList.contains('sheet-backdrop')) { closeSheet(); return; }
   dispatch('click', e);
 });

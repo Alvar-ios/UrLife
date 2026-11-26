@@ -2486,7 +2486,7 @@ html[data-look="nuevo"] .ob2-puerta > span:nth-child(2) span { display: block; f
 /* Juntos vacío */
 html[data-look="nuevo"] .jv-sin-app { font-size: 13px; color: var(--text-faint); }
 /* Pistas de primera vez */
-html[data-look="nuevo"] .pista { position: fixed; z-index: 60; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--accent); color: var(--accent-ink, #fff); font-size: 13.5px; font-weight: 600; line-height: 1.35; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+html[data-look="nuevo"] .pista { position: absolute; z-index: 60; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--accent); color: var(--accent-ink, #fff); font-size: 13.5px; font-weight: 600; line-height: 1.35; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
 html[data-look="nuevo"] .pista::before { content: ''; position: absolute; top: -6px; left: calc(var(--pf, 50%) - 6px); width: 12px; height: 12px; background: inherit; transform: rotate(45deg); border-radius: 2px; }
 html[data-look="nuevo"] .pista span { flex: 1; }
 html[data-look="nuevo"] .pista .link { flex: none; min-height: 36px; color: inherit; text-decoration: underline; font-weight: 700; }
@@ -2986,3 +2986,7 @@ html[data-look="nuevo"] .gd-estado .gd-nota { margin: 0; }
 html[data-look="nuevo"] .topbar h1.tb-largo { font-size: 19px; letter-spacing: -.02em; }
 /* 26/11 · «+1.038 €» tocaba el borde del anillo de «Así vas» */
 html[data-look="nuevo"] .ins-aro b.muy-largo { font-size: 10px; letter-spacing: -.04em; }
+/* 26/11 (docs/salud/2026-11-26-interaccion.md, fallo 3): con una hoja abierta, la pantalla de detrás ya no se desplaza
+   (ni deslizando en lo oscuro ni al llegar al final de la hoja). La hoja tiene su propio desplazamiento y no se ve afectada. */
+html[data-look="nuevo"] .sheet-backdrop, html[data-look="nuevo"] .popup-backdrop, .descartar { overscroll-behavior: contain; touch-action: none; }
+html[data-look="nuevo"] .sheet, html[data-look="nuevo"] .popup, .descartar-c { overscroll-behavior: contain; touch-action: pan-y; }
