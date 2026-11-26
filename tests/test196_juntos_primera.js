@@ -34,7 +34,7 @@ console.error = () => {};
   ok(!doc.querySelector('#content [data-click="juntosVer|metas"]'), 'sin metas compartidas no sale «Metas y deudas juntos»');
   // Por persona
   H.juntosVer(['personas']); await sleep(30);
-  ok(!!doc.querySelector('#content .jv4-personas') && /Ana/.test(txt()) && /Pablo/.test(txt()) && /Sumando todos tus grupos/.test(txt()), '«Por persona»: los círculos, sumando todos los grupos');
+  ok(!!doc.querySelector('#content .jv4-personas') && /Ana/.test(txt()) && /Pablo/.test(txt()) && !/Sumando todos tus grupos/.test(txt()), '«Por persona»: los círculos de cada persona (sin el texto «Sumando todos tus grupos», que sobraba)');
   ok(!!doc.querySelector('#content [data-click="juntosVer|"]'), 'y un enlace para volver a Juntos');
   ok(e.w.__atras() === true && !doc.querySelector('#content .jv4-personas') && !!doc.querySelector('#content .jv5-g'), 'el atrás de Android vuelve a la pantalla principal');
   H.juntosVer(['personas']); await sleep(20); H.goTab(['inicio']); await sleep(20); H.goTab(['juntos']); await sleep(20);
