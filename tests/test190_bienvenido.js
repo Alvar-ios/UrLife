@@ -7,12 +7,12 @@ const ENLACES = {
   grupo: 'https://groups.google.com/g/palomapp-testers',
   probador: 'https://play.google.com/apps/testing/es.palomapp.finanzas',
   tienda: 'https://play.google.com/store/apps/details?id=es.palomapp.finanzas',
-  web: 'https://urlife-zeta.vercel.app/',
+  web: 'https://www.palomapp.es/',
 };
 (async () => {
   const src = fs.readFileSync(F, 'utf8');
   const doc0 = () => new JSDOM(src).window.document;
-  const abrir = (q) => new JSDOM(src, { url: 'https://urlife-zeta.vercel.app/bienvenido.html' + (q || ''), runScripts: 'dangerously', pretendToBeVisual: true });
+  const abrir = (q) => new JSDOM(src, { url: 'https://www.palomapp.es/bienvenido.html' + (q || ''), runScripts: 'dangerously', pretendToBeVisual: true });
   // sin ?lang el navegador de pruebas (en-US) pide inglés
   let d = abrir('?lang=es'), doc = d.window.document;
   const es = doc.querySelector('[data-version="es"]'), en = doc.querySelector('[data-version="en"]');
@@ -34,7 +34,7 @@ const ENLACES = {
   d.window.close();
   // Sin ?lang manda el idioma del navegador: español para es-*, inglés para el resto
   for (const [lang, esp] of [['es-ES', true], ['es', true], ['en-US', false], ['fr-FR', false]]) {
-    const dd = new JSDOM(src, { url: 'https://urlife-zeta.vercel.app/bienvenido.html', runScripts: 'dangerously', beforeParse: (w) => Object.defineProperty(w.navigator, 'language', { value: lang, configurable: true }) });
+    const dd = new JSDOM(src, { url: 'https://www.palomapp.es/bienvenido.html', runScripts: 'dangerously', beforeParse: (w) => Object.defineProperty(w.navigator, 'language', { value: lang, configurable: true }) });
     ok(dd.window.document.querySelector('[data-version="es"]').hidden === !esp, 'navegador «' + lang + '» → ' + (esp ? 'español' : 'inglés')); dd.window.close();
   }
   // Frases que dependen del código: no prometer lo que la prueba cerrada de Google no trae todavía

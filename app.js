@@ -2744,7 +2744,7 @@ function renderMetasInicio() {
    GRUPOS PARA COMPARTIR (Bloque 8.1): crear, invitar por WhatsApp, unirse, salir
    Las reglas de la base de datos deciden qué ve cada uno; aquí solo se muestra.
    ============================================================ */
-const APP_URL = 'https://urlife-zeta.vercel.app/';
+const APP_URL = 'https://www.palomapp.es/';
 function gruposDisponible() { return !!(S.db && S.db.grupos && S.db.rpc); }
 function miUid() { return (S.user && S.user.id) || (S.db && S.db.uid && S.db.uid()) || null; }
 function nombreSugerido() {

@@ -30,6 +30,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="urlife-zeta.vercel.app" />
+                <data android:scheme="https" android:host="www.palomapp.es" />
+                <data android:scheme="https" android:host="palomapp.es" />
             </intent-filter>
 
             <!-- «Compartir con PalomApp» (C4 de docs/40): extractos del banco (CSV, Excel, Norma 43 .txt/.n43) desde la app del banco o Archivos.
