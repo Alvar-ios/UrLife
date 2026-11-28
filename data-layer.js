@@ -77,9 +77,9 @@
   var recargas = {};
   function avisarCambio(table) { (recargas[table] || []).forEach(function (f) { try { f(); } catch (e) { /* */ } }); }
   function recargarTodo() { Object.keys(recargas).forEach(avisarCambio); }
-  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { recargarTodo(); vaciarPronto(); } });
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { recargarTodo(); vaciarPronto(); comprobarCuenta(); } });
   if (typeof window !== 'undefined') {
-    window.addEventListener('online', function () { red.sin = false; emitir(); revalidarSesion(); recargarTodo(); vaciarPronto(); });
+    window.addEventListener('online', function () { red.sin = false; emitir(); revalidarSesion(); recargarTodo(); vaciarPronto(); comprobarCuenta(); });
     window.addEventListener('offline', function () { emitir(); });
   }
 
@@ -93,7 +93,7 @@
        cerrar la app. Se sube de uno en uno y en orden al volver la red; nada se descarta solo.
      - Lo compartido (Juntos) solo se lee sin red.
      ============================================================ */
-  var L = { uid: null, cola: [], snaps: {}, vistos: {}, listo: null, cadena: Promise.resolve(), subiendo: false, escuchas: [], tSnap: {} };
+  var L = { uid: null, cola: [], rota: false, snaps: {}, vistos: {}, listo: null, cadena: Promise.resolve(), subiendo: false, escuchas: [], tSnap: {} };
   var red = { sin: false };
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { /* */ } return null; }
   function nat() { return typeof window !== 'undefined' ? window.__nativo : null; }
@@ -129,7 +129,7 @@
     return idbs[uid] || (idbs[uid] = new Promise(function (ok, ko) {
       var r = window.indexedDB.open('palomapp-' + uid, 1);
       r.onupgradeneeded = function () { r.result.createObjectStore('kv'); };
-      r.onsuccess = function () { ok(r.result); };
+      r.onsuccess = function () { var db = r.result; db.onversionchange = function () { try { db.close(); } catch (e) { /* */ } if (idbs[uid]) delete idbs[uid]; }; ok(db); }; // 28/11: no frena un borrado de la copia desde otra pestaña/ventana
       r.onerror = function () { delete idbs[uid]; ko(r.error); };
     }));
   }
@@ -171,15 +171,30 @@
     if (!localOn() || !uid) return;
     if (L.uid === uid && L.listo) return;
     var antes = ls('palom:uid');
-    if (antes && antes !== uid) { try { abrirDb(antes).then(function (db) { var tx = db.transaction('kv', 'readwrite'), st = tx.objectStore('kv'); st.openCursor().onsuccess = function (ev) { var c = ev.target.result; if (!c) return; if (String(c.key).indexOf('snap:') === 0) st.delete(c.key); c.continue(); }; }).catch(function () { /* */ }); } catch (e) { /* */ } }
-    L.uid = uid; L.cola = []; L.snaps = {}; L.vistos = {};
+    // 28/11 (decisión con el dueño, riesgo 2 de docs/salud/2026-11-28-privacidad-tiendas.md): al entrar OTRA cuenta, de la anterior se borran
+    // siempre las copias de las tablas. Su cola de cambios sin subir solo se borra si está VACÍA (no se pierde nada). Si tiene cambios, se
+    // conserva (cifrada) para cuando esa cuenta vuelva a entrar: nunca se sube con la nueva. Si no se puede leer, tampoco se toca.
+    if (antes && antes !== uid) {
+      try {
+        kv(antes, 'get', 'cola').then(function (raw) {
+          return descifrar(raw).then(function (c) {
+            if (!raw || (Array.isArray(c) && !c.length)) return borrarDb(antes);
+            return abrirDb(antes).then(function (db) { var tx = db.transaction('kv', 'readwrite'), st = tx.objectStore('kv'); st.openCursor().onsuccess = function (ev) { var cu = ev.target.result; if (!cu) return; if (String(cu.key).indexOf('snap:') === 0) st.delete(cu.key); cu.continue(); }; });
+          });
+        }).catch(function () { /* */ });
+      } catch (e) { /* */ }
+    }
+    L.uid = uid; L.cola = []; L.rota = false; L.snaps = {}; L.vistos = {};
     ls('palom:uid', uid); if (mail !== undefined) ls('palom:mail', mail || ''); if (factores !== undefined) ls('palom:fact', factores ? JSON.stringify(factores) : null);
-    L.listo = kv(uid, 'get', 'cola').then(descifrar).then(function (c) { if (L.uid === uid) L.cola = Array.isArray(c) ? c : []; emitir(); }, function () { /* */ });
+    // 28/11: si hay una cola guardada pero no se puede descifrar (clave cambiada o dato roto) NO se lee como «vacía» en silencio: se marca para avisar
+    L.listo = kv(uid, 'get', 'cola').then(function (raw) {
+      return descifrar(raw).then(function (c) { if (L.uid === uid) { L.cola = Array.isArray(c) ? c : []; L.rota = !!raw && !Array.isArray(c); } emitir(); });
+    }, function () { /* */ });
     return L.listo;
   }
   function olvidarLocal() {
     var uid = L.uid || ls('palom:uid');
-    L.uid = null; L.cola = []; L.snaps = {}; L.vistos = {}; L.listo = null; clavePromesa = null;
+    L.uid = null; L.cola = []; L.rota = false; L.snaps = {}; L.vistos = {}; L.listo = null; clavePromesa = null;
     ls('palom:uid', null); ls('palom:mail', null); ls('palom:fact', null);
     var p = uid ? borrarDb(uid) : Promise.resolve();
     try { if (nat() && nat().olvidarClaveLocal) nat().olvidarClaveLocal(); } catch (e) { /* */ }
@@ -294,7 +309,7 @@
     activo: function () { return activoLocal(); },
     estado: function () {
       var m = colaMia();
-      return { activo: activoLocal(), sinRed: sinRedAhora(), subiendo: L.subiendo, pendientes: m.filter(function (o) { return o.estado === 'pend'; }).length, fallos: m.filter(function (o) { return o.estado === 'fallo'; }).length, revisar: m.filter(function (o) { return o.estado === 'revisar'; }).length, total: m.length };
+      return { activo: activoLocal(), ilegible: activoLocal() && !!L.rota, sinRed: sinRedAhora(), subiendo: L.subiendo, pendientes: m.filter(function (o) { return o.estado === 'pend'; }).length, fallos: m.filter(function (o) { return o.estado === 'fallo'; }).length, revisar: m.filter(function (o) { return o.estado === 'revisar'; }).length, total: m.length };
     },
     lista: function () { return colaMia().map(resumenOp); },
     onChange: function (fn) { L.escuchas.push(fn); return function () { L.escuchas = L.escuchas.filter(function (f) { return f !== fn; }); }; },
@@ -306,6 +321,8 @@
       L.cola.splice(L.cola.indexOf(o), 1); emitir();
       return guardarCola().then(function () { if (col0(o)) avisarCambio(col0(o)); else recargarTodo(); });
     },
+    // «Entendido» al aviso de cola ilegible: se deja de avisar y se vuelve a guardar la cola (vacía o con lo nuevo) con la clave de ahora
+    entendido: function () { L.rota = false; emitir(); return guardarCola(); },
     olvidar: olvidarLocal,
     vaciar: vaciar,
   };
@@ -569,7 +586,7 @@
     // copia local y cola de esta cuenta (solo en las apps). Una sesión «sin comprobar» (sin red) usa la de la última vez.
     if (session && session.user && localOn()) iniciarLocal(session.user.id, session.sinComprobar ? undefined : (session.user.email || ''), session.sinComprobar ? undefined : (session.user.factors || null));
     authListeners.forEach(function (fn) { fn(lastSession); });
-    if (session && !session.sinComprobar) vaciarPronto();
+    if (session && !session.sinComprobar) { cuentaFin = false; vaciarPronto(); comprobarCuenta(); }
   }
   // Sin red y con sesión que no se puede renovar: si hay copia de la última cuenta, se abre con ella (sin comprobar).
   function sesionSinRed() {
@@ -578,12 +595,28 @@
     var f = null; try { f = JSON.parse(ls('palom:fact') || 'null'); } catch (e) { /* */ }
     return { user: { id: u, email: ls('palom:mail') || '', factors: f || undefined }, sinComprobar: true };
   }
+  // 28/11: si el servidor dice que la cuenta YA NO EXISTE (borrada desde otro aparato), en este móvil se borra su copia y su cola.
+  // Solo con esa señal clara (user_not_found). Una sesión que simplemente caduca, o un fallo de red, NUNCA borran nada.
+  var cuentaFin = false, tCuenta = 0;
+  function cuentaYaNoExiste(e) { var o = (e && (e.original || e)) || {}; return /user_not_found|sub claim in jwt does not exist/i.test(String(o.code || '') + ' ' + String(o.message || o.msg || '')); }
+  function cuentaBorrada(uid) {
+    if (currentUid !== uid) return;
+    cuentaFin = true;
+    return olvidarLocal().then(function () { return Promise.resolve(sb.auth.signOut({ scope: 'local' })).catch(function () { /* */ }); }).then(function () { if (lastSession) notifyAuth(null); });
+  }
+  function comprobarCuenta(fuerza) {
+    if (!localOn() || !lastSession || lastSession.sinComprobar || !currentUid || sinRedAhora()) return;
+    if (!sb.auth || typeof sb.auth.getUser !== 'function') return;
+    if (!fuerza && Date.now() - tCuenta < 3600000) return; tCuenta = Date.now();
+    var uid = currentUid;
+    Promise.resolve(sb.auth.getUser()).then(function (r) { if (r && r.error && cuentaYaNoExiste(r.error)) cuentaBorrada(uid); }, function (e) { if (cuentaYaNoExiste(e)) cuentaBorrada(uid); });
+  }
   // al volver la red se comprueba de verdad la sesión: si ya no vale (cuenta cerrada, contraseña cambiada) se sale, SIN borrar lo pendiente
   function revalidarSesion() {
     if (!lastSession || !lastSession.sinComprobar) return;
     sb.auth.getSession().then(function (r) {
       if (r && r.data && r.data.session) notifyAuth(r.data.session);
-      else if (r && r.error && !esRed(r.error)) notifyAuth(null);
+      else if (r && r.error && !esRed(r.error)) { if (cuentaYaNoExiste(r.error) && currentUid) cuentaBorrada(currentUid); else notifyAuth(null); }
     }, function () { /* sigue sin red */ });
   }
   // 08/11: al volver del correo de «¿Olvidaste tu contraseña?», Supabase avisa con PASSWORD_RECOVERY: la app pide la nueva
@@ -594,6 +627,7 @@
   function urlVuelta() { var o = window.location.origin || ''; return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o) || !/^https?:/.test(o) ? WEB : o + window.location.pathname; }
 
   window.Auth = {
+    cuentaBorrada: function () { return cuentaFin; },
     getSession: function () { return sb.auth.getSession().then(function (r) { return r.data.session || sesionSinRed(); }, function () { return sesionSinRed(); }); },
     // Se llama inmediatamente con el estado ya conocido (si lo hay) y también con cada cambio futuro,
     // evitando perder el evento inicial si éste ya ocurrió antes de suscribirse.

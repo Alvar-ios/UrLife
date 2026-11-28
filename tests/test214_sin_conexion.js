@@ -28,14 +28,15 @@ function builder(t) {
 }
 let authCb = null;
 const fakeSb = (sesion) => ({ from: builder, channel() { const c = { on() { return c; }, subscribe() { return c; } }; return c; }, removeChannel() {},
-  auth: { onAuthStateChange(cb) { authCb = cb; setTimeout(() => cb('SIGNED_IN', sesion()), 0); }, getSession: async () => ({ data: { session: sesion() } }), signOut: async () => ({ error: null }) } });
+  auth: { onAuthStateChange(cb) { authCb = cb; setTimeout(() => cb('SIGNED_IN', sesion()), 0); }, getSession: async () => ({ data: { session: sesion() } }), getUser: async () => (srv.getUserError ? { data: { user: null }, error: srv.getUserError } : { data: { user: { id: srv.uid } }, error: null }), signOut: async () => { srv.cerro = (srv.cerro || 0) + 1; return { error: null }; } } });
 
 // ---- «móvil»: una ventana con la capa de datos, el almacén local compartido y la clave nativa ----
 const idb = new IDBFactory(); const CLAVE = Buffer.alloc(32, 7).toString('base64');
-function abrir(uid) {
+function abrir(uid, opt) {
+  opt = opt || {};
   const dom = new JSDOM('', { runScripts: 'outside-only', url: 'https://localhost/', pretendToBeVisual: true }); const w = dom.window;
-  Object.defineProperty(w, 'indexedDB', { value: idb, configurable: true }); Object.defineProperty(w, 'crypto', { value: require('crypto').webcrypto, configurable: true }); w.__nativo = { claveLocal: async () => CLAVE, olvidarClaveLocal: async () => {} };
-  w.localStorage.setItem('palom:uid', uid); w.localStorage.setItem('palom:mail', 'a@example.invalid');
+  Object.defineProperty(w, 'indexedDB', { value: idb, configurable: true }); Object.defineProperty(w, 'crypto', { value: require('crypto').webcrypto, configurable: true }); w.__nativo = { claveLocal: async () => opt.clave || CLAVE, olvidarClaveLocal: async () => {} };
+  w.localStorage.setItem('palom:uid', opt.antes || uid); w.localStorage.setItem('palom:mail', 'a@example.invalid');
   w.supabase = { createClient: () => fakeSb(() => ({ user: { id: uid, email: 'a@example.invalid' } })) }; w.SUPABASE_CONFIG = { url: 'x', anonKey: 'y' };
   w.eval(SRC); return w;
 }
@@ -99,6 +100,43 @@ function leer(w, col) { return new Promise((res) => { let off; off = w.Data.coll
   ok(![...srv.tablas.movimientos.values()].some((x) => x.id === 'm11'), 'otra cuenta en el mismo móvil no sube cambios de la primera');
   ok(w2.Data.sinc.estado().total === 0, 'y no ve su cola');
   w = abrir('u1'); await sleep(600); ok(srv.tablas.movimientos.has('m11'), 'al volver la primera cuenta, sus cambios se suben');
+
+
+  // 28/11 · cola que no se puede leer: se AVISA (no se lee como vacía en silencio) y se puede seguir con lo del servidor
+  srv.net = false; w = abrir('u1'); await sleep(80); await leer(w, 'movimientos');
+  await w.Data.collection('movimientos').doc('m21').set({ tipo: 'Gasto', importe: 4, descripcion: 'Sin leer' }); await sleep(80);
+  ok(w.Data.sinc.estado().total === 1 && !w.Data.sinc.estado().ilegible, 'con la clave buena, 1 cambio pendiente y nada ilegible');
+  w.close(); const CLAVE2 = Buffer.alloc(32, 9).toString('base64');
+  srv.net = true; const escr0 = srv.escrituras; w = abrir('u1', { clave: CLAVE2 }); await sleep(500);
+  ok(w.Data.sinc.estado().ilegible === true && w.Data.sinc.estado().total === 0, 'con la clave cambiada: se avisa de que no se puede leer la cola (y no se lee como vacía en silencio)');
+  ok(srv.escrituras === escr0 && !srv.tablas.movimientos.has('m21'), 'y no se sube ni se inventa nada');
+  r = await leer(w, 'movimientos'); ok(r && ids(r.snap).length > 0, 'se puede seguir viendo lo del servidor'); r.off();
+  await w.Data.sinc.entendido(); ok(w.Data.sinc.estado().ilegible === false, '«Entendido» quita el aviso');
+  w.close(); w = abrir('u1', { clave: CLAVE2 }); await sleep(300); ok(w.Data.sinc.estado().ilegible === false, 'y no vuelve a salir al abrir otra vez (la cola se guardó con la clave de ahora)');
+  await w.Data.collection('movimientos').doc('m22').set({ tipo: 'Gasto', importe: 2, descripcion: 'Ya con clave nueva' }); await sleep(900);
+  const dbs = async () => (await idb.databases()).map((d) => d.name);
+  // otra cuenta: de la anterior se borra todo si su cola estaba vacía; si tenía cambios se conserva
+  srv.net = true; w = abrir('u5'); await sleep(200); (await leer(w, 'movimientos')).off(); await sleep(1100); w.close();
+  ok((await dbs()).includes('palomapp-u5'), 'u5 tiene su copia local');
+  const w5 = abrir('u6', { antes: 'u5' }); await sleep(400);
+  ok(!(await dbs()).includes('palomapp-u5'), 'al entrar otra cuenta, si la anterior no dejó nada pendiente, se borra del todo su copia');
+  w5.close();
+  srv.net = false; w = abrir('u7'); await sleep(80); await leer(w, 'movimientos');
+  await w.Data.collection('movimientos').doc('m31').set({ tipo: 'Gasto', importe: 1, descripcion: 'Pendiente de u7' }); await sleep(80); w.close();
+  srv.net = true; const w6 = abrir('u8', { antes: 'u7' }); await sleep(400);
+  ok((await dbs()).includes('palomapp-u7') && !srv.tablas.movimientos.has('m31'), 'si la anterior dejó cambios sin subir, se conservan (cifrados) y no se suben con la cuenta nueva');
+  w6.close();
+  // cuenta que ya no existe (borrada desde otro aparato): se borra la copia y la cola; la caducidad de la sesión NO borra nada
+  srv.net = false; w = abrir('u9'); await sleep(80); await leer(w, 'movimientos');
+  await w.Data.collection('movimientos').doc('m41').set({ tipo: 'Gasto', importe: 1, descripcion: 'u9' }); await sleep(80); w.close();
+  srv.net = true; srv.getUserError = { code: 'bad_jwt', message: 'invalid JWT: token is expired', status: 401 };
+  let wc = abrir('u9'); await sleep(200); wc.dispatchEvent(new wc.Event('online')); await sleep(300);
+  ok((await dbs()).includes('palomapp-u9') && wc.Data.sinc.estado().total >= 0 && !wc.Auth.cuentaBorrada(), 'una sesión caducada (error de JWT) no borra la cola ni la copia'); wc.close();
+  srv.getUserError = { code: 'user_not_found', message: 'User from sub claim in JWT does not exist', status: 403 };
+  const esc1 = srv.escrituras; wc = abrir('u9'); await sleep(700);
+  ok(wc.Auth.cuentaBorrada() === true && !(await dbs()).includes('palomapp-u9'), 'si el servidor dice «user_not_found», se borra la copia y la cola de esa cuenta en este móvil');
+  ok(srv.escrituras === esc1 && wc.localStorage.getItem('palom:uid') == null, 'sin subir nada de esa cuenta y sin dejar su id en el móvil');
+  srv.getUserError = null; wc.close();
 
   // Juntos sin red: solo mirar
   srv.net = false; w = abrir('u1'); await sleep(80);

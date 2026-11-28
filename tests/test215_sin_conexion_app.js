@@ -18,6 +18,16 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   cambia({ pendientes: 3, total: 3 }); await sleep(30); ok(/Sin conexión · 3 cambios por subir/.test(bar().textContent), 'sin red y con 3 cambios: lo dice');
   cambia({ sinRed: false, subiendo: true }); await sleep(30); ok(/Subiendo 3 cambios…/.test(bar().textContent), 'al volver la red: «Subiendo 3 cambios…»');
   cambia({ subiendo: false, pendientes: 0, total: 0 }); await sleep(30); ok(/Todo al día/.test(bar().textContent), 'al terminar: «Todo al día»');
+  // 28/11 · cola que no se pudo descifrar: aviso claro, explicación en la «i» y «Entendido»
+  w.Data.sinc.entendido = async () => { llamadas.push(['entendido']); };
+  cambia({ ilegible: true }); await sleep(30);
+  ok(!bar().hidden && /No he podido leer tus cambios sin subir/.test(bar().textContent) && bar().classList.contains('mal'), 'cola ilegible: el aviso lo dice, en rojo');
+  (bar().querySelector('button')).click(); await sleep(450);
+  ok(/No he podido leer los cambios que dejaste sin subir/.test(w.document.querySelector('#sheetHost').textContent) && /Lo que ya estaba subido sigue en tu cuenta/.test(w.document.querySelector('#sheetHost').textContent), 'la hoja dice qué pasa y que lo subido sigue en la cuenta');
+  ok(w.document.querySelector('#sheetHost .info-i'), 'la explicación de por qué pasa va a la «i»');
+  ([...w.document.querySelectorAll('#sheetHost button')].find((b) => b.textContent === 'Entendido')).click(); await sleep(30);
+  ok(llamadas.some((l) => l[0] === 'entendido'), '«Entendido» avisa a la capa de datos');
+  cambia({ ilegible: false }); await sleep(30); pulsa('closeSheet'); await sleep(450);
   lista = [{ idOp: 'o1', col: 'movimientos', tipo: 'editar', id: 'm1', data: { descripcion: 'Pan', importe: 7 }, estado: 'revisar', motivo: 'borrado' }, { idOp: 'o2', col: 'tareas', tipo: 'crear', id: 't1', data: { titulo: 'Llamar' }, estado: 'fallo' }];
   cambia({ revisar: 1, fallos: 1, total: 2 }); await sleep(30); ok(/2 cambios no se han subir?do/.test(bar().textContent) || /2 cambios no se han subido/.test(bar().textContent), 'con fallos: «2 cambios no se han subido»');
   (bar().querySelector('button')).click(); await sleep(450);
