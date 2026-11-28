@@ -136,6 +136,9 @@ html[data-look="nuevo"] .list { border: 1px solid var(--card-border); border-rad
 /* 12/11 (rendimiento, docs/salud/2026-11-12-diag-rendimiento.md): los días de la Lista que quedan lejos de la pantalla no se pintan.
    El alto se reserva con las filas del día (--filas) y el alto de una fila medido en el móvil (--mov-fila-h, lo pone app.js) */
 html[data-look="nuevo"] #movList > .list.mov-dia { content-visibility: auto; contain-intrinsic-size: auto calc(var(--filas, 4) * var(--mov-fila-h, 69px) + 1px); }
+/* 28/11: las filas deslizables (.swipe) heredaban las esquinas de la lista (border-radius: inherit) y cada fila parecía una tarjeta suelta,
+   con el gris de la línea fina asomando por las esquinas. Dentro de una lista, las esquinas son solo las de la lista (overflow: hidden) */
+html[data-look="nuevo"] .list > .swipe, html[data-look="nuevo"] .list > .row { border-radius: 0; }
 html[data-look="nuevo"] .row { padding: 13px var(--sp-4); }
 html[data-look="nuevo"] .row .ttl { font-size: var(--fs-m); font-weight: 600; }
 html[data-look="nuevo"] .row .meta { font-size: 12.5px; }
@@ -3227,3 +3230,6 @@ html.con-sinc #app { padding-top: calc(28px + env(safe-area-inset-top, 0px)); }
 /* Editar Inicio, 28/11 (opinión del dueño): lo que no se edita se ve desenfocado y no se toca; la tira de arriba de cada caja es un asa grande */
 html.iw-editando #content > :not(.iw-e-bar):not(.iw-e-lista):not(.iw-e-pie) { filter: blur(2.5px); opacity: .55; pointer-events: none; -webkit-user-select: none; user-select: none; }
 html[data-look="nuevo"] .iw-e-grip svg { width: 20px; height: 20px; }
+/* 28/11: Juntos, dos cajas «Debes» / «Te deben» arriba (sin frase); no son botones */
+html[data-look="nuevo"] .jv5-cab .jv-ficha { cursor: default; }
+html[data-look="nuevo"] .jv5-cab .jv-fichas { margin-top: 0; }
