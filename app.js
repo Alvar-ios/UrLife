@@ -1975,15 +1975,16 @@ function tecCampoHtml(T) {
 function tecCatsLista(tipo, cat, max) { max = max || 7; const ci = tipo === 'Ingreso' ? categoriasPorTipo('Ingreso') : null, l = (tipo === 'Ingreso' ? (ci.length ? ci : OB_INGRESOS_SERIE) : catsPorUso()).slice(0, max); if (cat && l.indexOf(cat) < 0) { l.unshift(cat); l.length = Math.min(l.length, max); } return l; } // la que ya viene elegida (ticket, Repetir) siempre a la vista
 function tecFechaTxt(iso) { const h = todayISO(); return iso === h ? 'Hoy' : iso === uAdd(h, -1) ? 'Ayer' : fmtDateShort(iso); }
 /* 28/11 (docs/53 B2): en un gasto las categorías van solo con icono (5 + «Ver todas»), con el nombre de la elegida debajo */
-function tecCatsSolo(tipo) { return apuntarV2() && tipo !== 'Ingreso'; }
+function tecCatsSolo(tipo) { return apuntarV2() && (tipo === 'Gasto' || tipo === 'Ingreso'); } // 28/11 (tanda 10): también los ingresos
+function tecCatIcHtml(tipo, c) { return '<span class="chip-cat-ic" style="--cc:' + (tipo === 'Ingreso' ? 'var(--income)' : colorCat(c)) + '" aria-hidden="true">' + ic(iconoCat(tipo === 'Ingreso' ? 'Ingreso' : 'Gasto', c, '')) + '</span>'; }
 function tecCatsInner(tipo, cat) {
-  if (tecCatsSolo(tipo)) return tecCatsLista(tipo, cat, 5).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" aria-label="' + escapeHtml(c) + '" title="' + escapeHtml(c) + '" ' + act('tecCat', c) + '><span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span></button>').join('') +
+  if (tecCatsSolo(tipo)) return tecCatsLista(tipo, cat, 5).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" aria-label="' + escapeHtml(c) + '" title="' + escapeHtml(c) + '" ' + act('tecCat', c) + '>' + tecCatIcHtml(tipo, c) + '</button>').join('') +
     '<button type="button" class="tec-cat mas" aria-label="Ver todas las categorías" aria-expanded="false" ' + act('tecCatTodas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span></button>';
   return tecCatsLista(tipo, cat).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" ' + act('tecCat', c) + '>' +
       (tipo === 'Ingreso' ? '' : '<span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span>') + '<span class="tec-cat-n">' + escapeHtml(c) + '</span></button>').join('') +
     '<button type="button" class="tec-cat mas" ' + act('tecMas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span><span class="tec-cat-n">Más</span></button>';
 }
-function tecCatsTodasHtml(cat) { return catsPorUso().map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" ' + act('tecCat', c) + '><span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span><span class="tec-cat-n">' + escapeHtml(c) + '</span></button>').join(''); }
+function tecCatsTodasHtml(cat, tipo) { const ci = categoriasPorTipo('Ingreso'), todas = tipo === 'Ingreso' ? (ci.length ? ci : OB_INGRESOS_SERIE) : catsPorUso(); return todas.map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" ' + act('tecCat', c) + '>' + tecCatIcHtml(tipo, c) + '<span class="tec-cat-n">' + escapeHtml(c) + '</span></button>').join(''); }
 function tecCatsPintar(c) {
   const box = $('#tecCats'); if (!box || !tecCatsSolo(FORM && FORM.tipo)) return;
   box.innerHTML = tecCatsInner(FORM.tipo, c); const n = $('#tecCatSel'); if (n) n.textContent = c || 'Elige una categoría';
@@ -2011,6 +2012,12 @@ function deQueSugHtml() {
   const cat = (($('#fCategoria') || {}).value || '').trim(), t = (($('#fDesc') || {}).value || '');
   const l = deQueSugs(cat, t); if (!l.length) return '';
   return l.map((x) => '<button type="button" class="chip tappable" ' + act('deQuePick', x) + '>' + escapeHtml(x) + '</button>').join('');
+}
+const DESC_EN_DET = ['Ahorro', 'Inversión', 'Deuda', 'Factura']; // en estos la nota («¿De qué?») va en «Más detalles»
+function deQueSitio() {
+  if (!apuntarV2() || !FORM || FORM.kind !== 'mov') return;
+  const q = $('#deQueField'); if (!q || q.closest('#tecRapido')) return;
+  const d = $(DESC_EN_DET.indexOf(FORM.tipo) >= 0 ? '#deQueDet' : '#deQueSlot'); if (d && !d.contains(q)) d.appendChild(q);
 }
 function deQueRefrescar() { const b = $('#deQueSug'); if (b) b.innerHTML = deQueSugHtml(); }
 function deQueHtml(ex, pre) {
@@ -2069,12 +2076,13 @@ function tecOk() {
 }
 function tecAbrirTeclado() { const T = FORM && FORM.tec; if (!T) return; T.on = true; const t = $('#tec'); if (t) t.hidden = false; tecSync(); }
 function tecCerrar() { const T = FORM && FORM.tec; if (!T) return; T.on = false; T.reemplazar = false; const t = $('#tec'); if (t) t.hidden = true; tecSync(); }
-function tecMasDetalles() {
+function tecMasDetalles(sinDet) { // sinDet: se abre el cuerpo (compartir, ticket, otra moneda) pero no «Más detalles»
   const T = FORM && FORM.tec; if (!T) return;
   T.corta = false; T.tecla = 'hecho';
   const m = $('#mfMas'); if (m) m.hidden = false;
   const q = $('#deQueField'), sl = $('#deQueSlot'); if (q && sl && !sl.contains(q)) sl.appendChild(q);
   const r = $('#tecRapido'); if (r) r.remove();
+  deQueSitio(); if (!sinDet && apuntarV2() && FORM.kind === 'mov') { FORM.mfDet = true; const d = $('#mfDet'); if (d) d.hidden = false; const b = $('#mfDetBtn'); if (b) b.hidden = true; } // quien pide «Más detalles» los ve todos
   const a = $('#sheetHost .sheet .actions'); if (a) a.hidden = false;
   tecCerrar(); sentir('tic');
 }
@@ -2139,17 +2147,22 @@ function openMovForm(id, pre) {
   const tec = tecladoOn(), impIni = ex ? ex.importe : pre.importe, corta = tec && !ex && !comp && !compDest && (tipoIni === 'Gasto' || tipoIni === 'Ingreso');
   if (tec) FORM.tec = { on: !ex, txt: tecTxtDe(impIni), neg: tecNum(impIni) < 0, reemplazar: !!tecTxtDe(impIni), corta, tecla: corta ? 'guardar' : 'hecho' };
   const v2 = apuntarV2(), fechaIni = ex ? ex.fecha : (pre.fecha || todayISO()), catIni = ex ? ex.categoria : (pre.categoria || '');
+  // 28/11 (docs/53 tanda 10): lo de menos va en «Más detalles»: el tipo (al crear), la nota de ahorros, inversiones, deudas y pagos fijos, y el método de pago
+  const tipoEnDet = v2 && !ex && !comp;
+  const tipoHtml = '<label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
+    TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + tipoTxt(t) + '</button>').join('') + '</div>';
+  const metodoHtml = '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
+    metodos.concat(ex && ex.metodoPago && metodos.indexOf(ex.metodoPago) < 0 ? [ex.metodoPago] : []).map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>'; // barrido 08/11: no se pierde la que ya no está en tu lista
+  FORM.mfDet = v2 && !!(ex && (ex.metodoPago || (DESC_EN_DET.indexOf(tipoIni) >= 0 && ex.descripcion)));
   const antesChip = compararOn() && !VERSIONES.importe.cerrada && !comp && !compDest ? '<button type="button" class="tec-antes" ' + act('tecVersion', tec ? 1 : 0) + '>' + ic('swap') + (tec ? 'Antes' : 'Teclado nuevo') + '</button>' : '';
   openSheet(
     '<div class="handle"></div><div class="tec-cab"><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' + antesChip + '</div>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
     (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
-    (!comp && compartidosDisponible() && (ex || (apuntarV2() && !compDest)) ? '<button type="button" class="btn sm ghost comp-arriba' + (apuntarV2() ? ' block-v2' : '') + '" id="compArriba"' + (TIPOS_COMPARTIBLES.indexOf(tipoIni) >= 0 ? '' : ' hidden') + ' ' + act('compOnTop') + '>' + ic('users') + ' Compartir este gasto</button>' : '') +
+    (!comp && compartidosDisponible() && (ex || (apuntarV2() && !compDest)) ? '<button type="button" class="btn sm ghost comp-arriba' + (apuntarV2() ? ' block-v2' : '') + '" id="compArriba"' + (TIPOS_COMPARTIBLES.indexOf(tipoIni) >= 0 ? '' : ' hidden') + ' ' + act('compOnTop') + '>' + ic('users') + ' <span id="compArribaTxt">' + compArribaTxt(tipoIni) + '</span></button>' : '') +
     (tec ? tecCampoHtml(FORM.tec) + monBoxMov(ex, comp, tipoIni) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni, v2 ? deQueHtml(ex, pre) : '') : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
       : '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div>' + monBoxMov(ex, comp, tipoIni) + '<div>') +
-    '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
-    TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + tipoTxt(t) + '</button>').join('') + '</div>' +
-    '<div id="fijoBox">' + fijoHtml() + '</div></div>' +
+    (v2 ? (tipoEnDet ? '' : '<div class="field">' + tipoHtml + '</div>') + '<div id="fijoBox" class="fijo-box">' + fijoHtml() + '</div>' : '<div class="field">' + tipoHtml + '<div id="fijoBox">' + fijoHtml() + '</div></div>') +
     '<div id="invFields">' + invFieldsHtml(tipoIni, ex ? ex.tipoActivo : '') + '</div>' +
     '<div class="field" id="catField"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : (pre.categoria || '')) + '</div>' +
     '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : (pre.categoria || '')) + '" ' + onInput('onCatInput') + '><div id="catAviso"></div></div>' +
@@ -2158,8 +2171,8 @@ function openMovForm(id, pre) {
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : (pre.fecha || todayISO())) + '" ' + onChange('onFechaChange') + '></div>' +
     '<div id="cuentaField">' + cuentaFieldHtml() + '</div>' +
     (v2 ? '<div id="deQueSlot">' + (corta ? '' : deQueHtml(ex, pre)) + '</div>' : '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>') +
-    '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
-    metodos.concat(ex && ex.metodoPago && metodos.indexOf(ex.metodoPago) < 0 ? [ex.metodoPago] : []).map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' + // barrido 08/11: no se pierde la que ya no está en tu lista
+    (v2 ? '<button type="button" class="link mf-det-btn" id="mfDetBtn" aria-expanded="' + FORM.mfDet + '" aria-controls="mfDet" ' + act('mfDetToggle') + '>' + (FORM.mfDet ? 'Menos detalles' : 'Más detalles') + ' ' + ic('chevD') + '</button>' +
+      '<div id="mfDet" class="mf-det"' + (FORM.mfDet ? '' : ' hidden') + '>' + (tipoEnDet ? '<div class="field">' + tipoHtml + '</div>' : '') + '<div id="deQueDet"></div>' + metodoHtml + '</div>' : metodoHtml) +
     '<div id="artField">' + artFieldHtml(comp || ex) + '</div></div>' +
     // 26/11: «Convertir en traspaso» y «Eliminar» van antes de la barra fija «Cancelar · Guardar» (debajo quedaban medio tapados)
     (comp ? (puedeEditarComp(comp) ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>' : '<div class="rec-hint" style="margin-top:10px;">' + AVISO_PERMISO + '</div>')
@@ -2168,7 +2181,7 @@ function openMovForm(id, pre) {
     '<div class="actions"' + (corta ? ' hidden' : '') + '><button class="btn ghost block" ' + (FORM.volverGrupo ? act('grupoVer', FORM.volverGrupo) : FORM.volverPersona ? act('personaVer', FORM.volverPersona) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
     (tec ? tecladoHtml(FORM.tec) : '')
   );
-  syncCatField(); refrescarCatAviso(); if (v2) deQueRefrescar();
+  syncCatField(); refrescarCatAviso(); if (v2) { deQueRefrescar(); deQueSitio(); }
   if (tec) tecSync();
   if (FORM.activo && FORM.activo.activo_id) cargarPreview();
   if (!ex && !tec) setTimeout(() => { const el = $('#fImporte'); if (el) el.focus(); }, 80);
@@ -3105,11 +3118,27 @@ function compCambiarModo(modo) {
     cp.vals = {}; if (r.reparto) ms.forEach((m) => { cp.vals[m.uid] = r.reparto[m.uid] ? String(r.reparto[m.uid]) : ''; });
   } else if (r.reparto) { cp.incl = {}; ms.forEach((m) => { cp.incl[m.uid] = !!r.reparto[m.uid]; }); }
 }
+/* 28/11 (docs/53 tanda 10): «Con», «Pagó» y el reparto con caras, no solo con texto. Lo anterior sigue en «Antes» (VERSIONES.apuntar) */
+function destCaraHtml(d) {
+  if (d.k.indexOf('u:') === 0) return caraHtml(d.k.slice(2), d.label);
+  const g = grupoDe(d.k.slice(2)), o = g && !d.grupo ? otroDe(g) : null;
+  return o ? caraHtml(o.user_id, d.label) : grupoIcHtml(g || { nombre: d.label }, 'cv-g');
+}
+function nombreCorto(n, yo) { return yo ? 'Yo' : escapeHtml(String(n || '').split(' ')[0]); }
+function conCarasHtml(ds, sel, accion, ctx) {
+  return '<div class="cr-caras cv-con" role="group" aria-label="Con quién">' + ds.map((d) => '<button type="button" class="cr-cara cv-dest' + (sel === d.k ? ' on' : '') + '" aria-pressed="' + (sel === d.k) + '" title="' + escapeHtml(d.label) + '" ' + act(accion, d.k) + '>' + destCaraHtml(d) + '<span>' + escapeHtml(d.label) + '</span></button>').join('') +
+    '<button type="button" class="cr-cara cv-nueva" ' + act('invAbrir', ctx) + '><span class="avatar cara cv-mas" aria-hidden="true">' + ic('plus') + '</span><span>Otra persona</span></button></div>';
+}
+function pagoCarasHtml(ms, sel, yo) {
+  return '<div class="cr-caras cv-pago" role="group" aria-label="Quién pagó">' + ms.map((m) => '<button type="button" class="cr-cara' + (sel === m.uid ? ' on' : '') + '" aria-pressed="' + (sel === m.uid) + '" ' + act('compPagador', m.uid) + '>' + caraHtml(m.uid, m.nombre) + '<span>' + nombreCorto(m.nombre, m.uid === yo) + '</span></button>').join('') + '</div>';
+}
+function compArribaTxt(tipo) { const t = TIPO_OBJ[tipo]; return t === 'ahorro' ? 'Aportar a una meta compartida' : t === 'deuda' ? 'Pagar una deuda compartida' : 'Compartir este gasto'; }
 function compFieldHtml() {
   if (!FORM || FORM.kind !== 'mov' || !compartidosDisponible()) return '';
   const cp = FORM.comp || (FORM.comp = { on: false }), t = TIPO_OBJ[FORM.tipo];
   if (TIPOS_COMPARTIBLES.indexOf(FORM.tipo) < 0) return FORM.compId ? '<div class="rec-hint">Solo se comparten gastos, facturas, ahorro y deudas: si lo guardas así, dejará de estar compartido.</div>' : '';
   if (!cp.on && FORM.id && !FORM.compId) return '';
+  if (!cp.on && apuntarV2() && !FORM.compId) return ''; // 28/11: el botón «Compartir» de arriba ya lo ofrece, no se repite aquí
   if (!cp.on) return '<button type="button" class="comp-toggle" ' + act('compOn') + '>' + ic('users') + '<span>' + (t === 'ahorro' ? 'Aportar a una meta compartida' : t === 'deuda' ? 'Pagar una deuda compartida' : 'Compartir este gasto') + '</span>' + badge('compartir') + '</button>';
   const yo = miUid(), ds = destinosPara(FORM.tipo), c = FORM.compId ? compPorId(FORM.compId) : null;
   if (c && !ds.some((d) => d.k === 'g:' + c.grupoId)) ds.unshift({ k: 'g:' + c.grupoId, label: nombreDestino(grupoDe(c.grupoId)) });
@@ -3121,7 +3150,8 @@ function compFieldHtml() {
   if (!ds.length) {
     return h + '<div class="comp-lbl">Con</div><div class="chips">' + otraPersonaChip('f') + '</div>' + invInlineHtml('f') + '</div>';
   }
-  h += '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('compDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('f') + '</div>' + invInlineHtml('f');
+  if (apuntarV2()) h += '<div class="comp-lbl">Con</div>' + conCarasHtml(ds, cp.dest, 'compDest', 'f') + invInlineHtml('f');
+  else h += '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('compDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('f') + '</div>' + invInlineHtml('f');
   if (!cp.dest) return h + '</div>';
   const ms = miembrosComp();
   if (t) {
@@ -3129,6 +3159,9 @@ function compFieldHtml() {
     const huerf = c && c.objetivoId && c.objetivoId === cp.objetivo && !objPorId(c.objetivoId) ? '<button type="button" class="chip active">' + escapeHtml(c.categoria || '—') + ' (eliminada)</button>' : '';
     h += '<div class="comp-lbl">' + (t === 'deuda' ? 'Deuda' : 'Meta') + '</div><div class="chips">' + huerf + os.map((o) => '<button type="button" class="chip ' + (cp.objetivo === o.id ? 'active' : '') + '" ' + act('compObjetivo', o.id) + '>' + escapeHtml(o.nombre) + '</button>').join('') + '</div>';
   }
+  if (apuntarV2()) return h + '<div class="comp-lbl">' + (FORM.tipo === 'Ahorro' ? 'Aporta' : 'Pagó') + '</div>' + pagoCarasHtml(ms, cp.pagador, yo) +
+    '<div class="comp-lbl">Cómo se reparte</div><div class="segmented sm">' + [['igual', 'Iguales'], ['porcentaje', 'Por %'], ['importe', 'Por importe']].map(([id, l]) => '<button type="button" class="' + (cp.modo === id ? 'active' : '') + '" ' + act('compModo', id) + '>' + l + '</button>').join('') + '</div>' +
+    '<div id="compReparto">' + compRepartoHtml() + '</div>' + compAutorHtml(c) + '</div>';
   return h + '<div class="comp-lbl">' + (FORM.tipo === 'Ahorro' ? 'Aporta' : 'Pagó') + '</div><div class="chips">' + ms.map((m) => '<button type="button" class="chip ' + (cp.pagador === m.uid ? 'active' : '') + '" ' + act('compPagador', m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>' +
     '<div class="comp-lbl">Cómo se reparte</div><div class="segmented sm">' + [['igual', 'Iguales'], ['porcentaje', 'Por %'], ['importe', 'Por importe']].map(([id, l]) => '<button type="button" class="' + (cp.modo === id ? 'active' : '') + '" ' + act('compModo', id) + '>' + l + '</button>').join('') + '</div>' +
     '<div id="compReparto">' + compRepartoHtml() + '</div>' + compAutorHtml(c) + '</div>';
@@ -3155,13 +3188,13 @@ function compAutorTxt(c) {
 }
 function compAutorHtml(c) { const t = compAutorTxt(c); return t ? '<div class="comp-autor">' + ic('history') + '<span>' + escapeHtml(t) + '</span></div>' : ''; }
 function compRepartoHtml() {
-  const cp = FORM.comp, ms = miembrosComp(), yo = miUid(), nom = (m) => (m.uid === yo ? 'Yo' : escapeHtml(m.nombre));
+  const cp = FORM.comp, ms = miembrosComp(), yo = miUid(), v2 = apuntarV2(), nom = (m) => (v2 ? caraHtml(m.uid, m.nombre, 'cv-mini') : '') + '<span class="nn">' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</span>';
   let h;
   if (cp.modo === 'igual') {
     const r = calcReparto(cp, importeForm(), ms);
-    h = ms.map((m) => '<label class="comp-row"><input type="checkbox" ' + (cp.incl[m.uid] ? 'checked' : '') + ' ' + onChange('compIncl', m.uid) + '><span class="n">' + nom(m) + '</span><b class="tnum">' + (cp.incl[m.uid] && r.reparto ? money(r.reparto[m.uid] || 0) : '—') + '</b></label>').join('');
+    h = ms.map((m) => '<label class="comp-row' + (v2 ? ' cv-fila' : '') + '"><input type="checkbox" ' + (cp.incl[m.uid] ? 'checked' : '') + ' ' + onChange('compIncl', m.uid) + '><span class="n">' + nom(m) + '</span><b class="tnum">' + (cp.incl[m.uid] && r.reparto ? money(r.reparto[m.uid] || 0) : '—') + '</b></label>').join('');
   } else {
-    h = ms.map((m) => '<div class="comp-row"><span class="n">' + nom(m) + '</span><input type="number" step="0.01" min="0" inputmode="decimal" class="comp-val" placeholder="0" value="' + escapeHtml((cp.vals || {})[m.uid] || '') + '" ' + onInput('compVal', m.uid) + '><span class="u">' + (cp.modo === 'porcentaje' ? '%' : sym()) + '</span></div>').join('');
+    h = ms.map((m) => '<div class="comp-row' + (v2 ? ' cv-fila' : '') + '"><span class="n">' + nom(m) + '</span><input type="number" step="0.01" min="0" inputmode="decimal" class="comp-val" placeholder="0" value="' + escapeHtml((cp.vals || {})[m.uid] || '') + '" ' + onInput('compVal', m.uid) + '><span class="u">' + (cp.modo === 'porcentaje' ? '%' : sym()) + '</span></div>').join('');
   }
   return '<div class="comp-rows">' + h + '</div>' + (FORM.tipo === 'Ahorro' ? '' + infoSola('Quién aporta', 'En una hucha, normalmente cada uno aporta lo suyo: marca solo a quien aporta.') + '' : '') +
     '<div id="compResumen" class="comp-resumen">' + compResumenHtml() + '</div>';
@@ -3181,6 +3214,7 @@ function refrescarComp(soloResumen) {
   if (soloResumen) { const r = $('#compResumen'); if (r) { r.innerHTML = compResumenHtml(); return; } }
   const f = $('#compField'); if (f) f.innerHTML = compFieldHtml();
   const ca = $('#compArriba'); if (ca && FORM && FORM.kind === 'mov') ca.hidden = TIPOS_COMPARTIBLES.indexOf(FORM.tipo) < 0 || !!(FORM.comp && FORM.comp.on); // el de arriba solo con un gasto que aún no se comparte
+  const cat = $('#compArribaTxt'); if (cat && FORM && FORM.kind === 'mov') cat.textContent = compArribaTxt(FORM.tipo);
   refrescarCuentaField();
 }
 // ¿puedo cambiar o borrar este gasto del grupo? Según el ajuste del grupo: todos, o quien lo apuntó (y los administradores)
@@ -3839,7 +3873,7 @@ function tkContinuar() {
   if (comp) FORM.comp = comp;
   const af = $('#artField'); if (af) af.innerHTML = artFieldHtml();
   refrescarComp();
-  if (FORM.tec && FORM.tec.corta) tecMasDetalles(); // con un ticket se ven sus artículos y el reparto
+  if (FORM.tec && FORM.tec.corta) tecMasDetalles(true); // con un ticket se ven sus artículos y el reparto
   tecSync();
 }
 // En el formulario: los artículos del ticket (solo lectura)
@@ -6582,7 +6616,7 @@ function compRapidoHtml() {
   const pago = cp.pagador === yo, res = crResTxt(ms, imp, r);
   const cats = catsGasto().map((c) => c.nombre); if (F.cat && !cats.includes(F.cat)) cats.push(F.cat);
   return '<div class="handle"></div><h2>Compartir un gasto</h2>' +
-    '<div class="cr-lbl">Con</div><div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('r') + '</div>' + invInlineHtml('r') +
+    '<div class="cr-lbl">Con</div>' + (apuntarV2() ? conCarasHtml(ds, cp.dest, 'crDest', 'r') : '<div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('r') + '</div>') + invInlineHtml('r') +
     temaCajaHtml() +
     '<label class="cr-imp"><input id="crImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe total" value="' + escapeHtml(F.importe || '') + '" ' + onInput('crImporte') + '><span>' + sym() + '</span></label>' +
     '<div id="monBox" class="mon-box">' + monHtml() + '</div>' +
@@ -6667,7 +6701,7 @@ function monUsar() {
   if (F.tec) { F.tec.txt = txt; F.tec.neg = false; F.tec.reemplazar = true; tecSync(true); }
   const cr = $('#crImporte'); if (cr) { cr.value = txt; F.importe = txt; cr.size = Math.max(1, txt.length); }
   const fi = $('#fImporte'); if (fi && !F.tec) fi.value = txt;
-  { const mm = $('#mfMas'); if (mm && mm.hidden && M.moneda !== 'OTRA' && H.tecMas) { try { H.tecMas([]); } catch (e) { /* */ } } } // que se vea la nota en la descripción
+  { const mm = $('#mfMas'); if (mm && mm.hidden && M.moneda !== 'OTRA') { try { tecMasDetalles(true); } catch (e) { /* */ } } } // que se vea la nota en la descripción
   const d = $('#crDesc') || $('#fDesc'); if (d && M.moneda !== 'OTRA' && d.value.indexOf(nota) < 0) { d.value = (d.value.trim() ? d.value.trim() + ' · ' : '') + nota; if (d.id === 'crDesc') F.desc = d.value; }
   if (M.moneda !== 'OTRA' && M.origen === 'mano') monRecordar(M.moneda, numCampo(M.mano), todayISO());
   M.on = false; monPintar(); sentir('ok');
@@ -9011,15 +9045,17 @@ function openTraspasoForm(id, pre) {
   pre = pre || {};
   const desde = t ? t.cuentaId : (pre.desde || (pc && pc.id));
   FORM = { kind: 'traspaso', id: t ? t.id : null, convertir: !t && pre.convertir ? pre.convertir : null, desde, a: t ? t.cuentaDestinoId : (pre.a || (cuentasCfg().find((c) => c.id !== desde) || {}).id) };
-  const conv = !!FORM.convertir, tec = tecladoOn() && !conv;
+  const conv = !!FORM.convertir, tec = tecladoOn() && !conv, v2 = apuntarV2(), desc0 = t ? t.descripcion || '' : (pre.descripcion || '');
+  FORM.mfDet = !!desc0; // 28/11 (tanda 10): la nota va en «Más detalles», abierta si ya hay una
+  const descTras = '<div class="field"><label for="fDesc">' + (v2 ? '¿De qué?' : 'Descripción <span class="hint">· opcional</span>') + '</label><input id="fDesc" type="text" placeholder="' + (v2 ? 'Alquiler, cajero…' : 'p. ej. Para el alquiler') + '" value="' + escapeHtml(desc0) + '"></div>';
   if (tec) FORM.tec = { on: !t, txt: tecTxtDe(t ? t.importe : pre.importe), neg: false, sinNeg: true, reemplazar: !!(t || pre.importe), tecla: t ? 'hecho' : 'guardar', pie: 'Escribe cuánto pasas', alGuardar: () => saveTraspaso() };
   const h = '<div class="handle"></div><h2>' + (t ? 'Editar traspaso' : conv ? 'Convertir en traspaso' : 'Traspaso entre cuentas') + '</h2>' +
-    '<div class="rec-hint" style="margin:-6px 0 12px;">' + (conv ? 'Este movimiento dejará de contar como gasto o ingreso y pasará a ser un traspaso entre tus cuentas. No se duplica: es el mismo movimiento.' : 'También para sacar del cajero. No cambia «Te queda este mes».') + '</div>' +
+    (v2 && !conv ? infoSola('Qué es un traspaso', 'También sirve para sacar dinero del cajero. No cambia «Te queda este mes».') : '<div class="rec-hint" style="margin:-6px 0 12px;">' + (conv ? 'Este movimiento dejará de contar como gasto o ingreso y pasará a ser un traspaso entre tus cuentas. No se duplica: es el mismo movimiento.' : 'También para sacar del cajero. No cambia «Te queda este mes».') + '</div>') +
     (tec ? tecCampoHtml(FORM.tec) : '<div class="field"><label>Importe (' + sym() + ')</label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(t ? t.importe : pre.importe) + '"></div>') +
     '<div class="field"><label>Desde</label>' + trasChipsHtml('desde') + '</div>' +
     '<div class="field"><label>A</label>' + trasChipsHtml('a') + '</div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (t ? t.fecha : (pre.fecha || todayISO())) + '"></div>' +
-    '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="p. ej. Para el alquiler" value="' + escapeHtml(t ? t.descripcion || '' : (pre.descripcion || '')) + '"></div>' +
+    (v2 ? '<button type="button" class="link mf-det-btn" id="mfDetBtn" aria-expanded="' + FORM.mfDet + '" aria-controls="mfDet" ' + act('mfDetToggle') + '>' + (FORM.mfDet ? 'Menos detalles' : 'Más detalles') + ' ' + ic('chevD') + '</button><div id="mfDet" class="mf-det"' + (FORM.mfDet ? '' : ' hidden') + '>' + descTras + '</div>' : descTras) +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTraspaso') + '>' + (conv ? 'Convertir' : 'Guardar') + '</button></div>' +
     (t ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTraspaso') + '>' + ic('trash') + ' Eliminar traspaso</button>' : '') +
     (tec ? tecladoHtml(FORM.tec) : '');
@@ -14016,6 +14052,7 @@ const H = {
     const chips = $('#catChips'); if (chips) chips.innerHTML = chipsHtml(t, ($('#fCategoria') || {}).value || '');
     const inv = $('#invFields'); if (inv) inv.innerHTML = invFieldsHtml(t, '');
     const cl = $('#catLabel'); if (cl) cl.innerHTML = catLabel(t);
+    deQueSitio();
     syncCatField();
     if (FORM.comp && FORM.comp.on) compAsegurarDestino();
     refrescarComp();
@@ -14054,10 +14091,11 @@ const H = {
   tecK: ([k]) => { const largo = H.tecK._largo; H.tecK._largo = false; if (largo && k === 'del') return; tecPulsar(k); }, // tras mantener «Borrar», su propio toque no cuenta
   tecAbrir: () => { if (!FORM || !FORM.tec) return; if (!FORM.tec.on) { tecAbrirTeclado(); sentir('tic'); } },
   tecMas: () => tecMasDetalles(),
+  mfDetToggle: () => { if (!FORM || (FORM.kind !== 'mov' && FORM.kind !== 'traspaso')) return; FORM.mfDet = !FORM.mfDet; const d = $('#mfDet'), b = $('#mfDetBtn'); if (d) d.hidden = !FORM.mfDet; if (b) { b.setAttribute('aria-expanded', String(FORM.mfDet)); b.firstChild.nodeValue = (FORM.mfDet ? 'Menos detalles' : 'Más detalles') + ' '; } sentir('tic'); },
   // «Compartir» en el teclado corto: abre los detalles con lo de compartir ya activado
-  tecCompartir: () => { tecMasDetalles(); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
+  tecCompartir: () => { tecMasDetalles(true); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
   // «Compartir este gasto» arriba de un gasto ya apuntado
-  compOnTop: () => { const b = $('#compArriba'); if (b) b.hidden = true; if (FORM.tec && FORM.tec.corta) tecMasDetalles(); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
+  compOnTop: () => { const b = $('#compArriba'); if (b) b.hidden = true; if (FORM.tec && FORM.tec.corta) tecMasDetalles(true); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
   tecVersion: ([n]) => tecVolverAVersion(n),
   tecCat: ([c]) => { const ant = ($('#fCategoria') || {}).value; if (ant !== c) { const sb = $('#fSub'); if (sb) sb.value = ''; } H.pickCat([c]); tecCuentaPintar(); if (tecCatsSolo(FORM.tipo)) tecCatsPintar(c); $$('#tecCats .tec-cat').forEach((b) => { const on = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); tecSync(); },
   tecFecha: (_a, el) => { const v = el.value || todayISO(), f = $('#fFecha'); if (f) { f.value = v; if (H.onFechaChange) H.onFechaChange([], f); } const t = $('#tecFechaTxt'); if (t) t.textContent = tecFechaTxt(v); },
@@ -14621,7 +14659,7 @@ const H = {
     if (fs && fs.type === 'hidden') fs.value = hit || (FORM.id ? fs.value : '');
     autoCategoriaDesc(); refrescarReglaBox(); deQueRefrescar(); sentir('tic');
   },
-  tecCatTodas: () => { const t = $('#tecCatTodas'); if (!t) return; const abre = t.hidden; t.hidden = !abre; t.innerHTML = abre ? tecCatsTodasHtml((($('#fCategoria') || {}).value || '').trim()) : ''; const b = $('#tecCats .tec-cat.mas'); if (b) b.setAttribute('aria-expanded', String(abre)); sentir('tic'); },
+  tecCatTodas: () => { const t = $('#tecCatTodas'); if (!t) return; const abre = t.hidden; t.hidden = !abre; t.innerHTML = abre ? tecCatsTodasHtml((($('#fCategoria') || {}).value || '').trim(), FORM && FORM.tipo) : ''; const b = $('#tecCats .tec-cat.mas'); if (b) b.setAttribute('aria-expanded', String(abre)); sentir('tic'); },
   reglaCheck: (_, el) => { FORM.recordar = el.checked; },
   reglaTexto: (_, el) => { FORM.reglaTexto = el.value; },
   openRecurrentes: () => { verBadge('cobros'); FORM = { kind: 'recLista' }; if ($('#sheetBackdrop')) updateSheet(recListaHtml()); else openSheet(recListaHtml()); },

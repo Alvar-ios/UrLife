@@ -3065,3 +3065,25 @@ html[data-look="nuevo"] .jv6-gm { display: flex; align-items: center; gap: 6px; 
 html[data-look="nuevo"] .jv6-gm i { font-style: normal; font-size: 12px; color: var(--text-muted); }
 html[data-look="nuevo"] .jv6-gs { padding: 0 12px; font-size: 13px; color: var(--text-muted); }
 html[data-look="nuevo"] .jv6-g.bueno .jv6-gs b { color: var(--income); } html[data-look="nuevo"] .jv6-g.malo .jv6-gs b { color: var(--expense); }
+/* Apuntar · tanda 10 (28/11, docs/53): «Con», «Pagó» y el reparto con caras; «Más detalles» plegado */
+html[data-look="nuevo"] .cv-con, html[data-look="nuevo"] .cv-pago { overflow-y: hidden; overscroll-behavior-x: contain; padding: 4px 2px 6px; margin: 0 -2px; }
+html[data-look="nuevo"] .cv-con .cr-cara { min-width: 62px; max-width: 78px; }
+html[data-look="nuevo"] .cv-con .cr-cara > span:last-child { max-width: 74px; text-align: center; line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+html[data-look="nuevo"] .cv-dest .jv-g-ic, html[data-look="nuevo"] .cv-dest .jv-g-foto { width: 42px; height: 42px; border-radius: 50%; font-size: 14px; box-shadow: 0 0 0 2px var(--paper-raised), 0 0 0 4px transparent; transition: box-shadow .2s; }
+html[data-look="nuevo"] .cv-dest.on .jv-g-ic, html[data-look="nuevo"] .cv-dest.on .jv-g-foto { box-shadow: 0 0 0 2px var(--paper-raised), 0 0 0 4px var(--accent); }
+html[data-look="nuevo"] .cv-dest:not(.on) { opacity: .82; }
+html[data-look="nuevo"] .cv-mas { background: transparent; color: var(--accent); border: 1.5px dashed var(--accent); box-shadow: none; }
+html[data-look="nuevo"] .cv-mas svg { width: 20px; height: 20px; }
+html[data-look="nuevo"] .cv-fila { min-height: 48px; padding: 6px 0; gap: 10px; }
+html[data-look="nuevo"] .comp-row.cv-fila .n { display: flex; align-items: center; gap: 10px; min-width: 0; }
+html[data-look="nuevo"] .comp-row.cv-fila .n .nn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-look="nuevo"] .avatar.cv-mini { width: 30px; height: 30px; font-size: 11px; border-width: 0; }
+html[data-look="nuevo"] .field label.comp-row.cv-fila { margin: 0; }
+html[data-look="nuevo"] .mf-det-btn { display: flex; align-items: center; gap: 6px; min-height: 44px; margin: 0 0 2px; padding: 0 2px; font-size: 14px; font-weight: 600; }
+html[data-look="nuevo"] .mf-det-btn svg { width: 16px; height: 16px; transition: transform .2s ease; }
+html[data-look="nuevo"] .mf-det-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+html[data-look="nuevo"] .mf-det[hidden], html[data-look="nuevo"] .mf-det-btn[hidden] { display: none; }
+html[data-look="nuevo"] .fijo-box:empty { display: none; }
+html[data-look="nuevo"] .fijo-box { margin: 0 0 14px; }
+html[data-look="nuevo"] .cv-con .cr-cara.cv-nueva { max-width: none; min-width: 76px; }
+html[data-look="nuevo"] .cv-con .cr-cara.cv-nueva > span:last-child { max-width: none; white-space: nowrap; display: block; }
