@@ -3007,3 +3007,31 @@ html[data-look="nuevo"] .info-fila { margin: 0 0 2px; }
 /* la «i» nunca tapa un botón de acción: la barra fija y las hojas quedan por encima */
 html[data-look="nuevo"] .info-i { position: relative; z-index: 0; }
 html[data-look="nuevo"] .sheet .actions:not(.fija) { position: relative; z-index: 2; }
+
+/* 28/11 · Juntos v5 (docs/53 C): Amigos como historias y Grupos en tarjetas con foto; lo nuevo con aro, borde y «N nuevas» */
+html[data-look="nuevo"] .jv6-amigos { display: flex; gap: 14px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding: 4px 16px 6px; margin: 0 -16px; }
+html[data-look="nuevo"] .jv6-amigos::-webkit-scrollbar { display: none; }
+html[data-look="nuevo"] .jv6-am { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 72px; padding: 0; background: none; border: 0; color: inherit; font: inherit; scroll-snap-align: start; }
+html[data-look="nuevo"] .jv6-aro { display: grid; place-items: center; width: 64px; height: 64px; box-sizing: border-box; padding: 3px; border-radius: 50%; background: transparent; }
+html[data-look="nuevo"] .jv6-aro .avatar { width: 56px; height: 56px; font-size: 19px; box-sizing: border-box; border: 0; }
+html[data-look="nuevo"] .jv6-am.nuevo .jv6-aro { background: linear-gradient(135deg, var(--accent), var(--warn)); }
+html[data-look="nuevo"] .jv6-am.nuevo .jv6-aro .avatar { border: 3px solid var(--paper); width: 58px; height: 58px; }
+html[data-look="nuevo"] .jv6-aro.mas { width: 56px; height: 56px; margin: 4px; padding: 0; border: 1.5px dashed var(--text-faint); color: var(--accent); }
+html[data-look="nuevo"] .jv6-aro.mas .i { width: 22px; height: 22px; }
+html[data-look="nuevo"] .jv6-an { max-width: 72px; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; text-align: center; line-height: 1.2; }
+html[data-look="nuevo"] .jv6-af { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+html[data-look="nuevo"] .jv6-am.bueno .jv6-af { color: var(--income); } html[data-look="nuevo"] .jv6-am.malo .jv6-af { color: var(--expense); }
+html[data-look="nuevo"] .jv6-grupos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+html[data-look="nuevo"] .jv6-grupos.uno { grid-template-columns: 1fr; }
+html[data-look="nuevo"] .jv6-g { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; padding: 0 0 12px; text-align: left; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; color: inherit; font: inherit; }
+html[data-look="nuevo"] .jv6-g.nuevo { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+html[data-look="nuevo"] .jv6-img { position: relative; display: block; height: 84px; background: var(--paper-sunken); }
+html[data-look="nuevo"] .jv6-grupos.uno .jv6-img { height: 120px; }
+html[data-look="nuevo"] .jv6-foto { display: block; width: 100%; height: 100%; object-fit: cover; }
+html[data-look="nuevo"] .jv6-ini { display: grid; place-items: center; width: 100%; height: 100%; color: #fff; font-size: 30px; font-weight: 700; }
+html[data-look="nuevo"] .jv6-pill { position: absolute; top: 8px; right: 8px; padding: 2px 9px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11.5px; font-weight: 700; box-shadow: 0 1px 4px rgba(0, 0, 0, .25); }
+html[data-look="nuevo"] .jv6-gn { padding: 6px 12px 0; font-size: 15px; line-height: 1.2; overflow-wrap: anywhere; }
+html[data-look="nuevo"] .jv6-gm { display: flex; align-items: center; gap: 6px; padding: 0 12px; min-height: 24px; }
+html[data-look="nuevo"] .jv6-gm i { font-style: normal; font-size: 12px; color: var(--text-muted); }
+html[data-look="nuevo"] .jv6-gs { padding: 0 12px; font-size: 13px; color: var(--text-muted); }
+html[data-look="nuevo"] .jv6-g.bueno .jv6-gs b { color: var(--income); } html[data-look="nuevo"] .jv6-g.malo .jv6-gs b { color: var(--expense); }

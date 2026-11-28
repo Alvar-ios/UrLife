@@ -1204,6 +1204,7 @@ function render() {
   if (enAgenda) $$('.tabbar [data-tab], .rail [data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === 'agenda' && !!b.closest('.tabbar'))); // fase14: si la Agenda tiene pestaña abajo, se marca
   // fase14: la pestaña de la Agenda dice cuántas cosas hay hoy (como el botón de arriba al que sustituye)
   const agT = $('.tabbar [data-tab="agenda"]'); if (agT) { const n = allLoaded() ? agendaHoyN() : 0; agT.classList.toggle('con-cuenta', !!n); agT.setAttribute('aria-label', 'Agenda' + (n ? ', ' + n + (n === 1 ? ' cosa hoy' : ' cosas hoy') : '')); }
+  const jT = $('.tabbar [data-tab="juntos"]'); if (jT) { const n = allLoaded() && juntosV5() ? juntosNuevo().total : 0; jT.classList.toggle('con-cuenta', !!n); jT.setAttribute('aria-label', 'Juntos' + (n ? ', con novedades' : '')); } // 28/11: punto si hay algo nuevo de otros
   const ojo = $('#ojoTb'); if (ojo) ojo.innerHTML = cifrasOcultas() && S.tab !== 'inicio' ? ojoBtnHtml() : ''; // Calidad 10/11: volver a ver las cifras desde cualquier pestaña
   if (cifrasOcultas()) setTimeout(taparCifrasTexto, 0);
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : S.tab === 'tu' && S.tuSub && versionDe('tu') === 'nueva' && TU_RAMAS_N[S.tuSub] ? TU_RAMAS_N[S.tuSub] : TITULOS[S.tab];
@@ -1226,7 +1227,7 @@ function render() {
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
   if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
   if (_agEl || S._agFoco) { S._agFoco = false; const nv = $('#agRapida'); if (nv) { if (_agV) nv.value = _agV; try { nv.focus(); } catch (e) { /* noop */ } } }
-  if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') setTimeout(marcarJuntosVisto, 0); else if ((S._vjFuera = true) && !cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
+  if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') { if (juntosV5()) juntosVistoIniciar(); setTimeout(marcarJuntosVisto, 0); } else if ((S._vjFuera = true) && !cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
   pintarComparar(); pintarPista();
   if (S.tab === 'dinero' && dineroV2()) cabAltoMedir(); // después de «Antes»: ese botón puede bajar la fecha a dos líneas
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
@@ -2761,6 +2762,7 @@ function grupoAnadirAmigosHtml(g) {
     fuera.map((a) => '<button type="button" class="chip" ' + act('grupoAnadir', g.id, a.uid) + '>' + ic('plus') + ' ' + escapeHtml(a.nombre) + '</button>').join('') + '</div></div>';
 }
 async function abrirGrupo(id) {
+  juntosVioGrupo(id);
   const prev = FORM && ((FORM.kind === 'grupo' && FORM.id === id) || (FORM.kind === 'saldar' && FORM.gid === id)) ? FORM : null;
   const deVista = !prev && FORM && (FORM.kind === 'hist' || FORM.kind === 'origen') && FORM.gid === id ? FORM.grupoTab || '' : ''; // 23/11: de Historial o «¿De dónde sale?», a la pestaña de la que venías
   FORM = { kind: 'grupo', id, invitaciones: [], ajustes: !!(prev && prev.kind === 'grupo' && prev.ajustes), grupoTab: prev ? prev.grupoTab : (deVista || S._grupoTabVolver || ''), temaVer: prev && prev.kind === 'grupo' ? prev.temaVer : (S._temaVolver && S._temaVolver.gid === id ? S._temaVolver.tid : '') };
@@ -4676,7 +4678,7 @@ function insightsHtml() {
 const VERSIONES = {
   inicio: { txt: 'Inicio', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
-  juntos: { txt: 'Juntos', desde: '2026-11-22', variantes: [['filas', 'Nueva'], ['nueva', 'Antes'], ['v2', '22 oct'], ['antes', 'Primera']] }, // 22/11 (docs/46 tanda 3): grupos en filas, personas y metas a un enlace; «Antes» = la de tarjetas y círculos (13/11); «22 oct»: la lista de personas de antes de los círculos
+  juntos: { txt: 'Juntos', desde: '2026-11-28', variantes: [['v5', 'Nueva'], ['filas', 'Antes'], ['nueva', '13 nov'], ['v2', '22 oct'], ['antes', 'Primera']] }, // 28/11 (docs/53 C): resumen, amigos como historias, grupos en tarjetas con foto y lo nuevo marcado; «Antes» = la de 22/11. 22/11 (docs/46 tanda 3): grupos en filas, personas y metas a un enlace; «Antes» = la de tarjetas y círculos (13/11); «22 oct»: la lista de personas de antes de los círculos
   dinero: { txt: 'Dinero', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
   tu: { txt: 'Tú', desde: '2026-11-13', variantes: [['nueva', 'Por temas'], ['v2', 'Antes'], ['antes', 'Primera']] }, // 13/11: ajustes por temas; «Antes» = Tú de 22/10 (las pruebas antiguas fijan v2 o la primera)
   agenda: { txt: 'Agenda', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
@@ -6031,8 +6033,9 @@ function renderJuntos() {
    compartir un gasto en una sola pantalla. La versión anterior sigue en el botón «Antes».
    ============================================================ */
 function juntosV2() { return versionDe('juntos') !== 'antes'; }
-function juntosV3() { const v = versionDe('juntos'); return v === 'nueva' || v === 'filas'; }
-function juntosV4() { return versionDe('juntos') === 'filas'; }
+function juntosV3() { const v = versionDe('juntos'); return v === 'nueva' || v === 'filas' || v === 'v5'; }
+function juntosV4() { const v = versionDe('juntos'); return v === 'filas' || v === 'v5'; }
+function juntosV5() { return versionDe('juntos') === 'v5'; }
 /* ---- Juntos v3 (23/10/2026, docs/14 B1 y B3): lo que debes y te deben en círculos (Personas | Grupos) y la actividad arriba, con lo nuevo marcado ---- */
 function eurosR(v) { return (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString(LOC())) + ' ' + sym(); }
 function cifraCirc(v) { return Math.abs(v) < 1 ? money(Math.abs(v)) : eurosR(Math.abs(v)); } // menos de 1 €: con céntimos (si no, «0 €»)
@@ -6141,6 +6144,70 @@ function juntosV4Html(ps, gs, debes, teDeben, hayComp) {
     (hayObj ? '<button type="button" class="jv5-link tappable" ' + act('juntosVer', 'metas') + '>' + ic('piggy2') + '<span>Metas y deudas juntos</span>' + ic('chevR') + '</button>' : '') + '</div>';
   return h;
 }
+/* ---- Juntos v5 (28/11/2026, docs/53 C): resumen arriba, «Amigos» como historias que se deslizan y «Grupos» en tarjetas con foto.
+   Lo nuevo (de otros, desde tu última visita a ese grupo o persona) sale como aro en la cara, borde y «N nuevas» en el grupo y punto en la barra de abajo.
+   Se guarda en cfg().juntosVisto = { _: base, [gid]: fecha, 'p:uid': fecha } (fechas del servidor, sin migración). ---- */
+function juntosVistoDe(gid) { const j = cfg().juntosVisto || {}; return j[gid] || j._ || cfg().vistoJuntos || '9999'; }
+// la primera vez parte de lo que ya habías visto: nada aparece como nuevo de golpe
+function juntosVistoIniciar() { if (cfg().juntosVisto || !S.compartidos) return; saveConfig({ juntosVisto: { _: cfg().vistoJuntos || juntosUltimo() || new Date(0).toISOString() } }); }
+function juntosNuevo() {
+  const out = { g: {}, p: {}, u: {}, total: 0 }, yo = miUid();
+  if (!yo || !S.compartidos || !gruposDisponible() || !juntosOn()) return out;
+  const pv = cfg().juntosVisto || {};
+  const suma = (gid, uid, ts) => {
+    ts = String(ts || ''); if (!ts || !grupoDe(gid) || ts <= juntosVistoDe(gid)) return;
+    out.g[gid] = (out.g[gid] || 0) + 1; out.total++; if (ts > (out.u[gid] || '')) out.u[gid] = ts;
+    const u = aliasDe(gid, uid);
+    if (u && u !== yo && ts > (pv['p:' + u] || '')) { const x = out.p[u] || (out.p[u] = { n: 0, ult: '' }); x.n++; if (ts > x.ult) x.ult = ts; }
+  };
+  S.compartidos.forEach((c) => { const q = c.creadoPor || c.pagadoPor; if (q && !esMio(c.grupoId, q)) suma(c.grupoId, q, c.createdAt); });
+  if (historialOn()) histAvisos().forEach((f) => suma(f.gid, f.por, f.en));
+  encargosNuevos().forEach((a) => suma(a.grupoId, a.creadoPor, a.createdAt));
+  return out;
+}
+// al abrir un grupo o una persona se apaga su aviso (solo lo que había hasta ahora)
+function juntosMarcarVisto(clave, ts) {
+  if (!ts) return; const j = Object.assign({}, cfg().juntosVisto || {}); if ((j[clave] || '') >= ts) return;
+  j[clave] = ts; saveConfig({ juntosVisto: j }); render();
+}
+function juntosVioGrupo(gid) { if (juntosV5()) juntosMarcarVisto(gid, juntosNuevo().u[gid]); }
+function juntosVioPersona(uid) { if (juntosV5()) { const x = juntosNuevo().p[uid]; if (x) juntosMarcarVisto('p:' + uid, x.ult); } }
+function juntosV5Html(ps, gs, debes, teDeben, hayComp) {
+  const yo = miUid(), uso = juntosUso(), todos = S.juntosTodos || {}, nuevo = juntosNuevo();
+  const cifras = !hayComp ? '<div class="jv3-paz">Aún no habéis compartido gastos</div>' : (debes < 0.005 && teDeben < 0.005) ? '<div class="jv3-paz">' + ic('checkCircle') + ' Estás en paz con todos</div>' :
+    '<div class="jv3-cifras tnum">' + (teDeben >= 0.005 ? '<span class="te">Te deben <b>' + money(teDeben) + '</b></span>' : '') + (debes >= 0.005 ? '<span class="de">' + (teDeben >= 0.005 ? '<i>·</i> ' : '') + 'Debes <b>' + money(debes) + '</b></span>' : '') + '</div>';
+  let h = '<div class="card jv-cab jv3-cab jv5-cab">' + cifras + '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
+  // Amigos: a quien debes, quien te debe y con quien estás en paz
+  const vistos = new Set(ps.map((x) => x.uid)), paz = [];
+  gs.forEach((g) => g.miembros.forEach((m) => { const u = aliasDe(g.id, m.user_id); if (u !== yo && !esMio(g.id, m.user_id) && !vistos.has(u)) { vistos.add(u); paz.push({ uid: u, nombre: m.nombre }); } }));
+  const pers = ps.map((x) => ({ k: x.uid, nombre: x.nombre, v: x.neto })).concat(paz.map((x) => ({ k: x.uid, nombre: x.nombre, v: 0 }))).sort(jvPorUso(uso.p));
+  const amigo = (x) => {
+    const v = x.v, pz = Math.abs(v) < 0.005, n = (nuevo.p[x.k] || {}).n || 0, est = pz ? 'en paz' : v < 0 ? 'le debes' : 'te debe';
+    return '<button type="button" class="jv6-am tappable' + (n ? ' nuevo' : '') + (pz ? ' paz' : v < 0 ? ' malo' : ' bueno') + '" ' + act('personaVer', x.k) + '>' +
+      '<span class="jv6-aro">' + caraHtml(x.k, x.nombre) + '</span><b class="jv6-an">' + escapeHtml(String(x.nombre || '').trim().split(/\s+/)[0]) + '</b><span class="jv6-af tnum">' + (pz ? 'en paz' : '<span class="sr-only">' + est + ' </span>' + escapeHtml(cifraCirc(v))) + (n ? '<span class="sr-only">Novedades</span>' : '') + '</span></button>';
+  };
+  h += '<section class="jv4-sec jv6-sec"><div class="section-title">Amigos' + infoI('Cada cifra suma lo de todos tus grupos.') + '</div><div class="jv6-amigos">' +
+    '<button type="button" class="jv6-am tappable jv6-inv" ' + act('juntosInvitar') + '><span class="jv6-aro mas" aria-hidden="true">' + ic('plus') + '</span><b class="jv6-an">Invitar</b></button>' + pers.slice(0, 24).map(amigo).join('') + '</div></section>';
+  // Grupos: tarjetas de dos en dos, con foto
+  const grs = gs.map((g) => { const hay = (S.compartidos || []).some((c) => c.grupoId === g.id); return { k: g.id, g, nombre: nombreDestino(g), hay, v: hay ? miSaldo(g.id) : 0 }; }).sort(jvPorUso(uso.g));
+  const MAX = 6, n = todos.grupos ? grs.length : MAX;
+  const tarjeta = (x) => {
+    const g = x.g, v = x.v, pz = Math.abs(v) < 0.005, nn = nuevo.g[g.id] || 0, otros = g.miembros.filter((m) => m.user_id !== yo && !esMio(g.id, m.user_id));
+    const est = !x.hay ? 'sin gastos' : pz ? 'en paz' : v < 0 ? 'debes' : 'te deben';
+    const img = g.foto ? '<img class="jv6-foto" src="' + g.foto + '" alt="">' : '<span class="jv6-ini" style="background:' + colorPersona(g.id) + '" aria-hidden="true">' + escapeHtml(iniciales(x.nombre).charAt(0)) + '</span>';
+    return '<button type="button" class="jv6-g tappable ' + (!x.hay || pz ? 'paz' : v < 0 ? 'malo' : 'bueno') + (nn ? ' nuevo' : '') + '" ' + act('grupoVer', g.id) + '>' +
+      '<span class="jv6-img">' + img + (nn ? '<span class="jv6-pill">' + (nn === 1 ? '1 nueva' : (nn > 9 ? '9+' : nn) + ' nuevas') + '</span>' : '') + '</span>' +
+      '<b class="jv6-gn">' + escapeHtml(x.nombre) + '</b>' +
+      '<span class="jv6-gm"><span class="jv-caras" aria-hidden="true">' + otros.slice(0, 3).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '</span>' + (otros.length > 3 ? '<i class="tnum">+' + (otros.length - 3) + '</i>' : '') + '</span>' +
+      '<span class="jv6-gs">' + (!x.hay || pz ? est : est + ' <b class="tnum">' + escapeHtml(money(Math.abs(v))) + '</b>') + '</span></button>';
+  };
+  h += '<section class="jv4-sec jv6-sec"><div class="section-title">Grupos<button type="button" class="link" ' + act('openGrupos') + '>' + ic('plus') + ' Nuevo</button></div>' +
+    (grs.length ? '<div class="jv6-grupos' + (grs.length === 1 ? ' uno' : '') + '">' + grs.slice(0, n).map(tarjeta).join('') + '</div>' +
+      (grs.length > MAX ? '<button type="button" class="link jv4-todos" ' + act('juntosTodos', 'grupos') + '>' + (todos.grupos ? 'Ver menos' : 'Ver todos (' + grs.length + ')') + '</button>' : '')
+      : '<div class="jv3-vacio">Aún no tienes grupos. Crea uno para la casa, un viaje o el pádel.</div>') + '</section>';
+  h += juntosObjHtml();
+  return h;
+}
 // «Por persona»: los círculos de siempre (lo que te debe o le debes a cada uno, sumando todos los grupos)
 function juntosPersonasVerHtml(ps, gs) {
   const yo = miUid(), uso = juntosUso(), todos = S.juntosTodos || {};
@@ -6236,6 +6303,7 @@ function renderJuntosV2() {
     (basico() ? '<p class="jv-sin-app">¿Tus amigos no tienen PalomApp? No pasa nada: añádelos por su nombre.</p>' : '') +
     '<button class="btn accent block" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button>' +
     '<button class="btn ghost block" ' + act('openGrupos') + '>' + ic('users') + ' Crear un grupo</button></div>';
+  if (juntosV5()) return juntosV5Html(ps, gs, debes, teDeben, hayComp);
   if (juntosV4()) return juntosV4Html(ps, gs, debes, teDeben, hayComp);
   if (juntosV3()) return juntosV3Html(ps, gs, frase, debes, teDeben, hayComp);
   let h = '<div class="card jv-cab"><div class="jv-frase">' + frase + '</div>' +
@@ -14156,6 +14224,7 @@ const H = {
   juntosVer: ([k]) => { S.juntosVer = k || ''; sentir('tic'); render(); window.scrollTo && window.scrollTo(0, 0); },
   juntosTodos: ([k]) => { const t = S.juntosTodos = Object.assign({}, S.juntosTodos); t[k] = !t[k]; sentir('tic'); render(); },
   personaVer: ([uid]) => {
+    juntosVioPersona(uid);
     const F = FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid));
     const x = juntosPersonas().find((p) => p.uid === uid);
     if (x && x.neto > 0 && personaSinApp(x)) S.db.rpc('enlace_sin_cuenta', { p_id: uid }).then((t) => { if (t && FORM === F && $('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando) { F.pedirUrl = APP_URL + '?soy=' + encodeURIComponent(t); updateSheet(personaVerHtml(uid)); } }).catch((e) => console.error(e));

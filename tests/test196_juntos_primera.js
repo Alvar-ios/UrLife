@@ -4,7 +4,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
 console.error = () => {};
 (async () => {
   const pad = (n) => String(n).padStart(2, '0'), d = new Date(), hoy = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  const e = makeEnv({ version: { juntos: 0 }, cfg: { app: { nombre: 'Lucía' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uYo' } } });
+  const e = makeEnv({ version: { juntos: 1 }, cfg: { app: { nombre: 'Lucía' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uYo' } } });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc, txt = () => doc.querySelector('#content').textContent;
   S.user = Object.assign({}, S.user, { id: 'uYo' });
@@ -51,7 +51,7 @@ console.error = () => {};
   ok(!!fR && /sin app · Viaje Roma/.test(fR.textContent), 'grupo de dos con nombre propio: «sin app · Viaje Roma»');
   ok(!!fA && !/Lucía y Marta/.test(fA.textContent), 'el que creó la app («Lucía y Marta») no repite el nombre');
   // la de antes sigue en «Antes»
-  S.verAnterior = Object.assign({}, S.verAnterior, { juntos: 1 }); A.render(); await sleep(20);
+  S.verAnterior = Object.assign({}, S.verAnterior, { juntos: 2 }); A.render(); await sleep(20);
   ok(!!doc.querySelector('#content .jv4-grupos') && !doc.querySelector('#content .jv5-g'), '«Antes»: la pantalla de tarjetas y círculos');
   process.exit(fails ? 1 : 0);
 })();

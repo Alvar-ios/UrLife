@@ -4,7 +4,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
 console.error = () => {};
 (async () => {
   const pad = (n) => String(n).padStart(2, '0'), d = new Date(), hoy = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  const e = makeEnv({ version: { juntos: 0 }, cfg: { app: { nombre: 'Lucía' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uYo' } } });
+  const e = makeEnv({ version: { juntos: 1 }, cfg: { app: { nombre: 'Lucía' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uYo' } } });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc, sh = () => doc.querySelector('#sheetHost').textContent;
   S.user = Object.assign({}, S.user, { id: 'uYo' });
@@ -48,7 +48,7 @@ console.error = () => {};
   const t = sh(), iM = t.indexOf('Miembros'), iInv = t.indexOf('Invitar a gente nueva'), iRep = t.indexOf('Reparto habitual'), iPer = t.indexOf('Quién puede cambiar'), iNom = t.indexOf('Tu nombre en este grupo');
   ok(iM >= 0 && iInv > iM && iRep > iInv && iPer > iRep && iNom > iPer, 'Ajustes: Miembros → Invitar → Reparto → Quién puede cambiar → Tu nombre');
   // «Antes»: la pantalla de grupo de antes
-  H.closeSheet([]); await sleep(300); S.verAnterior = Object.assign({}, S.verAnterior, { juntos: 1 }); await abrir('g1');
+  H.closeSheet([]); await sleep(300); S.verAnterior = Object.assign({}, S.verAnterior, { juntos: 2 }); await abrir('g1');
   ok(!doc.querySelector('#sheetHost .jv-sit') && !!doc.querySelector('#sheetHost .jv-tuyo'), '«Antes»: la pantalla de grupo anterior');
   process.exit(fails ? 1 : 0);
 })();

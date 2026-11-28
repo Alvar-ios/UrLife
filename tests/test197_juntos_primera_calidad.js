@@ -8,7 +8,7 @@ const pad = (n) => String(n).padStart(2, '0'), d = new Date(), hoy = d.getFullYe
 const m = (u, nm, x) => Object.assign({ user_id: u, nombre: nm, rol: 'miembro' }, x || {});
 const gasto = (id, gid, imp, pag, rep, desc) => ({ id, grupoId: gid, tipo: 'Gasto', categoria: 'Otros', descripcion: desc, importe: imp, pagadoPor: pag, reparto: rep, modo: 'igual', fecha: hoy, createdAt: new Date().toISOString() });
 async function entorno(extra) {
-  const e = makeEnv(Object.assign({ version: { juntos: 0 }, cfg: { app: { nombre: 'Lucía' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uYo' } } }, extra || {}));
+  const e = makeEnv(Object.assign({ version: { juntos: 1 }, cfg: { app: { nombre: 'Lucía' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uYo' } } }, extra || {}));
   await sleep(150);
   const A = e.w.__APP__, S = A.S;
   S.user = Object.assign({}, S.user, { id: 'uYo' });
@@ -66,27 +66,27 @@ async function entorno(extra) {
     S.grupos.forEach((g) => { g.todos = g.miembros; });
     S.compartidos = [gasto('k1', 'g1', 30, 'uYo', { uYo: 10, uA: 10, uB: 10 }, 'Compra')];
     H.goTab(['juntos']); await sleep(40);
-    ok(!!doc.querySelector('#content .jv5-g'), 'sin elegir versión se ve la nueva');
+    ok(!!doc.querySelector('#content .jv6-grupos'), 'sin elegir versión se ve la nueva (Amigos y Grupos)');
     ok(!!fab(), 'en la principal sale el botón de comparar');
     H.juntosVer(['personas']); await sleep(20); A.render(); await sleep(20);
     ok(!fab(), 'en «Por persona» no sale el botón de comparar');
     H.juntosVer(['']); await sleep(20); A.render(); await sleep(20);
     const vistos = [];
-    for (let i = 0; i < 4; i++) { H.compararCambiar(['juntos']); await sleep(20); vistos.push(A.versionDe ? A.versionDe('juntos') : ''); }
+    for (let i = 0; i < 5; i++) { H.compararCambiar(['juntos']); await sleep(20); vistos.push(A.versionDe ? A.versionDe('juntos') : ''); }
     H.goTab(['juntos']); await sleep(20);
-    ok(!!doc.querySelector('#content .jv5-g'), 'tras dar la vuelta a las 4 versiones vuelve la nueva');
+    ok(!!doc.querySelector('#content .jv6-grupos'), 'tras dar la vuelta a las 5 versiones vuelve la nueva');
     H.compararCambiar(['juntos']); await sleep(20);
-    ok(!!doc.querySelector('#content .jv4-grupos') && !doc.querySelector('#content .jv5-g'), '«Antes» enseña la pantalla de tarjetas y círculos');
+    ok(!!doc.querySelector('#content .jv5-g') && !doc.querySelector('#content .jv6-grupos'), '«Antes» enseña la pantalla de grupos en filas');
   }
   // 5) usuario nuevo con compararVersiones:false: la nueva y sin botón, aunque tuviera otra elegida
   {
     const { S, H, A, doc, fab } = await entorno({ version: {}, cfg: { app: { nombre: 'Lucía', compararVersiones: false }, meta: { onboarded: true } } });
-    S.verAnterior = Object.assign({}, S.verAnterior, { juntos: 1 });
+    S.verAnterior = Object.assign({}, S.verAnterior, { juntos: 2 });
     S.grupos = [{ id: 'g1', nombre: 'Piso', tipo: 'grupo', alias: {}, soyAdmin: true, miembros: [yo, m('uA', 'Ana'), m('uB', 'Bea')] }];
     S.grupos.forEach((g) => { g.todos = g.miembros; });
     S.compartidos = [gasto('k1', 'g1', 30, 'uYo', { uYo: 10, uA: 10, uB: 10 }, 'Compra')];
     H.goTab(['juntos']); await sleep(30); A.render(); await sleep(20);
-    ok(!!doc.querySelector('#content .jv5-g') && !fab(), 'compararVersiones:false: la nueva y sin botón «Antes»');
+    ok(!!doc.querySelector('#content .jv6-grupos') && !fab(), 'compararVersiones:false: la nueva y sin botón «Antes»');
   }
   // 6) un grupo recién creado en el que aún estoy yo solo
   {

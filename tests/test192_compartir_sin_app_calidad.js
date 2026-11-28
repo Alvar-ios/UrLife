@@ -15,7 +15,7 @@ function conGrupos(w, estado) {
 }
 const LECTURA = { ticket: { es_ticket: true, comercio: 'Bar Ejemplo', fecha: '2026-10-09', total: 10, moneda: 'EUR', categoria: 'Restaurantes', notas: '', articulos: [{ nombre: 'Caña', cantidad: 2, importe: 4 }, { nombre: 'Tapa', cantidad: 1, importe: 6 }] }, modelo: 'rapido', usados: 1, limite: 60 };
 const nuevo = (herr, pre) => { const est = { grupos: [], miembros: [], sinCuenta: [] };
-  const e = makeEnv({ version: { juntos: 3, crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }], nombre: 'Álvaro', herramientas: herr }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => { conGrupos(w, est); if (pre) pre(w); } });
+  const e = makeEnv({ version: { juntos: 4, crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }], nombre: 'Álvaro', herramientas: herr }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } }, pre: (w) => { conGrupos(w, est); if (pre) pre(w); } });
   return { e, est }; };
 (async () => {
   // 1) Doble toque: un solo grupo

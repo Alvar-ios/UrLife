@@ -6,7 +6,7 @@ const conocido = (c, m) => console.log((c ? 'PASS ' : 'CONOCIDO ') + m);
 console.error = () => {};
 (async () => {
   const pad = (n) => String(n).padStart(2, '0'), d = new Date(), hoy = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  const e = makeEnv({ version: { juntos: 0 }, cfg: { app: { nombre: 'Lucía', historialVisto: { g1: '2000-01-01T00:00:00Z' } }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uYo' } } });
+  const e = makeEnv({ version: { juntos: 1 }, cfg: { app: { nombre: 'Lucía', historialVisto: { g1: '2000-01-01T00:00:00Z' } }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uYo' } } });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc, sh = () => doc.querySelector('#sheetHost').textContent;
   const hay = (sel) => !!doc.querySelector('#sheetHost ' + sel), abierta = () => { const b = doc.querySelector('#sheetBackdrop'); return !!b && !b.dataset.cerrando; };
@@ -113,7 +113,7 @@ console.error = () => {};
   } else console.log('SKIP FORM no visible desde la prueba');
 
   // 9) «Antes»: la de siempre, también con un directo
-  await cerrar(); S.verAnterior = Object.assign({}, S.verAnterior, { juntos: 1 }); await abrir('g4');
+  await cerrar(); S.verAnterior = Object.assign({}, S.verAnterior, { juntos: 2 }); await abrir('g4');
   ok(!hay('.jv-sit') && hay('.jv-tuyo'), '«Antes»: directo con la pantalla anterior');
   process.exit(fails ? 1 : 0);
 })();
