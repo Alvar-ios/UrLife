@@ -18,8 +18,8 @@ async function alta(url) {
   return altas[0] && altas[0].options && altas[0].options.emailRedirectTo;
 }
 (async () => {
-  ok(await alta('http://localhost:3000/') === 'https://urlife-zeta.vercel.app/', 'desde un ordenador de pruebas (localhost) el correo devuelve a la web de PalomApp');
-  ok(await alta('https://localhost/') === 'https://urlife-zeta.vercel.app/', 'desde la app de Android también');
+  ok(await alta('http://localhost:3000/') === 'https://www.palomapp.es/', 'desde un ordenador de pruebas (localhost) el correo devuelve a la web de PalomApp');
+  ok(await alta('https://localhost/') === 'https://www.palomapp.es/', 'desde la app de Android también');
   ok(await alta('https://urlife-zeta.vercel.app/') === 'https://urlife-zeta.vercel.app/', 'desde la web, a la misma web');
   console.log(fails ? fails + ' FALLOS' : 'TODO OK'); process.exit(fails ? 1 : 0);
 })();

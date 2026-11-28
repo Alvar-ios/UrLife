@@ -11,7 +11,7 @@
 
   // 13/11 (con permiso del dueño): el enlace del correo de confirmación vuelve a la web de PalomApp, nunca a «localhost»
   function urlVuelta() {
-    var WEB = 'https://urlife-zeta.vercel.app/', o = window.location.origin || '';
+    var WEB = 'https://www.palomapp.es/', o = window.location.origin || '';
     return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o) || !/^https?:/.test(o) ? WEB : o + window.location.pathname;
   }
 
