@@ -6953,7 +6953,7 @@ function monHtml() {
   const cam = M.origen === 'mano' ? numCampo(M.mano || '') : M.cambio;
   if (M.origen === 'bce' && !sinBce) h += '<div class="mon-res" id="monRes">' + (M.cargando ? 'Buscando el cambio del día…' : eur != null ? '= <b class="tnum">' + money(eur) + '</b> · 1 € = ' + escapeHtml(String(cam).replace('.', ',')) + ' ' + escapeHtml(inf[1]) + ' · BCE ' + escapeHtml(M.fecha ? fmtDateShort(M.fecha) : '') : cam ? '1 € = ' + escapeHtml(String(cam).replace('.', ',')) + ' ' + escapeHtml(inf[1]) + ' · BCE ' + escapeHtml(M.fecha ? fmtDateShort(M.fecha) : '') : '') +
     (M.aviso ? '<span class="mon-aviso">' + escapeHtml(M.aviso) + '</span>' : '') + '</div>';
-  h += '<div class="segmented sm mon-modo">' + (sinBce ? [] : [['bce', 'Cambio del día']]).concat([['mano', 'Poner el cambio'], ['cobro', 'Lo que me cobraron']]).map(([k, l]) => '<button type="button" class="' + (M.origen === k ? 'active' : '') + '" ' + act('monOrigen', k) + '>' + l + '</button>').join('') + '</div>';
+  h += '<div class="segmented sm mon-modo">' + (sinBce ? [] : [['bce', 'Del día']]).concat([['mano', 'Lo pongo yo'], ['cobro', 'Me cobraron']]).map(([k, l]) => '<button type="button" class="' + (M.origen === k ? 'active' : '') + '" ' + act('monOrigen', k) + '>' + l + '</button>').join('') + '</div>';
   if (M.origen === 'mano') h += '<div class="mon-fila mon-mano"><span>1 € =</span><input id="monMano" class="tnum" type="text" inputmode="decimal" placeholder="1,08" aria-label="Cambio: cuántas unidades por 1 euro" value="' + escapeHtml(M.mano || '') + '" ' + onInput('monMano') + '><span>' + escapeHtml(inf[1] || 'de esa moneda') + '</span></div>' +
     (sinBce ? '<div class="rec-hint">El Banco Central Europeo no publica esa moneda. Escribe el cambio que te den o lo que te cobraron en euros.</div>' : '');
   if (M.origen === 'cobro') h += '<div class="mon-fila mon-mano"><span>Me cobraron</span><input id="monCobro" class="tnum" type="text" inputmode="decimal" placeholder="0,00" aria-label="Lo que te cobraron en euros" value="' + escapeHtml(M.cobro || '') + '" ' + onInput('monCobro') + '><span>€</span></div>' + infoSola('Qué poner', 'Lo que dice tu banco o la tarjeta, con la comisión.') + '';
@@ -8183,7 +8183,7 @@ function origenHtml(gid, volver) {
     const que = liq ? (mio(c.pagadoPor) ? 'Pagaste a ' + n(a) : mio(a) ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a))
       : escapeHtml(c.descripcion || c.categoria || 'Gasto');
     const como = liq ? 'para saldar cuentas' : (mio(c.pagadoPor) ? verbo + 'aste ' + money(c.importe) : n(c.pagadoPor) + ' ' + verbo + 'ó ' + money(c.importe)) + ' · tu parte ' + money(parte);
-    return '<div class="og-f"><span class="og-x"><b>' + que + '</b><span>' + fmtDateShort(c.fecha) + ' · ' + como + '</span></span><b class="tnum" style="color:' + saldoColor(ef) + '">' + sg(ef) + '</b></div>';
+    return '<div class="og-f"><span class="og-x"><b>' + que + '</b><span>' + fmtDateShort(c.fecha) + ' · ' + nbEur(como) + '</span></span><b class="tnum" style="color:' + saldoColor(ef) + '">' + sg(ef) + '</b></div>';
   }).filter(Boolean);
   return '<div class="handle"></div><h2>¿De dónde sale?</h2><div class="rec-hint" style="margin-top:-4px;">' + escapeHtml(nombreDestino(g)) + '</div>' +
     '<div class="jv-total ' + (Math.abs(tot) < 0.005 ? 'paz' : tot < 0 ? 'de' : 'te') + '"><span>' + (Math.abs(tot) < 0.005 ? 'Estás en paz' : tot > 0 ? 'Te deben' : 'Debes') + '</span><b class="tnum">' + money(Math.abs(tot)) + '</b></div>' +
