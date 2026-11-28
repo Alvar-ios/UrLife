@@ -26,6 +26,8 @@ const NATIVO = (activo) => 'window.__nativo={notif:{permiso:async()=>"granted",p
 const AVISOS_MOVS = 'A.S.movimientos=A.S.movimientos.filter((m)=>m.origen!=="aviso").concat([["Supermercado de la esquina con nombre largo",23.45,"Gasto","Supermercado"],["Bizum recibido",15,"Ingreso","Otros ingresos"],["Gasolinera",52.1,"Gasto","Transporte"]].map((x,i)=>({id:"av"+i,tipo:x[2],categoria:x[3],importe:x[1],fecha:new Date().toISOString().slice(0,10),descripcion:x[0],origen:"aviso",creadoEn:Date.now()-i*1000})));';
 const PANTALLAS = [
   ['inicio', 'A.S.tab="inicio";A.render()'],
+  ['sin-conexion', 'window.Data.sinc={estado:()=>({activo:true,sinRed:true,total:3,pendientes:3,fallos:0,revisar:0}),lista:()=>[],onChange:()=>()=>{}};A.S.tab="inicio";A.render();window.dispatchEvent(new Event("offline"))'], // 26/11 (docs/52): aviso fino
+  ['sinc-hoja', 'window.Data.sinc={estado:()=>({activo:true,sinRed:false,total:2,pendientes:0,fallos:1,revisar:1}),lista:()=>[{idOp:"a",col:"movimientos",tipo:"editar",id:"x",data:{descripcion:"Pan",importe:7},estado:"revisar",motivo:"borrado"},{idOp:"b",col:"tareas",tipo:"crear",id:"y",data:{titulo:"Llamar"},estado:"fallo"}],onChange:()=>()=>{}};A.S.tab="inicio";A.render();window.dispatchEvent(new Event("offline"));A.H.sincAbrir([])'],
   ['movimientos', 'A.S.tab="movimientos";A.render()'],
   ['mov-lista', 'A.S.tab="movimientos";A.render();A.H.setMovVista(["lista"])'],
   ['juntos', 'A.S.tab="juntos";A.render()'],

@@ -177,3 +177,6 @@ Amigos (13/10/2026): amigos_y_enlace_para_varios.
   (data URL JPEG/WebP de ≤60 000 caracteres, regla `grupos_foto_formato`) y permiso de esa columna a `authenticated`, en una
   transacción. La ven los miembros y la cambian los administradores con las reglas de siempre. Revisada por Datos y Seguridad
   (columna mejor que un espacio de imágenes). Comprobado tras aplicarla: `select *` sigue funcionando y `anon` no la lee.
+
+- `2026-11-26_updated_at_movs_tareas.sql` — **APLICADA el 26/11/2026.** Columna `updated_at` (con disparador) en `movimientos` y `tareas`,
+  solo aditiva, para detectar cambios hechos desde otro móvil al subir lo apuntado sin conexión (docs/52).

@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AvisosBancoPlugin.class); // «Avisos del banco» (docs/39)
         registerPlugin(PalomaWidgetsPlugin.class); // widgets de la pantalla de inicio (docs/40 C5)
         registerPlugin(ArchivoEntrantePlugin.class); // «Compartir con PalomApp»: extractos para Importar (C4 de docs/40)
+        registerPlugin(ClaveLocalPlugin.class); // clave de la copia local sin conexión (docs/52)
         super.onCreate(savedInstanceState);
     }
 }
