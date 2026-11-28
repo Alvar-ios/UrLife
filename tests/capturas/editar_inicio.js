@@ -35,7 +35,18 @@ const ORD = ['asivas', 'gastos', 'ultimos', 'meses', 'calgastos'];
     await p.waitForTimeout(500);
     const pz = await p.evaluate(() => { const e = document.querySelector('#content .iw'); if (!e) return null; e.scrollIntoView({ block: 'center' }); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + 24]; });
     if (!pz) { mal('no hay ninguna pieza en Inicio'); continue; }
+    const sy0 = await p.evaluate(() => window.scrollY);
     await toque('touchStart', pz[0], pz[1]); await p.waitForTimeout(800); await toque('touchEnd'); await p.waitForTimeout(400);
+    const sy1 = await p.evaluate(() => window.scrollY);
+    sy0 > 80 ? (sy1 > 40 ? bien('al mantener pulsada la pantalla no salta arriba (' + Math.round(sy0) + ' → ' + Math.round(sy1) + ' px)') : mal('la pantalla saltó arriba (' + Math.round(sy0) + ' → ' + Math.round(sy1) + ')')) : bien('(sin scroll previo que comprobar: ' + Math.round(sy0) + ' px)');
+    // la barra no pisa la tarjeta de arriba y lo que no se edita está desenfocado e inerte
+    await p.evaluate(() => window.scrollTo(0, 0)); await p.waitForTimeout(200);
+    const so = await p.evaluate(() => { const h = document.querySelector('#content .hero2'), b = document.querySelector('#content .iw-e-bar'); if (!h || !b) return null; const rh = h.getBoundingClientRect(), rb = b.getBoundingClientRect(); return { hueco: rb.top - rh.bottom, blur: getComputedStyle(h).filter, inerte: h.inert }; });
+    so && so.hueco >= 8 ? bien('la barra no pisa la tarjeta grande (hueco ' + Math.round(so.hueco) + ' px)') : mal('la barra toca o pisa la tarjeta grande: ' + JSON.stringify(so));
+    so && /blur/.test(so.blur) && so.inerte ? bien('la tarjeta grande está desenfocada e inerte') : mal('la tarjeta grande no está desenfocada/inerte: ' + JSON.stringify(so));
+    const pegada = await p.evaluate(() => { window.scrollTo(0, 600); const b = document.querySelector('#content .iw-e-bar'), t = document.querySelector('.topbar'); if (!b) return null; const rb = b.getBoundingClientRect(), rt = t ? t.getBoundingClientRect() : { bottom: 0 }; return { b: rb.top - rt.bottom }; });
+    pegada && pegada.b >= 0 ? bien('pegada, la barra queda justo bajo la cabecera (' + Math.round(pegada.b) + ' px)') : mal('pegada, la barra se pisa con la cabecera: ' + JSON.stringify(pegada));
+    await p.evaluate(() => window.scrollTo(0, 0));
     (await p.evaluate(() => window.__APP__.S.inicioEd)) ? bien('mantener pulsada una pieza entra en el modo editar') : mal('mantener pulsada no entra en el modo editar');
     const n = await p.evaluate(() => document.querySelectorAll('#content .iw-e').length); n >= 3 ? bien(n + ' cajas') : mal('faltan cajas (' + n + ')');
     const ancho = await p.evaluate(() => document.documentElement.scrollWidth - window.innerWidth); ancho <= 1 ? bien('nada se sale a los lados') : mal('se sale ' + ancho + ' px');

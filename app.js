@@ -1262,6 +1262,7 @@ function render() {
   // 24/10 (docs/19, opción A): la Agenda a un toque desde arriba, con lo que hay hoy
   const tbA = $('#tbAgenda'); if (tbA) { const enAg = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0); tbA.classList.toggle('on', enAg); tbA.setAttribute('aria-current', enAg ? 'page' : 'false'); const n = allLoaded() ? agendaHoyN() : 0, nb = $('#tbAgendaN'); if (nb) { nb.hidden = !n; nb.textContent = n > 9 ? '9+' : String(n); } tbA.setAttribute('aria-label', 'Agenda' + (n ? ', ' + n + (n === 1 ? ' cosa hoy' : ' cosas hoy') : '')); }
   document.body.classList.toggle('en-movlista', S.tab === 'movimientos' && movVistaAct() === 'lista'); // allí ya hay una lupa que busca en la lista
+  document.documentElement.classList.toggle('iw-editando', !!(S.inicioEd && S.tab === 'inicio')); // 28/11: lo que no se edita se ve desenfocado
   document.body.classList.toggle('en-tu2', S.tab === 'tu' && !tuAntes());
   const enAgenda = S.tab === 'agenda' || (S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0);
   const sub = $('#pageSub'); if (sub) { const enHoy = S.tab === 'inicio' && !enAgenda; sub.textContent = enHoy ? fechaCabecera() : ''; sub.hidden = !enHoy; }
@@ -1294,6 +1295,7 @@ function render() {
   if (_agEl || S._agFoco) { S._agFoco = false; const nv = $('#agRapida'); if (nv) { if (_agV) nv.value = _agV; try { nv.focus(); } catch (e) { /* noop */ } } }
   if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') { if (juntosV5()) juntosVistoIniciar(); setTimeout(marcarJuntosVisto, 0); } else if ((S._vjFuera = true) && !cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
   pintarComparar(); pintarPista();
+  if (S.inicioEd && S.tab === 'inicio') { cabAltoMedir(); Array.prototype.forEach.call(c.children, (el) => { if (!el.matches('.iw-e-bar, .iw-e-lista, .iw-e-pie')) el.inert = true; }); } // la barra se pega justo debajo de la cabecera; lo que no se edita no se toca
   if (S.tab === 'dinero' && dineroV2()) cabAltoMedir(); // después de «Antes»: ese botón puede bajar la fecha a dos líneas
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
   if (!S._novRevisado || lsGet('unirse') || lsGet('soy')) setTimeout(() => { maybeUnirse(); maybeNovedades(); }, 0);
@@ -14165,7 +14167,10 @@ const H = {
   asiVasReset: () => { if (!FORM || FORM.kind !== 'asiVas') return; FORM.v = ['auto', 'auto', 'auto', 'auto', 'auto']; FORM.sub = ''; sentir('tic'); updateSheet(asiVasHtml()); },
   // «Editar Inicio» (docs/21)
   iwEditar: () => { verBadge('inicioEd'); if (versionDe('inicioEd') !== 'nueva') { iwAbrirHoja(); return; }
-    if ($('#sheetBackdrop')) closeSheet(); S.inicioVista = 'hoy'; if (S.tab !== 'inicio') H.goTab(['inicio']); S.inicioEd = true; sentir('tic', true); render(); window.scrollTo(0, 0); },
+    if ($('#sheetBackdrop')) closeSheet(); S.inicioVista = 'hoy'; if (S.tab !== 'inicio') H.goTab(['inicio']); S.inicioEd = true; sentir('tic', true); const an = S._iwAncla; S._iwAncla = null; render();
+    // la pieza que mantienes pulsada se queda bajo el dedo (28/11: antes la pantalla saltaba arriba del todo); desde el botón de abajo, sí se sube
+    const caja = an && Array.prototype.find.call(document.querySelectorAll('#content .iw-e-c'), (c) => c.firstElementChild && c.firstElementChild.className === an.cls);
+    if (caja) window.scrollBy(0, caja.closest('.iw-e').getBoundingClientRect().top - an.top); else window.scrollTo(0, 0); },
   iwListo: () => { S.inicioEd = false; sentir('tic'); render(); },
   iwMoverIn: ([i, d]) => { const l = iwLista(), vis = l.map((x, k) => k).filter((k) => iwTipoOn(l[k].t)); i = Number(i); const p = vis.indexOf(i), q = p + Number(d); if (p < 0 || q < 0 || q >= vis.length) return; const j = vis[q], t = l[i]; l[i] = l[j]; l[j] = t; sentir('tic'); iwGuardarIn(l); },
   iwReordenar: ([de, a]) => { const l = iwLista(); de = Number(de); a = Number(a); if (de === a || !l[de] || a < 0 || a >= l.length) return; const x = l.splice(de, 1)[0]; l.splice(a, 0, x); sentir('ok'); iwGuardarIn(l); },
@@ -15722,7 +15727,7 @@ document.addEventListener('focusin', (e) => { const el = e.target; if (el && el.
   let t = null, p0 = null;
   const quita = () => { clearTimeout(t); t = null; };
   document.addEventListener('pointerdown', (e) => { quita(); const w = e.target.closest && e.target.closest('#content .iw, #content .ins-circ, #content .dias-lista'); if (!w || S.tab !== 'inicio') return;
-    p0 = [e.clientX, e.clientY]; t = setTimeout(() => { t = null; S._iwLargo = Date.now(); sentir('tic', true); H.iwEditar(); }, 500); });
+    p0 = [e.clientX, e.clientY]; const rz = w.getBoundingClientRect(); t = setTimeout(() => { t = null; S._iwLargo = Date.now(); S._iwAncla = { cls: w.className, top: rz.top }; sentir('tic', true); H.iwEditar(); }, 500); });
   document.addEventListener('pointermove', (e) => { if (t && p0 && Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) > 10) quita(); });
   ['pointerup', 'pointercancel', 'scroll'].forEach((ev) => document.addEventListener(ev, quita, true));
   // el toque que acaba un «mantener pulsado» no abre la pieza
@@ -15754,7 +15759,7 @@ document.addEventListener('focusin', (e) => { const el = e.target; if (el && el.
     const w = e.target.closest && e.target.closest('#content .iw-e'); if (!w) return;
     if (e.target.closest('.iw-e-grip')) { e.preventDefault(); arma(w, e); return; }
     if (e.target.closest('button')) return;
-    pend = { x: e.clientX, y: e.clientY, t: setTimeout(() => { pend = null; arma(w, e); }, 350) };
+    pend = { x: e.clientX, y: e.clientY, t: setTimeout(() => { pend = null; arma(w, e); }, 180) };
   });
   document.addEventListener('pointermove', (e) => {
     if (pend && Math.hypot(e.clientX - pend.x, e.clientY - pend.y) > 8) quita();
