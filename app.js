@@ -4597,7 +4597,7 @@ function renderInicioNuevo() {
   if (basico()) { // docs/38 §2.1: una sola tarjeta de ayuda; las piezas, cuando ya no se ve «Primeros pasos»; al final, «Descubre PalomApp»
     const avisoB = inv || guiaInicioHtml() || tuMesSugHtml() || infAvisoHtml(), pp = avisoB ? '' : ppEstado();
     const ayuda = avisoB || (pp === 'tarjeta' || pp === 'hecho' ? ppTarjetaHtml() : (pp === 'linea' ? ppLineaHtml() : '') + sugerenciaHtml());
-    return heroMesHtmlV2() + avisosInicioHtml() + ayuda + (pp === 'tarjeta' ? '' : piezas()) + descLineaHtml();
+    return heroMesHtmlV2() + avisosInicioHtml() + ayuda + (pp === 'tarjeta' && !S.inicioEd ? '' : piezas()) + descLineaHtml();
   }
   return heroMesHtmlV2() + avisosInicioHtml() + (inv || guiaInicioHtml() || tuMesSugHtml() || aviso30Html() || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + piezas() + herrPistaHtml('inicio');
 }
@@ -4680,12 +4680,14 @@ const VERSIONES = {
   dinero: { txt: 'Dinero', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
   tu: { txt: 'Tú', desde: '2026-11-13', variantes: [['nueva', 'Por temas'], ['v2', 'Antes'], ['antes', 'Primera']] }, // 13/11: ajustes por temas; «Antes» = Tú de 22/10 (las pruebas antiguas fijan v2 o la primera)
   agenda: { txt: 'Agenda', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  inicioEd: { txt: 'Editar Inicio', desde: '2026-11-28', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] }, // 28/11 (docs/53 E): editar en la propia pantalla, arrastrando; «Antes» = la hoja con lista
   crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   balance: { txt: 'Mes cerrado', desde: '2026-10-29', variantes: [['nueva', 'Balance'], ['antes', 'Antes']] },
   importe: { txt: 'Apuntar importe', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
   bienvenida: { txt: 'Bienvenida', desde: '2026-11-13', cerrada: '2026-11-13', def: 3, variantes: [['pasos', 'Antes'], ['nueva', '2 pantallas'], ['antes', '4 pasos'], ['v2', 'Por objetivos']] }, // 13/11 (docs/45): def 3 = «Por objetivos» (la nueva, también al repetirla desde Tú); «Antes» = la de por pasos de esta mañana. // 13/11: Hola → Qué quieres usar → Permisos (solo Android) → Tu banco → Listo; «2 pantallas» = la de docs/38 (10/11) // docs/38 §6: 2 pantallas (1 con invitación) y «Lo básico»; «antes» = la de 4 pasos para todos (solo para las pruebas antiguas)
 };
 function seccionVersion() {
+  if (S.tab === 'inicio' && S.inicioEd && (S.inicioVista || 'hoy') === 'hoy') return 'inicioEd';
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
   if (S.tab === 'movimientos' && movVistaAct() === 'resumen') { const p = movPerNorm(S.movPeriodo); if (/^m:/.test(p) ? mesCerrado(+p.slice(2, 6), +p.slice(7, 9)) : /^y:/.test(p) && +p.slice(2) < mesActual().y) return 'balance'; if (/^m:/.test(p)) return 'movResumen'; }
   if (S.tab === 'juntos' && gruposDisponible() && (S.grupos || []).length && !S.juntosVer) return 'juntos';
@@ -5221,6 +5223,7 @@ function iwPiezaHtml(x, i) {
 }
 // todas las piezas en su orden; dos de medio ancho seguidas comparten fila (una sola se estira)
 function inicioPiezasHtml() {
+  if (S.inicioEd && S.tab === 'inicio') return iwEditHtml();
   const l = iwLista(), h = new Array(l.length); S._ins = [];
   const ia = l.findIndex((x) => x.t === 'asivas'); if (ia >= 0) h[ia] = iwPiezaHtml(l[ia], ia); // «Estos días» mira lo que ya sale en «Así vas»
   l.forEach((x, i) => { if (h[i] == null) h[i] = iwPiezaHtml(x, i); });
@@ -5231,6 +5234,27 @@ function inicioPiezasHtml() {
   }
   return out + (basico() ? '' : '<button type="button" class="iw-editar" ' + act('iwEditar') + '>' + ic('sliders') + ' Editar Inicio' + badge('inicioEd') + '</button>'); // en «Lo básico», «Inicio a tu gusto» está en Descubre
 }
+/* ===== Editar Inicio en la propia pantalla (28/11, docs/53 E): se mantienen pulsadas las piezas y se arrastran ===== */
+function iwEditHtml() {
+  const l = iwLista(), h = new Array(l.length); S._ins = [];
+  const ia = l.findIndex((x) => x.t === 'asivas'); if (ia >= 0) h[ia] = iwPiezaHtml(l[ia], ia);
+  l.forEach((x, i) => { if (h[i] == null) h[i] = iwPiezaHtml(x, i); });
+  const vis = l.map((x, i) => i).filter((i) => iwTipoOn(l[i].t));
+  const caja = (i) => { const x = l[i], T = IW_TIPOS[x.t], n = iwNombre(x), e = escapeHtml(n), pos = vis.indexOf(i);
+    return '<div class="iw-e" data-i="' + i + '"><div class="iw-e-h"><span class="iw-e-grip" aria-hidden="true">' + ic('grip') + '</span>' +
+      (T.opc ? '<button type="button" class="iw-e-cambiar" aria-label="Cambiar ' + e + '" ' + act('iwOpcAbrir', i) + '>' + ic('sliders') + ' Cambiar</button>' : '') + '<span class="iw-e-sp"></span>' +
+      '<button type="button" class="icon-btn sm" aria-label="Subir ' + e + '" ' + (pos > 0 ? act('iwMoverIn', i, -1) : 'disabled') + '>' + ic('arrowUp') + '</button>' +
+      '<button type="button" class="icon-btn sm" aria-label="Bajar ' + e + '" ' + (pos < vis.length - 1 ? act('iwMoverIn', i, 1) : 'disabled') + '>' + ic('arrowDown') + '</button>' +
+      '<button type="button" class="icon-btn sm iw-quitar" aria-label="Quitar ' + e + '" ' + act('iwQuitarIn', i) + '>' + ic('close') + '</button></div>' +
+      '<div class="iw-e-c" inert aria-hidden="true">' + (h[i] || '<div class="iw-e-vacio">Sin datos todavía</div>') + '</div></div>'; };
+  return '<div class="iw-e-bar"><b>Editar Inicio</b><button type="button" class="btn accent sm" ' + act('iwListo') + '>Listo</button></div><div class="iw-e-lista">' + vis.map(caja).join('') + '</div>' +
+    '<div class="iw-e-pie"><button type="button" class="btn ghost block" ' + (l.length < IW_MAX ? act('iwAnadirIn') : 'disabled') + '>' + ic('plus') + ' Añadir una pieza</button>' +
+    '<div class="iw-ed-pie"><span class="tnum">' + l.length + ' de ' + IW_MAX + '</span><button type="button" class="link" ' + act('iwResetIn') + '>Como al principio</button></div></div>';
+}
+// dónde queda la pieza que se arrastra: cuántas de las otras tienen su centro por encima del suyo
+function iwDestino(mids, i, centro) { let a = 0; mids.forEach((m, j) => { if (j !== i && m < centro) a++; }); return a; }
+async function iwGuardarIn(l) { const job = saveConfig({ inicioWidgets: l.slice(0, IW_MAX).map((x) => (x.o ? { t: x.t, o: x.o } : { t: x.t })) }); render(); await job; }
+function iwAbrirHoja() { FORM = { kind: 'iwEd', vista: 'lista', lista: iwLista() }; openSheet(iwEdHtml()); }
 /* ============================================================
    «LO BÁSICO» Y «DESCUBRE PALOMAPP» (10/11/2026, docs/38-lo-basico-diseno.md)
    Las cuentas nuevas empiezan en «Lo básico»: Inicio, el + y Tú más sencillos, sin esconder nada (lo demás, plegado
@@ -5662,7 +5686,7 @@ async function iwGuardar() {
   const F = FORM; if (!F || F.kind !== 'iwEd') return;
   F.lista = F.lista.slice(0, IW_MAX);
   const job = saveConfig({ inicioWidgets: F.lista.map((x) => (x.o ? { t: x.t, o: x.o } : { t: x.t })) }); // primero se guarda (cambia la configuración en memoria) y luego se pinta
-  render(); updateSheet(iwEdHtml()); await job;
+  render(); if (F.enInicio) closeSheet(); else updateSheet(iwEdHtml()); await job;
 }
 /* ===== Mes cerrado como informe (29/10, docs/23 §4): «Balance de septiembre» en vez de «Te queda» ===== */
 function balanceOn() { return versionDe('balance') === 'nueva'; }
@@ -13414,6 +13438,7 @@ function atrasAndroid() {
   if (b && !b.dataset.cerrando) { if (atrasEnHoja(b)) return true; if (hojaConAlgoEscrito()) preguntarDescartar();
     else if (volverDeHoja()) { /* 26/11 (decisión del dueño): de un gasto abierto desde un grupo (o una persona), atrás vuelve allí */ }
     else closeSheet(); return true; }
+  if (S.inicioEd && S.tab === 'inicio') { H.iwListo(); return true; } // 28/11: en «Editar Inicio», atrás sale del modo
   // 13/11 (Calidad): en la bienvenida, atrás vuelve al paso anterior (antes cerraba la app); en el primer paso, sale como siempre
   const ob = S.onboarding;
   if (ob && bienvV2(ob)) { if (ob.confSaltar) { ob.confSaltar = false; render(); return true; } return bvAtras(ob); } // 13/11 (docs/45)
@@ -13503,7 +13528,7 @@ const H = {
   avAvisarme: async () => { const n = avNat(), e = S._avEst || {}; if (!n) return; await n.configurar({ avisarme: e.avisarme === false }).catch(() => {}); avisosAbrir(); },
   avBanco: async ([pkg]) => { const n = avNat(), e = S._avEst || {}; if (!n) return; const b = new Set(e.bancos || []); if (b.has(pkg)) b.delete(pkg); else b.add(pkg); await n.configurar({ bancos: [...b] }).catch(() => {}); avisosAbrir(); },
   goTab: ([id]) => {
-    S._infoTeQueda = false;
+    S._infoTeQueda = false; S.inicioEd = false;
     S.volverA = null; if (id === 'movimientos') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S.movVista = 'resumen'; S.movPeriodo = mesHoyClave(); S._donutSel = ''; S._gcAbierta = ''; _donutAnim = ''; }
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
     const nueva = TAB_ALIAS[id] || id; if (nueva !== S.tab) S._entrando = true;
@@ -13720,6 +13745,7 @@ const H = {
   // las tarjetas de «Así vas» llevan delante insIr: quitan su etiqueta y hacen lo de siempre
   compararToggle: () => { const on = !compararOn(); saveConfig({ compararVersiones: on }); if (!on) S.verAnterior = {}; toast(on ? 'Verás un botón para comparar con la versión anterior' : 'Botón de comparar oculto'); render(); },
   compararCambiar: ([k]) => {
+    if (k === 'inicioEd') { S.inicioEd = false; sentir('tic'); toast('Viendo la versión anterior de Editar Inicio'); render(); iwAbrirHoja(); return; } // no se recuerda: la hoja es solo para comparar
     const v = VERSIONES[k]; if (!v) return; const n = (versionIdx(k) + 1) % v.variantes.length;
     S.verAnterior = Object.assign({}, S.verAnterior, { [k]: n }); sentir('tic'); _donutAnim = '';
     toast(v.variantes.length === 2 ? (n ? 'Viendo la versión anterior de ' + v.txt : 'Vuelves a la versión nueva') : v.txt + ': versión «' + v.variantes[n][1] + '» (' + (n + 1) + ' de ' + v.variantes.length + ')');
@@ -13731,8 +13757,15 @@ const H = {
   asiVasElegir: ([k]) => { if (!FORM || FORM.kind !== 'asiVas') return; const F = FORM, otro = k !== 'auto' ? F.v.findIndex((x, i) => i !== F.sel && x === k) : -1; if (otro >= 0) F.v[otro] = F.v[F.sel]; F.v[F.sel] = k; F.sub = ''; if (F.sel < 4) F.sel++; sentir('tic'); updateSheet(asiVasHtml()); },
   asiVasReset: () => { if (!FORM || FORM.kind !== 'asiVas') return; FORM.v = ['auto', 'auto', 'auto', 'auto', 'auto']; FORM.sub = ''; sentir('tic'); updateSheet(asiVasHtml()); },
   // «Editar Inicio» (docs/21)
-  iwEditar: () => { verBadge('inicioEd'); FORM = { kind: 'iwEd', vista: 'lista', lista: iwLista() }; openSheet(iwEdHtml()); },
-  iwVista: ([v]) => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.vista = v; FORM.aviso = ''; updateSheet(iwEdHtml()); },
+  iwEditar: () => { verBadge('inicioEd'); if (versionDe('inicioEd') !== 'nueva') { iwAbrirHoja(); return; }
+    if ($('#sheetBackdrop')) closeSheet(); S.inicioVista = 'hoy'; if (S.tab !== 'inicio') H.goTab(['inicio']); S.inicioEd = true; sentir('tic', true); render(); window.scrollTo(0, 0); },
+  iwListo: () => { S.inicioEd = false; sentir('tic'); render(); },
+  iwMoverIn: ([i, d]) => { const l = iwLista(), vis = l.map((x, k) => k).filter((k) => iwTipoOn(l[k].t)); i = Number(i); const p = vis.indexOf(i), q = p + Number(d); if (p < 0 || q < 0 || q >= vis.length) return; const j = vis[q], t = l[i]; l[i] = l[j]; l[j] = t; sentir('tic'); iwGuardarIn(l); },
+  iwReordenar: ([de, a]) => { const l = iwLista(); de = Number(de); a = Number(a); if (de === a || !l[de] || a < 0 || a >= l.length) return; const x = l.splice(de, 1)[0]; l.splice(a, 0, x); sentir('ok'); iwGuardarIn(l); },
+  iwQuitarIn: ([i]) => { const l = iwLista(), x = l.splice(Number(i), 1)[0]; if (!x) return; sentir('tic'); if (IW_TIPOS[x.t].recom) toast('Has quitado «' + IW_TIPOS[x.t].n + '». Te recomiendo tenerla: puedes volver a añadirla cuando quieras.'); iwGuardarIn(l); },
+  iwAnadirIn: () => { if (iwLista().length >= IW_MAX) return; FORM = { kind: 'iwEd', vista: 'cat', lista: iwLista(), enInicio: true }; openSheet(iwEdHtml()); },
+  iwResetIn: () => { sentir('tic'); iwGuardarIn(iwDefecto()); },
+  iwVista: ([v]) => { if (!FORM || FORM.kind !== 'iwEd') return; if (FORM.enInicio && v === 'lista') { closeSheet(); return; } FORM.vista = v; FORM.aviso = ''; updateSheet(iwEdHtml()); },
   iwCat: () => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.vista = 'cat'; FORM.aviso = ''; updateSheet(iwEdHtml()); },
   iwFiltro: ([k]) => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.filtro = k; updateSheet(iwEdHtml()); },
   iwMover: ([i, d]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; i = Number(i); const j = i + Number(d); if (j < 0 || j >= F.lista.length) return; const t = F.lista[i]; F.lista[i] = F.lista[j]; F.lista[j] = t; F.aviso = ''; sentir('tic'); iwGuardar(); },
@@ -13741,7 +13774,7 @@ const H = {
     if (IW_TIPOS[t].opc && !IW_TIPOS[t].sinPregunta) { F.vista = 'opc'; F.i = -1; F.nuevo = t; updateSheet(iwEdHtml()); return; }
     F.lista.push({ t }); F.vista = 'lista'; F.aviso = ''; sentir('ok'); iwGuardar(); },
   iwOpcAbrir: ([i]) => { i = Number(i); const l = FORM && FORM.kind === 'iwEd' ? FORM.lista : iwLista(); if (!l[i]) return; const ab = FORM && FORM.kind === 'iwEd' && $('#sheetBackdrop');
-    FORM = { kind: 'iwEd', vista: 'opc', lista: l, i, filtro: FORM && FORM.filtro }; if (ab) updateSheet(iwEdHtml()); else openSheet(iwEdHtml()); },
+    FORM = { kind: 'iwEd', vista: 'opc', lista: l, i, filtro: FORM && FORM.filtro, enInicio: ab ? !!FORM.enInicio : !!S.inicioEd }; if (ab) updateSheet(iwEdHtml()); else openSheet(iwEdHtml()); },
   iwOpcElegir: ([k]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; if (F.i >= 0 && F.lista[F.i]) F.lista[F.i] = { t: F.lista[F.i].t, o: iwOpcObj(F.lista[F.i].t, k) }; else if (F.nuevo && F.lista.length < IW_MAX) F.lista.push({ t: F.nuevo, o: iwOpcObj(F.nuevo, k) }); F.vista = 'lista'; F.i = -1; F.nuevo = null; F.aviso = ''; sentir('ok'); iwGuardar(); },
   iwIrMovLista: () => { S.tab = 'movimientos'; S.movVista = 'lista'; S.movPeriodo = mesHoyClave(); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
   iwIrMovCal: ([iso]) => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = mesClave(im.y, im.m); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S.movCalDia = iso || ''; S._entrando = true; render(); window.scrollTo(0, 0); },
@@ -15252,11 +15285,53 @@ document.addEventListener('focusin', (e) => { const el = e.target; if (el && el.
   let t = null, p0 = null;
   const quita = () => { clearTimeout(t); t = null; };
   document.addEventListener('pointerdown', (e) => { quita(); const w = e.target.closest && e.target.closest('#content .iw, #content .ins-circ, #content .dias-lista'); if (!w || S.tab !== 'inicio') return;
-    p0 = [e.clientX, e.clientY]; t = setTimeout(() => { t = null; S._iwLargo = Date.now(); sentir('tic', true); H.iwEditar(); }, 600); });
+    p0 = [e.clientX, e.clientY]; t = setTimeout(() => { t = null; S._iwLargo = Date.now(); sentir('tic', true); H.iwEditar(); }, 500); });
   document.addEventListener('pointermove', (e) => { if (t && p0 && Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) > 10) quita(); });
   ['pointerup', 'pointercancel', 'scroll'].forEach((ev) => document.addEventListener(ev, quita, true));
   // el toque que acaba un «mantener pulsado» no abre la pieza
   document.addEventListener('click', (e) => { if (S._iwLargo && Date.now() - S._iwLargo < 900) { S._iwLargo = 0; if (!(e.target.closest && e.target.closest('#sheetHost'))) { e.stopPropagation(); e.preventDefault(); } } }, true);
+})();
+/* ---- arrastrar las piezas en «Editar Inicio» sobre la propia pantalla (28/11) ----
+   Desde el asa se arrastra al instante; sobre la pieza, tras mantener 350 ms (la pulsación larga «arma» el arrastre y solo entonces se bloquea el desplazamiento) */
+(function () {
+  let D = null, pend = null, raf = 0;
+  const cajas = () => [...document.querySelectorAll('#content .iw-e[data-i]')];
+  const pinta = () => {
+    if (!D) return; const sy = window.scrollY, dy = (D.y - D.y0) + (sy - D.s0);
+    D.w.style.transform = 'translateY(' + dy + 'px)';
+    const a = iwDestino(D.mids, D.i, D.mids[D.i] + dy); if (a !== D.a) { D.a = a; sentir('tic'); }
+    D.els.forEach((el, j) => { if (j === D.i) return; const s = D.i < D.a && j > D.i && j <= D.a ? -1 : D.i > D.a && j < D.i && j >= D.a ? 1 : 0; el.style.transform = s ? 'translateY(' + (s * D.paso) + 'px)' : ''; });
+  };
+  const bucle = () => { if (!D) return; const h = window.innerHeight || 800, v = D.y < 90 ? -(90 - D.y) / 90 * 14 : D.y > h - 110 ? (D.y - (h - 110)) / 110 * 14 : 0; if (v) window.scrollBy(0, v); pinta(); raf = requestAnimationFrame(bucle); };
+  const arma = (w, e) => {
+    const els = cajas(), i = els.indexOf(w); if (i < 0 || !S.inicioEd) return; const sy = window.scrollY || 0, rs = els.map((el) => el.getBoundingClientRect());
+    const hueco = els.length > 1 ? Math.max(0, rs[1].top - rs[0].bottom) : 0;
+    D = { w, els, i, a: i, y0: e.clientY, y: e.clientY, s0: sy, mids: rs.map((r) => r.top + sy + r.height / 2), paso: rs[i].height + hueco };
+    w.classList.add('arrastra'); document.documentElement.classList.add('iw-arrastrando'); sentir('tic', true);
+    try { w.setPointerCapture(e.pointerId); } catch (er) { /* */ }
+    if (typeof requestAnimationFrame === 'function') raf = requestAnimationFrame(bucle);
+  };
+  const quita = () => { if (pend) { clearTimeout(pend.t); pend = null; } };
+  document.addEventListener('pointerdown', (e) => {
+    quita(); if (!S.inicioEd || D || (e.button != null && e.button > 0)) return;
+    const w = e.target.closest && e.target.closest('#content .iw-e'); if (!w) return;
+    if (e.target.closest('.iw-e-grip')) { e.preventDefault(); arma(w, e); return; }
+    if (e.target.closest('button')) return;
+    pend = { x: e.clientX, y: e.clientY, t: setTimeout(() => { pend = null; arma(w, e); }, 350) };
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (pend && Math.hypot(e.clientX - pend.x, e.clientY - pend.y) > 8) quita();
+    if (D) { D.y = e.clientY; pinta(); }
+  });
+  const fin = (e) => {
+    quita(); if (!D) return; const d = D; D = null; cancelAnimationFrame && cancelAnimationFrame(raf);
+    d.els.forEach((el) => { el.style.transform = ''; }); d.w.classList.remove('arrastra'); document.documentElement.classList.remove('iw-arrastrando');
+    if (d.a === d.i || (e && e.type === 'pointercancel')) return; // si el sistema corta el gesto, el orden se queda como estaba
+    H.iwReordenar([d.els[d.i].dataset.i, d.els[d.a].dataset.i]);
+  };
+  document.addEventListener('pointerup', fin); document.addEventListener('pointercancel', fin);
+  document.addEventListener('touchmove', (e) => { if (D && e.cancelable) e.preventDefault(); }, { passive: false });
+  document.addEventListener('contextmenu', (e) => { if (S.inicioEd && e.target.closest && e.target.closest('#content .iw-e')) e.preventDefault(); });
 })();
 document.addEventListener('change', (e) => dispatch('change', e));
 document.addEventListener('keydown', (e) => { if (tecTeclaFisica(e)) return; if (e.key === 'Enter' && e.target && e.target.id === 'agRapida') { e.preventDefault(); agRapidaCrear(); return; } if (e.key === 'Escape') { if ($('#popupBackdrop')) cerrarPopup(); else closeSheet(); } });
@@ -15385,6 +15460,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { LA, fotoValida, fotoReducir, cargarGrupos, herrOn, herrLista, obPasos, bvLista, bvPct, bvPiezas, bvSellosGanados, bvPpFilas, bvRecortes, bienvV2, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, tabsBarra, insightsCatalogo, herrPistaHtml };
+window.__APP__ = { iwDestino, LA, fotoValida, fotoReducir, cargarGrupos, herrOn, herrLista, obPasos, bvLista, bvPct, bvPiezas, bvSellosGanados, bvPpFilas, bvRecortes, bienvV2, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, tabsBarra, insightsCatalogo, herrPistaHtml };
 if (!window.__NO_AUTOSTART__) main();
 })();
