@@ -4,7 +4,7 @@
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const hoy = () => { const d = new Date(), p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
-const V = { tu: 0, agenda: 0, crear: 0 };
+const V = { tu: 0, agenda: 0, crear: 1 };
 const av = (tipo, importe, extra) => Object.assign({ id: 'x' + Math.random(), pkg: 'de.number26.android', app: 'N26', importe, entra: true, comercio: '', tipo, ts: Date.now() }, extra || {});
 (async () => {
   /* A · lista propia con «Nómina» la primera y sin «Otros»; un Bizum anterior mal puesto en Nómina (el fallo) */

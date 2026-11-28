@@ -54,7 +54,7 @@ paletas.violeta = bloque('html[data-look="nuevo"], html[data-look="nuevo"][data-
   if (m) m[1].match(/#[0-9A-Fa-f]{6}/g).forEach((c) => { const r = ratio([255, 255, 255], hex(c)); ok(r >= 4.5, 'blanco sobre color de persona ' + c + ' = ' + r.toFixed(2)); });
 
   // C) etiquetas de los campos del formulario de gasto (+ → Gasto)
-  const e = makeEnv({ cfg: { app: { categoriasGasto: [{ nombre: 'Comida' }], ingresos: ['Nómina'], compararVersiones: false }, meta: { onboarded: true } }, movs: [], version: { crear: 0 } });
+  const e = makeEnv({ cfg: { app: { categoriasGasto: [{ nombre: 'Comida' }], ingresos: ['Nómina'], compararVersiones: false }, meta: { onboarded: true } }, movs: [], version: { crear: 1 } });
   await sleep(150);
   e.w.__APP__.H.crearIr(['gasto']); await sleep(150);
   const hoja = e.doc.querySelector('.sheet');

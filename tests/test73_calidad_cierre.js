@@ -26,7 +26,7 @@ const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) =
     H.goTab(['tu']); await sleep(20); ok(!!fab() === comparar && doc.body.classList.contains('en-tu2') && !!doc.querySelector('#content .tu3-cat'), 'Tú: la nueva (por temas, 13/11); el botón «Antes» solo con «Comparar» activado' + t);
     A.openCrear(); await sleep(10);
     const sh = doc.querySelector('#sheetHost').innerHTML;
-    ok(!!doc.querySelector('#sheetHost .crear-4') && !/Ver la versión anterior/.test(sh), 'Botón +: la nueva y sin «Ver la versión anterior»' + t);
+    ok(!!doc.querySelector('#sheetHost .crear-4') && (!!comparar === /Ver la versión anterior/.test(sh)), 'Botón +: la nueva; «Ver la versión anterior» solo con «Comparar» activado (28/11)' + t);
     H.closeSheet([]); await sleep(300);
     H.goTab(['dinero']); await sleep(20);
     ok(!fab(), 'Dinero: sin botón de versiones (el dueño eligió «Formas» el 29/10)' + t);

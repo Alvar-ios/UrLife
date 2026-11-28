@@ -4,7 +4,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
 console.error = () => {};
 (async () => {
   const pad = (n) => String(n).padStart(2, '0'), d = new Date(), hoy = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  const e = makeEnv({ version: { juntos: 3, importe: 0, crear: 0, tu: 1, agenda: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }], nombre: 'Álvaro' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } },
+  const e = makeEnv({ version: { juntos: 3, importe: 0, crear: 1, tu: 1, agenda: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Restaurantes' }], nombre: 'Álvaro' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uA' } },
     movs: [{ id: 'm1', tipo: 'Gasto', categoria: 'Restaurantes', descripcion: 'Cena', importe: 40, fecha: hoy }] });
   await sleep(200);
   const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc, rpcs = [];

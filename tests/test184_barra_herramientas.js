@@ -8,7 +8,7 @@ T.fallosConocidos([]);
 const YO = 'u-yo';
 (async () => {
   const C = (id, pag, imp, rep, dias) => ({ id, grupoId: 'g1', fecha: diasAtras(dias), tipo: 'Gasto', categoria: 'Casa', descripcion: 'Compra ' + id, importe: imp, pagadoPor: pag, reparto: rep, modo: 'igual', creadoPor: pag, createdAt: diasAtras(dias) + 'T10:00:00.000Z' });
-  const e = await abrir({ version: { tu: 0, crear: 0 },
+  const e = await abrir({ version: { tu: 0, crear: 1 },
     cfg: { app: { nombre: 'Prueba', compararVersiones: false, categoriasGasto: [{ nombre: 'Ocio', presupuesto: 500 }, { nombre: 'Casa' }],
       cuentas: [{ id: 'c1', nombre: 'Banco A', saldo: 1000, fecha: diasAtras(40), principal: true }] }, meta: { onboarded: true } },
     grupos: [{ id: 'g1', nombre: 'Piso', tipo: 'grupo', edicion: 'todos', created_at: '2026-01-01', creado_por: YO }],

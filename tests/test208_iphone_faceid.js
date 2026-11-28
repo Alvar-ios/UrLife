@@ -5,7 +5,7 @@ const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 (async () => {
   for (const [nombre, nat, esperado, noEsperado, toastOn] of [['iPhone', { ios: true, huella: true, probarHuella: async () => {} }, 'Pedir Face ID al abrir', 'huella', /Se pedirá Face ID al abrir/], ['Android', { android: true, huella: true, probarHuella: async () => {} }, 'Pedir huella al abrir', 'Face ID', /Se pedirá la huella al abrir/]]) {
-    const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 0 }, pre: (w) => { w.__nativo = Object.assign({ notif: { permiso: async () => 'granted', pedir: async () => 'granted', programar: async () => 0, ahora: async () => 0 } }, nat); },
+    const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 1 }, pre: (w) => { w.__nativo = Object.assign({ notif: { permiso: async () => 'granted', pedir: async () => 'granted', programar: async () => 0, ahora: async () => 0 } }, nat); },
       cfg: { app: {}, meta: { onboarded: true } } });
     await sleep(200);
     const H = e.w.__APP__.H; H.goTab(['tu']); await sleep(40);

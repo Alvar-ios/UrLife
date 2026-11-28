@@ -5,7 +5,7 @@ console.error = () => {};
 const d = new Date(), iso = (x) => x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
 const mas = (n) => { const x = new Date(d); x.setDate(x.getDate() + n); return iso(x); };
 (async () => {
-  const e = makeEnv({ cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Transporte' }, { nombre: 'Otros' }], mesInicio: 1, otraCosa: { a: 1 } }, meta: { onboarded: true } }, version: { crear: 0 } });
+  const e = makeEnv({ cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Transporte' }, { nombre: 'Otros' }], mesInicio: 1, otraCosa: { a: 1 } }, meta: { onboarded: true } }, version: { crear: 1 } });
   await sleep(80);
   const A = e.w.__APP__, H = A.H, doc = e.doc, S = A.S, sh = () => doc.querySelector('#sheetHost');
   const set = (id, v, h) => { const el = doc.querySelector(id); el.value = v; H[h]([], el); };

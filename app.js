@@ -1922,11 +1922,12 @@ function fijoHtml() {
 function subFieldHtml(cat, actual) {
   if (!FORM || !(FORM.tipo === 'Gasto' || FORM.tipo === 'Factura')) return '';
   const fijo = FORM.tipo === 'Factura', subs = subcatsDe(cat, fijo);
+  if (apuntarV2() && !fijo) return '<input id="fSub" type="hidden" value="' + escapeHtml(actual || '') + '">'; // 28/11: el «Detalle» se ve como «¿De qué?» (docs/53 B1)
   return '<label>' + (fijo ? '¿Qué recibo es? <span class="hint">· Alquiler, Spotify, luz…</span>' : 'Detalle' + badge('detalle') + ' <span class="hint">· opcional: Uñas, Golf, Mercadona…</span>') + '</label>' +
     (subs.length ? '<div class="chips" id="subChips">' + subs.map((s) => '<button type="button" class="chip ' + (normName(s) === normName(actual) ? 'active' : '') + '" ' + act('pickSub', s) + '>' + escapeHtml(s) + '</button>').join('') + '</div>' : '') +
     '<input id="fSub" type="text" placeholder="' + (fijo ? 'Nombre del recibo' : 'Sin detalle') + '" value="' + escapeHtml(actual || '') + '" ' + onInput('onSubInput') + '>';
 }
-function refrescarSub() { const f = $('#subField'); if (f) { const sub = ($('#fSub') || {}).value || ''; f.innerHTML = subFieldHtml(($('#fCategoria') || {}).value || '', sub); } }
+function refrescarSub() { deQueRefrescar(); const f = $('#subField'); if (f) { const sub = ($('#fSub') || {}).value || ''; f.innerHTML = subFieldHtml(($('#fCategoria') || {}).value || '', sub); } }
 // Aviso al usar una categoría personalizada: puede que los demás no la tengan
 function refrescarCatAviso() {
   const box = $('#catAviso'); if (!box) return;
@@ -1970,17 +1971,50 @@ function tecCampoHtml(T) {
     '<button type="button" class="tec-cifra" id="tecCifra" aria-label="Importe: ' + escapeHtml(tecTxtLeido(T)) + '. Toca para escribirlo" ' + act('tecAbrir') + '>' + tecCifraHtml(T) + '</button>' +
     '<div class="tec-pie' + (T.neg ? ' neg' : '') + '" id="tecPie">' + escapeHtml(tecPieTxt(T)) + '</div><span class="sr-only" id="tecVoz" role="status" aria-live="polite"></span></div>';
 }
-function tecCatsLista(tipo, cat) { const ci = tipo === 'Ingreso' ? categoriasPorTipo('Ingreso') : null, l = (tipo === 'Ingreso' ? (ci.length ? ci : OB_INGRESOS_SERIE) : catsPorUso()).slice(0, 7); if (cat && l.indexOf(cat) < 0) { l.unshift(cat); l.length = Math.min(l.length, 7); } return l; } // la que ya viene elegida (ticket, Repetir) siempre a la vista
+function tecCatsLista(tipo, cat, max) { max = max || 7; const ci = tipo === 'Ingreso' ? categoriasPorTipo('Ingreso') : null, l = (tipo === 'Ingreso' ? (ci.length ? ci : OB_INGRESOS_SERIE) : catsPorUso()).slice(0, max); if (cat && l.indexOf(cat) < 0) { l.unshift(cat); l.length = Math.min(l.length, max); } return l; } // la que ya viene elegida (ticket, Repetir) siempre a la vista
 function tecFechaTxt(iso) { const h = todayISO(); return iso === h ? 'Hoy' : iso === uAdd(h, -1) ? 'Ayer' : fmtDateShort(iso); }
-function tecRapidoHtml(tipo, cat, fecha) {
-  const cu = hayVariasCuentas() ? cuentaPorId(FORM.cuenta) || cuentasCfg()[0] : null;
-  return '<div id="tecRapido"><div class="tec-cats" id="tecCats" role="group" aria-label="Categoría">' + tecCatsLista(tipo, cat).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" ' + act('tecCat', c) + '>' +
+/* 28/11 (docs/53 B2): en un gasto las categorías van solo con icono (5 + «Ver todas»), con el nombre de la elegida debajo */
+function tecCatsSolo(tipo) { return apuntarV2() && tipo !== 'Ingreso'; }
+function tecCatsInner(tipo, cat) {
+  if (tecCatsSolo(tipo)) return tecCatsLista(tipo, cat, 5).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" aria-label="' + escapeHtml(c) + '" title="' + escapeHtml(c) + '" ' + act('tecCat', c) + '><span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span></button>').join('') +
+    '<button type="button" class="tec-cat mas" aria-label="Ver todas las categorías" aria-expanded="false" ' + act('tecCatTodas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span></button>';
+  return tecCatsLista(tipo, cat).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" ' + act('tecCat', c) + '>' +
       (tipo === 'Ingreso' ? '' : '<span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span>') + '<span class="tec-cat-n">' + escapeHtml(c) + '</span></button>').join('') +
-      '<button type="button" class="tec-cat mas" ' + act('tecMas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span><span class="tec-cat-n">Más</span></button></div>' +
+    '<button type="button" class="tec-cat mas" ' + act('tecMas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span><span class="tec-cat-n">Más</span></button>';
+}
+function tecCatsTodasHtml(cat) { return catsPorUso().map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" ' + act('tecCat', c) + '><span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span><span class="tec-cat-n">' + escapeHtml(c) + '</span></button>').join(''); }
+function tecCatsPintar(c) {
+  const box = $('#tecCats'); if (!box || !tecCatsSolo(FORM && FORM.tipo)) return;
+  box.innerHTML = tecCatsInner(FORM.tipo, c); const n = $('#tecCatSel'); if (n) n.textContent = c || 'Elige una categoría';
+  const t = $('#tecCatTodas'); if (t) { t.hidden = true; t.innerHTML = ''; }
+}
+function tecRapidoHtml(tipo, cat, fecha, dq) {
+  const cu = hayVariasCuentas() ? cuentaPorId(FORM.cuenta) || cuentasCfg()[0] : null, solo = tecCatsSolo(tipo), v2 = apuntarV2();
+  return '<div id="tecRapido"><div class="tec-cats' + (solo ? ' solo' : '') + '" id="tecCats" role="group" aria-label="Categoría">' + tecCatsInner(tipo, cat) + '</div>' +
+    (solo ? '<div class="tec-cat-sel" id="tecCatSel" aria-live="polite">' + escapeHtml(cat || 'Elige una categoría') + '</div><div class="tec-todas" id="tecCatTodas" hidden></div>' : '') + (dq || '') +
     '<div class="tec-linea"><label class="chip tec-fecha">' + ic('calendar') + '<span id="tecFechaTxt">' + escapeHtml(tecFechaTxt(fecha)) + '</span><input type="date" id="tecFecha" aria-label="Fecha" value="' + escapeHtml(fecha) + '" ' + onChange('tecFecha') + '></label>' +
       (cu ? '<button type="button" class="chip tec-cuenta" id="tecCuenta" aria-label="Cuenta: ' + escapeHtml(cu.nombre) + '. Toca para cambiarla" ' + act('tecCuenta') + '><span class="dot" style="background:' + colorCuenta(cu) + '"></span>' + escapeHtml(cu.nombre) + '</button>' : '') +
-      (tipo === 'Gasto' && compartidosDisponible() ? '<button type="button" class="chip tec-comp" ' + act('tecCompartir') + '>' + ic('users') + 'Compartir</button>' : '') +
+      (!v2 && tipo === 'Gasto' && compartidosDisponible() ? '<button type="button" class="chip tec-comp" ' + act('tecCompartir') + '>' + ic('users') + 'Compartir</button>' : '') +
       '<button type="button" class="link tec-masdet" ' + act('tecMas') + '>Más detalles ' + ic('chevD') + '</button></div></div>';
+}
+/* 28/11 (docs/53 B1): un solo campo «¿De qué?». Elegir una sugerencia de la categoría guarda detalle (subcategoría) y descripción; escribir algo nuevo, solo descripción */
+function deQueSugs(cat, texto) {
+  const k = normName(texto || ''), fijo = FORM && FORM.tipo === 'Factura', c = {}, out = [];
+  subcatsDe(cat, fijo).forEach((x) => { out.push(x); });
+  const kc = normName(cat || '');
+  movsEfectivos().forEach((m) => { if ((m.tipo === 'Gasto' || m.tipo === 'Factura' || m.tipo === 'Ingreso') && m.descripcion && (!kc || normName(m.categoria) === kc)) c[m.descripcion.trim()] = (c[m.descripcion.trim()] || 0) + 1; });
+  Object.keys(c).sort((a, b) => c[b] - c[a]).forEach((x) => { if (!out.some((o) => normName(o) === normName(x))) out.push(x); });
+  return out.filter((x) => normName(x) !== k && (!k || normName(x).indexOf(k) >= 0)).slice(0, 6);
+}
+function deQueSugHtml() {
+  const cat = (($('#fCategoria') || {}).value || '').trim(), t = (($('#fDesc') || {}).value || '');
+  const l = deQueSugs(cat, t); if (!l.length) return '';
+  return l.map((x) => '<button type="button" class="chip tappable" ' + act('deQuePick', x) + '>' + escapeHtml(x) + '</button>').join('');
+}
+function deQueRefrescar() { const b = $('#deQueSug'); if (b) b.innerHTML = deQueSugHtml(); }
+function deQueHtml(ex, pre) {
+  const v = ex ? (ex.descripcion || ex.subcategoria || '') : (pre.descripcion || '');
+  return '<div class="field de-que" id="deQueField"><label for="fDesc">¿De qué?</label><input id="fDesc" type="text" autocomplete="off" placeholder="Mercadona, Golf, uñas…" value="' + escapeHtml(v) + '" ' + onInput('onDeQueInput') + '><div class="chips de-que-sug" id="deQueSug"></div><div id="reglaBox"></div></div>';
 }
 function tecOkLbl(T) { return T.tecla === 'guardar' ? (T.etiqueta || 'Guardar') : 'Hecho'; }
 function tecladoHtml(T) {
@@ -2038,6 +2072,7 @@ function tecMasDetalles() {
   const T = FORM && FORM.tec; if (!T) return;
   T.corta = false; T.tecla = 'hecho';
   const m = $('#mfMas'); if (m) m.hidden = false;
+  const q = $('#deQueField'), sl = $('#deQueSlot'); if (q && sl && !sl.contains(q)) sl.appendChild(q);
   const r = $('#tecRapido'); if (r) r.remove();
   const a = $('#sheetHost .sheet .actions'); if (a) a.hidden = false;
   tecCerrar(); sentir('tic');
@@ -2102,14 +2137,14 @@ function openMovForm(id, pre) {
   const metodos = cfg().metodosPago || [];
   const tec = tecladoOn(), impIni = ex ? ex.importe : pre.importe, corta = tec && !ex && !comp && !compDest && (tipoIni === 'Gasto' || tipoIni === 'Ingreso');
   if (tec) FORM.tec = { on: !ex, txt: tecTxtDe(impIni), neg: tecNum(impIni) < 0, reemplazar: !!tecTxtDe(impIni), corta, tecla: corta ? 'guardar' : 'hecho' };
-  const fechaIni = ex ? ex.fecha : (pre.fecha || todayISO()), catIni = ex ? ex.categoria : (pre.categoria || '');
+  const v2 = apuntarV2(), fechaIni = ex ? ex.fecha : (pre.fecha || todayISO()), catIni = ex ? ex.categoria : (pre.categoria || '');
   const antesChip = compararOn() && !VERSIONES.importe.cerrada && !comp && !compDest ? '<button type="button" class="tec-antes" ' + act('tecVersion', tec ? 1 : 0) + '>' + ic('swap') + (tec ? 'Antes' : 'Teclado nuevo') + '</button>' : '';
   openSheet(
     '<div class="handle"></div><div class="tec-cab"><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' + antesChip + '</div>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
     (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
-    (ex && !comp && compartidosDisponible() ? '<button type="button" class="btn sm ghost comp-arriba" id="compArriba"' + (TIPOS_COMPARTIBLES.indexOf(ex.tipo) >= 0 ? '' : ' hidden') + ' ' + act('compOnTop') + '>' + ic('users') + ' Compartir este gasto</button>' : '') +
-    (tec ? tecCampoHtml(FORM.tec) + monBoxMov(ex, comp, tipoIni) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni) : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
+    (!comp && compartidosDisponible() && (ex || (apuntarV2() && !compDest)) ? '<button type="button" class="btn sm ghost comp-arriba' + (apuntarV2() ? ' block-v2' : '') + '" id="compArriba"' + (TIPOS_COMPARTIBLES.indexOf(tipoIni) >= 0 ? '' : ' hidden') + ' ' + act('compOnTop') + '>' + ic('users') + ' Compartir este gasto</button>' : '') +
+    (tec ? tecCampoHtml(FORM.tec) + monBoxMov(ex, comp, tipoIni) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni, v2 ? deQueHtml(ex, pre) : '') : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
       : '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div>' + monBoxMov(ex, comp, tipoIni) + '<div>') +
     '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
     TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + tipoTxt(t) + '</button>').join('') + '</div>' +
@@ -2121,7 +2156,7 @@ function openMovForm(id, pre) {
     '<div class="field" id="subField">' + subFieldHtml(ex ? ex.categoria : (pre.categoria || ''), ex ? ex.subcategoria : (pre.subcategoria || '')) + '</div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : (pre.fecha || todayISO())) + '" ' + onChange('onFechaChange') + '></div>' +
     '<div id="cuentaField">' + cuentaFieldHtml() + '</div>' +
-    '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>' +
+    (v2 ? '<div id="deQueSlot">' + (corta ? '' : deQueHtml(ex, pre)) + '</div>' : '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>') +
     '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
     metodos.concat(ex && ex.metodoPago && metodos.indexOf(ex.metodoPago) < 0 ? [ex.metodoPago] : []).map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' + // barrido 08/11: no se pierde la que ya no está en tu lista
     '<div id="artField">' + artFieldHtml(comp || ex) + '</div></div>' +
@@ -2132,7 +2167,7 @@ function openMovForm(id, pre) {
     '<div class="actions"' + (corta ? ' hidden' : '') + '><button class="btn ghost block" ' + (FORM.volverGrupo ? act('grupoVer', FORM.volverGrupo) : FORM.volverPersona ? act('personaVer', FORM.volverPersona) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
     (tec ? tecladoHtml(FORM.tec) : '')
   );
-  syncCatField(); refrescarCatAviso();
+  syncCatField(); refrescarCatAviso(); if (v2) deQueRefrescar();
   if (tec) tecSync();
   if (FORM.activo && FORM.activo.activo_id) cargarPreview();
   if (!ex && !tec) setTimeout(() => { const el = $('#fImporte'); if (el) el.focus(); }, 80);
@@ -4107,6 +4142,25 @@ function crearTicketBandaHtml() {
   if (t.quedan === 0) return '<button class="crear-ticket tappable agotado" ' + act('crearSinLecturas') + '><span class="crear-ic">' + ic('camera') + '</span><span><b>Foto de ticket</b><span>Sin lecturas hasta el ' + ticketsVuelven() + '</span></span></button>';
   return '<button class="crear-ticket tappable' + (ticketsPocos() ? ' pocos' : '') + '" ' + act('crearIr', 'ticket') + '><span class="crear-ic">' + ic('camera') + '</span><span><b>Foto de ticket</b><span>' + (ticketsPocos() ? 'Te quedan ' + t.quedan + (t.quedan === 1 ? ' lectura' : ' lecturas') + ' este mes' : 'Lee los artículos y el total por ti') + '</span></span>' + badge('ticket') + '</button>';
 }
+/* Botón + v3 (28/11, docs/53 A): cuatro grandes y «Apuntes rápidos» plegado con «Lo de siempre» y lo demás */
+function crearHtmlV3() {
+  const op = (accion, args, icono, txt, cls) => '<button class="crear-op tappable ' + cls + '" ' + act(accion, ...args) + '><span class="crear-ic">' + ic(icono) + '</span><span>' + txt + '</span></button>';
+  const hab = gastosHabituales(), bas = basico(), comp = compartidosDisponible() && juntosOn(), ag = agendaOn();
+  const grandes = [op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto'), op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso')].concat(ag ? [op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea')] : [], [op('crearIr', ['importar'], 'fileIn', 'Importar', 'k-imp')]);
+  const rapidos = [comp ? ['Compartido', op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp')] : null, hayVariasCuentas() ? ['Traspaso', op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras')] : null,
+    herrOn('metas') ? ['Apartar', op('crearIr', ['ahorro'], 'piggy2', 'Apartar', 'k-ahorro')] : null, herrOn('inversiones') ? ['Invertir', op('crearIr', ['inversion'], 'trendUp', 'Invertir', 'k-ahorro')] : null,
+    ['Pago fijo', op('crearIr', ['factura'], 'repeat', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura')], herrOn('deudas') ? ['Pago de deuda', op('crearIr', ['deuda'], 'deuda', 'Pago de deuda', 'k-deuda')] : null,
+    herrOn('trayecto') ? ['Trayecto', op('trAbrir', [], 'coche2', 'Trayecto<small>gasolina o carga de un viaje</small>', 'k-tray')] : null].filter(Boolean);
+  const abierto = !!S.crearApuntes;
+  return '<div class="handle"></div><h2>¿Qué quieres apuntar?</h2>' + (herrOn('tickets') ? crearTicketBandaHtml() : '') +
+    '<div class="crear-grid crear-4 dos">' + grandes.join('') + '</div>' +
+    '<button type="button" class="crear-mas crear-apuntes tappable' + (abierto ? ' abierto' : '') + '" aria-expanded="' + abierto + '" ' + act('crearApuntesToggle') + '><span class="crear-ic">' + ic('bolt') + '</span><span><b>Apuntes rápidos</b></span>' + ic('chevD') + '</button>' +
+    (abierto ? '<div class="crear-apuntes-cuerpo">' +
+      (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Lo de siempre</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
+      '<div class="crear-grid crear-peq">' + rapidos.map((x) => x[1]).join('') + '</div>' +
+      (bas ? '<button type="button" class="link crear-desc" ' + act('descAbrir') + '>' + ic('sparkle') + ' Descubre para qué sirve cada una ' + ic('chevR') + '</button>' : '') + '</div>' : '') +
+    (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '');
+}
 function crearHtmlV2() {
   const op = (accion, args, icono, txt, cls) => '<button class="crear-op tappable ' + cls + '" ' + act(accion, ...args) + '><span class="crear-ic">' + ic(icono) + '</span><span>' + txt + '</span></button>';
   const hab = gastosHabituales(), bas = basico(), comp = compartidosDisponible() && juntosOn(), ag = agendaOn(); // 13/11: sin lo apagado en «Mis herramientas»
@@ -4122,7 +4176,7 @@ function crearHtmlV2() {
     (bas && !S.crearMas ? '<button type="button" class="crear-mas tappable" aria-expanded="false" ' + act('crearMasToggle') + '><span class="crear-ic">' + ic('more') + '</span><span><b>Más opciones</b><span>' + peq.map((x) => x[0]).join(', ') + '…</span></span>' + ic('chevD') + '</button>' :
     '<div class="crear-grid crear-peq">' + peq.filter((x) => bas || !x[2]).map((x) => x[1]).join('') + '</div>' +
       (bas ? '<button type="button" class="link crear-desc" ' + act('descAbrir') + '>' + ic('sparkle') + ' Descubre para qué sirve cada una ' + ic('chevR') + '</button>' : '')) +
-    (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '');
+    (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('comparar') + ' Ver la versión nueva</button>' : '');
 }
 /* ============================================================
    TRAYECTO (07/11/2026, docs/31-calculadora-trayecto.md): cuánto cuesta un viaje en coche.
@@ -4680,7 +4734,8 @@ const VERSIONES = {
   dinero: { txt: 'Dinero', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
   tu: { txt: 'Tú', desde: '2026-11-13', variantes: [['nueva', 'Por temas'], ['v2', 'Antes'], ['antes', 'Primera']] }, // 13/11: ajustes por temas; «Antes» = Tú de 22/10 (las pruebas antiguas fijan v2 o la primera)
   agenda: { txt: 'Agenda', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
-  crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  crear: { txt: 'Botón +', desde: '2026-11-28', cerrada: '2026-11-28', def: 0, variantes: [['v3', 'Apuntes rápidos'], ['v2', 'Antes'], ['antes', '22 oct']] }, // 28/11 (docs/53 A): cuatro grandes y «Apuntes rápidos»; «Antes» = el + de 22/10 (las pruebas antiguas fijan v2: crear 1)
+  apuntar: { txt: 'Apuntar un gasto', desde: '2026-11-28', cerrada: '2026-11-28', def: 0, variantes: [['v2', '¿De qué?'], ['antes', 'Antes']] }, // 28/11 (docs/53 B): un solo campo «¿De qué?», categorías con iconos y «Compartir» arriba; las pruebas antiguas fijan «antes» (apuntar 1)
   balance: { txt: 'Mes cerrado', desde: '2026-10-29', variantes: [['nueva', 'Balance'], ['antes', 'Antes']] },
   importe: { txt: 'Apuntar importe', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
   bienvenida: { txt: 'Bienvenida', desde: '2026-11-13', cerrada: '2026-11-13', def: 3, variantes: [['pasos', 'Antes'], ['nueva', '2 pantallas'], ['antes', '4 pasos'], ['v2', 'Por objetivos']] }, // 13/11 (docs/45): def 3 = «Por objetivos» (la nueva, también al repetirla desde Tú); «Antes» = la de por pasos de esta mañana. // 13/11: Hola → Qué quieres usar → Permisos (solo Android) → Tu banco → Listo; «2 pantallas» = la de docs/38 (10/11) // docs/38 §6: 2 pantallas (1 con invitación) y «Lo básico»; «antes» = la de 4 pasos para todos (solo para las pruebas antiguas)
@@ -4702,6 +4757,7 @@ function versionIdx(k) {
   if (v.cerrada) return sv != null && i >= 0 && i < v.variantes.length ? i : (v.def || 0);
   return compararOn() && i > 0 && i < v.variantes.length ? i : 0;
 }
+function apuntarV2() { return versionDe('apuntar') === 'v2'; }
 function versionDe(k) { return VERSIONES[k].variantes[versionIdx(k)][0]; }
 function verAnterior(k) { return versionIdx(k) > 0; }
 function compararOn() { return cfg().compararVersiones !== false; }
@@ -7971,7 +8027,7 @@ function crearHtml() {
     op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
 }
-function crearElegido() { return verAnterior('crear') ? crearHtml() + (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('comparar') + ' Ver la versión nueva</button>' : '') : crearHtmlV2(); }
+function crearElegido() { const v = versionDe('crear'); return v === 'v3' ? crearHtmlV3() : v === 'v2' ? crearHtmlV2() : crearHtml() + (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('comparar') + ' Ver la versión nueva</button>' : ''); }
 function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearElegido()); else openSheet(crearElegido()); }
 /* ---- buscador global: movimientos, tareas, categorías y ajustes ---- */
 const ATAJO_IC = { 'Foto de ticket': 'camera', 'Nuevo gasto': 'plus', 'Nueva tarea': 'checkCircle', 'Grupos y personas': 'users', Metas: 'target', Inversiones: 'trendUp', Deudas: 'deuda', 'Lo que tienes': 'wallet' };
@@ -10916,7 +10972,7 @@ function autoCategoriaDesc() {
   if (!inp || !desc) return;
   if (inp.value.trim() && !FORM.catAuto) return; // ya la eligió el usuario
   const r = reglaPara(desc, FORM.tipo), sg = r ? r.categoria : sugerirCategoria(desc, FORM.tipo);
-  if (sg && sg !== inp.value) { inp.value = sg; FORM.catAuto = true; $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === sg)); }
+  if (sg && sg !== inp.value) { inp.value = sg; FORM.catAuto = true; if (FORM.tec) tecCatsPintar(sg); $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === sg)); }
 }
 
 /* ============================================================
@@ -13577,6 +13633,7 @@ const H = {
   nivelGuardar: () => { if (!FORM || FORM.kind !== 'nivel') return; const v = FORM.v; closeSheet(); if (v !== nivel() || !cfg().nivel) nivelPoner(v, 'tu'); S.crearMas = false; toast('Listo'); render(); },
   aviso30Ver: () => { S._aviso30Fuera = true; render(); H.descAbrir([]); },
   aviso30Basico: () => { S._aviso30Fuera = true; nivelPoner('basico', 'tu'); toast('Vuelves a lo básico'); render(); },
+  crearApuntesToggle: () => { S.crearApuntes = !S.crearApuntes; sentir('tic'); if (FORM && FORM.kind === 'crear') updateSheet(crearElegido()); },
   crearMasToggle: () => { S.crearMas = !S.crearMas; sentir('tic'); if (FORM && FORM.kind === 'crear') updateSheet(crearElegido()); },
   ppAbrir: () => { FORM = { kind: 'pp' }; openSheet('<div class="handle"></div>' + ppTarjetaHtml(true)); },
   ppIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
@@ -13932,9 +13989,9 @@ const H = {
   // «Compartir» en el teclado corto: abre los detalles con lo de compartir ya activado
   tecCompartir: () => { tecMasDetalles(); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
   // «Compartir este gasto» arriba de un gasto ya apuntado
-  compOnTop: () => { const b = $('#compArriba'); if (b) b.hidden = true; H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
+  compOnTop: () => { const b = $('#compArriba'); if (b) b.hidden = true; if (FORM.tec && FORM.tec.corta) tecMasDetalles(); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
   tecVersion: ([n]) => tecVolverAVersion(n),
-  tecCat: ([c]) => { const ant = ($('#fCategoria') || {}).value; if (ant !== c) { const sb = $('#fSub'); if (sb) sb.value = ''; } H.pickCat([c]); tecCuentaPintar(); $$('#tecCats .tec-cat').forEach((b) => { const on = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); tecSync(); },
+  tecCat: ([c]) => { const ant = ($('#fCategoria') || {}).value; if (ant !== c) { const sb = $('#fSub'); if (sb) sb.value = ''; } H.pickCat([c]); tecCuentaPintar(); if (tecCatsSolo(FORM.tipo)) tecCatsPintar(c); $$('#tecCats .tec-cat').forEach((b) => { const on = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); tecSync(); },
   tecFecha: (_a, el) => { const v = el.value || todayISO(), f = $('#fFecha'); if (f) { f.value = v; if (H.onFechaChange) H.onFechaChange([], f); } const t = $('#tecFechaTxt'); if (t) t.textContent = tecFechaTxt(v); },
   tecCuenta: () => {
     const cs = cuentasCfg(); if (cs.length < 2) return;
@@ -14483,6 +14540,19 @@ const H = {
   reglaCuenta: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; const c0 = ($('#rgCat') || {}).value || '', tr0 = ($('#rgTras') || {}).value || ''; FORM.rgCuenta = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c0; if ($('#rgTras') && tr0 && [...$('#rgTras').options].some((o) => o.value === tr0)) $('#rgTras').value = tr0; sentir('tic'); },
   reglaEs: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; const c0 = ($('#rgCat') || {}).value || '', tr0 = ($('#rgTras') || {}).value || ''; FORM.rgEs = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c0; if ($('#rgTras') && tr0 && [...$('#rgTras').options].some((o) => o.value === tr0)) $('#rgTras').value = tr0; sentir('tic'); },
   onDescInput: () => { autoCategoriaDesc(); refrescarReglaBox(); },
+  onDeQueInput: (_a, el) => {
+    autoCategoriaDesc(); refrescarReglaBox(); deQueRefrescar();
+    const fs = $('#fSub'); if (!fs || fs.type !== 'hidden') return;
+    const hit = subcatsDe((($('#fCategoria') || {}).value || '').trim(), false).find((x) => normName(x) === normName(el.value));
+    if (hit) fs.value = hit; else if (!FORM.id) fs.value = ''; // un apunte nuevo solo lleva detalle si coincide con uno que ya usabas; al editar se conserva el que tenía
+  },
+  deQuePick: ([x]) => {
+    const d = $('#fDesc'); if (!d) return; d.value = x;
+    const fs = $('#fSub'), hit = fs && fs.type === 'hidden' ? subcatsDe((($('#fCategoria') || {}).value || '').trim(), false).find((y) => normName(y) === normName(x)) : null;
+    if (fs && fs.type === 'hidden') fs.value = hit || (FORM.id ? fs.value : '');
+    autoCategoriaDesc(); refrescarReglaBox(); deQueRefrescar(); sentir('tic');
+  },
+  tecCatTodas: () => { const t = $('#tecCatTodas'); if (!t) return; const abre = t.hidden; t.hidden = !abre; t.innerHTML = abre ? tecCatsTodasHtml((($('#fCategoria') || {}).value || '').trim()) : ''; const b = $('#tecCats .tec-cat.mas'); if (b) b.setAttribute('aria-expanded', String(abre)); sentir('tic'); },
   reglaCheck: (_, el) => { FORM.recordar = el.checked; },
   reglaTexto: (_, el) => { FORM.reglaTexto = el.value; },
   openRecurrentes: () => { verBadge('cobros'); FORM = { kind: 'recLista' }; if ($('#sheetBackdrop')) updateSheet(recListaHtml()); else openSheet(recListaHtml()); },
