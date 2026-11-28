@@ -710,6 +710,7 @@ function necesitoRed(msg) { if (!sinRedAhora()) return false; toast(msg || 'Nece
 function sincTextoBarra() {
   const e = window.Data && Data.sinc ? Data.sinc.estado() : null; if (!e || !e.activo) return null;
   const n = e.total, c = n === 1 ? '1 cambio' : n + ' cambios';
+  if (e.ilegible) return { ic: 'alert', t: 'No he podido leer tus cambios sin subir', cls: 'mal' }; // 28/11: la cola guardada no se pudo descifrar
   if (e.fallos || e.revisar) { const m = e.fallos + e.revisar; return { ic: 'alert', t: m === 1 ? '1 cambio no se ha subido' : m + ' cambios no se han subido', cls: 'mal' }; }
   if (e.sinRed) return { ic: 'sinRed', t: n ? 'Sin conexión · ' + c + ' por subir' : 'Sin conexión', cls: 'sin' };
   if (e.subiendo && n) return { ic: 'sincro', t: 'Subiendo ' + c + '…', cls: 'sube' };
@@ -754,7 +755,8 @@ function sincHojaHtml() {
     const nota = mal ? (o.motivo === 'borrado' ? 'Ya no existe en tu cuenta.' : 'Ha cambiado desde otro sitio.') : fallo ? 'No se ha podido subir.' : 'Esperando para subir.';
     return '<div class="sinc-fila"><div class="sinc-t"><b>' + escapeHtml(o.texto || 'Cambio') + '</b><small>' + escapeHtml(nota) + '</small></div>' + ((mal || fallo) ? '<div class="sinc-a">' + acc + des + '</div>' : '') + '</div>';
   };
-  return '<div class="handle"></div><h2>Cambios sin subir</h2>' +
+  const ileg = Data.sinc.estado().ilegible ? '<div class="sinc-fila"><div class="sinc-t"><b>No he podido leer los cambios que dejaste sin subir en este móvil.</b><small>Lo que ya estaba subido sigue en tu cuenta.</small></div>' + infoSola('Por qué pasa', 'Pasa si el móvil cambia la clave de seguridad de la app. Los cambios hechos sin conexión que no llegaron a subirse no se pueden recuperar.') + '<div class="sinc-a"><button class="btn accent" ' + act('sincEntendido') + '>Entendido</button></div></div>' : '';
+  return '<div class="handle"></div><h2>Cambios sin subir</h2>' + ileg +
     (lista.length ? '<div class="sinc-lista">' + lista.map(fila).join('') + '</div>' : '<p class="rec-hint">No hay nada pendiente.</p>') +
     '<div class="actions">' + (lista.length ? '<button class="btn accent block" ' + act('sincReintentar', '') + '>Reintentar todo</button>' : '') + '<button class="btn ghost block" ' + act('closeSheet') + '>Cerrar</button></div>';
 }
@@ -6953,7 +6955,7 @@ function monHtml() {
   const cam = M.origen === 'mano' ? numCampo(M.mano || '') : M.cambio;
   if (M.origen === 'bce' && !sinBce) h += '<div class="mon-res" id="monRes">' + (M.cargando ? 'Buscando el cambio del día…' : eur != null ? '= <b class="tnum">' + money(eur) + '</b> · 1 € = ' + escapeHtml(String(cam).replace('.', ',')) + ' ' + escapeHtml(inf[1]) + ' · BCE ' + escapeHtml(M.fecha ? fmtDateShort(M.fecha) : '') : cam ? '1 € = ' + escapeHtml(String(cam).replace('.', ',')) + ' ' + escapeHtml(inf[1]) + ' · BCE ' + escapeHtml(M.fecha ? fmtDateShort(M.fecha) : '') : '') +
     (M.aviso ? '<span class="mon-aviso">' + escapeHtml(M.aviso) + '</span>' : '') + '</div>';
-  h += '<div class="segmented sm mon-modo">' + (sinBce ? [] : [['bce', 'Cambio del día']]).concat([['mano', 'Poner el cambio'], ['cobro', 'Lo que me cobraron']]).map(([k, l]) => '<button type="button" class="' + (M.origen === k ? 'active' : '') + '" ' + act('monOrigen', k) + '>' + l + '</button>').join('') + '</div>';
+  h += '<div class="segmented sm mon-modo">' + (sinBce ? [] : [['bce', 'Del día']]).concat([['mano', 'Lo pongo yo'], ['cobro', 'Me cobraron']]).map(([k, l]) => '<button type="button" class="' + (M.origen === k ? 'active' : '') + '" ' + act('monOrigen', k) + '>' + l + '</button>').join('') + '</div>';
   if (M.origen === 'mano') h += '<div class="mon-fila mon-mano"><span>1 € =</span><input id="monMano" class="tnum" type="text" inputmode="decimal" placeholder="1,08" aria-label="Cambio: cuántas unidades por 1 euro" value="' + escapeHtml(M.mano || '') + '" ' + onInput('monMano') + '><span>' + escapeHtml(inf[1] || 'de esa moneda') + '</span></div>' +
     (sinBce ? '<div class="rec-hint">El Banco Central Europeo no publica esa moneda. Escribe el cambio que te den o lo que te cobraron en euros.</div>' : '');
   if (M.origen === 'cobro') h += '<div class="mon-fila mon-mano"><span>Me cobraron</span><input id="monCobro" class="tnum" type="text" inputmode="decimal" placeholder="0,00" aria-label="Lo que te cobraron en euros" value="' + escapeHtml(M.cobro || '') + '" ' + onInput('monCobro') + '><span>€</span></div>' + infoSola('Qué poner', 'Lo que dice tu banco o la tarjeta, con la comisión.') + '';
@@ -8183,7 +8185,7 @@ function origenHtml(gid, volver) {
     const que = liq ? (mio(c.pagadoPor) ? 'Pagaste a ' + n(a) : mio(a) ? n(c.pagadoPor) + ' te pagó' : n(c.pagadoPor) + ' pagó a ' + n(a))
       : escapeHtml(c.descripcion || c.categoria || 'Gasto');
     const como = liq ? 'para saldar cuentas' : (mio(c.pagadoPor) ? verbo + 'aste ' + money(c.importe) : n(c.pagadoPor) + ' ' + verbo + 'ó ' + money(c.importe)) + ' · tu parte ' + money(parte);
-    return '<div class="og-f"><span class="og-x"><b>' + que + '</b><span>' + fmtDateShort(c.fecha) + ' · ' + como + '</span></span><b class="tnum" style="color:' + saldoColor(ef) + '">' + sg(ef) + '</b></div>';
+    return '<div class="og-f"><span class="og-x"><b>' + que + '</b><span>' + fmtDateShort(c.fecha) + ' · ' + nbEur(como) + '</span></span><b class="tnum" style="color:' + saldoColor(ef) + '">' + sg(ef) + '</b></div>';
   }).filter(Boolean);
   return '<div class="handle"></div><h2>¿De dónde sale?</h2><div class="rec-hint" style="margin-top:-4px;">' + escapeHtml(nombreDestino(g)) + '</div>' +
     '<div class="jv-total ' + (Math.abs(tot) < 0.005 ? 'paz' : tot < 0 ? 'de' : 'te') + '"><span>' + (Math.abs(tot) < 0.005 ? 'Estás en paz' : tot > 0 ? 'Te deben' : 'Debes') + '</span><b class="tnum">' + money(Math.abs(tot)) + '</b></div>' +
@@ -15655,6 +15657,7 @@ const H = {
     catch (e) { renderLoginScreen('No se pudo enviar el correo. Inténtalo de nuevo en unos minutos.'); }
   },
   sincAbrir: () => sincAbrirHoja(),
+  sincEntendido: async () => { try { await Data.sinc.entendido(); } catch (e) { /* */ } sincPintar(); },
   sincReintentar: async ([id]) => { try { await Data.sinc.reintentar(id || undefined); } catch (e) { /* */ } sincPintar(); },
   sincForzar: async ([id]) => { try { await Data.sinc.forzar(id); } catch (e) { /* */ } sincPintar(); },
   sincDescartar: async ([id]) => {
@@ -15902,7 +15905,7 @@ async function main() {
     if (session && window.Auth.recuperando && window.Auth.recuperando()) { renderNuevaContrasena(); return; } // 08/11: vuelta del correo de «¿Olvidaste tu contraseña?»
     if (session && needsMfa(session)) { if (!S.appStarted) renderMfaScreen(); return; }
     if (session) { if (!S.appStarted) enterApp(session); }
-    else { leaveApp(); }
+    else { leaveApp(); if (window.Auth.cuentaBorrada && window.Auth.cuentaBorrada()) setTimeout(() => toast('Tu cuenta ya no existe. He borrado la copia de este móvil', { aviso: true }), 300); } // 28/11
   });
 }
 

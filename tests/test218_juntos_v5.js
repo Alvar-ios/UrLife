@@ -31,6 +31,12 @@ console.error = () => {};
   const V = () => A.S.verAnterior && A.S.verAnterior.juntos;
   ok(!!doc.querySelector('#content .jv6-amigos') && !!doc.querySelector('#content .jv6-grupos'), 'la pantalla nueva es la de serie: Amigos y Grupos');
   ok(/Te deben/.test(txt()) && !!doc.querySelector('#content .jv-compartir'), 'arriba: cifras y «Compartir un gasto»');
+  { // 28/11 · fase30: el Dashboard de arriba es el diseño del dueño: dos cajas lado a lado y el botón grande debajo, sin frase
+    const cab = doc.querySelector('#content .jv5-cab'), fs = cab ? [...cab.querySelectorAll('.jv-fichas > .jv-ficha')] : [], bt = cab && cab.querySelector('.jv-compartir');
+    ok(fs.length === 2 && fs[0].classList.contains('de') && fs[1].classList.contains('te'), 'dos cajas: Debes y Te deben, en ese orden');
+    ok(fs.length === 2 && /^Debes/.test(fs[0].textContent) && /nadie|\d personas?/.test(fs[0].textContent) && /^Te deben/.test(fs[1].textContent) && /\d personas?/.test(fs[1].textContent), 'cada caja: título, importe y cuántas personas («nadie» si ninguna)');
+    ok(!!bt && !!fs.length && (fs[0].parentNode.compareDocumentPosition(bt) & 4) !== 0 && !/todo sumado|con cada persona/.test(cab.textContent), '«Compartir un gasto» va debajo de las cajas y no hay frase encima');
+  }
   const am = [...doc.querySelectorAll('#content .jv6-am:not(.jv6-inv)')];
   ok(!!doc.querySelector('#content .jv6-inv') && doc.querySelector('#content .jv6-amigos').firstElementChild.classList.contains('jv6-inv'), '«Invitar» es el primero de la fila');
   ok(am.length === 5 && /Ana/.test(am.map((x) => x.textContent).join()) && /Pablo/.test(txt()), 'cinco amigos (Ana una sola vez aunque esté en dos grupos): ' + am.length);

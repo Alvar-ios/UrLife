@@ -49,7 +49,7 @@ w.eval(fs.readFileSync(require('path').join(__dirname, '..', 'data-layer.js'), '
   // contraseña olvidada
   ok(w.Auth.recuperando() === false, 'en un arranque normal no se pide contraseña nueva');
   await w.Auth.resetPassword('prueba@example.invalid');
-  ok(reset && reset.redirectTo === 'https://urlife-zeta.vercel.app/', 'dentro de la app de Android (https://localhost) el correo lleva a la web pública');
+  ok(reset && reset.redirectTo === 'https://www.palomapp.es/', 'dentro de la app de Android (https://localhost) el correo lleva a la web pública');
   authCb('PASSWORD_RECOVERY', { user: { id: 'u1' } });
   ok(w.Auth.recuperando() === true, 'al volver del correo, la app sabe que toca poner contraseña nueva');
   await w.Auth.cambiarContrasena('clave-inventada-1');

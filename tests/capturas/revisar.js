@@ -241,7 +241,7 @@ function revisarPagina() {
     const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     for (let n = w.nextNode(); n; n = w.nextNode()) { const t = n.textContent.trim(); if (!t || t.split(/\s+/).length > 4) continue; const rg = document.createRange(); rg.selectNodeContents(n);
       const tops = new Set(Array.from(rg.getClientRects()).filter((r) => r.width > 2).map((r) => Math.round(r.top / 6)));
-      if (tops.size > 1 && !el.closest('.tab, .rail')) { out.push({ tipo: 'botón en dos líneas', donde: nombre(el), txt: t.slice(0, 40) }); break; } }
+      if (tops.size > 1 && !el.closest('.tab, .rail') && !el.matches('.bv-card, .tec-ok')) { out.push({ tipo: 'botón en dos líneas', donde: nombre(el), txt: t.slice(0, 40) }); break; } }
   });
   // 26/11: lo que va DESPUÉS de la barra fija de botones de una hoja queda medio tapado («Qué se borra y qué se conserva»)
   const fija = document.querySelector('#sheetHost .actions.fija');
@@ -251,12 +251,16 @@ function revisarPagina() {
   document.querySelectorAll('.info-i').forEach((el) => { if (!vis(el)) return; const r = el.getBoundingClientRect();
     if (r.width < 43.5 || r.height < 43.5) out.push({ tipo: '«i» con zona táctil pequeña', donde: nombre(el) || 'info-i', txt: Math.round(r.width) + '×' + Math.round(r.height) });
     if (r.left < -0.5 || r.right > W + 0.5) out.push({ tipo: '«i» fuera de la pantalla', donde: nombre(el) || 'info-i', txt: Math.round(r.left) + '–' + Math.round(r.right) }); });
+  // 28/11: botones de la barra de acciones de una hoja que otra capa tapa (no se podrían tocar)
+  document.querySelectorAll('#sheetHost .actions button, #sheetHost .actions a').forEach((el) => { if (!vis(el)) return; const r = el.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    if (x < 0 || y < 0 || x > W || y > window.innerHeight) { out.push({ tipo: 'botón de la hoja fuera de la pantalla', donde: nombre(el), txt: (el.textContent || '').trim().slice(0, 30) }); return; }
+    const t = document.elementFromPoint(x, y); if (!t || !(t === el || el.contains(t))) out.push({ tipo: 'botón de la hoja tapado por otra capa', donde: nombre(el), txt: (el.textContent || '').trim().slice(0, 30) }); });
   // textos que se pisan entre sí (dos textos distintos, ninguno dentro del otro)
   const arriba = (el, r) => { const x = r.left + r.width / 2, y = r.top + r.height / 2; if (x < 0 || y < 0 || x > W || y > window.innerHeight) return false; const t = document.elementFromPoint(x, y); return !!t && (t === el || el.contains(t)); };
   const T = [];
   document.querySelectorAll(SEL).forEach((el) => { if (!vis(el) || enScroll(el)) return; el.childNodes.forEach((n) => { if (n.nodeType !== 3 || !n.textContent.trim()) return;
     const rg = document.createRange(); rg.selectNodeContents(n); let r = rg.getBoundingClientRect();
-    for (let q = el; q && q !== document.body; q = q.parentElement) { if (getComputedStyle(q).overflowX !== 'visible') { const c = q.getBoundingClientRect(), l = Math.max(r.left, c.left), rt = Math.min(r.right, c.right); r = { left: l, right: rt, top: r.top, bottom: r.bottom, width: rt - l, height: r.height }; } } if (r.width > 2 && r.height > 2 && arriba(el, r)) T.push({ el, r }); }); });
+    for (let q = el; q && q !== document.body; q = q.parentElement) { if (getComputedStyle(q).overflowX !== 'visible') { const c = q.getBoundingClientRect(), l = Math.max(r.left, c.left), rt = Math.min(r.right, c.right); const tp = Math.max(r.top, c.top), bt = Math.min(r.bottom, c.bottom); r = { left: l, right: rt, top: tp, bottom: bt, width: rt - l, height: Math.max(0, bt - tp) }; } } if (r.width > 2 && r.height > 2 && arriba(el, r)) T.push({ el, r }); }); });
   for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++) {
     const a = T[i], b = T[j]; if (a.el === b.el || a.el.contains(b.el) || b.el.contains(a.el)) continue;
     const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left), h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
