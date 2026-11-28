@@ -36,7 +36,7 @@ html[data-look="nuevo"] {
     --on-solid: #0A0A12; --toast-bg: #2B2B33;
     --accent: var(--pd); --accent-ink: #0A0A12; --accent-soft: var(--pd-soft);
     --hero-1: var(--h1d); --hero-2: var(--h2d); --hero-bg: var(--h1d); --hero-tile: rgba(255,255,255,.10);
-    --shadow: none; --shadow-2: 0 18px 40px -18px rgba(0,0,0,.8); --card-border: var(--line); --glow: 0 12px 28px -10px var(--pd-glow);
+    --shadow: none; --shadow-2: 0 18px 40px -18px rgba(0,0,0,.8); --card-border: var(--line); --glow: 0 12px 28px -10px var(--pd-glow); --glow-c: 0 0 22px -3px var(--pd-glow);
     color-scheme: dark;
   }
 }
@@ -48,7 +48,7 @@ html[data-look="nuevo"][data-theme="dark"] {
   --on-solid: #0A0A12; --toast-bg: #2B2B33;
   --accent: var(--pd); --accent-ink: #0A0A12; --accent-soft: var(--pd-soft);
   --hero-1: var(--h1d); --hero-2: var(--h2d); --hero-bg: var(--h1d); --hero-tile: rgba(255,255,255,.10);
-  --shadow: none; --shadow-2: 0 18px 40px -18px rgba(0,0,0,.8); --card-border: var(--line); --glow: 0 12px 28px -10px var(--pd-glow);
+  --shadow: none; --shadow-2: 0 18px 40px -18px rgba(0,0,0,.8); --card-border: var(--line); --glow: 0 12px 28px -10px var(--pd-glow); --glow-c: 0 0 22px -3px var(--pd-glow);
   color-scheme: dark;
 }
 
@@ -3007,3 +3007,16 @@ html[data-look="nuevo"] .info-fila { margin: 0 0 2px; }
 /* la «i» nunca tapa un botón de acción: la barra fija y las hojas quedan por encima */
 html[data-look="nuevo"] .info-i { position: relative; z-index: 0; }
 html[data-look="nuevo"] .sheet .actions:not(.fija) { position: relative; z-index: 2; }
+
+/* ---------- Tanda 1 (28/11): arreglos visuales ---------- */
+/* 1 · aire entre la tarjeta grande de Inicio y lo que va justo debajo (avisos, invitaciones, sugerencias…) */
+html[data-look="nuevo"] .hero2 + :is(.av-card, .inv-ini, .gd-ini, .sug-card, .inf-ini, .tumes-sug, .iw-editar, .desc-linea) { margin-top: 16px; }
+/* 2 · scroll horizontal solo horizontal: sin deslizamiento vertical dentro ni salto de la hoja al llegar al borde */
+html[data-look="nuevo"] :is(.pill-row, .prox-scroll, .chips-nav, .mov-tools, .amigos-fila, .ins-scroll, .ins-circ, .cr-con, .cr-caras, .dm-tarros, .crear-rep-f, .jv-objs, .tr-lineas, .tema-chips, .plan-con, .agc-caras, .hist-chips) {
+  overflow-y: hidden; overscroll-behavior-x: contain;
+}
+/* 3 · halos centrados (antes caían hacia abajo y parecían descentrados) */
+html[data-look="nuevo"] { --glow-c: 0 0 22px -3px var(--pl-glow); }
+html[data-look="nuevo"] .kpi-mes .kpi.avail { box-shadow: var(--glow-c); }
+html[data-look="nuevo"] .hero { box-shadow: 0 0 34px -10px var(--pl-glow); }
+html[data-look="nuevo"] :is(.cr-con, .tema-chips) { padding-block: 6px; margin-block: -6px; }
