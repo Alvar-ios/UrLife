@@ -3,7 +3,7 @@ console.error = () => {};
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 (async () => {
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, cfg: { app: { nombre: 'Prueba', cuentas: [{ id: 'c1', nombre: 'Principal', tipo: 'corriente', saldo: 100, principal: true }, { id: 'c2', nombre: 'Ahorro', tipo: 'ahorro', saldo: 50 }] }, meta: { onboarded: true } } });
+  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 1 }, cfg: { app: { nombre: 'Prueba', cuentas: [{ id: 'c1', nombre: 'Principal', tipo: 'corriente', saldo: 100, principal: true }, { id: 'c2', nombre: 'Ahorro', tipo: 'ahorro', saldo: 50 }] }, meta: { onboarded: true } } });
   await sleep(250);
   const { w, doc } = e, A = w.__APP__, H = A.H, $ = (s) => doc.querySelector(s), $$ = (s) => Array.from(doc.querySelectorAll(s));
 

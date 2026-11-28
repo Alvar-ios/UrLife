@@ -153,7 +153,7 @@ const cuenta = (e, n) => e.srv.llamadas.filter((x) => x[0] === 'rpc.' + n).lengt
 
   // ---------- 7) Barra: Juntos encendido y Agenda apagada ----------
   paso('Barra con Juntos y sin Agenda');
-  e = await abrir({ cfg: { app: { nombre: 'Álex', cuentas: [{ id: 'c1', nombre: 'Banco', saldo: 100, principal: true }], herramientas: { agenda: false } }, meta: { onboarded: true } }, version: { tu: 0, agenda: 0, crear: 0 } });
+  e = await abrir({ cfg: { app: { nombre: 'Álex', cuentas: [{ id: 'c1', nombre: 'Banco', saldo: 100, principal: true }], herramientas: { agenda: false } }, meta: { onboarded: true } }, version: { tu: 0, agenda: 0, crear: 1 } });
   await sleep(150);
   const barra = () => [...e.doc.querySelectorAll('.tabbar > *')].map((b) => b.getAttribute('data-tab') || (b.classList.contains('tab-crear') ? '+' : '?')).join();
   ok(barra() === 'inicio,movimientos,+,juntos,dinero', 'la barra de siempre (' + barra() + ')');

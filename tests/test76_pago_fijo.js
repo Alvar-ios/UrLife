@@ -2,7 +2,7 @@
 const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 (async () => {
-  const e = makeEnv({ version: { crear: 0 }, cfg: { app: { categoriasGasto: [{ nombre: 'Vivienda' }], ingresos: ['Nómina'] }, meta: { onboarded: true } } });
+  const e = makeEnv({ version: { crear: 1 }, cfg: { app: { categoriasGasto: [{ nombre: 'Vivienda' }], ingresos: ['Nómina'] }, meta: { onboarded: true } } });
   await sleep(80);
   const A = e.w.__APP__, H = A.H, doc = e.doc, sh = () => doc.querySelector('#sheetHost').textContent;
   A.openCrear(); await sleep(10);

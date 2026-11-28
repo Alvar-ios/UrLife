@@ -22,7 +22,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
       atajos: { pendientes: async () => cola.slice(), quitar: async (ids) => { reg.quitados.push(...ids); cola = cola.filter((x) => !ids.includes(x.id)); }, info: async () => ({ ios: '27.1', usado }), cuenta: async (u) => { reg.cuentas.push(u); } },
       notif: { permiso: async () => 'granted', pedir: async () => 'granted', programar: async () => 0, ahora: async () => 0 } };
   };
-  const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 0 }, pre, session: { user: { id: 'u-1', email: 't@t.com' } },
+  const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 1 }, pre, session: { user: { id: 'u-1', email: 't@t.com' } },
     cfg: { app: { compararVersiones: false, cuentas: [{ id: 'c-bbva', nombre: 'BBVA', banco: 'bbva', principal: true }] }, meta: { onboarded: true } } });
   e.w.Data.moviles = { registrar: async (p) => p.id, quitar: async () => {}, quitarTodos: async () => {} };
   await e.w.__APP__.main(); await sleep(2600);

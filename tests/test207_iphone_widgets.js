@@ -38,7 +38,7 @@ const sheetAbierta = (e) => !!e.doc.querySelector('#sheetBackdrop') && !e.doc.qu
     { id: 'i1', tipo: 'Ingreso', categoria: 'Nómina', importe: 1500, fecha: hoy, descripcion: 'Nómina' },
     { id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 123.45, fecha: hoy, descripcion: 'Compra' },
   ];
-  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0, importe: 0 }, pre, movs,
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 1, importe: 0 }, pre, movs,
     cfg: { app: { compararVersiones: false, categoriasGasto: [{ nombre: 'Supermercado' }, { nombre: 'Otros' }], ingresos: ['Nómina'] }, meta: { onboarded: true } } });
   const A = e.w.__APP__, ultimo = () => L.guardar[L.guardar.length - 1] || null;
   await A.main(); await sleep(1600);

@@ -127,7 +127,7 @@ const uidC = (x) => decodeURIComponent((x.getAttribute('data-click') || '').spli
 
   /* ---------- 4. «Pago fijo»: ni «Gasto fijo» ni «Factura o pago» a la vista ---------- */
   {
-    const e = makeEnv({ version: { crear: 0, importe: 0 }, cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Vivienda' }], ingresos: ['Nómina'] }, meta: { onboarded: true } },
+    const e = makeEnv({ version: { crear: 1, importe: 0 }, cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Vivienda' }], ingresos: ['Nómina'] }, meta: { onboarded: true } },
       movs: [{ id: 'f1', tipo: 'Factura', categoria: 'Vivienda', descripcion: 'Alquiler', importe: 700, fecha: '2026-10-03' }] });
     await sleep(80);
     const A = e.w.__APP__, H = A.H, doc = e.doc, sh = () => doc.querySelector('#sheetHost').textContent;

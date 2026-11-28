@@ -3007,3 +3007,21 @@ html[data-look="nuevo"] .info-fila { margin: 0 0 2px; }
 /* la «i» nunca tapa un botón de acción: la barra fija y las hojas quedan por encima */
 html[data-look="nuevo"] .info-i { position: relative; z-index: 0; }
 html[data-look="nuevo"] .sheet .actions:not(.fija) { position: relative; z-index: 2; }
+/* Botón + v3 (28/11, docs/53 A): cuatro grandes en 2×2 y «Apuntes rápidos» plegado */
+html[data-look="nuevo"] .crear-grid.crear-4.dos .crear-op { min-height: 88px; }
+html[data-look="nuevo"] .crear-apuntes > .i { transition: transform .2s ease; }
+html[data-look="nuevo"] .crear-apuntes.abierto > .i { transform: rotate(180deg); }
+html[data-look="nuevo"] .crear-apuntes-cuerpo { margin-top: 4px; }
+html[data-look="nuevo"] .crear-apuntes-cuerpo .crear-rep { margin-top: 12px; }
+/* Apuntar (28/11, docs/53 B): categorías solo con icono, «¿De qué?» con sugerencias */
+html[data-look="nuevo"] .tec-cats.solo { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 4px; }
+html[data-look="nuevo"] .tec-cats.solo .tec-cat { min-height: 46px; padding: 0; }
+html[data-look="nuevo"] .tec-cat-sel { min-height: 20px; margin: 0 2px 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+html[data-look="nuevo"] .tec-todas { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
+html[data-look="nuevo"] .tec-todas .tec-cat { flex-direction: row; min-height: 40px; padding: 6px 10px; gap: 6px; }
+html[data-look="nuevo"] .tec-todas[hidden] { display: none; }
+html[data-look="nuevo"] .de-que { margin: 0 0 10px; }
+html[data-look="nuevo"] .de-que-sug { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-top: 8px; }
+html[data-look="nuevo"] .de-que-sug:empty { display: none; }
+html[data-look="nuevo"] .de-que-sug .chip { flex: none; min-height: 36px; white-space: nowrap; }
+html[data-look="nuevo"] .comp-arriba.block-v2 { width: 100%; justify-content: center; }

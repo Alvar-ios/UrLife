@@ -65,7 +65,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
       push: { disponible: async () => conFirebase, token: async () => { reg.register++; return 'tok-' + 'a'.repeat(30); }, olvidar: async () => { reg.olvidar++; }, pendiente: () => { const d0 = pend; pend = null; return d0; } } };
   };
   pend = { tipo: 'juntos', grupo: 'gPiso', persona: 'uAna', rol: 'parte' }; // aviso tocado con la app cerrada
-  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre, session: { user: { id: 'uYo', email: 't@t.com' } },
+  const e = makeEnv({ version: { tu: 1, agenda: 0, crear: 1 }, pre, session: { user: { id: 'uYo', email: 't@t.com' } },
     cfg: { app: { compararVersiones: false, nombre: 'Lucía', categoriasGasto: [{ nombre: 'Casa' }] }, meta: { onboarded: true } } });
   e.w.Data.moviles = { registrar: async (p) => { reg.registrar.push(p); return p.id; }, token: async (p) => { reg.token.push(p); return p.id; }, quitar: async (id) => { reg.quitar.push(id); }, quitarTodos: async () => {} };
   const A = e.w.__APP__, S = A.S, H = A.H, doc = e.doc;
@@ -116,7 +116,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
     const reg2 = { token: 0, register: 0 };
     const pre2 = (w) => { w.__nativo = { android: true, notif: { permiso: async () => 'granted', pedir: async () => 'granted', programar: async () => 0 },
       push: { disponible: async () => false, token: async () => { reg2.register++; return 'x'.repeat(30); }, olvidar: async () => {}, pendiente: () => null } }; };
-    const e2 = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre: pre2, session: { user: { id: 'uYo', email: 't@t.com' } }, cfg: { app: { compararVersiones: false }, meta: { onboarded: true } } });
+    const e2 = makeEnv({ version: { tu: 1, agenda: 0, crear: 1 }, pre: pre2, session: { user: { id: 'uYo', email: 't@t.com' } }, cfg: { app: { compararVersiones: false }, meta: { onboarded: true } } });
     e2.w.Data.moviles = { registrar: async () => {}, token: async () => { reg2.token++; }, quitar: async () => {}, quitarTodos: async () => {} };
     await e2.w.__APP__.main(); await sleep(2600);
     ok(reg2.register === 0 && reg2.token === 0, 'sin Firebase en la compilación no se pide token (no se cierra la app)');
@@ -127,7 +127,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
     const reg3 = { register: 0 };
     const pre3 = (w) => { w.__nativo = { android: true, notif: { permiso: async () => 'denied', pedir: async () => 'denied', programar: async () => 0 },
       push: { disponible: async () => true, token: async () => { reg3.register++; return 'x'.repeat(30); }, olvidar: async () => {}, pendiente: () => null } }; };
-    const e3 = makeEnv({ version: { tu: 1, agenda: 0, crear: 0 }, pre: pre3, session: { user: { id: 'uYo', email: 't@t.com' } }, cfg: { app: { compararVersiones: false }, meta: { onboarded: true } } });
+    const e3 = makeEnv({ version: { tu: 1, agenda: 0, crear: 1 }, pre: pre3, session: { user: { id: 'uYo', email: 't@t.com' } }, cfg: { app: { compararVersiones: false }, meta: { onboarded: true } } });
     e3.w.Data.moviles = { registrar: async () => {}, token: async () => {}, quitar: async () => {}, quitarTodos: async () => {} };
     await e3.w.__APP__.main(); await sleep(2600);
     ok(reg3.register === 0, 'sin permiso de avisos no se pide el token');
