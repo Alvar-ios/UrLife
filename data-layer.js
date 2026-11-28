@@ -590,7 +590,7 @@
   var recuperando = false;
   sb.auth.onAuthStateChange(function (event, session) { if (event === 'PASSWORD_RECOVERY') recuperando = true; if (!session && event !== 'SIGNED_OUT') session = sesionSinRed(); notifyAuth(session); });
   // La web pública: dentro de la app de Android el origen es «https://localhost», que no sirve para un enlace de correo
-  var WEB = 'https://urlife-zeta.vercel.app/';
+  var WEB = 'https://www.palomapp.es/';
   function urlVuelta() { var o = window.location.origin || ''; return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o) || !/^https?:/.test(o) ? WEB : o + window.location.pathname; }
 
   window.Auth = {
