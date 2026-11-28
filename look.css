@@ -3233,3 +3233,12 @@ html[data-look="nuevo"] .iw-e-grip svg { width: 20px; height: 20px; }
 /* 28/11: Juntos, dos cajas «Debes» / «Te deben» arriba (sin frase); no son botones */
 html[data-look="nuevo"] .jv5-cab .jv-ficha { cursor: default; }
 html[data-look="nuevo"] .jv5-cab .jv-fichas { margin-top: 0; }
+
+/* 28/11 · fase30/juntos-cajas: las dos cajas «Debes» / «Te deben» del Dashboard de Juntos, como el diseño del dueño (más aire, importe grande, tinte algo más marcado) */
+html[data-look="nuevo"] .jv5-cab .jv-fichas { gap: 12px; margin-bottom: 14px; }
+html[data-look="nuevo"] .jv5-cab .jv-ficha { gap: 4px; padding: 16px 16px 14px; border-radius: 20px; }
+html[data-look="nuevo"] .jv5-cab .jv-ficha span { font-size: 14px; font-weight: 700; }
+html[data-look="nuevo"] .jv5-cab .jv-ficha b { font-size: 26px; line-height: 1.1; white-space: nowrap; }
+html[data-look="nuevo"] .jv5-cab .jv-ficha i { font-size: 13px; color: var(--text-muted); }
+html[data-look="nuevo"] .jv5-cab .jv-ficha.de { background: color-mix(in srgb, var(--expense) 14%, var(--paper-sunken)); }
+html[data-look="nuevo"] .jv5-cab .jv-ficha.te { background: color-mix(in srgb, var(--income) 14%, var(--paper-sunken)); }
