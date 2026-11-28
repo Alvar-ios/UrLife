@@ -6534,8 +6534,11 @@ function juntosVioGrupo(gid) { if (juntosV5()) juntosMarcarVisto(gid, juntosNuev
 function juntosVioPersona(uid) { if (juntosV5()) { const x = juntosNuevo().p[uid]; if (x) juntosMarcarVisto('p:' + uid, x.ult); } }
 function juntosV5Html(ps, gs, debes, teDeben, hayComp) {
   const yo = miUid(), uso = juntosUso(), todos = S.juntosTodos || {}, nuevo = juntosNuevo();
+  // 28/11: dos cajas «Debes» y «Te deben» (con cuántas personas), sin frase encima
+  const nDe = ps.filter((x) => x.neto < 0).length, nTe = ps.filter((x) => x.neto > 0).length;
+  const caja = (cls, t, v, n) => '<div class="jv-ficha ' + cls + '"><span>' + t + '</span><b class="tnum">' + money(v) + '</b><i>' + (n ? n + (n === 1 ? ' persona' : ' personas') : 'nadie') + '</i></div>';
   const cifras = !hayComp ? '<div class="jv3-paz">Aún no habéis compartido gastos</div>' : (debes < 0.005 && teDeben < 0.005) ? '<div class="jv3-paz">' + ic('checkCircle') + ' Estás en paz con todos</div>' :
-    '<div class="jv3-cifras tnum">' + (teDeben >= 0.005 ? '<span class="te">Te deben <b>' + money(teDeben) + '</b></span>' : '') + (debes >= 0.005 ? '<span class="de">' + (teDeben >= 0.005 ? '<i>·</i> ' : '') + 'Debes <b>' + money(debes) + '</b></span>' : '') + '</div>';
+    '<div class="jv-fichas">' + caja('de', 'Debes', debes, nDe) + caja('te', 'Te deben', teDeben, nTe) + '</div>';
   let h = '<div class="card jv-cab jv3-cab jv5-cab">' + cifras + '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
   // Amigos: a quien debes, quien te debe y con quien estás en paz
   const vistos = new Set(ps.map((x) => x.uid)), paz = [];
