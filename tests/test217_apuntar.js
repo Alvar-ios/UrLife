@@ -100,5 +100,111 @@ const nuevo = (version) => makeEnv({ version: Object.assign({ tu: 0, agenda: 0, 
   ok(!!ca && !ca.hidden && /Compartir este gasto/.test(ca.textContent) && !e3.doc.querySelector('.tec-comp'), 'T2 · «Compartir este gasto» arriba también en un gasto nuevo (y ya no está el chip de abajo)');
   e3.w.__APP__.H.compOnTop([]); await sleep(80);
   ok(!e3.doc.querySelector('#tecRapido') && !e3.doc.querySelector('#mfMas').hidden && ca.hidden, 'T2 · al tocarlo se abre la parte compartida en el sitio');
+
+  // ---- Tanda 10 (docs/53): lo compartido con caras, «Más detalles» y los demás apuntes con lo justo ----
+  const PIX = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==';
+  const creados = [];
+  const e4 = makeEnv({ version: { tu: 0, agenda: 0, crear: 0, apuntar: 0, importe: 0 }, cfg: { app: Object.assign({}, cfgApp, { cuentas: [{ id: 'c1', nombre: 'Nómina', saldo: 100 }, { id: 'c2', nombre: 'Ahorro', saldo: 50 }] }), meta: { onboarded: true } }, movs: MOVS, session: { user: { email: 'a@a.com', id: 'uYo' } } });
+  await sleep(250);
+  const A4 = e4.w.__APP__, H4 = A4.H, S4 = A4.S, d4b = e4.doc, q4 = (x) => d4b.querySelector(x), qq4 = (x) => Array.from(d4b.querySelectorAll(x));
+  S4.user = Object.assign({}, S4.user, { id: 'uYo' });
+  const mb = (u, nm, x) => Object.assign({ user_id: u, nombre: nm, rol: 'miembro' }, x || {});
+  S4.grupos = [{ id: 'g1', nombre: 'Piso de la calle Mayor', tipo: 'grupo', alias: {}, soyAdmin: true, foto: PIX, miembros: [mb('uYo', 'Lucía', { rol: 'admin' }), mb('uA', 'Ana'), mb('uB', 'Bea')] },
+    { id: 'g2', nombre: 'Pádel', tipo: 'grupo', alias: {}, soyAdmin: false, foto: null, miembros: [mb('uYo', 'Lucía'), mb('uC', 'Carlos')] }].map((g) => Object.assign(g, { todos: g.miembros }));
+  S4.compartidos = []; S4.objetivos = []; S4.aportes = []; S4.carpetas = [];
+  S4.db = Object.assign(S4.db || {}, { compartidos: { suscribir: (nx) => { setTimeout(() => nx([]), 0); return () => {}; }, crear: async (d) => { creados.push(d); return Object.assign({ id: 'cc' + creados.length, createdAt: new Date().toISOString() }, d); }, editar: async () => ({}), borrar: async () => ({}) }, rpc: async () => null,
+    grupos: { listar: async () => { throw new Error('sin red'); }, invitaciones: async () => [] } });
+  const hoja4 = () => (q4('#sheetHost') ? q4('#sheetHost').textContent.replace(/\s+/g, ' ') : '');
+
+  // «Con», «Pagó» y el reparto con caras
+  H4.crearIr(['gasto']); await sleep(450);
+  ok(!q4('#sheetHost .comp-toggle'), 'T10 · en un gasto nuevo el botón «Compartir» sale una sola vez (arriba)');
+  H4.compOnTop([]); await sleep(100);
+  const con = qq4('#compField .cv-con .cr-cara');
+  ok(con.length === 6 && !q4('#compField .chips'), 'T10 · «Con»: una cara por grupo y persona y «Otra persona» (sin chips de texto) · ' + con.length);
+  ok(!!q4('#compField .cv-con img.jv-g-foto') && !!q4('#compField .cv-con .jv-g-ic'), 'T10 · el grupo con foto la enseña y el que no, sus iniciales');
+  ok(!!q4('#compField .cv-con [data-click="invAbrir|f"]'), 'T10 · «+ Otra persona» sigue ahí');
+  H4.compDest(['g:g2']); await sleep(30);
+  ok(qq4('#compField .cv-con .cr-cara.on').length === 1 && q4('#compField .cv-con .cr-cara.on').getAttribute('aria-pressed') === 'true', 'T10 · el elegido va marcado');
+  ok(q4('#compField .cv-con .cr-cara.on').getAttribute('data-click') === 'compDest|g%3Ag2' && qq4('#compField .cv-pago .cr-cara').length === 2, 'T10 · cambiar de grupo cambia quién puede pagar · ' + qq4('#compField .cv-pago .cr-cara').length);
+  ok(qq4('#compField .cv-fila .cv-mini').length === 2 && /Yo/.test(q4('#compField .cv-fila').textContent), 'T10 · el reparto tiene una cara por persona');
+  H4.compPagador(['uC']); await sleep(30);
+  ok(/Carlos/.test(q4('#compField .cv-pago .cr-cara.on').textContent), 'T10 · «Pagó» cambia de cara');
+  // todavía se puede guardar: Carlos pagó, a partes iguales
+  ['4', '0'].forEach((k) => H4.tecK([k])); H4.tecCat(['Ocio']); await sleep(20); H4.saveMov([]); await sleep(150);
+  ok(creados.length === 1 && creados[0].grupoId === 'g2' && creados[0].pagadoPor === 'uC' && creados[0].importe === 40 && creados[0].reparto && creados[0].reparto.uYo === 20, 'T10 · guarda igual que antes · ' + JSON.stringify(creados[0] && [creados[0].grupoId, creados[0].pagadoPor, creados[0].reparto]));
+  await sleep(450);
+  // «Antes»: con apuntar:1 siguen los chips
+  const e5 = makeEnv({ version: { tu: 0, agenda: 0, crear: 0, apuntar: 1, importe: 0 }, cfg: { app: cfgApp, meta: { onboarded: true } }, movs: MOVS, session: { user: { email: 'a@a.com', id: 'uYo' } } }); await sleep(250);
+  const A5 = e5.w.__APP__; A5.S.user = Object.assign({}, A5.S.user, { id: 'uYo' });
+  A5.S.grupos = S4.grupos.slice(); A5.S.compartidos = []; A5.S.objetivos = []; A5.S.aportes = []; A5.S.carpetas = [];
+  A5.S.db = Object.assign(A5.S.db || {}, { compartidos: { suscribir: () => () => {} }, rpc: async () => null, grupos: { listar: async () => { throw new Error('x'); }, invitaciones: async () => [] } });
+  A5.H.crearIr(['compartido']); await sleep(450);
+  ok(!e5.doc.querySelector('#compField .cv-con') && !!e5.doc.querySelector('#compField .chips .chip'), 'T10 · «Antes»: «Con» sigue con chips de texto');
+  A5.closeSheet && A5.closeSheet();
+
+  // el + «Compartir» rápido: «Con» también con caras
+  H4.closeSheet([]); await sleep(450); H4.compRapido(['g:g1']); await sleep(60);
+  ok(qq4('#sheetHost .cv-con .cr-cara').length === 6 && !q4('#sheetHost .cr-con'), 'T10 · compartir rápido: «Con» con caras');
+  H4.closeSheet([]); await sleep(450);
+
+  // «Más detalles» en los apuntes de ahorro, inversión, deuda y pago fijo
+  for (const [k, tipo] of [['ahorro', 'Ahorro'], ['inversion', 'Inversión'], ['deuda', 'Deuda'], ['factura', 'Factura']]) {
+    H4.crearIr([k]); await sleep(450);
+    const det = q4('#mfDet');
+    ok(det && det.hidden && det.contains(q4('#fMetodo')) && det.contains(q4('#tipoToggle')) && det.contains(q4('#deQueField')), 'T10 · ' + tipo + ': método de pago, tipo y «¿De qué?» van plegados en «Más detalles»');
+    ok(!!q4('#mfDetBtn') && q4('#mfDetBtn').getAttribute('aria-expanded') === 'false', 'T10 · ' + tipo + ': «Más detalles» sale cerrado');
+    if (k === 'ahorro') { H4.mfDetToggle([]); await sleep(20); ok(!det.hidden && q4('#mfDetBtn').getAttribute('aria-expanded') === 'true' && /Menos detalles/.test(q4('#mfDetBtn').textContent), 'T10 · tocarlo los abre y cambia a «Menos detalles»'); H4.mfDetToggle([]); await sleep(20); ok(det.hidden, 'T10 · y otra vez los cierra'); }
+    H4.closeSheet([]); await sleep(450);
+  }
+  // cambiar de tipo desde «Más detalles»: la nota vuelve a su sitio en Gasto
+  H4.crearIr(['ahorro']); await sleep(450); H4.mfDetToggle([]); H4.pickTipo(['Gasto']); await sleep(30);
+  ok(q4('#deQueSlot #deQueField') && !q4('#mfDet #deQueField'), 'T10 · al pasar a Gasto, «¿De qué?» vuelve a la vista');
+  H4.pickTipo(['Deuda']); await sleep(30);
+  ok(q4('#mfDet #deQueField'), 'T10 · y al pasar a Deuda se vuelve a plegar');
+  ok(q4('#compArribaTxt') && /deuda compartida/.test(q4('#compArribaTxt').textContent), 'T10 · el botón de compartir de arriba cambia con el tipo («Pagar una deuda compartida»)');
+  H4.closeSheet([]); await sleep(450);
+  // «Más detalles» de verdad (apunte corto) enseña todo
+  H4.crearIr(['gasto']); await sleep(450); H4.tecMas([]); await sleep(30);
+  ok(q4('#mfDet') && !q4('#mfDet').hidden && !!q4('#mfDet #tipoToggle'), 'T10 · en el gasto corto, «Más detalles» lo abre todo');
+  H4.closeSheet([]); await sleep(450);
+  // compartir desde el apunte corto no abre «Más detalles»
+  H4.crearIr(['gasto']); await sleep(450); H4.compOnTop([]); await sleep(60);
+  ok(q4('#mfDet') && q4('#mfDet').hidden, 'T10 · compartir un gasto no abre «Más detalles»');
+  H4.closeSheet([]); await sleep(450);
+  // editar un gasto: tipo a la vista, método de pago plegado (abierto si ya tiene uno)
+  H4.openMovForm(['m1']); await sleep(450);
+  ok(q4('#mfDet') && q4('#mfDet').hidden && q4('#mfDet').contains(q4('#fMetodo')) && !q4('#mfDet').contains(q4('#tipoToggle')) && !!q4('#tipoToggle'), 'T10 · al editar: el tipo sigue a la vista y el método de pago va en «Más detalles»');
+  H4.closeSheet([]); await sleep(450);
+  e4.store.movimientos.m2 && (e4.store.movimientos.m2.metodoPago = 'Tarjeta');
+  S4.movimientos.find((m) => m.id === 'm2').metodoPago = 'Tarjeta';
+  H4.openMovForm(['m2']); await sleep(450);
+  ok(q4('#mfDet') && !q4('#mfDet').hidden, 'T10 · si ya tiene método de pago, «Más detalles» sale abierto');
+  H4.closeSheet([]); await sleep(450);
+
+  // ingreso: categorías con icono y «Ver todas»
+  H4.crearIr(['ingreso']); await sleep(450);
+  const ci = qq4('#tecCats .tec-cat:not(.mas)');
+  ok(q4('#tecCats.solo') && ci.length === 5 && ci.every((b) => b.getAttribute('aria-label') && !b.querySelector('.tec-cat-n') && b.querySelector('.chip-cat-ic svg')), 'T10 · ingreso: 5 categorías con icono (el nombre va en aria-label) · ' + ci.length);
+  ok(q4('#tecCatSel') && q4('#tecCatSel').textContent === 'Elige una categoría', 'T10 · ingreso: debajo dice «Elige una categoría»');
+  H4.tecCat(['Nómina']); await sleep(20);
+  ok(q4('#tecCatSel').textContent === 'Nómina' && q4('#fCategoria').value === 'Nómina', 'T10 · ingreso: elegir pone el nombre debajo');
+  H4.tecCatTodas([]); await sleep(20);
+  const ti = qq4('#tecCatTodas .tec-cat');
+  ok(ti.length >= 6 && ti.every((b) => b.querySelector('.tec-cat-n')) && !ti.some((b) => /Mercadona|Supermercado/.test(b.textContent)), 'T10 · ingreso: «Ver todas» lista los ingresos con nombre (no los gastos) · ' + ti.length);
+  H4.closeSheet([]); await sleep(450);
+
+  // traspaso: lo justo y la nota en «Más detalles»
+  H4.crearIr(['traspaso']); await sleep(450);
+  ok(q4('#mfDet') && q4('#mfDet').hidden && q4('#mfDet').contains(q4('#fDesc')) && /¿De qué\?/.test(q4('#mfDet').textContent), 'T10 · traspaso: la nota va plegada en «Más detalles»');
+  ok(!!q4('#sheetHost .info-i') && /cajero/.test(q4('#sheetHost .info-txt').textContent) && !q4('#sheetHost .rec-hint'), 'T10 · traspaso: «Qué es un traspaso» está en la «i»');
+  H4.mfDetToggle([]); await sleep(20); q4('#fDesc').value = 'Alquiler';
+  ['9', '5'].forEach((k) => H4.tecK([k])); H4.saveTraspaso([]); await sleep(150);
+  const tr = Object.values(e4.store.movimientos).filter((m) => m.tipo === 'Traspaso' && m.descripcion === 'Alquiler');
+  ok(tr.length === 1 && tr[0].importe === 95, 'T10 · traspaso: se guarda con su nota · ' + tr.length);
+  await sleep(450);
+  // traspaso con la versión anterior: nada plegado
+  const e6 = nuevo({ apuntar: 1 }); await sleep(250); e6.w.__APP__.H.crearIr(['traspaso']); await sleep(450);
+  ok(!e6.doc.querySelector('#mfDet') && /Descripción/.test(e6.doc.querySelector('#sheetHost').textContent), 'T10 · «Antes»: el traspaso es el de siempre');
   console.log(fails ? 'FALLOS: ' + fails : 'TODO BIEN'); process.exit(fails ? 1 : 0);
 })().catch((x) => { console.log('CRASH', x && x.stack || x); process.exit(1); });
