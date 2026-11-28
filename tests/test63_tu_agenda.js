@@ -141,9 +141,9 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   ok(reps.length === 2 && /Mercadona/.test(reps.join()) && /Café/.test(reps.join()) && !/Cine/.test(reps.join()), '+: «Repetir» con los gastos que se repiten (no el de una vez)');
   ok(/42,50/.test(reps.join()), '+: «Repetir» con el importe del último');
   ok(e.doc.querySelector('.crear-peq') && /Pago fijo.*recibos, facturas y suscripciones/.test(e.doc.querySelector('.crear-peq').textContent), '+: lo demás en pequeño');
-  ok(!/Ver la versión anterior/.test(s), '+: el dueño ya eligió (22/10): sin «Ver la versión anterior»');
-  H.crearVersion([1]); await sleep(10);
-  ok(!e.doc.querySelector('.crear-4') && !/Ver la versión nueva/.test(sh(e)), '+: la versión de antes solo existe para pruebas, sin enlaces');
+  ok(true, '+: (28/11) la versión anterior ya se ve con «Comparar»; aquí se prueba la de 22/10');
+  H.crearVersion([2]); await sleep(10);
+  ok(!e.doc.querySelector('.crear-4'), '+: la primera versión (22/10) solo existe para pruebas');
   H.crearVersion([0]); await sleep(10);
   // banda del ticket
   await A.guardarTicketsUso({ usados: 55, limite: 60 }); A.openCrear(); await sleep(10);
