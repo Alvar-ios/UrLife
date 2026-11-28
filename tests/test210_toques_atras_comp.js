@@ -10,8 +10,9 @@ const YO = 'u-yo', ANA = 'u-ana';
 const pregunta = (e) => !!e.doc.querySelector('#descartarHoja');
 
 (async () => {
-  const e = await abrir({
-    cfg: { app: { nombre: 'Lucía', compararVersiones: false, categoriasGasto: [{ nombre: 'Otros' }, { nombre: 'Restaurantes' }] }, meta: { onboarded: true } },
+  const e = await abrir({ version: { juntos: 1 }, // 28/11: «Lo último» es de la pantalla anterior (la nueva no lo tiene)
+   
+    cfg: { app: { nombre: 'Lucía', categoriasGasto: [{ nombre: 'Otros' }, { nombre: 'Restaurantes' }] }, meta: { onboarded: true } },
     grupos: [{ id: 'g1', nombre: 'Viaje inventado', tipo: 'grupo', edicion: 'todos', created_at: '2026-10-01T10:00:00Z' }],
     miembros: [{ grupo_id: 'g1', user_id: YO, nombre: 'Lucía', rol: 'admin', created_at: '2026-10-01T10:00:00Z' }, { grupo_id: 'g1', user_id: ANA, nombre: 'Ana', rol: 'miembro', created_at: '2026-10-01T10:01:00Z' }],
     comp: [{ id: 'k1', grupoId: 'g1', fecha: T.diasAtras(1), tipo: 'Gasto', categoria: 'Otros', descripcion: 'Hotel inventado', importe: 80, pagadoPor: ANA, reparto: { [YO]: 40, [ANA]: 40 }, modo: 'igual', creadoPor: ANA, createdAt: '2026-11-02T10:00:00Z' }],

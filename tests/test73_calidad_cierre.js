@@ -7,7 +7,7 @@ const CUENTAS = [{ id: 'c1', nombre: 'Banco A', saldo: 1000, ts: 1 }, { id: 'c2'
 const MOVS = [{ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 40, fecha: ym + '-02', cuentaId: 'c1' },
   { id: 'n1', tipo: 'Ingreso', categoria: 'Nómina', importe: 1500, fecha: ym + '-01', cuentaId: 'c1' }];
 // como un usuario real: sin ninguna variante fijada por las pruebas
-const real = (A) => { A.S.verAnterior = { juntos: 1 }; A.render(); };
+const real = (A) => { A.S.verAnterior = { juntos: 2 }; A.render(); };
 const tecla = (e, key, extra) => e.doc.body.dispatchEvent(new e.w.KeyboardEvent('keydown', Object.assign({ key, bubbles: true, cancelable: true }, extra || {})));
 const pegar = (e, t) => { const ev = new e.w.Event('paste', { bubbles: true, cancelable: true }); ev.clipboardData = { getData: () => t }; e.doc.body.dispatchEvent(ev); };
 const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) => m.tipo === tipo);
