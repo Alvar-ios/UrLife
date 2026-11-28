@@ -200,7 +200,7 @@ if (Capacitor.isNativePlatform()) {
     });
   }
 
-  // Invitaciones: https://urlife-zeta.vercel.app/?unirse=… abre la app (App Links) y se pasa a la web de dentro
+  // Invitaciones: https://www.palomapp.es/?unirse=… (y el dominio anterior urlife-zeta.vercel.app) abre la app (App Links) y se pasa a la web de dentro
   App.addListener('appUrlOpen', ({ url }) => {
     // 25/11: los widgets de iPhone abren la app con palomapp://gasto o palomapp://inicio
     if (N.widgets && N.widgets.alUrl && N.widgets.alUrl(url)) return;

@@ -43,7 +43,7 @@ function env(uid,email,url){
  ok(DB.grupos.length===1&&DB.miembros[0].rol==='admin'&&/Casa/.test(sh())&&/Administrador/.test(sh()),'grupo «Casa» creado, Álvaro administrador');
  click(a,'grupoInvitar','g1');await sleep(40);
  const wa=da.querySelector('a.wa-btn');const url=wa&&decodeURIComponent(wa.getAttribute('href').split('text=')[1]);
- ok(wa&&/^https:\/\/wa\.me\/\?text=/.test(wa.getAttribute('href'))&&/urlife-zeta\.vercel\.app\/\?unirse=TOKEN/.test(url)&&/«Casa»/.test(url),'botón de WhatsApp con el mensaje y el enlace');
+ ok(wa&&/^https:\/\/wa\.me\/\?text=/.test(wa.getAttribute('href'))&&/www\.palomapp\.es\/\?unirse=TOKEN/.test(url)&&/«Casa»/.test(url),'botón de WhatsApp con el mensaje y el enlace');
  click(a,'grupoCopiar');await sleep(10);ok(/unirse=TOKEN/.test(a.w.__copiado||''),'copiar enlace');
  ok(/1 enlace pendiente/.test(sh())&&/unirse=TOKEN/.test(sh()),'muestra el enlace y que está pendiente');
  const enlace=url.match(/https:\S+/)[0];
