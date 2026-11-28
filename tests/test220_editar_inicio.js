@@ -14,6 +14,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(S.inicioEd && !doc.querySelector('#sheetBackdrop'), 'Editar Inicio no abre una hoja: se edita en la propia pantalla');
   const cajas = () => [...doc.querySelectorAll('#content .iw-e[data-i]')];
   ok(cajas().length === 4 && doc.querySelector('.iw-e-bar') && doc.querySelector('.iw-e-pie'), 'cada pieza en su caja, con «Listo» arriba y «Añadir una pieza» abajo');
+  ok(doc.documentElement.classList.contains('iw-editando') && [...doc.querySelector('#content').children].filter((x) => !x.matches('.iw-e-bar, .iw-e-lista, .iw-e-pie')).every((x) => x.inert) && doc.querySelector('#content .hero2').inert, 'lo que no se edita (tarjeta grande…) queda inerte y desenfocado (clase iw-editando)');
   ok(cajas().every((c) => c.querySelector('.iw-e-grip') && c.querySelector('.iw-quitar') && c.querySelector('.iw-e-c[inert]')), 'cada caja: asa, quitar, y el contenido no se puede tocar');
   ok(/Subir/.test(cajas()[1].innerHTML) && cajas()[0].querySelector('[aria-label^="Subir"]').disabled && cajas()[3].querySelector('[aria-label^="Bajar"]').disabled, 'respaldo con flechas: la primera no sube y la última no baja');
   // flechas
@@ -34,7 +35,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(orden() === antes, 'si el sistema corta el gesto, el orden se queda como estaba');
   // pulsación larga sobre la caja (sin asa)
   const c1 = cajas()[1]; ev(c1, 'pointerdown', 50, 150); await sleep(420);
-  ok(c1.classList.contains('arrastra'), 'mantener pulsada una caja 350 ms prepara el arrastre');
+  ok(c1.classList.contains('arrastra'), 'mantener pulsada una caja ~180 ms prepara el arrastre');
   ev(doc, 'pointerup', 50, 150); await sleep(10);
   // mover antes de tiempo = desplazar la pantalla, no arrastrar
   const c2 = cajas()[2]; ev(c2, 'pointerdown', 50, 250); ev(doc, 'pointermove', 50, 290); await sleep(420);
@@ -54,7 +55,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(e.w.__atras() === true && !S.inicioEd && !doc.querySelector('.iw-e'), 'atrás sale del modo editar');
   // Listo
   H.iwEditar([]); await sleep(10); H.iwListo([]); await sleep(10);
-  ok(!S.inicioEd && !doc.querySelector('.iw-e'), '«Listo» sale del modo editar');
+  ok(!S.inicioEd && !doc.querySelector('.iw-e') && !doc.documentElement.classList.contains('iw-editando'), '«Listo» sale del modo editar y quita el desenfoque');
   // mantener pulsada una pieza de Inicio entra
   const pz = doc.querySelector('#content .iw'); ev(pz, 'pointerdown', 50, 150); await sleep(560);
   ok(S.inicioEd, 'mantener pulsada una pieza de Inicio entra en el modo editar'); H.iwListo([]);
