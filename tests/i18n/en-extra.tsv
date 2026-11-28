@@ -984,3 +984,97 @@ Quién pagó	Who paid
 Qué es un traspaso	What a transfer is
 Alquiler, cajero…	Rent, cash machine…
 También sirve para sacar dinero del cajero. No cambia «Te queda este mes».	Also for withdrawing cash at the ATM. It doesn't change «Left this month».
+// 28/11 informe v2 (docs/53 D)
+Muy apretado	Very tight
+Apretado	Tight
+Justo	Even
+Bueno	Good
+Muy bueno	Very good
+Va apretado	Going tight
+Va justo	Going even
+Va bien	Going well
+Te quedó el # % de lo que entró.	You kept #% of what came in.
+Te queda el # % de lo que entró.	You're keeping #% of what came in.
+Gastaste un # % más de lo que entró.	You spent #% more than came in.
+Llevas gastado un # % más de lo que ha entrado.	You've spent #% more than has come in.
+No hay carita: no apuntaste ingresos.	No face: you didn't log any income.
+No hay carita: hay pocos apuntes.	No face: there are too few entries.
+Cómo lo valoro	How I rate it
+Miro cuánto de lo que entró no gastaste, y lo apartado cuenta como no gastado. Por debajo de 0 %: apretado (muy apretado desde −10 %). De 0 a 10 %: justo. De 10 a 25 %: bueno. Más de 25 %: muy bueno, salvo que te pases de presupuesto.	I look at how much of what came in you didn't spend, and what you set aside counts as not spent. Below 0%: tight (very tight from −10%). 0 to 10%: even. 10 to 25%: good. Over 25%: very good, unless you go over budget.
+Frente a tu presupuesto	Compared with your budget
+Frente a tu media	Compared with your average
+Cuento solo lo gastado en las categorías que tienen presupuesto.	I only count what you spent in categories that have a budget.
+Dentro de tus topes.	Within your limits.
+Referencia:	Reference:
+meses anteriores para comparar.	earlier months to compare yet.
+semanas anteriores para comparar.	earlier weeks to compare yet.
+trimestres anteriores para comparar.	earlier quarters to compare yet.
+años anteriores para comparar.	earlier years to compare yet.
+Qué tener en cuenta	What to keep in mind
+Cómo se hace	How it's done
+Es la media de los semanas anteriores ya cerrados y con apuntes. Si pones presupuesto a tus categorías, comparo con él.	It's the average of earlier periods that are closed and have entries. If you set a budget on your categories, I compare with that.
+Es la media de los meses anteriores ya cerrados y con apuntes. Si pones presupuesto a tus categorías, comparo con él.	It's the average of earlier months that are closed and have entries. If you set a budget on your categories, I compare with that.
+Es la media de los trimestres anteriores ya cerrados y con apuntes. Si pones presupuesto a tus categorías, comparo con él.	It's the average of earlier quarters that are closed and have entries. If you set a budget on your categories, I compare with that.
+Es la media de los periodos anteriores ya cerrados y con apuntes. Si pones presupuesto a tus categorías, comparo con él.	It's the average of earlier periods that are closed and have entries. If you set a budget on your categories, I compare with that.
+Frente a tu media de los	Compared with your average of the
+Frente a tu media de las	Compared with your average of the
+últimos meses	last months
+últimas semanas	last weeks
+trimestres anteriores	previous quarters
+tu media de los	your average of the
+tu media de las	your average of the
+lo que hiciste en	what you did in
+No apuntaste ingresos	You didn't log any income
+, así que no puedo valorarlo.	, so I can't rate it.
+Apunta lo que cobras para que pueda compararlo.	Log what you earn so I can compare it.
+más de lo que	more than
+Lo que más pesó fue	What weighed most was
+: para el siguiente, empieza por ahí.	: for the next one, start there.
+menos habrías cuadrado.	less you'd have balanced out.
+Para el siguiente, prueba a gastar	For the next one, try spending
+menos.	less.
+más de lo que te sobraba.	more than you had left over.
+Aparta solo lo que sobre después de gastar.	Only set aside what's left after spending.
+tu tope es	your limit is
+tu media es	your average is
+Apartaste poco: el	You set aside little: just
+de lo que entró.	of what came in.
+Prueba a apartar algo en cuanto cobres, aunque sean	Try setting something aside as soon as you get paid, even if it's just
+Tus pagos fijos se llevan el	Your fixed payments take
+Revisa si alguno ya no te compensa.	Check whether any of them is no longer worth it.
+de lo gastado.	of what you spent.
+Mira qué pasó ese día antes de que se repita.	Look at what happened that day before it happens again.
+Si fue algo puntual, no pasa nada; si no, mira en qué se fue.	If it was a one-off, no problem; if not, look at where it went.
+Así da gusto.	Nice.
+Semana tranquila: sin sustos.	A calm week: no scares.
+Va tranquila: sin sustos por ahora.	Going calmly: no scares so far.
+Mes tranquilo: sin sustos.	A calm month: no scares.
+Trimestre tranquilo: sin sustos.	A calm quarter: no scares.
+Año tranquilo: sin sustos.	A calm year: no scares.
+Va tranquilo: sin sustos por ahora.	Going calmly: no scares so far.
+Lo que te sobró,	What you had left,
+puedes llevarlo a una meta.	you can put toward a goal.
+Si sigue así, te sobrará algo para llevarlo a una meta.	If it keeps going like this, you'll have something left to put toward a goal.
+Sigue así.	Keep it up.
+A fin de	By the end of
+, con tu nómina y tus pagos fijos, te quedarían unos	, with your pay and fixed payments, you'd have about
+Es una previsión, no un dato.	It's a forecast, not a fact.
+Lo que entró	What came in
+De dónde vino	Where it came from
+Lo que gastaste	What you spent
+Lo que más subió	What rose most
+Tus presupuestos	Your budgets
+Lo que apartaste e invertiste	What you set aside and invested
+Es el	That's
+% de lo que entró.	% of what came in.
+Tu balance	Your balance
+Cómo sale	How it works out
+Tu balance, uno tras otro	Your balance, one after another
+Ver los ingresos	See the income
+Ver los gastos	See the spending
+Ver lo apartado	See what was set aside
+Ver la versión anterior	See the previous version
+Ver la versión nueva	See the new version
+No apuntaste ni invertiste nada.	You didn't set aside or invest anything.
+No apuntaste ingresos.	You didn't log any income.
+No gastaste nada.	You didn't spend anything.

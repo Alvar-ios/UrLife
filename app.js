@@ -10,6 +10,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------------- Iconos (SVG inline, trazo simple) ---------------- */
 const ICONS = {
+  cara1: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 9.4l2.5-.9"/><path d="M16 9.4l-2.5-.9"/><circle cx="9.5" cy="11.6" r=".9" fill="currentColor" stroke="none"/><circle cx="14.5" cy="11.6" r=".9" fill="currentColor" stroke="none"/><path d="M9.3 14.2v1.5"/><path d="M8.4 17.8c1-2.3 6.2-2.3 7.2 0"/></svg>',
+  cara2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="9.4" cy="10.4" r=".9" fill="currentColor" stroke="none"/><circle cx="14.6" cy="10.4" r=".9" fill="currentColor" stroke="none"/><path d="M8.8 16.4c1-1.4 5.4-1.4 6.4 0"/></svg>',
+  cara3: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="9.4" cy="10.4" r=".9" fill="currentColor" stroke="none"/><circle cx="14.6" cy="10.4" r=".9" fill="currentColor" stroke="none"/><path d="M9 15.2h6"/></svg>',
+  cara4: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="9.4" cy="10.4" r=".9" fill="currentColor" stroke="none"/><circle cx="14.6" cy="10.4" r=".9" fill="currentColor" stroke="none"/><path d="M8.8 14.2c1 1.6 5.4 1.6 6.4 0"/></svg>',
+  cara5: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 10.8c.5-1.1 1.9-1.1 2.4 0"/><path d="M13.6 10.8c.5-1.1 1.9-1.1 2.4 0"/><path d="M7.9 13.6h8.2c-.5 3-2 4-4.1 4s-3.6-1-4.1-4z"/></svg>',
   piggy2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5c0-3.3 3-5.5 7-5.5 2.6 0 4.6.8 5.8 2.2l2.2-.7-.5 2.8c.6.6 1 1.4 1 2.2v1l-1.8.7a6 6 0 0 1-2.2 2.3V20h-2.5v-1.6h-4V20H7v-2.4a5 5 0 0 1-2.5-4.3Z"/><path d="M10 9.5h3"/><circle cx="16.3" cy="12" r=".8" fill="currentColor" stroke="none"/><path d="M4.6 12.2c-1.4-.2-2-1.1-1.8-2"/></svg>',
   target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>',
   deuda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="12" r="6"/><path d="M8 12h4"/><path d="M17.5 6.5a8 8 0 0 1 0 11"/><path d="m17.5 17.5-.2-2.9M17.5 17.5l-2.8.4"/></svg>',
@@ -4772,6 +4777,7 @@ const VERSIONES = {
   agenda: { txt: 'Agenda', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
   crear: { txt: 'Botón +', desde: '2026-11-28', cerrada: '2026-11-28', def: 0, variantes: [['v3', 'Apuntes rápidos'], ['v2', 'Antes'], ['antes', '22 oct']] }, // 28/11 (docs/53 A): cuatro grandes y «Apuntes rápidos»; «Antes» = el + de 22/10 (las pruebas antiguas fijan v2: crear 1)
   apuntar: { txt: 'Apuntar un gasto', desde: '2026-11-28', cerrada: '2026-11-28', def: 0, variantes: [['v2', '¿De qué?'], ['antes', 'Antes']] }, // 28/11 (docs/53 B): un solo campo «¿De qué?», categorías con iconos y «Compartir» arriba; las pruebas antiguas fijan «antes» (apuntar 1)
+  informe: { txt: 'Informe', desde: '2026-11-28', variantes: [['nueva', 'Nuevo'], ['antes', 'Antes']] }, // 28/11 (docs/53 D): carita, asesor, 4 tarjetas con hojas visuales; «Antes» = el informe de texto
   balance: { txt: 'Mes cerrado', desde: '2026-10-29', variantes: [['nueva', 'Balance'], ['antes', 'Antes']] },
   importe: { txt: 'Apuntar importe', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
   bienvenida: { txt: 'Bienvenida', desde: '2026-11-13', cerrada: '2026-11-13', def: 3, variantes: [['pasos', 'Antes'], ['nueva', '2 pantallas'], ['antes', '4 pasos'], ['v2', 'Por objetivos']] }, // 13/11 (docs/45): def 3 = «Por objetivos» (la nueva, también al repetirla desde Tú); «Antes» = la de por pasos de esta mañana. // 13/11: Hola → Qué quieres usar → Permisos (solo Android) → Tu banco → Listo; «2 pantallas» = la de docs/38 (10/11) // docs/38 §6: 2 pantallas (1 con invitación) y «Lo básico»; «antes» = la de 4 pasos para todos (solo para las pruebas antiguas)
@@ -5915,7 +5921,7 @@ function infDatos(clave) {
   if (P.tipo === 'mes' && !P.cerrado) { const pv = previstoMes(P.y, P.m); if (pv) out.previsto = 'Con tu nómina y tus pagos fijos, a fin de ' + MESES[P.m - 1].toLowerCase() + ' te quedarían unos ' + m0(Math.round(pv.total)) + '. Es una previsión, no un dato.'; }
   return out;
 }
-function infHtml(clave) {
+function infHtmlAntes(clave) {
   const D = infDatos(clave), P = D.P, F = FORM || {};
   const tabs = '<div class="segmented inf-tabs">' + INF_TIPOS.map(([t, l]) => '<button class="' + (P.tipo === t ? 'active' : '') + '" ' + act('infTipo', t) + '>' + l + '</button>').join('') + '</div>';
   const nav = '<div class="inf-nav"><button class="icon-btn" aria-label="Anterior" ' + act('infVer', P.ant) + '>' + ic('chevL') + '</button><div class="inf-nav-t"><b>' + escapeHtml(P.titulo) + '</b><span>' + escapeHtml(fechaCortaU(P.desde) + ' – ' + fechaCortaU(P.hasta)) + '</span></div>' +
@@ -5929,7 +5935,183 @@ function infHtml(clave) {
     (D.vacio ? '' : sec('Las cifras', 'chart', '<div class="inf-cifs">' + cifras + '</div>') + (D.cambios.length ? sec('Lo que cambió', 'comparar', lin(D.cambios)) : '') + (D.metas.length ? sec('Tus metas y deudas', 'flag', lin(D.metas)) : '') +
       (D.previsto ? '<div class="inf-prev"><span class="prev-tag">Previsto</span> ' + escapeHtml(D.previsto) + '</div>' : '')) +
     '<p class="inf-pie">Hecho en tu móvil con lo que has apuntado en la app. Describe tus números; no es asesoramiento financiero.</p>' +
-    '<button class="btn ghost block" ' + act('infMovs', per) + '>' + ic('list') + ' Ver los movimientos</button>';
+    '<button class="btn ghost block" ' + act('infMovs', per) + '>' + ic('list') + ' Ver los movimientos</button>' + (compararOn() && !VERSIONES.informe.cerrada ? '<button type="button" class="crear-antes" ' + act('infVersion', 0) + '>' + ic('comparar') + ' Ver la versión nueva</button>' : '');
+}
+/* ===== INFORME v2 (28/11, docs/53 bloque D): carita (solo aquí), frase de asesor, 4 tarjetas con hoja visual y comparación con el presupuesto o con tu media.
+   Todo se calcula en el móvil con reglas fijas, sin IA, y con los mismos kpisMes/infPeriodo de siempre. La anterior sigue en «Antes» (VERSIONES.informe). ===== */
+function infV2On() { return versionDe('informe') === 'nueva'; }
+function infHtml(clave) { return infV2On() ? infHtmlV2(clave) : infHtmlAntes(clave); }
+function infCatNom(c) { const s = String(c == null ? '' : c).trim(); return s && s !== 'undefined' && s !== 'null' ? s : 'Sin categoría'; }
+function infGasto(k) { return k.facturas + k.gastos; }
+function infCatMapa(movs, tipos) { const o = {}; movs.forEach((x) => { if ((tipos || ['Gasto', 'Factura']).indexOf(x.tipo) >= 0) { const c = infCatNom(x.categoria); o[c] = (o[c] || 0) + num(x.importe); } }); return o; }
+const INF_NIVELES = ['', 'Muy apretado', 'Apretado', 'Justo', 'Bueno', 'Muy bueno'];
+// los periodos anteriores ya cerrados y con apuntes, del mismo tipo (semana: 4, mes: 3, trimestre: 2, año: el anterior)
+function infAnteriores(P) {
+  const n = { semana: 4, mes: 3, trimestre: 2, anio: 1 }[P.tipo], out = []; let c = P.ant;
+  if (P.tipo === 'anio' && P.enCurso) return out; // lo que llevas de año no se compara con un año entero
+  for (let i = 0; i < n + 4 && out.length < n; i++) { const Q = infPeriodo(c); if (Q.cerrado && Q.k.movs.length) out.push(Q); c = Q.ant; }
+  return out;
+}
+function infMedia(P) {
+  const A = infAnteriores(P), min = P.tipo === 'anio' ? 1 : 2;
+  if (A.length < min) return { ok: false, n: A.length };
+  const av = (f) => A.reduce((s, Q) => s + f(Q.k), 0) / A.length, cats = {};
+  A.forEach((Q) => { const mp = infCatMapa(Q.k.movs); Object.keys(mp).forEach((c) => { cats[c] = (cats[c] || 0) + mp[c] / A.length; }); });
+  const n = A.length, rot = P.tipo === 'semana' ? 'tu media de las ' + n + ' últimas semanas' : P.tipo === 'mes' ? 'tu media de los ' + n + ' últimos meses' : P.tipo === 'trimestre' ? 'tu media de los ' + n + ' trimestres anteriores' : 'lo que hiciste en ' + (P.y - 1);
+  return { ok: true, n, rot, ing: av((k) => k.ingresos), gas: av(infGasto), aho: av((k) => k.ahorro + k.inversion), bal: av((k) => k.disponible), cats, periodos: A };
+}
+// el presupuesto de las categorías que lo tienen (solo en un mes: es un tope mensual)
+function infPresupuesto(P) {
+  if (P.tipo !== 'mes') return null;
+  const cats = catsGasto().filter((c) => num(c.presupuesto) > 0); if (!cats.length) return null;
+  const mp = infCatMapa(P.k.movs), nm = {}; Object.keys(mp).forEach((c) => { nm[normName(c)] = (nm[normName(c)] || 0) + mp[c]; });
+  const filas = cats.map((c) => ({ c: c.nombre, pres: num(c.presupuesto), v: Math.max(0, nm[normName(c.nombre)] || 0) }));
+  return { total: filas.reduce((a, f) => a + f.pres, 0), gasto: filas.reduce((a, f) => a + f.v, 0), filas, pasadas: filas.filter((f) => f.v > f.pres + 0.004).sort((a, b) => (b.v - b.pres) - (a.v - a.pres)) };
+}
+// lo que no gastaste, sobre lo que entró (lo apartado cuenta como no gastado)
+function infTasa(k) { return k.ingresos > 0.005 ? (k.ingresos - infGasto(k) - k.deuda) / k.ingresos : null; }
+// la carita: 1 a 5, o null si no se puede valorar (semana, periodo sin cerrar, sin ingresos o con menos de 10 apuntes)
+function infNivel(P, pres) {
+  const k = P.k, t = infTasa(k);
+  if (P.tipo === 'semana' || !P.cerrado || t == null || k.movs.length < 10) return null;
+  if (t < -0.005) return t <= -0.1 ? 1 : 2;
+  if (t < 0.1) return 3;
+  if (t < 0.25) return 4;
+  return pres && pres.pasadas.length ? 4 : 5;
+}
+function infSinCara(P) {
+  const k = P.k; if (P.tipo === 'semana') return '';
+  if (!P.cerrado) return '';
+  if (k.ingresos < 0.005) return 'No hay carita: no apuntaste ingresos.';
+  if (k.movs.length < 10) return 'No hay carita: hay pocos apuntes.';
+  return '';
+}
+// «Va bien / Va justo» para lo que aún no ha terminado
+function infVa(P) { const t = infTasa(P.k); if (P.tipo === 'semana' || t == null || P.k.movs.length < 3) return ''; return t < -0.005 ? 'Va apretado' : t < 0.1 ? 'Va justo' : 'Va bien'; }
+/* El asesor: reglas fijas en orden. Sale la primera que se cumple (qué pasó + qué hacer) y hasta dos más en «Qué tener en cuenta». */
+function infAsesor(P, cmp, pres) {
+  const k = P.k, ing = k.ingresos, gas = infGasto(k), bal = k.disponible, aho = k.ahorro + k.inversion, c = P.cerrado, R = [];
+  const cm = infCatMapa(k.movs), top = Object.entries(cm).filter((e) => e[1] > 0.004).sort((a, b) => b[1] - a[1])[0];
+  const completo = P.tipo !== 'semana';
+  if (completo && ing < 0.005 && gas > 0.004) R.push({ mal: 'No apuntaste ingresos' + (c ? '' : ' todavía') + ', así que no puedo valorarlo.', cons: 'Apunta lo que cobras para que pueda compararlo.' });
+  if (completo && ing > 0.005 && bal < -0.5) {
+    if (gas + k.deuda > ing + 0.5) R.push({ mal: (c ? 'Gastaste ' : 'Llevas gastados ') + m0(gas + k.deuda - ing) + ' más de lo que ' + (c ? 'entró' : 'ha entrado') + '.', cons: top ? 'Lo que más pesó fue ' + top[0] + ': para el siguiente, empieza por ahí.' : 'Para el siguiente, prueba a gastar ' + m0(-bal) + ' menos.' });
+    else R.push({ mal: 'Apartaste ' + m0(-bal) + ' más de lo que te sobraba.', cons: 'Aparta solo lo que sobre después de gastar.' });
+  }
+  if (pres && pres.pasadas.length) { const f = pres.pasadas[0]; R.push({ mal: 'Te pasaste ' + m0(f.v - f.pres) + ' en ' + f.c + '.', cons: 'Vigila ' + f.c + ': tu tope es ' + m0(f.pres) + '.' }); }
+  if (cmp.ok) { const sube = Object.keys(cm).map((n) => ({ n, v: cm[n], b: cmp.cats[n] || 0 })).filter((x) => x.b > 0.004 && x.v - x.b > 30 && x.v / x.b - 1 > 0.3).sort((a, b) => (b.v - b.b) - (a.v - a.b))[0];
+    if (sube && !(pres && pres.pasadas.some((f) => normName(f.c) === normName(sube.n)))) R.push({ mal: sube.n + ' subió ' + m0(sube.v - sube.b) + ' sobre ' + cmp.rot + '.', cons: 'Vigila ' + sube.n + ': tu media es ' + m0(sube.b) + '.' }); }
+  if (completo && c && ing > 0.005 && bal >= -0.5 && aho / ing < 0.05) R.push({ mal: aho < 0.005 ? 'No apartaste nada.' : 'Apartaste poco: el ' + Math.round(aho / ing * 100) + ' % de lo que entró.', cons: 'Prueba a apartar algo en cuanto cobres, aunque sean ' + m0(Math.max(10, Math.round(ing * 0.05))) + '.' });
+  if (completo && ing > 0.005 && k.facturas / ing > 0.5) R.push({ mal: 'Tus pagos fijos se llevan el ' + Math.round(k.facturas / ing * 100) + ' % de lo que entró.', cons: 'Revisa si alguno ya no te compensa.' });
+  if (P.tipo === 'mes' && gas >= 50) { const dia = {}; k.movs.forEach((x) => { if (x.tipo === 'Gasto' || x.tipo === 'Factura') { const f = x.fecha.slice(0, 10); dia[f] = (dia[f] || 0) + num(x.importe); } });
+    const d = Object.entries(dia).sort((a, b) => b[1] - a[1])[0]; if (d && d[1] / gas > 0.25) R.push({ mal: 'El ' + fechaCortaU(d[0]) + ' concentró ' + m0(d[1]) + ' de lo gastado.', cons: 'Mira qué pasó ese día antes de que se repita.' }); }
+  if (P.tipo === 'semana' && cmp.ok && !R.length && Math.abs(gas - cmp.gas) >= 1) R.push({ mal: (c ? 'Gastaste ' : 'Llevas gastados ') + m0(gas) + ', ' + m0(Math.abs(gas - cmp.gas)) + (gas > cmp.gas ? ' más' : ' menos') + ' que ' + cmp.rot + '.', cons: gas > cmp.gas ? 'Si fue algo puntual, no pasa nada; si no, mira en qué se fue.' : 'Así da gusto.' });
+  const bien = !R.length;
+  if (bien) R.push({ mal: P.tipo === 'semana' ? (c ? 'Semana tranquila: sin sustos.' : 'Va tranquila: sin sustos por ahora.') : (c ? (P.tipo === 'mes' ? 'Mes' : P.tipo === 'trimestre' ? 'Trimestre' : 'Año') + ' tranquilo: sin sustos.' : 'Va tranquilo: sin sustos por ahora.'), cons: bal > 0.5 && completo ? (c ? 'Lo que te sobró, ' + m0(bal) + ', puedes llevarlo a una meta.' : 'Si sigue así, te sobrará algo para llevarlo a una meta.') : 'Sigue así.' });
+  const notas = R.slice(1, 3).map((x) => x.mal);
+  const sig = []; if (P.tipo === 'mes' && c) { const S1 = infPeriodo(P.sig), pv = previstoMes(S1.y, S1.m); if (pv) sig.push('A fin de ' + MESES[S1.m - 1].toLowerCase() + ', con tu nómina y tus pagos fijos, te quedarían unos ' + m0(Math.round(pv.total)) + '. Es una previsión, no un dato.'); }
+  return { frase: R[0].mal, cons: R[0].cons, bien, notas, sig };
+}
+function infPct(a, b) { return b > 0.004 ? Math.round((a - b) / b * 100) : null; }
+function infChip(a, b, verdeSiSube) {
+  const p = infPct(a, b); if (p == null || !(a > 0.004)) return '';
+  if (Math.abs(p) < 1) return '<span class="kpi-chip igual">= media</span>';
+  const tono = verdeSiSube == null ? 'gris' : (p > 0) === verdeSiSube ? 'bien' : 'mal';
+  return '<span class="kpi-chip bal-' + tono + '">' + (p > 0 ? '↑ ' : '↓ ') + Math.min(999, Math.abs(p)) + ' %</span>';
+}
+// una fila «tú frente a la referencia»: barra con una marca donde está la media
+function infFilaCmp(l, v, ref, verdeSiSube, cls) {
+  const max = Math.max(Math.abs(v), Math.abs(ref), 1) * 1.12, pw = (x) => (Math.max(0, x) / max * 100).toFixed(1);
+  return '<div class="inf-cmp"><div class="inf-cmp-h"><span>' + l + '</span><b class="tnum">' + escapeHtml(m0(v)) + '</b>' + infChip(v, ref, verdeSiSube) + '</div>' +
+    '<div class="inf-cmp-b" role="img" aria-label="' + escapeHtml(l + ': ' + m0(v) + ', referencia ' + m0(ref)) + '"><i class="' + (cls || '') + '" style="width:' + pw(v) + '%"></i><em style="left:' + pw(ref) + '%"></em></div><small>Referencia: ' + escapeHtml(m0(ref)) + '</small></div>';
+}
+function infCaraHtml(n) { return '<span class="inf-cara n' + n + '" role="img" aria-label="' + INF_NIVELES[n] + '">' + ic('cara' + n) + '</span>'; }
+function infPer(P) { return P.tipo === 'mes' ? P.clave : P.tipo === 'anio' || P.tipo === 'trimestre' ? 'y:' + P.y : 'm:' + mesDe(P.hasta > todayISO() ? todayISO() : P.hasta); }
+function infCabHtml(clave) {
+  const P = infPeriodo(clave);
+  const tabs = '<div class="segmented inf-tabs">' + INF_TIPOS.map(([t, l]) => '<button class="' + (P.tipo === t ? 'active' : '') + '" ' + act('infTipo', t) + '>' + l + '</button>').join('') + '</div>';
+  const nav = '<div class="inf-nav"><button class="icon-btn" aria-label="Anterior" ' + act('infVer', P.ant) + '>' + ic('chevL') + '</button><div class="inf-nav-t"><b>' + escapeHtml(P.titulo) + '</b><span>' + escapeHtml(fechaCortaU(P.desde) + ' – ' + fechaCortaU(P.hasta)) + '</span></div>' +
+    '<button class="icon-btn" aria-label="Siguiente" ' + (infPeriodo(P.sig).futuro ? 'disabled' : act('infVer', P.sig)) + '>' + ic('chevR') + '</button></div>';
+  return '<div class="handle"></div><div class="inf-cab"><h2>Informes</h2><button type="button" class="icon-btn" aria-label="Ajustes de los informes" ' + act('infAjustes') + '>' + ic('sliders') + '</button></div>' + tabs + nav;
+}
+function infHtmlV2(clave) {
+  const P = infPeriodo(clave), k = P.k, cab = infCabHtml(clave), antes = compararOn() && !VERSIONES.informe.cerrada ? '<button type="button" class="crear-antes" ' + act('infVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '';
+  if (!k.movs.length) return cab + '<div class="card inf-v2"><p class="inf-asesor">En ' + escapeHtml(P.nombre) + ' no apuntaste nada.</p></div>' + antes;
+  const cmp = infMedia(P), pres = infPresupuesto(P), nivel = infNivel(P, pres), A = infAsesor(P, cmp, pres), gas = infGasto(k), aho = k.ahorro + k.inversion, bal = k.disponible, t = infTasa(k);
+  const va = !P.cerrado ? infVa(P) : '', sin = infSinCara(P);
+  const infoCara = infoI('Miro cuánto de lo que entró no gastaste, y lo apartado cuenta como no gastado. Por debajo de 0 %: apretado (muy apretado desde −10 %). De 0 a 10 %: justo. De 10 a 25 %: bueno. Más de 25 %: muy bueno, salvo que te pases de presupuesto.');
+  const sub = t == null ? '' : t < -0.005 ? 'Gastaste un ' + Math.round(-t * 100) + ' % más de lo que entró.' : 'Te quedó el ' + Math.round(t * 100) + ' % de lo que entró.';
+  const cabecera = nivel ? '<div class="inf-v2-cab">' + infCaraHtml(nivel) + '<div class="inf-v2-et"><b>' + INF_NIVELES[nivel] + '</b><span>' + escapeHtml(sub) + '</span></div>' + infoCara + '</div>'
+    : va ? '<div class="inf-v2-cab"><div class="inf-v2-et"><b>' + va + '</b>' + (t != null ? '<span>' + escapeHtml(sub.replace('Te quedó', 'Te queda').replace('Gastaste', 'Llevas gastado')) + '</span>' : '') + '</div></div>' : sin ? '<div class="inf-v2-cab"><div class="inf-v2-et"><span>' + escapeHtml(sin) + '</span></div></div>' : '';
+  const hero = '<div class="card inf-v2 ' + (nivel ? 'n' + nivel : '') + '">' + cabecera + '<p class="inf-asesor">' + escapeHtml(A.frase + ' ' + A.cons) + '</p>' + (!P.cerrado ? '<span class="inf-aviso">' + escapeHtml((P.tipo === 'semana' ? 'La semana' : P.tipo === 'anio' ? 'El año' : P.tipo === 'trimestre' ? 'El trimestre' : 'El mes') + ' aún no ha terminado: cuenta lo apuntado hasta hoy.') + '</span>' : '') + '</div>';
+  const card = (v, cls, l, val, ref, verde, signo) => '<button type="button" class="inf-card tappable ' + cls + '" ' + act('infHoja', clave, v) + '><span class="inf-card-l">' + l + '</span><b class="tnum">' + escapeHtml(signo ? conSigno(val) : m0(val)) + '</b>' + (cmp.ok ? infChip(val, ref, verde) : '') + '<span class="inf-card-go">' + ic('chevR') + '</span></button>';
+  const cards = '<div class="inf-cards">' + card('ing', 'ing', 'Entró', k.ingresos, cmp.ing, true) + card('gas', 'gas', 'Gastaste', gas, cmp.gas, false) + card('aho', 'aho', 'Apartaste e invertiste', aho, cmp.aho, true) + card('bal', 'bal', 'Balance', bal, cmp.bal, true, true) + '</div>';
+  let frente = '';
+  if (pres) { const pc = pres.total > 0 ? Math.min(100, pres.gasto / pres.total * 100) : 0, pasa = pres.gasto > pres.total + 0.004;
+    frente = '<div class="inf-sec"><div class="inf-sec-t">' + ic('target') + 'Frente a tu presupuesto ' + infoI('Cuento solo lo gastado en las categorías que tienen presupuesto.') + '</div><div class="card inf-cmp-c"><div class="inf-cmp"><div class="inf-cmp-h"><span>Gastaste <b class="tnum">' + escapeHtml(m0(pres.gasto)) + '</b> de <b class="tnum">' + escapeHtml(m0(pres.total)) + '</b> previstos</span></div>' +
+      '<div class="inf-cmp-b" role="img" aria-label="' + Math.round(pc) + ' % del presupuesto"><i class="' + (pasa ? 'pasa' : '') + '" style="width:' + pc.toFixed(1) + '%"></i></div>' + (pres.pasadas.length ? '<small>' + pres.pasadas.slice(0, 3).map((f) => escapeHtml(f.c) + ' +' + escapeHtml(m0(f.v - f.pres))).join(' · ') + '</small>' : '<small>Dentro de tus topes.</small>') + '</div></div></div>'; }
+  else if (cmp.ok) frente = '<div class="inf-sec"><div class="inf-sec-t">' + ic('comparar') + 'Frente a ' + escapeHtml(cmp.rot) + ' ' + infoI('Es la media de los ' + (P.tipo === 'semana' ? 'semanas' : P.tipo === 'mes' ? 'meses' : P.tipo === 'trimestre' ? 'trimestres' : 'periodos') + ' anteriores ya cerrados y con apuntes. Si pones presupuesto a tus categorías, comparo con él.') + '</div><div class="card inf-cmp-c">' +
+    infFilaCmp('Entró', k.ingresos, cmp.ing, true, 'ing') + infFilaCmp('Gastaste', gas, cmp.gas, false, 'gas') + infFilaCmp('Apartaste e invertiste', aho, cmp.aho, true, 'aho') + '</div></div>';
+  else if (!(P.tipo === 'anio' && P.enCurso)) frente = '<div class="inf-sec"><div class="inf-sec-t">' + ic('comparar') + 'Frente a tu media</div><div class="card inf-cmp-c"><p class="inf-vacio">Aún no tengo ' + INF_NOM_PER[P.tipo] + ' anteriores para comparar.</p></div></div>';
+  const tener = A.notas.concat(A.sig), cuenta = tener.length ? '<div class="inf-sec"><div class="inf-sec-t">' + ic('alert') + 'Qué tener en cuenta</div><div class="card inf-tener">' + tener.map((tx, i) => '<div class="bal-lin"><span class="bal-lin-ic">' + ic(i < A.notas.length ? 'alert' : 'calendar') + '</span><span>' + escapeHtml(tx) + '</span></div>').join('') + '</div></div>' : '';
+  return cab + hero + cards + frente + cuenta + infoSola('Cómo se hace', 'Hecho en tu móvil con lo que has apuntado en la app. Describe tus números; no es asesoramiento financiero.') +
+    '<button class="btn ghost block" ' + act('infMovs', infPer(P)) + '>' + ic('list') + ' Ver los movimientos</button>' + antes;
+}
+const INF_NOM_PER = { semana: 'semanas', mes: 'meses', trimestre: 'trimestres', anio: 'años' };
+/* ---- las hojas visuales de cada tarjeta ---- */
+function infVolverHtml(clave) { return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('infVer', clave) + '>' + ic('chevL') + ' Informe</button>'; }
+function infLeyenda(partes, total) {
+  return '<div class="inf-ley">' + partes.map((p) => '<div class="inf-ley-f"><i style="background:' + p.color + '"></i><span>' + escapeHtml(p.l) + '</span><b class="tnum">' + escapeHtml(moneyShort(p.v)) + '</b><small class="tnum">' + (total > 0 ? Math.round(p.v / total * 100) : 0) + ' %</small></div>').join('') + '</div>';
+}
+// como mucho 6 colores: las 5 mayores y «Otras»
+function infPartes(mapa, colorDe) {
+  const ents = Object.entries(mapa).filter((e) => e[1] > 0.004).sort((a, b) => b[1] - a[1]), total = ents.reduce((a, e) => a + e[1], 0);
+  const trozo = ([n, v]) => ({ n, l: n, v, color: colorDe(n) });
+  const partes = ents.length <= 6 ? ents.map(trozo) : ents.slice(0, 5).map(trozo).concat([{ n: 'Otras', l: 'Otras', v: ents.slice(5).reduce((a, e) => a + e[1], 0), color: COLOR_OTRAS }]);
+  return { partes, total };
+}
+function infAnillo(partes, total, centro) {
+  const R = 54, C = 2 * Math.PI * R; let ini = 0;
+  const arcos = partes.map((p) => { const len = p.v / total * C, el = '<circle cx="70" cy="70" r="54" fill="none" stroke="' + p.color + '" stroke-width="16" stroke-dasharray="' + Math.max(0.5, len - (partes.length > 1 ? 1.6 : 0)).toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-ini).toFixed(2) + '"/>'; ini += len; return el; }).join('');
+  return '<svg class="inf-anillo" viewBox="0 0 140 140" role="img" aria-label="Reparto por categoría"><circle cx="70" cy="70" r="54" fill="none" class="inf-an-fondo" stroke-width="16"/><g transform="rotate(-90 70 70)">' + arcos + '</g>' +
+    '<text x="70" y="70" text-anchor="middle" class="inf-an-v">' + escapeHtml(centro[0]) + '</text><text x="70" y="88" text-anchor="middle" class="inf-an-s">' + escapeHtml(centro[1]) + '</text></svg>';
+}
+function infBarraApilada(partes, total) { return '<div class="inf-apil" role="img" aria-label="Reparto">' + partes.map((p) => '<i style="width:' + (p.v / total * 100).toFixed(1) + '%;background:' + p.color + '"></i>').join('') + '</div>'; }
+function infHojaTitulo(P, t, valor, cls) { return '<h2>' + t + '</h2><p class="inf-hoja-sub">' + escapeHtml(P.titulo) + '</p><div class="inf-hoja-v tnum ' + (cls || '') + '">' + escapeHtml(valor) + '</div>'; }
+function infHojaHtml(clave, vista) {
+  const P = infPeriodo(clave), k = P.k, cmp = infMedia(P), per = infPer(P), gas = infGasto(k), aho = k.ahorro + k.inversion;
+  const ver = (tipo, txt) => '<button class="btn ghost block" ' + act('infIr', tipo, per) + '>' + ic('list') + ' ' + txt + '</button>';
+  const cabeza = infVolverHtml(clave);
+  if (vista === 'ing') {
+    const { partes, total } = infPartes(infCatMapa(k.movs, ['Ingreso']), colorCat);
+    return cabeza + infHojaTitulo(P, 'Lo que entró', m0(k.ingresos), 'ing') + (total > 0 ? '<div class="card inf-h-c"><div class="inf-h-t">De dónde vino</div>' + infBarraApilada(partes, total) + infLeyenda(partes, total) + '</div>' : '<p class="inf-vacio">No apuntaste ingresos.</p>') +
+      (cmp.ok ? '<div class="card inf-h-c"><div class="inf-h-t">Frente a ' + escapeHtml(cmp.rot) + '</div>' + infFilaCmp('Entró', k.ingresos, cmp.ing, true, 'ing') + '</div>' : '') + ver('Ingreso', 'Ver los ingresos');
+  }
+  if (vista === 'gas') {
+    const mapa = infCatMapa(k.movs), { partes, total } = infPartes(mapa, colorCat), pres = infPresupuesto(P);
+    const sube = cmp.ok ? Object.keys(mapa).map((n) => ({ n, v: mapa[n], b: cmp.cats[n] || 0, d: mapa[n] - (cmp.cats[n] || 0) })).filter((x) => x.d >= 10).sort((a, b) => b.d - a.d).slice(0, 3) : [];
+    return cabeza + infHojaTitulo(P, 'Lo que gastaste', m0(gas), 'gas') + (total > 0 ? '<div class="card inf-h-c inf-h-anillo">' + infAnillo(partes, total, [moneyShort(total), 'gastado']) + infLeyenda(partes, total) + '</div>' : '<p class="inf-vacio">No gastaste nada.</p>') +
+      (sube.length ? '<div class="card inf-h-c"><div class="inf-h-t">Lo que más subió ' + infoI('Frente a ' + escapeHtml(cmp.rot) + '.') + '</div>' + sube.map((x) => '<div class="inf-sube"><span><i style="background:' + colorCat(x.n) + '"></i>' + escapeHtml(x.n) + '</span><b class="tnum">+' + escapeHtml(m0(x.d)) + '</b><small class="tnum">' + escapeHtml(m0(x.v)) + (x.b > 0.004 ? ' · media ' + escapeHtml(m0(x.b)) : '') + '</small></div>').join('') + '</div>' : '') +
+      (pres ? '<div class="card inf-h-c"><div class="inf-h-t">Tus presupuestos</div>' + pres.filas.map((f) => { const pc = Math.min(100, f.v / f.pres * 100), pasa = f.v > f.pres + 0.004; return '<div class="inf-cmp"><div class="inf-cmp-h"><span>' + escapeHtml(f.c) + '</span><b class="tnum">' + escapeHtml(m0(f.v)) + '</b><span class="inf-de">de ' + escapeHtml(m0(f.pres)) + '</span></div><div class="inf-cmp-b" role="img" aria-label="' + Math.round(f.v / f.pres * 100) + ' %"><i class="' + (pasa ? 'pasa' : '') + '" style="width:' + pc.toFixed(1) + '%"></i></div></div>'; }).join('') + '</div>' : '') +
+      (cmp.ok ? '<div class="card inf-h-c"><div class="inf-h-t">Frente a ' + escapeHtml(cmp.rot) + '</div>' + infFilaCmp('Gastaste', gas, cmp.gas, false, 'gas') + '</div>' : '') + ver('_gastos', 'Ver los gastos');
+  }
+  if (vista === 'aho') {
+    const mapa = infCatMapa(k.movs, ['Ahorro', 'Inversión']), ents = Object.entries(mapa).filter((e) => e[1] > 0.004).sort((a, b) => b[1] - a[1]), max = ents.length ? ents[0][1] : 1;
+    let metas = {}; try { metasStats().forEach((r) => { metas[normName(r.nombre)] = r; }); } catch (e) { metas = {}; }
+    return cabeza + infHojaTitulo(P, 'Lo que apartaste e invertiste', m0(aho), 'aho') + (k.ingresos > 0.005 ? '<p class="inf-hoja-sub">Es el ' + Math.round(aho / k.ingresos * 100) + ' % de lo que entró.</p>' : '') +
+      (ents.length ? '<div class="card inf-h-c">' + ents.map(([n, v]) => { const r = metas[normName(n)]; return '<div class="inf-cmp"><div class="inf-cmp-h"><span>' + escapeHtml(n) + '</span><b class="tnum">' + escapeHtml(m0(v)) + '</b></div><div class="inf-cmp-b" role="img" aria-label="' + escapeHtml(n + ': ' + m0(v)) + '"><i class="aho" style="width:' + (v / (max * 1.05) * 100).toFixed(1) + '%"></i></div>' + (r && r.obj > 0 ? '<small>Llevas ' + escapeHtml(m0(Math.max(0, r.valor))) + ' de ' + escapeHtml(m0(r.obj)) + '</small>' : '') + '</div>'; }).join('') + '</div>' : '<p class="inf-vacio">No apartaste ni invertiste nada.</p>') +
+      (cmp.ok ? '<div class="card inf-h-c"><div class="inf-h-t">Frente a ' + escapeHtml(cmp.rot) + '</div>' + infFilaCmp('Apartaste e invertiste', aho, cmp.aho, true, 'aho') + '</div>' : '') + ver('_ahorro', 'Ver lo apartado');
+  }
+  // balance: la cascada y los últimos periodos
+  const base = Math.max(k.ingresos, gas + aho + k.deuda, 1), pw = (x) => (Math.max(0, x) / base * 100).toFixed(1);
+  const f = (cls, l, v, signo) => '<div class="inf-cas ' + cls + '"><span>' + l + '</span><span class="inf-cas-b"><i style="width:' + pw(v) + '%"></i></span><b class="tnum">' + escapeHtml((v > 0.004 ? signo : '') + m0(v)) + '</b></div>';
+  const cascada = '<div class="card inf-h-c"><div class="inf-h-t">Cómo sale</div>' + f('ing', 'Entró', k.ingresos, '') + f('gas', 'Gastaste', gas, '−') + f('aho', 'Apartaste e invertiste', aho, '−') + (k.deuda > 0.004 ? f('deu', 'Pagaste de deudas', k.deuda, '−') : '') +
+    '<div class="inf-cas bal"><span>Balance</span><span class="inf-cas-b"><i class="' + (k.disponible < 0 ? 'neg' : 'pos') + '" style="width:' + pw(Math.abs(k.disponible)) + '%"></i></span><b class="tnum ' + (k.disponible >= 0.005 ? 'pos' : k.disponible <= -0.005 ? 'neg' : '') + '">' + escapeHtml(conSigno(k.disponible)) + '</b></div></div>';
+  const cadena = [P]; for (let i = 0, c = P.ant, n = P.tipo === 'anio' ? 3 : 5; i < n; i++) { const Q = infPeriodo(c); cadena.unshift(Q); c = Q.ant; }
+  const maxA = Math.max(1, ...cadena.map((Q) => Math.abs(Q.k.disponible))), etq = (Q) => Q.tipo === 'mes' ? MESES_ABR[Q.m - 1] : Q.tipo === 'semana' ? fechaCortaU(Q.desde) : Q.tipo === 'trimestre' ? 'T' + Q.q : String(Q.y);
+  const hist = '<div class="card inf-h-c"><div class="inf-h-t">Tu balance, uno tras otro</div><div class="inf-hist" role="img" aria-label="Balance de los últimos periodos">' + cadena.map((Q) => { const b = Q.k.movs.length ? Q.k.disponible : 0, h = Math.abs(b) / maxA * 100;
+    return '<div class="inf-hist-c' + (Q.clave === P.clave ? ' act' : '') + '"><div class="inf-hist-m"><span class="arr">' + (b > 0.005 ? '<i class="pos" style="height:' + h.toFixed(1) + '%"></i>' : '') + '</span><span class="abj">' + (b < -0.005 ? '<i class="neg" style="height:' + h.toFixed(1) + '%"></i>' : '') + '</span></div><small>' + escapeHtml(etq(Q)) + '</small></div>'; }).join('') + '</div></div>';
+  return cabeza + infHojaTitulo(P, 'Tu balance', conSigno(k.disponible), k.disponible >= 0.005 ? 'pos' : k.disponible <= -0.005 ? 'neg' : '') + cascada + hist + (cmp.ok ? '<div class="card inf-h-c"><div class="inf-h-t">Frente a ' + escapeHtml(cmp.rot) + '</div><p class="inf-vacio">Tu media: ' + escapeHtml(conSigno(cmp.bal)) + '.</p></div>' : '') + ver('Todos', 'Ver los movimientos');
 }
 function infAjustesHtml() {
   const C = infCfg(), pend = infPendientes(), vistos = C.vistos;
@@ -13913,6 +14095,9 @@ const H = {
   infAbrir: () => { verBadge('informes'); const c = infPendientes()[0] || infUltimo('mes'); H.infVer([c]); },
   infVer: ([c]) => { if (!c) return; FORM = { kind: 'informe', clave: c }; if ($('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando) updateSheet(infHtml(c)); else openSheet(infHtml(c)); if (infPeriodo(c).cerrado) { infMarcarVisto(c); if (S.tab === 'inicio') render(); } },
   infTipo: ([t]) => H.infVer([infUltimo(t)]),
+  infHoja: ([c, v]) => { if (!c || !v) return; FORM = { kind: 'informe', clave: c, vista: v }; updateSheet(infHojaHtml(c, v)); const sh = $('#sheetBackdrop .sheet'); if (sh) sh.scrollTop = 0; sentir('tic'); },
+  infIr: ([tipo, per]) => { closeSheet(); irMovs({ tipo: tipo || 'Todos', periodo: per }); },
+  infVersion: ([n]) => { S.verAnterior = Object.assign({}, S.verAnterior, { informe: Number(n) || 0 }); sentir('tic'); if (FORM && FORM.kind === 'informe' && FORM.clave) { FORM = { kind: 'informe', clave: FORM.clave }; updateSheet(infHtml(FORM.clave)); } },
   infAjustes: () => { if (!FORM) return; FORM.kind = FORM.kind === 'informe' ? 'informe' : FORM.kind; updateSheet(infAjustesHtml()); },
   infOn: ([t], el) => { const C = cfg().informes || {}, v = el && typeof el.checked === 'boolean' ? el.checked : !infCfg().on[t]; saveConfig({ informes: Object.assign({}, C, { on: Object.assign({}, infCfg().on, { [t]: v }) }) }); sentir('tic'); updateSheet(infAjustesHtml()); render(); },
   infDescartar: ([c]) => { infMarcarVisto(c); sentir('tic'); render(); },
