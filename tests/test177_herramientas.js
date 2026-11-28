@@ -9,7 +9,7 @@ const YO = 'u-yo';
   const cfg0 = { app: { nombre: 'Prueba', compararVersiones: false, categoriasGasto: [{ nombre: 'Ocio', presupuesto: 80 }],
     ahorro: [{ nombre: 'Viaje', objetivo: 900 }], deudas: [{ nombre: 'Coche', objetivo: 3000 }], trayecto: { prod: 'g95' },
     inicioWidgets: [{ t: 'asivas' }, { t: 'presu' }, { t: 'meta', o: { key: '*' } }, { t: 'deuda' }] }, meta: { onboarded: true } };
-  const e = await abrir({ version: { tu: 0, crear: 0 }, cfg: JSON.parse(JSON.stringify(cfg0)),
+  const e = await abrir({ version: { tu: 0, crear: 1 }, cfg: JSON.parse(JSON.stringify(cfg0)),
     grupos: [{ id: 'g1', nombre: 'Piso', tipo: 'grupo', edicion: 'todos', created_at: '2026-01-01', creado_por: YO }], miembros: [{ grupo_id: 'g1', user_id: YO, nombre: 'Prueba', rol: 'admin' }, { grupo_id: 'g1', user_id: 'u-ana', nombre: 'Ana', rol: 'miembro' }],
     movs: [{ id: 'm1', tipo: 'Gasto', categoria: 'Ocio', importe: 30, fecha: hoy() }, { id: 'm2', tipo: 'Inversión', categoria: 'Fondos', importe: 100, fecha: diasAtras(3) }],
     tareas: [{ id: 't1', nombre: 'Llamar al casero', estado: 'Pendiente', fechaLimite: hoy(), prioridad: 'Media' }] });

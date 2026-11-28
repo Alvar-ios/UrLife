@@ -64,6 +64,7 @@ const hayAntes = (e) => [...e.doc.querySelectorAll('[data-click]')].filter((x) =
   e = await abrir({ cfg: { app: { nombre: 'Marta', compararVersiones: false, categoriasGasto: [{ nombre: 'Otros' }] }, meta: { onboarded: true } } });
   const ed = buscar(e, 'iwEditar', null, 'app');
   ok(!!ed, 'en Inicio está «Editar Inicio»');
+  e.A.S.config.compararVersiones = true; e.A.S.verAnterior.inicioEd = 1; // 28/11: este bloque prueba la hoja de siempre («Antes»); la nueva, en test220
   ed.click(); await sleep(60);
   const antes = e.A.form().lista.map((x) => x.t);
   ok(antes.length > 1, 'la hoja enseña las piezas de Inicio (' + antes.join(', ') + ')');

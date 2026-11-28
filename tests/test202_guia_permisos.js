@@ -14,7 +14,7 @@ const arrancar = async (est, opts) => {
       huella: async () => 'f'.repeat(64), deshechos: async () => [] },
       notif: { permiso: async () => perm, pedir: async () => { reg.pedir++; perm = 'granted'; return perm; }, programar: async () => 0, ahora: async () => 0 } };
   };
-  const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 0 }, pre, session: { user: { id: 'u-1', email: 't@t.com' } }, cfg: { app: Object.assign({ compararVersiones: false }, (opts && opts.app) || {}), meta: { onboarded: true } } });
+  const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 1 }, pre, session: { user: { id: 'u-1', email: 't@t.com' } }, cfg: { app: Object.assign({ compararVersiones: false }, (opts && opts.app) || {}), meta: { onboarded: true } } });
   e.w.Data.moviles = { registrar: async (p) => p.id, quitar: async () => {}, quitarTodos: async () => {} };
   await e.w.__APP__.main(); await sleep(2300);
   e.reg = reg; e.A = e.w.__APP__; e.H = e.w.__APP__.H; e.txt = () => e.w.document.body.textContent; e.hoja = () => ((e.w.document.querySelector('#sheetHost') || {}).textContent || '');

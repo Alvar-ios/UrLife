@@ -13,7 +13,7 @@ ICONOS.trendUp = ICONOS.piggy; // ICONS.trendUp = ICONS.piggy
 
 (async () => {
   // ---------- 1. Reglas de siempre: mismas fechas con los festivos apagados ----------
-  const e = makeEnv({ version: { tu: 1, crear: 0, dinero: 0 }, cfg: { app: { nombre: 'Ana Ruiz', categoriasGasto: [{ nombre: 'Otros' }], cuentas: [{ id: 'c1', nombre: 'Banco A', saldo: 100, ts: 1 }, { id: 'c2', nombre: 'Banco B', saldo: 50, ts: 1 }],
+  const e = makeEnv({ version: { tu: 1, crear: 1, dinero: 0 }, cfg: { app: { nombre: 'Ana Ruiz', categoriasGasto: [{ nombre: 'Otros' }], cuentas: [{ id: 'c1', nombre: 'Banco A', saldo: 100, ts: 1 }, { id: 'c2', nombre: 'Banco B', saldo: 50, ts: 1 }],
     ingresos: ['Nómina'], cobros: [{ nombre: 'Nómina', importe: 1500, regla: { t: 'ultHabil' } }] }, meta: { onboarded: true } }, movs: [] });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, doc = e.doc, sh = () => doc.querySelector('#sheetHost');

@@ -5,7 +5,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
 const errores = []; console.error = (...a) => { errores.push(a.map((x) => { try { return typeof x === 'string' ? x : JSON.stringify(x, Object.getOwnPropertyNames(x || {})) + JSON.stringify((x && x.original) || ''); } catch (e) { return String(x); } }).join(' ')); };
 const PIX = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==';
 (async () => {
-  const e = makeEnv({ version: { juntos: 0 }, cfg: { app: { nombre: 'Lucía' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uYo' } } });
+  const e = makeEnv({ version: { juntos: 1 }, cfg: { app: { nombre: 'Lucía' }, meta: { onboarded: true } }, session: { user: { email: 'a@a.com', id: 'uYo' } } });
   await sleep(150);
   const A = e.w.__APP__, H = A.H, S = A.S, doc = e.doc, sh = () => doc.querySelector('#sheetHost');
   const toastTxt = () => ((doc.querySelector('#toast .toast-txt') || {}).textContent || '');
@@ -56,12 +56,12 @@ const PIX = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgH
   ok(!sh().querySelector('.jv-foto-aj'), '«directo» (persona a persona): no se ofrece foto');
 
   // 5) versión «Antes» de Juntos: no se ofrece cambiarla
-  H.closeSheet([]); await sleep(300); S.verAnterior.juntos = 1;
+  H.closeSheet([]); await sleep(300); S.verAnterior.juntos = 2;
   H.grupoVer(['gD']); await sleep(60);
   ok(!!sh().querySelector('.jv-gcab img.jv-g-foto'), 'versión «Antes» de Juntos: la cabecera también enseña la foto');
   H.grupoAjustes(['gD']); await sleep(60);
   ok(!sh().querySelector('.jv-foto-aj'), 'versión «Antes» de Juntos: no se ofrece poner foto');
-  H.closeSheet([]); await sleep(300); S.verAnterior.juntos = 0;
+  H.closeSheet([]); await sleep(300); S.verAnterior.juntos = 1;
 
   // 6) desde la base de datos: lo raro se descarta y lo bueno se guarda (aserción fuerte)
   S.db.grupos.listar = async () => ({ grupos: [

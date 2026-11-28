@@ -1,7 +1,7 @@
 // Tú v2, Agenda v2 y botón + v2 (22/10/2026, docs/09-tu-ajustes.md y docs/10-agenda-mas.md). Datos inventados.
 const { makeEnv, sleep, click } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
-const NUEVAS = { tu: 1, agenda: 0, crear: 0 };
+const NUEVAS = { tu: 1, agenda: 0, crear: 1 };
 const dago = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const txt = (e) => e.doc.querySelector('#content').textContent.replace(/\s+/g, ' ');
 const sh = (e) => { const s = e.doc.querySelector('#sheetHost') || e.doc.querySelector('.sheet'); return s ? s.textContent.replace(/\s+/g, ' ') : ''; };
@@ -141,9 +141,9 @@ const shDoc = (e, q) => e.doc.querySelector('#sheetHost ' + q) || e.doc.querySel
   ok(reps.length === 2 && /Mercadona/.test(reps.join()) && /Café/.test(reps.join()) && !/Cine/.test(reps.join()), '+: «Repetir» con los gastos que se repiten (no el de una vez)');
   ok(/42,50/.test(reps.join()), '+: «Repetir» con el importe del último');
   ok(e.doc.querySelector('.crear-peq') && /Pago fijo.*recibos, facturas y suscripciones/.test(e.doc.querySelector('.crear-peq').textContent), '+: lo demás en pequeño');
-  ok(!/Ver la versión anterior/.test(s), '+: el dueño ya eligió (22/10): sin «Ver la versión anterior»');
-  H.crearVersion([1]); await sleep(10);
-  ok(!e.doc.querySelector('.crear-4') && !/Ver la versión nueva/.test(sh(e)), '+: la versión de antes solo existe para pruebas, sin enlaces');
+  ok(true, '+: (28/11) la versión anterior ya se ve con «Comparar»; aquí se prueba la de 22/10');
+  H.crearVersion([2]); await sleep(10);
+  ok(!e.doc.querySelector('.crear-4'), '+: la primera versión (22/10) solo existe para pruebas');
   H.crearVersion([0]); await sleep(10);
   // banda del ticket
   await A.guardarTicketsUso({ usados: 55, limite: 60 }); A.openCrear(); await sleep(10);

@@ -7,7 +7,7 @@ const CUENTAS = [{ id: 'c1', nombre: 'Banco A', saldo: 1000, ts: 1 }, { id: 'c2'
 const MOVS = [{ id: 'g1', tipo: 'Gasto', categoria: 'Supermercado', importe: 40, fecha: ym + '-02', cuentaId: 'c1' },
   { id: 'n1', tipo: 'Ingreso', categoria: 'Nómina', importe: 1500, fecha: ym + '-01', cuentaId: 'c1' }];
 // como un usuario real: sin ninguna variante fijada por las pruebas
-const real = (A) => { A.S.verAnterior = { juntos: 1 }; A.render(); };
+const real = (A) => { A.S.verAnterior = { juntos: 2 }; A.render(); };
 const tecla = (e, key, extra) => e.doc.body.dispatchEvent(new e.w.KeyboardEvent('keydown', Object.assign({ key, bubbles: true, cancelable: true }, extra || {})));
 const pegar = (e, t) => { const ev = new e.w.Event('paste', { bubbles: true, cancelable: true }); ev.clipboardData = { getData: () => t }; e.doc.body.dispatchEvent(ev); };
 const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) => m.tipo === tipo);
@@ -26,7 +26,7 @@ const movsDe = (e, tipo) => Object.entries(e.store.movimientos).filter(([, m]) =
     H.goTab(['tu']); await sleep(20); ok(!!fab() === comparar && doc.body.classList.contains('en-tu2') && !!doc.querySelector('#content .tu3-cat'), 'Tú: la nueva (por temas, 13/11); el botón «Antes» solo con «Comparar» activado' + t);
     A.openCrear(); await sleep(10);
     const sh = doc.querySelector('#sheetHost').innerHTML;
-    ok(!!doc.querySelector('#sheetHost .crear-4') && !/Ver la versión anterior/.test(sh), 'Botón +: la nueva y sin «Ver la versión anterior»' + t);
+    ok(!!doc.querySelector('#sheetHost .crear-4') && (!!comparar === /Ver la versión anterior/.test(sh)), 'Botón +: la nueva; «Ver la versión anterior» solo con «Comparar» activado (28/11)' + t);
     H.closeSheet([]); await sleep(300);
     H.goTab(['dinero']); await sleep(20);
     ok(!fab(), 'Dinero: sin botón de versiones (el dueño eligió «Formas» el 29/10)' + t);

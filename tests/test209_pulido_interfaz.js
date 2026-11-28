@@ -4,7 +4,7 @@ const { makeEnv, sleep } = require('./harness.js');
 let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
 const hoy = new Date().toISOString().slice(0, 10);
 (async () => {
-  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 0 }, cfg: { app: { nombre: 'Prueba', ahorro: [{ id: 'h1', nombre: 'Viaje', objetivo: 1000, yaAhorrado: 250 }] }, meta: { onboarded: true } },
+  const e = makeEnv({ version: { tu: 0, agenda: 0, crear: 1 }, cfg: { app: { nombre: 'Prueba', ahorro: [{ id: 'h1', nombre: 'Viaje', objetivo: 1000, yaAhorrado: 250 }] }, meta: { onboarded: true } },
     tareas: [{ id: 't1', nombre: 'Llamar al seguro', estado: 'Pendiente', prioridad: 'Media', fechaLimite: hoy }],
     movs: [{ id: 'm1', tipo: 'Gasto', categoria: 'Supermercado', importe: 12.5, fecha: hoy, descripcion: 'Compra' }] });
   await sleep(250);

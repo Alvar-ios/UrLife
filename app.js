@@ -10,6 +10,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /* ---------------- Iconos (SVG inline, trazo simple) ---------------- */
 const ICONS = {
+  cara1: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 9.4l2.5-.9"/><path d="M16 9.4l-2.5-.9"/><circle cx="9.5" cy="11.6" r=".9" fill="currentColor" stroke="none"/><circle cx="14.5" cy="11.6" r=".9" fill="currentColor" stroke="none"/><path d="M9.3 14.2v1.5"/><path d="M8.4 17.8c1-2.3 6.2-2.3 7.2 0"/></svg>',
+  cara2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="9.4" cy="10.4" r=".9" fill="currentColor" stroke="none"/><circle cx="14.6" cy="10.4" r=".9" fill="currentColor" stroke="none"/><path d="M8.8 16.4c1-1.4 5.4-1.4 6.4 0"/></svg>',
+  cara3: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="9.4" cy="10.4" r=".9" fill="currentColor" stroke="none"/><circle cx="14.6" cy="10.4" r=".9" fill="currentColor" stroke="none"/><path d="M9 15.2h6"/></svg>',
+  cara4: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="9.4" cy="10.4" r=".9" fill="currentColor" stroke="none"/><circle cx="14.6" cy="10.4" r=".9" fill="currentColor" stroke="none"/><path d="M8.8 14.2c1 1.6 5.4 1.6 6.4 0"/></svg>',
+  cara5: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8 10.8c.5-1.1 1.9-1.1 2.4 0"/><path d="M13.6 10.8c.5-1.1 1.9-1.1 2.4 0"/><path d="M7.9 13.6h8.2c-.5 3-2 4-4.1 4s-3.6-1-4.1-4z"/></svg>',
   piggy2: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5c0-3.3 3-5.5 7-5.5 2.6 0 4.6.8 5.8 2.2l2.2-.7-.5 2.8c.6.6 1 1.4 1 2.2v1l-1.8.7a6 6 0 0 1-2.2 2.3V20h-2.5v-1.6h-4V20H7v-2.4a5 5 0 0 1-2.5-4.3Z"/><path d="M10 9.5h3"/><circle cx="16.3" cy="12" r=".8" fill="currentColor" stroke="none"/><path d="M4.6 12.2c-1.4-.2-2-1.1-1.8-2"/></svg>',
   target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>',
   deuda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="12" r="6"/><path d="M8 12h4"/><path d="M17.5 6.5a8 8 0 0 1 0 11"/><path d="m17.5 17.5-.2-2.9M17.5 17.5l-2.8.4"/></svg>',
@@ -1204,6 +1209,7 @@ function render() {
   if (enAgenda) $$('.tabbar [data-tab], .rail [data-tab]').forEach((b) => b.classList.toggle('active', b.getAttribute('data-tab') === 'agenda' && !!b.closest('.tabbar'))); // fase14: si la Agenda tiene pestaña abajo, se marca
   // fase14: la pestaña de la Agenda dice cuántas cosas hay hoy (como el botón de arriba al que sustituye)
   const agT = $('.tabbar [data-tab="agenda"]'); if (agT) { const n = allLoaded() ? agendaHoyN() : 0; agT.classList.toggle('con-cuenta', !!n); agT.setAttribute('aria-label', 'Agenda' + (n ? ', ' + n + (n === 1 ? ' cosa hoy' : ' cosas hoy') : '')); }
+  const jT = $('.tabbar [data-tab="juntos"]'); if (jT) { const n = allLoaded() && juntosV5() ? juntosNuevo().total : 0; jT.classList.toggle('con-cuenta', !!n); jT.setAttribute('aria-label', 'Juntos' + (n ? ', con novedades' : '')); } // 28/11: punto si hay algo nuevo de otros
   const ojo = $('#ojoTb'); if (ojo) ojo.innerHTML = cifrasOcultas() && S.tab !== 'inicio' ? ojoBtnHtml() : ''; // Calidad 10/11: volver a ver las cifras desde cualquier pestaña
   if (cifrasOcultas()) setTimeout(taparCifrasTexto, 0);
   const title = $('#pageTitle'); if (title) title.textContent = S.tab === 'inicio' && ['tareas', 'calendario'].indexOf(S.inicioVista) >= 0 ? 'Agenda' : S.tab === 'tu' && S.tuSub && versionDe('tu') === 'nueva' && TU_RAMAS_N[S.tuSub] ? TU_RAMAS_N[S.tuSub] : TITULOS[S.tab];
@@ -1226,7 +1232,7 @@ function render() {
   if (S._entrando) { S._entrando = false; if (!reduceMotion()) { c.classList.remove('entra'); void c.offsetWidth; c.classList.add('entra'); clearTimeout(render._e); render._e = setTimeout(() => c.classList.remove('entra'), 900); } }
   if (S._aterriza && c.querySelector('.row.aterriza')) S._aterriza = null; // la fila nueva aterriza una sola vez
   if (_agEl || S._agFoco) { S._agFoco = false; const nv = $('#agRapida'); if (nv) { if (_agV) nv.value = _agV; try { nv.focus(); } catch (e) { /* noop */ } } }
-  if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') setTimeout(marcarJuntosVisto, 0); else if ((S._vjFuera = true) && !cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
+  if (S.compartidos && gruposDisponible && gruposDisponible()) { if (S.tab === 'juntos') { if (juntosV5()) juntosVistoIniciar(); setTimeout(marcarJuntosVisto, 0); } else if ((S._vjFuera = true) && !cfg().vistoJuntos && S.compartidos.length) setTimeout(() => { if (!cfg().vistoJuntos) saveConfig({ vistoJuntos: juntosUltimo() || new Date(0).toISOString() }); }, 0); }
   pintarComparar(); pintarPista();
   if (S.tab === 'dinero' && dineroV2()) cabAltoMedir(); // después de «Antes»: ese botón puede bajar la fecha a dos líneas
   limitarBadges(c); animarHero(); animarSegmentados(c); revelarAlVer(c, _ent); iniciarReveladas(c); contarAlVer(c); celebrarMetas();
@@ -1922,11 +1928,12 @@ function fijoHtml() {
 function subFieldHtml(cat, actual) {
   if (!FORM || !(FORM.tipo === 'Gasto' || FORM.tipo === 'Factura')) return '';
   const fijo = FORM.tipo === 'Factura', subs = subcatsDe(cat, fijo);
+  if (apuntarV2() && !fijo) return '<input id="fSub" type="hidden" value="' + escapeHtml(actual || '') + '">'; // 28/11: el «Detalle» se ve como «¿De qué?» (docs/53 B1)
   return '<label>' + (fijo ? '¿Qué recibo es? <span class="hint">· Alquiler, Spotify, luz…</span>' : 'Detalle' + badge('detalle') + ' <span class="hint">· opcional: Uñas, Golf, Mercadona…</span>') + '</label>' +
     (subs.length ? '<div class="chips" id="subChips">' + subs.map((s) => '<button type="button" class="chip ' + (normName(s) === normName(actual) ? 'active' : '') + '" ' + act('pickSub', s) + '>' + escapeHtml(s) + '</button>').join('') + '</div>' : '') +
     '<input id="fSub" type="text" placeholder="' + (fijo ? 'Nombre del recibo' : 'Sin detalle') + '" value="' + escapeHtml(actual || '') + '" ' + onInput('onSubInput') + '>';
 }
-function refrescarSub() { const f = $('#subField'); if (f) { const sub = ($('#fSub') || {}).value || ''; f.innerHTML = subFieldHtml(($('#fCategoria') || {}).value || '', sub); } }
+function refrescarSub() { deQueRefrescar(); const f = $('#subField'); if (f) { const sub = ($('#fSub') || {}).value || ''; f.innerHTML = subFieldHtml(($('#fCategoria') || {}).value || '', sub); } }
 // Aviso al usar una categoría personalizada: puede que los demás no la tengan
 function refrescarCatAviso() {
   const box = $('#catAviso'); if (!box) return;
@@ -1970,17 +1977,57 @@ function tecCampoHtml(T) {
     '<button type="button" class="tec-cifra" id="tecCifra" aria-label="Importe: ' + escapeHtml(tecTxtLeido(T)) + '. Toca para escribirlo" ' + act('tecAbrir') + '>' + tecCifraHtml(T) + '</button>' +
     '<div class="tec-pie' + (T.neg ? ' neg' : '') + '" id="tecPie">' + escapeHtml(tecPieTxt(T)) + '</div><span class="sr-only" id="tecVoz" role="status" aria-live="polite"></span></div>';
 }
-function tecCatsLista(tipo, cat) { const ci = tipo === 'Ingreso' ? categoriasPorTipo('Ingreso') : null, l = (tipo === 'Ingreso' ? (ci.length ? ci : OB_INGRESOS_SERIE) : catsPorUso()).slice(0, 7); if (cat && l.indexOf(cat) < 0) { l.unshift(cat); l.length = Math.min(l.length, 7); } return l; } // la que ya viene elegida (ticket, Repetir) siempre a la vista
+function tecCatsLista(tipo, cat, max) { max = max || 7; const ci = tipo === 'Ingreso' ? categoriasPorTipo('Ingreso') : null, l = (tipo === 'Ingreso' ? (ci.length ? ci : OB_INGRESOS_SERIE) : catsPorUso()).slice(0, max); if (cat && l.indexOf(cat) < 0) { l.unshift(cat); l.length = Math.min(l.length, max); } return l; } // la que ya viene elegida (ticket, Repetir) siempre a la vista
 function tecFechaTxt(iso) { const h = todayISO(); return iso === h ? 'Hoy' : iso === uAdd(h, -1) ? 'Ayer' : fmtDateShort(iso); }
-function tecRapidoHtml(tipo, cat, fecha) {
-  const cu = hayVariasCuentas() ? cuentaPorId(FORM.cuenta) || cuentasCfg()[0] : null;
-  return '<div id="tecRapido"><div class="tec-cats" id="tecCats" role="group" aria-label="Categoría">' + tecCatsLista(tipo, cat).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" ' + act('tecCat', c) + '>' +
+/* 28/11 (docs/53 B2): en un gasto las categorías van solo con icono (5 + «Ver todas»), con el nombre de la elegida debajo */
+function tecCatsSolo(tipo) { return apuntarV2() && (tipo === 'Gasto' || tipo === 'Ingreso'); } // 28/11 (tanda 10): también los ingresos
+function tecCatIcHtml(tipo, c) { return '<span class="chip-cat-ic" style="--cc:' + (tipo === 'Ingreso' ? 'var(--income)' : colorCat(c)) + '" aria-hidden="true">' + ic(iconoCat(tipo === 'Ingreso' ? 'Ingreso' : 'Gasto', c, '')) + '</span>'; }
+function tecCatsInner(tipo, cat) {
+  if (tecCatsSolo(tipo)) return tecCatsLista(tipo, cat, 5).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" aria-label="' + escapeHtml(c) + '" title="' + escapeHtml(c) + '" ' + act('tecCat', c) + '>' + tecCatIcHtml(tipo, c) + '</button>').join('') +
+    '<button type="button" class="tec-cat mas" aria-label="Ver todas las categorías" aria-expanded="false" ' + act('tecCatTodas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span></button>';
+  return tecCatsLista(tipo, cat).map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" aria-pressed="' + (c === cat) + '" ' + act('tecCat', c) + '>' +
       (tipo === 'Ingreso' ? '' : '<span class="chip-cat-ic" style="--cc:' + colorCat(c) + '" aria-hidden="true">' + ic(iconoCat('Gasto', c, '')) + '</span>') + '<span class="tec-cat-n">' + escapeHtml(c) + '</span></button>').join('') +
-      '<button type="button" class="tec-cat mas" ' + act('tecMas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span><span class="tec-cat-n">Más</span></button></div>' +
+    '<button type="button" class="tec-cat mas" ' + act('tecMas') + '><span class="chip-cat-ic" aria-hidden="true">' + ic('more') + '</span><span class="tec-cat-n">Más</span></button>';
+}
+function tecCatsTodasHtml(cat, tipo) { const ci = categoriasPorTipo('Ingreso'), todas = tipo === 'Ingreso' ? (ci.length ? ci : OB_INGRESOS_SERIE) : catsPorUso(); return todas.map((c) => '<button type="button" class="tec-cat' + (c === cat ? ' on' : '') + '" ' + act('tecCat', c) + '>' + tecCatIcHtml(tipo, c) + '<span class="tec-cat-n">' + escapeHtml(c) + '</span></button>').join(''); }
+function tecCatsPintar(c) {
+  const box = $('#tecCats'); if (!box || !tecCatsSolo(FORM && FORM.tipo)) return;
+  box.innerHTML = tecCatsInner(FORM.tipo, c); const n = $('#tecCatSel'); if (n) n.textContent = c || 'Elige una categoría';
+  const t = $('#tecCatTodas'); if (t) { t.hidden = true; t.innerHTML = ''; }
+}
+function tecRapidoHtml(tipo, cat, fecha, dq) {
+  const cu = hayVariasCuentas() ? cuentaPorId(FORM.cuenta) || cuentasCfg()[0] : null, solo = tecCatsSolo(tipo), v2 = apuntarV2();
+  return '<div id="tecRapido"><div class="tec-cats' + (solo ? ' solo' : '') + '" id="tecCats" role="group" aria-label="Categoría">' + tecCatsInner(tipo, cat) + '</div>' +
+    (solo ? '<div class="tec-cat-sel" id="tecCatSel" aria-live="polite">' + escapeHtml(cat || 'Elige una categoría') + '</div><div class="tec-todas" id="tecCatTodas" hidden></div>' : '') + (dq || '') +
     '<div class="tec-linea"><label class="chip tec-fecha">' + ic('calendar') + '<span id="tecFechaTxt">' + escapeHtml(tecFechaTxt(fecha)) + '</span><input type="date" id="tecFecha" aria-label="Fecha" value="' + escapeHtml(fecha) + '" ' + onChange('tecFecha') + '></label>' +
       (cu ? '<button type="button" class="chip tec-cuenta" id="tecCuenta" aria-label="Cuenta: ' + escapeHtml(cu.nombre) + '. Toca para cambiarla" ' + act('tecCuenta') + '><span class="dot" style="background:' + colorCuenta(cu) + '"></span>' + escapeHtml(cu.nombre) + '</button>' : '') +
-      (tipo === 'Gasto' && compartidosDisponible() ? '<button type="button" class="chip tec-comp" ' + act('tecCompartir') + '>' + ic('users') + 'Compartir</button>' : '') +
+      (!v2 && tipo === 'Gasto' && compartidosDisponible() ? '<button type="button" class="chip tec-comp" ' + act('tecCompartir') + '>' + ic('users') + 'Compartir</button>' : '') +
       '<button type="button" class="link tec-masdet" ' + act('tecMas') + '>Más detalles ' + ic('chevD') + '</button></div></div>';
+}
+/* 28/11 (docs/53 B1): un solo campo «¿De qué?». Elegir una sugerencia de la categoría guarda detalle (subcategoría) y descripción; escribir algo nuevo, solo descripción */
+function deQueSugs(cat, texto) {
+  const k = normName(texto || ''), fijo = FORM && FORM.tipo === 'Factura', c = {}, out = [];
+  subcatsDe(cat, fijo).forEach((x) => { out.push(x); });
+  const kc = normName(cat || '');
+  movsEfectivos().forEach((m) => { if ((m.tipo === 'Gasto' || m.tipo === 'Factura' || m.tipo === 'Ingreso') && m.descripcion && (!kc || normName(m.categoria) === kc)) c[m.descripcion.trim()] = (c[m.descripcion.trim()] || 0) + 1; });
+  Object.keys(c).sort((a, b) => c[b] - c[a]).forEach((x) => { if (!out.some((o) => normName(o) === normName(x))) out.push(x); });
+  return out.filter((x) => normName(x) !== k && (!k || normName(x).indexOf(k) >= 0)).slice(0, 6);
+}
+function deQueSugHtml() {
+  const cat = (($('#fCategoria') || {}).value || '').trim(), t = (($('#fDesc') || {}).value || '');
+  const l = deQueSugs(cat, t); if (!l.length) return '';
+  return l.map((x) => '<button type="button" class="chip tappable" ' + act('deQuePick', x) + '>' + escapeHtml(x) + '</button>').join('');
+}
+const DESC_EN_DET = ['Ahorro', 'Inversión', 'Deuda', 'Factura']; // en estos la nota («¿De qué?») va en «Más detalles»
+function deQueSitio() {
+  if (!apuntarV2() || !FORM || FORM.kind !== 'mov') return;
+  const q = $('#deQueField'); if (!q || q.closest('#tecRapido')) return;
+  const d = $(DESC_EN_DET.indexOf(FORM.tipo) >= 0 ? '#deQueDet' : '#deQueSlot'); if (d && !d.contains(q)) d.appendChild(q);
+}
+function deQueRefrescar() { const b = $('#deQueSug'); if (b) b.innerHTML = deQueSugHtml(); }
+function deQueHtml(ex, pre) {
+  const v = ex ? (ex.descripcion || ex.subcategoria || '') : (pre.descripcion || '');
+  return '<div class="field de-que" id="deQueField"><label for="fDesc">¿De qué?</label><input id="fDesc" type="text" autocomplete="off" placeholder="Mercadona, Golf, uñas…" value="' + escapeHtml(v) + '" ' + onInput('onDeQueInput') + '><div class="chips de-que-sug" id="deQueSug"></div><div id="reglaBox"></div></div>';
 }
 function tecOkLbl(T) { return T.tecla === 'guardar' ? (T.etiqueta || 'Guardar') : 'Hecho'; }
 function tecladoHtml(T) {
@@ -2034,11 +2081,13 @@ function tecOk() {
 }
 function tecAbrirTeclado() { const T = FORM && FORM.tec; if (!T) return; T.on = true; const t = $('#tec'); if (t) t.hidden = false; tecSync(); }
 function tecCerrar() { const T = FORM && FORM.tec; if (!T) return; T.on = false; T.reemplazar = false; const t = $('#tec'); if (t) t.hidden = true; tecSync(); }
-function tecMasDetalles() {
+function tecMasDetalles(sinDet) { // sinDet: se abre el cuerpo (compartir, ticket, otra moneda) pero no «Más detalles»
   const T = FORM && FORM.tec; if (!T) return;
   T.corta = false; T.tecla = 'hecho';
   const m = $('#mfMas'); if (m) m.hidden = false;
+  const q = $('#deQueField'), sl = $('#deQueSlot'); if (q && sl && !sl.contains(q)) sl.appendChild(q);
   const r = $('#tecRapido'); if (r) r.remove();
+  deQueSitio(); if (!sinDet && apuntarV2() && FORM.kind === 'mov') { FORM.mfDet = true; const d = $('#mfDet'); if (d) d.hidden = false; const b = $('#mfDetBtn'); if (b) b.hidden = true; } // quien pide «Más detalles» los ve todos
   const a = $('#sheetHost .sheet .actions'); if (a) a.hidden = false;
   tecCerrar(); sentir('tic');
 }
@@ -2102,18 +2151,23 @@ function openMovForm(id, pre) {
   const metodos = cfg().metodosPago || [];
   const tec = tecladoOn(), impIni = ex ? ex.importe : pre.importe, corta = tec && !ex && !comp && !compDest && (tipoIni === 'Gasto' || tipoIni === 'Ingreso');
   if (tec) FORM.tec = { on: !ex, txt: tecTxtDe(impIni), neg: tecNum(impIni) < 0, reemplazar: !!tecTxtDe(impIni), corta, tecla: corta ? 'guardar' : 'hecho' };
-  const fechaIni = ex ? ex.fecha : (pre.fecha || todayISO()), catIni = ex ? ex.categoria : (pre.categoria || '');
+  const v2 = apuntarV2(), fechaIni = ex ? ex.fecha : (pre.fecha || todayISO()), catIni = ex ? ex.categoria : (pre.categoria || '');
+  // 28/11 (docs/53 tanda 10): lo de menos va en «Más detalles»: el tipo (al crear), la nota de ahorros, inversiones, deudas y pagos fijos, y el método de pago
+  const tipoEnDet = v2 && !ex && !comp;
+  const tipoHtml = '<label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
+    TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + tipoTxt(t) + '</button>').join('') + '</div>';
+  const metodoHtml = '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
+    metodos.concat(ex && ex.metodoPago && metodos.indexOf(ex.metodoPago) < 0 ? [ex.metodoPago] : []).map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>'; // barrido 08/11: no se pierde la que ya no está en tu lista
+  FORM.mfDet = v2 && !!(ex && (ex.metodoPago || (DESC_EN_DET.indexOf(tipoIni) >= 0 && ex.descripcion)));
   const antesChip = compararOn() && !VERSIONES.importe.cerrada && !comp && !compDest ? '<button type="button" class="tec-antes" ' + act('tecVersion', tec ? 1 : 0) + '>' + ic('swap') + (tec ? 'Antes' : 'Teclado nuevo') + '</button>' : '';
   openSheet(
     '<div class="handle"></div><div class="tec-cab"><h2 id="movFormTit">' + (comp ? 'Gasto compartido' : ex ? 'Editar movimiento' : tituloNuevoMov(tipoIni)) + '</h2>' + antesChip + '</div>' +
     (!ex && !compDest && ticketsDisponible() && ticketsUso().quedan !== 0 ? '<button type="button" class="comp-toggle tk-btn" ' + act('ticketFoto') + '>' + ic('camera') + '<span>Leer un ticket con una foto' + (ticketsPocos() ? ' · quedan ' + ticketsUso().quedan : '') + '</span>' + badge('ticket') + '</button>' : '') +
     (ex && !comp ? '<div class="edit-aviso">Estás cambiando un movimiento que ya existe. <button type="button" class="link" ' + act('movDuplicar', ex.id) + '>Apuntar uno nuevo igual</button></div>' : '') +
-    (ex && !comp && compartidosDisponible() ? '<button type="button" class="btn sm ghost comp-arriba" id="compArriba"' + (TIPOS_COMPARTIBLES.indexOf(ex.tipo) >= 0 ? '' : ' hidden') + ' ' + act('compOnTop') + '>' + ic('users') + ' Compartir este gasto</button>' : '') +
-    (tec ? tecCampoHtml(FORM.tec) + monBoxMov(ex, comp, tipoIni) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni) : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
+    (!comp && compartidosDisponible() && (ex || (apuntarV2() && !compDest)) ? '<button type="button" class="btn sm ghost comp-arriba' + (apuntarV2() ? ' block-v2' : '') + '" id="compArriba"' + (TIPOS_COMPARTIBLES.indexOf(tipoIni) >= 0 ? '' : ' hidden') + ' ' + act('compOnTop') + '>' + ic('users') + ' <span id="compArribaTxt">' + compArribaTxt(tipoIni) + '</span></button>' : '') +
+    (tec ? tecCampoHtml(FORM.tec) + monBoxMov(ex, comp, tipoIni) + (corta ? tecRapidoHtml(tipoIni, catIni, fechaIni, v2 ? deQueHtml(ex, pre) : '') : '') + '<div id="mfMas"' + (corta ? ' hidden' : '') + '>'
       : '<div class="field"><label>Importe (' + sym() + ') <span class="hint">· en negativo si es una devolución</span></label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(ex ? ex.importe : pre.importe) + '" ' + onInput('onImporteInput') + '></div>' + monBoxMov(ex, comp, tipoIni) + '<div>') +
-    '<div class="field"><label>Tipo</label><div class="type-toggle" id="tipoToggle">' +
-    TIPOS_FORM.map((t) => '<button type="button" data-t="' + t + '" class="' + (t === tipoIni || (t === 'Gasto' && tipoIni === 'Factura') ? 'active' : '') + '" ' + act('pickTipo', t) + '>' + tipoTxt(t) + '</button>').join('') + '</div>' +
-    '<div id="fijoBox">' + fijoHtml() + '</div></div>' +
+    (v2 ? (tipoEnDet ? '' : '<div class="field">' + tipoHtml + '</div>') + '<div id="fijoBox" class="fijo-box">' + fijoHtml() + '</div>' : '<div class="field">' + tipoHtml + '<div id="fijoBox">' + fijoHtml() + '</div></div>') +
     '<div id="invFields">' + invFieldsHtml(tipoIni, ex ? ex.tipoActivo : '') + '</div>' +
     '<div class="field" id="catField"><label id="catLabel">' + catLabel(tipoIni) + '</label><div id="catChips">' + chipsHtml(tipoIni, ex ? ex.categoria : (pre.categoria || '')) + '</div>' +
     '<input id="fCategoria" type="text" placeholder="…o escribe otra" value="' + escapeHtml(ex ? ex.categoria : (pre.categoria || '')) + '" ' + onInput('onCatInput') + '><div id="catAviso"></div></div>' +
@@ -2121,9 +2175,9 @@ function openMovForm(id, pre) {
     '<div class="field" id="subField">' + subFieldHtml(ex ? ex.categoria : (pre.categoria || ''), ex ? ex.subcategoria : (pre.subcategoria || '')) + '</div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (ex ? ex.fecha : (pre.fecha || todayISO())) + '" ' + onChange('onFechaChange') + '></div>' +
     '<div id="cuentaField">' + cuentaFieldHtml() + '</div>' +
-    '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>' +
-    '<div class="field"><label>Método de pago <span class="hint">· opcional</span></label><select id="fMetodo"><option value="">—</option>' +
-    metodos.concat(ex && ex.metodoPago && metodos.indexOf(ex.metodoPago) < 0 ? [ex.metodoPago] : []).map((mm) => '<option ' + (ex && ex.metodoPago === mm ? 'selected' : '') + '>' + escapeHtml(mm) + '</option>').join('') + '</select></div>' + // barrido 08/11: no se pierde la que ya no está en tu lista
+    (v2 ? '<div id="deQueSlot">' + (corta ? '' : deQueHtml(ex, pre)) + '</div>' : '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="Nota rápida (p. ej. Mercadona)" value="' + escapeHtml(ex ? ex.descripcion : (pre.descripcion || '')) + '" ' + onInput('onDescInput') + '><div id="reglaBox"></div></div>') +
+    (v2 ? '<button type="button" class="link mf-det-btn" id="mfDetBtn" aria-expanded="' + FORM.mfDet + '" aria-controls="mfDet" ' + act('mfDetToggle') + '>' + (FORM.mfDet ? 'Menos detalles' : 'Más detalles') + ' ' + ic('chevD') + '</button>' +
+      '<div id="mfDet" class="mf-det"' + (FORM.mfDet ? '' : ' hidden') + '>' + (tipoEnDet ? '<div class="field">' + tipoHtml + '</div>' : '') + '<div id="deQueDet"></div>' + metodoHtml + '</div>' : metodoHtml) +
     '<div id="artField">' + artFieldHtml(comp || ex) + '</div></div>' +
     // 26/11: «Convertir en traspaso» y «Eliminar» van antes de la barra fija «Cancelar · Guardar» (debajo quedaban medio tapados)
     (comp ? (puedeEditarComp(comp) ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteComp') + '>' + ic('trash') + ' Eliminar gasto compartido</button>' : '<div class="rec-hint" style="margin-top:10px;">' + AVISO_PERMISO + '</div>')
@@ -2132,7 +2186,7 @@ function openMovForm(id, pre) {
     '<div class="actions"' + (corta ? ' hidden' : '') + '><button class="btn ghost block" ' + (FORM.volverGrupo ? act('grupoVer', FORM.volverGrupo) : FORM.volverPersona ? act('personaVer', FORM.volverPersona) : act('closeSheet')) + '>Cancelar</button><button class="btn accent block" ' + act('saveMov') + '>Guardar</button></div>' +
     (tec ? tecladoHtml(FORM.tec) : '')
   );
-  syncCatField(); refrescarCatAviso();
+  syncCatField(); refrescarCatAviso(); if (v2) { deQueRefrescar(); deQueSitio(); }
   if (tec) tecSync();
   if (FORM.activo && FORM.activo.activo_id) cargarPreview();
   if (!ex && !tec) setTimeout(() => { const el = $('#fImporte'); if (el) el.focus(); }, 80);
@@ -2761,6 +2815,7 @@ function grupoAnadirAmigosHtml(g) {
     fuera.map((a) => '<button type="button" class="chip" ' + act('grupoAnadir', g.id, a.uid) + '>' + ic('plus') + ' ' + escapeHtml(a.nombre) + '</button>').join('') + '</div></div>';
 }
 async function abrirGrupo(id) {
+  juntosVioGrupo(id);
   const prev = FORM && ((FORM.kind === 'grupo' && FORM.id === id) || (FORM.kind === 'saldar' && FORM.gid === id)) ? FORM : null;
   const deVista = !prev && FORM && (FORM.kind === 'hist' || FORM.kind === 'origen') && FORM.gid === id ? FORM.grupoTab || '' : ''; // 23/11: de Historial o «¿De dónde sale?», a la pestaña de la que venías
   FORM = { kind: 'grupo', id, invitaciones: [], ajustes: !!(prev && prev.kind === 'grupo' && prev.ajustes), grupoTab: prev ? prev.grupoTab : (deVista || S._grupoTabVolver || ''), temaVer: prev && prev.kind === 'grupo' ? prev.temaVer : (S._temaVolver && S._temaVolver.gid === id ? S._temaVolver.tid : '') };
@@ -3068,11 +3123,27 @@ function compCambiarModo(modo) {
     cp.vals = {}; if (r.reparto) ms.forEach((m) => { cp.vals[m.uid] = r.reparto[m.uid] ? String(r.reparto[m.uid]) : ''; });
   } else if (r.reparto) { cp.incl = {}; ms.forEach((m) => { cp.incl[m.uid] = !!r.reparto[m.uid]; }); }
 }
+/* 28/11 (docs/53 tanda 10): «Con», «Pagó» y el reparto con caras, no solo con texto. Lo anterior sigue en «Antes» (VERSIONES.apuntar) */
+function destCaraHtml(d) {
+  if (d.k.indexOf('u:') === 0) return caraHtml(d.k.slice(2), d.label);
+  const g = grupoDe(d.k.slice(2)), o = g && !d.grupo ? otroDe(g) : null;
+  return o ? caraHtml(o.user_id, d.label) : grupoIcHtml(g || { nombre: d.label }, 'cv-g');
+}
+function nombreCorto(n, yo) { return yo ? 'Yo' : escapeHtml(String(n || '').split(' ')[0]); }
+function conCarasHtml(ds, sel, accion, ctx) {
+  return '<div class="cr-caras cv-con" role="group" aria-label="Con quién">' + ds.map((d) => '<button type="button" class="cr-cara cv-dest' + (sel === d.k ? ' on' : '') + '" aria-pressed="' + (sel === d.k) + '" title="' + escapeHtml(d.label) + '" ' + act(accion, d.k) + '>' + destCaraHtml(d) + '<span>' + escapeHtml(d.label) + '</span></button>').join('') +
+    '<button type="button" class="cr-cara cv-nueva" ' + act('invAbrir', ctx) + '><span class="avatar cara cv-mas" aria-hidden="true">' + ic('plus') + '</span><span>Otra persona</span></button></div>';
+}
+function pagoCarasHtml(ms, sel, yo) {
+  return '<div class="cr-caras cv-pago" role="group" aria-label="Quién pagó">' + ms.map((m) => '<button type="button" class="cr-cara' + (sel === m.uid ? ' on' : '') + '" aria-pressed="' + (sel === m.uid) + '" ' + act('compPagador', m.uid) + '>' + caraHtml(m.uid, m.nombre) + '<span>' + nombreCorto(m.nombre, m.uid === yo) + '</span></button>').join('') + '</div>';
+}
+function compArribaTxt(tipo) { const t = TIPO_OBJ[tipo]; return t === 'ahorro' ? 'Aportar a una meta compartida' : t === 'deuda' ? 'Pagar una deuda compartida' : 'Compartir este gasto'; }
 function compFieldHtml() {
   if (!FORM || FORM.kind !== 'mov' || !compartidosDisponible()) return '';
   const cp = FORM.comp || (FORM.comp = { on: false }), t = TIPO_OBJ[FORM.tipo];
   if (TIPOS_COMPARTIBLES.indexOf(FORM.tipo) < 0) return FORM.compId ? '<div class="rec-hint">Solo se comparten gastos, facturas, ahorro y deudas: si lo guardas así, dejará de estar compartido.</div>' : '';
   if (!cp.on && FORM.id && !FORM.compId) return '';
+  if (!cp.on && apuntarV2() && !FORM.compId) return ''; // 28/11: el botón «Compartir» de arriba ya lo ofrece, no se repite aquí
   if (!cp.on) return '<button type="button" class="comp-toggle" ' + act('compOn') + '>' + ic('users') + '<span>' + (t === 'ahorro' ? 'Aportar a una meta compartida' : t === 'deuda' ? 'Pagar una deuda compartida' : 'Compartir este gasto') + '</span>' + badge('compartir') + '</button>';
   const yo = miUid(), ds = destinosPara(FORM.tipo), c = FORM.compId ? compPorId(FORM.compId) : null;
   if (c && !ds.some((d) => d.k === 'g:' + c.grupoId)) ds.unshift({ k: 'g:' + c.grupoId, label: nombreDestino(grupoDe(c.grupoId)) });
@@ -3084,7 +3155,8 @@ function compFieldHtml() {
   if (!ds.length) {
     return h + '<div class="comp-lbl">Con</div><div class="chips">' + otraPersonaChip('f') + '</div>' + invInlineHtml('f') + '</div>';
   }
-  h += '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('compDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('f') + '</div>' + invInlineHtml('f');
+  if (apuntarV2()) h += '<div class="comp-lbl">Con</div>' + conCarasHtml(ds, cp.dest, 'compDest', 'f') + invInlineHtml('f');
+  else h += '<div class="comp-lbl">Con</div><div class="chips">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('compDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('f') + '</div>' + invInlineHtml('f');
   if (!cp.dest) return h + '</div>';
   const ms = miembrosComp();
   if (t) {
@@ -3092,6 +3164,9 @@ function compFieldHtml() {
     const huerf = c && c.objetivoId && c.objetivoId === cp.objetivo && !objPorId(c.objetivoId) ? '<button type="button" class="chip active">' + escapeHtml(c.categoria || '—') + ' (eliminada)</button>' : '';
     h += '<div class="comp-lbl">' + (t === 'deuda' ? 'Deuda' : 'Meta') + '</div><div class="chips">' + huerf + os.map((o) => '<button type="button" class="chip ' + (cp.objetivo === o.id ? 'active' : '') + '" ' + act('compObjetivo', o.id) + '>' + escapeHtml(o.nombre) + '</button>').join('') + '</div>';
   }
+  if (apuntarV2()) return h + '<div class="comp-lbl">' + (FORM.tipo === 'Ahorro' ? 'Aporta' : 'Pagó') + '</div>' + pagoCarasHtml(ms, cp.pagador, yo) +
+    '<div class="comp-lbl">Cómo se reparte</div><div class="segmented sm">' + [['igual', 'Iguales'], ['porcentaje', 'Por %'], ['importe', 'Por importe']].map(([id, l]) => '<button type="button" class="' + (cp.modo === id ? 'active' : '') + '" ' + act('compModo', id) + '>' + l + '</button>').join('') + '</div>' +
+    '<div id="compReparto">' + compRepartoHtml() + '</div>' + compAutorHtml(c) + '</div>';
   return h + '<div class="comp-lbl">' + (FORM.tipo === 'Ahorro' ? 'Aporta' : 'Pagó') + '</div><div class="chips">' + ms.map((m) => '<button type="button" class="chip ' + (cp.pagador === m.uid ? 'active' : '') + '" ' + act('compPagador', m.uid) + '>' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</button>').join('') + '</div>' +
     '<div class="comp-lbl">Cómo se reparte</div><div class="segmented sm">' + [['igual', 'Iguales'], ['porcentaje', 'Por %'], ['importe', 'Por importe']].map(([id, l]) => '<button type="button" class="' + (cp.modo === id ? 'active' : '') + '" ' + act('compModo', id) + '>' + l + '</button>').join('') + '</div>' +
     '<div id="compReparto">' + compRepartoHtml() + '</div>' + compAutorHtml(c) + '</div>';
@@ -3118,13 +3193,13 @@ function compAutorTxt(c) {
 }
 function compAutorHtml(c) { const t = compAutorTxt(c); return t ? '<div class="comp-autor">' + ic('history') + '<span>' + escapeHtml(t) + '</span></div>' : ''; }
 function compRepartoHtml() {
-  const cp = FORM.comp, ms = miembrosComp(), yo = miUid(), nom = (m) => (m.uid === yo ? 'Yo' : escapeHtml(m.nombre));
+  const cp = FORM.comp, ms = miembrosComp(), yo = miUid(), v2 = apuntarV2(), nom = (m) => (v2 ? caraHtml(m.uid, m.nombre, 'cv-mini') : '') + '<span class="nn">' + (m.uid === yo ? 'Yo' : escapeHtml(m.nombre)) + '</span>';
   let h;
   if (cp.modo === 'igual') {
     const r = calcReparto(cp, importeForm(), ms);
-    h = ms.map((m) => '<label class="comp-row"><input type="checkbox" ' + (cp.incl[m.uid] ? 'checked' : '') + ' ' + onChange('compIncl', m.uid) + '><span class="n">' + nom(m) + '</span><b class="tnum">' + (cp.incl[m.uid] && r.reparto ? money(r.reparto[m.uid] || 0) : '—') + '</b></label>').join('');
+    h = ms.map((m) => '<label class="comp-row' + (v2 ? ' cv-fila' : '') + '"><input type="checkbox" ' + (cp.incl[m.uid] ? 'checked' : '') + ' ' + onChange('compIncl', m.uid) + '><span class="n">' + nom(m) + '</span><b class="tnum">' + (cp.incl[m.uid] && r.reparto ? money(r.reparto[m.uid] || 0) : '—') + '</b></label>').join('');
   } else {
-    h = ms.map((m) => '<div class="comp-row"><span class="n">' + nom(m) + '</span><input type="number" step="0.01" min="0" inputmode="decimal" class="comp-val" placeholder="0" value="' + escapeHtml((cp.vals || {})[m.uid] || '') + '" ' + onInput('compVal', m.uid) + '><span class="u">' + (cp.modo === 'porcentaje' ? '%' : sym()) + '</span></div>').join('');
+    h = ms.map((m) => '<div class="comp-row' + (v2 ? ' cv-fila' : '') + '"><span class="n">' + nom(m) + '</span><input type="number" step="0.01" min="0" inputmode="decimal" class="comp-val" placeholder="0" value="' + escapeHtml((cp.vals || {})[m.uid] || '') + '" ' + onInput('compVal', m.uid) + '><span class="u">' + (cp.modo === 'porcentaje' ? '%' : sym()) + '</span></div>').join('');
   }
   return '<div class="comp-rows">' + h + '</div>' + (FORM.tipo === 'Ahorro' ? '' + infoSola('Quién aporta', 'En una hucha, normalmente cada uno aporta lo suyo: marca solo a quien aporta.') + '' : '') +
     '<div id="compResumen" class="comp-resumen">' + compResumenHtml() + '</div>';
@@ -3144,6 +3219,7 @@ function refrescarComp(soloResumen) {
   if (soloResumen) { const r = $('#compResumen'); if (r) { r.innerHTML = compResumenHtml(); return; } }
   const f = $('#compField'); if (f) f.innerHTML = compFieldHtml();
   const ca = $('#compArriba'); if (ca && FORM && FORM.kind === 'mov') ca.hidden = TIPOS_COMPARTIBLES.indexOf(FORM.tipo) < 0 || !!(FORM.comp && FORM.comp.on); // el de arriba solo con un gasto que aún no se comparte
+  const cat = $('#compArribaTxt'); if (cat && FORM && FORM.kind === 'mov') cat.textContent = compArribaTxt(FORM.tipo);
   refrescarCuentaField();
 }
 // ¿puedo cambiar o borrar este gasto del grupo? Según el ajuste del grupo: todos, o quien lo apuntó (y los administradores)
@@ -3802,7 +3878,7 @@ function tkContinuar() {
   if (comp) FORM.comp = comp;
   const af = $('#artField'); if (af) af.innerHTML = artFieldHtml();
   refrescarComp();
-  if (FORM.tec && FORM.tec.corta) tecMasDetalles(); // con un ticket se ven sus artículos y el reparto
+  if (FORM.tec && FORM.tec.corta) tecMasDetalles(true); // con un ticket se ven sus artículos y el reparto
   tecSync();
 }
 // En el formulario: los artículos del ticket (solo lectura)
@@ -4107,6 +4183,25 @@ function crearTicketBandaHtml() {
   if (t.quedan === 0) return '<button class="crear-ticket tappable agotado" ' + act('crearSinLecturas') + '><span class="crear-ic">' + ic('camera') + '</span><span><b>Foto de ticket</b><span>Sin lecturas hasta el ' + ticketsVuelven() + '</span></span></button>';
   return '<button class="crear-ticket tappable' + (ticketsPocos() ? ' pocos' : '') + '" ' + act('crearIr', 'ticket') + '><span class="crear-ic">' + ic('camera') + '</span><span><b>Foto de ticket</b><span>' + (ticketsPocos() ? 'Te quedan ' + t.quedan + (t.quedan === 1 ? ' lectura' : ' lecturas') + ' este mes' : 'Lee los artículos y el total por ti') + '</span></span>' + badge('ticket') + '</button>';
 }
+/* Botón + v3 (28/11, docs/53 A): cuatro grandes y «Apuntes rápidos» plegado con «Lo de siempre» y lo demás */
+function crearHtmlV3() {
+  const op = (accion, args, icono, txt, cls) => '<button class="crear-op tappable ' + cls + '" ' + act(accion, ...args) + '><span class="crear-ic">' + ic(icono) + '</span><span>' + txt + '</span></button>';
+  const hab = gastosHabituales(), bas = basico(), comp = compartidosDisponible() && juntosOn(), ag = agendaOn();
+  const grandes = [op('crearIr', ['gasto'], 'arrowDown', 'Gasto', 'k-gasto'), op('crearIr', ['ingreso'], 'arrowUp', 'Ingreso', 'k-ingreso')].concat(ag ? [op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea')] : [], [op('crearIr', ['importar'], 'fileIn', 'Importar', 'k-imp')]);
+  const rapidos = [comp ? ['Compartido', op('crearIr', ['compartido'], 'users', 'Compartido', 'k-comp')] : null, hayVariasCuentas() ? ['Traspaso', op('crearIr', ['traspaso'], 'swap', 'Traspaso', 'k-tras')] : null,
+    herrOn('metas') ? ['Apartar', op('crearIr', ['ahorro'], 'piggy2', 'Apartar', 'k-ahorro')] : null, herrOn('inversiones') ? ['Invertir', op('crearIr', ['inversion'], 'trendUp', 'Invertir', 'k-ahorro')] : null,
+    ['Pago fijo', op('crearIr', ['factura'], 'repeat', 'Pago fijo<small>recibos, facturas y suscripciones</small>', 'k-factura')], herrOn('deudas') ? ['Pago de deuda', op('crearIr', ['deuda'], 'deuda', 'Pago de deuda', 'k-deuda')] : null,
+    herrOn('trayecto') ? ['Trayecto', op('trAbrir', [], 'coche2', 'Trayecto<small>gasolina o carga de un viaje</small>', 'k-tray')] : null].filter(Boolean);
+  const abierto = !!S.crearApuntes;
+  return '<div class="handle"></div><h2>¿Qué quieres apuntar?</h2>' + (herrOn('tickets') ? crearTicketBandaHtml() : '') +
+    '<div class="crear-grid crear-4 dos">' + grandes.join('') + '</div>' +
+    '<button type="button" class="crear-mas crear-apuntes tappable' + (abierto ? ' abierto' : '') + '" aria-expanded="' + abierto + '" ' + act('crearApuntesToggle') + '><span class="crear-ic">' + ic('bolt') + '</span><span><b>Apuntes rápidos</b></span>' + ic('chevD') + '</button>' +
+    (abierto ? '<div class="crear-apuntes-cuerpo">' +
+      (hab.length ? '<div class="crear-rep"><span class="crear-rep-l">Lo de siempre</span><div class="crear-rep-f">' + hab.map((m) => '<button type="button" class="chip tappable" ' + act('crearRepetir', m.id) + '>' + ic('repeat') + '<span>' + escapeHtml(m.descripcion || m.categoria || 'Gasto') + ' · <b class="tnum">' + money(m.importe) + '</b></span></button>').join('') + '</div></div>' : '') +
+      '<div class="crear-grid crear-peq">' + rapidos.map((x) => x[1]).join('') + '</div>' +
+      (bas ? '<button type="button" class="link crear-desc" ' + act('descAbrir') + '>' + ic('sparkle') + ' Descubre para qué sirve cada una ' + ic('chevR') + '</button>' : '') + '</div>' : '') +
+    (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '');
+}
 function crearHtmlV2() {
   const op = (accion, args, icono, txt, cls) => '<button class="crear-op tappable ' + cls + '" ' + act(accion, ...args) + '><span class="crear-ic">' + ic(icono) + '</span><span>' + txt + '</span></button>';
   const hab = gastosHabituales(), bas = basico(), comp = compartidosDisponible() && juntosOn(), ag = agendaOn(); // 13/11: sin lo apagado en «Mis herramientas»
@@ -4122,7 +4217,7 @@ function crearHtmlV2() {
     (bas && !S.crearMas ? '<button type="button" class="crear-mas tappable" aria-expanded="false" ' + act('crearMasToggle') + '><span class="crear-ic">' + ic('more') + '</span><span><b>Más opciones</b><span>' + peq.map((x) => x[0]).join(', ') + '…</span></span>' + ic('chevD') + '</button>' :
     '<div class="crear-grid crear-peq">' + peq.filter((x) => bas || !x[2]).map((x) => x[1]).join('') + '</div>' +
       (bas ? '<button type="button" class="link crear-desc" ' + act('descAbrir') + '>' + ic('sparkle') + ' Descubre para qué sirve cada una ' + ic('chevR') + '</button>' : '')) +
-    (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '');
+    (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('comparar') + ' Ver la versión nueva</button>' : '');
 }
 /* ============================================================
    TRAYECTO (07/11/2026, docs/31-calculadora-trayecto.md): cuánto cuesta un viaje en coche.
@@ -4597,7 +4692,7 @@ function renderInicioNuevo() {
   if (basico()) { // docs/38 §2.1: una sola tarjeta de ayuda; las piezas, cuando ya no se ve «Primeros pasos»; al final, «Descubre PalomApp»
     const avisoB = inv || guiaInicioHtml() || tuMesSugHtml() || infAvisoHtml(), pp = avisoB ? '' : ppEstado();
     const ayuda = avisoB || (pp === 'tarjeta' || pp === 'hecho' ? ppTarjetaHtml() : (pp === 'linea' ? ppLineaHtml() : '') + sugerenciaHtml());
-    return heroMesHtmlV2() + avisosInicioHtml() + ayuda + (pp === 'tarjeta' ? '' : piezas()) + descLineaHtml();
+    return heroMesHtmlV2() + avisosInicioHtml() + ayuda + (pp === 'tarjeta' && !S.inicioEd ? '' : piezas()) + descLineaHtml();
   }
   return heroMesHtmlV2() + avisosInicioHtml() + (inv || guiaInicioHtml() || tuMesSugHtml() || aviso30Html() || infAvisoHtml()) + (S.movimientos.length ? '' : empiezaHtml()) + piezas() + herrPistaHtml('inicio');
 }
@@ -4676,16 +4771,20 @@ function insightsHtml() {
 const VERSIONES = {
   inicio: { txt: 'Inicio', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['v2', '22 oct'], ['antes', 'Primera']] }, // «22 oct»: Inicio tal cual estaba antes de la v3
   movResumen: { txt: 'En qué gastas', desde: '2026-10-18', cerrada: '2026-10-22', def: 2, variantes: [['barras', 'Barras'], ['mosaico', 'Mosaico'], ['anillo', 'Anillo']] },
-  juntos: { txt: 'Juntos', desde: '2026-11-22', variantes: [['filas', 'Nueva'], ['nueva', 'Antes'], ['v2', '22 oct'], ['antes', 'Primera']] }, // 22/11 (docs/46 tanda 3): grupos en filas, personas y metas a un enlace; «Antes» = la de tarjetas y círculos (13/11); «22 oct»: la lista de personas de antes de los círculos
+  juntos: { txt: 'Juntos', desde: '2026-11-28', variantes: [['v5', 'Nueva'], ['filas', 'Antes'], ['nueva', '13 nov'], ['v2', '22 oct'], ['antes', 'Primera']] }, // 28/11 (docs/53 C): resumen, amigos como historias, grupos en tarjetas con foto y lo nuevo marcado; «Antes» = la de 22/11. 22/11 (docs/46 tanda 3): grupos en filas, personas y metas a un enlace; «Antes» = la de tarjetas y círculos (13/11); «22 oct»: la lista de personas de antes de los círculos
   dinero: { txt: 'Dinero', desde: '2026-10-23', cerrada: '2026-10-29', def: 0, variantes: [['formas', 'Formas'], ['tarros', 'Tarros'], ['anillos', 'Anillos'], ['antes', 'Antes'], ['camino', '22 oct']] }, // 23/10: «Formas» (con pestañas) sustituye a «Camino»; «22 oct» es Dinero tal cual estaba
   tu: { txt: 'Tú', desde: '2026-11-13', variantes: [['nueva', 'Por temas'], ['v2', 'Antes'], ['antes', 'Primera']] }, // 13/11: ajustes por temas; «Antes» = Tú de 22/10 (las pruebas antiguas fijan v2 o la primera)
   agenda: { txt: 'Agenda', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
-  crear: { txt: 'Botón +', desde: '2026-10-22', cerrada: '2026-10-22', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] },
+  crear: { txt: 'Botón +', desde: '2026-11-28', cerrada: '2026-11-28', def: 0, variantes: [['v3', 'Apuntes rápidos'], ['v2', 'Antes'], ['antes', '22 oct']] }, // 28/11 (docs/53 A): cuatro grandes y «Apuntes rápidos»; «Antes» = el + de 22/10 (las pruebas antiguas fijan v2: crear 1)
+  apuntar: { txt: 'Apuntar un gasto', desde: '2026-11-28', cerrada: '2026-11-28', def: 0, variantes: [['v2', '¿De qué?'], ['antes', 'Antes']] }, // 28/11 (docs/53 B): un solo campo «¿De qué?», categorías con iconos y «Compartir» arriba; las pruebas antiguas fijan «antes» (apuntar 1)
+  informe: { txt: 'Informe', desde: '2026-11-28', variantes: [['nueva', 'Nuevo'], ['antes', 'Antes']] }, // 28/11 (docs/53 D): carita, asesor, 4 tarjetas con hojas visuales; «Antes» = el informe de texto
+  inicioEd: { txt: 'Editar Inicio', desde: '2026-11-28', variantes: [['nueva', 'Nueva'], ['antes', 'Antes']] }, // 28/11 (docs/53 E): editar en la propia pantalla, arrastrando; «Antes» = la hoja con lista
   balance: { txt: 'Mes cerrado', desde: '2026-10-29', variantes: [['nueva', 'Balance'], ['antes', 'Antes']] },
   importe: { txt: 'Apuntar importe', desde: '2026-10-22', cerrada: '2026-10-29', def: 0, variantes: [['teclado', 'Teclado'], ['antes', 'Antes']] },
   bienvenida: { txt: 'Bienvenida', desde: '2026-11-13', cerrada: '2026-11-13', def: 3, variantes: [['pasos', 'Antes'], ['nueva', '2 pantallas'], ['antes', '4 pasos'], ['v2', 'Por objetivos']] }, // 13/11 (docs/45): def 3 = «Por objetivos» (la nueva, también al repetirla desde Tú); «Antes» = la de por pasos de esta mañana. // 13/11: Hola → Qué quieres usar → Permisos (solo Android) → Tu banco → Listo; «2 pantallas» = la de docs/38 (10/11) // docs/38 §6: 2 pantallas (1 con invitación) y «Lo básico»; «antes» = la de 4 pasos para todos (solo para las pruebas antiguas)
 };
 function seccionVersion() {
+  if (S.tab === 'inicio' && S.inicioEd && (S.inicioVista || 'hoy') === 'hoy') return 'inicioEd';
   if (S.tab === 'inicio' && (S.inicioVista || 'hoy') === 'hoy') return 'inicio';
   if (S.tab === 'movimientos' && movVistaAct() === 'resumen') { const p = movPerNorm(S.movPeriodo); if (/^m:/.test(p) ? mesCerrado(+p.slice(2, 6), +p.slice(7, 9)) : /^y:/.test(p) && +p.slice(2) < mesActual().y) return 'balance'; if (/^m:/.test(p)) return 'movResumen'; }
   if (S.tab === 'juntos' && gruposDisponible() && (S.grupos || []).length && !S.juntosVer) return 'juntos';
@@ -4702,6 +4801,7 @@ function versionIdx(k) {
   if (v.cerrada) return sv != null && i >= 0 && i < v.variantes.length ? i : (v.def || 0);
   return compararOn() && i > 0 && i < v.variantes.length ? i : 0;
 }
+function apuntarV2() { return versionDe('apuntar') === 'v2'; }
 function versionDe(k) { return VERSIONES[k].variantes[versionIdx(k)][0]; }
 function verAnterior(k) { return versionIdx(k) > 0; }
 function compararOn() { return cfg().compararVersiones !== false; }
@@ -5221,6 +5321,7 @@ function iwPiezaHtml(x, i) {
 }
 // todas las piezas en su orden; dos de medio ancho seguidas comparten fila (una sola se estira)
 function inicioPiezasHtml() {
+  if (S.inicioEd && S.tab === 'inicio') return iwEditHtml();
   const l = iwLista(), h = new Array(l.length); S._ins = [];
   const ia = l.findIndex((x) => x.t === 'asivas'); if (ia >= 0) h[ia] = iwPiezaHtml(l[ia], ia); // «Estos días» mira lo que ya sale en «Así vas»
   l.forEach((x, i) => { if (h[i] == null) h[i] = iwPiezaHtml(x, i); });
@@ -5231,6 +5332,27 @@ function inicioPiezasHtml() {
   }
   return out + (basico() ? '' : '<button type="button" class="iw-editar" ' + act('iwEditar') + '>' + ic('sliders') + ' Editar Inicio' + badge('inicioEd') + '</button>'); // en «Lo básico», «Inicio a tu gusto» está en Descubre
 }
+/* ===== Editar Inicio en la propia pantalla (28/11, docs/53 E): se mantienen pulsadas las piezas y se arrastran ===== */
+function iwEditHtml() {
+  const l = iwLista(), h = new Array(l.length); S._ins = [];
+  const ia = l.findIndex((x) => x.t === 'asivas'); if (ia >= 0) h[ia] = iwPiezaHtml(l[ia], ia);
+  l.forEach((x, i) => { if (h[i] == null) h[i] = iwPiezaHtml(x, i); });
+  const vis = l.map((x, i) => i).filter((i) => iwTipoOn(l[i].t));
+  const caja = (i) => { const x = l[i], T = IW_TIPOS[x.t], n = iwNombre(x), e = escapeHtml(n), pos = vis.indexOf(i);
+    return '<div class="iw-e" data-i="' + i + '"><div class="iw-e-h"><span class="iw-e-grip" aria-hidden="true">' + ic('grip') + '</span>' +
+      (T.opc ? '<button type="button" class="iw-e-cambiar" aria-label="Cambiar ' + e + '" ' + act('iwOpcAbrir', i) + '>' + ic('sliders') + ' Cambiar</button>' : '') + '<span class="iw-e-sp"></span>' +
+      '<button type="button" class="icon-btn sm" aria-label="Subir ' + e + '" ' + (pos > 0 ? act('iwMoverIn', i, -1) : 'disabled') + '>' + ic('arrowUp') + '</button>' +
+      '<button type="button" class="icon-btn sm" aria-label="Bajar ' + e + '" ' + (pos < vis.length - 1 ? act('iwMoverIn', i, 1) : 'disabled') + '>' + ic('arrowDown') + '</button>' +
+      '<button type="button" class="icon-btn sm iw-quitar" aria-label="Quitar ' + e + '" ' + act('iwQuitarIn', i) + '>' + ic('close') + '</button></div>' +
+      '<div class="iw-e-c" inert aria-hidden="true">' + (h[i] || '<div class="iw-e-vacio">Sin datos todavía</div>') + '</div></div>'; };
+  return '<div class="iw-e-bar"><b>Editar Inicio</b><button type="button" class="btn accent sm" ' + act('iwListo') + '>Listo</button></div><div class="iw-e-lista">' + vis.map(caja).join('') + '</div>' +
+    '<div class="iw-e-pie"><button type="button" class="btn ghost block" ' + (l.length < IW_MAX ? act('iwAnadirIn') : 'disabled') + '>' + ic('plus') + ' Añadir una pieza</button>' +
+    '<div class="iw-ed-pie"><span class="tnum">' + l.length + ' de ' + IW_MAX + '</span><button type="button" class="link" ' + act('iwResetIn') + '>Como al principio</button></div></div>';
+}
+// dónde queda la pieza que se arrastra: cuántas de las otras tienen su centro por encima del suyo
+function iwDestino(mids, i, centro) { let a = 0; mids.forEach((m, j) => { if (j !== i && m < centro) a++; }); return a; }
+async function iwGuardarIn(l) { const job = saveConfig({ inicioWidgets: l.slice(0, IW_MAX).map((x) => (x.o ? { t: x.t, o: x.o } : { t: x.t })) }); render(); await job; }
+function iwAbrirHoja() { FORM = { kind: 'iwEd', vista: 'lista', lista: iwLista() }; openSheet(iwEdHtml()); }
 /* ============================================================
    «LO BÁSICO» Y «DESCUBRE PALOMAPP» (10/11/2026, docs/38-lo-basico-diseno.md)
    Las cuentas nuevas empiezan en «Lo básico»: Inicio, el + y Tú más sencillos, sin esconder nada (lo demás, plegado
@@ -5662,7 +5784,7 @@ async function iwGuardar() {
   const F = FORM; if (!F || F.kind !== 'iwEd') return;
   F.lista = F.lista.slice(0, IW_MAX);
   const job = saveConfig({ inicioWidgets: F.lista.map((x) => (x.o ? { t: x.t, o: x.o } : { t: x.t })) }); // primero se guarda (cambia la configuración en memoria) y luego se pinta
-  render(); updateSheet(iwEdHtml()); await job;
+  render(); if (F.enInicio) closeSheet(); else updateSheet(iwEdHtml()); await job;
 }
 /* ===== Mes cerrado como informe (29/10, docs/23 §4): «Balance de septiembre» en vez de «Te queda» ===== */
 function balanceOn() { return versionDe('balance') === 'nueva'; }
@@ -5823,7 +5945,7 @@ function infDatos(clave) {
   if (P.tipo === 'mes' && !P.cerrado) { const pv = previstoMes(P.y, P.m); if (pv) out.previsto = 'Con tu nómina y tus pagos fijos, a fin de ' + MESES[P.m - 1].toLowerCase() + ' te quedarían unos ' + m0(Math.round(pv.total)) + '. Es una previsión, no un dato.'; }
   return out;
 }
-function infHtml(clave) {
+function infHtmlAntes(clave) {
   const D = infDatos(clave), P = D.P, F = FORM || {};
   const tabs = '<div class="segmented inf-tabs">' + INF_TIPOS.map(([t, l]) => '<button class="' + (P.tipo === t ? 'active' : '') + '" ' + act('infTipo', t) + '>' + l + '</button>').join('') + '</div>';
   const nav = '<div class="inf-nav"><button class="icon-btn" aria-label="Anterior" ' + act('infVer', P.ant) + '>' + ic('chevL') + '</button><div class="inf-nav-t"><b>' + escapeHtml(P.titulo) + '</b><span>' + escapeHtml(fechaCortaU(P.desde) + ' – ' + fechaCortaU(P.hasta)) + '</span></div>' +
@@ -5837,7 +5959,183 @@ function infHtml(clave) {
     (D.vacio ? '' : sec('Las cifras', 'chart', '<div class="inf-cifs">' + cifras + '</div>') + (D.cambios.length ? sec('Lo que cambió', 'comparar', lin(D.cambios)) : '') + (D.metas.length ? sec('Tus metas y deudas', 'flag', lin(D.metas)) : '') +
       (D.previsto ? '<div class="inf-prev"><span class="prev-tag">Previsto</span> ' + escapeHtml(D.previsto) + '</div>' : '')) +
     '<p class="inf-pie">Hecho en tu móvil con lo que has apuntado en la app. Describe tus números; no es asesoramiento financiero.</p>' +
-    '<button class="btn ghost block" ' + act('infMovs', per) + '>' + ic('list') + ' Ver los movimientos</button>';
+    '<button class="btn ghost block" ' + act('infMovs', per) + '>' + ic('list') + ' Ver los movimientos</button>' + (compararOn() && !VERSIONES.informe.cerrada ? '<button type="button" class="crear-antes" ' + act('infVersion', 0) + '>' + ic('comparar') + ' Ver la versión nueva</button>' : '');
+}
+/* ===== INFORME v2 (28/11, docs/53 bloque D): carita (solo aquí), frase de asesor, 4 tarjetas con hoja visual y comparación con el presupuesto o con tu media.
+   Todo se calcula en el móvil con reglas fijas, sin IA, y con los mismos kpisMes/infPeriodo de siempre. La anterior sigue en «Antes» (VERSIONES.informe). ===== */
+function infV2On() { return versionDe('informe') === 'nueva'; }
+function infHtml(clave) { return infV2On() ? infHtmlV2(clave) : infHtmlAntes(clave); }
+function infCatNom(c) { const s = String(c == null ? '' : c).trim(); return s && s !== 'undefined' && s !== 'null' ? s : 'Sin categoría'; }
+function infGasto(k) { return k.facturas + k.gastos; }
+function infCatMapa(movs, tipos) { const o = {}; movs.forEach((x) => { if ((tipos || ['Gasto', 'Factura']).indexOf(x.tipo) >= 0) { const c = infCatNom(x.categoria); o[c] = (o[c] || 0) + num(x.importe); } }); return o; }
+const INF_NIVELES = ['', 'Muy apretado', 'Apretado', 'Justo', 'Bueno', 'Muy bueno'];
+// los periodos anteriores ya cerrados y con apuntes, del mismo tipo (semana: 4, mes: 3, trimestre: 2, año: el anterior)
+function infAnteriores(P) {
+  const n = { semana: 4, mes: 3, trimestre: 2, anio: 1 }[P.tipo], out = []; let c = P.ant;
+  if (P.tipo === 'anio' && P.enCurso) return out; // lo que llevas de año no se compara con un año entero
+  for (let i = 0; i < n + 4 && out.length < n; i++) { const Q = infPeriodo(c); if (Q.cerrado && Q.k.movs.length) out.push(Q); c = Q.ant; }
+  return out;
+}
+function infMedia(P) {
+  const A = infAnteriores(P), min = P.tipo === 'anio' ? 1 : 2;
+  if (A.length < min) return { ok: false, n: A.length };
+  const av = (f) => A.reduce((s, Q) => s + f(Q.k), 0) / A.length, cats = {};
+  A.forEach((Q) => { const mp = infCatMapa(Q.k.movs); Object.keys(mp).forEach((c) => { cats[c] = (cats[c] || 0) + mp[c] / A.length; }); });
+  const n = A.length, rot = P.tipo === 'semana' ? 'tu media de las ' + n + ' últimas semanas' : P.tipo === 'mes' ? 'tu media de los ' + n + ' últimos meses' : P.tipo === 'trimestre' ? 'tu media de los ' + n + ' trimestres anteriores' : 'lo que hiciste en ' + (P.y - 1);
+  return { ok: true, n, rot, ing: av((k) => k.ingresos), gas: av(infGasto), aho: av((k) => k.ahorro + k.inversion), bal: av((k) => k.disponible), cats, periodos: A };
+}
+// el presupuesto de las categorías que lo tienen (solo en un mes: es un tope mensual)
+function infPresupuesto(P) {
+  if (P.tipo !== 'mes') return null;
+  const cats = catsGasto().filter((c) => num(c.presupuesto) > 0); if (!cats.length) return null;
+  const mp = infCatMapa(P.k.movs), nm = {}; Object.keys(mp).forEach((c) => { nm[normName(c)] = (nm[normName(c)] || 0) + mp[c]; });
+  const filas = cats.map((c) => ({ c: c.nombre, pres: num(c.presupuesto), v: Math.max(0, nm[normName(c.nombre)] || 0) }));
+  return { total: filas.reduce((a, f) => a + f.pres, 0), gasto: filas.reduce((a, f) => a + f.v, 0), filas, pasadas: filas.filter((f) => f.v > f.pres + 0.004).sort((a, b) => (b.v - b.pres) - (a.v - a.pres)) };
+}
+// lo que no gastaste, sobre lo que entró (lo apartado cuenta como no gastado)
+function infTasa(k) { return k.ingresos > 0.005 ? (k.ingresos - infGasto(k) - k.deuda) / k.ingresos : null; }
+// la carita: 1 a 5, o null si no se puede valorar (semana, periodo sin cerrar, sin ingresos o con menos de 10 apuntes)
+function infNivel(P, pres) {
+  const k = P.k, t = infTasa(k);
+  if (P.tipo === 'semana' || !P.cerrado || t == null || k.movs.length < 10) return null;
+  if (t < -0.005) return t <= -0.1 ? 1 : 2;
+  if (t < 0.1) return 3;
+  if (t < 0.25) return 4;
+  return pres && pres.pasadas.length ? 4 : 5;
+}
+function infSinCara(P) {
+  const k = P.k; if (P.tipo === 'semana') return '';
+  if (!P.cerrado) return '';
+  if (k.ingresos < 0.005) return 'No hay carita: no apuntaste ingresos.';
+  if (k.movs.length < 10) return 'No hay carita: hay pocos apuntes.';
+  return '';
+}
+// «Va bien / Va justo» para lo que aún no ha terminado
+function infVa(P) { const t = infTasa(P.k); if (P.tipo === 'semana' || t == null || P.k.movs.length < 3) return ''; return t < -0.005 ? 'Va apretado' : t < 0.1 ? 'Va justo' : 'Va bien'; }
+/* El asesor: reglas fijas en orden. Sale la primera que se cumple (qué pasó + qué hacer) y hasta dos más en «Qué tener en cuenta». */
+function infAsesor(P, cmp, pres) {
+  const k = P.k, ing = k.ingresos, gas = infGasto(k), bal = k.disponible, aho = k.ahorro + k.inversion, c = P.cerrado, R = [];
+  const cm = infCatMapa(k.movs), top = Object.entries(cm).filter((e) => e[1] > 0.004).sort((a, b) => b[1] - a[1])[0];
+  const completo = P.tipo !== 'semana';
+  if (completo && ing < 0.005 && gas > 0.004) R.push({ mal: 'No apuntaste ingresos' + (c ? '' : ' todavía') + ', así que no puedo valorarlo.', cons: 'Apunta lo que cobras para que pueda compararlo.' });
+  if (completo && ing > 0.005 && bal < -0.5) {
+    if (gas + k.deuda > ing + 0.5) R.push({ mal: (c ? 'Gastaste ' : 'Llevas gastados ') + m0(gas + k.deuda - ing) + ' más de lo que ' + (c ? 'entró' : 'ha entrado') + '.', cons: top ? 'Lo que más pesó fue ' + top[0] + ': para el siguiente, empieza por ahí.' : 'Para el siguiente, prueba a gastar ' + m0(-bal) + ' menos.' });
+    else R.push({ mal: 'Apartaste ' + m0(-bal) + ' más de lo que te sobraba.', cons: 'Aparta solo lo que sobre después de gastar.' });
+  }
+  if (pres && pres.pasadas.length) { const f = pres.pasadas[0]; R.push({ mal: 'Te pasaste ' + m0(f.v - f.pres) + ' en ' + f.c + '.', cons: 'Vigila ' + f.c + ': tu tope es ' + m0(f.pres) + '.' }); }
+  if (cmp.ok) { const sube = Object.keys(cm).map((n) => ({ n, v: cm[n], b: cmp.cats[n] || 0 })).filter((x) => x.b > 0.004 && x.v - x.b > 30 && x.v / x.b - 1 > 0.3).sort((a, b) => (b.v - b.b) - (a.v - a.b))[0];
+    if (sube && !(pres && pres.pasadas.some((f) => normName(f.c) === normName(sube.n)))) R.push({ mal: sube.n + ' subió ' + m0(sube.v - sube.b) + ' sobre ' + cmp.rot + '.', cons: 'Vigila ' + sube.n + ': tu media es ' + m0(sube.b) + '.' }); }
+  if (completo && c && ing > 0.005 && bal >= -0.5 && aho / ing < 0.05) R.push({ mal: aho < 0.005 ? 'No apartaste nada.' : 'Apartaste poco: el ' + Math.round(aho / ing * 100) + ' % de lo que entró.', cons: 'Prueba a apartar algo en cuanto cobres, aunque sean ' + m0(Math.max(10, Math.round(ing * 0.05))) + '.' });
+  if (completo && ing > 0.005 && k.facturas / ing > 0.5) R.push({ mal: 'Tus pagos fijos se llevan el ' + Math.round(k.facturas / ing * 100) + ' % de lo que entró.', cons: 'Revisa si alguno ya no te compensa.' });
+  if (P.tipo === 'mes' && gas >= 50) { const dia = {}; k.movs.forEach((x) => { if (x.tipo === 'Gasto' || x.tipo === 'Factura') { const f = x.fecha.slice(0, 10); dia[f] = (dia[f] || 0) + num(x.importe); } });
+    const d = Object.entries(dia).sort((a, b) => b[1] - a[1])[0]; if (d && d[1] / gas > 0.25) R.push({ mal: 'El ' + fechaCortaU(d[0]) + ' concentró ' + m0(d[1]) + ' de lo gastado.', cons: 'Mira qué pasó ese día antes de que se repita.' }); }
+  if (P.tipo === 'semana' && cmp.ok && !R.length && Math.abs(gas - cmp.gas) >= 1) R.push({ mal: (c ? 'Gastaste ' : 'Llevas gastados ') + m0(gas) + ', ' + m0(Math.abs(gas - cmp.gas)) + (gas > cmp.gas ? ' más' : ' menos') + ' que ' + cmp.rot + '.', cons: gas > cmp.gas ? 'Si fue algo puntual, no pasa nada; si no, mira en qué se fue.' : 'Así da gusto.' });
+  const bien = !R.length;
+  if (bien) R.push({ mal: P.tipo === 'semana' ? (c ? 'Semana tranquila: sin sustos.' : 'Va tranquila: sin sustos por ahora.') : (c ? (P.tipo === 'mes' ? 'Mes' : P.tipo === 'trimestre' ? 'Trimestre' : 'Año') + ' tranquilo: sin sustos.' : 'Va tranquilo: sin sustos por ahora.'), cons: bal > 0.5 && completo ? (c ? 'Lo que te sobró, ' + m0(bal) + ', puedes llevarlo a una meta.' : 'Si sigue así, te sobrará algo para llevarlo a una meta.') : 'Sigue así.' });
+  const notas = R.slice(1, 3).map((x) => x.mal);
+  const sig = []; if (P.tipo === 'mes' && c) { const S1 = infPeriodo(P.sig), pv = previstoMes(S1.y, S1.m); if (pv) sig.push('A fin de ' + MESES[S1.m - 1].toLowerCase() + ', con tu nómina y tus pagos fijos, te quedarían unos ' + m0(Math.round(pv.total)) + '. Es una previsión, no un dato.'); }
+  return { frase: R[0].mal, cons: R[0].cons, bien, notas, sig };
+}
+function infPct(a, b) { return b > 0.004 ? Math.round((a - b) / b * 100) : null; }
+function infChip(a, b, verdeSiSube) {
+  const p = infPct(a, b); if (p == null || !(a > 0.004)) return '';
+  if (Math.abs(p) < 1) return '<span class="kpi-chip igual">= media</span>';
+  const tono = verdeSiSube == null ? 'gris' : (p > 0) === verdeSiSube ? 'bien' : 'mal';
+  return '<span class="kpi-chip bal-' + tono + '">' + (p > 0 ? '↑ ' : '↓ ') + Math.min(999, Math.abs(p)) + ' %</span>';
+}
+// una fila «tú frente a la referencia»: barra con una marca donde está la media
+function infFilaCmp(l, v, ref, verdeSiSube, cls) {
+  const max = Math.max(Math.abs(v), Math.abs(ref), 1) * 1.12, pw = (x) => (Math.max(0, x) / max * 100).toFixed(1);
+  return '<div class="inf-cmp"><div class="inf-cmp-h"><span>' + l + '</span><b class="tnum">' + escapeHtml(m0(v)) + '</b>' + infChip(v, ref, verdeSiSube) + '</div>' +
+    '<div class="inf-cmp-b" role="img" aria-label="' + escapeHtml(l + ': ' + m0(v) + ', referencia ' + m0(ref)) + '"><i class="' + (cls || '') + '" style="width:' + pw(v) + '%"></i><em style="left:' + pw(ref) + '%"></em></div><small>Referencia: ' + escapeHtml(m0(ref)) + '</small></div>';
+}
+function infCaraHtml(n) { return '<span class="inf-cara n' + n + '" role="img" aria-label="' + INF_NIVELES[n] + '">' + ic('cara' + n) + '</span>'; }
+function infPer(P) { return P.tipo === 'mes' ? P.clave : P.tipo === 'anio' || P.tipo === 'trimestre' ? 'y:' + P.y : 'm:' + mesDe(P.hasta > todayISO() ? todayISO() : P.hasta); }
+function infCabHtml(clave) {
+  const P = infPeriodo(clave);
+  const tabs = '<div class="segmented inf-tabs">' + INF_TIPOS.map(([t, l]) => '<button class="' + (P.tipo === t ? 'active' : '') + '" ' + act('infTipo', t) + '>' + l + '</button>').join('') + '</div>';
+  const nav = '<div class="inf-nav"><button class="icon-btn" aria-label="Anterior" ' + act('infVer', P.ant) + '>' + ic('chevL') + '</button><div class="inf-nav-t"><b>' + escapeHtml(P.titulo) + '</b><span>' + escapeHtml(fechaCortaU(P.desde) + ' – ' + fechaCortaU(P.hasta)) + '</span></div>' +
+    '<button class="icon-btn" aria-label="Siguiente" ' + (infPeriodo(P.sig).futuro ? 'disabled' : act('infVer', P.sig)) + '>' + ic('chevR') + '</button></div>';
+  return '<div class="handle"></div><div class="inf-cab"><h2>Informes</h2><button type="button" class="icon-btn" aria-label="Ajustes de los informes" ' + act('infAjustes') + '>' + ic('sliders') + '</button></div>' + tabs + nav;
+}
+function infHtmlV2(clave) {
+  const P = infPeriodo(clave), k = P.k, cab = infCabHtml(clave), antes = compararOn() && !VERSIONES.informe.cerrada ? '<button type="button" class="crear-antes" ' + act('infVersion', 1) + '>' + ic('comparar') + ' Ver la versión anterior</button>' : '';
+  if (!k.movs.length) return cab + '<div class="card inf-v2"><p class="inf-asesor">En ' + escapeHtml(P.nombre) + ' no apuntaste nada.</p></div>' + antes;
+  const cmp = infMedia(P), pres = infPresupuesto(P), nivel = infNivel(P, pres), A = infAsesor(P, cmp, pres), gas = infGasto(k), aho = k.ahorro + k.inversion, bal = k.disponible, t = infTasa(k);
+  const va = !P.cerrado ? infVa(P) : '', sin = infSinCara(P);
+  const infoCara = infoI('Miro cuánto de lo que entró no gastaste, y lo apartado cuenta como no gastado. Por debajo de 0 %: apretado (muy apretado desde −10 %). De 0 a 10 %: justo. De 10 a 25 %: bueno. Más de 25 %: muy bueno, salvo que te pases de presupuesto.');
+  const sub = t == null ? '' : t < -0.005 ? 'Gastaste un ' + Math.round(-t * 100) + ' % más de lo que entró.' : 'Te quedó el ' + Math.round(t * 100) + ' % de lo que entró.';
+  const cabecera = nivel ? '<div class="inf-v2-cab">' + infCaraHtml(nivel) + '<div class="inf-v2-et"><b>' + INF_NIVELES[nivel] + '</b><span>' + escapeHtml(sub) + '</span></div>' + infoCara + '</div>'
+    : va ? '<div class="inf-v2-cab"><div class="inf-v2-et"><b>' + va + '</b>' + (t != null ? '<span>' + escapeHtml(sub.replace('Te quedó', 'Te queda').replace('Gastaste', 'Llevas gastado')) + '</span>' : '') + '</div></div>' : sin ? '<div class="inf-v2-cab"><div class="inf-v2-et"><span>' + escapeHtml(sin) + '</span></div></div>' : '';
+  const hero = '<div class="card inf-v2 ' + (nivel ? 'n' + nivel : '') + '">' + cabecera + '<p class="inf-asesor">' + escapeHtml(A.frase + ' ' + A.cons) + '</p>' + (!P.cerrado ? '<span class="inf-aviso">' + escapeHtml((P.tipo === 'semana' ? 'La semana' : P.tipo === 'anio' ? 'El año' : P.tipo === 'trimestre' ? 'El trimestre' : 'El mes') + ' aún no ha terminado: cuenta lo apuntado hasta hoy.') + '</span>' : '') + '</div>';
+  const card = (v, cls, l, val, ref, verde, signo) => '<button type="button" class="inf-card tappable ' + cls + '" ' + act('infHoja', clave, v) + '><span class="inf-card-l">' + l + '</span><b class="tnum">' + escapeHtml(signo ? conSigno(val) : m0(val)) + '</b>' + (cmp.ok ? infChip(val, ref, verde) : '') + '<span class="inf-card-go">' + ic('chevR') + '</span></button>';
+  const cards = '<div class="inf-cards">' + card('ing', 'ing', 'Entró', k.ingresos, cmp.ing, true) + card('gas', 'gas', 'Gastaste', gas, cmp.gas, false) + card('aho', 'aho', 'Apartaste e invertiste', aho, cmp.aho, true) + card('bal', 'bal', 'Balance', bal, cmp.bal, true, true) + '</div>';
+  let frente = '';
+  if (pres) { const pc = pres.total > 0 ? Math.min(100, pres.gasto / pres.total * 100) : 0, pasa = pres.gasto > pres.total + 0.004;
+    frente = '<div class="inf-sec"><div class="inf-sec-t">' + ic('target') + 'Frente a tu presupuesto ' + infoI('Cuento solo lo gastado en las categorías que tienen presupuesto.') + '</div><div class="card inf-cmp-c"><div class="inf-cmp"><div class="inf-cmp-h"><span>Gastaste <b class="tnum">' + escapeHtml(m0(pres.gasto)) + '</b> de <b class="tnum">' + escapeHtml(m0(pres.total)) + '</b> previstos</span></div>' +
+      '<div class="inf-cmp-b" role="img" aria-label="' + Math.round(pc) + ' % del presupuesto"><i class="' + (pasa ? 'pasa' : '') + '" style="width:' + pc.toFixed(1) + '%"></i></div>' + (pres.pasadas.length ? '<small>' + pres.pasadas.slice(0, 3).map((f) => escapeHtml(f.c) + ' +' + escapeHtml(m0(f.v - f.pres))).join(' · ') + '</small>' : '<small>Dentro de tus topes.</small>') + '</div></div></div>'; }
+  else if (cmp.ok) frente = '<div class="inf-sec"><div class="inf-sec-t">' + ic('comparar') + 'Frente a ' + escapeHtml(cmp.rot) + ' ' + infoI('Es la media de los ' + (P.tipo === 'semana' ? 'semanas' : P.tipo === 'mes' ? 'meses' : P.tipo === 'trimestre' ? 'trimestres' : 'periodos') + ' anteriores ya cerrados y con apuntes. Si pones presupuesto a tus categorías, comparo con él.') + '</div><div class="card inf-cmp-c">' +
+    infFilaCmp('Entró', k.ingresos, cmp.ing, true, 'ing') + infFilaCmp('Gastaste', gas, cmp.gas, false, 'gas') + infFilaCmp('Apartaste e invertiste', aho, cmp.aho, true, 'aho') + '</div></div>';
+  else if (!(P.tipo === 'anio' && P.enCurso)) frente = '<div class="inf-sec"><div class="inf-sec-t">' + ic('comparar') + 'Frente a tu media</div><div class="card inf-cmp-c"><p class="inf-vacio">Aún no tengo ' + INF_NOM_PER[P.tipo] + ' anteriores para comparar.</p></div></div>';
+  const tener = A.notas.concat(A.sig), cuenta = tener.length ? '<div class="inf-sec"><div class="inf-sec-t">' + ic('alert') + 'Qué tener en cuenta</div><div class="card inf-tener">' + tener.map((tx, i) => '<div class="bal-lin"><span class="bal-lin-ic">' + ic(i < A.notas.length ? 'alert' : 'calendar') + '</span><span>' + escapeHtml(tx) + '</span></div>').join('') + '</div></div>' : '';
+  return cab + hero + cards + frente + cuenta + infoSola('Cómo se hace', 'Hecho en tu móvil con lo que has apuntado en la app. Describe tus números; no es asesoramiento financiero.') +
+    '<button class="btn ghost block" ' + act('infMovs', infPer(P)) + '>' + ic('list') + ' Ver los movimientos</button>' + antes;
+}
+const INF_NOM_PER = { semana: 'semanas', mes: 'meses', trimestre: 'trimestres', anio: 'años' };
+/* ---- las hojas visuales de cada tarjeta ---- */
+function infVolverHtml(clave) { return '<div class="handle"></div><button type="button" class="link av-volver" ' + act('infVer', clave) + '>' + ic('chevL') + ' Informe</button>'; }
+function infLeyenda(partes, total) {
+  return '<div class="inf-ley">' + partes.map((p) => '<div class="inf-ley-f"><i style="background:' + p.color + '"></i><span>' + escapeHtml(p.l) + '</span><b class="tnum">' + escapeHtml(moneyShort(p.v)) + '</b><small class="tnum">' + (total > 0 ? Math.round(p.v / total * 100) : 0) + ' %</small></div>').join('') + '</div>';
+}
+// como mucho 6 colores: las 5 mayores y «Otras»
+function infPartes(mapa, colorDe) {
+  const ents = Object.entries(mapa).filter((e) => e[1] > 0.004).sort((a, b) => b[1] - a[1]), total = ents.reduce((a, e) => a + e[1], 0);
+  const trozo = ([n, v]) => ({ n, l: n, v, color: colorDe(n) });
+  const partes = ents.length <= 6 ? ents.map(trozo) : ents.slice(0, 5).map(trozo).concat([{ n: 'Otras', l: 'Otras', v: ents.slice(5).reduce((a, e) => a + e[1], 0), color: COLOR_OTRAS }]);
+  return { partes, total };
+}
+function infAnillo(partes, total, centro) {
+  const R = 54, C = 2 * Math.PI * R; let ini = 0;
+  const arcos = partes.map((p) => { const len = p.v / total * C, el = '<circle cx="70" cy="70" r="54" fill="none" stroke="' + p.color + '" stroke-width="16" stroke-dasharray="' + Math.max(0.5, len - (partes.length > 1 ? 1.6 : 0)).toFixed(2) + ' ' + C.toFixed(2) + '" stroke-dashoffset="' + (-ini).toFixed(2) + '"/>'; ini += len; return el; }).join('');
+  return '<svg class="inf-anillo" viewBox="0 0 140 140" role="img" aria-label="Reparto por categoría"><circle cx="70" cy="70" r="54" fill="none" class="inf-an-fondo" stroke-width="16"/><g transform="rotate(-90 70 70)">' + arcos + '</g>' +
+    '<text x="70" y="70" text-anchor="middle" class="inf-an-v">' + escapeHtml(centro[0]) + '</text><text x="70" y="88" text-anchor="middle" class="inf-an-s">' + escapeHtml(centro[1]) + '</text></svg>';
+}
+function infBarraApilada(partes, total) { return '<div class="inf-apil" role="img" aria-label="Reparto">' + partes.map((p) => '<i style="width:' + (p.v / total * 100).toFixed(1) + '%;background:' + p.color + '"></i>').join('') + '</div>'; }
+function infHojaTitulo(P, t, valor, cls) { return '<h2>' + t + '</h2><p class="inf-hoja-sub">' + escapeHtml(P.titulo) + '</p><div class="inf-hoja-v tnum ' + (cls || '') + '">' + escapeHtml(valor) + '</div>'; }
+function infHojaHtml(clave, vista) {
+  const P = infPeriodo(clave), k = P.k, cmp = infMedia(P), per = infPer(P), gas = infGasto(k), aho = k.ahorro + k.inversion;
+  const ver = (tipo, txt) => '<button class="btn ghost block" ' + act('infIr', tipo, per) + '>' + ic('list') + ' ' + txt + '</button>';
+  const cabeza = infVolverHtml(clave);
+  if (vista === 'ing') {
+    const { partes, total } = infPartes(infCatMapa(k.movs, ['Ingreso']), colorCat);
+    return cabeza + infHojaTitulo(P, 'Lo que entró', m0(k.ingresos), 'ing') + (total > 0 ? '<div class="card inf-h-c"><div class="inf-h-t">De dónde vino</div>' + infBarraApilada(partes, total) + infLeyenda(partes, total) + '</div>' : '<p class="inf-vacio">No apuntaste ingresos.</p>') +
+      (cmp.ok ? '<div class="card inf-h-c"><div class="inf-h-t">Frente a ' + escapeHtml(cmp.rot) + '</div>' + infFilaCmp('Entró', k.ingresos, cmp.ing, true, 'ing') + '</div>' : '') + ver('Ingreso', 'Ver los ingresos');
+  }
+  if (vista === 'gas') {
+    const mapa = infCatMapa(k.movs), { partes, total } = infPartes(mapa, colorCat), pres = infPresupuesto(P);
+    const sube = cmp.ok ? Object.keys(mapa).map((n) => ({ n, v: mapa[n], b: cmp.cats[n] || 0, d: mapa[n] - (cmp.cats[n] || 0) })).filter((x) => x.d >= 10).sort((a, b) => b.d - a.d).slice(0, 3) : [];
+    return cabeza + infHojaTitulo(P, 'Lo que gastaste', m0(gas), 'gas') + (total > 0 ? '<div class="card inf-h-c inf-h-anillo">' + infAnillo(partes, total, [moneyShort(total), 'gastado']) + infLeyenda(partes, total) + '</div>' : '<p class="inf-vacio">No gastaste nada.</p>') +
+      (sube.length ? '<div class="card inf-h-c"><div class="inf-h-t">Lo que más subió ' + infoI('Frente a ' + escapeHtml(cmp.rot) + '.') + '</div>' + sube.map((x) => '<div class="inf-sube"><span><i style="background:' + colorCat(x.n) + '"></i>' + escapeHtml(x.n) + '</span><b class="tnum">+' + escapeHtml(m0(x.d)) + '</b><small class="tnum">' + escapeHtml(m0(x.v)) + (x.b > 0.004 ? ' · media ' + escapeHtml(m0(x.b)) : '') + '</small></div>').join('') + '</div>' : '') +
+      (pres ? '<div class="card inf-h-c"><div class="inf-h-t">Tus presupuestos</div>' + pres.filas.map((f) => { const pc = Math.min(100, f.v / f.pres * 100), pasa = f.v > f.pres + 0.004; return '<div class="inf-cmp"><div class="inf-cmp-h"><span>' + escapeHtml(f.c) + '</span><b class="tnum">' + escapeHtml(m0(f.v)) + '</b><span class="inf-de">de ' + escapeHtml(m0(f.pres)) + '</span></div><div class="inf-cmp-b" role="img" aria-label="' + Math.round(f.v / f.pres * 100) + ' %"><i class="' + (pasa ? 'pasa' : '') + '" style="width:' + pc.toFixed(1) + '%"></i></div></div>'; }).join('') + '</div>' : '') +
+      (cmp.ok ? '<div class="card inf-h-c"><div class="inf-h-t">Frente a ' + escapeHtml(cmp.rot) + '</div>' + infFilaCmp('Gastaste', gas, cmp.gas, false, 'gas') + '</div>' : '') + ver('_gastos', 'Ver los gastos');
+  }
+  if (vista === 'aho') {
+    const mapa = infCatMapa(k.movs, ['Ahorro', 'Inversión']), ents = Object.entries(mapa).filter((e) => e[1] > 0.004).sort((a, b) => b[1] - a[1]), max = ents.length ? ents[0][1] : 1;
+    let metas = {}; try { metasStats().forEach((r) => { metas[normName(r.nombre)] = r; }); } catch (e) { metas = {}; }
+    return cabeza + infHojaTitulo(P, 'Lo que apartaste e invertiste', m0(aho), 'aho') + (k.ingresos > 0.005 ? '<p class="inf-hoja-sub">Es el ' + Math.round(aho / k.ingresos * 100) + ' % de lo que entró.</p>' : '') +
+      (ents.length ? '<div class="card inf-h-c">' + ents.map(([n, v]) => { const r = metas[normName(n)]; return '<div class="inf-cmp"><div class="inf-cmp-h"><span>' + escapeHtml(n) + '</span><b class="tnum">' + escapeHtml(m0(v)) + '</b></div><div class="inf-cmp-b" role="img" aria-label="' + escapeHtml(n + ': ' + m0(v)) + '"><i class="aho" style="width:' + (v / (max * 1.05) * 100).toFixed(1) + '%"></i></div>' + (r && r.obj > 0 ? '<small>Llevas ' + escapeHtml(m0(Math.max(0, r.valor))) + ' de ' + escapeHtml(m0(r.obj)) + '</small>' : '') + '</div>'; }).join('') + '</div>' : '<p class="inf-vacio">No apartaste ni invertiste nada.</p>') +
+      (cmp.ok ? '<div class="card inf-h-c"><div class="inf-h-t">Frente a ' + escapeHtml(cmp.rot) + '</div>' + infFilaCmp('Apartaste e invertiste', aho, cmp.aho, true, 'aho') + '</div>' : '') + ver('_ahorro', 'Ver lo apartado');
+  }
+  // balance: la cascada y los últimos periodos
+  const base = Math.max(k.ingresos, gas + aho + k.deuda, 1), pw = (x) => (Math.max(0, x) / base * 100).toFixed(1);
+  const f = (cls, l, v, signo) => '<div class="inf-cas ' + cls + '"><span>' + l + '</span><span class="inf-cas-b"><i style="width:' + pw(v) + '%"></i></span><b class="tnum">' + escapeHtml((v > 0.004 ? signo : '') + m0(v)) + '</b></div>';
+  const cascada = '<div class="card inf-h-c"><div class="inf-h-t">Cómo sale</div>' + f('ing', 'Entró', k.ingresos, '') + f('gas', 'Gastaste', gas, '−') + f('aho', 'Apartaste e invertiste', aho, '−') + (k.deuda > 0.004 ? f('deu', 'Pagaste de deudas', k.deuda, '−') : '') +
+    '<div class="inf-cas bal"><span>Balance</span><span class="inf-cas-b"><i class="' + (k.disponible < 0 ? 'neg' : 'pos') + '" style="width:' + pw(Math.abs(k.disponible)) + '%"></i></span><b class="tnum ' + (k.disponible >= 0.005 ? 'pos' : k.disponible <= -0.005 ? 'neg' : '') + '">' + escapeHtml(conSigno(k.disponible)) + '</b></div></div>';
+  const cadena = [P]; for (let i = 0, c = P.ant, n = P.tipo === 'anio' ? 3 : 5; i < n; i++) { const Q = infPeriodo(c); cadena.unshift(Q); c = Q.ant; }
+  const maxA = Math.max(1, ...cadena.map((Q) => Math.abs(Q.k.disponible))), etq = (Q) => Q.tipo === 'mes' ? MESES_ABR[Q.m - 1] : Q.tipo === 'semana' ? fechaCortaU(Q.desde) : Q.tipo === 'trimestre' ? 'T' + Q.q : String(Q.y);
+  const hist = '<div class="card inf-h-c"><div class="inf-h-t">Tu balance, uno tras otro</div><div class="inf-hist" role="img" aria-label="Balance de los últimos periodos">' + cadena.map((Q) => { const b = Q.k.movs.length ? Q.k.disponible : 0, h = Math.abs(b) / maxA * 100;
+    return '<div class="inf-hist-c' + (Q.clave === P.clave ? ' act' : '') + '"><div class="inf-hist-m"><span class="arr">' + (b > 0.005 ? '<i class="pos" style="height:' + h.toFixed(1) + '%"></i>' : '') + '</span><span class="abj">' + (b < -0.005 ? '<i class="neg" style="height:' + h.toFixed(1) + '%"></i>' : '') + '</span></div><small>' + escapeHtml(etq(Q)) + '</small></div>'; }).join('') + '</div></div>';
+  return cabeza + infHojaTitulo(P, 'Tu balance', conSigno(k.disponible), k.disponible >= 0.005 ? 'pos' : k.disponible <= -0.005 ? 'neg' : '') + cascada + hist + (cmp.ok ? '<div class="card inf-h-c"><div class="inf-h-t">Frente a ' + escapeHtml(cmp.rot) + '</div><p class="inf-vacio">Tu media: ' + escapeHtml(conSigno(cmp.bal)) + '.</p></div>' : '') + ver('Todos', 'Ver los movimientos');
 }
 function infAjustesHtml() {
   const C = infCfg(), pend = infPendientes(), vistos = C.vistos;
@@ -6031,8 +6329,9 @@ function renderJuntos() {
    compartir un gasto en una sola pantalla. La versión anterior sigue en el botón «Antes».
    ============================================================ */
 function juntosV2() { return versionDe('juntos') !== 'antes'; }
-function juntosV3() { const v = versionDe('juntos'); return v === 'nueva' || v === 'filas'; }
-function juntosV4() { return versionDe('juntos') === 'filas'; }
+function juntosV3() { const v = versionDe('juntos'); return v === 'nueva' || v === 'filas' || v === 'v5'; }
+function juntosV4() { const v = versionDe('juntos'); return v === 'filas' || v === 'v5'; }
+function juntosV5() { return versionDe('juntos') === 'v5'; }
 /* ---- Juntos v3 (23/10/2026, docs/14 B1 y B3): lo que debes y te deben en círculos (Personas | Grupos) y la actividad arriba, con lo nuevo marcado ---- */
 function eurosR(v) { return (v < 0 ? '−' : '') + agrupar(Math.round(Math.abs(v)).toLocaleString(LOC())) + ' ' + sym(); }
 function cifraCirc(v) { return Math.abs(v) < 1 ? money(Math.abs(v)) : eurosR(Math.abs(v)); } // menos de 1 €: con céntimos (si no, «0 €»)
@@ -6141,6 +6440,70 @@ function juntosV4Html(ps, gs, debes, teDeben, hayComp) {
     (hayObj ? '<button type="button" class="jv5-link tappable" ' + act('juntosVer', 'metas') + '>' + ic('piggy2') + '<span>Metas y deudas juntos</span>' + ic('chevR') + '</button>' : '') + '</div>';
   return h;
 }
+/* ---- Juntos v5 (28/11/2026, docs/53 C): resumen arriba, «Amigos» como historias que se deslizan y «Grupos» en tarjetas con foto.
+   Lo nuevo (de otros, desde tu última visita a ese grupo o persona) sale como aro en la cara, borde y «N nuevas» en el grupo y punto en la barra de abajo.
+   Se guarda en cfg().juntosVisto = { _: base, [gid]: fecha, 'p:uid': fecha } (fechas del servidor, sin migración). ---- */
+function juntosVistoDe(gid) { const j = cfg().juntosVisto || {}; return j[gid] || j._ || cfg().vistoJuntos || '9999'; }
+// la primera vez parte de lo que ya habías visto: nada aparece como nuevo de golpe
+function juntosVistoIniciar() { if (cfg().juntosVisto || !S.compartidos) return; saveConfig({ juntosVisto: { _: cfg().vistoJuntos || juntosUltimo() || new Date(0).toISOString() } }); }
+function juntosNuevo() {
+  const out = { g: {}, p: {}, u: {}, total: 0 }, yo = miUid();
+  if (!yo || !S.compartidos || !gruposDisponible() || !juntosOn()) return out;
+  const pv = cfg().juntosVisto || {};
+  const suma = (gid, uid, ts) => {
+    ts = String(ts || ''); if (!ts || !grupoDe(gid) || ts <= juntosVistoDe(gid)) return;
+    out.g[gid] = (out.g[gid] || 0) + 1; out.total++; if (ts > (out.u[gid] || '')) out.u[gid] = ts;
+    const u = aliasDe(gid, uid);
+    if (u && u !== yo && ts > (pv['p:' + u] || '')) { const x = out.p[u] || (out.p[u] = { n: 0, ult: '' }); x.n++; if (ts > x.ult) x.ult = ts; }
+  };
+  S.compartidos.forEach((c) => { const q = c.creadoPor || c.pagadoPor; if (q && !esMio(c.grupoId, q)) suma(c.grupoId, q, c.createdAt); });
+  if (historialOn()) histAvisos().forEach((f) => suma(f.gid, f.por, f.en));
+  encargosNuevos().forEach((a) => suma(a.grupoId, a.creadoPor, a.createdAt));
+  return out;
+}
+// al abrir un grupo o una persona se apaga su aviso (solo lo que había hasta ahora)
+function juntosMarcarVisto(clave, ts) {
+  if (!ts) return; const j = Object.assign({}, cfg().juntosVisto || {}); if ((j[clave] || '') >= ts) return;
+  j[clave] = ts; saveConfig({ juntosVisto: j }); render();
+}
+function juntosVioGrupo(gid) { if (juntosV5()) juntosMarcarVisto(gid, juntosNuevo().u[gid]); }
+function juntosVioPersona(uid) { if (juntosV5()) { const x = juntosNuevo().p[uid]; if (x) juntosMarcarVisto('p:' + uid, x.ult); } }
+function juntosV5Html(ps, gs, debes, teDeben, hayComp) {
+  const yo = miUid(), uso = juntosUso(), todos = S.juntosTodos || {}, nuevo = juntosNuevo();
+  const cifras = !hayComp ? '<div class="jv3-paz">Aún no habéis compartido gastos</div>' : (debes < 0.005 && teDeben < 0.005) ? '<div class="jv3-paz">' + ic('checkCircle') + ' Estás en paz con todos</div>' :
+    '<div class="jv3-cifras tnum">' + (teDeben >= 0.005 ? '<span class="te">Te deben <b>' + money(teDeben) + '</b></span>' : '') + (debes >= 0.005 ? '<span class="de">' + (teDeben >= 0.005 ? '<i>·</i> ' : '') + 'Debes <b>' + money(debes) + '</b></span>' : '') + '</div>';
+  let h = '<div class="card jv-cab jv3-cab jv5-cab">' + cifras + '<button class="btn accent block jv-compartir" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button></div>';
+  // Amigos: a quien debes, quien te debe y con quien estás en paz
+  const vistos = new Set(ps.map((x) => x.uid)), paz = [];
+  gs.forEach((g) => g.miembros.forEach((m) => { const u = aliasDe(g.id, m.user_id); if (u !== yo && !esMio(g.id, m.user_id) && !vistos.has(u)) { vistos.add(u); paz.push({ uid: u, nombre: m.nombre }); } }));
+  const pers = ps.map((x) => ({ k: x.uid, nombre: x.nombre, v: x.neto })).concat(paz.map((x) => ({ k: x.uid, nombre: x.nombre, v: 0 }))).sort(jvPorUso(uso.p));
+  const amigo = (x) => {
+    const v = x.v, pz = Math.abs(v) < 0.005, n = (nuevo.p[x.k] || {}).n || 0, est = pz ? 'en paz' : v < 0 ? 'le debes' : 'te debe';
+    return '<button type="button" class="jv6-am tappable' + (n ? ' nuevo' : '') + (pz ? ' paz' : v < 0 ? ' malo' : ' bueno') + '" ' + act('personaVer', x.k) + '>' +
+      '<span class="jv6-aro">' + caraHtml(x.k, x.nombre) + '</span><b class="jv6-an">' + escapeHtml(String(x.nombre || '').trim().split(/\s+/)[0]) + '</b><span class="jv6-af tnum">' + (pz ? 'en paz' : '<span class="sr-only">' + est + ' </span>' + escapeHtml(cifraCirc(v))) + (n ? '<span class="sr-only">Novedades</span>' : '') + '</span></button>';
+  };
+  h += '<section class="jv4-sec jv6-sec"><div class="section-title">Amigos' + infoI('Cada cifra suma lo de todos tus grupos.') + '</div><div class="jv6-amigos">' +
+    '<button type="button" class="jv6-am tappable jv6-inv" ' + act('juntosInvitar') + '><span class="jv6-aro mas" aria-hidden="true">' + ic('plus') + '</span><b class="jv6-an">Invitar</b></button>' + pers.slice(0, 24).map(amigo).join('') + '</div></section>';
+  // Grupos: tarjetas de dos en dos, con foto
+  const grs = gs.map((g) => { const hay = (S.compartidos || []).some((c) => c.grupoId === g.id); return { k: g.id, g, nombre: nombreDestino(g), hay, v: hay ? miSaldo(g.id) : 0 }; }).sort(jvPorUso(uso.g));
+  const MAX = 6, n = todos.grupos ? grs.length : MAX;
+  const tarjeta = (x) => {
+    const g = x.g, v = x.v, pz = Math.abs(v) < 0.005, nn = nuevo.g[g.id] || 0, otros = g.miembros.filter((m) => m.user_id !== yo && !esMio(g.id, m.user_id));
+    const est = !x.hay ? 'sin gastos' : pz ? 'en paz' : v < 0 ? 'debes' : 'te deben';
+    const img = g.foto ? '<img class="jv6-foto" src="' + g.foto + '" alt="">' : '<span class="jv6-ini" style="background:' + colorPersona(g.id) + '" aria-hidden="true">' + escapeHtml(iniciales(x.nombre).charAt(0)) + '</span>';
+    return '<button type="button" class="jv6-g tappable ' + (!x.hay || pz ? 'paz' : v < 0 ? 'malo' : 'bueno') + (nn ? ' nuevo' : '') + '" ' + act('grupoVer', g.id) + '>' +
+      '<span class="jv6-img">' + img + (nn ? '<span class="jv6-pill">' + (nn === 1 ? '1 nueva' : (nn > 9 ? '9+' : nn) + ' nuevas') + '</span>' : '') + '</span>' +
+      '<b class="jv6-gn">' + escapeHtml(x.nombre) + '</b>' +
+      '<span class="jv6-gm"><span class="jv-caras" aria-hidden="true">' + otros.slice(0, 3).map((m) => caraHtml(aliasDe(g.id, m.user_id), m.nombre, 'mini')).join('') + '</span>' + (otros.length > 3 ? '<i class="tnum">+' + (otros.length - 3) + '</i>' : '') + '</span>' +
+      '<span class="jv6-gs">' + (!x.hay || pz ? est : est + ' <b class="tnum">' + escapeHtml(money(Math.abs(v))) + '</b>') + '</span></button>';
+  };
+  h += '<section class="jv4-sec jv6-sec"><div class="section-title">Grupos<button type="button" class="link" ' + act('openGrupos') + '>' + ic('plus') + ' Nuevo</button></div>' +
+    (grs.length ? '<div class="jv6-grupos' + (grs.length === 1 ? ' uno' : '') + '">' + grs.slice(0, n).map(tarjeta).join('') + '</div>' +
+      (grs.length > MAX ? '<button type="button" class="link jv4-todos" ' + act('juntosTodos', 'grupos') + '>' + (todos.grupos ? 'Ver menos' : 'Ver todos (' + grs.length + ')') + '</button>' : '')
+      : '<div class="jv3-vacio">Aún no tienes grupos. Crea uno para la casa, un viaje o el pádel.</div>') + '</section>';
+  h += juntosObjHtml();
+  return h;
+}
 // «Por persona»: los círculos de siempre (lo que te debe o le debes a cada uno, sumando todos los grupos)
 function juntosPersonasVerHtml(ps, gs) {
   const yo = miUid(), uso = juntosUso(), todos = S.juntosTodos || {};
@@ -6236,6 +6599,7 @@ function renderJuntosV2() {
     (basico() ? '<p class="jv-sin-app">¿Tus amigos no tienen PalomApp? No pasa nada: añádelos por su nombre.</p>' : '') +
     '<button class="btn accent block" ' + act('compRapido', '') + '>' + ic('plus') + ' Compartir un gasto</button>' +
     '<button class="btn ghost block" ' + act('openGrupos') + '>' + ic('users') + ' Crear un grupo</button></div>';
+  if (juntosV5()) return juntosV5Html(ps, gs, debes, teDeben, hayComp);
   if (juntosV4()) return juntosV4Html(ps, gs, debes, teDeben, hayComp);
   if (juntosV3()) return juntosV3Html(ps, gs, frase, debes, teDeben, hayComp);
   let h = '<div class="card jv-cab"><div class="jv-frase">' + frase + '</div>' +
@@ -6458,7 +6822,7 @@ function compRapidoHtml() {
   const pago = cp.pagador === yo, res = crResTxt(ms, imp, r);
   const cats = catsGasto().map((c) => c.nombre); if (F.cat && !cats.includes(F.cat)) cats.push(F.cat);
   return '<div class="handle"></div><h2>Compartir un gasto</h2>' +
-    '<div class="cr-lbl">Con</div><div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('r') + '</div>' + invInlineHtml('r') +
+    '<div class="cr-lbl">Con</div>' + (apuntarV2() ? conCarasHtml(ds, cp.dest, 'crDest', 'r') : '<div class="cr-con">' + ds.map((d) => '<button type="button" class="chip ' + (cp.dest === d.k ? 'active' : '') + '" ' + act('crDest', d.k) + '>' + (d.grupo ? ic('users') + ' ' : '') + escapeHtml(d.label) + '</button>').join('') + otraPersonaChip('r') + '</div>') + invInlineHtml('r') +
     temaCajaHtml() +
     '<label class="cr-imp"><input id="crImporte" class="cr-importe tnum" type="text" inputmode="decimal" placeholder="0" size="' + Math.max(1, String(F.importe || '').length) + '" aria-label="Importe total" value="' + escapeHtml(F.importe || '') + '" ' + onInput('crImporte') + '><span>' + sym() + '</span></label>' +
     '<div id="monBox" class="mon-box">' + monHtml() + '</div>' +
@@ -6543,7 +6907,7 @@ function monUsar() {
   if (F.tec) { F.tec.txt = txt; F.tec.neg = false; F.tec.reemplazar = true; tecSync(true); }
   const cr = $('#crImporte'); if (cr) { cr.value = txt; F.importe = txt; cr.size = Math.max(1, txt.length); }
   const fi = $('#fImporte'); if (fi && !F.tec) fi.value = txt;
-  { const mm = $('#mfMas'); if (mm && mm.hidden && M.moneda !== 'OTRA' && H.tecMas) { try { H.tecMas([]); } catch (e) { /* */ } } } // que se vea la nota en la descripción
+  { const mm = $('#mfMas'); if (mm && mm.hidden && M.moneda !== 'OTRA') { try { tecMasDetalles(true); } catch (e) { /* */ } } } // que se vea la nota en la descripción
   const d = $('#crDesc') || $('#fDesc'); if (d && M.moneda !== 'OTRA' && d.value.indexOf(nota) < 0) { d.value = (d.value.trim() ? d.value.trim() + ' · ' : '') + nota; if (d.id === 'crDesc') F.desc = d.value; }
   if (M.moneda !== 'OTRA' && M.origen === 'mano') monRecordar(M.moneda, numCampo(M.mano), todayISO());
   M.on = false; monPintar(); sentir('ok');
@@ -7971,7 +8335,7 @@ function crearHtml() {
     op('crearIr', ['deuda'], 'card', 'Pago de deuda', 'k-gasto') + op('crearIr', ['tarea'], 'checkCircle', 'Tarea', 'k-tarea') + op('crearIr', ['importar'], 'download', 'Importar', 'k-imp') +
     '</div>';
 }
-function crearElegido() { return verAnterior('crear') ? crearHtml() + (compararOn() && !VERSIONES.crear.cerrada ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('comparar') + ' Ver la versión nueva</button>' : '') : crearHtmlV2(); }
+function crearElegido() { const v = versionDe('crear'); return v === 'v3' ? crearHtmlV3() : v === 'v2' ? crearHtmlV2() : crearHtml() + (compararOn() ? '<button type="button" class="crear-antes" ' + act('crearVersion', 0) + '>' + ic('comparar') + ' Ver la versión nueva</button>' : ''); }
 function openCrear() { FORM = { kind: 'crear' }; if ($('#sheetBackdrop')) updateSheet(crearElegido()); else openSheet(crearElegido()); }
 /* ---- buscador global: movimientos, tareas, categorías y ajustes ---- */
 const ATAJO_IC = { 'Foto de ticket': 'camera', 'Nuevo gasto': 'plus', 'Nueva tarea': 'checkCircle', 'Grupos y personas': 'users', Metas: 'target', Inversiones: 'trendUp', Deudas: 'deuda', 'Lo que tienes': 'wallet' };
@@ -8887,15 +9251,17 @@ function openTraspasoForm(id, pre) {
   pre = pre || {};
   const desde = t ? t.cuentaId : (pre.desde || (pc && pc.id));
   FORM = { kind: 'traspaso', id: t ? t.id : null, convertir: !t && pre.convertir ? pre.convertir : null, desde, a: t ? t.cuentaDestinoId : (pre.a || (cuentasCfg().find((c) => c.id !== desde) || {}).id) };
-  const conv = !!FORM.convertir, tec = tecladoOn() && !conv;
+  const conv = !!FORM.convertir, tec = tecladoOn() && !conv, v2 = apuntarV2(), desc0 = t ? t.descripcion || '' : (pre.descripcion || '');
+  FORM.mfDet = !!desc0; // 28/11 (tanda 10): la nota va en «Más detalles», abierta si ya hay una
+  const descTras = '<div class="field"><label for="fDesc">' + (v2 ? '¿De qué?' : 'Descripción <span class="hint">· opcional</span>') + '</label><input id="fDesc" type="text" placeholder="' + (v2 ? 'Alquiler, cajero…' : 'p. ej. Para el alquiler') + '" value="' + escapeHtml(desc0) + '"></div>';
   if (tec) FORM.tec = { on: !t, txt: tecTxtDe(t ? t.importe : pre.importe), neg: false, sinNeg: true, reemplazar: !!(t || pre.importe), tecla: t ? 'hecho' : 'guardar', pie: 'Escribe cuánto pasas', alGuardar: () => saveTraspaso() };
   const h = '<div class="handle"></div><h2>' + (t ? 'Editar traspaso' : conv ? 'Convertir en traspaso' : 'Traspaso entre cuentas') + '</h2>' +
-    '<div class="rec-hint" style="margin:-6px 0 12px;">' + (conv ? 'Este movimiento dejará de contar como gasto o ingreso y pasará a ser un traspaso entre tus cuentas. No se duplica: es el mismo movimiento.' : 'También para sacar del cajero. No cambia «Te queda este mes».') + '</div>' +
+    (v2 && !conv ? infoSola('Qué es un traspaso', 'También sirve para sacar dinero del cajero. No cambia «Te queda este mes».') : '<div class="rec-hint" style="margin:-6px 0 12px;">' + (conv ? 'Este movimiento dejará de contar como gasto o ingreso y pasará a ser un traspaso entre tus cuentas. No se duplica: es el mismo movimiento.' : 'También para sacar del cajero. No cambia «Te queda este mes».') + '</div>') +
     (tec ? tecCampoHtml(FORM.tec) : '<div class="field"><label>Importe (' + sym() + ')</label><input id="fImporte" class="importe-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="0,00" value="' + importeCampo(t ? t.importe : pre.importe) + '"></div>') +
     '<div class="field"><label>Desde</label>' + trasChipsHtml('desde') + '</div>' +
     '<div class="field"><label>A</label>' + trasChipsHtml('a') + '</div>' +
     '<div class="field"><label>Fecha</label><input id="fFecha" type="date" value="' + (t ? t.fecha : (pre.fecha || todayISO())) + '"></div>' +
-    '<div class="field"><label>Descripción <span class="hint">· opcional</span></label><input id="fDesc" type="text" placeholder="p. ej. Para el alquiler" value="' + escapeHtml(t ? t.descripcion || '' : (pre.descripcion || '')) + '"></div>' +
+    (v2 ? '<button type="button" class="link mf-det-btn" id="mfDetBtn" aria-expanded="' + FORM.mfDet + '" aria-controls="mfDet" ' + act('mfDetToggle') + '>' + (FORM.mfDet ? 'Menos detalles' : 'Más detalles') + ' ' + ic('chevD') + '</button><div id="mfDet" class="mf-det"' + (FORM.mfDet ? '' : ' hidden') + '>' + descTras + '</div>' : descTras) +
     '<div class="actions"><button class="btn ghost block" ' + act('closeSheet') + '>Cancelar</button><button class="btn accent block" ' + act('saveTraspaso') + '>' + (conv ? 'Convertir' : 'Guardar') + '</button></div>' +
     (t ? '<button class="btn danger block" style="margin-top:10px;" ' + act('deleteTraspaso') + '>' + ic('trash') + ' Eliminar traspaso</button>' : '') +
     (tec ? tecladoHtml(FORM.tec) : '');
@@ -10916,7 +11282,7 @@ function autoCategoriaDesc() {
   if (!inp || !desc) return;
   if (inp.value.trim() && !FORM.catAuto) return; // ya la eligió el usuario
   const r = reglaPara(desc, FORM.tipo), sg = r ? r.categoria : sugerirCategoria(desc, FORM.tipo);
-  if (sg && sg !== inp.value) { inp.value = sg; FORM.catAuto = true; $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === sg)); }
+  if (sg && sg !== inp.value) { inp.value = sg; FORM.catAuto = true; if (FORM.tec) tecCatsPintar(sg); $$('#catChips .chip').forEach((b) => b.classList.toggle('active', decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === sg)); }
 }
 
 /* ============================================================
@@ -13414,6 +13780,7 @@ function atrasAndroid() {
   if (b && !b.dataset.cerrando) { if (atrasEnHoja(b)) return true; if (hojaConAlgoEscrito()) preguntarDescartar();
     else if (volverDeHoja()) { /* 26/11 (decisión del dueño): de un gasto abierto desde un grupo (o una persona), atrás vuelve allí */ }
     else closeSheet(); return true; }
+  if (S.inicioEd && S.tab === 'inicio') { H.iwListo(); return true; } // 28/11: en «Editar Inicio», atrás sale del modo
   // 13/11 (Calidad): en la bienvenida, atrás vuelve al paso anterior (antes cerraba la app); en el primer paso, sale como siempre
   const ob = S.onboarding;
   if (ob && bienvV2(ob)) { if (ob.confSaltar) { ob.confSaltar = false; render(); return true; } return bvAtras(ob); } // 13/11 (docs/45)
@@ -13503,7 +13870,7 @@ const H = {
   avAvisarme: async () => { const n = avNat(), e = S._avEst || {}; if (!n) return; await n.configurar({ avisarme: e.avisarme === false }).catch(() => {}); avisosAbrir(); },
   avBanco: async ([pkg]) => { const n = avNat(), e = S._avEst || {}; if (!n) return; const b = new Set(e.bancos || []); if (b.has(pkg)) b.delete(pkg); else b.add(pkg); await n.configurar({ bancos: [...b] }).catch(() => {}); avisosAbrir(); },
   goTab: ([id]) => {
-    S._infoTeQueda = false;
+    S._infoTeQueda = false; S.inicioEd = false;
     S.volverA = null; if (id === 'movimientos') { S.movCat = ''; S.movCuenta = ''; movLimpiarFiltros(); S.movVista = 'resumen'; S.movPeriodo = mesHoyClave(); S._donutSel = ''; S._gcAbierta = ''; _donutAnim = ''; }
     if (id === 'tareas' || id === 'calendario') S.agendaSub = id;
     const nueva = TAB_ALIAS[id] || id; if (nueva !== S.tab) S._entrando = true;
@@ -13577,6 +13944,7 @@ const H = {
   nivelGuardar: () => { if (!FORM || FORM.kind !== 'nivel') return; const v = FORM.v; closeSheet(); if (v !== nivel() || !cfg().nivel) nivelPoner(v, 'tu'); S.crearMas = false; toast('Listo'); render(); },
   aviso30Ver: () => { S._aviso30Fuera = true; render(); H.descAbrir([]); },
   aviso30Basico: () => { S._aviso30Fuera = true; nivelPoner('basico', 'tu'); toast('Vuelves a lo básico'); render(); },
+  crearApuntesToggle: () => { S.crearApuntes = !S.crearApuntes; sentir('tic'); if (FORM && FORM.kind === 'crear') updateSheet(crearElegido()); },
   crearMasToggle: () => { S.crearMas = !S.crearMas; sentir('tic'); if (FORM && FORM.kind === 'crear') updateSheet(crearElegido()); },
   ppAbrir: () => { FORM = { kind: 'pp' }; openSheet('<div class="handle"></div>' + ppTarjetaHtml(true)); },
   ppIr: ([h, ...args]) => { closeSheet(); if (H[h]) H[h](args); },
@@ -13720,6 +14088,7 @@ const H = {
   // las tarjetas de «Así vas» llevan delante insIr: quitan su etiqueta y hacen lo de siempre
   compararToggle: () => { const on = !compararOn(); saveConfig({ compararVersiones: on }); if (!on) S.verAnterior = {}; toast(on ? 'Verás un botón para comparar con la versión anterior' : 'Botón de comparar oculto'); render(); },
   compararCambiar: ([k]) => {
+    if (k === 'inicioEd') { S.inicioEd = false; sentir('tic'); toast('Viendo la versión anterior de Editar Inicio'); render(); iwAbrirHoja(); return; } // no se recuerda: la hoja es solo para comparar
     const v = VERSIONES[k]; if (!v) return; const n = (versionIdx(k) + 1) % v.variantes.length;
     S.verAnterior = Object.assign({}, S.verAnterior, { [k]: n }); sentir('tic'); _donutAnim = '';
     toast(v.variantes.length === 2 ? (n ? 'Viendo la versión anterior de ' + v.txt : 'Vuelves a la versión nueva') : v.txt + ': versión «' + v.variantes[n][1] + '» (' + (n + 1) + ' de ' + v.variantes.length + ')');
@@ -13731,8 +14100,15 @@ const H = {
   asiVasElegir: ([k]) => { if (!FORM || FORM.kind !== 'asiVas') return; const F = FORM, otro = k !== 'auto' ? F.v.findIndex((x, i) => i !== F.sel && x === k) : -1; if (otro >= 0) F.v[otro] = F.v[F.sel]; F.v[F.sel] = k; F.sub = ''; if (F.sel < 4) F.sel++; sentir('tic'); updateSheet(asiVasHtml()); },
   asiVasReset: () => { if (!FORM || FORM.kind !== 'asiVas') return; FORM.v = ['auto', 'auto', 'auto', 'auto', 'auto']; FORM.sub = ''; sentir('tic'); updateSheet(asiVasHtml()); },
   // «Editar Inicio» (docs/21)
-  iwEditar: () => { verBadge('inicioEd'); FORM = { kind: 'iwEd', vista: 'lista', lista: iwLista() }; openSheet(iwEdHtml()); },
-  iwVista: ([v]) => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.vista = v; FORM.aviso = ''; updateSheet(iwEdHtml()); },
+  iwEditar: () => { verBadge('inicioEd'); if (versionDe('inicioEd') !== 'nueva') { iwAbrirHoja(); return; }
+    if ($('#sheetBackdrop')) closeSheet(); S.inicioVista = 'hoy'; if (S.tab !== 'inicio') H.goTab(['inicio']); S.inicioEd = true; sentir('tic', true); render(); window.scrollTo(0, 0); },
+  iwListo: () => { S.inicioEd = false; sentir('tic'); render(); },
+  iwMoverIn: ([i, d]) => { const l = iwLista(), vis = l.map((x, k) => k).filter((k) => iwTipoOn(l[k].t)); i = Number(i); const p = vis.indexOf(i), q = p + Number(d); if (p < 0 || q < 0 || q >= vis.length) return; const j = vis[q], t = l[i]; l[i] = l[j]; l[j] = t; sentir('tic'); iwGuardarIn(l); },
+  iwReordenar: ([de, a]) => { const l = iwLista(); de = Number(de); a = Number(a); if (de === a || !l[de] || a < 0 || a >= l.length) return; const x = l.splice(de, 1)[0]; l.splice(a, 0, x); sentir('ok'); iwGuardarIn(l); },
+  iwQuitarIn: ([i]) => { const l = iwLista(), x = l.splice(Number(i), 1)[0]; if (!x) return; sentir('tic'); if (IW_TIPOS[x.t].recom) toast('Has quitado «' + IW_TIPOS[x.t].n + '». Te recomiendo tenerla: puedes volver a añadirla cuando quieras.'); iwGuardarIn(l); },
+  iwAnadirIn: () => { if (iwLista().length >= IW_MAX) return; FORM = { kind: 'iwEd', vista: 'cat', lista: iwLista(), enInicio: true }; openSheet(iwEdHtml()); },
+  iwResetIn: () => { sentir('tic'); iwGuardarIn(iwDefecto()); },
+  iwVista: ([v]) => { if (!FORM || FORM.kind !== 'iwEd') return; if (FORM.enInicio && v === 'lista') { closeSheet(); return; } FORM.vista = v; FORM.aviso = ''; updateSheet(iwEdHtml()); },
   iwCat: () => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.vista = 'cat'; FORM.aviso = ''; updateSheet(iwEdHtml()); },
   iwFiltro: ([k]) => { if (!FORM || FORM.kind !== 'iwEd') return; FORM.filtro = k; updateSheet(iwEdHtml()); },
   iwMover: ([i, d]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; i = Number(i); const j = i + Number(d); if (j < 0 || j >= F.lista.length) return; const t = F.lista[i]; F.lista[i] = F.lista[j]; F.lista[j] = t; F.aviso = ''; sentir('tic'); iwGuardar(); },
@@ -13741,7 +14117,7 @@ const H = {
     if (IW_TIPOS[t].opc && !IW_TIPOS[t].sinPregunta) { F.vista = 'opc'; F.i = -1; F.nuevo = t; updateSheet(iwEdHtml()); return; }
     F.lista.push({ t }); F.vista = 'lista'; F.aviso = ''; sentir('ok'); iwGuardar(); },
   iwOpcAbrir: ([i]) => { i = Number(i); const l = FORM && FORM.kind === 'iwEd' ? FORM.lista : iwLista(); if (!l[i]) return; const ab = FORM && FORM.kind === 'iwEd' && $('#sheetBackdrop');
-    FORM = { kind: 'iwEd', vista: 'opc', lista: l, i, filtro: FORM && FORM.filtro }; if (ab) updateSheet(iwEdHtml()); else openSheet(iwEdHtml()); },
+    FORM = { kind: 'iwEd', vista: 'opc', lista: l, i, filtro: FORM && FORM.filtro, enInicio: ab ? !!FORM.enInicio : !!S.inicioEd }; if (ab) updateSheet(iwEdHtml()); else openSheet(iwEdHtml()); },
   iwOpcElegir: ([k]) => { const F = FORM; if (!F || F.kind !== 'iwEd') return; if (F.i >= 0 && F.lista[F.i]) F.lista[F.i] = { t: F.lista[F.i].t, o: iwOpcObj(F.lista[F.i].t, k) }; else if (F.nuevo && F.lista.length < IW_MAX) F.lista.push({ t: F.nuevo, o: iwOpcObj(F.nuevo, k) }); F.vista = 'lista'; F.i = -1; F.nuevo = null; F.aviso = ''; sentir('ok'); iwGuardar(); },
   iwIrMovLista: () => { S.tab = 'movimientos'; S.movVista = 'lista'; S.movPeriodo = mesHoyClave(); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S._entrando = true; render(); window.scrollTo(0, 0); },
   iwIrMovCal: ([iso]) => { const im = inicioYM(); S.tab = 'movimientos'; S.movVista = 'calendario'; S.movPeriodo = mesClave(im.y, im.m); S.volverA = null; movLimpiarFiltros(); S.movCat = ''; S.movCuenta = ''; S.movCalDia = iso || ''; S._entrando = true; render(); window.scrollTo(0, 0); },
@@ -13752,6 +14128,9 @@ const H = {
   infAbrir: () => { verBadge('informes'); const c = infPendientes()[0] || infUltimo('mes'); H.infVer([c]); },
   infVer: ([c]) => { if (!c) return; FORM = { kind: 'informe', clave: c }; if ($('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando) updateSheet(infHtml(c)); else openSheet(infHtml(c)); if (infPeriodo(c).cerrado) { infMarcarVisto(c); if (S.tab === 'inicio') render(); } },
   infTipo: ([t]) => H.infVer([infUltimo(t)]),
+  infHoja: ([c, v]) => { if (!c || !v) return; FORM = { kind: 'informe', clave: c, vista: v }; updateSheet(infHojaHtml(c, v)); const sh = $('#sheetBackdrop .sheet'); if (sh) sh.scrollTop = 0; sentir('tic'); },
+  infIr: ([tipo, per]) => { closeSheet(); irMovs({ tipo: tipo || 'Todos', periodo: per }); },
+  infVersion: ([n]) => { S.verAnterior = Object.assign({}, S.verAnterior, { informe: Number(n) || 0 }); sentir('tic'); if (FORM && FORM.kind === 'informe' && FORM.clave) { FORM = { kind: 'informe', clave: FORM.clave }; updateSheet(infHtml(FORM.clave)); } },
   infAjustes: () => { if (!FORM) return; FORM.kind = FORM.kind === 'informe' ? 'informe' : FORM.kind; updateSheet(infAjustesHtml()); },
   infOn: ([t], el) => { const C = cfg().informes || {}, v = el && typeof el.checked === 'boolean' ? el.checked : !infCfg().on[t]; saveConfig({ informes: Object.assign({}, C, { on: Object.assign({}, infCfg().on, { [t]: v }) }) }); sentir('tic'); updateSheet(infAjustesHtml()); render(); },
   infDescartar: ([c]) => { infMarcarVisto(c); sentir('tic'); render(); },
@@ -13891,6 +14270,7 @@ const H = {
     const chips = $('#catChips'); if (chips) chips.innerHTML = chipsHtml(t, ($('#fCategoria') || {}).value || '');
     const inv = $('#invFields'); if (inv) inv.innerHTML = invFieldsHtml(t, '');
     const cl = $('#catLabel'); if (cl) cl.innerHTML = catLabel(t);
+    deQueSitio();
     syncCatField();
     if (FORM.comp && FORM.comp.on) compAsegurarDestino();
     refrescarComp();
@@ -13929,12 +14309,13 @@ const H = {
   tecK: ([k]) => { const largo = H.tecK._largo; H.tecK._largo = false; if (largo && k === 'del') return; tecPulsar(k); }, // tras mantener «Borrar», su propio toque no cuenta
   tecAbrir: () => { if (!FORM || !FORM.tec) return; if (!FORM.tec.on) { tecAbrirTeclado(); sentir('tic'); } },
   tecMas: () => tecMasDetalles(),
+  mfDetToggle: () => { if (!FORM || (FORM.kind !== 'mov' && FORM.kind !== 'traspaso')) return; FORM.mfDet = !FORM.mfDet; const d = $('#mfDet'), b = $('#mfDetBtn'); if (d) d.hidden = !FORM.mfDet; if (b) { b.setAttribute('aria-expanded', String(FORM.mfDet)); b.firstChild.nodeValue = (FORM.mfDet ? 'Menos detalles' : 'Más detalles') + ' '; } sentir('tic'); },
   // «Compartir» en el teclado corto: abre los detalles con lo de compartir ya activado
-  tecCompartir: () => { tecMasDetalles(); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
+  tecCompartir: () => { tecMasDetalles(true); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
   // «Compartir este gasto» arriba de un gasto ya apuntado
-  compOnTop: () => { const b = $('#compArriba'); if (b) b.hidden = true; H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
+  compOnTop: () => { const b = $('#compArriba'); if (b) b.hidden = true; if (FORM.tec && FORM.tec.corta) tecMasDetalles(true); H.compOn(); setTimeout(() => { const f = $('#compField'); if (f && f.scrollIntoView) f.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60); },
   tecVersion: ([n]) => tecVolverAVersion(n),
-  tecCat: ([c]) => { const ant = ($('#fCategoria') || {}).value; if (ant !== c) { const sb = $('#fSub'); if (sb) sb.value = ''; } H.pickCat([c]); tecCuentaPintar(); $$('#tecCats .tec-cat').forEach((b) => { const on = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); tecSync(); },
+  tecCat: ([c]) => { const ant = ($('#fCategoria') || {}).value; if (ant !== c) { const sb = $('#fSub'); if (sb) sb.value = ''; } H.pickCat([c]); tecCuentaPintar(); if (tecCatsSolo(FORM.tipo)) tecCatsPintar(c); $$('#tecCats .tec-cat').forEach((b) => { const on = decodeURIComponent((b.getAttribute('data-click') || '').split('|')[1] || '') === c; b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); }); sentir('tic'); tecSync(); },
   tecFecha: (_a, el) => { const v = el.value || todayISO(), f = $('#fFecha'); if (f) { f.value = v; if (H.onFechaChange) H.onFechaChange([], f); } const t = $('#tecFechaTxt'); if (t) t.textContent = tecFechaTxt(v); },
   tecCuenta: () => {
     const cs = cuentasCfg(); if (cs.length < 2) return;
@@ -14156,6 +14537,7 @@ const H = {
   juntosVer: ([k]) => { S.juntosVer = k || ''; sentir('tic'); render(); window.scrollTo && window.scrollTo(0, 0); },
   juntosTodos: ([k]) => { const t = S.juntosTodos = Object.assign({}, S.juntosTodos); t[k] = !t[k]; sentir('tic'); render(); },
   personaVer: ([uid]) => {
+    juntosVioPersona(uid);
     const F = FORM = { kind: 'persona', uid }; if ($('#sheetBackdrop')) updateSheet(personaVerHtml(uid)); else openSheet(personaVerHtml(uid));
     const x = juntosPersonas().find((p) => p.uid === uid);
     if (x && x.neto > 0 && personaSinApp(x)) S.db.rpc('enlace_sin_cuenta', { p_id: uid }).then((t) => { if (t && FORM === F && $('#sheetBackdrop') && !$('#sheetBackdrop').dataset.cerrando) { F.pedirUrl = APP_URL + '?soy=' + encodeURIComponent(t); updateSheet(personaVerHtml(uid)); } }).catch((e) => console.error(e));
@@ -14483,6 +14865,19 @@ const H = {
   reglaCuenta: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; const c0 = ($('#rgCat') || {}).value || '', tr0 = ($('#rgTras') || {}).value || ''; FORM.rgCuenta = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c0; if ($('#rgTras') && tr0 && [...$('#rgTras').options].some((o) => o.value === tr0)) $('#rgTras').value = tr0; sentir('tic'); },
   reglaEs: ([v]) => { if (!FORM || FORM.kind !== 'reglas') return; const t = ($('#rgTexto') || {}).value || ''; const c0 = ($('#rgCat') || {}).value || '', tr0 = ($('#rgTras') || {}).value || ''; FORM.rgEs = v || ''; updateSheet(reglasHtml()); if ($('#rgTexto')) $('#rgTexto').value = t; if ($('#rgCat')) $('#rgCat').value = c0; if ($('#rgTras') && tr0 && [...$('#rgTras').options].some((o) => o.value === tr0)) $('#rgTras').value = tr0; sentir('tic'); },
   onDescInput: () => { autoCategoriaDesc(); refrescarReglaBox(); },
+  onDeQueInput: (_a, el) => {
+    autoCategoriaDesc(); refrescarReglaBox(); deQueRefrescar();
+    const fs = $('#fSub'); if (!fs || fs.type !== 'hidden') return;
+    const hit = subcatsDe((($('#fCategoria') || {}).value || '').trim(), false).find((x) => normName(x) === normName(el.value));
+    if (hit) fs.value = hit; else if (!FORM.id) fs.value = ''; // un apunte nuevo solo lleva detalle si coincide con uno que ya usabas; al editar se conserva el que tenía
+  },
+  deQuePick: ([x]) => {
+    const d = $('#fDesc'); if (!d) return; d.value = x;
+    const fs = $('#fSub'), hit = fs && fs.type === 'hidden' ? subcatsDe((($('#fCategoria') || {}).value || '').trim(), false).find((y) => normName(y) === normName(x)) : null;
+    if (fs && fs.type === 'hidden') fs.value = hit || (FORM.id ? fs.value : '');
+    autoCategoriaDesc(); refrescarReglaBox(); deQueRefrescar(); sentir('tic');
+  },
+  tecCatTodas: () => { const t = $('#tecCatTodas'); if (!t) return; const abre = t.hidden; t.hidden = !abre; t.innerHTML = abre ? tecCatsTodasHtml((($('#fCategoria') || {}).value || '').trim(), FORM && FORM.tipo) : ''; const b = $('#tecCats .tec-cat.mas'); if (b) b.setAttribute('aria-expanded', String(abre)); sentir('tic'); },
   reglaCheck: (_, el) => { FORM.recordar = el.checked; },
   reglaTexto: (_, el) => { FORM.reglaTexto = el.value; },
   openRecurrentes: () => { verBadge('cobros'); FORM = { kind: 'recLista' }; if ($('#sheetBackdrop')) updateSheet(recListaHtml()); else openSheet(recListaHtml()); },
@@ -15252,11 +15647,53 @@ document.addEventListener('focusin', (e) => { const el = e.target; if (el && el.
   let t = null, p0 = null;
   const quita = () => { clearTimeout(t); t = null; };
   document.addEventListener('pointerdown', (e) => { quita(); const w = e.target.closest && e.target.closest('#content .iw, #content .ins-circ, #content .dias-lista'); if (!w || S.tab !== 'inicio') return;
-    p0 = [e.clientX, e.clientY]; t = setTimeout(() => { t = null; S._iwLargo = Date.now(); sentir('tic', true); H.iwEditar(); }, 600); });
+    p0 = [e.clientX, e.clientY]; t = setTimeout(() => { t = null; S._iwLargo = Date.now(); sentir('tic', true); H.iwEditar(); }, 500); });
   document.addEventListener('pointermove', (e) => { if (t && p0 && Math.hypot(e.clientX - p0[0], e.clientY - p0[1]) > 10) quita(); });
   ['pointerup', 'pointercancel', 'scroll'].forEach((ev) => document.addEventListener(ev, quita, true));
   // el toque que acaba un «mantener pulsado» no abre la pieza
   document.addEventListener('click', (e) => { if (S._iwLargo && Date.now() - S._iwLargo < 900) { S._iwLargo = 0; if (!(e.target.closest && e.target.closest('#sheetHost'))) { e.stopPropagation(); e.preventDefault(); } } }, true);
+})();
+/* ---- arrastrar las piezas en «Editar Inicio» sobre la propia pantalla (28/11) ----
+   Desde el asa se arrastra al instante; sobre la pieza, tras mantener 350 ms (la pulsación larga «arma» el arrastre y solo entonces se bloquea el desplazamiento) */
+(function () {
+  let D = null, pend = null, raf = 0;
+  const cajas = () => [...document.querySelectorAll('#content .iw-e[data-i]')];
+  const pinta = () => {
+    if (!D) return; const sy = window.scrollY, dy = (D.y - D.y0) + (sy - D.s0);
+    D.w.style.transform = 'translateY(' + dy + 'px)';
+    const a = iwDestino(D.mids, D.i, D.mids[D.i] + dy); if (a !== D.a) { D.a = a; sentir('tic'); }
+    D.els.forEach((el, j) => { if (j === D.i) return; const s = D.i < D.a && j > D.i && j <= D.a ? -1 : D.i > D.a && j < D.i && j >= D.a ? 1 : 0; el.style.transform = s ? 'translateY(' + (s * D.paso) + 'px)' : ''; });
+  };
+  const bucle = () => { if (!D) return; const h = window.innerHeight || 800, v = D.y < 90 ? -(90 - D.y) / 90 * 14 : D.y > h - 110 ? (D.y - (h - 110)) / 110 * 14 : 0; if (v) window.scrollBy(0, v); pinta(); raf = requestAnimationFrame(bucle); };
+  const arma = (w, e) => {
+    const els = cajas(), i = els.indexOf(w); if (i < 0 || !S.inicioEd) return; const sy = window.scrollY || 0, rs = els.map((el) => el.getBoundingClientRect());
+    const hueco = els.length > 1 ? Math.max(0, rs[1].top - rs[0].bottom) : 0;
+    D = { w, els, i, a: i, y0: e.clientY, y: e.clientY, s0: sy, mids: rs.map((r) => r.top + sy + r.height / 2), paso: rs[i].height + hueco };
+    w.classList.add('arrastra'); document.documentElement.classList.add('iw-arrastrando'); sentir('tic', true);
+    try { w.setPointerCapture(e.pointerId); } catch (er) { /* */ }
+    if (typeof requestAnimationFrame === 'function') raf = requestAnimationFrame(bucle);
+  };
+  const quita = () => { if (pend) { clearTimeout(pend.t); pend = null; } };
+  document.addEventListener('pointerdown', (e) => {
+    quita(); if (!S.inicioEd || D || (e.button != null && e.button > 0)) return;
+    const w = e.target.closest && e.target.closest('#content .iw-e'); if (!w) return;
+    if (e.target.closest('.iw-e-grip')) { e.preventDefault(); arma(w, e); return; }
+    if (e.target.closest('button')) return;
+    pend = { x: e.clientX, y: e.clientY, t: setTimeout(() => { pend = null; arma(w, e); }, 350) };
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (pend && Math.hypot(e.clientX - pend.x, e.clientY - pend.y) > 8) quita();
+    if (D) { D.y = e.clientY; pinta(); }
+  });
+  const fin = (e) => {
+    quita(); if (!D) return; const d = D; D = null; cancelAnimationFrame && cancelAnimationFrame(raf);
+    d.els.forEach((el) => { el.style.transform = ''; }); d.w.classList.remove('arrastra'); document.documentElement.classList.remove('iw-arrastrando');
+    if (d.a === d.i || (e && e.type === 'pointercancel')) return; // si el sistema corta el gesto, el orden se queda como estaba
+    H.iwReordenar([d.els[d.i].dataset.i, d.els[d.a].dataset.i]);
+  };
+  document.addEventListener('pointerup', fin); document.addEventListener('pointercancel', fin);
+  document.addEventListener('touchmove', (e) => { if (D && e.cancelable) e.preventDefault(); }, { passive: false });
+  document.addEventListener('contextmenu', (e) => { if (S.inicioEd && e.target.closest && e.target.closest('#content .iw-e')) e.preventDefault(); });
 })();
 document.addEventListener('change', (e) => dispatch('change', e));
 document.addEventListener('keydown', (e) => { if (tecTeclaFisica(e)) return; if (e.key === 'Enter' && e.target && e.target.id === 'agRapida') { e.preventDefault(); agRapidaCrear(); return; } if (e.key === 'Escape') { if ($('#popupBackdrop')) cerrarPopup(); else closeSheet(); } });
@@ -15385,6 +15822,6 @@ async function main() {
   });
 }
 
-window.__APP__ = { LA, fotoValida, fotoReducir, cargarGrupos, herrOn, herrLista, obPasos, bvLista, bvPct, bvPiezas, bvSellosGanados, bvPpFilas, bvRecortes, bienvV2, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, tabsBarra, insightsCatalogo, herrPistaHtml };
+window.__APP__ = { iwDestino, LA, fotoValida, fotoReducir, cargarGrupos, herrOn, herrLista, obPasos, bvLista, bvPct, bvPiezas, bvSellosGanados, bvPpFilas, bvRecortes, bienvV2, tuRamas, tuRamaFilas, HERRAMIENTAS, descLista, parseN43, esNorma43, impArchivoEntrante, ticketsPocos, nivel, descubreN, descubierta, DESCUBRE, sugCandidatas, ppEstado, diasAlta, revisarNivel30, saldoCuenta, cuentaDeMeta, metaCuentaAviso, trCalc, trPrecio, impPropTras, VERSIONES, bancoTinta, agendaHoyN, invCorto, deudaEmojiSug, colorActivo, BADGES, badgeActivo, rangoTxt, tecPulsar, tecSync, tecladoOn, ticketsUso, guardarTicketsUso, errTicket, todayISO, uAdd, agRapidaCrear, toggleTarea, saveTarea, openTareaForm, openCrear, ticketsDisponible, crearTicketBandaHtml, gastosHabituales, escrMensaje, efectoMio, deudaStats, impNuevosConfig, metaEstado2, deudaEstado2, form: () => FORM, imp: () => IMP, toast, metasStats, statsMetaH, objStatsAny, metaOpciones, patrimonio, metaInvStats, S, main, render, kpisMes, H, cfg, aplicaEstado, parseNum, parseFechaImp, parseCSV, sugerirCategoria, reglaPara, ocurrencias, aprenderRegla, reglaTexto, siguienteFechaTarea, avisosRecurrentes, buscarResHtml, leerTicket, tkReparto, articulosTopHtml, movsEfectivos, deudasDe, calcReparto, saldosDe, objStats, patrimonio, saldoCuenta, enTusCuentas, compartidosCuenta, miSaldo, miParte, mesDe, rangoMes, previstoMes, mesActual, colorCat, donutDatos, avisoAMov, avisosMapa, catIngresoAviso, completarIngresosSerie, iconoCat, INGRESOS_SERIE, tabsBarra, insightsCatalogo, herrPistaHtml };
 if (!window.__NO_AUTOSTART__) main();
 })();

@@ -6,7 +6,7 @@ T.fallosConocidos([]); // 13/11: atrás en la bienvenida cerraba la app; arregla
 const pasoN = (e) => (pantalla(e).match(/Paso (\d+) de (\d+)/) || []).slice(1).join('/');
 (async () => {
   paso('Tú → una pantalla de temas → atrás');
-  let e = await abrir({ version: { tu: 0, crear: 0 }, cfg: { app: { nombre: 'Prueba', compararVersiones: false }, meta: { onboarded: true } } });
+  let e = await abrir({ version: { tu: 0, crear: 1 }, cfg: { app: { nombre: 'Prueba', compararVersiones: false }, meta: { onboarded: true } } });
   await ir(e, 'tu');
   for (const n of ['Mis herramientas', 'Dinero', 'Apariencia', 'Tus datos', 'Ayuda']) {
     const b = buscar(e, 'tuIr', n, 'app'); if (!ok(!!b, 'Tú: está «' + n + '»')) continue;
@@ -35,7 +35,7 @@ const pasoN = (e) => (pantalla(e).match(/Paso (\d+) de (\d+)/) || []).slice(1).j
   ok(atras(e) === false && !!e.S.onboarding, 'en el paso 1, atrás deja salir (como antes)');
 
   paso('Cuenta de antes (sin «herramientas» ni «nivel»): barra y + de siempre');
-  e = await abrir({ version: { tu: 0, crear: 0 }, cfg: { app: { nombre: 'Prueba', compararVersiones: false, cuentas: [{ id: 'c1', nombre: 'A', saldo: 10, fecha: '2026-01-01' }, { id: 'c2', nombre: 'B', saldo: 10, fecha: '2026-01-01' }] }, meta: { onboarded: true } } });
+  e = await abrir({ version: { tu: 0, crear: 1 }, cfg: { app: { nombre: 'Prueba', compararVersiones: false, cuentas: [{ id: 'c1', nombre: 'A', saldo: 10, fecha: '2026-01-01' }, { id: 'c2', nombre: 'B', saldo: 10, fecha: '2026-01-01' }] }, meta: { onboarded: true } } });
   const barra = () => [...e.doc.querySelectorAll('.tabbar > *')].map((b) => b.classList.contains('tab-crear') ? '+' : b.getAttribute('data-tab')).join();
   ok(barra() === 'inicio,movimientos,+,juntos,dinero' && !e.doc.querySelector('.tabbar.tres'), 'barra de 4 con el + en medio (' + barra() + ')');
   ok(!e.doc.querySelector('#tbAgenda').hidden, 'botón de la Agenda arriba');

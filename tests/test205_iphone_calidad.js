@@ -27,7 +27,7 @@ const cfgBase = { app: { compararVersiones: false, cuentas: [{ id: 'c-x', nombre
       { id: 'b3', uid: 'u-1', tipo: 'aviso', banco: 'bbva', texto: 'Has pagado 1,80 € en CAFE LUNA con tu tarjeta', ts: t - 60000 },
       { id: 'b4', uid: 'u-1', tipo: 'applepay', importe: '1,80 €', comercio: 'Cafe Luna', tarjeta: 'BBVA', ts: t - 59000 },
     ]);
-    const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 0 }, pre: st.pre, session: { user: { id: 'u-1', email: 't@t.com' } }, cfg: cfgBase });
+    const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 1 }, pre: st.pre, session: { user: { id: 'u-1', email: 't@t.com' } }, cfg: cfgBase });
     e.w.Data.moviles = { registrar: async (p) => p.id, quitar: async () => {}, quitarTodos: async () => {} };
     await e.w.__APP__.main(); await sleep(2200);
     const av = e.w.__APP__.S.movimientos.filter((m) => m.origen === 'aviso');
@@ -37,7 +37,7 @@ const cfgBase = { app: { compararVersiones: false, cuentas: [{ id: 'c-x', nombre
   // 2) el aviso se apunta en una vuelta; el Apple Pay del mismo pago llega en la siguiente → sigue habiendo uno
   {
     const st = iphone([{ id: 'c1', uid: 'u-1', tipo: 'aviso', banco: 'bbva', texto: 'Has pagado 23,40 € en FRUTERIA SOL con tu tarjeta', ts: t - 30000 }]);
-    const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 0 }, pre: st.pre, session: { user: { id: 'u-1', email: 't@t.com' } }, cfg: cfgBase });
+    const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 1 }, pre: st.pre, session: { user: { id: 'u-1', email: 't@t.com' } }, cfg: cfgBase });
     e.w.Data.moviles = { registrar: async (p) => p.id, quitar: async () => {}, quitarTodos: async () => {} };
     await e.w.__APP__.main(); await sleep(2200);
     const S = e.w.__APP__.S;
@@ -65,7 +65,7 @@ const cfgBase = { app: { compararVersiones: false, cuentas: [{ id: 'c-x', nombre
   }
   // 4) web: nada nuevo
   {
-    const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 0 }, session: { user: { id: 'u-1', email: 't@t.com' } },
+    const e = makeEnv({ url: 'https://palomapp.test/', version: { tu: 1, agenda: 0, crear: 1 }, session: { user: { id: 'u-1', email: 't@t.com' } },
       pre: (w) => { try { w.localStorage.setItem('guiaAbre', '5'); } catch (x) { /* */ } }, cfg: { app: { compararVersiones: false }, meta: { onboarded: true } } });
     await e.w.__APP__.main(); await sleep(1500);
     const txt = e.w.document.body.textContent;
